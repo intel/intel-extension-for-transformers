@@ -15,23 +15,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import numpy as np
 import os
 import shutil
-import time
 import subprocess
+import time
+import unittest
+
 import torch
-from datasets import load_dataset
 from transformers import BertForSequenceClassification
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 
 
 class TestWeightSharingThroughput(unittest.TestCase):
-
     @classmethod
     def setUpClass(self):
-        self.skipTest(self, "currently not support Unit Test for dispatcher, but this function is supported. Will improve Unit Test very soon.")
+        self.skipTest(
+            self,
+            "currently not support Unit Test for dispatcher, but this function is supported. Will improve Unit Test very soon.",
+        )
         code = """
 import time
 import math
@@ -104,33 +106,37 @@ if __name__ == "__main__":
     run()
 
 """
-        with open('run.py', 'w', encoding='utf-8') as f:
+        with open("run.py", "w", encoding="utf-8") as f:
             f.write(code)
         model_path = "/tf_dataset2/models/nlp_toolkit/bert_mini_mrpc"
-        torch_model = BertForSequenceClassification.from_pretrained(
-            model_path)
+        torch_model = BertForSequenceClassification.from_pretrained(model_path)
         with torch.no_grad():
             inputs = {
-                'input_ids': torch.ones(1, 128, dtype=torch.int32),
-                'attention_mask': torch.ones(1, 128, dtype=torch.int32),
-                'token_type_ids': torch.ones(1, 128, dtype=torch.int32)
+                "input_ids": torch.ones(1, 128, dtype=torch.int32),
+                "attention_mask": torch.ones(1, 128, dtype=torch.int32),
+                "token_type_ids": torch.ones(1, 128, dtype=torch.int32),
             }
             outputs = torch_model(**inputs)
 
-            symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
+            symbolic_names = {0: "batch_size", 1: "max_seq_len"}
             torch.onnx.export(
                 torch_model,
-                (inputs['input_ids'], inputs['attention_mask'], inputs['token_type_ids']),
+                (
+                    inputs["input_ids"],
+                    inputs["attention_mask"],
+                    inputs["token_type_ids"],
+                ),
                 "onnx_fp32.onnx",
                 opset_version=11,
                 do_constant_folding=True,
-                input_names=['input_ids', 'input_mask', 'segment_ids'],
-                output_names=['output'],
+                input_names=["input_ids", "input_mask", "segment_ids"],
+                output_names=["output"],
                 dynamic_axes={
-                    'input_ids': symbolic_names,
-                    'input_mask': symbolic_names,
-                    'segment_ids': symbolic_names
-                })
+                    "input_ids": symbolic_names,
+                    "input_mask": symbolic_names,
+                    "segment_ids": symbolic_names,
+                },
+            )
         graph = compile("onnx_fp32.onnx")
         graph.save()
 
@@ -147,22 +153,24 @@ if __name__ == "__main__":
                 continue
 
     def test_weight_sharing_throughput(self):
-        cmd = "numactl -l -C 0-3 python run.py log0_ws0.txt & " \
-              "numactl -l -C 4-7 python run.py log1_ws0.txt & " \
-              "numactl -l -C 8-11 python run.py log2_ws0.txt & " \
-              "numactl -l -C 12-15 python run.py log3_ws0.txt &" \
-              "numactl -l -C 16-19 python run.py log4_ws0.txt &" \
-              "numactl -l -C 20-23 python run.py log5_ws0.txt &" \
-              "numactl -l -C 24-27 python run.py log6_ws0.txt"
+        cmd = (
+            "numactl -l -C 0-3 python run.py log0_ws0.txt & "
+            "numactl -l -C 4-7 python run.py log1_ws0.txt & "
+            "numactl -l -C 8-11 python run.py log2_ws0.txt & "
+            "numactl -l -C 12-15 python run.py log3_ws0.txt &"
+            "numactl -l -C 16-19 python run.py log4_ws0.txt &"
+            "numactl -l -C 20-23 python run.py log5_ws0.txt &"
+            "numactl -l -C 24-27 python run.py log6_ws0.txt"
+        )
         # open weight_sharing
-        os.environ['WEIGHT_SHARING'] = '1'
-        os.environ['INST_NUM'] = '7'
-        os.environ['GLOG_minloglevel'] = '2'
+        os.environ["WEIGHT_SHARING"] = "1"
+        os.environ["INST_NUM"] = "7"
+        os.environ["GLOG_minloglevel"] = "2"
         # cycle buffer
-        if os.environ.get('DIRECT_BUFFER'):
-            del os.environ['DIRECT_BUFFER']
-        if os.environ.get('UNIFIED_BUFFER'):
-            del os.environ['UNIFIED_BUFFER']
+        if os.environ.get("DIRECT_BUFFER"):
+            del os.environ["DIRECT_BUFFER"]
+        if os.environ.get("UNIFIED_BUFFER"):
+            del os.environ["UNIFIED_BUFFER"]
 
         process = subprocess.Popen(cmd, shell=True)  # nosec
         process.wait()
@@ -182,18 +190,20 @@ if __name__ == "__main__":
 
         throughput_on = 0
         for i in range(7):
-            with open("log" + str(i) + "_ws0.txt", 'r') as f:
+            with open("log" + str(i) + "_ws0.txt", "r") as f:
                 throughput_on += int(f.readline().strip())
 
         # close weight_sharing
-        del os.environ['WEIGHT_SHARING']
-        cmd = "numactl -l -C 0-3 python run.py log0_ws1.txt & " \
-              "numactl -l -C 4-7 python run.py log1_ws1.txt & " \
-              "numactl -l -C 8-11 python run.py log2_ws1.txt & " \
-              "numactl -l -C 12-15 python run.py log3_ws1.txt &" \
-              "numactl -l -C 16-19 python run.py log4_ws1.txt &" \
-              "numactl -l -C 20-23 python run.py log5_ws1.txt &" \
-              "numactl -l -C 24-27 python run.py log6_ws1.txt"
+        del os.environ["WEIGHT_SHARING"]
+        cmd = (
+            "numactl -l -C 0-3 python run.py log0_ws1.txt & "
+            "numactl -l -C 4-7 python run.py log1_ws1.txt & "
+            "numactl -l -C 8-11 python run.py log2_ws1.txt & "
+            "numactl -l -C 12-15 python run.py log3_ws1.txt &"
+            "numactl -l -C 16-19 python run.py log4_ws1.txt &"
+            "numactl -l -C 20-23 python run.py log5_ws1.txt &"
+            "numactl -l -C 24-27 python run.py log6_ws1.txt"
+        )
         process = subprocess.Popen(cmd, shell=True)  # nosec
         process.wait()
         if process.returncode != 0:
@@ -212,7 +222,7 @@ if __name__ == "__main__":
 
         throughput_off = 0
         for i in range(7):
-            with open("log" + str(i) + "_ws1.txt", 'r') as f:
+            with open("log" + str(i) + "_ws1.txt", "r") as f:
                 throughput_off += int(f.readline().strip())
         self.assertNotEqual(throughput_on, throughput_off)
         self.assertGreater(throughput_on, 0)

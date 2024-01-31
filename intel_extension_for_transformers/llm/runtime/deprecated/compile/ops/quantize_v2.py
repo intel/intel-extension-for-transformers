@@ -14,25 +14,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
 
 
 # get the matmul op scale, in bert_mlperf_int8.pb model, this op has several outputs
 # but the other output tensors has empty shape except the first one, and don't be used by other ops
 # so just keep the first one as the output_tensor
-@operator_registry(operator_type='QuantizeV2')
+@operator_registry(operator_type="QuantizeV2")
 class QuantizeV2(Operator):
     """Parse the QuantizeV2 operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
         """Extract the node attr from tensorflow."""
-        self._op_type = 'Quantize'
-        if framework == 'tensorflow':
-            self._attr['output_dtype'] = 'u8'
+        self._op_type = "Quantize"
+        if framework == "tensorflow":
+            self._attr["output_dtype"] = "u8"

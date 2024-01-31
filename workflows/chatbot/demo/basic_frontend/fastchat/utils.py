@@ -1,14 +1,27 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import json
 import logging
 import logging.handlers
 import os
-import sys
-import json
-import warnings
 import platform
+import sys
+import warnings
 
 import requests
 import torch
-
 from fastchat.constants import LOGDIR
 
 server_error_msg = (
@@ -36,8 +49,10 @@ def build_logger(logger_name, logger_filename):
             logging.basicConfig(level=logging.INFO, encoding="utf-8")
         else:
             if platform.system() == "Windows":
-                warnings.warn("If you are running on Windows, "
-                              "we recommend you use Python >= 3.9 for UTF-8 encoding.")
+                warnings.warn(
+                    "If you are running on Windows, "
+                    "we recommend you use Python >= 3.9 for UTF-8 encoding."
+                )
             logging.basicConfig(level=logging.INFO)
     logging.getLogger().handlers[0].setFormatter(formatter)
 
@@ -73,9 +88,7 @@ def build_logger(logger_name, logger_filename):
 
 
 class StreamToLogger(object):
-    """
-    Fake file-like stream object that redirects writes to a logger instance.
-    """
+    """Fake file-like stream object that redirects writes to a logger instance."""
 
     def __init__(self, logger, log_level=logging.INFO):
         self.terminal = sys.stdout
@@ -109,9 +122,7 @@ class StreamToLogger(object):
 
 
 def disable_torch_init():
-    """
-    Disable the redundant torch default initialization to accelerate model creation.
-    """
+    """Disable the redundant torch default initialization to accelerate model creation."""
     import torch
 
     setattr(torch.nn.Linear, "reset_parameters", lambda self: None)
@@ -119,9 +130,7 @@ def disable_torch_init():
 
 
 def violates_moderation(text):
-    """
-    Check whether the text violates OpenAI moderation API.
-    """
+    """Check whether the text violates OpenAI moderation API."""
     url = "https://api.openai.com/v1/moderations"
     headers = {
         "Content-Type": "application/json",
@@ -133,9 +142,9 @@ def violates_moderation(text):
     try:
         ret = requests.post(url, headers=headers, data=data, timeout=5)
         flagged = ret.json()["results"][0]["flagged"]
-    except requests.exceptions.RequestException as e:
+    except requests.exceptions.RequestException:
         flagged = False
-    except KeyError as e:
+    except KeyError:
         flagged = False
 
     return flagged

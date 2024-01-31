@@ -16,16 +16,16 @@
 from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
-config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
-model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",config=config)
+config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english", num_labels=2)
+model = AutoModelForSequenceClassification.from_pretrained(
+    "distilbert-base-uncased-finetuned-sst-2-english", config=config
+)
 model.config.label2id = {0: 0, 1: 1}
-model.config.id2label = {0: 'NEGATIVE', 1: 'POSITIVE'}
+model.config.id2label = {0: "NEGATIVE", 1: "POSITIVE"}
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
-trainer = NLPTrainer(model=model, 
-    train_dataset=raw_datasets["train"], 
-    eval_dataset=raw_datasets["validation"],
-    tokenizer=tokenizer
+trainer = NLPTrainer(
+    model=model, train_dataset=raw_datasets["train"], eval_dataset=raw_datasets["validation"], tokenizer=tokenizer
 )
 q_config = QuantizationConfig(metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)])
 model = trainer.quantize(quant_config=q_config)
@@ -45,7 +45,7 @@ from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # trainer = transformers.Trainer(...)
 trainer = NLPTrainer(...)
 metric = metrics.Metric(name="eval_accuracy")
-pruner_config = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
+pruner_config = PrunerConfig(prune_type="BasicMagnitude", target_sparsity_ratio=0.9)
 p_conf = PruningConfig(pruner_config=[pruner_config], metrics=metric)
 model = trainer.prune(pruning_config=p_conf)
 ```
@@ -60,7 +60,7 @@ from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
-teacher_model = ... # exist model
+teacher_model = ...  # exist model
 trainer = NLPTrainer(...)
 metric = metrics.Metric(name="eval_accuracy")
 d_conf = DistillationConfig(metrics=metric)
@@ -80,11 +80,7 @@ from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # trainer = transformers.Trainer(...)
 trainer = NLPTrainer(...)
 metric = metrics.Metric(name="eval_f1", is_relative=True, criterion=0.01)
-q_config = QuantizationConfig(
-    approach="PostTrainingStatic",
-    metrics=[metric],
-    objectives=[objectives.performance]
-)
+q_config = QuantizationConfig(approach="PostTrainingStatic", metrics=[metric], objectives=[objectives.performance])
 # Apply the length config
 dynamic_length_config = DynamicLengthConfig(length_config=length_config)
 trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
@@ -100,9 +96,10 @@ Transformers-accelerated Neural Engine is one of reference deployments that Inte
 
 ```python
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+
 # /path/to/your/model is a TensorFlow pb model or ONNX model
-model = compile('/path/to/your/model')
-inputs = ... # [input_ids, segment_ids, input_mask]
+model = compile("/path/to/your/model")
+inputs = ...  # [input_ids, segment_ids, input_mask]
 model.inference(inputs)
 ```
 

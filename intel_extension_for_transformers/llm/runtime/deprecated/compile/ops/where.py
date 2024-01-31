@@ -14,17 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
-from ..graph_utils import list2str
 
 
-@operator_registry(operator_type='Where')
+@operator_registry(operator_type="Where")
 class Where(Operator):
     """Parse the Cos operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -33,6 +31,6 @@ class Where(Operator):
         """Extract the node attr from torch."""
         if framework == "torch":
             if type(node.inputsAt(2).toIValue()) == float:
-                self._attr['mask_value'] = node.inputsAt(2).toIValue()
+                self._attr["mask_value"] = node.inputsAt(2).toIValue()
             else:
-                self._attr['mask_value'] = node.inputsAt(2).toIValue().item()
+                self._attr["mask_value"] = node.inputsAt(2).toIValue().item()

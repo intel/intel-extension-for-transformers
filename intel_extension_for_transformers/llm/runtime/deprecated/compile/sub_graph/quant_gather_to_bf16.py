@@ -16,15 +16,15 @@
 # limitations under the License.
 """The TorchInsertBF16Node Pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
-from ..ops import Tensor
+
 import numpy as np
+
 from .. import graph_utils as util
 from .. import logger
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='QuantGatherToBF16')
+@pattern_registry(pattern_type="QuantGatherToBF16")
 class TorchInsertBF16Node(Pattern):
     """The QuantGatherToBF16 pattern.
 
@@ -44,18 +44,24 @@ class TorchInsertBF16Node(Pattern):
             elif fp32_np.dtype in [np.int16, np.uint16]:
                 return fp32_np
             else:
-                logger.error('Wrong dtype when convert to bf16 dtype.')
+                logger.error("Wrong dtype when convert to bf16 dtype.")
 
-        if model.framework_modeling_config['framework'] != 'torch' or \
-           util.get_autocast_info()['cast_type'] != "bf16":
+        if (
+            model.framework_modeling_config["framework"] != "torch"
+            or util.get_autocast_info()["cast_type"] != "bf16"
+        ):
             return model
 
         for node in model.nodes:
-            if node.op_type == 'Gather' and node.attr and node.attr.get('embedding', False):
+            if (
+                node.op_type == "Gather"
+                and node.attr
+                and node.attr.get("embedding", False)
+            ):
                 weight_fp32 = node.input_tensors[1].data
                 if isinstance(weight_fp32, np.ndarray):
                     node.input_tensors[1].data = fp32_to_bf16(weight_fp32)
-                    node.input_tensors[1].dtype = 'bf16'
-                    node.attr['output_dtype'] = 'bf16'
+                    node.input_tensors[1].dtype = "bf16"
+                    node.attr["output_dtype"] = "bf16"
 
         return model

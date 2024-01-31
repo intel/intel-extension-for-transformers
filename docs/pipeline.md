@@ -18,6 +18,7 @@ The pipeline is inherited from [huggingface/transformers pipeline](https://githu
 1. Initialize a pipeline instance with a model name and specific task.
     ```py
     from intel_extension_for_transformers.transformers.pipeline import pipeline
+
     text_classifier = pipeline(
         task="text-classification",
         model="Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static",
@@ -47,17 +48,13 @@ For executor, we only accept ONNX model now for pipeline. Users can get ONNX mod
         task="text-classification",
         config=config,
         tokenizer=tokenizer,
-        model='fp32.onnx',
-        model_kwargs={'backend': "executor"},
+        model="fp32.onnx",
+        model_kwargs={"backend": "executor"},
     )
     ```
 
 2. Pass your input text to the pipeline instance for inference.
     ```py
-    outputs = text_classifier(
-        "But believe it or not , it 's one of the most "
-        "beautiful , evocative works I 've seen ."
-    )
+    outputs = text_classifier("But believe it or not , it 's one of the most " "beautiful , evocative works I 've seen .")
     # output: [{'label': 'POSITIVE', 'score': 0.9998886585235596}]
     ```
-

@@ -16,20 +16,18 @@
 # limitations under the License.
 
 
-import json
 import datetime
+import json
 from datetime import timedelta, timezone
 from typing import Dict
+
 from .database.mysqldb import MysqlDb
 
 
 def record_request(request_url: str, request_body: Dict, user_id: str):
     mysqldb = MysqlDb()
     mysqldb._set_db("requests")
-    SHA_TZ = timezone(
-        timedelta(hours=8),
-        name='Asia/Shanghai'
-    )
+    SHA_TZ = timezone(timedelta(hours=8), name="Asia/Shanghai")
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
     if not isinstance(request_body, Dict):
@@ -44,4 +42,3 @@ def record_request(request_url: str, request_body: Dict, user_id: str):
     except Exception as e:
         raise Exception(f"[record request] Exception occurred: {e}")
     mysqldb._close()
-        

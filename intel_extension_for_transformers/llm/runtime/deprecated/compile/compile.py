@@ -17,34 +17,36 @@
 """The neural engine compile module."""
 
 from collections import OrderedDict
-from .loaders.loader import Loader
-from .extractors.extractor import Extractor
-from .sub_graph.subgraph_matcher import SubGraphMatcher, EXECUTOR_TYPE
-from .graph_utils import get_model_fwk_name
-from .dynamic_quantize import _dynamic_quantization
-from .graph import Graph
-from . import graph_utils as util
-from copy import deepcopy
-from .optimizer import Optimizer
 
-COMPILES = OrderedDict({
-    'loader': Loader,
-    'extractor': Extractor,
-    'sub_graph': SubGraphMatcher,
-})
+from . import graph_utils as util
+from .dynamic_quantize import _dynamic_quantization
+from .extractors.extractor import Extractor
+from .graph import Graph
+from .graph_utils import get_model_fwk_name
+from .loaders.loader import Loader
+from .optimizer import Optimizer
+from .sub_graph.subgraph_matcher import SubGraphMatcher
+
+COMPILES = OrderedDict(
+    {
+        "loader": Loader,
+        "extractor": Extractor,
+        "sub_graph": SubGraphMatcher,
+    }
+)
 
 
 class autocast:
     def __init__(self, cast_type: str, *args, **kwargs) -> None:
         util.autocast_init()
-        self.prev_cast_type = util.get_autocast_info()['cast_type']
+        self.prev_cast_type = util.get_autocast_info()["cast_type"]
         self.cast_type = cast_type
         self.weight_dtype = None
-        if 'weight_dtype' in kwargs:
-            self.weight_dtype = kwargs['weight_dtype']
+        if "weight_dtype" in kwargs:
+            self.weight_dtype = kwargs["weight_dtype"]
 
     def __enter__(self) -> None:
-        self.prev_cast_type = util.get_autocast_info()['cast_type']
+        self.prev_cast_type = util.get_autocast_info()["cast_type"]
         util.set_autocast("cast_type", self.cast_type)
         if self.weight_dtype:
             util.set_autocast("weight_dtype", self.weight_dtype)
@@ -60,12 +62,20 @@ def _config_validation(config):
 
     # the config is a dict or text file.
     if isinstance(config, dict) != True:
-        with open(config, 'r') as conf_file:
+        with open(config, "r") as conf_file:
             import yaml
+
             config = yaml.safe_load(conf_file)
 
     from schema import Schema
-    conf_schema = Schema({'pattern_switch': Schema({str: bool}, error='The format of the pattern config is wrong.')})
+
+    conf_schema = Schema(
+        {
+            "pattern_switch": Schema(
+                {str: bool}, error="The format of the pattern config is wrong."
+            )
+        }
+    )
 
     return conf_schema.validate(config)
 
@@ -96,16 +106,19 @@ def compile(model, config=None) -> Graph:
     Finally, convert them to .yaml file and .bin file for model configuration and inference.
     """
     from .graph import Graph
+
     try:
         util.get_autocast_info()
     except:
         util.autocast_init()
     if not isinstance(model, Graph):
-        if get_model_fwk_name(model) == 'neural engine':
+        if get_model_fwk_name(model) == "neural engine":
             graph = Graph()
-            graph.graph_init(model + '/conf.yaml',
-                             model + '/model.bin',
-                             load_weight=util.get_autocast_info()['cast_type'] == "dynamic_int8")
+            graph.graph_init(
+                model + "/conf.yaml",
+                model + "/model.bin",
+                load_weight=util.get_autocast_info()["cast_type"] == "dynamic_int8",
+            )
             model = graph
         else:
             config = _config_validation(config)
@@ -113,7 +126,7 @@ def compile(model, config=None) -> Graph:
 
         optimizer = Optimizer(model)
         optimizer.optimize()
-    if util.get_autocast_info()['cast_type'] == "dynamic_int8":
+    if util.get_autocast_info()["cast_type"] == "dynamic_int8":
         model = _dynamic_quantization(model)
 
     return model

@@ -15,14 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 import os
+import unittest
+
 import numpy as np
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern import PATTERNS
+
 import intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils as util
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern import (
+    PATTERNS,
+)
+
 util.autocast_init()
-util.set_autocast('cast_type','bf16')
+util.set_autocast("cast_type", "bf16")
 util.quant_info_init()
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -35,11 +40,11 @@ class TestTorchOP(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        os.remove('conf.yaml')
+        os.remove("conf.yaml")
         pass
 
     def test_1(self):
-        text = '''
+        text = """
 model:
   name: model
   operator:
@@ -731,24 +736,29 @@ model:
         self.model.embed_out.weight: {}
       output:
         '175': {}
-'''
-        file = open('conf.yaml', 'w')
+"""
+        file = open("conf.yaml", "w")
         file.write(text)
         file.close()
         dollygraph = Graph()
-        dollygraph.graph_init('./conf.yaml')
-        dollygraph.framework_modeling_config['framework'] = 'torch'
+        dollygraph.graph_init("./conf.yaml")
+        dollygraph.framework_modeling_config["framework"] = "torch"
         for dest_op_name in dollygraph.nodes[0].output_tensors[9].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[0].data = np.zeros([1,1,2048,20], dtype=np.float32)
+            dest_node.input_tensors[0].data = np.zeros(
+                [1, 1, 2048, 20], dtype=np.float32
+            )
         for dest_op_name in dollygraph.nodes[0].output_tensors[10].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[0].data = np.zeros([1,1,2048,20], dtype=np.float32)
+            dest_node.input_tensors[0].data = np.zeros(
+                [1, 1, 2048, 20], dtype=np.float32
+            )
         oldlen = len(dollygraph.nodes)
-        p_fusion = PATTERNS['NeoxRoraryPosEmb']()
+        p_fusion = PATTERNS["NeoxRoraryPosEmb"]()
         dollygraph = p_fusion(dollygraph)
         newlen = len(dollygraph.nodes)
         self.assertTrue(oldlen != newlen)
+
 
 if __name__ == "__main__":
     unittest.main()

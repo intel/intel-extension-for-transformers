@@ -17,11 +17,9 @@
 
 import re
 
+
 class Optimization:
-    def __init__(
-            self,
-            optimization_config
-        ):
+    def __init__(self, optimization_config):
         self.optimization_config = optimization_config
 
     def optimize(self, model, use_llm_runtime=False):
@@ -31,21 +29,31 @@ class Optimization:
             model_name = model.config._name_or_path
             optimized_model = model
         from intel_extension_for_transformers.transformers import (
+            BitsAndBytesConfig,
             MixedPrecisionConfig,
             WeightOnlyQuantConfig,
-            BitsAndBytesConfig
         )
-        assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
-            f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
-            " or BitsAndBytesConfig,got {type(self.optimization_config)}."
+
+        assert type(self.optimization_config) in [
+            MixedPrecisionConfig,
+            WeightOnlyQuantConfig,
+            BitsAndBytesConfig,
+        ], (
+            "Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig"
+            + " or BitsAndBytesConfig,got {type(self.optimization_config)}."
+        )
         config = self.optimization_config
         if re.search("flan-t5", model_name, re.IGNORECASE):
-            from intel_extension_for_transformers.transformers import AutoModelForSeq2SeqLM
+            from intel_extension_for_transformers.transformers import (
+                AutoModelForSeq2SeqLM,
+            )
+
             optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
-                    model_name,
-                    quantization_config=config,
-                    use_llm_runtime=use_llm_runtime,
-                    trust_remote_code=True)
+                model_name,
+                quantization_config=config,
+                use_llm_runtime=use_llm_runtime,
+                trust_remote_code=True,
+            )
         elif (
             re.search("gpt", model_name, re.IGNORECASE)
             or re.search("mpt", model_name, re.IGNORECASE)
@@ -59,17 +67,23 @@ class Optimization:
             or re.search("magicoder", model_name, re.IGNORECASE)
             or re.search("solar", model_name, re.IGNORECASE)
         ):
-            from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+            from intel_extension_for_transformers.transformers import (
+                AutoModelForCausalLM,
+            )
+
             optimized_model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 quantization_config=config,
                 use_llm_runtime=use_llm_runtime,
-                trust_remote_code=True)
+                trust_remote_code=True,
+            )
         elif re.search("chatglm", model_name, re.IGNORECASE):
             from intel_extension_for_transformers.transformers import AutoModel
+
             optimized_model = AutoModel.from_pretrained(
                 model_name,
                 quantization_config=config,
                 use_llm_runtime=use_llm_runtime,
-                trust_remote_code=True)
+                trust_remote_code=True,
+            )
         return optimized_model

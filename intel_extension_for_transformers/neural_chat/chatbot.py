@@ -16,84 +16,89 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
-from intel_extension_for_transformers.llm.quantization.optimization import Optimization
-from .config import PipelineConfig
-from .config import BaseFinetuningConfig
-from .plugins import plugins
-
-from .errorcode import ErrorCodes
-from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
-from intel_extension_for_transformers.utils.logger import logging
 import importlib
+
+from intel_extension_for_transformers.llm.quantization.optimization import Optimization
+from intel_extension_for_transformers.utils.logger import logging
+
+from .config import BaseFinetuningConfig, PipelineConfig
+from .errorcode import ErrorCodes
+from .utils.error_utils import clear_latest_error, get_latest_error, set_latest_error
+
 
 def check_tts_dependency():
     try:
-        importlib.import_module('paddlespeech')
-        importlib.import_module('paddle')
-        importlib.import_module('soundfile')
-        importlib.import_module('pydub')
-        importlib.import_module('speechbrain')
-        importlib.import_module('librosa')
+        importlib.import_module("paddlespeech")
+        importlib.import_module("paddle")
+        importlib.import_module("soundfile")
+        importlib.import_module("pydub")
+        importlib.import_module("speechbrain")
+        importlib.import_module("librosa")
         return True
     except ImportError:
         return False
+
 
 def check_cache_dependency():
     try:
-        importlib.import_module('gptcache')
+        importlib.import_module("gptcache")
         return True
     except ImportError:
         return False
+
 
 def check_retrieval_dependency():
     try:
-        importlib.import_module('PyPDF2')
-        importlib.import_module('langchain')
-        importlib.import_module('langchain_core')
-        importlib.import_module('docx')
-        importlib.import_module('bs4')
-        importlib.import_module('unstructured')
-        importlib.import_module('InstructorEmbedding')
-        importlib.import_module('chromadb')
-        importlib.import_module('openpyxl')
+        importlib.import_module("PyPDF2")
+        importlib.import_module("langchain")
+        importlib.import_module("langchain_core")
+        importlib.import_module("docx")
+        importlib.import_module("bs4")
+        importlib.import_module("unstructured")
+        importlib.import_module("InstructorEmbedding")
+        importlib.import_module("chromadb")
+        importlib.import_module("openpyxl")
         return True
     except ImportError:
         return False
+
 
 def check_faceanimation_dependency():
     try:
-        importlib.import_module('face_alignment')
-        importlib.import_module('imageio')
-        importlib.import_module('resampy')
-        importlib.import_module('kornia')
-        importlib.import_module('tqdm')
-        importlib.import_module('facexlib')
-        importlib.import_module('gfpgan')
-        importlib.import_module('av')
-        importlib.import_module('safetensors')
+        importlib.import_module("face_alignment")
+        importlib.import_module("imageio")
+        importlib.import_module("resampy")
+        importlib.import_module("kornia")
+        importlib.import_module("tqdm")
+        importlib.import_module("facexlib")
+        importlib.import_module("gfpgan")
+        importlib.import_module("av")
+        importlib.import_module("safetensors")
         return True
     except ImportError:
         return False
+
 
 def check_ner_dependency():
     try:
-        importlib.import_module('spacy')
-        importlib.import_module('pymysql')
-        importlib.import_module('deepface')
-        importlib.import_module('exifread')
+        importlib.import_module("spacy")
+        importlib.import_module("pymysql")
+        importlib.import_module("deepface")
+        importlib.import_module("exifread")
         return True
     except ImportError:
         return False
+
 
 def check_image2image_dependency():
     try:
-        importlib.import_module('diffusers')
+        importlib.import_module("diffusers")
         return True
     except ImportError:
         return False
 
 
-def build_chatbot(config: PipelineConfig=None):
+def build_chatbot(config: PipelineConfig = None):
     """Build the chatbot with a given configuration.
 
     Args:
@@ -115,35 +120,45 @@ def build_chatbot(config: PipelineConfig=None):
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
+
         adapter = LlamaModel()
     elif "mpt" in config.model_name_or_path.lower():
         from .models.mpt_model import MptModel
+
         adapter = MptModel()
     elif "neural-chat" in config.model_name_or_path.lower():
         from .models.neuralchat_model import NeuralChatModel
+
         adapter = NeuralChatModel()
     elif "chatglm" in config.model_name_or_path.lower():
         from .models.chatglm_model import ChatGlmModel
+
         adapter = ChatGlmModel()
     elif "qwen" in config.model_name_or_path.lower():
         from .models.qwen_model import QwenModel
+
         adapter = QwenModel()
     elif "mistral" in config.model_name_or_path.lower():
         from .models.mistral_model import MistralModel
+
         adapter = MistralModel()
     elif "solar" in config.model_name_or_path.lower():
         from .models.solar_model import SolarModel
+
         adapter = SolarModel()
-    elif "opt" in config.model_name_or_path.lower() or \
-         "gpt" in config.model_name_or_path.lower() or \
-         "flan-t5" in config.model_name_or_path.lower() or \
-         "bloom" in config.model_name_or_path.lower() or \
-         "starcoder" in config.model_name_or_path.lower() or \
-         "codegen" in config.model_name_or_path.lower() or \
-         "magicoder" in config.model_name_or_path.lower() or \
-         "mixtral" in config.model_name_or_path.lower() or \
-         "phi-2" in config.model_name_or_path.lower():
+    elif (
+        "opt" in config.model_name_or_path.lower()
+        or "gpt" in config.model_name_or_path.lower()
+        or "flan-t5" in config.model_name_or_path.lower()
+        or "bloom" in config.model_name_or_path.lower()
+        or "starcoder" in config.model_name_or_path.lower()
+        or "codegen" in config.model_name_or_path.lower()
+        or "magicoder" in config.model_name_or_path.lower()
+        or "mixtral" in config.model_name_or_path.lower()
+        or "phi-2" in config.model_name_or_path.lower()
+    ):
         from .models.base_model import BaseModel
+
         adapter = BaseModel()
     else:
         set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
@@ -153,103 +168,130 @@ def build_chatbot(config: PipelineConfig=None):
     # register plugin instance in model adaptor
     if config.plugins:
         for plugin_name, plugin_value in config.plugins.items():
-            enable_plugin = plugin_value.get('enable', False)
+            enable_plugin = plugin_value.get("enable", False)
             if enable_plugin:
-                if plugin_name == "tts" or plugin_name == "tts_chinese" or plugin_name == "asr":
+                if (
+                    plugin_name == "tts"
+                    or plugin_name == "tts_chinese"
+                    or plugin_name == "asr"
+                ):
                     if not check_tts_dependency():
                         raise ImportError(
-                            f"Unable to initialize 'tts' plugin due to missing dependency packages.\n" \
-                            f"Please run pip install -r requirements.txt to enable.\n" \
-                            f"Please find the 'requirements.txt' file in the directory " \
+                            "Unable to initialize 'tts' plugin due to missing dependency packages.\n"
+                            "Please run pip install -r requirements.txt to enable.\n"
+                            "Please find the 'requirements.txt' file in the directory "
                             "'intel_extension_for_transformers.neural_chat.pipeline.plugins.audio'."
                         )
                 if plugin_name == "cache":
                     if not check_cache_dependency():
                         raise ImportError(
-                            f"Unable to initialize 'cache' plugin due to missing dependency packages.\n" \
-                            f"Please run pip install -r requirements.txt to enable.\n" \
-                            f"Please find the 'requirements.txt' file in the directory " \
+                            "Unable to initialize 'cache' plugin due to missing dependency packages.\n"
+                            "Please run pip install -r requirements.txt to enable.\n"
+                            "Please find the 'requirements.txt' file in the directory "
                             "'intel_extension_for_transformers.neural_chat.pipeline.plugins.caching'."
                         )
                 if plugin_name == "retrieval":
                     if not check_retrieval_dependency():
                         raise ImportError(
-                            f"Unable to initialize 'retrieval' plugin due to missing dependency packages.\n" \
-                            f"Please run pip install -r requirements.txt to enable.\n" \
-                            f"Please find the 'requirements.txt' file in the directory " \
+                            "Unable to initialize 'retrieval' plugin due to missing dependency packages.\n"
+                            "Please run pip install -r requirements.txt to enable.\n"
+                            "Please find the 'requirements.txt' file in the directory "
                             "'intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval'."
                         )
                 if plugin_name == "face_animation":
                     if not check_faceanimation_dependency():
                         raise ImportError(
-                            f"Unable to initialize 'face_animation' plugin due to missing dependency packages.\n" \
-                            f"Please run pip install -r requirements.txt to enable.\n" \
-                            f"Please find the 'requirements.txt' file in the directory " \
+                            "Unable to initialize 'face_animation' plugin due to missing dependency packages.\n"
+                            "Please run pip install -r requirements.txt to enable.\n"
+                            "Please find the 'requirements.txt' file in the directory "
                             "'intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation'."
                         )
                 if plugin_name == "ner":
                     if not check_ner_dependency():
                         raise ImportError(
-                            f"Unable to initialize 'ner' plugin due to missing dependency packages.\n" \
-                            f"Please run pip install -r requirements.txt to enable.\n" \
-                            f"Please find the 'requirements.txt' file in the directory. " \
-                            f"'intel_extension_for_transformers.neural_chat.pipeline.plugins.ner'."
+                            "Unable to initialize 'ner' plugin due to missing dependency packages.\n"
+                            "Please run pip install -r requirements.txt to enable.\n"
+                            "Please find the 'requirements.txt' file in the directory. "
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.ner'."
                         )
                 if plugin_name == "image2image":
                     if not check_image2image_dependency():
                         raise ImportError(
-                            f"Unable to initialize 'image2image' plugin due to missing dependency packages.\n" \
-                            f"Please run pip install -r requirements.txt to enable.\n" \
-                            f"Please find the 'requirements.txt' file in the directory " \
+                            "Unable to initialize 'image2image' plugin due to missing dependency packages.\n"
+                            "Please run pip install -r requirements.txt to enable.\n"
+                            "Please find the 'requirements.txt' file in the directory "
                             "'intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image'."
                         )
                 if plugin_name == "tts":
                     from .pipeline.plugins.audio.tts import TextToSpeech
-                    plugins[plugin_name]['class'] = TextToSpeech
+
+                    plugins[plugin_name]["class"] = TextToSpeech
                 elif plugin_name == "tts_chinese":
                     from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-                    plugins[plugin_name]['class'] = ChineseTextToSpeech
+
+                    plugins[plugin_name]["class"] = ChineseTextToSpeech
                 elif plugin_name == "asr":
                     from .pipeline.plugins.audio.asr import AudioSpeechRecognition
-                    plugins[plugin_name]['class'] = AudioSpeechRecognition
+
+                    plugins[plugin_name]["class"] = AudioSpeechRecognition
                 elif plugin_name == "retrieval":
                     from .pipeline.plugins.retrieval.retrieval_agent import Agent_QA
-                    plugins[plugin_name]['class'] = Agent_QA
+
+                    plugins[plugin_name]["class"] = Agent_QA
                 elif plugin_name == "cache":
                     from .pipeline.plugins.caching.cache import ChatCache
-                    plugins[plugin_name]['class'] = ChatCache
+
+                    plugins[plugin_name]["class"] = ChatCache
                 elif plugin_name == "safety_checker":
                     from .pipeline.plugins.security.safety_checker import SafetyChecker
-                    plugins[plugin_name]['class'] = SafetyChecker
+
+                    plugins[plugin_name]["class"] = SafetyChecker
                 elif plugin_name == "ner":
                     from .pipeline.plugins.ner.ner import NamedEntityRecognition
-                    plugins[plugin_name]['class'] = NamedEntityRecognition
+
+                    plugins[plugin_name]["class"] = NamedEntityRecognition
                 elif plugin_name == "face_animation":
-                    from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
-                    plugins[plugin_name]['class'] = SadTalker
-                elif plugin_name == "image2image": # pragma: no cover
+                    from .pipeline.plugins.video.face_animation.sadtalker import (
+                        SadTalker,
+                    )
+
+                    plugins[plugin_name]["class"] = SadTalker
+                elif plugin_name == "image2image":  # pragma: no cover
                     from .pipeline.plugins.image2image.image2image import Image2Image
-                    plugins[plugin_name]['class'] = Image2Image
+
+                    plugins[plugin_name]["class"] = Image2Image
                 else:
                     set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
                     logging.error("build_chatbot: unknown plugin")
                     return
                 print(f"create {plugin_name} plugin instance...")
-                print(f"plugin parameters: ", plugin_value['args'])
+                print("plugin parameters: ", plugin_value["args"])
                 try:
-                    plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
+                    plugins[plugin_name]["instance"] = plugins[plugin_name]["class"](
+                        **plugin_value["args"]
+                    )
                 except Exception as e:
                     if "[Rereieval ERROR] Document format not supported" in str(e):
-                        set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
+                        set_latest_error(
+                            ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED
+                        )
                         logging.error("build_chatbot: retrieval plugin init failed")
-                    elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
-                        set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
-                        logging.error("build_chatbot: safety checker plugin init failed")
+                    elif "[SafetyChecker ERROR] Sensitive check file not found" in str(
+                        e
+                    ):
+                        set_latest_error(
+                            ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND
+                        )
+                        logging.error(
+                            "build_chatbot: safety checker plugin init failed"
+                        )
                     else:
                         set_latest_error(ErrorCodes.ERROR_GENERIC)
                         logging.error("build_chatbot: plugin init failed")
                     return
-                adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
+                adapter.register_plugin_instance(
+                    plugin_name, plugins[plugin_name]["instance"]
+                )
 
     parameters = {}
     parameters["model_name"] = config.model_name_or_path
@@ -280,6 +322,7 @@ def build_chatbot(config: PipelineConfig=None):
     else:
         return adapter
 
+
 def finetune_model(config: BaseFinetuningConfig):
     """Finetune the model based on the provided configuration.
 
@@ -289,6 +332,7 @@ def finetune_model(config: BaseFinetuningConfig):
     clear_latest_error()
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
     from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
+
     finetuning = Finetuning(config)
     try:
         finetuning.finetune()
@@ -319,6 +363,7 @@ def finetune_model(config: BaseFinetuningConfig):
         else:
             set_latest_error(ErrorCodes.ERROR_GENERIC)
 
+
 def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
 
@@ -334,10 +379,11 @@ def optimize_model(model, config, use_llm_runtime=False):
     except Exception as e:
         logging.error(f"Exception: {e}")
         from intel_extension_for_transformers.transformers import (
+            BitsAndBytesConfig,
             MixedPrecisionConfig,
             WeightOnlyQuantConfig,
-            BitsAndBytesConfig
         )
+
         if type(config) == MixedPrecisionConfig:
             set_latest_error(ErrorCodes.ERROR_AMP_OPTIMIZATION_FAIL)
         elif type(config) == WeightOnlyQuantConfig:

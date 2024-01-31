@@ -17,52 +17,87 @@
 
 from .utils.dotdict import DotDict
 
+
 class GlobalPlugins:
     def __init__(self):
         self.reset_plugins()
 
     def reset_plugins(self):
-        self.plugins = DotDict({
-            "tts": {"enable": False, "class": None, "args": {}, "instance": None},
-            "tts_chinese": {"enable": False, "class": None, "args": {}, "instance": None},
-            "asr": {"enable": False, "class": None, "args": {}, "instance": None},
-            "asr_chinese": {"enable": False, "class": None, "args": {}, "instance": None},
-            "retrieval": {"enable": False, "class": None, "args": {}, "instance": None},
-            "cache": {"enable": False, "class": None, "args": {}, "instance": None},
-            "safety_checker": {"enable": False, "class": None, "args": {}, "instance": None},
-            "ner": {"enable": False, "class": None, "args": {}, "instance": None},
-            "face_animation": {"enable": False, "class": None, "args": {}, "instance": None},
-            "image2image": {"enable": False, "class": None, "args": {}, "instance": None},
-        })
+        self.plugins = DotDict(
+            {
+                "tts": {"enable": False, "class": None, "args": {}, "instance": None},
+                "tts_chinese": {
+                    "enable": False,
+                    "class": None,
+                    "args": {},
+                    "instance": None,
+                },
+                "asr": {"enable": False, "class": None, "args": {}, "instance": None},
+                "asr_chinese": {
+                    "enable": False,
+                    "class": None,
+                    "args": {},
+                    "instance": None,
+                },
+                "retrieval": {
+                    "enable": False,
+                    "class": None,
+                    "args": {},
+                    "instance": None,
+                },
+                "cache": {"enable": False, "class": None, "args": {}, "instance": None},
+                "safety_checker": {
+                    "enable": False,
+                    "class": None,
+                    "args": {},
+                    "instance": None,
+                },
+                "ner": {"enable": False, "class": None, "args": {}, "instance": None},
+                "face_animation": {
+                    "enable": False,
+                    "class": None,
+                    "args": {},
+                    "instance": None,
+                },
+                "image2image": {
+                    "enable": False,
+                    "class": None,
+                    "args": {},
+                    "instance": None,
+                },
+            }
+        )
+
 
 global_plugins = GlobalPlugins()
 plugins = global_plugins.plugins
 
+
 def register_plugin(name):
     def decorator(cls):
-        plugins[name] = {
-            'enable': True,
-            'class': cls,
-            'args': {},
-            'instance': None
-        }
+        plugins[name] = {"enable": True, "class": cls, "args": {}, "instance": None}
         return cls
+
     return decorator
 
+
 def is_plugin_enabled(plugin_name):
-    if plugin_name in plugins and plugins[plugin_name]['enable']:
+    if plugin_name in plugins and plugins[plugin_name]["enable"]:
         return True
     return False
 
+
 def get_plugin_instance(plugin_name):
-    if is_plugin_enabled(plugin_name) and plugins[plugin_name]['instance']:
-        return plugins[plugin_name]['instance']
+    if is_plugin_enabled(plugin_name) and plugins[plugin_name]["instance"]:
+        return plugins[plugin_name]["instance"]
     return None
 
+
 def get_plugin_arguments(plugin_name):
-    if plugin_name in plugins and plugins[plugin_name]['enable']:
-        return plugins[plugin_name]['args']
+    if plugin_name in plugins and plugins[plugin_name]["enable"]:
+        return plugins[plugin_name]["args"]
     return None
+
 
 def get_registered_plugins():
     registered_plugins = []
@@ -70,6 +105,17 @@ def get_registered_plugins():
         registered_plugins.append(plugin_name)
     return registered_plugins
 
+
 def get_all_plugins():
-    return ["tts", "tts_chinese", "asr", "asr_chinese", "retrieval", "cache", "safety_checker", "ner", "ner_int",
-            "face_animation"]
+    return [
+        "tts",
+        "tts_chinese",
+        "asr",
+        "asr_chinese",
+        "retrieval",
+        "cache",
+        "safety_checker",
+        "ner",
+        "ner_int",
+        "face_animation",
+    ]

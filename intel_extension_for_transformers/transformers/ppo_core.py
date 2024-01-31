@@ -16,17 +16,14 @@
 # limitations under the License.
 
 import gc
+import importlib
 import random
-import warnings
 from contextlib import contextmanager
-from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
-from transformers import top_k_top_p_filtering
-import importlib
 from transformers.utils.import_utils import is_optimum_available
 
 try:
@@ -56,9 +53,7 @@ def flatten_dict(nested, sep="/"):
 
 
 def convert_to_scalar(stats):
-    """
-    Converts the stats from a flattened dict to single scalar dicts
-    """
+    """Converts the stats from a flattened dict to single scalar dicts."""
     tensorboard_stats = {}
     for k, v in stats.items():
         # for tensorboard compatibility - arrays and tensors are ignored with tensorboard
@@ -145,6 +140,7 @@ def entropy_from_logits(logits):
     entropy = torch.logsumexp(logits, axis=-1) - torch.sum(pd * logits, axis=-1)
     return entropy
 
+
 def stats_to_np(stats_dict):
     """Cast all torch.tensors in dict to numpy arrays."""
     new_dict = dict()
@@ -162,8 +158,7 @@ def stats_to_np(stats_dict):
 
 
 def set_seed(seed: int):
-    """
-    Helper function for reproducible behavior to set the seed in `random`, `numpy`, and `torch`.
+    """Helper function for reproducible behavior to set the seed in `random`, `numpy`, and `torch`.
 
     Args:
         seed (`int`): The seed to set.
@@ -174,16 +169,18 @@ def set_seed(seed: int):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-    if is_optimum_available() and importlib.util.find_spec("optimum.habana") != None: # pragma: no cover
-        from habana_frameworks.torch.hpu import random as hpu_random # pylint: disable=E0611, E0401
+    if (
+        is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
+    ):  # pragma: no cover
+        from habana_frameworks.torch.hpu import (
+            random as hpu_random,
+        )  # pylint: disable=E0611, E0401
 
         hpu_random.manual_seed_all(seed)
 
 
 class LengthSampler:
-    """
-    Samples a length
-    """
+    """Samples a length."""
 
     def __init__(self, min_value, max_value):
         self.values = list(range(min_value, max_value))

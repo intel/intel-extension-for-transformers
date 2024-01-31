@@ -1,10 +1,9 @@
 import logging
 import os
+from argparse import ArgumentParser
+
 import numpy as np
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import OptimizedModel
-from intel_extension_for_transformers.transformers.trainer import  NLPSeq2SeqTrainer
-from argparse import ArgumentParser
 from transformers import (
     AutoConfig,
     AutoModelForSeq2SeqLM,
@@ -14,13 +13,18 @@ from transformers import (
     set_seed,
 )
 
+from intel_extension_for_transformers.transformers import OptimizedModel
+from intel_extension_for_transformers.transformers.trainer import NLPSeq2SeqTrainer
+
 os.environ["WANDB_DISABLED"] = "true"
 
 logger = logging.getLogger(__name__)
 
-arg_parser = ArgumentParser(description='Parse args')
-arg_parser.add_argument('--data_type', default = "int8", help='data type of model')
-arg_parser.add_argument('--model_name_or_path', default = "t5-small", help = 'input model for benchmark')
+arg_parser = ArgumentParser(description="Parse args")
+arg_parser.add_argument("--data_type", default="int8", help="data type of model")
+arg_parser.add_argument(
+    "--model_name_or_path", default="t5-small", help="input model for benchmark"
+)
 args = arg_parser.parse_args()
 
 raw_datasets = load_dataset("wmt16", "ro-en")
@@ -31,21 +35,23 @@ training_args = Seq2SeqTrainingArguments(
     no_cuda=True,
     overwrite_output_dir=True,
     per_device_eval_batch_size=8,
-    predict_with_generate=True
+    predict_with_generate=True,
 )
 config = AutoConfig.from_pretrained(args.model_name_or_path, revision="main")
-tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, revision="main", use_fast=True)
+tokenizer = AutoTokenizer.from_pretrained(
+    args.model_name_or_path, revision="main", use_fast=True
+)
 prefix = ""
 
 ## start with int8 benchmarking
 if args.data_type == "int8":
     # Load the model obtained after Intel Neural Compressor (INC) quantization
     model = OptimizedModel.from_pretrained(
-          args.model_name_or_path,
-          from_tf=bool(".ckpt" in args.model_name_or_path),
-          config=config,
-          revision="main",
-          use_auth_token=None,
+        args.model_name_or_path,
+        from_tf=bool(".ckpt" in args.model_name_or_path),
+        config=config,
+        revision="main",
+        use_auth_token=None,
     )
 else:
     ## original fp32 model benchmarking
@@ -54,7 +60,7 @@ else:
         "t5-small",
         from_tf=bool(".ckpt" in args.model_name_or_path),
         config=config,
-        revision="main"
+        revision="main",
     )
     model.resize_token_embeddings(len(tokenizer))
 
@@ -69,6 +75,7 @@ target_lang = "ro"
 max_target_length = 128
 padding = False
 
+
 def preprocess_function(examples):
     inputs = [ex[source_lang] for ex in examples["translation"]]
     targets = [ex[target_lang] for ex in examples["translation"]]
@@ -77,10 +84,13 @@ def preprocess_function(examples):
 
     # Setup the tokenizer for targets
     with tokenizer.as_target_tokenizer():
-        labels = tokenizer(targets, max_length=max_target_length, padding=padding, truncation=True)
+        labels = tokenizer(
+            targets, max_length=max_target_length, padding=padding, truncation=True
+        )
 
     model_inputs["labels"] = labels["input_ids"]
     return model_inputs
+
 
 # define train dataset
 train_dataset = raw_datasets["train"]
@@ -118,11 +128,13 @@ data_collator = DataCollatorForSeq2Seq(
 # Metric
 metric = load_metric("sacrebleu")
 
+
 def postprocess_text(preds, labels):
     preds = [pred.strip() for pred in preds]
     labels = [[label.strip()] for label in labels]
 
     return preds, labels
+
 
 def compute_metrics(eval_preds):
     preds, labels = eval_preds
@@ -139,10 +151,13 @@ def compute_metrics(eval_preds):
     result = metric.compute(predictions=decoded_preds, references=decoded_labels)
     result = {"bleu": result["score"]}
 
-    prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
+    prediction_lens = [
+        np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds
+    ]
     result["gen_len"] = np.mean(prediction_lens)
     result = {k: round(v, 4) for k, v in result.items()}
     return result
+
 
 metric_name = "eval_bleu"
 max_length = 128
@@ -160,12 +175,19 @@ trainer = NLPSeq2SeqTrainer(
 )
 
 results = trainer.evaluate(max_length=max_length, num_beams=num_beams)
-bert_task_acc_keys = ['eval_loss', 'eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
-                              'eval_pearson', 'eval_mcc', 'eval_spearmanr']
+bert_task_acc_keys = [
+    "eval_loss",
+    "eval_f1",
+    "eval_accuracy",
+    "eval_matthews_correlation",
+    "eval_pearson",
+    "eval_mcc",
+    "eval_spearmanr",
+]
 
 throughput = results.get("eval_samples_per_second")
 eval_loss = results["eval_loss"]
-print('Batch size = {}'.format(training_args.per_device_eval_batch_size))
+print("Batch size = {}".format(training_args.per_device_eval_batch_size))
 print("Finally Eval eval_loss Accuracy: {}".format(eval_loss))
 print("Latency: {:.3f} ms".format(1000 / throughput))
 print("Throughput: {} samples/sec".format(throughput))

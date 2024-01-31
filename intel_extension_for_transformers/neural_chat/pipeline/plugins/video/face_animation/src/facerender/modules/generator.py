@@ -16,18 +16,24 @@
 # limitations under the License.
 
 import torch
-from torch import nn
 import torch.nn.functional as F
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.facerender.modules.util import ResBlock2d, SameBlock2d, UpBlock2d, DownBlock2d, ResBlock3d, SPADEResnetBlock
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.facerender.modules.dense_motion import DenseMotionNetwork
+from torch import nn
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.dense_motion import (
+    DenseMotionNetwork,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util import (
+    DownBlock2d,
+    ResBlock2d,
+    ResBlock3d,
+    SameBlock2d,
+    SPADEResnetBlock,
+    UpBlock2d,
+)
 
 
 class OcclusionAwareGenerator(nn.Module):
-    """
-    Generator follows NVIDIA architecture.
-    """
+    """Generator follows NVIDIA architecture."""
 
     def __init__(
         self,
@@ -56,40 +62,64 @@ class OcclusionAwareGenerator(nn.Module):
         else:
             self.dense_motion_network = None
 
-        self.first = SameBlock2d(image_channel, block_expansion, kernel_size=(7, 7), padding=(3, 3))
+        self.first = SameBlock2d(
+            image_channel, block_expansion, kernel_size=(7, 7), padding=(3, 3)
+        )
 
         down_blocks = []
         for i in range(num_down_blocks):
             in_features = min(max_features, block_expansion * (2**i))
             out_features = min(max_features, block_expansion * (2 ** (i + 1)))
-            down_blocks.append(DownBlock2d(in_features, out_features, kernel_size=(3, 3), padding=(1, 1)))
+            down_blocks.append(
+                DownBlock2d(
+                    in_features, out_features, kernel_size=(3, 3), padding=(1, 1)
+                )
+            )
         self.down_blocks = nn.ModuleList(down_blocks)
 
-        self.second = nn.Conv2d(in_channels=out_features, out_channels=max_features, kernel_size=1, stride=1)
+        self.second = nn.Conv2d(
+            in_channels=out_features, out_channels=max_features, kernel_size=1, stride=1
+        )
 
         self.reshape_channel = reshape_channel
         self.reshape_depth = reshape_depth
 
         self.resblocks_3d = torch.nn.Sequential()
         for i in range(num_resblocks):
-            self.resblocks_3d.add_module("3dr" + str(i), ResBlock3d(reshape_channel, kernel_size=3, padding=1))
+            self.resblocks_3d.add_module(
+                "3dr" + str(i), ResBlock3d(reshape_channel, kernel_size=3, padding=1)
+            )
 
         out_features = block_expansion * (2 ** (num_down_blocks))
-        self.third = SameBlock2d(max_features, out_features, kernel_size=(3, 3), padding=(1, 1), lrelu=True)
-        self.fourth = nn.Conv2d(in_channels=out_features, out_channels=out_features, kernel_size=1, stride=1)
+        self.third = SameBlock2d(
+            max_features, out_features, kernel_size=(3, 3), padding=(1, 1), lrelu=True
+        )
+        self.fourth = nn.Conv2d(
+            in_channels=out_features, out_channels=out_features, kernel_size=1, stride=1
+        )
 
         self.resblocks_2d = torch.nn.Sequential()
         for i in range(num_resblocks):
-            self.resblocks_2d.add_module("2dr" + str(i), ResBlock2d(out_features, kernel_size=3, padding=1))
+            self.resblocks_2d.add_module(
+                "2dr" + str(i), ResBlock2d(out_features, kernel_size=3, padding=1)
+            )
 
         up_blocks = []
         for i in range(num_down_blocks):
-            in_features = max(block_expansion, block_expansion * (2 ** (num_down_blocks - i)))
-            out_features = max(block_expansion, block_expansion * (2 ** (num_down_blocks - i - 1)))
-            up_blocks.append(UpBlock2d(in_features, out_features, kernel_size=(3, 3), padding=(1, 1)))
+            in_features = max(
+                block_expansion, block_expansion * (2 ** (num_down_blocks - i))
+            )
+            out_features = max(
+                block_expansion, block_expansion * (2 ** (num_down_blocks - i - 1))
+            )
+            up_blocks.append(
+                UpBlock2d(in_features, out_features, kernel_size=(3, 3), padding=(1, 1))
+            )
         self.up_blocks = nn.ModuleList(up_blocks)
 
-        self.final = nn.Conv2d(block_expansion, image_channel, kernel_size=(7, 7), padding=(3, 3))
+        self.final = nn.Conv2d(
+            block_expansion, image_channel, kernel_size=(7, 7), padding=(3, 3)
+        )
         self.estimate_occlusion_map = estimate_occlusion_map
         self.image_channel = image_channel
 
@@ -116,7 +146,9 @@ class OcclusionAwareGenerator(nn.Module):
         # Transforming feature representation according to deformation and occlusion
         output_dict = {}
         if self.dense_motion_network is not None:
-            dense_motion = self.dense_motion_network(feature=feature_3d, kp_driving=kp_driving, kp_source=kp_source)
+            dense_motion = self.dense_motion_network(
+                feature=feature_3d, kp_driving=kp_driving, kp_source=kp_source
+            )
             output_dict["mask"] = dense_motion["mask"]
 
             if "occlusion_map" in dense_motion:
@@ -133,8 +165,13 @@ class OcclusionAwareGenerator(nn.Module):
             out = self.fourth(out)
 
             if occlusion_map is not None:
-                if out.shape[2] != occlusion_map.shape[2] or out.shape[3] != occlusion_map.shape[3]:
-                    occlusion_map = F.interpolate(occlusion_map, size=out.shape[2:], mode="bilinear")
+                if (
+                    out.shape[2] != occlusion_map.shape[2]
+                    or out.shape[3] != occlusion_map.shape[3]
+                ):
+                    occlusion_map = F.interpolate(
+                        occlusion_map, size=out.shape[2:], mode="bilinear"
+                    )
                 out = out * occlusion_map
 
         # Decoding part
@@ -218,27 +255,41 @@ class OcclusionAwareSPADEGenerator(nn.Module):
         else:
             self.dense_motion_network = None
 
-        self.first = SameBlock2d(image_channel, block_expansion, kernel_size=(3, 3), padding=(1, 1))
+        self.first = SameBlock2d(
+            image_channel, block_expansion, kernel_size=(3, 3), padding=(1, 1)
+        )
 
         down_blocks = []
         for i in range(num_down_blocks):
             in_features = min(max_features, block_expansion * (2**i))
             out_features = min(max_features, block_expansion * (2 ** (i + 1)))
-            down_blocks.append(DownBlock2d(in_features, out_features, kernel_size=(3, 3), padding=(1, 1)))
+            down_blocks.append(
+                DownBlock2d(
+                    in_features, out_features, kernel_size=(3, 3), padding=(1, 1)
+                )
+            )
         self.down_blocks = nn.ModuleList(down_blocks)
 
-        self.second = nn.Conv2d(in_channels=out_features, out_channels=max_features, kernel_size=1, stride=1)
+        self.second = nn.Conv2d(
+            in_channels=out_features, out_channels=max_features, kernel_size=1, stride=1
+        )
 
         self.reshape_channel = reshape_channel
         self.reshape_depth = reshape_depth
 
         self.resblocks_3d = torch.nn.Sequential()
         for i in range(num_resblocks):
-            self.resblocks_3d.add_module("3dr" + str(i), ResBlock3d(reshape_channel, kernel_size=3, padding=1))
+            self.resblocks_3d.add_module(
+                "3dr" + str(i), ResBlock3d(reshape_channel, kernel_size=3, padding=1)
+            )
 
         out_features = block_expansion * (2 ** (num_down_blocks))
-        self.third = SameBlock2d(max_features, out_features, kernel_size=(3, 3), padding=(1, 1), lrelu=True)
-        self.fourth = nn.Conv2d(in_channels=out_features, out_channels=out_features, kernel_size=1, stride=1)
+        self.third = SameBlock2d(
+            max_features, out_features, kernel_size=(3, 3), padding=(1, 1), lrelu=True
+        )
+        self.fourth = nn.Conv2d(
+            in_channels=out_features, out_channels=out_features, kernel_size=1, stride=1
+        )
 
         self.estimate_occlusion_map = estimate_occlusion_map
         self.image_channel = image_channel
@@ -268,7 +319,9 @@ class OcclusionAwareSPADEGenerator(nn.Module):
         # Transforming feature representation according to deformation and occlusion
         output_dict = {}
         if self.dense_motion_network is not None:
-            dense_motion = self.dense_motion_network(feature=feature_3d, kp_driving=kp_driving, kp_source=kp_source)
+            dense_motion = self.dense_motion_network(
+                feature=feature_3d, kp_driving=kp_driving, kp_source=kp_source
+            )
             output_dict["mask"] = dense_motion["mask"]
 
             # import pdb; pdb.set_trace()
@@ -289,8 +342,13 @@ class OcclusionAwareSPADEGenerator(nn.Module):
             # occlusion_map = torch.where(occlusion_map < 0.95, 0, occlusion_map)
 
             if occlusion_map is not None:
-                if out.shape[2] != occlusion_map.shape[2] or out.shape[3] != occlusion_map.shape[3]:
-                    occlusion_map = F.interpolate(occlusion_map, size=out.shape[2:], mode="bilinear")
+                if (
+                    out.shape[2] != occlusion_map.shape[2]
+                    or out.shape[3] != occlusion_map.shape[3]
+                ):
+                    occlusion_map = F.interpolate(
+                        occlusion_map, size=out.shape[2:], mode="bilinear"
+                    )
                 out = out * occlusion_map
 
         # Decoding part

@@ -15,23 +15,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import numpy as np
 import os
-import subprocess
-import shutil
-import time
 import platform
+import shutil
+import subprocess
+import time
+import unittest
+
 import torch
 from transformers import BertForSequenceClassification
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 
 
 class TestDispatcherTuningThroughput(unittest.TestCase):
-
     @classmethod
     def setUpClass(self):
-        self.skipTest(self, "currently not support Unit Test for dispatcher, but this function is supported. Will improve Unit Test very soon.")
+        self.skipTest(
+            self,
+            "currently not support Unit Test for dispatcher, but this function is supported. Will improve Unit Test very soon.",
+        )
         if platform.system().lower() == "windows":
             self.skipTest(self, "not support dispatch on windows yet")
         code = """
@@ -107,38 +110,42 @@ def run():
 if __name__ == "__main__":
     run()
 """
-        with open('run.py', 'w', encoding='utf-8') as f:
+        with open("run.py", "w", encoding="utf-8") as f:
             f.write(code)
         # export onnx model
         model_path = "/tf_dataset2/models/nlp_toolkit/bert_mini_mrpc"
-        torch_model = BertForSequenceClassification.from_pretrained(
-            model_path)
+        torch_model = BertForSequenceClassification.from_pretrained(model_path)
         with torch.no_grad():
             inputs = {
-                'input_ids': torch.ones(1, 128, dtype=torch.int32),
-                'attention_mask': torch.ones(1, 128, dtype=torch.int32),
-                'token_type_ids': torch.ones(1, 128, dtype=torch.int32)
+                "input_ids": torch.ones(1, 128, dtype=torch.int32),
+                "attention_mask": torch.ones(1, 128, dtype=torch.int32),
+                "token_type_ids": torch.ones(1, 128, dtype=torch.int32),
             }
             outputs = torch_model(**inputs)
 
-            symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
+            symbolic_names = {0: "batch_size", 1: "max_seq_len"}
             torch.onnx.export(
                 torch_model,
-                (inputs['input_ids'], inputs['attention_mask'], inputs['token_type_ids']),
+                (
+                    inputs["input_ids"],
+                    inputs["attention_mask"],
+                    inputs["token_type_ids"],
+                ),
                 "onnx_fp32.onnx",
                 opset_version=11,
                 do_constant_folding=True,
-                input_names=['input_ids', 'input_mask', 'segment_ids'],
-                output_names=['output'],
+                input_names=["input_ids", "input_mask", "segment_ids"],
+                output_names=["output"],
                 dynamic_axes={
-                    'input_ids': symbolic_names,
-                    'input_mask': symbolic_names,
-                    'segment_ids': symbolic_names
-                })
+                    "input_ids": symbolic_names,
+                    "input_mask": symbolic_names,
+                    "segment_ids": symbolic_names,
+                },
+            )
         graph = compile("onnx_fp32.onnx")
         graph.save()
 
-        self.dispatch_table_dir = './engine_dispatch_table.txt'
+        self.dispatch_table_dir = "./engine_dispatch_table.txt"
 
     @classmethod
     def tearDownClass(self):
@@ -156,21 +163,23 @@ if __name__ == "__main__":
             os.remove(self.dispatch_table_dir)
 
     def test_dispatcher_tuning_sharing_throughput(self):
-        os.environ['GLOG_minloglevel'] = '2'
+        os.environ["GLOG_minloglevel"] = "2"
         # cycle buffer
-        if os.environ.get('DIRECT_BUFFER'):
-            del os.environ['DIRECT_BUFFER']
-        if os.environ.get('UNIFIED_BUFFER'):
-            del os.environ['UNIFIED_BUFFER']
+        if os.environ.get("DIRECT_BUFFER"):
+            del os.environ["DIRECT_BUFFER"]
+        if os.environ.get("UNIFIED_BUFFER"):
+            del os.environ["UNIFIED_BUFFER"]
         if os.path.exists(self.dispatch_table_dir):
             os.remove(self.dispatch_table_dir)
-        cmd = "numactl -l -C 0-3 python run.py log0_dt0.txt 0 & " \
-              "numactl -l -C 4-7 python run.py log1_dt0.txt 0 & " \
-              "numactl -l -C 8-11 python run.py log2_dt0.txt 0 & " \
-              "numactl -l -C 12-15 python run.py log3_dt0.txt 0 &" \
-              "numactl -l -C 16-19 python run.py log4_dt0.txt 0 &" \
-              "numactl -l -C 20-23 python run.py log5_dt0.txt 0 &" \
-              "numactl -l -C 24-27 python run.py log6_dt0.txt 0"
+        cmd = (
+            "numactl -l -C 0-3 python run.py log0_dt0.txt 0 & "
+            "numactl -l -C 4-7 python run.py log1_dt0.txt 0 & "
+            "numactl -l -C 8-11 python run.py log2_dt0.txt 0 & "
+            "numactl -l -C 12-15 python run.py log3_dt0.txt 0 &"
+            "numactl -l -C 16-19 python run.py log4_dt0.txt 0 &"
+            "numactl -l -C 20-23 python run.py log5_dt0.txt 0 &"
+            "numactl -l -C 24-27 python run.py log6_dt0.txt 0"
+        )
         # close dispatcher and tuning
         process = subprocess.Popen(cmd, shell=True)  # nosec
         process.wait()
@@ -190,18 +199,20 @@ if __name__ == "__main__":
 
         throughput_off = 0
         for i in range(7):
-            with open("log" + str(i) + "_dt0.txt", 'r') as f:
+            with open("log" + str(i) + "_dt0.txt", "r") as f:
                 throughput_off += int(f.readline().strip())
 
         # open kernel tuning
-        os.environ['INST_NUM'] = '7'
-        cmd = "numactl -l -C 0-3 python run.py log0_dt1.txt 1 &" \
-              "numactl -l -C 4-7 python run.py log1_dt1.txt 1 & " \
-              "numactl -l -C 8-11 python run.py log2_dt1.txt 1 & " \
-              "numactl -l -C 12-15 python run.py log3_dt1.txt 1 &" \
-              "numactl -l -C 16-19 python run.py log4_dt1.txt 1 &" \
-              "numactl -l -C 20-23 python run.py log5_dt1.txt 1 &" \
-              "numactl -l -C 24-27 python run.py log6_dt1.txt 1"
+        os.environ["INST_NUM"] = "7"
+        cmd = (
+            "numactl -l -C 0-3 python run.py log0_dt1.txt 1 &"
+            "numactl -l -C 4-7 python run.py log1_dt1.txt 1 & "
+            "numactl -l -C 8-11 python run.py log2_dt1.txt 1 & "
+            "numactl -l -C 12-15 python run.py log3_dt1.txt 1 &"
+            "numactl -l -C 16-19 python run.py log4_dt1.txt 1 &"
+            "numactl -l -C 20-23 python run.py log5_dt1.txt 1 &"
+            "numactl -l -C 24-27 python run.py log6_dt1.txt 1"
+        )
         process = subprocess.Popen(cmd, shell=True)  # nosec
         process.wait()
         if process.returncode != 0:
@@ -215,17 +226,19 @@ if __name__ == "__main__":
                 time.sleep(1)
                 time_exit += 1
                 log_exist = os.path.exists("log" + str(i) + "_dt1.txt")
-                if (time_exit >= 600):
+                if time_exit >= 600:
                     break
 
         # use dispatch table after tuning
-        cmd = "numactl -l -C 0-3 python run.py log0_dt2.txt 0 & " \
-              "numactl -l -C 4-7 python run.py log1_dt2.txt 0 & " \
-              "numactl -l -C 8-11 python run.py log2_dt2.txt 0 & " \
-              "numactl -l -C 12-15 python run.py log3_dt2.txt 0 &" \
-              "numactl -l -C 16-19 python run.py log4_dt2.txt 0 &" \
-              "numactl -l -C 20-23 python run.py log5_dt2.txt 0 &" \
-              "numactl -l -C 24-27 python run.py log6_dt2.txt 0"
+        cmd = (
+            "numactl -l -C 0-3 python run.py log0_dt2.txt 0 & "
+            "numactl -l -C 4-7 python run.py log1_dt2.txt 0 & "
+            "numactl -l -C 8-11 python run.py log2_dt2.txt 0 & "
+            "numactl -l -C 12-15 python run.py log3_dt2.txt 0 &"
+            "numactl -l -C 16-19 python run.py log4_dt2.txt 0 &"
+            "numactl -l -C 20-23 python run.py log5_dt2.txt 0 &"
+            "numactl -l -C 24-27 python run.py log6_dt2.txt 0"
+        )
         process = subprocess.Popen(cmd, shell=True)  # nosec
         process.wait()
         if process.returncode != 0:
@@ -244,7 +257,7 @@ if __name__ == "__main__":
 
         throughput_dispatcher = 0
         for i in range(7):
-            with open("log" + str(i) + "_dt2.txt", 'r') as f:
+            with open("log" + str(i) + "_dt2.txt", "r") as f:
                 throughput_dispatcher += int(f.readline().strip())
         self.assertNotEqual(throughput_dispatcher, throughput_off)
         self.assertGreater(throughput_dispatcher, 0)

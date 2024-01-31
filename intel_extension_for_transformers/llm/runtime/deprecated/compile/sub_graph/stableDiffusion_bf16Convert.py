@@ -16,25 +16,29 @@
 # limitations under the License.
 """The StableDiffusion_bf16Convert Pattern."""
 
-from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
-from .. import graph_utils as util
-from ..ops import Tensor
-from .subgraph_matcher import EXECUTOR_TYPE
+
 import numpy as np
 
+from .. import graph_utils as util
+from ..ops import Tensor
+from .pattern import Pattern, pattern_registry
+from .subgraph_matcher import EXECUTOR_TYPE
 
-@pattern_registry(pattern_type='StableDiffusion_bf16Convert')
+
+@pattern_registry(pattern_type="StableDiffusion_bf16Convert")
 class StableDiffusion_bf16Convert(Pattern):
     """The StableDiffusion_bf16Convert pattern.
 
     Fuse the original sub-graph into the custom acceleration 'StableDiffusion_bf16Convert' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
+
         def fp32_to_bf16(fp32_np):
-            assert (fp32_np.dtype == np.float32)
+            assert fp32_np.dtype == np.float32
             int32_np = fp32_np.view(dtype=np.int32)
             int32_np = int32_np >> 16
             bf16_np = int32_np.astype(np.uint16)
@@ -42,31 +46,43 @@ class StableDiffusion_bf16Convert(Pattern):
 
         for node in model.nodes:
             if node.op_type in EXECUTOR_TYPE:
-                if (EXECUTOR_TYPE[node.op_type] == "InnerProduct" and node.input_tensors[1].dtype == "fp16") or \
-                    (EXECUTOR_TYPE[node.op_type] == "Convolution" and node.input_tensors[1].dtype == "fp16"):
-                    node.input_tensors[1].dtype = 'bf16'
+                if (
+                    EXECUTOR_TYPE[node.op_type] == "InnerProduct"
+                    and node.input_tensors[1].dtype == "fp16"
+                ) or (
+                    EXECUTOR_TYPE[node.op_type] == "Convolution"
+                    and node.input_tensors[1].dtype == "fp16"
+                ):
+                    node.input_tensors[1].dtype = "bf16"
                     if len(node.input_tensors) > 2:
                         bias_fp32 = node.input_tensors[2].data
-                        if node.input_tensors[2].dtype == 'fp32':
+                        if node.input_tensors[2].dtype == "fp32":
                             node.input_tensors[2].data = fp32_to_bf16(bias_fp32)
-                        node.input_tensors[2].dtype = 'bf16'
+                        node.input_tensors[2].dtype = "bf16"
                     input_tensor = node.input_tensors[0]
                     input_name = input_tensor.name
-                    quant_output = Tensor(name=input_name + "_quant",
-                                          source_op=[node.name + "_quant"],
-                                          dest_op=[node.name],
-                                          dtype='bf16')
-                    quantize_op = util.construct_node(node_name=node.name + "_quant",
-                                                      op_type='Quantize',
-                                                      input_tensors=[input_tensor],
-                                                      output_tensors=[quant_output],
-                                                      attr=OrderedDict({'output_dtype': 'bf16'}))
+                    quant_output = Tensor(
+                        name=input_name + "_quant",
+                        source_op=[node.name + "_quant"],
+                        dest_op=[node.name],
+                        dtype="bf16",
+                    )
+                    quantize_op = util.construct_node(
+                        node_name=node.name + "_quant",
+                        op_type="Quantize",
+                        input_tensors=[input_tensor],
+                        output_tensors=[quant_output],
+                        attr=OrderedDict({"output_dtype": "bf16"}),
+                    )
                     insert_idx = model.get_node_id(node.name)
 
                     model.insert_nodes(insert_idx, [quantize_op])
                     node.input_tensors[0] = quant_output
                     dest_op = node.output_tensors[0].dest_op
-                    if dest_op and model.get_node_by_name(dest_op[0]).op_type != 'LayerNorm':
+                    if (
+                        dest_op
+                        and model.get_node_by_name(dest_op[0]).op_type != "LayerNorm"
+                    ):
                         next_node = model.get_node_by_name(dest_op[0])
                         next_dest_op = next_node.output_tensors[0].dest_op
                         # when next_dest_op is Output op, output_type should be fp32

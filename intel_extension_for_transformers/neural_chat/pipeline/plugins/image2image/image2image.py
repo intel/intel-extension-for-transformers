@@ -15,22 +15,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .instructpix2pix_pipeline import StableDiffusionInstructPix2PixPipeline
 import torch
+
 from .diffusion_utils import neural_engine_init
+from .instructpix2pix_pipeline import StableDiffusionInstructPix2PixPipeline
+
 
 class Image2Image:
     def __init__(self, bf16_ir_path, device="cpu"):
         self.device = device
         self.pipe_img2img = StableDiffusionInstructPix2PixPipeline.from_pretrained(
-                    "timbrooks/instruct-pix2pix", torch_dtype=torch.float32, use_auth_token=True)
+            "timbrooks/instruct-pix2pix", torch_dtype=torch.float32, use_auth_token=True
+        )
         self.neural_engine_graph = neural_engine_init(bf16_ir_path)
 
-    def image2image(self, prompt, image, num_inference_steps, guidance_scale, generator):
+    def image2image(
+        self, prompt, image, num_inference_steps, guidance_scale, generator
+    ):
         # pylint: disable=E1102
-        return self.pipe_img2img(prompt=prompt,
-                                 image=image,
-                                 engine_graph=self.neural_engine_graph,
-                                 num_inference_steps=num_inference_steps,
-                                 guidance_scale=guidance_scale,
-                                 generator=generator).images[0]
+        return self.pipe_img2img(
+            prompt=prompt,
+            image=image,
+            engine_graph=self.neural_engine_graph,
+            num_inference_steps=num_inference_steps,
+            guidance_scale=guidance_scale,
+            generator=generator,
+        ).images[0]

@@ -19,15 +19,18 @@ import torch
 
 try:
     import habana_frameworks.torch.hpu as hthpu
+
     is_hpu_available = True
 except ImportError:
     is_hpu_available = False
 
 try:
     import intel_extension_for_pytorch as intel_ipex
+
     is_ipex_available = True
 except ImportError:
     is_ipex_available = False
+
 
 def get_device_type():
     if torch.cuda.is_available():
@@ -40,9 +43,10 @@ def get_device_type():
         device = "cpu"
     return device
 
+
 def is_audio_file(filename):
-    audio_extensions = ['mp3', 'wav', 'flac', 'ogg', 'aac', 'm4a']
-    file_extension = filename.split('.')[-1].lower()
+    audio_extensions = ["mp3", "wav", "flac", "ogg", "aac", "m4a"]
+    file_extension = filename.split(".")[-1].lower()
 
     if file_extension in audio_extensions:
         return True

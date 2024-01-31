@@ -14,28 +14,38 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""This script defines the parametric 3d face model for Deep3DFaceRecon_pytorch."""
 
-"""This script defines the parametric 3d face model for Deep3DFaceRecon_pytorch
-"""
+import os
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from scipy.io import loadmat
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.face3d.util.load_mats import transferBFM09
-import os
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.load_mats import (
+    transferBFM09,
+)
 
 
 def perspective_projection(focal, center):
     # return p.T (N, 3) @ (3, 3)
-    return np.array([focal, 0, center, 0, focal, center, 0, 0, 1]).reshape([3, 3]).astype(np.float32).transpose()
+    return (
+        np.array([focal, 0, center, 0, focal, center, 0, 0, 1])
+        .reshape([3, 3])
+        .astype(np.float32)
+        .transpose()
+    )
 
 
 class SH:
     def __init__(self):
         self.a = [np.pi, 2 * np.pi / np.sqrt(3.0), 2 * np.pi / np.sqrt(8.0)]
-        self.c = [1 / np.sqrt(4 * np.pi), np.sqrt(3.0) / np.sqrt(4 * np.pi), 3 * np.sqrt(5.0) / np.sqrt(12 * np.pi)]
+        self.c = [
+            1 / np.sqrt(4 * np.pi),
+            np.sqrt(3.0) / np.sqrt(4 * np.pi),
+            3 * np.sqrt(5.0) / np.sqrt(12 * np.pi),
+        ]
 
 
 class ParametricFaceModel:
@@ -120,7 +130,9 @@ class ParametricFaceModel:
             tex_coeff        -- torch.tensor, size (B, 80)
         """
         batch_size = tex_coeff.shape[0]
-        face_texture = torch.einsum("ij,aj->ai", self.tex_base, tex_coeff) + self.mean_tex
+        face_texture = (
+            torch.einsum("ij,aj->ai", self.tex_base, tex_coeff) + self.mean_tex
+        )
         if normalize:
             face_texture = face_texture / 255.0
         return face_texture.reshape([batch_size, -1, 3])
@@ -141,7 +153,9 @@ class ParametricFaceModel:
         e2 = v2 - v3
         face_norm = torch.cross(e1, e2, dim=-1)
         face_norm = F.normalize(face_norm, dim=-1, p=2)
-        face_norm = torch.cat([face_norm, torch.zeros(face_norm.shape[0], 1, 3).to(self.device)], dim=1)
+        face_norm = torch.cat(
+            [face_norm, torch.zeros(face_norm.shape[0], 1, 3).to(self.device)], dim=1
+        )
 
         vertex_norm = torch.sum(face_norm[:, self.point_buf], dim=2)
         vertex_norm = F.normalize(vertex_norm, dim=-1, p=2)
@@ -173,7 +187,10 @@ class ParametricFaceModel:
                 -a[2] * c[2] * face_norm[..., 1:2] * face_norm[..., 2:],
                 0.5 * a[2] * c[2] / np.sqrt(3.0) * (3 * face_norm[..., 2:] ** 2 - 1),
                 -a[2] * c[2] * face_norm[..., :1] * face_norm[..., 2:],
-                0.5 * a[2] * c[2] * (face_norm[..., :1] ** 2 - face_norm[..., 1:2] ** 2),
+                0.5
+                * a[2]
+                * c[2]
+                * (face_norm[..., :1] ** 2 - face_norm[..., 1:2] ** 2),
             ],
             dim=-1,
         )
@@ -202,15 +219,48 @@ class ParametricFaceModel:
         )
 
         rot_x = torch.cat(
-            [ones, zeros, zeros, zeros, torch.cos(x), -torch.sin(x), zeros, torch.sin(x), torch.cos(x)], dim=1
+            [
+                ones,
+                zeros,
+                zeros,
+                zeros,
+                torch.cos(x),
+                -torch.sin(x),
+                zeros,
+                torch.sin(x),
+                torch.cos(x),
+            ],
+            dim=1,
         ).reshape([batch_size, 3, 3])
 
         rot_y = torch.cat(
-            [torch.cos(y), zeros, torch.sin(y), zeros, ones, zeros, -torch.sin(y), zeros, torch.cos(y)], dim=1
+            [
+                torch.cos(y),
+                zeros,
+                torch.sin(y),
+                zeros,
+                ones,
+                zeros,
+                -torch.sin(y),
+                zeros,
+                torch.cos(y),
+            ],
+            dim=1,
         ).reshape([batch_size, 3, 3])
 
         rot_z = torch.cat(
-            [torch.cos(z), -torch.sin(z), zeros, torch.sin(z), torch.cos(z), zeros, zeros, zeros, ones], dim=1
+            [
+                torch.cos(z),
+                -torch.sin(z),
+                zeros,
+                torch.sin(z),
+                torch.cos(z),
+                zeros,
+                zeros,
+                zeros,
+                ones,
+            ],
+            dim=1,
         ).reshape([batch_size, 3, 3])
 
         rot = rot_z @ rot_y @ rot_x
@@ -292,7 +342,9 @@ class ParametricFaceModel:
         face_shape = self.compute_shape(coef_dict["id"], coef_dict["exp"])
         rotation = self.compute_rotation(coef_dict["angle"])
 
-        face_shape_transformed = self.transform(face_shape, rotation, coef_dict["trans"])
+        face_shape_transformed = self.transform(
+            face_shape, rotation, coef_dict["trans"]
+        )
         face_vertex = self.to_camera(face_shape_transformed)
 
         face_proj = self.to_image(face_vertex)
@@ -301,7 +353,9 @@ class ParametricFaceModel:
         face_texture = self.compute_texture(coef_dict["tex"])
         face_norm = self.compute_norm(face_shape)
         face_norm_roted = face_norm @ rotation
-        face_color = self.compute_color(face_texture, face_norm_roted, coef_dict["gamma"])
+        face_color = self.compute_color(
+            face_texture, face_norm_roted, coef_dict["gamma"]
+        )
 
         return face_vertex, face_texture, face_color, landmark
 
@@ -327,7 +381,9 @@ class ParametricFaceModel:
         face_texture = self.compute_texture(coef_dict["tex"])
         face_norm = self.compute_norm(face_shape)
         face_norm_roted = face_norm  # @ rotation
-        face_color = self.compute_color(face_texture, face_norm_roted, coef_dict["gamma"])
+        face_color = self.compute_color(
+            face_texture, face_norm_roted, coef_dict["gamma"]
+        )
 
         return face_vertex, face_texture, face_color, landmark
 

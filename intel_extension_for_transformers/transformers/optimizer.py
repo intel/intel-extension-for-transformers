@@ -18,26 +18,27 @@
 import logging
 import os
 import shlex
+from typing import Callable, List, Optional
 
-from neural_compressor.experimental import(
-    common,
+from neural_compressor.experimental import (
     Component,
     Distillation,
-    Quantization,
     Pruning,
+    Quantization,
+    common,
 )
 from neural_compressor.experimental.scheduler import Scheduler
-from intel_extension_for_transformers.transformers import(
+from transformers import PretrainedConfig
+from transformers.file_utils import WEIGHTS_NAME
+
+from intel_extension_for_transformers.transformers import (
     DistillationConfig,
     Provider,
+    PruningConfig,
     QuantizationConfig,
-    PruningConfig
 )
-from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from intel_extension_for_transformers.transformers.quantization import QuantizationMode
-from transformers import PreTrainedModel, PretrainedConfig
-from transformers.file_utils import WEIGHTS_NAME
-from typing import Callable, Optional, Union, List
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 
 torch = LazyImport("torch")
 
@@ -46,6 +47,7 @@ logger = logging.getLogger(__name__)
 
 class Orchestrate_optimizer:
     """Orchestrate_optimizer aggregates and orchestrates components such as Quantization, Pruning and Distillation."""
+
     def __init__(
         self,
         model,
@@ -63,10 +65,12 @@ class Orchestrate_optimizer:
             train_func: Training function which will be combined with pruning.
         """
         if len(components) == 0:
-            raise RuntimeError("`NLPOptimizer` requires at least one `Quantization`, "
-                               "`Pruning` or `Distillation` object")
+            raise RuntimeError(
+                "`NLPOptimizer` requires at least one `Quantization`, "
+                "`Pruning` or `Distillation` object"
+            )
         self.output_dir = output_dir
-        if hasattr(model, 'config') and isinstance(model.config, PretrainedConfig):
+        if hasattr(model, "config") and isinstance(model.config, PretrainedConfig):
             self.model_config = model.config
         self.enable_inc_quant = False
         self.enable_inc_pruning = False
@@ -78,7 +82,9 @@ class Orchestrate_optimizer:
             agent.train_func = train_func
             agent.eval_func = eval_func
             for component in components:
-                if isinstance(component, Distillation) and hasattr(component, 'criterion'):
+                if isinstance(component, Distillation) and hasattr(
+                    component, "criterion"
+                ):
                     agent.criterion = component.criterion
                 if isinstance(component, Quantization):
                     self.enable_inc_quant = True
@@ -103,23 +109,32 @@ class Orchestrate_optimizer:
 
         Args:
             output_dir: the path to save config.json and pytorch_model.bin.
-            tokenizer (object, optional): the tokenizer object, use it if you want to 
+            tokenizer (object, optional): the tokenizer object, use it if you want to
                                           save tokenizer.json in output_dir. Defaults to None.
         """
         os.makedirs(shlex.quote(output_dir), exist_ok=True)
-        torch.save(self.opt_model.quantized_state_dict(), os.path.join(shlex.quote(output_dir), WEIGHTS_NAME))
-        if hasattr(self, 'model_config') and isinstance(self.model_config, PretrainedConfig):
+        torch.save(
+            self.opt_model.quantized_state_dict(),
+            os.path.join(shlex.quote(output_dir), WEIGHTS_NAME),
+        )
+        if hasattr(self, "model_config") and isinstance(
+            self.model_config, PretrainedConfig
+        ):
             if self.enable_inc_quant == True:
                 self.model_config.torch_dtype = "int8"
             self.model_config.save_pretrained(output_dir)
-        if tokenizer:   # pragma: no cover
+        if tokenizer:  # pragma: no cover
             tokenizer.save_pretrained(output_dir)
-        logger.info("orchestrate_optimizations model and configure file have saved to {}".format(
-                    output_dir))
+        logger.info(
+            "orchestrate_optimizations model and configure file have saved to {}".format(
+                output_dir
+            )
+        )
 
 
-class NoTrainerOptimizer:   # pragma: no cover
+class NoTrainerOptimizer:  # pragma: no cover
     """Optimizer without using Trainer."""
+
     def __init__(
         self,
         model,
@@ -176,7 +191,7 @@ class NoTrainerOptimizer:   # pragma: no cover
     @eval_func.setter
     def eval_func(self, func: Callable):
         """Set the evaluation function.
-            
+
         Args:
             func: evaluation function.
         """
@@ -185,7 +200,7 @@ class NoTrainerOptimizer:   # pragma: no cover
     @train_func.setter
     def train_func(self, func: Callable):
         """Set the train function.
-        
+
         Args:
             func: train function.
         """
@@ -194,7 +209,7 @@ class NoTrainerOptimizer:   # pragma: no cover
     @provider.setter
     def provider(self, provider):
         """Set the provider.
-        
+
         Args:
             provider: optimization provider.
         """
@@ -203,13 +218,14 @@ class NoTrainerOptimizer:   # pragma: no cover
     @calib_dataloader.setter
     def calib_dataloader(self, dataloader):
         """Set the calibration dataloader.
-        
+
         Args:
             dataloader: calibration dataloader.
         """
         # transformer issue #1
         if dataloader.batch_size is None:
             from .utils.utility import _build_inc_dataloader
+
             self._calib_dataloader = _build_inc_dataloader(dataloader)
         else:
             self._calib_dataloader = dataloader
@@ -220,22 +236,22 @@ class NoTrainerOptimizer:   # pragma: no cover
         provider: str = Provider.INC.value,
     ):
         """Init a Quantization object with config.
-        
+
         Args:
             quant_config: quantization config.
             provider: define the quantization provider.
         """
         from neural_compressor.experimental import Quantization
 
-        assert isinstance(quant_config, QuantizationConfig), \
-            "Please pass QuantizationConfig instance to trainer.quantize!"
+        assert isinstance(
+            quant_config, QuantizationConfig
+        ), "Please pass QuantizationConfig instance to trainer.quantize!"
         self.quant_config = quant_config
         self.metrics = self.quant_config.metrics
         self._provider = Provider[provider.upper()].value
 
         if self.quant_config.framework == "pytorch":
-            if self.quant_config.approach == \
-              QuantizationMode.POSTTRAININGDYNAMIC.value:
+            if self.quant_config.approach == QuantizationMode.POSTTRAININGDYNAMIC.value:
                 self.quant_config.framework = "pytorch"
             else:
                 self.quant_config.framework = "pytorch_fx"
@@ -259,12 +275,17 @@ class NoTrainerOptimizer:   # pragma: no cover
         if self._calib_func is not None:
             self.quantizer.calib_func = self._calib_func
         if self.quant_config.approach == QuantizationMode.POSTTRAININGSTATIC.value:
-            assert self._calib_dataloader is not None, \
-                "Please pass calib_dataloader to NoTrainerOptimizer.calib_dataloader"
+            assert (
+                self._calib_dataloader is not None
+            ), "Please pass calib_dataloader to NoTrainerOptimizer.calib_dataloader"
             self.quantizer.calib_dataloader = self._calib_dataloader
-        elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
-            assert self._train_func is not None, \
-                "Please pass train_func to NoTrainerOptimizer.train_func"
+        elif (
+            self.quant_config.approach
+            == QuantizationMode.QUANTIZATIONAWARETRAINING.value
+        ):
+            assert (
+                self._train_func is not None
+            ), "Please pass train_func to NoTrainerOptimizer.train_func"
             self.quantizer.q_func = self._train_func
         self.opt_model = self.quantizer.fit()
         self.enable_inc_quant = True
@@ -281,7 +302,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         calib_dataloader=None,
     ):
         """Prepare for invoking the _inc_quantize function.
-        
+
         Args:
             quant_config: quantization config.
             provider: define the quantization provider.
@@ -309,22 +330,24 @@ class NoTrainerOptimizer:   # pragma: no cover
 
     def init_pruner(
         self,
-        pruning_config = None,
+        pruning_config=None,
         provider: str = Provider.INC.value,
     ):
         """Init a Pruning object with config.
-        
+
         Args:
             pruning_config: pruning config.
             provider: define the pruning provider.
         """
         from neural_compressor.experimental import Pruning
+
         self.pruning_config = pruning_config
         self.metrics = self.pruning_config.metrics
         self._provider = Provider[provider.upper()].value
 
-        assert isinstance(self.pruning_config, PruningConfig), \
-            "please pass a instance of PruningConfig to trainer.prune!"
+        assert isinstance(
+            self.pruning_config, PruningConfig
+        ), "please pass a instance of PruningConfig to trainer.prune!"
 
         pruner = Pruning(self.pruning_config.inc_config)
         pruner.model = common.Model(self.model)
@@ -334,13 +357,13 @@ class NoTrainerOptimizer:   # pragma: no cover
 
     def prune(
         self,
-        pruning_config = None,
+        pruning_config=None,
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
         """Do the pruning.
-        
+
         Args:
             pruning_config: pruning config.
             provider: define the pruning provider.
@@ -373,15 +396,17 @@ class NoTrainerOptimizer:   # pragma: no cover
         provider: str = Provider.INC.value,
     ):
         """Init a Distillation object with config and the teacher model.
-        
+
         Args:
             distillation_config: distillation config.
             teacher_model: set the teacher model.
             provider: define the distillation provider.
         """
         from neural_compressor.experimental import Distillation, common
-        assert isinstance(distillation_config, DistillationConfig), \
-            "please pass a instance of PruningConfig to trainer.prune!"
+
+        assert isinstance(
+            distillation_config, DistillationConfig
+        ), "please pass a instance of PruningConfig to trainer.prune!"
         self.distillation_config = distillation_config
         self._provider = Provider[provider.upper()].value
         self.metrics = self.distillation_config.metrics
@@ -403,7 +428,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         train_func: Optional[Callable] = None,
     ):
         """Do the distillation.
-        
+
         Args:
             distillation_config: distillation config.
             teacher_model: set the teacher model.
@@ -415,7 +440,7 @@ class NoTrainerOptimizer:   # pragma: no cover
             self.init_distiller(
                 distillation_config=distillation_config,
                 teacher_model=teacher_model,
-                provider=provider
+                provider=provider,
             )
         if eval_func is not None:
             self._eval_func = eval_func
@@ -432,7 +457,7 @@ class NoTrainerOptimizer:   # pragma: no cover
 
     def _save_inc_int8(self, opt_model, output_dir):
         """Save the optimized model in the output directory.
-        
+
         Args:
             opt_model: optimized model.
             output_dir: output path.
@@ -441,8 +466,9 @@ class NoTrainerOptimizer:   # pragma: no cover
         self.model.config.torch_dtype = "int8"
         if isinstance(self.model.config, PretrainedConfig):
             self.model.config.save_pretrained(output_dir)
-        weights_file = os.path.join(os.path.abspath(
-          os.path.expanduser(output_dir)), WEIGHTS_NAME)
+        weights_file = os.path.join(
+            os.path.abspath(os.path.expanduser(output_dir)), WEIGHTS_NAME
+        )
         torch.save(opt_model.quantized_state_dict(), weights_file)
 
     def save_model(self, output_dir, tokenizer=None):
@@ -450,17 +476,21 @@ class NoTrainerOptimizer:   # pragma: no cover
 
         Args:
             output_dir: the path to save config.json and pytorch_model.bin.
-            tokenizer (object, optional): the tokenizer object, use it if you want to 
+            tokenizer (object, optional): the tokenizer object, use it if you want to
                                           save tokenizer.json in output_dir. Defaults to None.
         """
         os.makedirs(shlex.quote(output_dir), exist_ok=True)
-        torch.save(self.opt_model.quantized_state_dict(), os.path.join(shlex.quote(output_dir), WEIGHTS_NAME))
+        torch.save(
+            self.opt_model.quantized_state_dict(),
+            os.path.join(shlex.quote(output_dir), WEIGHTS_NAME),
+        )
         if self.enable_inc_quant and self.opt_model:
             self._save_inc_int8(self.opt_model, output_dir)
         else:
             self.model.save_pretrained(output_dir)
             self.model.config.save_pretrained(output_dir)
-        if tokenizer:   # pragma: no cover
+        if tokenizer:  # pragma: no cover
             tokenizer.save_pretrained(output_dir)
-        logger.info("Optimized model and configure file have saved to {}".format(
-                    output_dir))
+        logger.info(
+            "Optimized model and configure file have saved to {}".format(output_dir)
+        )

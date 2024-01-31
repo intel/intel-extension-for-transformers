@@ -15,14 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from fastapi import APIRouter
-from typing import ByteString
+
 from ...cli.log import logger
 from ...server.restful.response import ImageResponse
 
 
 class Text2ImageAPIRouter(APIRouter):
-
     def __init__(self) -> None:
         super().__init__()
         self.chatbot = None
@@ -47,11 +47,12 @@ class Text2ImageAPIRouter(APIRouter):
         except:
             raise Exception("Exception occurred when generating image from text.")
         else:
-            logger.info('Text transferring to image finished.')
+            logger.info("Text transferring to image finished.")
             return ImageResponse(image=image, response="Succeed")
-    
+
 
 router = Text2ImageAPIRouter()
+
 
 @router.post("/v1/text2image")
 async def text2image(request: str) -> str:

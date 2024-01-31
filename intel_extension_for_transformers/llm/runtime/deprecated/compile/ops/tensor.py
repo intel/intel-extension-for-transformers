@@ -14,24 +14,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine tensor file."""
 
 from collections import OrderedDict
-from .. import graph_utils as util
+
 import numpy as np
+
+from .. import graph_utils as util
 
 
 class Tensor(object):
     """The definition of the neural engine."""
-    def __init__(self,
-                 name='',
-                 source_op=None,
-                 dest_op=None,
-                 shape=None,
-                 data=None,
-                 dtype=None,
-                 location=None):
+
+    def __init__(
+        self,
+        name="",
+        source_op=None,
+        dest_op=None,
+        shape=None,
+        data=None,
+        dtype=None,
+        location=None,
+    ):
         """The __init__ function."""
         self._name = name
         # assume data in tensor should be numpy array
@@ -135,10 +139,10 @@ class Tensor(object):
         """Get the config dict in the graph."""
         conf_dict = OrderedDict()
         if self._dtype is not None:
-            conf_dict['dtype'] = util.DTYPES_DICT.get(self._dtype, self._dtype)
+            conf_dict["dtype"] = util.DTYPES_DICT.get(self._dtype, self._dtype)
         if self._shape is not None:
-            conf_dict['shape'] = self._shape
+            conf_dict["shape"] = self._shape
         if self._location is not None:
-            conf_dict['location'] = self._location
+            conf_dict["location"] = self._location
 
         return conf_dict

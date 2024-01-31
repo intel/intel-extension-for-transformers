@@ -16,59 +16,66 @@
 # limitations under the License.
 """The Transformer2Dmodel_SampleSlice pattern."""
 
-from .pattern import Pattern, pattern_registry
 from .. import graph_utils as util
 from .. import logger
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='Transformer2Dmodel_SampleSlice')
+@pattern_registry(pattern_type="Transformer2Dmodel_SampleSlice")
 class Transformer2Dmodel_SampleSlice(Pattern):
     """The Transformer2Dmodel_SampleSlice pattern.
 
     Fuse the original sub-graph into the custom acceleration 'Transformer2Dmodel_SampleSlice' graph.
     The search strategy is based on the following pattern mapping configs for the stable textEncoderV1-5.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
-            'Transformer2Dmodel_SampleSlice': [
+            "Transformer2Dmodel_SampleSlice": [
                 {
-                    'patterns': {
-                        'in': [[(0, 'Concat'), (1, 'Slice'), (3, 'Concat'), (4, 'Cast')],
-                               [(0, 'Concat'), (2, 'Slice'), (3, 'Concat')]],
+                    "patterns": {
+                        "in": [
+                            [(0, "Concat"), (1, "Slice"), (3, "Concat"), (4, "Cast")],
+                            [(0, "Concat"), (2, "Slice"), (3, "Concat")],
+                        ],
                     },
                 },
             ]
         }
 
-        pattern = pattern_mapping_config['Transformer2Dmodel_SampleSlice'][0]['patterns']['in']
+        pattern = pattern_mapping_config["Transformer2Dmodel_SampleSlice"][0][
+            "patterns"
+        ]["in"]
         patterns_nodes_name = util.search_pattern(pattern, model)
-        logger.info('Transformer2Dmodel_SampleSlice matched...')
-        logger.debug('Transformer2Dmodel_SampleSlice = {}'.format(patterns_nodes_name))
+        logger.info("Transformer2Dmodel_SampleSlice matched...")
+        logger.debug("Transformer2Dmodel_SampleSlice = {}".format(patterns_nodes_name))
         if len(patterns_nodes_name) != 0:
             for j in range(len(patterns_nodes_name)):
-                #the first node
+                # the first node
                 concat_node = model.get_node_by_name(patterns_nodes_name[j][0])
-                assert concat_node.op_type == 'Concat'
-                if concat_node.attr['axis'] == -1:
-                    concat_node.attr['axis'] = 1
+                assert concat_node.op_type == "Concat"
+                if concat_node.attr["axis"] == -1:
+                    concat_node.attr["axis"] = 1
 
                 # the second node
                 slice_node = model.get_node_by_name(patterns_nodes_name[j][1])
-                assert slice_node.op_type == 'Slice'
-                if slice_node.attr['ends'] == '-1':
-                    slice_node.attr['ends'] = '320'
+                assert slice_node.op_type == "Slice"
+                if slice_node.attr["ends"] == "-1":
+                    slice_node.attr["ends"] = "320"
 
-                #the third node
+                # the third node
                 concat_node = model.get_node_by_name(patterns_nodes_name[j][3])
-                assert concat_node.op_type == 'Concat'
-                if concat_node.attr['axis'] == -1:
-                    concat_node.attr['axis'] = 1
+                assert concat_node.op_type == "Concat"
+                if concat_node.attr["axis"] == -1:
+                    concat_node.attr["axis"] = 1
 
                 cast_node = model.get_node_by_name(patterns_nodes_name[j][4])
-                assert cast_node.op_type == 'Cast'
-                gemm_node = model.get_node_by_name(cast_node.output_tensors[0].dest_op[0])
-                assert gemm_node.op_type == 'MatMulWithBias'
+                assert cast_node.op_type == "Cast"
+                gemm_node = model.get_node_by_name(
+                    cast_node.output_tensors[0].dest_op[0]
+                )
+                assert gemm_node.op_type == "MatMulWithBias"
 
                 concat_node.output_tensors[0].dest_op = gemm_node.name
                 gemm_node.input_tensors[0] = concat_node.output_tensors[0]

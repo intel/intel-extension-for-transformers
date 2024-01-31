@@ -15,9 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tqdm import tqdm
 import torch
 from torch import nn
+from tqdm import tqdm
 
 
 class Audio2Exp(nn.Module):

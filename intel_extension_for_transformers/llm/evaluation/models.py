@@ -16,16 +16,18 @@
 # limitations under the License.
 
 import re
+from typing import Optional, Tuple
+
 import torch
 import transformers
-from typing import Optional, Tuple
-from transformers.modeling_outputs import CausalLMOutputWithPast
 from optimum.intel.generation.modeling import TSModelForCausalLM
+from transformers.modeling_outputs import CausalLMOutputWithPast
+
 from intel_extension_for_transformers.transformers.utils.utility import (
+    IPEX_OPT_LLM_SUPPORTED,
+    MODEL_TYPES_REQUIRING_POSITION_IDS,
     generate_dummy_past_key_values_for_inference,
     generate_dummy_past_key_values_for_opt_llm,
-    MODEL_TYPES_REQUIRING_POSITION_IDS,
-    IPEX_OPT_LLM_SUPPORTED,
 )
 
 
@@ -33,9 +35,9 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
     def _reorder_cache(
         self, past_key_values: Tuple[Tuple[torch.Tensor]], beam_idx: torch.Tensor
     ) -> Tuple[Tuple[torch.Tensor]]:
-        """
-        This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
+        """This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
         [`~PreTrainedModel.beam_sample`] is called.
+
         This is required to match `past_key_values` with the correct beam_idx at every generation step.
         """
         if self.config.model_type == "bloom":

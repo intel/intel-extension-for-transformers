@@ -14,9 +14,8 @@
 #
 
 
-from datasets import load_dataset, Features, Value, ClassLabel
+from datasets import ClassLabel, Features, Value, load_dataset
 from transformers import AutoTokenizer
-
 from utils import Benchmark
 
 

@@ -15,10 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
-import os
 import datetime
-from datetime import timezone, timedelta
+import re
+from datetime import timedelta, timezone
 
 
 def enforce_stop_tokens(text: str) -> str:
@@ -28,10 +27,7 @@ def enforce_stop_tokens(text: str) -> str:
 
 
 def get_current_time() -> str:
-    SHA_TZ = timezone(
-        timedelta(hours=8),
-        name='Asia/Shanghai'
-    )
+    SHA_TZ = timezone(timedelta(hours=8), name="Asia/Shanghai")
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     cur_time = utc_now.astimezone(SHA_TZ).strftime("%Y/%m/%d")
     return cur_time

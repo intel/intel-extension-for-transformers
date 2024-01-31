@@ -15,22 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
+import itertools
 import os
-import torch
-
-from gfpgan import GFPGANer
-
-from tqdm import tqdm
-
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.utils.videoio import load_video_to_cv2
+import re
+import time
 
 import cv2
 import numpy as np
-import contextlib
-import time
-import re
-import itertools
+import torch
+from gfpgan import GFPGANer
+from tqdm import tqdm
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.videoio import (
+    load_video_to_cv2,
+)
 
 
 class GeneratorWithLen(object):
@@ -52,18 +51,31 @@ def enhancer(images, method="gfpgan", bg_upsampler="realesrgan"):
     return list(gen)
 
 
-def enhancer_with_len(images, method="gfpgan", bg_upsampler="realesrgan", rank=0, p_num=1, bf16=False):
+def enhancer_with_len(
+    images, method="gfpgan", bg_upsampler="realesrgan", rank=0, p_num=1, bf16=False
+):
     if os.path.isfile(images):  # handle video to images
         # TODO: Create a generator version of load_video_to_cv2
         images = load_video_to_cv2(images)
-        results = enhancer_no_len(images, method=method, bg_upsampler=bg_upsampler, rank=rank, p_num=p_num, bf16=bf16)
+        results = enhancer_no_len(
+            images,
+            method=method,
+            bg_upsampler=bg_upsampler,
+            rank=rank,
+            p_num=p_num,
+            bf16=bf16,
+        )
         # gen_with_len = GeneratorWithLen(gen, len(images))
         return results
 
 
-def enhancer_no_len(images, method="gfpgan", bg_upsampler="realesrgan", rank=0, p_num=1, bf16=False):
+def enhancer_no_len(
+    images, method="gfpgan", bg_upsampler="realesrgan", rank=0, p_num=1, bf16=False
+):
     print(f"face enhancer rank, p_num: {rank}, {p_num}....")
-    if not isinstance(images, list) and os.path.isfile(images):  # handle video to images
+    if not isinstance(images, list) and os.path.isfile(
+        images
+    ):  # handle video to images
         images = load_video_to_cv2(images)
 
     # ------------------------ set up GFPGAN restorer ------------------------
@@ -99,7 +111,11 @@ def enhancer_no_len(images, method="gfpgan", bg_upsampler="realesrgan", rank=0, 
         model_path = url
 
     restorer = GFPGANer(
-        model_path=model_path, upscale=2, arch=arch, channel_multiplier=channel_multiplier, bg_upsampler=bg_upsampler
+        model_path=model_path,
+        upscale=2,
+        arch=arch,
+        channel_multiplier=channel_multiplier,
+        bg_upsampler=bg_upsampler,
     )
 
     # ------------------------ restore ------------------------
@@ -119,7 +135,11 @@ def enhancer_no_len(images, method="gfpgan", bg_upsampler="realesrgan", rank=0, 
         with torch.cpu.amp.autocast(
             enabled=True, dtype=torch.bfloat16, cache_enabled=True
         ) if bf16 else contextlib.nullcontext():
-            cropped_faces, restored_faces, r_img = restorer.enhance(  # r_img (512, 512, 3)
+            (
+                cropped_faces,
+                restored_faces,
+                r_img,
+            ) = restorer.enhance(  # r_img (512, 512, 3)
                 img, has_aligned=False, only_center_face=False, paste_back=True
             )
         r_imgs.append(r_img)
@@ -177,11 +197,16 @@ def enhancer_generator_with_len(images, method="gfpgan", bg_upsampler="realesrga
 
 def enhancer_generator_no_len(images, method="gfpgan", bg_upsampler="realesrgan"):
     """Provide a generator function so that all of the enhanced images don't need
-    to be stored in memory at the same time. This can save tons of RAM compared to
-    the enhancer function."""
+    to be stored in memory at the same time.
+
+    This can save tons of RAM compared to
+    the enhancer function.
+    """
 
     print("face enhancer....")
-    if not isinstance(images, list) and os.path.isfile(images):  # handle video to images
+    if not isinstance(images, list) and os.path.isfile(
+        images
+    ):  # handle video to images
         images = load_video_to_cv2(images)
 
     # ------------------------ set up GFPGAN restorer ------------------------
@@ -217,7 +242,11 @@ def enhancer_generator_no_len(images, method="gfpgan", bg_upsampler="realesrgan"
         model_path = url
 
     restorer = GFPGANer(
-        model_path=model_path, upscale=2, arch=arch, channel_multiplier=channel_multiplier, bg_upsampler=bg_upsampler
+        model_path=model_path,
+        upscale=2,
+        arch=arch,
+        channel_multiplier=channel_multiplier,
+        bg_upsampler=bg_upsampler,
     )
 
     # ------------------------ restore ------------------------

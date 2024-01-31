@@ -16,63 +16,73 @@
 # limitations under the License.
 """The TextEncoder_AttentionReshape Pattern."""
 
-from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
+
 from .. import graph_utils as util
 from .. import logger
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='TextEncoder_AttentionReshape')
+@pattern_registry(pattern_type="TextEncoder_AttentionReshape")
 class TextEncoder_AttentionReshape(Pattern):
     """The TextEncoder_AttentionReshape pattern.
 
     Fuse the original sub-graph into the custom acceleration 'TextEncoder_AttentionReshape' graph.
     The search strategy is based on the following pattern mapping configs for the stable diffusionV1-5.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             # for text encoder self_attn/out_proj/Add
-            'TextEncoder_AttentionReshape': [
+            "TextEncoder_AttentionReshape": [
                 {
-                    'patterns': {
-                        'in': [[(0, 'Shape'), (1, 'Gather'), (2, 'Unsqueeze'), (9, 'Concat'), (10, 'Reshape'),
-                                (11, 'MatMulWithBias')],
-                               [(), (3, 'Shape'), (4, 'Gather'), (5, 'Unsqueeze'), (9, 'Concat')],
-                               [(), (6, 'Shape'), (7, 'Gather'), (8, 'Unsqueeze'), (9, 'Concat')]],
-                        'out': [[(0, 'Reshape'), (1, 'Reshape'), (1, 'MatMulWithBias')]]
+                    "patterns": {
+                        "in": [
+                            [
+                                (0, "Shape"),
+                                (1, "Gather"),
+                                (2, "Unsqueeze"),
+                                (9, "Concat"),
+                                (10, "Reshape"),
+                                (11, "MatMulWithBias"),
+                            ],
+                            [
+                                (),
+                                (3, "Shape"),
+                                (4, "Gather"),
+                                (5, "Unsqueeze"),
+                                (9, "Concat"),
+                            ],
+                            [
+                                (),
+                                (6, "Shape"),
+                                (7, "Gather"),
+                                (8, "Unsqueeze"),
+                                (9, "Concat"),
+                            ],
+                        ],
+                        "out": [
+                            [(0, "Reshape"), (1, "Reshape"), (1, "MatMulWithBias")]
+                        ],
                     },
-                    'search_mode': 'op_type',
-                    'node_names': {
+                    "search_mode": "op_type",
+                    "node_names": {
                         0: 10,
-                        1: 'TextEncoder_AttentionReshape/reshape_to_2D',
-                        2: 11
+                        1: "TextEncoder_AttentionReshape/reshape_to_2D",
+                        2: 11,
                     },
-                    'input_tensors': {
-                        0: [[{
-                            10: [0]
-                        }, {
-                            'input_data': [0]
-                        }], [[0, 1], 2]],
-                        1: [[{
-                            'input_data': [0]
-                        }], [[1], 2]],
-                        2: [[{
-                            11: [1]
-                        }, {
-                            11: [2]
-                        }], [[1, 2], 3]],
+                    "input_tensors": {
+                        0: [[{10: [0]}, {"input_data": [0]}], [[0, 1], 2]],
+                        1: [[{"input_data": [0]}], [[1], 2]],
+                        2: [[{11: [1]}, {11: [2]}], [[1, 2], 3]],
                     },
-                    'output_tensors': {
-                        0: [[{
-                            10: [0]
-                        }], [[0], 1]],
+                    "output_tensors": {
+                        0: [[{10: [0]}], [[0], 1]],
                         1: [[], [[], 1]],
-                        2: [[{
-                            11: [0]
-                        }], [[0], 1]]
+                        2: [[{11: [0]}], [[0], 1]],
                     },
-                    'returns': [9, 11]
+                    "returns": [9, 11],
                 },
             ]
         }
@@ -80,31 +90,32 @@ class TextEncoder_AttentionReshape(Pattern):
         def _set_attr(node_names, model):
             attr = OrderedDict()
             # bsz, max_seq, hidden_size, 1, 77, 768
-            attr['dst_shape'] = '-1,-1,-1'
-            attr['dims'] = '0, 1'
+            attr["dst_shape"] = "-1,-1,-1"
+            attr["dims"] = "0, 1"
             reshape_node_idx = model.get_node_id(node_names[0])
             model.nodes[reshape_node_idx].attr = attr
 
             attr_1 = OrderedDict()
             # bsz, max_seq, hidden_size, 1, 77, 768
-            attr_1['dst_shape'] = '-1,-1'
-            attr_1['dims'] = 1
+            attr_1["dst_shape"] = "-1,-1"
+            attr_1["dims"] = 1
             reshape_node_idx = model.get_node_id(node_names[1])
             model.nodes[reshape_node_idx].attr = attr_1
 
-        for i in range(len(pattern_mapping_config['TextEncoder_AttentionReshape'])):
-            pattern_dict = pattern_mapping_config['TextEncoder_AttentionReshape'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("TextEncoder_AttentionReshape",
-                                                                        pattern_dict, model)
+        for i in range(len(pattern_mapping_config["TextEncoder_AttentionReshape"])):
+            pattern_dict = pattern_mapping_config["TextEncoder_AttentionReshape"][i]
+            model, new_node_names, ret_old_nodes = util.pattern_mapping(
+                "TextEncoder_AttentionReshape", pattern_dict, model
+            )
 
             if len(new_node_names) != 0:
-                logger.info('TextEncoder_AttentionReshape matched...')
-                logger.debug('TextEncoder_AttentionReshape = {}'.format(new_node_names))
+                logger.info("TextEncoder_AttentionReshape matched...")
+                logger.debug("TextEncoder_AttentionReshape = {}".format(new_node_names))
                 for j in range(len(new_node_names)):
                     if len(ret_old_nodes[j]) == 2:
                         _set_attr(new_node_names[j], model)
 
-                        assert ret_old_nodes[j][1].op_type == 'MatMulWithBias'
+                        assert ret_old_nodes[j][1].op_type == "MatMulWithBias"
                         mat_node_idx = model.get_node_id(new_node_names[j][2])
                         model.nodes[mat_node_idx].attr = ret_old_nodes[j][1].attr
 

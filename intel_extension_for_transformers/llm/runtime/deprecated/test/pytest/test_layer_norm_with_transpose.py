@@ -17,10 +17,17 @@
 
 import unittest
 from collections import OrderedDict
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS, Operator
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.layer_norm_with_transpose import LayerNormWithTranspose
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import (
+    OPERATORS,
+)
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import (
+    Tensor,
+)
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.layer_norm_with_transpose import (
+    LayerNormWithTranspose,
+)
 
 
 class TestLayerNormWithTranspose(unittest.TestCase):
@@ -34,45 +41,71 @@ class TestLayerNormWithTranspose(unittest.TestCase):
 
     def test_layer_norm_with_transpose(self):
         graph = Graph()
-        graph.framework_modeling_config['framework'] = 'onnxruntime'
-        input_data_node = OPERATORS['Input']()
+        graph.framework_modeling_config["framework"] = "onnxruntime"
+        input_data_node = OPERATORS["Input"]()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
-        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors, 
-                                output_tensors=output_tensors)
+        input_data_node.construct(
+            "input_data",
+            "Input",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+        )
 
-        mat_node = OPERATORS['MatMulWithBiasAdd']()
+        mat_node = OPERATORS["MatMulWithBiasAdd"]()
         input_tensors = [Tensor(), Tensor(shape=[768]), Tensor(shape=[768]), Tensor()]
-        output_tensors = [Tensor(name='mat:0', source_op=['mat'], dest_op=['layer_norm'])]
-        mat_node.construct('mat', 'MatMulWithBiasAdd', input_tensors=input_tensors, 
-                                output_tensors=output_tensors, attr=OrderedDict({
-                                    'append_op': 'sum'}))
+        output_tensors = [
+            Tensor(name="mat:0", source_op=["mat"], dest_op=["layer_norm"])
+        ]
+        mat_node.construct(
+            "mat",
+            "MatMulWithBiasAdd",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+            attr=OrderedDict({"append_op": "sum"}),
+        )
 
-        ln_node = OPERATORS['LayerNorm']()
-        input_tensors = [Tensor(name='mat:0', source_op=['mat'], dest_op=['layer_norm']),
-                         Tensor(shape=[768]), Tensor(shape=[768])]
-        output_tensors = [Tensor(name='layer_norm:0', source_op=['layer_norm'], 
-                                 dest_op=['transpose'])]
-        ln_node.construct('layer_norm', 'LayerNorm', input_tensors=input_tensors, 
-                                output_tensors=output_tensors, attr=OrderedDict({
-                                    'epsilon': 0.009}))
-        
-        transpose_node = OPERATORS['Transpose']()
-        input_tensors = [Tensor(name='layer_norm:0', source_op=['layer_norm'], 
-                                    dest_op=['transpose'])]
-        output_tensors = [Tensor(name='transpose:0', source_op=['transpose'],
-                                dest_op=[])]
-        transpose_node.construct('transpose', 'Transpose', input_tensors=input_tensors, 
-                                output_tensors=output_tensors, attr=OrderedDict(
-                                    {'src_perm': '0,1,2', 'dst_perm': '1,0,2'}))
+        ln_node = OPERATORS["LayerNorm"]()
+        input_tensors = [
+            Tensor(name="mat:0", source_op=["mat"], dest_op=["layer_norm"]),
+            Tensor(shape=[768]),
+            Tensor(shape=[768]),
+        ]
+        output_tensors = [
+            Tensor(name="layer_norm:0", source_op=["layer_norm"], dest_op=["transpose"])
+        ]
+        ln_node.construct(
+            "layer_norm",
+            "LayerNorm",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+            attr=OrderedDict({"epsilon": 0.009}),
+        )
 
-        graph.insert_nodes(len(graph.nodes), [input_data_node, mat_node, ln_node, transpose_node])
-        graph.add_config_item('hidden_size', 768)
+        transpose_node = OPERATORS["Transpose"]()
+        input_tensors = [
+            Tensor(name="layer_norm:0", source_op=["layer_norm"], dest_op=["transpose"])
+        ]
+        output_tensors = [
+            Tensor(name="transpose:0", source_op=["transpose"], dest_op=[])
+        ]
+        transpose_node.construct(
+            "transpose",
+            "Transpose",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+            attr=OrderedDict({"src_perm": "0,1,2", "dst_perm": "1,0,2"}),
+        )
+
+        graph.insert_nodes(
+            len(graph.nodes), [input_data_node, mat_node, ln_node, transpose_node]
+        )
+        graph.add_config_item("hidden_size", 768)
         graph = LayerNormWithTranspose()(graph)
         self.assertEqual(5, len(graph.nodes))
-        self.assertEqual('-1,-1,768', graph.nodes[3].attr['dst_shape'])
-        self.assertEqual('reshape_3d_before_transpose', graph.nodes[3].name)
-        self.assertEqual('1,0', graph.nodes[3].attr['dims'])
+        self.assertEqual("-1,-1,768", graph.nodes[3].attr["dst_shape"])
+        self.assertEqual("reshape_3d_before_transpose", graph.nodes[3].name)
+        self.assertEqual("1,0", graph.nodes[3].attr["dims"])
 
 
 if __name__ == "__main__":

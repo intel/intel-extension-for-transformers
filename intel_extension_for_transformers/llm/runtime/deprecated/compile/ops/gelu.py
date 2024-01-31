@@ -14,31 +14,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
 
 
 # tf.nn.gelu(features, approximate=False, name=None)
 # approximate=True: return x * cdf
 # cdf = 0.5 * (1.0 + tf.tanh((np.sqrt(2 / np.pi) * (x + 0.044715 * tf.pow(x, 3)))))
 # approximate=False: return x * 0.5 * (1.0 + math_ops.erf(x / math.sqrt(2.0)))
-@operator_registry(operator_type='Gelu')
+@operator_registry(operator_type="Gelu")
 class Gelu(Operator):
     """Parse the Gelu operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
         """Extract the node attr from tensorflow."""
-        if framework == 'tensorflow':
-            self._attr['approximate'] = node.attr['approximate'].b
-        if framework == 'torch':
+        if framework == "tensorflow":
+            self._attr["approximate"] = node.attr["approximate"].b
+        if framework == "torch":
             approximate = node.inputsAt(1).toIValue()
-            if approximate == 'none':
-                self._attr['algorithm'] = 'gelu_erf'
-            elif approximate == 'tanh':
-                self._attr['algorithm'] = 'gelu_tanh'
+            if approximate == "none":
+                self._attr["algorithm"] = "gelu_erf"
+            elif approximate == "tanh":
+                self._attr["algorithm"] = "gelu_tanh"

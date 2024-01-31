@@ -15,14 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 import os
+import unittest
+
 import numpy as np
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern import PATTERNS
+
 import intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils as util
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern import (
+    PATTERNS,
+)
+
 util.autocast_init()
-util.set_autocast('cast_type','bf16')
+util.set_autocast("cast_type", "bf16")
 util.quant_info_init()
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -35,11 +40,11 @@ class TestTorchOP(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        os.remove('conf.yaml')
+        os.remove("conf.yaml")
         pass
 
     def test_1(self):
-        text = '''
+        text = """
 model:
   name: model
   operator:
@@ -981,112 +986,119 @@ model:
         '194': {}
       output:
         '195': {}
-'''
-        file = open('conf.yaml', 'w')
+"""
+        file = open("conf.yaml", "w")
         file.write(text)
         file.close()
         dollygraph = Graph()
-        dollygraph.graph_init('./conf.yaml')
-        dollygraph.framework_modeling_config['framework'] = 'torch'
+        dollygraph.graph_init("./conf.yaml")
+        dollygraph.framework_modeling_config["framework"] = "torch"
         for dest_op_name in dollygraph.nodes[0].output_tensors[7].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[1].data = np.zeros([7680,2560], dtype=np.float32)
-            dest_node.input_tensors[2].data = np.zeros([7680,2560], dtype=np.float32)
+            dest_node.input_tensors[1].data = np.zeros([7680, 2560], dtype=np.float32)
+            dest_node.input_tensors[2].data = np.zeros([7680, 2560], dtype=np.float32)
         for dest_op_name in dollygraph.nodes[0].output_tensors[15].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[1].data = np.zeros([2560,2560], dtype=np.float32)
+            dest_node.input_tensors[1].data = np.zeros([2560, 2560], dtype=np.float32)
             dest_node.input_tensors[2].data = np.zeros([2560], dtype=np.float32)
         for dest_op_name in dollygraph.nodes[0].output_tensors[20].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[1].data = np.zeros([10240,2560], dtype=np.float32)
+            dest_node.input_tensors[1].data = np.zeros([10240, 2560], dtype=np.float32)
             dest_node.input_tensors[2].data = np.zeros([10240], dtype=np.float32)
         for dest_op_name in dollygraph.nodes[0].output_tensors[21].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[1].data = np.zeros([2560,10240], dtype=np.float32)
+            dest_node.input_tensors[1].data = np.zeros([2560, 10240], dtype=np.float32)
             dest_node.input_tensors[2].data = np.zeros([2560], dtype=np.float32)
         for dest_op_name in dollygraph.nodes[0].output_tensors[25].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[1].data = np.zeros([50280,2560], dtype=np.float32)
+            dest_node.input_tensors[1].data = np.zeros([50280, 2560], dtype=np.float32)
         for dest_op_name in dollygraph.nodes[0].output_tensors[8].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[0].data = np.zeros([1,1,2048,20], dtype=np.float32)
+            dest_node.input_tensors[0].data = np.zeros(
+                [1, 1, 2048, 20], dtype=np.float32
+            )
         for dest_op_name in dollygraph.nodes[0].output_tensors[9].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[0].data = np.zeros([1,1,2048,20], dtype=np.float32)
+            dest_node.input_tensors[0].data = np.zeros(
+                [1, 1, 2048, 20], dtype=np.float32
+            )
         for dest_op_name in dollygraph.nodes[0].output_tensors[13].dest_op:
             dest_node = dollygraph.get_node_by_name(dest_op_name)
-            dest_node.input_tensors[0].data = np.zeros([1,1,2048,2048], dtype=np.float32)
+            dest_node.input_tensors[0].data = np.zeros(
+                [1, 1, 2048, 2048], dtype=np.float32
+            )
         oldlen = len(dollygraph.nodes)
-        p_fusion = PATTERNS['TorchUnpackBaddbmm']()
+        p_fusion = PATTERNS["TorchUnpackBaddbmm"]()
         dollygraph = p_fusion(dollygraph)
         newlen = len(dollygraph.nodes)
         self.assertTrue(oldlen != newlen)
         oldlen = len(dollygraph.nodes)
-        p_fusion = PATTERNS['RemoveZeros']()
+        p_fusion = PATTERNS["RemoveZeros"]()
         dollygraph = p_fusion(dollygraph)
         newlen = len(dollygraph.nodes)
         self.assertTrue(oldlen != newlen)
         oldlen = len(dollygraph.nodes)
-        p_fusion = PATTERNS['LowerAllTuples']()
+        p_fusion = PATTERNS["LowerAllTuples"]()
         dollygraph = p_fusion(dollygraph)
         newlen = len(dollygraph.nodes)
         self.assertTrue(oldlen != newlen)
-        p_fusion = PATTERNS['TorchEmbedding']()
+        p_fusion = PATTERNS["TorchEmbedding"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['RmsNorm']()
+        p_fusion = PATTERNS["RmsNorm"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['InnerproductReshapeFusion']()
+        p_fusion = PATTERNS["InnerproductReshapeFusion"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['InnerproductWithBiasGelu']()
+        p_fusion = PATTERNS["InnerproductWithBiasGelu"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['InnerproductWithSwish']()
+        p_fusion = PATTERNS["InnerproductWithSwish"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['SliceMask']()
+        p_fusion = PATTERNS["SliceMask"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['ArangewithReciprocal']()
+        p_fusion = PATTERNS["ArangewithReciprocal"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['InnerproductwithSlice']()
+        p_fusion = PATTERNS["InnerproductwithSlice"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['RoraryPosEmb']()
+        p_fusion = PATTERNS["RoraryPosEmb"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['EinsumwithArange']()
+        p_fusion = PATTERNS["EinsumwithArange"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['RemoveSlice']()
+        p_fusion = PATTERNS["RemoveSlice"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['RemoveRange']()
+        p_fusion = PATTERNS["RemoveRange"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['MatMulWithTransposeScaleAdd']()
+        p_fusion = PATTERNS["MatMulWithTransposeScaleAdd"]()
         dollygraph = p_fusion(dollygraph)
         oldlen = len(dollygraph.nodes)
-        p_fusion = PATTERNS['NeoxReorderChange']()
+        p_fusion = PATTERNS["NeoxReorderChange"]()
         dollygraph = p_fusion(dollygraph)
         newlen = len(dollygraph.nodes)
         self.assertTrue(oldlen != newlen)
         oldlen = len(dollygraph.nodes)
-        p_fusion = PATTERNS['NeoxRoraryPosEmb']()
+        p_fusion = PATTERNS["NeoxRoraryPosEmb"]()
         dollygraph = p_fusion(dollygraph)
         newlen = len(dollygraph.nodes)
         self.assertTrue(oldlen != newlen)
-        p_fusion = PATTERNS['InsertQuantNode']()
+        p_fusion = PATTERNS["InsertQuantNode"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['InsertBF16Node']()
+        p_fusion = PATTERNS["InsertBF16Node"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['TorchInsertBF16Node']()
+        p_fusion = PATTERNS["TorchInsertBF16Node"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['QuantizeFusion']()
+        p_fusion = PATTERNS["QuantizeFusion"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['QKVMerge']()
+        p_fusion = PATTERNS["QKVMerge"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['ReshapeFusion']()
+        p_fusion = PATTERNS["ReshapeFusion"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['OperatorAdaptor']()
+        p_fusion = PATTERNS["OperatorAdaptor"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['EmbeddingsTo2DBeforeInnerProduct']()
+        p_fusion = PATTERNS["EmbeddingsTo2DBeforeInnerProduct"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['QuantGatherToBF16']()
+        p_fusion = PATTERNS["QuantGatherToBF16"]()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['MultiHeadAttention']()
+        p_fusion = PATTERNS["MultiHeadAttention"]()
         dollygraph = p_fusion(dollygraph)
+
 
 if __name__ == "__main__":
     unittest.main()

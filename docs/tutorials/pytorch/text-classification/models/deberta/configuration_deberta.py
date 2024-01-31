@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" DeBERTa model configuration for SWEET"""
+"""DeBERTa model configuration for SWEET."""
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
 
@@ -92,33 +92,33 @@ class DebertaConfig(PretrainedConfig):
     model_type = "deberta"
 
     def __init__(
-            self,
-            vocab_size=50265,
-            hidden_size=768,
-            num_hidden_layers=12,
-            num_attention_heads=12,
-            intermediate_size=3072,
-            hidden_act="gelu",
-            hidden_dropout_prob=0.1,
-            attention_probs_dropout_prob=0.1,
-            max_position_embeddings=512,
-            type_vocab_size=0,
-            initializer_range=0.02,
-            layer_norm_eps=1e-7,
-            relative_attention=False,
-            max_relative_positions=-1,
-            pad_token_id=0,
-            position_biased_input=True,
-            pos_att_type=None,
-            pooler_dropout=0,
-            pooler_hidden_act="gelu",
-            exit_layers=None,
-            freeze_previous_layers=False,
-            probe_model=False,
-            gold_exit_layer=None,
-            exit_thresholds=1,
-            sweet=True,
-            **kwargs
+        self,
+        vocab_size=50265,
+        hidden_size=768,
+        num_hidden_layers=12,
+        num_attention_heads=12,
+        intermediate_size=3072,
+        hidden_act="gelu",
+        hidden_dropout_prob=0.1,
+        attention_probs_dropout_prob=0.1,
+        max_position_embeddings=512,
+        type_vocab_size=0,
+        initializer_range=0.02,
+        layer_norm_eps=1e-7,
+        relative_attention=False,
+        max_relative_positions=-1,
+        pad_token_id=0,
+        position_biased_input=True,
+        pos_att_type=None,
+        pooler_dropout=0,
+        pooler_hidden_act="gelu",
+        exit_layers=None,
+        freeze_previous_layers=False,
+        probe_model=False,
+        gold_exit_layer=None,
+        exit_thresholds=1,
+        sweet=True,
+        **kwargs
     ):
         super().__init__(**kwargs)
 
@@ -170,29 +170,37 @@ class DebertaOnnxConfig(OnnxConfig):
             dynamic_axis = {0: "batch", 1: "sequence"}
         if self._config.type_vocab_size > 0:
             return OrderedDict(
-                [("input_ids", dynamic_axis), ("attention_mask", dynamic_axis), ("token_type_ids", dynamic_axis)]
+                [
+                    ("input_ids", dynamic_axis),
+                    ("attention_mask", dynamic_axis),
+                    ("token_type_ids", dynamic_axis),
+                ]
             )
         else:
-            return OrderedDict([("input_ids", dynamic_axis), ("attention_mask", dynamic_axis)])
+            return OrderedDict(
+                [("input_ids", dynamic_axis), ("attention_mask", dynamic_axis)]
+            )
 
     @property
     def default_onnx_opset(self) -> int:
         return 12
 
     def generate_dummy_inputs(
-            self,
-            preprocessor: Union["PreTrainedTokenizerBase", "FeatureExtractionMixin"],
-            batch_size: int = -1,
-            seq_length: int = -1,
-            num_choices: int = -1,
-            is_pair: bool = False,
-            framework: Optional["TensorType"] = None,
-            num_channels: int = 3,
-            image_width: int = 40,
-            image_height: int = 40,
-            tokenizer: "PreTrainedTokenizerBase" = None,
+        self,
+        preprocessor: Union["PreTrainedTokenizerBase", "FeatureExtractionMixin"],
+        batch_size: int = -1,
+        seq_length: int = -1,
+        num_choices: int = -1,
+        is_pair: bool = False,
+        framework: Optional["TensorType"] = None,
+        num_channels: int = 3,
+        image_width: int = 40,
+        image_height: int = 40,
+        tokenizer: "PreTrainedTokenizerBase" = None,
     ) -> Mapping[str, Any]:
-        dummy_inputs = super().generate_dummy_inputs(preprocessor=preprocessor, framework=framework)
+        dummy_inputs = super().generate_dummy_inputs(
+            preprocessor=preprocessor, framework=framework
+        )
         if self._config.type_vocab_size == 0 and "token_type_ids" in dummy_inputs:
             del dummy_inputs["token_type_ids"]
         return dummy_inputs

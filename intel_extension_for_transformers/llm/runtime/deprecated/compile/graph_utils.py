@@ -16,14 +16,16 @@
 # limitations under the License.
 """The neural engine graph utils."""
 
-from . import logger
 import copy
-import re
-import os
-import numpy as np
-from collections import namedtuple, OrderedDict
-from schema import Schema, And, Or
 import importlib
+import os
+import re
+from collections import OrderedDict
+
+import numpy as np
+from schema import And, Or, Schema
+
+from . import logger
 
 DTYPES_DICT = {
     "float16": "fp16",
@@ -33,7 +35,7 @@ DTYPES_DICT = {
     "int64": "s64",
     "uint8": "u8",
     "uint16": "bf16",
-    "float64": "fp64"
+    "float64": "fp64",
 }
 
 
@@ -56,7 +58,7 @@ def names_from_input(name):
     # not end with ':x"
     if m is None:
         node_name = name
-        tensor_name = name + ':0'
+        tensor_name = name + ":0"
     # end with ':x'
     else:
         node_name = m.group(1)
@@ -87,7 +89,7 @@ def get_data_dtype(data):
 def autocast_init():
     """Initialize the quant info."""
     global _autocast_info
-    _autocast_info = {'cast_type': 'native'}
+    _autocast_info = {"cast_type": "native"}
 
 
 def set_autocast(key, value):
@@ -121,18 +123,22 @@ def environ_info_init():
     global _environ_info
     _environ_info = {}
 
+
 def insert_environ_info(key, value):
     """Modify the environ info."""
     _environ_info[key] = value
+
 
 def remove_environ_info_item(key):
     """Remove an item in environ info."""
     _environ_info.pop(key, None)
 
+
 def remove_environ_info_items(keys):
     """Remove a list of items in environ info."""
     for key in keys:
         remove_environ_info_item(key)
+
 
 def get_environ_info():
     """Get the environ info."""
@@ -247,7 +253,7 @@ def search_straight_pattern(input_pattern, graph):
 
         for index, value in enumerate(node.input_tensors):
             is_const = False
-            is_const = (isinstance(value.data, np.ndarray))
+            is_const = isinstance(value.data, np.ndarray)
             if not is_const and len(value.source_op) != 0:
                 try:
                     cur_node = graph.get_node_by_name(value.source_op[0])
@@ -285,13 +291,13 @@ def search_straight_pattern(input_pattern, graph):
 
     useless_match_list = []
     for index, value in enumerate(sorted_output):
-
         if index == len(sorted_output) - 1:
             break
 
         next_matched_op_names = sorted_output[index + 1][:-1]
-        if len(value[:-1]) < len(next_matched_op_names) and \
-                _compare_list(value[:-1], next_matched_op_names):
+        if len(value[:-1]) < len(next_matched_op_names) and _compare_list(
+            value[:-1], next_matched_op_names
+        ):
             useless_match_list.append(value)
 
     for i in useless_match_list:
@@ -400,7 +406,9 @@ def search_pattern(pattern_list, graph):
         m_subgraph = search_straight_pattern(p_subgraph, graph)
         return (m_subgraph, subgraph_idx)
 
-    def _has_duplicated_names_in_main_chain(sub_chain, main_chain, sub_chain_node_idx, has_head):
+    def _has_duplicated_names_in_main_chain(
+        sub_chain, main_chain, sub_chain_node_idx, has_head
+    ):
         """Avoid splicing error when sub_graphs with totally same op types and tail node."""
         main_chain_node_names = [main_chain[i][0] for i in main_chain.keys()]
         ret_flag = False
@@ -438,11 +446,15 @@ def search_pattern(pattern_list, graph):
                         head_name = iter_ret[i][head_idx][0]
                         if (each_sub[0] == head_name) and (each_sub[-2] == tail_name):
                             # check sub-graph name (#7)
-                            if _has_duplicated_names_in_main_chain(each_sub, iter_ret[i],
-                                                                   sub_graph_idx, has_head):
+                            if _has_duplicated_names_in_main_chain(
+                                each_sub, iter_ret[i], sub_graph_idx, has_head
+                            ):
                                 continue
                             for j in range(1, len(each_sub) - 1):
-                                iter_ret[i][sub_graph_idx[j]] = [each_sub[j], each_sub[-1][j]]
+                                iter_ret[i][sub_graph_idx[j]] = [
+                                    each_sub[j],
+                                    each_sub[-1][j],
+                                ]
                                 # each sub-graph can be matched more than one main_chain
                             flag[i] = 1
                             # break
@@ -451,11 +463,15 @@ def search_pattern(pattern_list, graph):
                         # need to improve the implementation of unknown input node
                         if each_sub[-2] == tail_name:
                             # check sub-graph name (#7)
-                            if _has_duplicated_names_in_main_chain(each_sub, iter_ret[i],
-                                                                   sub_graph_idx, has_head):
+                            if _has_duplicated_names_in_main_chain(
+                                each_sub, iter_ret[i], sub_graph_idx, has_head
+                            ):
                                 continue
                             for j in range(0, len(each_sub) - 1):
-                                iter_ret[i][sub_graph_idx[j]] = [each_sub[j], each_sub[-1][j]]
+                                iter_ret[i][sub_graph_idx[j]] = [
+                                    each_sub[j],
+                                    each_sub[-1][j],
+                                ]
                                 # each sub-graph just can be matched more than one main_chain
                             flag[i] = 1
                             # break
@@ -528,8 +544,10 @@ def search_pattern(pattern_list, graph):
             iter_ret = _check_subgraph(iter_ret, m_subgraph, subgraph_idx, has_head)
         if has_one_no_head:
             logger.debug(
-            "Does not completely support this pattern: {} now, please check the output results."\
-            .format(pattern_list))
+                "Does not completely support this pattern: {} now, please check the output results.".format(
+                    pattern_list
+                )
+            )
         pattern_max_len = 1
         for each_ret in iter_ret:
             pattern_max_len = max(pattern_max_len, len(each_ret))
@@ -562,7 +580,9 @@ def search_pattern(pattern_list, graph):
         return m_main_chain
 
 
-def construct_node(node_name, op_type, input_tensors=None, output_tensors=None, attr=None):
+def construct_node(
+    node_name, op_type, input_tensors=None, output_tensors=None, attr=None
+):
     """Construct node with engine op_type.
 
     Args:
@@ -574,8 +594,8 @@ def construct_node(node_name, op_type, input_tensors=None, output_tensors=None, 
     Returns:
         new_node: Operator class
     """
-    from .ops.op import OPERATORS, Operator
-    from .ops.tensor import Tensor
+    from .ops.op import OPERATORS
+
     if op_type not in OPERATORS.keys():
         new_node = OPERATORS["OpAny"]()
     else:
@@ -586,11 +606,13 @@ def construct_node(node_name, op_type, input_tensors=None, output_tensors=None, 
         output_tensors = []
     if attr == None:
         attr = OrderedDict()
-    new_node.construct(node_name,
-                       op_type,
-                       input_tensors=input_tensors,
-                       output_tensors=output_tensors,
-                       attr=attr)
+    new_node.construct(
+        node_name,
+        op_type,
+        input_tensors=input_tensors,
+        output_tensors=output_tensors,
+        attr=attr,
+    )
     return new_node
 
 
@@ -653,8 +675,11 @@ def insert_pattern(target_node_names, new_nodes, graph):
             else:
                 # if not has extra input tensors
                 if len(exist_node_names) == (tail_id - head_id + 1):
-                    raise ValueError("The target nodes have node {} while graph has node {}."\
-                    .format(exist_node_names[i], graph.nodes[index].name))
+                    raise ValueError(
+                        "The target nodes have node {} while graph has node {}.".format(
+                            exist_node_names[i], graph.nodes[index].name
+                        )
+                    )
                 # if has extra input tensors
                 else:
                     index += 1
@@ -724,26 +749,31 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
     Note that the pattern after fusion (n->n / n->1)is must be sequence pattern like
     [a->b->c->d->e], or [a]. That means if one pattern is too complicated, or the pattern after
     fusion is too complicated, you had better decompose it.
-
     """
 
     def _get_pattern_info():
         """Search pattern and get the in_pattern match_result and info for out_pattern."""
-        in_pattern = mapping_dict['patterns']['in']
-        search_mode = mapping_dict['search_mode']
-        assert search_mode in ['op_type', 'node_name'], 'Unsupported mode'
+        in_pattern = mapping_dict["patterns"]["in"]
+        search_mode = mapping_dict["search_mode"]
+        assert search_mode in ["op_type", "node_name"], "Unsupported mode"
         in_match_result = []
-        if search_mode == 'op_type':
+        if search_mode == "op_type":
             in_match_result = search_pattern(in_pattern, graph)
             num_match = len(in_match_result)
 
             # WordEmbeddings and TokenTypeEmbeddings is same in some models.
             # Distinguish them by data size
             if num_match == 2 and pattern_name == "WordEmbeddings":
-                if len(in_match_result[0]) == 5 and in_match_result[0][-1][1] == "Gather":
+                if (
+                    len(in_match_result[0]) == 5
+                    and in_match_result[0][-1][1] == "Gather"
+                ):
                     gather0 = graph.get_node_by_name(in_match_result[0][1])
                     gather1 = graph.get_node_by_name(in_match_result[1][1])
-                    if gather0.input_tensors[0].data.size > gather1.input_tensors[0].data.size:
+                    if (
+                        gather0.input_tensors[0].data.size
+                        > gather1.input_tensors[0].data.size
+                    ):
                         in_match_result = [in_match_result[0]]
                     else:
                         in_match_result = [in_match_result[1]]
@@ -756,8 +786,9 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                     for name in name_list[:-1]:
                         node = graph.get_node_by_name(name)
                         if node.op_type == "Transpose" and (
-                                len(node.output_tensors[0].dest_op) > 1 or
-                                node.output_tensors[0].name in graph.output_tensors_name):
+                            len(node.output_tensors[0].dest_op) > 1
+                            or node.output_tensors[0].name in graph.output_tensors_name
+                        ):
                             keep_flag = False
                             break
                     if keep_flag:
@@ -769,11 +800,13 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                 for name_list in in_match_result:
                     first_matmul_node = graph.get_node_by_name(name_list[0])
                     last_matmul_node = graph.get_node_by_name(name_list[-2])
-                    if len(first_matmul_node.input_tensors) > 5 and \
-                        len(last_matmul_node.input_tensors) > 5 and \
-                            'output_dtype' in last_matmul_node.attr.keys() and \
-                                last_matmul_node.attr['output_dtype'] == 'u8':
-                                    new_in_match_result.append(name_list)
+                    if (
+                        len(first_matmul_node.input_tensors) > 5
+                        and len(last_matmul_node.input_tensors) > 5
+                        and "output_dtype" in last_matmul_node.attr.keys()
+                        and last_matmul_node.attr["output_dtype"] == "u8"
+                    ):
+                        new_in_match_result.append(name_list)
                 in_match_result = new_in_match_result
         else:
             # check whether the nodes exit or not
@@ -795,13 +828,13 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
         num_match = len(in_match_result)
 
         new_node_names = []
-        name_reference = mapping_dict['node_names']
+        name_reference = mapping_dict["node_names"]
         input_tensors = []
-        input_tensors_reference = mapping_dict['input_tensors']
+        input_tensors_reference = mapping_dict["input_tensors"]
         output_tensors = []
-        output_tensors_reference = mapping_dict['output_tensors']
+        output_tensors_reference = mapping_dict["output_tensors"]
         ret_old_nodes = []
-        returns_inference = mapping_dict['returns']
+        returns_inference = mapping_dict["returns"]
         for i in range(num_match):
             # get the node_names in out_pattern
             names = []
@@ -813,11 +846,12 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                     if num_match == 1:
                         names.append(tmp)
                     else:
-                        names.append(tmp + '_' + str(i))
+                        names.append(tmp + "_" + str(i))
                 else:
                     raise ValueError(
-                        'Do not support the set node_names types,it must be int or str,'\
-                            'rather than {}.'.format(type(tmp)))
+                        "Do not support the set node_names types,it must be int or str,"
+                        "rather than {}.".format(type(tmp))
+                    )
             new_node_names.append(names)
 
             # get the input_tensors in out_pattern
@@ -839,7 +873,9 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                             else:
                                 v = tmp_v[0]
                                 t0 = node.input_tensors[v]
-                                pre_node = graph.get_node_by_name(in_match_result[i][tmp_k - 1])
+                                pre_node = graph.get_node_by_name(
+                                    in_match_result[i][tmp_k - 1]
+                                )
                                 if t0.name == pre_node.output_tensors[0].name:
                                     v = tmp_v[1]
                             tmp.append(copy.deepcopy(node.input_tensors[v]))
@@ -848,8 +884,11 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                             tmp.append(copy.deepcopy(node.output_tensors[tmp_v[0]]))
                         else:
                             raise ValueError(
-                                'Do not support the set input_tensors types,'\
-                                    'it must be int or str, rather than {}.'.format(type(tmp_k)))
+                                "Do not support the set input_tensors types,"
+                                "it must be int or str, rather than {}.".format(
+                                    type(tmp_k)
+                                )
+                            )
 
                 in_tensors.append([tmp, dest])
             input_tensors.append(in_tensors)
@@ -868,9 +907,10 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                             node = graph.get_node_by_name(in_match_result[i][tmp_k])
                         else:
                             raise ValueError(
-                                'Do not support the set output_tensors types, it must be int,'\
-                                    'rather than {}.'.format(type(tmp_k)))
-                        assert len(tmp_v) == 1, 'Output tensor must be specified.'
+                                "Do not support the set output_tensors types, it must be int,"
+                                "rather than {}.".format(type(tmp_k))
+                            )
+                        assert len(tmp_v) == 1, "Output tensor must be specified."
                         tmp.append(copy.deepcopy(node.output_tensors[tmp_v[0]]))
                 out_tensors.append([tmp, dest])
             output_tensors.append(out_tensors)
@@ -881,12 +921,19 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                 ret_tmp.append(copy.deepcopy(node))
             ret_old_nodes.append(ret_tmp)
 
-        return (in_match_result, new_node_names, input_tensors, output_tensors, ret_old_nodes)
+        return (
+            in_match_result,
+            new_node_names,
+            input_tensors,
+            output_tensors,
+            ret_old_nodes,
+        )
 
     def _create_out_pattern(new_node_names, input_tensors_list, output_tensors_list):
         """Created the new nodes in out_pattern."""
         from .ops.tensor import Tensor
-        out_pattern = mapping_dict['patterns']['out']
+
+        out_pattern = mapping_dict["patterns"]["out"]
         # sequence = mapping_dict['sequence']
         sequence = True if len(out_pattern[0]) > 1 else False
         num_pattern = len(new_node_names)
@@ -908,17 +955,21 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                 num_tensors = input_tensors_list[i][j][1][1]
                 input_tensors = [0] * num_tensors
                 if pre_node is None:
-                    assert num_tensors == len(tensors),\
-                        'No pre node of {}, please supply the completed input_tensors.'.format(
-                            node_name)
+                    assert num_tensors == len(
+                        tensors
+                    ), "No pre node of {}, please supply the completed input_tensors.".format(
+                        node_name
+                    )
                     input_tensors = tensors
                 else:
-                    assert num_tensors == len(tensors) + 1,\
-                        'Only support the sequence pattern for now.'
+                    assert (
+                        num_tensors == len(tensors) + 1
+                    ), "Only support the sequence pattern for now."
                     for k in range(len(idx_tensors)):
                         input_tensors[idx_tensors[k]] = tensors[k]
                     input_tensors[input_tensors.index(0)] = copy.deepcopy(
-                        pre_node.output_tensors[0])
+                        pre_node.output_tensors[0]
+                    )
                 # set the output_tensors
                 tensors = output_tensors_list[i][j][0]
                 idx_tensors = output_tensors_list[i][j][1][0]
@@ -930,17 +981,23 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                     output_tensors = tensors
                 # has connections
                 else:
-                    assert num_tensors == 1, 'Only support op with one output_tensor for now.'
+                    assert (
+                        num_tensors == 1
+                    ), "Only support op with one output_tensor for now."
                     output_tensors = [
-                        Tensor(name=node_name + ':0',
-                               source_op=[node_name],
-                               dest_op=[new_node_names[i][j + 1]])
+                        Tensor(
+                            name=node_name + ":0",
+                            source_op=[node_name],
+                            dest_op=[new_node_names[i][j + 1]],
+                        )
                     ]
 
-                new_node = construct_node(node_name,
-                                          op_type,
-                                          input_tensors=input_tensors,
-                                          output_tensors=output_tensors)
+                new_node = construct_node(
+                    node_name,
+                    op_type,
+                    input_tensors=input_tensors,
+                    output_tensors=output_tensors,
+                )
                 one_p.append(new_node)
 
                 if sequence:
@@ -953,7 +1010,8 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
     def _replace_pattern(in_match_result, new_nodes, graph):
         """Replace the in_pattern with out_pattern."""
         assert len(in_match_result) == len(
-            new_nodes), 'out_pattern should have as some num as in_pattern in graph.'
+            new_nodes
+        ), "out_pattern should have as some num as in_pattern in graph."
         for i in range(len(in_match_result)):
             each_ret = in_match_result[i][:-1]
             insert_nodes = new_nodes[i]
@@ -964,10 +1022,17 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
     # 1. check the format of mapping_dict
     mapping_dict = pattern_mapping_conf_validation(mapping_dict)
     # 2. get the necessary info for out_pattern construction
-    in_match_result, new_node_names, input_tensors_list, output_tensors_list, \
-        ret_old_nodes = _get_pattern_info()
+    (
+        in_match_result,
+        new_node_names,
+        input_tensors_list,
+        output_tensors_list,
+        ret_old_nodes,
+    ) = _get_pattern_info()
     # 3. create the nodes in out_pattern
-    new_nodes = _create_out_pattern(new_node_names, input_tensors_list, output_tensors_list)
+    new_nodes = _create_out_pattern(
+        new_node_names, input_tensors_list, output_tensors_list
+    )
     # 4. remove the nodes in in_pattern, and insert the nodes in out_pattern
     graph = _replace_pattern(in_match_result, new_nodes, graph)
     # 5. return graph after pattern mapping
@@ -983,7 +1048,7 @@ def list2str(src_perm):
     Returns:
         ret: str, for example '1,2,3,4'
     """
-    ret = ','.join(str(i) for i in list(src_perm))
+    ret = ",".join(str(i) for i in list(src_perm))
     return ret
 
 
@@ -997,77 +1062,107 @@ def str2list(src_str):
         ret: list, for example [1,2,3,4]
     """
     ret = []
-    s_list = src_str.split(',')
+    s_list = src_str.split(",")
     ret = [int(i) for i in s_list]
     return ret
 
 
 def pattern_mapping_conf_validation(conf_dict):
     """The validation of the pattern mapping config."""
-    dict_schema = Schema({
-    'patterns' : Schema({
-        'in' : And(
-            list,
-            lambda s: all(Schema([(), (int, Or(str, Schema([str])))]).validate(p) for p in s),
-            lambda s: all((len(t)==2 for t in p[1:]) for p in s[1:]),
-            error='The in pattern must supply the node index and op_type, and only the head node'\
-            'in sub-chain can be empty.'
-        ),
-        'out': Schema([[(int, str)]], error='The out pattern must be straight chain.')
-    }),
-
-    'search_mode': Or('op_type', 'node_name', error='Only support op_type or node_name these '\
-                        'two modes'),
-
-    'node_names': Schema({
-        int: Or(int, str)
-    },  error='For node_names, the key is the out node index while the value is the old node ' \
-                'index or a specific name'),
-
-    'input_tensors': Schema({
-        int: And(
-            list,
-            lambda s: And(all(list for i in s), len(s)==2, error='The value in input_tensors ' \
-            'must be list and has length 2'),
-            lambda s: Or(
-                And(Schema([{Or(int, str): Schema([int])}]).validate(s[0]),
-                    lambda s: Schema([[int], int]).validate(s[1])),
-
-                And(len(s[0])==0, isinstance(s[0], list),
-                    lambda s: Schema([[], int]).validate(s[1])),
-
-                error='The first element can be empty list or contains several dict for telling'\
-                ' where can get the input_tensor of new_node, while the second element can be'\
-                ' empty list or contains several int number for telling the input_tensor index '\
-                'of new_node.'
-            )
-        )
-    }),
-
-    'output_tensors': Schema({
-        int: And(
-            list,
-            lambda s: And(all(list for i in s), len(s)==2, error='The value in output_tensors ' \
-            'must be list and has length 2'),
-            lambda s: Or(
-                And(Schema([{int: Schema([int])}]).validate(s[0]),
-                    lambda s: Schema([[int], int]).validate(s[1])),
-
-                And(len(s[0])==0, isinstance(s[0], list),
-                    lambda s: Schema([[], int]).validate(s[1])),
-
-                error='The first element can be empty list or contains several dict for telling'\
-                ' where can get the input_tensor of new_node, while the second element can be'\
-                ' empty list or contains several int number for telling the input_tensor index '\
-                'of new_node.'
-            )
-        )
-    }),
-
-    'returns': Or(Schema([]), Schema([int]), error='Returns can be empty list or contains some ' \
-     'old node index for set attr of new node later'),
-
-    },  ignore_extra_keys=True)
+    dict_schema = Schema(
+        {
+            "patterns": Schema(
+                {
+                    "in": And(
+                        list,
+                        lambda s: all(
+                            Schema([(), (int, Or(str, Schema([str])))]).validate(p)
+                            for p in s
+                        ),
+                        lambda s: all((len(t) == 2 for t in p[1:]) for p in s[1:]),
+                        error="The in pattern must supply the node index and op_type, and only the head node"
+                        "in sub-chain can be empty.",
+                    ),
+                    "out": Schema(
+                        [[(int, str)]], error="The out pattern must be straight chain."
+                    ),
+                }
+            ),
+            "search_mode": Or(
+                "op_type",
+                "node_name",
+                error="Only support op_type or node_name these " "two modes",
+            ),
+            "node_names": Schema(
+                {int: Or(int, str)},
+                error="For node_names, the key is the out node index while the value is the old node "
+                "index or a specific name",
+            ),
+            "input_tensors": Schema(
+                {
+                    int: And(
+                        list,
+                        lambda s: And(
+                            all(list for i in s),
+                            len(s) == 2,
+                            error="The value in input_tensors "
+                            "must be list and has length 2",
+                        ),
+                        lambda s: Or(
+                            And(
+                                Schema([{Or(int, str): Schema([int])}]).validate(s[0]),
+                                lambda s: Schema([[int], int]).validate(s[1]),
+                            ),
+                            And(
+                                len(s[0]) == 0,
+                                isinstance(s[0], list),
+                                lambda s: Schema([[], int]).validate(s[1]),
+                            ),
+                            error="The first element can be empty list or contains several dict for telling"
+                            " where can get the input_tensor of new_node, while the second element can be"
+                            " empty list or contains several int number for telling the input_tensor index "
+                            "of new_node.",
+                        ),
+                    )
+                }
+            ),
+            "output_tensors": Schema(
+                {
+                    int: And(
+                        list,
+                        lambda s: And(
+                            all(list for i in s),
+                            len(s) == 2,
+                            error="The value in output_tensors "
+                            "must be list and has length 2",
+                        ),
+                        lambda s: Or(
+                            And(
+                                Schema([{int: Schema([int])}]).validate(s[0]),
+                                lambda s: Schema([[int], int]).validate(s[1]),
+                            ),
+                            And(
+                                len(s[0]) == 0,
+                                isinstance(s[0], list),
+                                lambda s: Schema([[], int]).validate(s[1]),
+                            ),
+                            error="The first element can be empty list or contains several dict for telling"
+                            " where can get the input_tensor of new_node, while the second element can be"
+                            " empty list or contains several int number for telling the input_tensor index "
+                            "of new_node.",
+                        ),
+                    )
+                }
+            ),
+            "returns": Or(
+                Schema([]),
+                Schema([int]),
+                error="Returns can be empty list or contains some "
+                "old node index for set attr of new node later",
+            ),
+        },
+        ignore_extra_keys=True,
+    )
 
     return dict_schema.validate(conf_dict)
 
@@ -1090,15 +1185,15 @@ class LazyImport(object):
             self.module = importlib.import_module(self.module_name)
             mod = getattr(self.module, name)
         except:
-            spec = importlib.util.find_spec(str(self.module_name + '.' + name))
+            spec = importlib.util.find_spec(str(self.module_name + "." + name))
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
         return mod
 
     def __call__(self, *args, **kwargs):
         """The __call__ function."""
-        function_name = self.module_name.split('.')[-1]
-        module_name = self.module_name.split(f'.{function_name}')[0]
+        function_name = self.module_name.split(".")[-1]
+        module_name = self.module_name.split(f".{function_name}")[0]
         self.module = importlib.import_module(module_name)
         function = getattr(self.module, function_name)
         return function(*args, **kwargs)
@@ -1111,38 +1206,38 @@ def get_model_fwk_name(model):
         model (string): framework name that supported by Neural Engine,
                         if there's no available fwk info, then return 'NA'.
     """
-    onnx = LazyImport('onnx')
-    tf = LazyImport('tensorflow')
-    torch = LazyImport('torch')
+    onnx = LazyImport("onnx")
+    tf = LazyImport("tensorflow")
+    torch = LazyImport("torch")
 
     def _is_onnxruntime(model):
         """Check if the model is onnxruntime."""
         if isinstance(model, str):
             try:
                 graph = onnx.load(model)
-                assert (len(graph.graph.node) != 0)
+                assert len(graph.graph.node) != 0
             except:
-                return 'NA'
+                return "NA"
             else:
-                return 'onnxruntime'
-        elif 'onnx' in str(type(model)):
-            return 'onnxruntime'
-        return 'NA'
+                return "onnxruntime"
+        elif "onnx" in str(type(model)):
+            return "onnxruntime"
+        return "NA"
 
     def _is_tensorflow(model):
         """Check if the model is tensorflow."""
         try:
             if isinstance(model, str):
                 graph_def = tf.compat.v1.GraphDef()
-                with open(model, 'rb') as f:
+                with open(model, "rb") as f:
                     graph_def.ParseFromString(f.read())
             else:
                 graph = model.graph_def
         except:
             pass
         else:
-            return 'tensorflow'
-        return 'NA'
+            return "tensorflow"
+        return "NA"
 
     def _is_torch(model):
         """Check if the model is torch."""
@@ -1150,52 +1245,59 @@ def get_model_fwk_name(model):
             try:
                 torch.jit.load(model)
             except:
-                return 'NA'
+                return "NA"
             else:
-                return 'torch'
-        elif 'torch' in str(type(model)):
-            return 'torch'
-        return 'NA'
+                return "torch"
+        elif "torch" in str(type(model)):
+            return "torch"
+        return "NA"
 
     def _is_neural_engine(model):
         """Check if the model is neural engine."""
         if model and isinstance(model, str) and os.path.isdir(model):
-            if os.path.exists(os.path.join(model, 'conf.yaml')) and os.path.exists(os.path.join(model, 'model.bin')):
-                return 'neural engine'
+            if os.path.exists(os.path.join(model, "conf.yaml")) and os.path.exists(
+                os.path.join(model, "model.bin")
+            ):
+                return "neural engine"
             else:
                 logger.error("Please Input yaml and bin for neural engine.")
-                return 'NA'
+                return "NA"
         else:
-            return 'NA'
+            return "NA"
 
     if isinstance(model, str):
         absmodel = os.path.abspath(os.path.expanduser(model))
-        assert os.path.exists(absmodel) or os.path.exists(absmodel+'.pb'), \
-            'invalid input path, the file does not exist!'
+        assert os.path.exists(absmodel) or os.path.exists(
+            absmodel + ".pb"
+        ), "invalid input path, the file does not exist!"
 
     checker = [_is_onnxruntime, _is_neural_engine, _is_tensorflow, _is_torch]
     for handler in checker:
         fwk_name = handler(model)
-        if fwk_name != 'NA':
+        if fwk_name != "NA":
             break
-    assert fwk_name != 'NA', 'Framework is not detected correctly from model format.'
+    assert fwk_name != "NA", "Framework is not detected correctly from model format."
 
     return fwk_name
 
-def set_environ_var(key, val='1'):
+
+def set_environ_var(key, val="1"):
     """Set an env var."""
-    assert type(val) == str, 'Environment variable must be string!'
+    assert type(val) == str, "Environment variable must be string!"
     os.environ[key] = val
+
 
 def set_environ_vars(kvs):
     """Set a list of env vars."""
     for key, val in kvs.items():
         set_environ_var(key, val)
 
+
 def del_environ_var(key):
     """Delete an env var."""
     if key in os.environ:
         del os.environ[key]
+
 
 def del_environ_vars(keys):
     """Delete a list of env vars."""

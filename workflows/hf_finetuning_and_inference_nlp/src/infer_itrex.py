@@ -13,25 +13,21 @@
 # and limitations under the License.
 #
 
-import numpy as np
-import torch
 from os import path
+
+import torch
+from infer import DlsaInference
+from transformers import (
+    AutoModelForSequenceClassification,
+)
+from utils import compute_metrics, save_performance_metrics
+
 from intel_extension_for_transformers.transformers import (
     QuantizationConfig,
     metrics,
     objectives,
 )
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-from transformers import (
-    AutoModelForSequenceClassification,
-    DataCollatorWithPadding,
-    Trainer,
-)
-
-from infer import DlsaInference
-from utils import PredsLabels, compute_metrics, save_performance_metrics
 
 
 class ItrexInfer(DlsaInference):
@@ -87,18 +83,23 @@ class ItrexInfer(DlsaInference):
             self.model = self.trainer.quantize(
                 quant_config=q_config, calib_dataloader=eval_dataloader
             )
-            
+
         else:
             error_msg = f"Now only support fp32, bf16 and int8.Your input datatype is {self.args.dtype_inf}."
             raise ValueError(error_msg)
 
     def _do_infer(self):
-        
-        if self.args.dtype_inf == "bf16" and not (self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
-                    raise ValueError("BF16 with both IPEX and OneDNN disabled is currently not implemented...")
+        if self.args.dtype_inf == "bf16" and not (
+            self.training_args.use_ipex or vars(self.args).get("use_onednn", True)
+        ):
+            raise ValueError(
+                "BF16 with both IPEX and OneDNN disabled is currently not implemented..."
+            )
 
-        with torch.backends.mkldnn.flags(enabled = self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
-
+        with torch.backends.mkldnn.flags(
+            enabled=self.training_args.use_ipex
+            or vars(self.args).get("use_onednn", True)
+        ):
             if self.training_args.do_predict:
                 with self.track("Inference"):
                     if not self.args.save_detailed_performance_metrics:
@@ -107,5 +108,11 @@ class ItrexInfer(DlsaInference):
                             f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
                         )
                     else:
-                        save_performance_metrics(self.trainer, self.test_data,
-                                            path.join(self.training_args.output_dir, self.args.inference_output) )
+                        save_performance_metrics(
+                            self.trainer,
+                            self.test_data,
+                            path.join(
+                                self.training_args.output_dir,
+                                self.args.inference_output,
+                            ),
+                        )

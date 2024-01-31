@@ -128,8 +128,8 @@ You can also save and load your quantized low bit model by the below code.
 ```python
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 
-model_path = "meta-llama/Llama-2-7b-chat-hf" # your_pytorch_model_path_or_HF_model_name
-saved_dir = "4_bit_llama2" # your_saved_model_dir
+model_path = "meta-llama/Llama-2-7b-chat-hf"  # your_pytorch_model_path_or_HF_model_name
+saved_dir = "4_bit_llama2"  # your_saved_model_dir
 # quant
 model = AutoModelForCausalLM.from_pretrained(model_path, load_in_4bit=True, use_llm_runtime=False)
 # save quant model
@@ -198,12 +198,13 @@ output = user_model.generate(inputs)
 
 5. Saving and Loading quantized model
 ```python
-
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 
-qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True, device_map="xpu", trust_remote_code=True)
+qmodel = AutoModelForCausalLM.from_pretrained(
+    "Qwen/Qwen-7B", load_in_4bit=True, device_map="xpu", trust_remote_code=True
+)
 
-# Please note, saving model should be executed before ipex.optimize_transformers function is called. 
+# Please note, saving model should be executed before ipex.optimize_transformers function is called.
 model.save_pretrained("saved_dir")
 
 # Load model
@@ -213,7 +214,6 @@ loaded_model = AutoModelForCausalLM.from_pretrained("saved_dir", trust_remote_co
 loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torch.float16, woq=True, device="xpu")
 
 output = loaded_model.generate(inputs)
-
 ```
 
 6. You can directly use [example script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py)

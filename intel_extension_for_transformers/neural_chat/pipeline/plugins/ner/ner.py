@@ -15,32 +15,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
-import spacy
-from .utils.utils import (
-    enforce_stop_tokens,
-    get_current_time
-)
-from .utils.process_text import process_time, process_entities
-
 import logging
+import time
+
+import spacy
+
+from .utils.process_text import process_entities, process_time
+from .utils.utils import enforce_stop_tokens, get_current_time
+
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
 
-class NamedEntityRecognition():
-    """
-        NER class to inference with fp32 or bf16 llm models
-        Set bf16=True if you want to inference with bf16 model.
-    """
+
+class NamedEntityRecognition:
+    """NER class to inference with fp32 or bf16 llm models
+    Set bf16=True if you want to inference with bf16 model."""
 
     def __init__(self, spacy_model="en_core_web_lg") -> None:
         # initialize tokenizer and models
         self.nlp = spacy.load(spacy_model)
         logging.info("[NER info] Spacy model initialized.")
-
 
     def ner_inference(self, response):
         start_time = time.time()
@@ -52,7 +49,8 @@ class NamedEntityRecognition():
 
         new_doc = self.nlp(response)
         result = process_entities(response, new_doc, mentioned_time)
-        logging.info("[NER info] Inference time consumption: %s", time.time() - start_time)
+        logging.info(
+            "[NER info] Inference time consumption: %s", time.time() - start_time
+        )
 
         return result
-

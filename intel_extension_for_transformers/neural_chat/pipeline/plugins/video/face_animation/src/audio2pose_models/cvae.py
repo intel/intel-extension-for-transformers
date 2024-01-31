@@ -16,10 +16,11 @@
 # limitations under the License.
 
 import torch
-import torch.nn.functional as F
 from torch import nn
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.audio2pose_models.res_unet import ResUnet
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.res_unet import (
+    ResUnet,
+)
 
 
 def class2onehot(idx, class_num):
@@ -43,10 +44,20 @@ class CVAE(nn.Module):
         self.latent_size = latent_size
 
         self.encoder = ENCODER(
-            encoder_layer_sizes, latent_size, num_classes, audio_emb_in_size, audio_emb_out_size, seq_len
+            encoder_layer_sizes,
+            latent_size,
+            num_classes,
+            audio_emb_in_size,
+            audio_emb_out_size,
+            seq_len,
         )
         self.decoder = DECODER(
-            decoder_layer_sizes, latent_size, num_classes, audio_emb_in_size, audio_emb_out_size, seq_len
+            decoder_layer_sizes,
+            latent_size,
+            num_classes,
+            audio_emb_in_size,
+            audio_emb_out_size,
+            seq_len,
         )
 
     def reparameterize(self, mu, logvar):
@@ -63,16 +74,22 @@ class CVAE(nn.Module):
         return self.decoder(batch)
 
     def test(self, batch):
-        """
-        class_id = batch['class']
+        """class_id = batch['class']
         z = torch.randn([class_id.size(0), self.latent_size]).to(class_id.device)
-        batch['z'] = z
-        """
+        batch['z'] = z."""
         return self.decoder(batch)
 
 
 class ENCODER(nn.Module):
-    def __init__(self, layer_sizes, latent_size, num_classes, audio_emb_in_size, audio_emb_out_size, seq_len):
+    def __init__(
+        self,
+        layer_sizes,
+        latent_size,
+        num_classes,
+        audio_emb_in_size,
+        audio_emb_out_size,
+        seq_len,
+    ):
         super().__init__()
 
         self.resunet = ResUnet()
@@ -82,7 +99,9 @@ class ENCODER(nn.Module):
         self.MLP = nn.Sequential()
         layer_sizes[0] += latent_size + seq_len * audio_emb_out_size + 6
         for i, (in_size, out_size) in enumerate(zip(layer_sizes[:-1], layer_sizes[1:])):
-            self.MLP.add_module(name="L{:d}".format(i), module=nn.Linear(in_size, out_size))
+            self.MLP.add_module(
+                name="L{:d}".format(i), module=nn.Linear(in_size, out_size)
+            )
             self.MLP.add_module(name="A{:d}".format(i), module=nn.ReLU())
 
         self.linear_means = nn.Linear(layer_sizes[-1], latent_size)
@@ -121,7 +140,15 @@ class ENCODER(nn.Module):
 
 
 class DECODER(nn.Module):
-    def __init__(self, layer_sizes, latent_size, num_classes, audio_emb_in_size, audio_emb_out_size, seq_len):
+    def __init__(
+        self,
+        layer_sizes,
+        latent_size,
+        num_classes,
+        audio_emb_in_size,
+        audio_emb_out_size,
+        seq_len,
+    ):
         super().__init__()
 
         self.resunet = ResUnet()
@@ -130,8 +157,12 @@ class DECODER(nn.Module):
 
         self.MLP = nn.Sequential()
         input_size = latent_size + seq_len * audio_emb_out_size + 6
-        for i, (in_size, out_size) in enumerate(zip([input_size] + layer_sizes[:-1], layer_sizes)):
-            self.MLP.add_module(name="L{:d}".format(i), module=nn.Linear(in_size, out_size))
+        for i, (in_size, out_size) in enumerate(
+            zip([input_size] + layer_sizes[:-1], layer_sizes)
+        ):
+            self.MLP.add_module(
+                name="L{:d}".format(i), module=nn.Linear(in_size, out_size)
+            )
             if i + 1 < len(layer_sizes):
                 self.MLP.add_module(name="A{:d}".format(i), module=nn.ReLU())
             else:

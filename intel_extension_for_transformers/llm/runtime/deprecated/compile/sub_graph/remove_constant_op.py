@@ -14,26 +14,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The RemoveConstantOP Pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
-from .. import graph_utils as util
 import copy
 
+from .pattern import Pattern, pattern_registry
 
-@pattern_registry(pattern_type='RemoveConstantOP')
+
+@pattern_registry(pattern_type="RemoveConstantOP")
 class RemoveConstantOP(Pattern):
     """The RemoveConstantOP pattern.
 
     Remove Constant OP
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         remove_list = []
         for node in model.nodes:
-            if node.op_type == 'Constant':
+            if node.op_type == "Constant":
                 if node.output_tensors[0].name in model.input_tensors_name:
                     remove_list.append(node.name)
                     continue

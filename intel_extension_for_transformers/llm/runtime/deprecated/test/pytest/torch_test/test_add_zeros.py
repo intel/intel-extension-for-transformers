@@ -15,17 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import unittest
-import sys
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-import os
-import shutil
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
+
 
 class Net(nn.Module):
     def __init__(self):
@@ -36,6 +37,7 @@ class Net(nn.Module):
         zeros = torch.zeros(x.shape)
         x = x + zeros
         return self.gelu(x)
+
 
 class TestTorchOP(unittest.TestCase):
     @classmethod
@@ -50,19 +52,20 @@ class TestTorchOP(unittest.TestCase):
         n = Net()
         example_in = torch.rand(3, 256)
         traced_model = torch.jit.trace(n, example_in)
-        
-        torch.jit.save(traced_model, '{}.pt'.format(file_name))
+
+        torch.jit.save(traced_model, "{}.pt".format(file_name))
         ref_out = traced_model(example_in).detach().numpy()
-        
-        graph = compile('{}.pt'.format(file_name))
+
+        graph = compile("{}.pt".format(file_name))
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + "/conf.yaml", file_name + "/model.bin")
         out = newgraph.inference([example_in.numpy()])
 
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
-        os.remove('{}.pt'.format(file_name))
+        os.remove("{}.pt".format(file_name))
         # shutil.rmtree(file_name)
+
 
 if __name__ == "__main__":
     unittest.main()

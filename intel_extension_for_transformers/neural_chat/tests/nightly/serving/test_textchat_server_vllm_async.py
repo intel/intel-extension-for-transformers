@@ -16,34 +16,47 @@
 # limitations under the License.
 
 import unittest
+
+import torch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from intel_extension_for_transformers.neural_chat import build_chatbot
-from intel_extension_for_transformers.neural_chat import PipelineConfig
-from intel_extension_for_transformers.neural_chat.config import ServingConfig, VllmEngineParams
-from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
-import torch
+
+from intel_extension_for_transformers.neural_chat import PipelineConfig, build_chatbot
+from intel_extension_for_transformers.neural_chat.config import (
+    ServingConfig,
+    VllmEngineParams,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import (
+    ChatCompletionRequest,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import (
+    router,
+)
 
 app = FastAPI()
 app.include_router(router)
 client = TestClient(app)
+
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         if not torch.cuda.is_available():
             self.skipTest("Only test this UT case on Nvidia GPU.")
         serving_config = ServingConfig(
-                            framework="vllm", framework_config=VllmEngineParams(
-                                use_async_engine=True,  # Start the Async vllm Engine
-                                tensor_parallel_size = 1,
-                                quantization=None,
-                                gpu_memory_utilization=0.9,
-                                swap_space=4,
-                                enforce_eager=False,
-                                max_context_len_to_capture=8192
-                            ))
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m", serving_config=serving_config)
+            framework="vllm",
+            framework_config=VllmEngineParams(
+                use_async_engine=True,  # Start the Async vllm Engine
+                tensor_parallel_size=1,
+                quantization=None,
+                gpu_memory_utilization=0.9,
+                swap_space=4,
+                enforce_eager=False,
+                max_context_len_to_capture=8192,
+            ),
+        )
+        config = PipelineConfig(
+            model_name_or_path="facebook/opt-125m", serving_config=serving_config
+        )
         chatbot = build_chatbot(config)
         router.set_chatbot(chatbot)
 
@@ -54,8 +67,9 @@ class UnitTest(unittest.TestCase):
             temperature=0.8,
             top_p=0.95,
         )
-        response =  client.post("/v1/chat/completions", json=chat_request.dict())
+        response = client.post("/v1/chat/completions", json=chat_request.dict())
         assert response.status_code == 200
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -15,31 +15,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import warnings
+import importlib
+import logging
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from datasets import Dataset
-from transformers import DataCollator, PreTrainedModel, PreTrainedTokenizerBase, Trainer, TrainingArguments
-from transformers.trainer_callback import TrainerCallback
-import importlib
 from peft import PeftModel, get_peft_model, prepare_model_for_kbit_training
-import time
-import logging
+from transformers import (
+    DataCollator,
+    PreTrainedModel,
+    PreTrainedTokenizerBase,
+    Trainer,
+    TrainingArguments,
+)
+
 from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 logger = logging.getLogger(__name__)
 
+
 def is_peft_available():
     return importlib.util.find_spec("peft") is not None
 
+
 def disable_dropout_in_model(model: torch.nn.Module) -> None:
     for module in model.modules():
-        if isinstance(module, torch.nn.Dropout): # pragma: no cover
+        if isinstance(module, torch.nn.Dropout):  # pragma: no cover
             module.p = 0
+
 
 class DPOTrainer(Trainer):
     r"""
@@ -49,9 +56,9 @@ class DPOTrainer(Trainer):
         model (`transformers.PreTrainedModel`):
             The model to train, preferably an `AutoModelForSequenceClassification`.
         ref_model (`PreTrainedModelWrapper`):
-            Hugging Face transformer model with a casual language modelling head. 
+            Hugging Face transformer model with a casual language modelling head.
             Used for implicit reward computation and loss. If no
-            reference model is provided, the trainer will 
+            reference model is provided, the trainer will
             create a reference model with the same architecture as the model to be optimized.
         beta (`float`, defaults to 0.1):
             The beta factor in DPO loss. Higher beta means less divergence from the initial policy.
@@ -99,7 +106,9 @@ class DPOTrainer(Trainer):
         peft_config: Optional[Dict] = None,
         disable_dropout: bool = True,
     ):
-        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
+        model = prepare_model_for_kbit_training(
+            model, use_gradient_checkpointing=args.gradient_checkpointing
+        )
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
 
@@ -107,7 +116,7 @@ class DPOTrainer(Trainer):
 
         self.ref_model = ref_model
 
-        if disable_dropout: # pragma: no cover
+        if disable_dropout:  # pragma: no cover
             disable_dropout_in_model(model)
             disable_dropout_in_model(self.ref_model)
 
@@ -128,12 +137,14 @@ class DPOTrainer(Trainer):
             tokenizer=tokenizer,
         )
 
-        if self.is_deepspeed_enabled: # pragma: no cover
+        if self.is_deepspeed_enabled:  # pragma: no cover
             # Read more about the issue in https://github.com/huggingface/trl/pull/687
             self.ref_model = self.accelerator._prepare_deepspeed(self.ref_model)[0]
             self.ref_model.eval()
         else:
-            self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
+            self.ref_model = self.accelerator.prepare_model(
+                self.ref_model, evaluation_mode=True
+            )
 
     def dpo_loss(
         self,
@@ -142,16 +153,19 @@ class DPOTrainer(Trainer):
         reference_chosen_logps: torch.FloatTensor,
         reference_rejected_logps: torch.FloatTensor,
     ) -> Tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]:
-        """Compute the DPO loss for a batch of policy and reference model log probabilities.
-        """
+        """Compute the DPO loss for a batch of policy and reference model log probabilities."""
         pi_logratios = policy_chosen_logps - policy_rejected_logps
         ref_logratios = reference_chosen_logps - reference_rejected_logps
 
         logits = pi_logratios - ref_logratios
 
         losses = -F.logsigmoid(self.beta * logits)
-        chosen_rewards = self.beta * (policy_chosen_logps - reference_chosen_logps).detach()
-        rejected_rewards = self.beta * (policy_rejected_logps - reference_rejected_logps).detach()
+        chosen_rewards = (
+            self.beta * (policy_chosen_logps - reference_chosen_logps).detach()
+        )
+        rejected_rewards = (
+            self.beta * (policy_rejected_logps - reference_rejected_logps).detach()
+        )
 
         return losses, chosen_rewards, rejected_rewards
 
@@ -173,8 +187,10 @@ class DPOTrainer(Trainer):
             A tensor of shape (batch_size,) containing the average/sum log
                probabilities of the given labels under the given logits.
         """
-        if logits.shape[:-1] != labels.shape: # pragma: no cover
-            raise ValueError("Logits (batch and sequence length dim) and labels must have the same shape.")
+        if logits.shape[:-1] != labels.shape:  # pragma: no cover
+            raise ValueError(
+                "Logits (batch and sequence length dim) and labels must have the same shape."
+            )
 
         labels = labels[:, 1:].clone()
         logits = logits[:, :-1, :]
@@ -183,13 +199,17 @@ class DPOTrainer(Trainer):
         # dummy token; we'll ignore the losses on these tokens later
         labels[labels == self.label_pad_token_id] = 0
 
-        per_token_logps = torch.gather(logits.log_softmax(-1), dim=2, index=labels.unsqueeze(2)).squeeze(2)
+        per_token_logps = torch.gather(
+            logits.log_softmax(-1), dim=2, index=labels.unsqueeze(2)
+        ).squeeze(2)
 
         return (per_token_logps * loss_mask).sum(-1)
 
     def dpo_forward(
         self, model: nn.Module, batch: Dict[str, Union[List, torch.LongTensor]]
-    ) -> Tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]:
+    ) -> Tuple[
+        torch.FloatTensor, torch.FloatTensor, torch.FloatTensor, torch.FloatTensor
+    ]:
         """Run the given model on the given batch of inputs, concatenating the chosen and rejected inputs together.
 
         We do this to avoid doing two forward passes, because it's faster for FSDP.
@@ -249,7 +269,7 @@ class DPOTrainer(Trainer):
         )
         reward_accuracies = (chosen_rewards > rejected_rewards).float()
 
-        prefix = "eval_" if train_eval == "eval" else "" # pragma: no cover
+        prefix = "eval_" if train_eval == "eval" else ""  # pragma: no cover
         metrics[f"{prefix}rewards/chosen"] = chosen_rewards.mean()
         metrics[f"{prefix}rewards/rejected"] = rejected_rewards.mean()
         metrics[f"{prefix}rewards/accuracies"] = reward_accuracies.mean()
@@ -267,31 +287,31 @@ class DPOTrainer(Trainer):
         inputs: Dict[str, Union[torch.Tensor, Any]],
         return_outputs=False,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict[str, torch.Tensor]]]:
-
         loss, metrics = self.get_batch_metrics(model, inputs, train_eval="train")
 
         # force log the metrics
-        if self.accelerator.is_main_process: # pragma: no cover
+        if self.accelerator.is_main_process:  # pragma: no cover
             self.store_metrics(metrics, train_eval="train")
 
-        if return_outputs: # pragma: no cover
+        if return_outputs:  # pragma: no cover
             return (loss, metrics)
         return loss
 
-    def store_metrics(self, metrics: Dict[str, float], train_eval: Literal["train", "eval"] = "train") -> None:
+    def store_metrics(
+        self, metrics: Dict[str, float], train_eval: Literal["train", "eval"] = "train"
+    ) -> None:
         for key, value in metrics.items():
             self._stored_metrics[train_eval][key].append(value)
 
     def log(self, logs: Dict[str, float]) -> None:
-        """
-        Log `logs` on the various objects watching training, including stored metrics.
+        """Log `logs` on the various objects watching training, including stored metrics.
 
         Args:
             logs (`Dict[str, float]`):
                 The values to log.
         """
         # logs either has 'loss' or 'eval_loss'
-        train_eval = "train" if "loss" in logs else "eval" # pragma: no cover
+        train_eval = "train" if "loss" in logs else "eval"  # pragma: no cover
         # Add averaged stored metrics to logs
         for key, metrics in self._stored_metrics[train_eval].items():
             logs[key] = torch.tensor(metrics).mean().item()
@@ -300,12 +320,12 @@ class DPOTrainer(Trainer):
         return super().log(logs)
 
 
-if is_hpu_available: # pragma: no cover
+if is_hpu_available:  # pragma: no cover
     # pylint: disable=E0611
-    from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0401
+    from optimum.habana import GaudiConfig, GaudiTrainer  # pylint: disable=E0401
+
     class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):
-        r"""Initialize habana
-        """
+        r"""Initialize habana."""
 
         def __init__(
             self,
@@ -323,7 +343,9 @@ if is_hpu_available: # pragma: no cover
             peft_config: Optional[Dict] = None,
             disable_dropout: bool = True,
         ):
-            model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
+            model = prepare_model_for_kbit_training(
+                model, use_gradient_checkpointing=args.gradient_checkpointing
+            )
             model = get_peft_model(model, peft_config)
             model.print_trainable_parameters()
 
@@ -331,7 +353,7 @@ if is_hpu_available: # pragma: no cover
 
             self.ref_model = ref_model
 
-            if disable_dropout: # pragma: no cover
+            if disable_dropout:  # pragma: no cover
                 disable_dropout_in_model(model)
                 disable_dropout_in_model(self.ref_model)
 
@@ -357,15 +379,19 @@ if is_hpu_available: # pragma: no cover
                 eval_dataset=eval_dataset,
                 tokenizer=tokenizer,
             )
-            if self.is_deepspeed_enabled: # pragma: no cover
+            if self.is_deepspeed_enabled:  # pragma: no cover
                 # Read more about the issue in https://github.com/huggingface/trl/pull/687
                 self.ref_model = self.accelerator._prepare_deepspeed(self.ref_model)[0]
             else:
-                self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
+                self.ref_model = self.accelerator.prepare_model(
+                    self.ref_model, evaluation_mode=True
+                )
             self.ref_model.eval()
 
             if args.use_hpu_graphs_for_training:
-                from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0611, E0401
+                from habana_frameworks.torch.hpu import (
+                    wrap_in_hpu_graph,
+                )  # pylint: disable=E0611, E0401
+
                 ref_model = self.accelerator.unwrap_model(self.ref_model)
                 ref_model = wrap_in_hpu_graph(ref_model)
-

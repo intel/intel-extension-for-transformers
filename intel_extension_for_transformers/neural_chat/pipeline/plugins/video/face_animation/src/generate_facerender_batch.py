@@ -16,11 +16,12 @@
 # limitations under the License.
 
 import os
+
 import numpy as np
-from PIL import Image
-from skimage import io, img_as_float32, transform
-import torch
 import scipy.io as scio
+import torch
+from PIL import Image
+from skimage import img_as_float32, transform
 
 
 def get_facerender_data(
@@ -69,14 +70,20 @@ def get_facerender_data(
 
     if "full" in preprocess.lower():
         generated_3dmm = np.concatenate(
-            [generated_3dmm, np.repeat(source_semantics[:, 70:], generated_3dmm.shape[0], axis=0)], axis=1
+            [
+                generated_3dmm,
+                np.repeat(source_semantics[:, 70:], generated_3dmm.shape[0], axis=0),
+            ],
+            axis=1,
         )
 
     # generated_3dmm: (100, 70)
     # source_semantics[:, 64:]: (1, 6)
     # generated_3dmm.shape[0]: 100
     if still_mode:
-        generated_3dmm[:, 64:] = np.repeat(source_semantics[:, 64:], generated_3dmm.shape[0], axis=0)
+        generated_3dmm[:, 64:] = np.repeat(
+            source_semantics[:, 64:], generated_3dmm.shape[0], axis=0
+        )
 
     with open(txt_path + ".txt", "w") as f:
         for coeff in generated_3dmm:
@@ -88,7 +95,9 @@ def get_facerender_data(
     frame_num = generated_3dmm.shape[0]
     data["frame_num"] = frame_num
     for frame_idx in range(frame_num):
-        target_semantics = transform_semantic_target(generated_3dmm, frame_idx, semantic_radius)
+        target_semantics = transform_semantic_target(
+            generated_3dmm, frame_idx, semantic_radius
+        )
         target_semantics_list.append(target_semantics)
 
     remainder = frame_num % batch_size
@@ -96,10 +105,12 @@ def get_facerender_data(
         for _ in range(batch_size - remainder):
             target_semantics_list.append(target_semantics)
 
-    target_semantics_np = np.array(target_semantics_list)  # frame_num 70 semantic_radius*2+1
-    target_semantics_np = target_semantics_np.reshape((
-        batch_size, -1, target_semantics_np.shape[-2], target_semantics_np.shape[-1]
-    ))
+    target_semantics_np = np.array(
+        target_semantics_list
+    )  # frame_num 70 semantic_radius*2+1
+    target_semantics_np = target_semantics_np.reshape(
+        (batch_size, -1, target_semantics_np.shape[-2], target_semantics_np.shape[-1])
+    )
     data["target_semantics_list"] = torch.FloatTensor(target_semantics_np)
     data["video_name"] = video_name
     data["audio_path"] = audio_path

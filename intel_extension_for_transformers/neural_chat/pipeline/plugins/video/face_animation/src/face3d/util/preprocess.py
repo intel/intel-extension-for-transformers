@@ -14,13 +14,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""This script contains the image preprocessing code for Deep3DFaceRecon_pytorch."""
 
-"""This script contains the image preprocessing code for Deep3DFaceRecon_pytorch
-"""
+import warnings
 
 import numpy as np
 from PIL import Image
-import warnings
 
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -70,7 +69,9 @@ def resize_n_crop_img(img, lm, t, s, target_size=224.0, mask=None):
         mask = mask.crop((left, up, right, below))
 
     lm = np.stack([lm[:, 0] - t[0] + w0 / 2, lm[:, 1] - t[1] + h0 / 2], axis=1) * s
-    lm = lm - np.reshape(np.array([(w / 2 - target_size / 2), (h / 2 - target_size / 2)]), [1, 2])
+    lm = lm - np.reshape(
+        np.array([(w / 2 - target_size / 2), (h / 2 - target_size / 2)]), [1, 2]
+    )
 
     return img, lm, mask
 
@@ -119,7 +120,9 @@ def align_img(img, lm, lm3D, mask=None, target_size=224.0, rescale_factor=102.0)
     s = rescale_factor / s
 
     # processing the image
-    img_new, lm_new, mask_new = resize_n_crop_img(img, lm, t, s, target_size=target_size, mask=mask)
+    img_new, lm_new, mask_new = resize_n_crop_img(
+        img, lm, t, s, target_size=target_size, mask=mask
+    )
     trans_params = np.array([w0, h0, s, t[0], t[1]])
 
     return trans_params, img_new, lm_new, mask_new

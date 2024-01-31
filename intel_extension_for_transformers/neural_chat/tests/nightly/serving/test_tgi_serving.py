@@ -15,22 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import unittest
+from unittest.mock import patch
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import patch
-from intel_extension_for_transformers.neural_chat.server.restful.tgi_api import router
 
+from intel_extension_for_transformers.neural_chat.server.restful.tgi_api import router
 
 app = FastAPI()
 app.include_router(router)
 client = TestClient(app)
 
 
-@patch('intel_extension_for_transformers.neural_chat.server.restful.tgi_api.InferenceClient.text_generation')
+@patch(
+    "intel_extension_for_transformers.neural_chat.server.restful.tgi_api.InferenceClient.text_generation"
+)
 class TestTGI(unittest.TestCase):
-
     def setUp(self):
         return super().setUp()
 
@@ -41,8 +42,8 @@ class TestTGI(unittest.TestCase):
         mock_text_generation.return_value = "Mocked text generation result."
         request_data = {
             "inputs": "Test text generation inputs.",
-            "parameters": {"max_new_tokens":10},
-            "stream": False
+            "parameters": {"max_new_tokens": 10},
+            "stream": False,
         }
         response = client.post("/v1/tgi", json=request_data)
 
@@ -51,12 +52,12 @@ class TestTGI(unittest.TestCase):
             best_of=1,
             do_sample=True,
             max_new_tokens=10,
-            repetition_penalty=1.03, 
-            temperature=0.5, 
-            top_k=10, 
-            top_p=0.95, 
+            repetition_penalty=1.03,
+            temperature=0.5,
+            top_k=10,
+            top_p=0.95,
             typical_p=0.95,
-            stream=False
+            stream=False,
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), "Mocked text generation result.")
@@ -65,7 +66,7 @@ class TestTGI(unittest.TestCase):
         mock_text_generation.return_value = "Mocked text generation result."
         request_data = {
             "inputs": "Test text generation inputs.",
-            "parameters": {"max_new_tokens":10}
+            "parameters": {"max_new_tokens": 10},
         }
         response = client.post("/v1/tgi/generate", json=request_data)
 
@@ -74,12 +75,12 @@ class TestTGI(unittest.TestCase):
             best_of=1,
             do_sample=True,
             max_new_tokens=10,
-            repetition_penalty=1.03, 
-            temperature=0.5, 
-            top_k=10, 
-            top_p=0.95, 
+            repetition_penalty=1.03,
+            temperature=0.5,
+            top_k=10,
+            top_p=0.95,
             typical_p=0.95,
-            stream=False
+            stream=False,
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), "Mocked text generation result.")
@@ -88,10 +89,11 @@ class TestTGI(unittest.TestCase):
         def mock_generator():
             yield "Mocked text generation output part 1."
             yield "Mocked text generation output part 2."
+
         mock_text_generation.return_value = mock_generator()
         request_data = {
             "inputs": "Test text generation inputs.",
-            "parameters": {"max_new_tokens":10}
+            "parameters": {"max_new_tokens": 10},
         }
         response = client.post("/v1/tgi/generate_stream", json=request_data)
 

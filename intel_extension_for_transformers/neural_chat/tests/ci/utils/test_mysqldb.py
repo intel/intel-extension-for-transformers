@@ -17,29 +17,31 @@
 
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from intel_extension_for_transformers.neural_chat.utils.database.mysqldb import MysqlDb
 
 
 class TestMysqlDb(unittest.TestCase):
-
-    @patch('pymysql.connect')
+    @patch("pymysql.connect")
     def test_mysql_db_methods(self, mock_connect):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
         mock_connect.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
 
-        mock_cursor.fetchone.return_value = {'image_id': '1'}
-        mock_cursor.fetchall.return_value = [{'image_id': '1'}, {'image_id': '2'}]
+        mock_cursor.fetchone.return_value = {"image_id": "1"}
+        mock_cursor.fetchall.return_value = [{"image_id": "1"}, {"image_id": "2"}]
         mock_cursor.execute.return_value = True
 
         db = MysqlDb()
         one_result = db.fetch_one("SELECT * FROM table WHERE id = 1")
         all_result = db.fetch_all("SELECT * FROM table")
-        insert_result = db.insert("INSERT INTO table mock_table VALUES ('mock_value')", None)
+        insert_result = db.insert(
+            "INSERT INTO table mock_table VALUES ('mock_value')", None
+        )
 
-        self.assertEqual(one_result,  {'image_id': '1'})
+        self.assertEqual(one_result, {"image_id": "1"})
         self.assertEqual(len(all_result), 2)
         self.assertTrue(insert_result)
 

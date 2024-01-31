@@ -14,16 +14,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
-from ..graph_utils import list2str
+
 
 # Fused_op Reshape, ExpandDims+Sub+Mul
 # This pattern is used for dealing with input_mask originally in bert model
-@operator_registry(operator_type='PaddingSequence')
+@operator_registry(operator_type="PaddingSequence")
 class PaddingSequence(Operator):
     """Register the PaddingSequence operator."""
 
@@ -34,7 +32,7 @@ class PaddingSequence(Operator):
     def set_attr(self, framework, node):
         """Extract the node attr."""
         if framework == "torch":
-            self._attr['dst_shape'] = "-1,1,1,-1"
-            self._attr['dims'] = 1
-            self._attr['padding_value'] = node.inputsAt(1).toIValue().item()
+            self._attr["dst_shape"] = "-1,1,1,-1"
+            self._attr["dims"] = 1
+            self._attr["padding_value"] = node.inputsAt(1).toIValue().item()
             del self.input_tensors[1]

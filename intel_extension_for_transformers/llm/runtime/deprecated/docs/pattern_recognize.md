@@ -17,7 +17,20 @@ Our pattern recognition function supports the pattern which is not sequence and 
 Pattern recognition function utilizes general rules to represent and search the pattern. We use a combination of index and op_type to recruit nodes and several lists to indicate different straight chains. For example, the pattern representation of the `LayerNorm` pattern above can be like this:
 
 ```python
-ln_pattern = [[(0, 'Mean'), (1, 'SquaredDifference'), (2, 'Mean'), (3, ['Add', 'AddV2']), (4, 'Rsqrt'), (5, 'Mul'), (7, 'Mul'), (8, 'Sub'), (9, ['Add', 'AddV2'])], [(5, 'Mul'), (6, 'Mul'), (9, ['Add', 'AddV2'])]]
+ln_pattern = [
+    [
+        (0, "Mean"),
+        (1, "SquaredDifference"),
+        (2, "Mean"),
+        (3, ["Add", "AddV2"]),
+        (4, "Rsqrt"),
+        (5, "Mul"),
+        (7, "Mul"),
+        (8, "Sub"),
+        (9, ["Add", "AddV2"]),
+    ],
+    [(5, "Mul"), (6, "Mul"), (9, ["Add", "AddV2"])],
+]
 ```
 
 First, due to computation order, we set indexes for each node in the `LayerNorm` pattern. These indexes also supply the locations for splicing sub-chains with the main chain. You can set the index number by yourself as long as the calculation order is correct (We recommend the number starts from 0 and grows recursively for conciseness and intuition).
@@ -47,14 +60,20 @@ The pattern recognition function would first parse the pattern representation li
 The [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py) has `search_straight_pattern` API for searching sequence patterns. It receives `input_pattern` and `graph` parameters and exploits `DFS` algorithm to find eligible results. The `input_pattern` is a list containing several op_type from the step above. For example, it could be one like this:
 
 ```python
-['MatMul', 'BiasAdd', ['Add', 'AddV2']]
+["MatMul", "BiasAdd", ["Add", "AddV2"]]
 ```
 
 The `graph` is the intermediate graph of `compile`. This API returns matched node_names results list. For example, if the intermediate graph has 24 layers and each layer has a `['MatMul', 'BiasAdd', ['Add', 'AddV2']]` pattern, then the length is 24. Each match pattern result is still a list containing the node names, and the last element is the op_type list corresponding to the former node names.
 
 ```python
 # the input_pattern is [A, B, C]
-ret = [[A_node_name_1, B_node_name_1, C_node_name_1, [A, B, C]], [A_node_name_2, B_node_name_2, C_node_name_2, [A, B, C]], ..., [A_node_name_n, B_node_name_n, C_node_name_n, [A, B, C]], ...]
+ret = [
+    [A_node_name_1, B_node_name_1, C_node_name_1, [A, B, C]],
+    [A_node_name_2, B_node_name_2, C_node_name_2, [A, B, C]],
+    ...,
+    [A_node_name_n, B_node_name_n, C_node_name_n, [A, B, C]],
+    ...,
+]
 ```
 
 Assume you want to find the match results of pattern `['MatMul', 'BiasAdd', ['Add', 'AddV2']]` in bert_large TensorFlow model.
@@ -62,9 +81,10 @@ Assume you want to find the match results of pattern `['MatMul', 'BiasAdd', ['Ad
 ```python
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import COMPILES
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils import search_straight_pattern
-graph = COMPILES['loader']()(bert_large_model_path)
-graph = COMPILES['extractor']()(graph)
-input_pattern = ['MatMul', 'BiasAdd', ['Add', 'AddV2']]
+
+graph = COMPILES["loader"]()(bert_large_model_path)
+graph = COMPILES["extractor"]()(graph)
+input_pattern = ["MatMul", "BiasAdd", ["Add", "AddV2"]]
 ret = search_straight_pattern(input_pattern, graph)
 print(ret)
 ```
@@ -86,9 +106,23 @@ In the end, here is the example shows how to get the `LayerNorm` pattern matched
 ```python
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import COMPILES
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils import search_pattern
-graph = COMPILES['loader']()(bert_large_model_path)
-graph = COMPILES['extractor']()(graph)
-ln_pattern = [[(0, 'Mean'), (1, 'SquaredDifference'), (2, 'Mean'), (3, ['Add', 'AddV2']), (4, 'Rsqrt'), (5, 'Mul'), (7, 'Mul'), (8, 'Sub'), (9, ['Add', 'AddV2'])], [(5, 'Mul'), (6, 'Mul'), (9, ['Add', 'AddV2'])]]
+
+graph = COMPILES["loader"]()(bert_large_model_path)
+graph = COMPILES["extractor"]()(graph)
+ln_pattern = [
+    [
+        (0, "Mean"),
+        (1, "SquaredDifference"),
+        (2, "Mean"),
+        (3, ["Add", "AddV2"]),
+        (4, "Rsqrt"),
+        (5, "Mul"),
+        (7, "Mul"),
+        (8, "Sub"),
+        (9, ["Add", "AddV2"]),
+    ],
+    [(5, "Mul"), (6, "Mul"), (9, ["Add", "AddV2"])],
+]
 ret = search_pattern(ln_pattern, graph)
 print(len(ret))
 print(ret)

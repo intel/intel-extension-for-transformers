@@ -18,13 +18,15 @@
 import os
 import unittest
 
+from datasets import DatasetDict, load_dataset
 from transformers import AutoTokenizer
-from datasets import load_dataset, Dataset, DatasetDict
+
 import intel_extension_for_transformers.llm.finetuning.data_utils as data_utils
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
 MODEL_NAME = "hf-internal-testing/tiny-random-GPTJForCausalLM"
+
 
 class TestChatDataset(unittest.TestCase):
     @classmethod
@@ -46,16 +48,15 @@ class TestChatDataset(unittest.TestCase):
         self.sample_datasets["train"] = raw_datasets["train_sft"].select(range(100))
 
     def test_process(self):
-
-        raw_datasets, preprocess_fn  = data_utils.preprocess_dataset(self.sample_datasets, self.tokenizer,
-                self.test_args, self.test_args)
+        raw_datasets, preprocess_fn = data_utils.preprocess_dataset(
+            self.sample_datasets, self.tokenizer, self.test_args, self.test_args
+        )
 
         column_names = list(raw_datasets["train"].features)
 
         tokenized_datasets = raw_datasets.map(
-                preprocess_fn,
-                batched=True,
-                remove_columns=column_names)
+            preprocess_fn, batched=True, remove_columns=column_names
+        )
 
         self.assertTrue(isinstance(tokenized_datasets, DatasetDict))
 
@@ -80,16 +81,15 @@ class TestCompletionDataset(unittest.TestCase):
         self.sample_datasets["train"] = raw_datasets["train"].select(range(100))
 
     def test_process(self):
-
-        raw_datasets, preprocess_fn  = data_utils.preprocess_dataset(self.sample_datasets, self.tokenizer,
-                self.test_args, self.test_args)
+        raw_datasets, preprocess_fn = data_utils.preprocess_dataset(
+            self.sample_datasets, self.tokenizer, self.test_args, self.test_args
+        )
 
         column_names = list(raw_datasets["train"].features)
 
         tokenized_datasets = raw_datasets.map(
-                preprocess_fn,
-                batched=True,
-                remove_columns=column_names)
+            preprocess_fn, batched=True, remove_columns=column_names
+        )
 
         self.assertTrue(isinstance(tokenized_datasets, DatasetDict))
 
@@ -114,16 +114,15 @@ class TestSlimOrcaDataset(unittest.TestCase):
         self.sample_datasets["train"] = raw_datasets["train"].select(range(100))
 
     def test_process(self):
-
-        raw_datasets, preprocess_fn  = data_utils.preprocess_dataset(self.sample_datasets, self.tokenizer,
-                self.test_args, self.test_args)
+        raw_datasets, preprocess_fn = data_utils.preprocess_dataset(
+            self.sample_datasets, self.tokenizer, self.test_args, self.test_args
+        )
 
         column_names = list(raw_datasets["train"].features)
 
         tokenized_datasets = raw_datasets.map(
-                preprocess_fn,
-                batched=True,
-                remove_columns=column_names)
+            preprocess_fn, batched=True, remove_columns=column_names
+        )
 
         self.assertTrue(isinstance(tokenized_datasets, DatasetDict))
 
@@ -148,16 +147,15 @@ class TestSummarizationDataset(unittest.TestCase):
         self.sample_datasets["train"] = raw_datasets["train"].select(range(100))
 
     def test_process(self):
-
-        raw_datasets, preprocess_fn  = data_utils.preprocess_dataset(self.sample_datasets, self.tokenizer,
-                self.test_args, self.test_args)
+        raw_datasets, preprocess_fn = data_utils.preprocess_dataset(
+            self.sample_datasets, self.tokenizer, self.test_args, self.test_args
+        )
 
         column_names = list(raw_datasets["train"].features)
 
         tokenized_datasets = raw_datasets.map(
-                preprocess_fn,
-                batched=True,
-                remove_columns=column_names)
+            preprocess_fn, batched=True, remove_columns=column_names
+        )
 
         self.assertTrue(isinstance(tokenized_datasets, DatasetDict))
 

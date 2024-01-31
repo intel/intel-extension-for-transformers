@@ -15,11 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class MappingNet(nn.Module):
@@ -29,11 +26,18 @@ class MappingNet(nn.Module):
         self.layer = layer
         nonlinearity = nn.LeakyReLU(0.1)
 
-        self.first = nn.Sequential(torch.nn.Conv1d(coeff_nc, descriptor_nc, kernel_size=7, padding=0, bias=True))
+        self.first = nn.Sequential(
+            torch.nn.Conv1d(
+                coeff_nc, descriptor_nc, kernel_size=7, padding=0, bias=True
+            )
+        )
 
         for i in range(layer):
             net = nn.Sequential(
-                nonlinearity, torch.nn.Conv1d(descriptor_nc, descriptor_nc, kernel_size=3, padding=0, dilation=3)
+                nonlinearity,
+                torch.nn.Conv1d(
+                    descriptor_nc, descriptor_nc, kernel_size=3, padding=0, dilation=3
+                ),
             )
             setattr(self, "encoder" + str(i), net)
 

@@ -19,7 +19,12 @@ import functools
 
 from torch.nn.parallel.data_parallel import DataParallel
 
-__all__ = ["CallbackContext", "execute_replication_callbacks", "DataParallelWithCallback", "patch_replication_callback"]
+__all__ = [
+    "CallbackContext",
+    "execute_replication_callbacks",
+    "DataParallelWithCallback",
+    "patch_replication_callback",
+]
 
 
 class CallbackContext(object):
@@ -27,8 +32,7 @@ class CallbackContext(object):
 
 
 def execute_replication_callbacks(modules):
-    """
-    Execute an replication callback `__data_parallel_replicate__` on each module created by original replication.
+    """Execute an replication callback `__data_parallel_replicate__` on each module created by original replication.
 
     The callback will be invoked with arguments `__data_parallel_replicate__(ctx, copy_id)`
 
@@ -50,8 +54,7 @@ def execute_replication_callbacks(modules):
 
 
 class DataParallelWithCallback(DataParallel):
-    """
-    Data Parallel with a replication callback.
+    """Data Parallel with a replication callback.
 
     An replication callback `__data_parallel_replicate__` of each module will be invoked after being created by
     original `replicate` function.
@@ -70,8 +73,7 @@ class DataParallelWithCallback(DataParallel):
 
 
 def patch_replication_callback(data_parallel):
-    """
-    Monkey-patch an existing `DataParallel` object. Add the replication callback.
+    """Monkey-patch an existing `DataParallel` object. Add the replication callback.
     Useful when you have customized `DataParallel` implementation.
 
     Examples:

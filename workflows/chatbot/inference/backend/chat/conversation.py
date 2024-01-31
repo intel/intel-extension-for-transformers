@@ -1,10 +1,21 @@
-"""
-Conversation prompt templates.
-"""
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Conversation prompt templates."""
 
 import dataclasses
-from enum import auto, IntEnum
-from typing import List, Any, Dict
+from enum import IntEnum, auto
+from typing import Dict, List
 
 
 class SeparatorStyle(IntEnum):
@@ -802,6 +813,7 @@ register_conv_template(
     )
 )
 
+
 def get_default_conv_template(model_path: str) -> Conversation:
     if "mpt" in model_path:
         return get_conv_template("mpt-7b-chat")
@@ -811,6 +823,7 @@ def get_default_conv_template(model_path: str) -> Conversation:
         return get_conv_template("alpaca")
     else:
         return get_conv_template("zero_shot")
+
 
 if __name__ == "__main__":
     conv = get_conv_template("vicuna_v1.1")

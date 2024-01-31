@@ -10,6 +10,7 @@ The Neural Chat API provides a convenient way to build and use chatbot models. H
 
 ```python
 from intel_extension_for_transformers.neural_chat import build_chatbot
+
 chatbot = build_chatbot()
 ```
 

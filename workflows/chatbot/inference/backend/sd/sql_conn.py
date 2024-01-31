@@ -1,28 +1,51 @@
-import pymysql
-from threading import Condition
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import logging
 import threading
 import time
-from config import SQL_HOST, SQL_PORT, SQL_USER, SQL_PASSWORD, SQL_DB, SQL_TABLE
-import logging
+
+import pymysql
+from config import SQL_DB, SQL_HOST, SQL_PASSWORD, SQL_PORT, SQL_TABLE, SQL_USER
 
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger("mysql")
 
 time_to_sleep = 1000
 
-class MysqlWorker():
+
+class MysqlWorker:
     def __init__(self):
         # threading.Thread.__init__(self)
 
-        self.conn = pymysql.connect(host=SQL_HOST,port=SQL_PORT,user=SQL_USER,passwd=SQL_PASSWORD,db=SQL_DB)
+        self.conn = pymysql.connect(
+            host=SQL_HOST, port=SQL_PORT, user=SQL_USER, passwd=SQL_PASSWORD, db=SQL_DB
+        )
         self.cursor = self.conn.cursor()
 
         self.lock = threading.Lock()
 
-        self.save_sql = "insert into {} (user,timestamp,prompt,num_inference_steps,guidance_scale,seed,status,task_type,ip,port) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(SQL_TABLE)
-        self.update_sql = "UPDATE {} SET status=%s,execution_time=%s WHERE user=%s and timestamp=%s;".format(SQL_TABLE)
+        self.save_sql = "insert into {} (user,timestamp,prompt,num_inference_steps,guidance_scale,seed,status,task_type,ip,port) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(
+            SQL_TABLE
+        )
+        self.update_sql = "UPDATE {} SET status=%s,execution_time=%s WHERE user=%s and timestamp=%s;".format(
+            SQL_TABLE
+        )
 
-        self.completed_sql = "select max(id) as id from {} where status='completed'".format(SQL_TABLE)
+        self.completed_sql = (
+            "select max(id) as id from {} where status='completed'".format(SQL_TABLE)
+        )
         self.waiting_sql = "select id from {} where user='{}' and status='waiting'"
 
     def re_connection(self):
@@ -34,29 +57,34 @@ class MysqlWorker():
 
         LOGGER.info("re_connection.")
 
-        self.conn = pymysql.connect(host=SQL_HOST,port=SQL_PORT,user=SQL_USER,passwd=SQL_PASSWORD,db=SQL_DB)
+        self.conn = pymysql.connect(
+            host=SQL_HOST, port=SQL_PORT, user=SQL_USER, passwd=SQL_PASSWORD, db=SQL_DB
+        )
         self.cursor = self.conn.cursor()
 
     def run(self):
         # check connection status
         while True:
             time.sleep(time_to_sleep)
-            """
-            LOGGER.info("ping mysql.")
+            """LOGGER.info("ping mysql.")
             self.conn.ping(reconnect=True)
-            
+
             if not self._ping():
                 self.re_connection()
             """
 
     def _ping(self):
         try:
-            self.cursor.execute('select 1;')
+            self.cursor.execute("select 1;")
             LOGGER.debug(self.cursor.fetchall())
             return True
 
         except pymysql.OperationalError as e:
-            LOGGER.warn('Cannot connect to mysql - retrying in {} seconds'.format(self.time_to_sleep))
+            LOGGER.warn(
+                "Cannot connect to mysql - retrying in {} seconds".format(
+                    self.time_to_sleep
+                )
+            )
             LOGGER.exception(e)
             return False
 
@@ -81,7 +109,7 @@ class MysqlWorker():
             result = self.cursor.execute(self.update_sql, values)
             self.conn.commit()
         except pymysql.OperationalError as e:
-            LOGGER.info('Cannot update to mysql, will ping reconnect')
+            LOGGER.info("Cannot update to mysql, will ping reconnect")
             LOGGER.exception(e)
             self.conn.ping(reconnect=True)
             self.cursor = self.conn.cursor()
@@ -89,9 +117,8 @@ class MysqlWorker():
             self.conn.commit()
         finally:
             self.lock.release()
-        
-        return result
 
+        return result
 
     def insert(self, *values):
         LOGGER.info("save to sql")
@@ -103,7 +130,7 @@ class MysqlWorker():
             result = self.cursor.executemany(query=self.save_sql, args=args)
             self.conn.commit()
         except pymysql.OperationalError as e:
-            LOGGER.info('Cannot insert to mysql, will ping reconnect')
+            LOGGER.info("Cannot insert to mysql, will ping reconnect")
             LOGGER.exception(e)
             self.conn.ping(reconnect=True)
             self.cursor = self.conn.cursor()
@@ -111,8 +138,9 @@ class MysqlWorker():
             self.conn.commit()
         finally:
             self.lock.release()
-        
+
         return result
+
 
 mysql = MysqlWorker()
 # mysql.start()

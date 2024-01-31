@@ -16,10 +16,11 @@
 # limitations under the License.
 
 import argparse
+
 import torch
 from peft import PeftModel
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
 
 def apply_lora(base_model_path, lora_path):
     print(f"Loading the base model from {base_model_path}")
@@ -40,6 +41,7 @@ def apply_lora(base_model_path, lora_path):
 
     return base, model, base_tokenizer
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-model-path", type=str, required=True)
@@ -48,6 +50,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    base, target, base_tokenizer = apply_lora(args.base_model_path, args.lora_model_path)
+    base, target, base_tokenizer = apply_lora(
+        args.base_model_path, args.lora_model_path
+    )
     target.save_pretrained(args.output_path)
     base_tokenizer.save_pretrained(args.output_path)

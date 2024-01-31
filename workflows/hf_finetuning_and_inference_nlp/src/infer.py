@@ -14,9 +14,8 @@
 #
 
 
-from datasets import load_dataset, Features, Value, ClassLabel
+from datasets import ClassLabel, Features, Value, load_dataset
 from transformers import AutoTokenizer
-
 from utils import Benchmark
 
 
@@ -51,7 +50,7 @@ class DlsaInference(object):
             self.tokenize_data = False
             self._preprocess()
             self._load_model()
-    
+
     def e2e_infer_only(self, filename):
         with self.track("Inference Only Run"):
             self.load_tokenizer = False
@@ -137,7 +136,9 @@ class DlsaInference(object):
                     )
 
             if self.tokenize_data:
-                max_seq_len = min(self.args.max_seq_len, self.tokenizer.model_max_length)
+                max_seq_len = min(
+                    self.args.max_seq_len, self.tokenizer.model_max_length
+                )
 
                 with self.track("----Tokenize + Extract Features"):
 

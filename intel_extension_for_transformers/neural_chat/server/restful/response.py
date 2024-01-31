@@ -16,10 +16,11 @@
 # limitations under the License.
 
 import time
+
 import shortuuid
+
 # pylint: disable=E0611
 from pydantic import BaseModel, Field
-from fastapi.responses import StreamingResponse
 
 
 class ResponseBaseModel(BaseModel):

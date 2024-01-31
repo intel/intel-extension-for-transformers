@@ -15,9 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
-from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 import unittest
+
+from intel_extension_for_transformers.neural_chat import PipelineConfig, build_chatbot
+
 
 class TestCodeLlamaModel(unittest.TestCase):
     def setUp(self):
@@ -28,11 +29,13 @@ class TestCodeLlamaModel(unittest.TestCase):
 
     def test_code_gen(self):
         config = PipelineConfig(
-            model_name_or_path="/tf_dataset2/models/nlp_toolkit/CodeLlama-7b-hf")
+            model_name_or_path="/tf_dataset2/models/nlp_toolkit/CodeLlama-7b-hf"
+        )
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("def print_hello_world():")
         print(result)
         self.assertIn("Hello World", str(result))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,30 +14,36 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Config: provide config classes for optimization processes."""
 
-import yaml
 from enum import Enum
-from neural_compressor.conf.config import (
-    Distillation_Conf, Pruner, Pruning_Conf, Quantization_Conf
-)
-from neural_compressor.conf.dotdict import DotDict, deep_set
-from .utils.metrics import Metric
-from .utils.objectives import Objective, performance
-from .quantization import QuantizationMode, SUPPORTED_QUANT_MODE
-from .distillation import (
-    Criterion, DistillationCriterionMode, SUPPORTED_DISTILLATION_CRITERION_MODE
-)
 from typing import List, Union
 from xmlrpc.client import boolean
 
+import yaml
+from neural_compressor.conf.config import (
+    Distillation_Conf,
+    Pruner,
+    Pruning_Conf,
+    Quantization_Conf,
+)
+from neural_compressor.conf.dotdict import DotDict, deep_set
+
+from .distillation import (
+    SUPPORTED_DISTILLATION_CRITERION_MODE,
+    Criterion,
+    DistillationCriterionMode,
+)
+from .quantization import SUPPORTED_QUANT_MODE, QuantizationMode
+from .utils.metrics import Metric
+from .utils.objectives import Objective, performance
 
 WEIGHTS_NAME = "pytorch_model.bin"
 
 
 class Provider(Enum):
     """Optimization functionalities provider: INC or NNCF."""
+
     INC = "inc"
 
 
@@ -51,22 +57,31 @@ def check_value(name, src, supported_type, supported_value=[]):  # pragma: no co
                 self._datatype = datatype
     """
     if isinstance(src, list) and any([not isinstance(i, supported_type) for i in src]):
-        assert False, ("Type of {} items should be {} but not {}".format(
-            name, str(supported_type), [type(i) for i in src]))
+        assert False, "Type of {} items should be {} but not {}".format(
+            name, str(supported_type), [type(i) for i in src]
+        )
     elif not isinstance(src, list) and not isinstance(src, supported_type):
-        assert False, ("Type of {} should be {} but not {}".format(
-            name, str(supported_type), type(src)))
+        assert False, "Type of {} should be {} but not {}".format(
+            name, str(supported_type), type(src)
+        )
 
     if len(supported_value) > 0:
         if isinstance(src, str) and src not in supported_value:
-            assert False, ("{} is not in supported {}: {}. Skip setting it.".format(
-                src, name, str(supported_value)))
-        elif isinstance(src, list) and all([isinstance(i, str) for i in src]) and \
-            any([i not in supported_value for i in src]):
-            assert False, ("{} is not in supported {}: {}. Skip setting it.".format(
-                src, name, str(supported_value)))
+            assert False, "{} is not in supported {}: {}. Skip setting it.".format(
+                src, name, str(supported_value)
+            )
+        elif (
+            isinstance(src, list)
+            and all([isinstance(i, str) for i in src])
+            and any([i not in supported_value for i in src])
+        ):
+            assert False, "{} is not in supported {}: {}. Skip setting it.".format(
+                src, name, str(supported_value)
+            )
 
     return True
+
+
 def constructor_register(cls):
     yaml_key = "!{}".format(cls.__name__)
 
@@ -108,6 +123,7 @@ class DynamicLengthConfig(object):
         latency_constraint: Latency constraint used in evolution search
         evo_eval_metric: The metric name used in evolution search
     """
+
     def __init__(
         self,
         max_length: int = None,
@@ -127,7 +143,7 @@ class DynamicLengthConfig(object):
         num_cpus: int = 48,
         distributed_world_size: int = 5,
         latency_constraint: bool = True,
-        evo_eval_metric = 'eval_f1'
+        evo_eval_metric="eval_f1",
     ):
         """Init a DynamicLengthConfig object."""
         super().__init__()
@@ -181,6 +197,7 @@ class QuantizationConfig(object):
             'optypes_to_exclude_output_quant': don't quantize output of specified optypes
             'dedicated_qdq_pair': whether dedicate QDQ pair, only valid for onnxrt_trt_ep.
     """
+
     def __init__(
         self,
         framework: str = "pytorch",
@@ -233,9 +250,10 @@ class QuantizationConfig(object):
     def approach(self, approach):
         """Set the quantization approach."""
         approach = approach.upper()
-        assert approach in SUPPORTED_QUANT_MODE, \
-            f"quantization approach: {approach} is not support!" + \
-            "PostTrainingStatic, PostTrainingDynamic and QuantizationAwareTraining are supported!"
+        assert approach in SUPPORTED_QUANT_MODE, (
+            f"quantization approach: {approach} is not support!"
+            + "PostTrainingStatic, PostTrainingDynamic and QuantizationAwareTraining are supported!"
+        )
         self.inc_config.usr_cfg.quantization.approach = QuantizationMode[approach].value
 
     @property
@@ -270,15 +288,19 @@ class QuantizationConfig(object):
         """Set the metrics."""
         self._metrics = metrics
         rel_or_abs = {True: "relative", False: "absolute"}
-        assert isinstance(metrics[0] if isinstance(metrics, list) else metrics, Metric), \
-            "metric should be a Metric class!"
+        assert isinstance(
+            metrics[0] if isinstance(metrics, list) else metrics, Metric
+        ), "metric should be a Metric class!"
         if isinstance(metrics, Metric) or len(metrics) == 1:
             self.inc_config.usr_cfg.tuning.accuracy_criterion = {
                 rel_or_abs[metrics[0].is_relative]
-                if isinstance(metrics, list) else rel_or_abs[metrics.is_relative]:
-                metrics[0].criterion if isinstance(metrics, list) else metrics.criterion,
-                "higher_is_better": metrics[0].greater_is_better if isinstance(metrics, list) else
-                metrics.greater_is_better
+                if isinstance(metrics, list)
+                else rel_or_abs[metrics.is_relative]: metrics[0].criterion
+                if isinstance(metrics, list)
+                else metrics.criterion,
+                "higher_is_better": metrics[0].greater_is_better
+                if isinstance(metrics, list)
+                else metrics.greater_is_better,
             }
         else:
             weights = [metric.weight_ratio for metric in metrics]
@@ -286,17 +308,19 @@ class QuantizationConfig(object):
                 weight = 1 / len(metrics)
                 for metric in metrics:
                     metric.weight_ratio = weight
-            else:   # pragma: no cover
+            else:  # pragma: no cover
                 assert all(weights), "Please set the weight ratio for all metrics!"
 
-            assert all(metric.is_relative == metrics[0].is_relative for metric in metrics), \
-                "Unsupported different is_relative for different metric now, will support soon!"
-            assert all(metric.criterion == metrics[0].criterion for metric in metrics), \
-                "Unsupported different criterion for different metric now, will support soon!"
+            assert all(
+                metric.is_relative == metrics[0].is_relative for metric in metrics
+            ), "Unsupported different is_relative for different metric now, will support soon!"
+            assert all(
+                metric.criterion == metrics[0].criterion for metric in metrics
+            ), "Unsupported different criterion for different metric now, will support soon!"
 
             self.inc_config.usr_cfg.tuning.accuracy_criterion = {
                 rel_or_abs[metrics[0].is_relative]: metrics[0].criterion,
-                "higher_is_better": metrics[0].greater_is_better
+                "higher_is_better": metrics[0].greater_is_better,
             }
 
     @property
@@ -307,8 +331,12 @@ class QuantizationConfig(object):
     @framework.setter
     def framework(self, framework):
         """Set the framework."""
-        assert framework in ["pytorch", "pytorch_fx", "pytorch_ipex", "tensorflow"], \
-            "framework: {} is not support!".format(framework)
+        assert framework in [
+            "pytorch",
+            "pytorch_fx",
+            "pytorch_ipex",
+            "tensorflow",
+        ], "framework: {} is not support!".format(framework)
         self.inc_config.usr_cfg.model.framework = framework
 
     @property
@@ -321,8 +349,11 @@ class QuantizationConfig(object):
         """Set the objectives."""
         self._objectives = objectives
         if isinstance(objectives, Objective) or len(objectives) == 1:
-            self.inc_config.usr_cfg.tuning.objective = objectives.name \
-                if isinstance(objectives, Objective) else objectives[0].name
+            self.inc_config.usr_cfg.tuning.objective = (
+                objectives.name
+                if isinstance(objectives, Objective)
+                else objectives[0].name
+            )
         else:
             weights = [objective.weight_ratio for objective in objectives]
             if not any(weights):
@@ -334,7 +365,9 @@ class QuantizationConfig(object):
 
             self.inc_config.usr_cfg.tuning.multi_objective = {
                 "objective": [objective.name for objective in objectives],
-                "higher_is_better": [objective.greater_is_better for objective in objectives],
+                "higher_is_better": [
+                    objective.greater_is_better for objective in objectives
+                ],
                 "weight": [objective.weight_ratio for objective in objectives],
             }
 
@@ -346,8 +379,12 @@ class QuantizationConfig(object):
     @strategy.setter
     def strategy(self, strategy):
         """Set the strategy."""
-        assert strategy in ["basic", "bayesian", "mse", "mse_v2"], \
-            "strategy: {} is not support!".format(strategy)
+        assert strategy in [
+            "basic",
+            "bayesian",
+            "mse",
+            "mse_v2",
+        ], "strategy: {} is not support!".format(strategy)
         self.inc_config.usr_cfg.tuning.strategy.name = strategy
         if strategy == "mse_v2":
             self.inc_config.usr_cfg.tuning.strategy_kwargs = {"confidence_batches": 1}
@@ -402,7 +439,9 @@ class QuantizationConfig(object):
     @performance_only.setter
     def performance_only(self, performance_only):
         """Set the boolean whether to use performance only."""
-        assert isinstance(performance_only, boolean), "performance_only should be boolean!"
+        assert isinstance(
+            performance_only, boolean
+        ), "performance_only should be boolean!"
         self.inc_config.usr_cfg.tuning.exit_policy.performance_only = performance_only
 
     @property
@@ -458,9 +497,13 @@ class QuantizationConfig(object):
     def sampling_size(self, sampling_size):
         """Set the sampling size."""
         if isinstance(sampling_size, int):
-            self.inc_config.usr_cfg.quantization.calibration.sampling_size = [sampling_size]
+            self.inc_config.usr_cfg.quantization.calibration.sampling_size = [
+                sampling_size
+            ]
         elif isinstance(sampling_size, list):
-            self.inc_config.usr_cfg.quantization.calibration.sampling_size = sampling_size
+            self.inc_config.usr_cfg.quantization.calibration.sampling_size = (
+                sampling_size
+            )
         else:
             assert False, "The sampling_size must be a list of int numbers"
 
@@ -488,8 +531,9 @@ class QuantizationConfig(object):
                 check_value("smooth_quant_args", val, dict)
                 for k, v in val.items():
                     if k == "alpha":
-                        assert isinstance(v, str) or isinstance(v, float),\
-                            "Smooth_quant_args.alpha should be a float or 'auto'."
+                        assert isinstance(v, str) or isinstance(
+                            v, float
+                        ), "Smooth_quant_args.alpha should be a float or 'auto'."
                 return True
             else:
                 return {}
@@ -522,20 +566,21 @@ class QuantizationConfig(object):
             else:
                 return True
 
-        RECIPES = {"smooth_quant": smooth_quant, # Only for PyTorch
-                   "smooth_quant_args": smooth_quant_args, # Only for PyTorch
-                   "fast_bias_correction": fast_bias_correction, # Support PyTorch and Tensorflow, not used now.
-                   "weight_correction": weight_correction, # Support PyTorch and Tensorflow, not used now.
-                   "first_conv_or_matmul_quantization": first_conv_or_matmul_quantization, # Only for Tensorflow
-                   "last_conv_or_matmul_quantization": last_conv_or_matmul_quantization, # Only for Tensorflow
-                   }
+        RECIPES = {
+            "smooth_quant": smooth_quant,  # Only for PyTorch
+            "smooth_quant_args": smooth_quant_args,  # Only for PyTorch
+            "fast_bias_correction": fast_bias_correction,  # Support PyTorch and Tensorflow, not used now.
+            "weight_correction": weight_correction,  # Support PyTorch and Tensorflow, not used now.
+            "first_conv_or_matmul_quantization": first_conv_or_matmul_quantization,  # Only for Tensorflow
+            "last_conv_or_matmul_quantization": last_conv_or_matmul_quantization,  # Only for Tensorflow
+        }
         _recipes = {}
         for k in RECIPES.keys():
             if k in recipes and RECIPES[k](recipes[k]):
                 _recipes.update({k: recipes[k]})
             else:
                 _recipes.update({k: RECIPES[k]()})
-        deep_set(self.inc_config.usr_cfg, 'quantization.recipes', _recipes)
+        deep_set(self.inc_config.usr_cfg, "quantization.recipes", _recipes)
 
 
 class PruningConfig(object):
@@ -552,16 +597,17 @@ class PruningConfig(object):
             'BasicMagnitude' pruning typel
         config_file: Path to the config file
     """
+
     def __init__(
         self,
         framework: str = "pytorch",
         epochs: int = 1,
         epoch_range: List = [0, 4],
-        initial_sparsity_ratio: float=0.0,
+        initial_sparsity_ratio: float = 0.0,
         target_sparsity_ratio: float = 0.97,
         metrics: Metric = None,
         pruner_config: Union[List, Pruner] = None,
-        config_file: str = None
+        config_file: str = None,
     ):
         """Init a PruningConfig object."""
         super().__init__()
@@ -584,11 +630,12 @@ class PruningConfig(object):
             self.init_prune_config()
         self.epochs = epochs
 
-
     def init_prune_config(self):
         """Init the pruning config."""
         pruner_config = Pruner()
-        self.inc_config.usr_cfg.pruning.approach.weight_compression['pruners'] = [pruner_config]
+        self.inc_config.usr_cfg.pruning.approach.weight_compression["pruners"] = [
+            pruner_config
+        ]
 
     @property
     def pruner_config(self):
@@ -599,58 +646,79 @@ class PruningConfig(object):
     def pruner_config(self, pruner_config):
         """Set the pruner config."""
         if isinstance(pruner_config, list):
-            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = pruner_config
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = (
+                pruner_config
+            )
         else:
-            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = [pruner_config]
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = [
+                pruner_config
+            ]
 
     @property
     def target_sparsity_ratio(self):
         """Get the target sparsity ratio."""
-        return self.inc_config.usr_cfg.pruning.approach.weight_compression.target_sparsity
+        return (
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.target_sparsity
+        )
 
     @target_sparsity_ratio.setter
     def target_sparsity_ratio(self, target_sparsity_ratio):
         """Set the target sparsity ratio."""
-        self.inc_config.usr_cfg.pruning.approach.weight_compression.target_sparsity = \
+        self.inc_config.usr_cfg.pruning.approach.weight_compression.target_sparsity = (
             target_sparsity_ratio
+        )
 
     @property
     def initial_sparsity_ratio(self):
         """Get the initial sparsity ratio."""
-        return self.inc_config.usr_cfg.pruning.approach.weight_compression.initial_sparsity
+        return (
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.initial_sparsity
+        )
 
     @initial_sparsity_ratio.setter
     def initial_sparsity_ratio(self, initial_sparsity_ratio):
         """Set the initial sparsity ratio."""
-        self.inc_config.usr_cfg.pruning.approach.weight_compression.initial_sparsity = \
+        self.inc_config.usr_cfg.pruning.approach.weight_compression.initial_sparsity = (
             initial_sparsity_ratio
+        )
 
     @property
     def epoch_range(self):
         """Get the epoch range."""
-        return [self.inc_config.usr_cfg.pruning.approach.weight_compression.start_epoch,
-                self.inc_config.usr_cfg.pruning.approach.weight_compression.end_epoch]
+        return [
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.start_epoch,
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.end_epoch,
+        ]
 
     @epoch_range.setter
     def epoch_range(self, epoch_range):
         """Set the epoch range."""
-        assert isinstance(epoch_range, list) and len(epoch_range) == 2, \
-          "You should set epoch_range like [a,b] format to match the pruning start and end epoch."
-        self.inc_config.usr_cfg.pruning.approach.weight_compression.start_epoch = epoch_range[0]
-        self.inc_config.usr_cfg.pruning.approach.weight_compression.end_epoch = epoch_range[1]
+        assert (
+            isinstance(epoch_range, list) and len(epoch_range) == 2
+        ), "You should set epoch_range like [a,b] format to match the pruning start and end epoch."
+        self.inc_config.usr_cfg.pruning.approach.weight_compression.start_epoch = (
+            epoch_range[0]
+        )
+        self.inc_config.usr_cfg.pruning.approach.weight_compression.end_epoch = (
+            epoch_range[1]
+        )
 
     @property
     def epochs(self):
         """Get the epochs."""
-        eps = self.inc_config.usr_cfg.pruning.train.epoch \
-            if hasattr(self.inc_config.usr_cfg.pruning, "train") else 1
+        eps = (
+            self.inc_config.usr_cfg.pruning.train.epoch
+            if hasattr(self.inc_config.usr_cfg.pruning, "train")
+            else 1
+        )
         return eps
 
     @epochs.setter
     def epochs(self, epochs):
         """Set the epochs."""
-        assert isinstance(epochs, int) and epochs > 0, \
-          "You should set epochs > 0 and int, not {}.".format(epochs)
+        assert (
+            isinstance(epochs, int) and epochs > 0
+        ), "You should set epochs > 0 and int, not {}.".format(epochs)
         self.inc_config.usr_cfg.pruning["train"] = {"epoch": epochs}
 
     @property
@@ -661,8 +729,11 @@ class PruningConfig(object):
     @framework.setter
     def framework(self, framework):
         """Set the framework."""
-        assert framework.lower() in ["pytorch", "pytorch_fx", "tensorflow"], \
-            "framework: {} is not support!".format(framework)
+        assert framework.lower() in [
+            "pytorch",
+            "pytorch_fx",
+            "tensorflow",
+        ], "framework: {} is not support!".format(framework)
         self.inc_config.usr_cfg.model.framework = framework.lower()
 
     @property
@@ -685,12 +756,13 @@ class DistillationConfig(object):
         metrics: Metrics for distillation
         inc_config: Distillation config
     """
+
     def __init__(
         self,
         framework: str = "pytorch",
         criterion: Criterion = None,
         metrics: Metric = None,
-        inc_config = None
+        inc_config=None,
     ):
         """Init a DistillationConfig object."""
         super().__init__()
@@ -711,8 +783,11 @@ class DistillationConfig(object):
     @framework.setter
     def framework(self, framework):
         """Set the framework."""
-        assert framework in ["pytorch", "pytorch_fx", "tensorflow"], \
-            "framework: {} is not support!".format(framework)
+        assert framework in [
+            "pytorch",
+            "pytorch_fx",
+            "tensorflow",
+        ], "framework: {} is not support!".format(framework)
         self.inc_config.usr_cfg.model.framework = framework
 
     @property
@@ -723,38 +798,49 @@ class DistillationConfig(object):
     @criterion.setter
     def criterion(self, criterion: Criterion):
         """Set the criterion."""
-        assert criterion.name.upper() in SUPPORTED_DISTILLATION_CRITERION_MODE, \
-            "The criterion name must be in ['KnowledgeLoss', 'IntermediateLayersLoss']"
+        assert (
+            criterion.name.upper() in SUPPORTED_DISTILLATION_CRITERION_MODE
+        ), "The criterion name must be in ['KnowledgeLoss', 'IntermediateLayersLoss']"
         if criterion.name.upper() == DistillationCriterionMode.KNOWLEDGELOSS.name:
-            assert criterion.temperature is not None, \
-                "Please pass the temperature to Criterion.temperature!"
-            assert criterion.loss_types is not None, \
-                "Please pass the loss_types to Criterion.loss_types!"
-            assert criterion.loss_weight_ratio is not None, \
-                "Please pass the loss_weight_ratio to Criterion.loss_weight_ratio!"
+            assert (
+                criterion.temperature is not None
+            ), "Please pass the temperature to Criterion.temperature!"
+            assert (
+                criterion.loss_types is not None
+            ), "Please pass the loss_types to Criterion.loss_types!"
+            assert (
+                criterion.loss_weight_ratio is not None
+            ), "Please pass the loss_weight_ratio to Criterion.loss_weight_ratio!"
             self.inc_config.usr_cfg.distillation.train.criterion = {
                 DistillationCriterionMode.KNOWLEDGELOSS.value: {
                     "temperature": criterion.temperature,
                     "loss_types": criterion.loss_types,
-                    "loss_weights": criterion.loss_weight_ratio
+                    "loss_weights": criterion.loss_weight_ratio,
                 }
             }
 
-        if criterion.name.upper() == DistillationCriterionMode.INTERMEDIATELAYERSLOSS.name:
-            assert criterion.layer_mappings is not None, \
-                "Please pass the layer_mappings to Criterion.layer_mappings!"
-            assert criterion.loss_types is not None, \
-                "Please pass the loss_types to Criterion.loss_types!"
-            assert criterion.loss_weight_ratio is not None, \
-                "Please pass the loss_weight_ratio to Criterion.loss_weight_ratio!"
-            assert criterion.add_origin_loss is not None, \
-                "Please pass the add_origin_loss to Criterion.add_origin_loss!"
+        if (
+            criterion.name.upper()
+            == DistillationCriterionMode.INTERMEDIATELAYERSLOSS.name
+        ):
+            assert (
+                criterion.layer_mappings is not None
+            ), "Please pass the layer_mappings to Criterion.layer_mappings!"
+            assert (
+                criterion.loss_types is not None
+            ), "Please pass the loss_types to Criterion.loss_types!"
+            assert (
+                criterion.loss_weight_ratio is not None
+            ), "Please pass the loss_weight_ratio to Criterion.loss_weight_ratio!"
+            assert (
+                criterion.add_origin_loss is not None
+            ), "Please pass the add_origin_loss to Criterion.add_origin_loss!"
             self.inc_config.usr_cfg.distillation.train.criterion = {
                 DistillationCriterionMode.INTERMEDIATELAYERSLOSS.value: {
                     "layer_mappings": criterion.layer_mappings,
                     "loss_types": criterion.loss_types,
                     "loss_weights": criterion.loss_weight_ratio,
-                    "add_origin_loss": criterion.add_origin_loss
+                    "add_origin_loss": criterion.add_origin_loss,
                 }
             }
 
@@ -766,8 +852,7 @@ class DistillationConfig(object):
     @metrics.setter
     def metrics(self, metrics):
         """Set the metrics."""
-        assert isinstance(metrics, Metric), \
-            "metric should be a Metric class!"
+        assert isinstance(metrics, Metric), "metric should be a Metric class!"
         self._metrics = metrics
 
 
@@ -780,12 +865,13 @@ class TFDistillationConfig(object):
         train_steps: Steps of training
         temperature: Parameter for KnowledgeDistillationLoss
     """
+
     def __init__(
         self,
         loss_types: list = [],
         loss_weights: list = [],
         train_steps: list = [],
-        temperature: float = 1.0
+        temperature: float = 1.0,
     ):
         """Init a TFDistillationConfig object."""
         super().__init__()
@@ -797,6 +883,7 @@ class TFDistillationConfig(object):
 
 class FlashDistillationConfig(object):
     """The flash distillation configuration used by AutoDistillationConfig."""
+
     def __init__(
         self,
         block_names: list = [],
@@ -809,7 +896,9 @@ class FlashDistillationConfig(object):
         """Init a FlashDistillationConfig object."""
         super().__init__()
         self.block_names = block_names
-        self.layer_mappings_for_knowledge_transfer = layer_mappings_for_knowledge_transfer
+        self.layer_mappings_for_knowledge_transfer = (
+            layer_mappings_for_knowledge_transfer
+        )
         self.loss_types = loss_types
         self.loss_weights = loss_weights
         self.add_origin_loss = add_origin_loss
@@ -831,6 +920,7 @@ class AutoDistillationConfig(object):
         regular_distillation: Configuration controlling the behavior of regular distillation stage
             in the autodistillation
     """
+
     def __init__(
         self,
         framework: str = "pytorch",
@@ -844,15 +934,16 @@ class AutoDistillationConfig(object):
     ):
         """Init a AutoDistillationConfig object."""
         super().__init__()
-        self.config = DotDict({
-            'model':{'name': 'AutoDistillation'},
-            'auto_distillation':{
-                'search':{},
-                'flash_distillation':{
-                    'knowledge_transfer':{},
-                    'regular_distillation':{}
-                    }
-                }
+        self.config = DotDict(
+            {
+                "model": {"name": "AutoDistillation"},
+                "auto_distillation": {
+                    "search": {},
+                    "flash_distillation": {
+                        "knowledge_transfer": {},
+                        "regular_distillation": {},
+                    },
+                },
             }
         )
         self.framework = framework
@@ -881,7 +972,9 @@ class AutoDistillationConfig(object):
             knowledge_transfer = FlashDistillationConfig()
         for k, v in knowledge_transfer.__dict__.items():
             if v:
-                self.config.auto_distillation.flash_distillation.knowledge_transfer[k] = v
+                self.config.auto_distillation.flash_distillation.knowledge_transfer[
+                    k
+                ] = v
 
     @property
     def regular_distillation(self):
@@ -895,7 +988,9 @@ class AutoDistillationConfig(object):
             regular_distillation = FlashDistillationConfig()
         for k, v in regular_distillation.__dict__.items():
             if v:
-                self.config.auto_distillation.flash_distillation.regular_distillation[k] = v
+                self.config.auto_distillation.flash_distillation.regular_distillation[
+                    k
+                ] = v
 
     @property
     def framework(self):
@@ -905,8 +1000,9 @@ class AutoDistillationConfig(object):
     @framework.setter
     def framework(self, framework):
         """Set the framework."""
-        assert framework in ["pytorch"], \
-            "framework: {} is not support!".format(framework)
+        assert framework in ["pytorch"], "framework: {} is not support!".format(
+            framework
+        )
         self.config.model.framework = framework
 
     @property
@@ -966,19 +1062,19 @@ class AutoDistillationConfig(object):
             self.config.auto_distillation.search.metrics.append(metric.name)
             self.config.auto_distillation.search.higher_is_better.append(
                 metric.greater_is_better
-                )
+            )
 
 
 class NASConfig(object):
-    """config parser.
+    """Config parser.
 
     Args:
         approach: The approach of the NAS.
         search_algorithm: The search algorithm for NAS procedure.
-
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         framework: str = "pytorch",
         approach: str = "basic",
         search_space: dict = {},
@@ -986,16 +1082,17 @@ class NASConfig(object):
         metrics: Union[List, Metric] = None,
         max_trials: int = None,
         seed: int = None,
-        ):
+    ):
         super().__init__()
-        self.config = DotDict({
-                'model': {'name': 'nas', 'framework': 'NA'},
-                'nas': {
-                    'approach': approach,
-                    'search': {
-                        'search_space': search_space,
-                        'search_algorithm': search_algorithm
-                    }
+        self.config = DotDict(
+            {
+                "model": {"name": "nas", "framework": "NA"},
+                "nas": {
+                    "approach": approach,
+                    "search": {
+                        "search_space": search_space,
+                        "search_algorithm": search_algorithm,
+                    },
                 },
             }
         )
@@ -1008,7 +1105,7 @@ class NASConfig(object):
             self.seed = seed
         if metrics is not None:
             self.metrics = metrics
-        if approach and approach != 'basic':
+        if approach and approach != "basic":
             self.config[approach] = DotDict({})
             self.__setattr__(approach, self.config[approach])
 
@@ -1020,8 +1117,9 @@ class NASConfig(object):
     @framework.setter
     def framework(self, framework):
         """Set the framework."""
-        assert framework in ["pytorch"], \
-            "framework: {} is not support!".format(framework)
+        assert framework in ["pytorch"], "framework: {} is not support!".format(
+            framework
+        )
         self.config.model.framework = framework
 
     @property
@@ -1079,9 +1177,8 @@ class NASConfig(object):
         self.config.nas.search.higher_is_better = []
         for metric in metrics:
             self.config.nas.search.metrics.append(metric.name)
-            self.config.nas.search.higher_is_better.append(
-                metric.greater_is_better
-                )
+            self.config.nas.search.higher_is_better.append(metric.greater_is_better)
+
 
 class BenchmarkConfig:
     """Config Class for Benchmark.
@@ -1097,6 +1194,7 @@ class BenchmarkConfig:
         generate (bool, optional): Enable it if you want to use model.generate \
                                    when benchmarking. Defaults to False.
     """
+
     def __init__(
         self,
         backend: str = "torch",  # select from ["torch", "ipex", "neural_engine"]
@@ -1209,67 +1307,95 @@ class BenchmarkConfig:
     def kwargs(self, kwargs):
         """Set kwargs."""
         self._kwargs = kwargs
-        
+
+
 @constructor_register
 class PrunerV2:
-    """
-    similar to torch optimizer's interface
-    """
+    """Similar to torch optimizer's interface."""
 
-    def __init__(self,
-                 target_sparsity=None, pruning_type=None, pattern=None, op_names=None,
-                 excluded_op_names=None,
-                 start_step=None, end_step=None, pruning_scope=None, pruning_frequency=None,
-                 min_sparsity_ratio_per_op=None, max_sparsity_ratio_per_op=None,
-                 sparsity_decay_type=None, pruning_op_types=None, reg_type=None,
-                 criterion_reduce_type=None, parameters=None, resume_from_pruned_checkpoint=None):
-        self.pruner_config = DotDict({
-            'target_sparsity': target_sparsity,
-            'pruning_type': pruning_type,
-            'pattern': pattern,
-            'op_names': op_names,
-            'excluded_op_names': excluded_op_names,  ##global only
-            'start_step': start_step,
-            'end_step': end_step,
-            'pruning_scope': pruning_scope,
-            'pruning_frequency': pruning_frequency,
-            'min_sparsity_ratio_per_op': min_sparsity_ratio_per_op,
-            'max_sparsity_ratio_per_op': max_sparsity_ratio_per_op,
-            'sparsity_decay_type': sparsity_decay_type,
-            'pruning_op_types': pruning_op_types,
-            'reg_type': reg_type,
-            'criterion_reduce_type': criterion_reduce_type,
-            'parameters': parameters,
-            'resume_from_pruned_checkpoint': resume_from_pruned_checkpoint
-        })
+    def __init__(
+        self,
+        target_sparsity=None,
+        pruning_type=None,
+        pattern=None,
+        op_names=None,
+        excluded_op_names=None,
+        start_step=None,
+        end_step=None,
+        pruning_scope=None,
+        pruning_frequency=None,
+        min_sparsity_ratio_per_op=None,
+        max_sparsity_ratio_per_op=None,
+        sparsity_decay_type=None,
+        pruning_op_types=None,
+        reg_type=None,
+        criterion_reduce_type=None,
+        parameters=None,
+        resume_from_pruned_checkpoint=None,
+    ):
+        self.pruner_config = DotDict(
+            {
+                "target_sparsity": target_sparsity,
+                "pruning_type": pruning_type,
+                "pattern": pattern,
+                "op_names": op_names,
+                "excluded_op_names": excluded_op_names,  ##global only
+                "start_step": start_step,
+                "end_step": end_step,
+                "pruning_scope": pruning_scope,
+                "pruning_frequency": pruning_frequency,
+                "min_sparsity_ratio_per_op": min_sparsity_ratio_per_op,
+                "max_sparsity_ratio_per_op": max_sparsity_ratio_per_op,
+                "sparsity_decay_type": sparsity_decay_type,
+                "pruning_op_types": pruning_op_types,
+                "reg_type": reg_type,
+                "criterion_reduce_type": criterion_reduce_type,
+                "parameters": parameters,
+                "resume_from_pruned_checkpoint": resume_from_pruned_checkpoint,
+            }
+        )
 
 
 class WeightPruningConfig:
     """Similar to torch optimizer's interface."""
-    def __init__(self, pruning_configs=[{}],  ##empty dict will use global values
-                 target_sparsity=0.9, pruning_type="snip_momentum", pattern="4x1", op_names=[],
-                 excluded_op_names=[],
-                 start_step=0, end_step=0, pruning_scope="global", pruning_frequency=1,
-                 min_sparsity_ratio_per_op=0.0, max_sparsity_ratio_per_op=0.98,
-                 sparsity_decay_type="exp", pruning_op_types=['Conv', 'Linear'],
-                 **kwargs):
+
+    def __init__(
+        self,
+        pruning_configs=[{}],  ##empty dict will use global values
+        target_sparsity=0.9,
+        pruning_type="snip_momentum",
+        pattern="4x1",
+        op_names=[],
+        excluded_op_names=[],
+        start_step=0,
+        end_step=0,
+        pruning_scope="global",
+        pruning_frequency=1,
+        min_sparsity_ratio_per_op=0.0,
+        max_sparsity_ratio_per_op=0.98,
+        sparsity_decay_type="exp",
+        pruning_op_types=["Conv", "Linear"],
+        **kwargs,
+    ):
         """Init a WeightPruningConfig object."""
         self.pruning_configs = pruning_configs
-        self._weight_compression = DotDict({
-            'target_sparsity': target_sparsity,
-            'pruning_type': pruning_type,
-            'pattern': pattern,
-            'op_names': op_names,
-            'excluded_op_names': excluded_op_names,  ##global only
-            'start_step': start_step,
-            'end_step': end_step,
-            'pruning_scope': pruning_scope,
-            'pruning_frequency': pruning_frequency,
-            'min_sparsity_ratio_per_op': min_sparsity_ratio_per_op,
-            'max_sparsity_ratio_per_op': max_sparsity_ratio_per_op,
-            'sparsity_decay_type': sparsity_decay_type,
-            'pruning_op_types': pruning_op_types,
-        })
+        self._weight_compression = DotDict(
+            {
+                "target_sparsity": target_sparsity,
+                "pruning_type": pruning_type,
+                "pattern": pattern,
+                "op_names": op_names,
+                "excluded_op_names": excluded_op_names,  ##global only
+                "start_step": start_step,
+                "end_step": end_step,
+                "pruning_scope": pruning_scope,
+                "pruning_frequency": pruning_frequency,
+                "min_sparsity_ratio_per_op": min_sparsity_ratio_per_op,
+                "max_sparsity_ratio_per_op": max_sparsity_ratio_per_op,
+                "sparsity_decay_type": sparsity_decay_type,
+                "pruning_op_types": pruning_op_types,
+            }
+        )
         self._weight_compression.update(kwargs)
 
     @property

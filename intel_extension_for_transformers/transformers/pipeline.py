@@ -16,14 +16,16 @@
 # limitations under the License.
 """Pipeline: import transformers.pipelines and support int8 model loading based on infer_framework_load_model."""
 import importlib
-from transformers import AutoConfig, pipeline
-from transformers.pipelines import *
 from typing import Dict, Optional, Tuple
-from .modeling.model import OptimizedModel
 
+from transformers import AutoConfig
+from transformers.pipelines import *
+
+from .modeling.model import OptimizedModel
 
 origin_forward = Pipeline.forward
 origin_check = Pipeline.check_model_type
+
 
 # pylint: disable=E0102
 def infer_framework_load_model(
@@ -46,17 +48,22 @@ def infer_framework_load_model(
     Returns:
         Tuple: A tuple framework, model.
     """
-    logger.warning("Function transformers.pipelines.base.infer_framework_load_model is replaced "
-                    "by intel_extension_for_transformers.transformers.pipeline.")
+    logger.warning(
+        "Function transformers.pipelines.base.infer_framework_load_model is replaced "
+        "by intel_extension_for_transformers.transformers.pipeline."
+    )
 
-    backend = model_kwargs['backend'] if 'backend' in model_kwargs else None
+    backend = model_kwargs["backend"] if "backend" in model_kwargs else None
     if isinstance(model, str):
-        if backend == 'executor':  # pragma: no cover
-            from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+        if backend == "executor":  # pragma: no cover
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile import (
+                compile,
+            )
+
             model = compile(model)
-            model.__call__= model.inference
+            model.__call__ = model.inference
             model.config = config
-            framework = 'pt'
+            framework = "pt"
 
             # only support text-classification now
             def forward_executor(self, model_inputs, **forward_params):
@@ -88,5 +95,5 @@ def infer_framework_load_model(
 
 
 # Replace the function in pipeline to support int8 loading
-trans_pipeline = importlib.import_module('transformers.pipelines')
+trans_pipeline = importlib.import_module("transformers.pipelines")
 trans_pipeline.infer_framework_load_model = infer_framework_load_model

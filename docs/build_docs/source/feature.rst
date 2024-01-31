@@ -15,4 +15,3 @@ Features
    docs/metrics.md
    docs/objectives.md
    docs/pipeline.md
-

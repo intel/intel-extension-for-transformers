@@ -17,12 +17,16 @@
 
 import torch
 from torch import nn
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.audio2pose_models.cvae import CVAE
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.audio2pose_models.discriminator import PoseSequenceDiscriminator
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.audio2pose_models.audio_encoder import AudioEncoder
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.audio_encoder import (
+    AudioEncoder,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.cvae import (
+    CVAE,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.discriminator import (
+    PoseSequenceDiscriminator,
+)
 
 
 class Audio2Pose(nn.Module):
@@ -44,14 +48,18 @@ class Audio2Pose(nn.Module):
     def forward(self, x):
         batch = {}
         coeff_gt = x["gt"].cuda().squeeze(0)  # bs frame_len+1 73
-        batch["pose_motion_gt"] = coeff_gt[:, 1:, -9:-3] - coeff_gt[:, :1, -9:-3]  # bs frame_len 6
+        batch["pose_motion_gt"] = (
+            coeff_gt[:, 1:, -9:-3] - coeff_gt[:, :1, -9:-3]
+        )  # bs frame_len 6
         batch["ref"] = coeff_gt[:, 0, -9:-3]  # bs  6
         batch["class"] = x["class"].squeeze(0).cuda()  # bs
         indiv_mels = x["indiv_mels"].cuda().squeeze(0)  # bs seq_len+1 80 16
 
         # forward
         audio_emb_list = []
-        audio_emb = self.audio_encoder(indiv_mels[:, 1:, :, :].unsqueeze(2))  # bs seq_len 512
+        audio_emb = self.audio_encoder(
+            indiv_mels[:, 1:, :, :].unsqueeze(2)
+        )  # bs seq_len 512
         batch["audio_emb"] = audio_emb
         batch = self.netG(batch)
 
@@ -81,7 +89,11 @@ class Audio2Pose(nn.Module):
         re = num_frames % self.seq_len
         audio_emb_list = []
         pose_motion_pred_list = [
-            torch.zeros(batch["ref"].unsqueeze(1).shape, dtype=batch["ref"].dtype, device=batch["ref"].device)
+            torch.zeros(
+                batch["ref"].unsqueeze(1).shape,
+                dtype=batch["ref"].dtype,
+                device=batch["ref"].device,
+            )
         ]
 
         for i in range(div):
@@ -92,12 +104,16 @@ class Audio2Pose(nn.Module):
             )  # bs seq_len 512
             batch["audio_emb"] = audio_emb
             batch = self.netG.test(batch)
-            pose_motion_pred_list.append(batch["pose_motion_pred"])  # list of bs seq_len 6
+            pose_motion_pred_list.append(
+                batch["pose_motion_pred"]
+            )  # list of bs seq_len 6
 
         if re != 0:
             z = torch.randn(bs, self.latent_dim).to(ref.device)
             batch["z"] = z
-            audio_emb = self.audio_encoder(indiv_mels_use[:, -1 * self.seq_len :, :, :, :])  # bs seq_len  512
+            audio_emb = self.audio_encoder(
+                indiv_mels_use[:, -1 * self.seq_len :, :, :, :]
+            )  # bs seq_len  512
             if audio_emb.shape[1] != self.seq_len:
                 pad_dim = self.seq_len - audio_emb.shape[1]
                 pad_audio_emb = audio_emb[:, :1].repeat(1, pad_dim, 1)

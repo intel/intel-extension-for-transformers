@@ -38,7 +38,9 @@ class Logger(object):
         self._logger = logging.getLogger("neural_compressor")
         self._logger.handlers.clear()
         self._logger.setLevel(LOGLEVEL)
-        formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S")
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
+        )
         streamHandler = logging.StreamHandler()
         streamHandler.setFormatter(formatter)
         self._logger.addHandler(streamHandler)
@@ -53,7 +55,10 @@ def _pretty_dict(value, indent=0):
     """Make the logger dict pretty."""
     prefix = "\n" + " " * (indent + 4)
     if isinstance(value, dict):
-        items = [prefix + repr(key) + ": " + _pretty_dict(value[key], indent + 4) for key in value]
+        items = [
+            prefix + repr(key) + ": " + _pretty_dict(value[key], indent + 4)
+            for key in value
+        ]
         return "{%s}" % (",".join(items) + "\n" + " " * indent)
     elif isinstance(value, list):
         items = [prefix + _pretty_dict(item, indent + 4) for item in value]

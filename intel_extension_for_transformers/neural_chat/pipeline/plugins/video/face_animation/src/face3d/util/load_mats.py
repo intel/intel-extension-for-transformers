@@ -14,14 +14,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""This script is to load 3D face model for Deep3DFaceRecon_pytorch."""
 
-"""This script is to load 3D face model for Deep3DFaceRecon_pytorch
-"""
+import os.path as osp
+from array import array
 
 import numpy as np
 from scipy.io import loadmat, savemat
-from array import array
-import os.path as osp
 
 
 # load expression basis
@@ -79,7 +78,9 @@ def transferBFM09(bfm_folder="BFM"):
     index_exp = index_exp["idx"].astype(np.int32) - 1  # starts from 0 (to 53215)
 
     index_shape = loadmat(osp.join(bfm_folder, "BFM_exp_idx.mat"))
-    index_shape = index_shape["trimIndex"].astype(np.int32) - 1  # starts from 0 (to 53490)
+    index_shape = (
+        index_shape["trimIndex"].astype(np.int32) - 1
+    )  # starts from 0 (to 53490)
     index_shape = index_shape[index_exp]
 
     idBase = np.reshape(idBase, [-1, 3, 80])

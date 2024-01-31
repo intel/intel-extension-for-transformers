@@ -18,12 +18,15 @@
 import argparse
 import os
 import time
+
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import (
-    PipelineConfig, GenerationConfig, LoadingModelConfig
+    GenerationConfig,
+    LoadingModelConfig,
+    PipelineConfig,
 )
-
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -161,7 +164,10 @@ def parse_args():
         help="bfloat16, float32 or float16",
     )
     parser.add_argument(
-        "--return_stats", action='store_true', default=False,)
+        "--return_stats",
+        action="store_true",
+        default=False,
+    )
     parser.add_argument(
         "--format_version",
         type=str,
@@ -170,6 +176,7 @@ def parse_args():
     )
     args = parser.parse_args()
     return args
+
 
 def main():
     args = parse_args()
@@ -223,7 +230,7 @@ def main():
             peft_path=args.peft_model_path,
             use_deepspeed=True if use_deepspeed and args.habana else False,
         ),
-        optimization_config=MixedPrecisionConfig(dtype=args.dtype)
+        optimization_config=MixedPrecisionConfig(dtype=args.dtype),
     )
     chatbot = build_chatbot(config)
     gen_config = GenerationConfig(
@@ -240,7 +247,7 @@ def main():
         num_return_sequences=args.num_return_sequences,
         ipex_int8=args.ipex_int8,
         return_stats=args.return_stats,
-        format_version=args.format_version
+        format_version=args.format_version,
     )
 
     if args.habana:
@@ -252,10 +259,12 @@ def main():
         print(f"n_hpu: {world_size}, bf16")
     # warmup, the first time inference take longer because of graph compilation
 
-    for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
+    for new_text in chatbot.predict_stream(
+        query="Tell me about Intel Xeon.", config=gen_config
+    )[0]:
         if args.local_rank in [-1, 0]:
             print(new_text, end="", flush=True)
-    print("\n"*3)
+    print("\n" * 3)
 
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
@@ -281,8 +290,9 @@ def main():
         out = chatbot.predict(query=instruction, config=gen_config)
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")
-            print(f"duration: {time.time() - start_time}" + ' s')
+            print(f"duration: {time.time() - start_time}" + " s")
             print("=" * (60 + len(idxs)))
+
 
 if __name__ == "__main__":
     main()

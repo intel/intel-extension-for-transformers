@@ -15,25 +15,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts import TextToSpeech
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
-import unittest
-import shutil
 import os
+import shutil
 import time
+import unittest
+
 import torch
 from transformers import set_seed
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import (
+    AudioSpeechRecognition,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts import (
+    TextToSpeech,
+)
+
 
 class TestTTS(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         try:
             import habana_frameworks.torch.hpu as hthpu
+
             self.is_hpu_available = True
         except ImportError:
             self.is_hpu_available = False
         try:
             import intel_extension_for_pytorch as ipex
+
             self.is_ipex_available = True
         except ImportError:
             self.is_ipex_available = False
@@ -44,18 +53,20 @@ class TestTTS(unittest.TestCase):
         self.tts = TextToSpeech(device=self.device)
         self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
         self.tts_noise_reducer = TextToSpeech(device=self.device, reduce_noise=True)
-        shutil.rmtree('./tmp_audio', ignore_errors=True)
-        os.mkdir('./tmp_audio')
+        shutil.rmtree("./tmp_audio", ignore_errors=True)
+        os.mkdir("./tmp_audio")
 
     @classmethod
     def tearDownClass(self):
-        shutil.rmtree('./tmp_audio', ignore_errors=True)
+        shutil.rmtree("./tmp_audio", ignore_errors=True)
 
     def test_tts(self):
         text = "Welcome to Neural Chat"
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/1.wav")
         set_seed(555)
-        output_audio_path = self.tts.text2speech(text, output_audio_path, voice="default")
+        output_audio_path = self.tts.text2speech(
+            text, output_audio_path, voice="default"
+        )
         self.assertTrue(os.path.exists(output_audio_path))
         # verify accuracy
         result = self.asr.audio2text(output_audio_path)
@@ -72,7 +83,9 @@ class TestTTS(unittest.TestCase):
         self.assertEqual(text.lower(), result.lower())
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/4.wav")
         set_seed(555)
-        output_audio_path = self.tts.text2speech(text, output_audio_path, voice="female")
+        output_audio_path = self.tts.text2speech(
+            text, output_audio_path, voice="female"
+        )
         self.assertTrue(os.path.exists(output_audio_path))
         # verify accuracy
         result = self.asr.audio2text(output_audio_path)
@@ -83,27 +96,40 @@ class TestTTS(unittest.TestCase):
             for i in ["Ann", "Bob", "Tim"]:
                 time.sleep(1)
                 yield f"Welcome {i} to Neural Chat"
+
         gen = text_generate()
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/1.wav")
-        for result_path in self.tts.stream_text2speech(gen, output_audio_path, voice="default"):
+        for result_path in self.tts.stream_text2speech(
+            gen, output_audio_path, voice="default"
+        ):
             self.assertTrue(os.path.exists(result_path))
 
     def test_tts_long_text(self):
-        text = "Intel Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on " + \
-        "Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids " + \
-        "(codenamed Sapphire Rapids)"
+        text = (
+            "Intel Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on "
+            + "Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids "
+            + "(codenamed Sapphire Rapids)"
+        )
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/2.wav")
         set_seed(555)
-        output_audio_path = self.tts.text2speech(text, output_audio_path, voice="default", do_batch_tts=True, batch_length=120)
+        output_audio_path = self.tts.text2speech(
+            text,
+            output_audio_path,
+            voice="default",
+            do_batch_tts=True,
+            batch_length=120,
+        )
         result = self.asr.audio2text(output_audio_path)
         self.assertTrue(os.path.exists(output_audio_path))
-        self.assertEqual("intel extension for transformers is an innovative toolkit to accelerate transformer based " + \
-                         "models on intel platforms in particular effective on 4th intel xeon scalable processor " + \
-                            "sapphire rapids codenamed sapphire rapids", result)
+        self.assertEqual(
+            "intel extension for transformers is an innovative toolkit to accelerate transformer based "
+            + "models on intel platforms in particular effective on 4th intel xeon scalable processor "
+            + "sapphire rapids codenamed sapphire rapids",
+            result,
+        )
 
     def test_create_speaker_embedding(self):
-        driven_audio_path = \
-           "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"
+        driven_audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"
         if os.path.exists(driven_audio_path):
             spk_embed = self.tts.create_speaker_embedding(driven_audio_path)
         else:
@@ -115,21 +141,32 @@ class TestTTS(unittest.TestCase):
         text = "hello there"
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/5.wav")
         set_seed(555)
-        output_audio_path = self.tts_noise_reducer.text2speech(text, output_audio_path, voice="default")
+        output_audio_path = self.tts_noise_reducer.text2speech(
+            text, output_audio_path, voice="default"
+        )
         self.assertTrue(os.path.exists(output_audio_path))
         # verify accuracy
         result = self.asr.audio2text(output_audio_path)
         self.assertEqual(text.lower(), result.lower())
 
     def test_tts_messy_input(self):
-        text = "Please refer to the following responses to this inquiry:\n" + 244 * "* " + "*"
+        text = (
+            "Please refer to the following responses to this inquiry:\n"
+            + 244 * "* "
+            + "*"
+        )
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/6.wav")
         set_seed(555)
-        output_audio_path = self.tts_noise_reducer.text2speech(text, output_audio_path, voice="default")
+        output_audio_path = self.tts_noise_reducer.text2speech(
+            text, output_audio_path, voice="default"
+        )
         self.assertTrue(os.path.exists(output_audio_path))
         # verify accuracy
         result = self.asr.audio2text(output_audio_path)
-        self.assertEqual("please refer to the following responses to this inquiry", result.lower())
+        self.assertEqual(
+            "please refer to the following responses to this inquiry", result.lower()
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

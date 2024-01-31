@@ -14,23 +14,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
+
 from .op import Operator, operator_registry
-from .tensor import Tensor
-import copy
+
 
 # tf.shape(input, out_type=tf.dtypes.int32, name=None)
 # Returns a tensor containing the shape of the input tensor.
-@operator_registry(operator_type='Shape')
+@operator_registry(operator_type="Shape")
 class Shape(Operator):
     """Register the Shape operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
     def set_attr(self, framework, node):
         """Extract the node attr."""
-        if framework == 'torch':
-            self._attr['start'] = node.inputsAt(1).toIValue()
-            self._attr['end'] = node.inputsAt(1).toIValue() + 1
+        if framework == "torch":
+            self._attr["start"] = node.inputsAt(1).toIValue()
+            self._attr["end"] = node.inputsAt(1).toIValue() + 1

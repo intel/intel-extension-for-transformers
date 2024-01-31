@@ -17,10 +17,11 @@
 
 """The memory function for saving chat history or loading chat history."""
 
+
 class Memory:
     def __init__(self):
         self.chat_memory = []
-    
+
     def clear(self):
         self.chat_memory.clear()
 
@@ -35,8 +36,11 @@ class Memory:
 
     def add(self, query, answer):
         turn = len(self.chat_memory)
-        cur_conversation = "[Round {}]\nUser Query: {}\nAI Answer:{}".format(turn+1, query, answer)
+        cur_conversation = "[Round {}]\nUser Query: {}\nAI Answer:{}".format(
+            turn + 1, query, answer
+        )
         self.chat_memory.append(cur_conversation)
+
 
 class Buffer_Memory:
     def __init__(self, buffer_size=3):
@@ -61,5 +65,7 @@ class Buffer_Memory:
         length = len(self.chat_memory)
         if length > self.buffer_size:
             self.chat_memory = self.chat_memory[1:]
-        cur_conversation = "[Round {}]\nUser Query: {}\nAI Answer:{}".format(self.turn+1, query, answer)
+        cur_conversation = "[Round {}]\nUser Query: {}\nAI Answer:{}".format(
+            self.turn + 1, query, answer
+        )
         self.chat_memory.append(cur_conversation)

@@ -38,6 +38,7 @@ The AudioSpeechRecognition class provides functionality for converting English/M
 
 ```python
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import AudioSpeechRecognition
+
 # pass the parameter language="auto" to let the asr model automatically detect language
 # otherwise, you can pass an arbitrary language to the model (e.g. en/zh/de/fr)
 asr = AudioSpeechRecognition("openai/whisper-small", language="auto", device=self.device)
@@ -63,6 +64,7 @@ The TextToSpeech class in your module provides the capability to convert English
 
 ```python
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import TextToSpeech
+
 tts = TextToSpeech()
 text_to_speak = "Hello, this is a sample text."  # Replace with your text
 output_audio_path = "./output.wav"  # Replace with the desired output audio path
@@ -86,6 +88,7 @@ The ChineseTextToSpeech class within your module provides functionality for TTS.
 
 ```python
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import ChineseTextToSpeech
+
 # Initialize the TTS module
 tts = ChineseTextToSpeech()
 # Define the text you want to convert to speech

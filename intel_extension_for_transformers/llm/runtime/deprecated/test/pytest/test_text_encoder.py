@@ -15,79 +15,72 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
-import numpy as np
 import os
 import sys
-import torch
+import unittest
+
+import numpy as np
 import onnxruntime as ort
+import torch
+
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 
 text_encoder_pattern_config = {
-    'pattern_switch': {
+    "pattern_switch": {
         # General Pattern
-        'PaddingSequence': False,
-        'AttentionReshape': False,
-        'QKVReshape': False,
-        'ReshapeFusion': False,
-        'InsertBF16Node': False,
-        'OperatorAdaptor': False,
-
+        "PaddingSequence": False,
+        "AttentionReshape": False,
+        "QKVReshape": False,
+        "ReshapeFusion": False,
+        "InsertBF16Node": False,
+        "OperatorAdaptor": False,
         # transpose_int8
-        'QKVMerge': False,
-
+        "QKVMerge": False,
         # 'TextEncoder
-        'TextEncoder_WordEmbedding': True,
-        'TextEncoder_QReshape': True,
-        'TextEncoder_KVReshape': True,
-        'TextEncoder_AttentionMaskAddReshape': True,
-        'TextEncoder_SoftmaxReshape': True,
-        'TextEncoder_MulReshape': True,
-        'TextEncoder_AttentionReshape': True,
-        'TextEncoder_CasualAttentionMask': True,
-
+        "TextEncoder_WordEmbedding": True,
+        "TextEncoder_QReshape": True,
+        "TextEncoder_KVReshape": True,
+        "TextEncoder_AttentionMaskAddReshape": True,
+        "TextEncoder_SoftmaxReshape": True,
+        "TextEncoder_MulReshape": True,
+        "TextEncoder_AttentionReshape": True,
+        "TextEncoder_CasualAttentionMask": True,
         # for unet and vae decoder
-        'GroupNorm': False,
-
+        "GroupNorm": False,
         # vae decoder & Transformer2Dmodel
-        'AttentionBlock_QKVPreReshape': False,
-        'AttentionBlock_AttentionMaskAddReshape': False,
-        'AttentionBlock_ConstantOfShapeWithMul': False,
-        'Transformer2Dmodel_GetSampleBatch': False,
-        'Transformer2Dmodel_SampleSlice': False,
-        'Transformer2Dmodel_EncoderHiddenStatesReshape': False,
-        'Transformer2Dmodel_ConstantOfShapeWithMul': False,
-        'Transformer2Dmodel_QKVPreReshape': False,
-        'Transformer2Dmodel_QKVReshape': False,
-        'AttentionBlock_QKVReshape': False,
-        'Transformer2Dmodel_QKVReshapeTo4D': False,
-        'Transformer2Dmodel_AttentionMaskAddReshape': False,
-        'Transformer2Dmodel_FFNInputSlice': False,
-        'Transformer2Dmodel_FFNInputSlice_1': False,
-
+        "AttentionBlock_QKVPreReshape": False,
+        "AttentionBlock_AttentionMaskAddReshape": False,
+        "AttentionBlock_ConstantOfShapeWithMul": False,
+        "Transformer2Dmodel_GetSampleBatch": False,
+        "Transformer2Dmodel_SampleSlice": False,
+        "Transformer2Dmodel_EncoderHiddenStatesReshape": False,
+        "Transformer2Dmodel_ConstantOfShapeWithMul": False,
+        "Transformer2Dmodel_QKVPreReshape": False,
+        "Transformer2Dmodel_QKVReshape": False,
+        "AttentionBlock_QKVReshape": False,
+        "Transformer2Dmodel_QKVReshapeTo4D": False,
+        "Transformer2Dmodel_AttentionMaskAddReshape": False,
+        "Transformer2Dmodel_FFNInputSlice": False,
+        "Transformer2Dmodel_FFNInputSlice_1": False,
         # for all stable diffusion models
-        'StableDiffusion_bf16Convert': True,
-        'StableDiffusion_ReshapeFusion': True,
-
+        "StableDiffusion_bf16Convert": True,
+        "StableDiffusion_ReshapeFusion": True,
         # MHA
-        'TorchInsertBF16Node': False,
-        'StableDiffusion_MHAReshape': True,
-        'StableDiffusion_MHA': False,
-        'ExplicitNHWCTransposeForConv': True,
-
+        "TorchInsertBF16Node": False,
+        "StableDiffusion_MHAReshape": True,
+        "StableDiffusion_MHA": False,
+        "ExplicitNHWCTransposeForConv": True,
         # Channel_last
-        'ConvReshape': False
+        "ConvReshape": False,
     }
 }
 
 
 def is_win():
-    return sys.platform.startswith('win')
+    return sys.platform.startswith("win")
 
 
 class TestTextEncoder(unittest.TestCase):
-
     @classmethod
     def setUpClass(self):
         pass
@@ -97,20 +90,23 @@ class TestTextEncoder(unittest.TestCase):
         pass
 
     def test_text_encoder(self):
-        os.environ['GLOG_minloglevel'] = '2'
-        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/text_encoder_fp32/'
+        os.environ["GLOG_minloglevel"] = "2"
+        root_dir = "/tf_dataset2/models/nlp_toolkit/stable-diffusion/text_encoder_fp32/"
         if is_win():
-            root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'
-        model_dir = root_dir + 'model.onnx'
-        self.assertTrue(os.path.exists(model_dir), 'model is not found, please set your own model path!')
+            root_dir = "D:\\dataset\\nlptoolkit_ut_model\\"
+        model_dir = root_dir + "model.onnx"
+        self.assertTrue(
+            os.path.exists(model_dir),
+            "model is not found, please set your own model path!",
+        )
 
         graph = compile(model_dir, config=text_encoder_pattern_config)
-        input_0_path = root_dir + 'input_ids.pt'
+        input_0_path = root_dir + "input_ids.pt"
         inputs_0 = torch.load(input_0_path)
 
         output = graph.inference([inputs_0])
         for node_name in output.keys():
-            print(node_name, ', shape = ', output[node_name].shape)
+            print(node_name, ", shape = ", output[node_name].shape)
 
         # onnxruntime
         session = ort.InferenceSession(model_dir, providers=["CPUExecutionProvider"])
@@ -119,16 +115,19 @@ class TestTextEncoder(unittest.TestCase):
         ortvalue = ort.OrtValue.ortvalue_from_numpy(x)
         ortvalue.device_name()
 
-        outputs = session.run(None, {
-            'input_ids': ortvalue,
-        })
+        outputs = session.run(
+            None,
+            {
+                "input_ids": ortvalue,
+            },
+        )
 
         for idx, output_ort in enumerate(outputs):
-            print('onnxruntime output_shape = ', output_ort.shape)
+            print("onnxruntime output_shape = ", output_ort.shape)
 
-        flag = np.allclose(output['last_hidden_state:0'], outputs[0], atol=1e-2)
+        flag = np.allclose(output["last_hidden_state:0"], outputs[0], atol=1e-2)
         self.assertTrue(flag)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

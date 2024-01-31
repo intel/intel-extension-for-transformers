@@ -15,64 +15,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
+
 from .. import graph_utils as util
 from .. import logger
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='GroupNormSwish')
+@pattern_registry(pattern_type="GroupNormSwish")
 class GroupNormSwish(Pattern):
-    """
-    The input channels are separated into num_groups groups, each containing num_channels / 
+    """The input channels are separated into num_groups groups, each containing num_channels /
+
     num_groups channels. Each group is calculated like:
     y = (x - E(X)) / (Var(x) + epsilon) * gamma + beta
-    More info can see: https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html 
+    More info can see: https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html
     """
 
     def __call__(self, model):
-
         pattern_mapping_config = {
-            'GroupNormSwish': [
+            "GroupNormSwish": [
                 # wav2vec2-base / wav2vec2-large
                 {
-                    'patterns': {
-                        'in': [[(0, 'GroupNorm'), (1, 'Sigmoid'), (2, 'Mul')]],
-                        'out': [[(0, 'GroupNorm')]]
+                    "patterns": {
+                        "in": [[(0, "GroupNorm"), (1, "Sigmoid"), (2, "Mul")]],
+                        "out": [[(0, "GroupNorm")]],
                     },
-                    'search_mode': 'op_type',
-                    'node_names': {
-                        0: 0
+                    "search_mode": "op_type",
+                    "node_names": {0: 0},
+                    "input_tensors": {
+                        0: [[{0: [0]}, {0: [1]}, {0: [2]}], [[0, 1, 2], 3]]
                     },
-                    'input_tensors': {
-                        0: [[{
-                            0: [0]
-                        }, {
-                            0: [1]
-                        }, {
-                            0: [2]
-                        }], [[0, 1, 2], 3]]
-                    },
-                    'output_tensors': {
-                        0: [[{
-                            2: [0]
-                        }], [[0], 1]]
-                    },
-                    'returns': [0]
+                    "output_tensors": {0: [[{2: [0]}], [[0], 1]]},
+                    "returns": [0],
                 },
             ]
         }
 
-        pattern_dict = pattern_mapping_config['GroupNormSwish'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("GroupNormSwish", pattern_dict, model)
+        pattern_dict = pattern_mapping_config["GroupNormSwish"][0]
+        model, new_node_names, ret_old_nodes = util.pattern_mapping(
+            "GroupNormSwish", pattern_dict, model
+        )
         if len(new_node_names) != 0:
-            logger.info('GroupNormSwish matched...')
-            logger.debug('GroupNormSwish = {}'.format(new_node_names))
+            logger.info("GroupNormSwish matched...")
+            logger.debug("GroupNormSwish = {}".format(new_node_names))
             for j in range(len(new_node_names)):
                 attr = OrderedDict()
                 attr = ret_old_nodes[j][0].attr
-                attr['append_op'] = 'swish'
-                attr['swish_beta'] = 1
+                attr["append_op"] = "swish"
+                attr["swish_beta"] = 1
 
                 groupnorm_node = model.get_node_by_name(new_node_names[j][0])
                 groupnorm_node.attr = attr

@@ -15,7 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from fastchat.conversation import get_conv_template, register_conv_template, Conversation, SeparatorStyle
+from fastchat.conversation import (
+    Conversation,
+    SeparatorStyle,
+    get_conv_template,
+    register_conv_template,
+)
 
 # neuralchat-v3-1 prompt template
 register_conv_template(
@@ -89,8 +94,8 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="alpaca_without_input",
-        system_message="Below is an instruction that describes a task. " + \
-            "Write a response that appropriately completes the request.",
+        system_message="Below is an instruction that describes a task. "
+        + "Write a response that appropriately completes the request.",
         roles=("### Instruction", "### Response"),
         messages=(),
         offset=0,
@@ -103,9 +108,9 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="alpaca_with_input",
-        system_message="Below is an instruction that describes a task, " + \
-            "paired with an input that provides further context. " + \
-            "Write a response that appropriately completes the request.",
+        system_message="Below is an instruction that describes a task, "
+        + "paired with an input that provides further context. "
+        + "Write a response that appropriately completes the request.",
         roles=("### Instruction", "### Input", "### Response"),
         messages=(),
         offset=0,
@@ -132,8 +137,13 @@ register_conv_template(
         system_message="""### You are a helpful, respectful and honest assistant to help the user with questions. \
          - Please refer to the search results obtained from the local knowledge base. But be careful to not \
          incorporate the information that you think is not relevant to the question.
-         - If you don't know the answer to a question, please don't share false information.\n""" ,
-        roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
+         - If you don't know the answer to a question, please don't share false information.\n""",
+        roles=(
+            "### Question:",
+            "### Search Results:",
+            "### Chat History:",
+            "### Response:",
+        ),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -143,8 +153,8 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="rag_without_context",
-        system_message="Have a conversation with a human. " + \
-            "You are required to generate suitable response to the user input.\n",
+        system_message="Have a conversation with a human. "
+        + "You are required to generate suitable response to the user input.\n",
         roles=("### Input:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
@@ -155,8 +165,8 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="rag_without_context_memory",
-        system_message="Have a conversation with a human. " + \
-            "You are required to generate suitable response to the user input.\n",
+        system_message="Have a conversation with a human. "
+        + "You are required to generate suitable response to the user input.\n",
         roles=("### Input:", "### Chat History:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
@@ -172,7 +182,12 @@ register_conv_template(
          - Please refer to the search results obtained from the local knowledge base. But be careful to not \
          incorporate the information that you think is not relevant to the question.
          - If you don't know the answer to a question, please don't share false information.\n""",
-        roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
+        roles=(
+            "### Question:",
+            "### Search Results:",
+            "### Chat History:",
+            "### Response:",
+        ),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -183,9 +198,9 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="intent",
-        system_message="Please identify the intent of the user query." + \
-            " You may only respond with \"chitchat\" or \"QA\" without explanations" + \
-            " or engaging in conversation.\n",
+        system_message="Please identify the intent of the user query."
+        + ' You may only respond with "chitchat" or "QA" without explanations'
+        + " or engaging in conversation.\n",
         roles=("### User Query: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
@@ -196,9 +211,9 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="ner",
-        system_message="""Please determine the precise time mentioned in the user's query. 
-            Your response should consist only of an accurate time in the format 
-            'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' 
+        system_message="""Please determine the precise time mentioned in the user's query.
+            Your response should consist only of an accurate time in the format
+            'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.'
             If the user query does not include any time reference, please reply with 'None'.\n""",
         roles=("Current Time: ", "User Query: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
@@ -215,6 +230,7 @@ register_conv_template(
         sep="\n\n",
     )
 )
+
 
 class PromptTemplate:
     def __init__(self, name="one_shot", clear_history=False):
@@ -236,6 +252,7 @@ class PromptTemplate:
 
     def clear_messages(self) -> str:
         self.conv.messages = []
+
 
 # pylint: disable=C0301
 MAGICODER_PROMPT = """You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.

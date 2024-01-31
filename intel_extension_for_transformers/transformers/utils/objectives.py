@@ -14,22 +14,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The class of objective for optimization."""
+
 
 class Objective(object):
     """Objective class."""
-    def __init__(self, name: str, greater_is_better: bool = True, weight_ratio: float = None):
+
+    def __init__(
+        self, name: str, greater_is_better: bool = True, weight_ratio: float = None
+    ):
         """Init an instance.
 
         Args:
             name: Objectice name.
-            greater_is_better: Used to describe the usage of the metric, like: greater is better for f1, 
+            greater_is_better: Used to describe the usage of the metric, like: greater is better for f1,
                 this parameter is only used for quantization.
-            weight_ratio: Used when there are multiple metrics, for example: you want to focus on both 
-                f1 and accuracy, then you will create f1 instance and accuracy instance, and indicate 
-                their weight proportion. If weight_ratio of f1 is 0.3, and weight ratio of accuracy 
-                is 0.7, then the final metric to tune is f1*0.3 + accuracy*0.7, this parameter is only 
+            weight_ratio: Used when there are multiple metrics, for example: you want to focus on both
+                f1 and accuracy, then you will create f1 instance and accuracy instance, and indicate
+                their weight proportion. If weight_ratio of f1 is 0.3, and weight ratio of accuracy
+                is 0.7, then the final metric to tune is f1*0.3 + accuracy*0.7, this parameter is only
                 used for quantization.
         """
         self.name = name

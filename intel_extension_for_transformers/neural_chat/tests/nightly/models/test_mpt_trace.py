@@ -15,8 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 import unittest
+
+from intel_extension_for_transformers.neural_chat import PipelineConfig, build_chatbot
+
 
 class TestMptTrace(unittest.TestCase):
     def setUp(self):
@@ -24,12 +26,15 @@ class TestMptTrace(unittest.TestCase):
 
     def tearDown(self) -> None:
         return super().tearDown()
-    
+
     def test_mpt_trace(self):
-        config = PipelineConfig(model_name_or_path='/tf_dataset2/models/nlp_toolkit/mpt-7b')
+        config = PipelineConfig(
+            model_name_or_path="/tf_dataset2/models/nlp_toolkit/mpt-7b"
+        )
         chatbot = build_chatbot(config)
         response = chatbot.predict(query="hello")
         self.assertIsNotNone(response)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,46 +14,45 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
 
 
 # The inputs must be two-dimensional matrices
-@operator_registry(operator_type='Gemm')
+@operator_registry(operator_type="Gemm")
 class Gemm(Operator):
     """Parse the Gemm operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
         """Extract the node attr from frameworks."""
-        self._op_type = 'MatMulWithBias'
-        if framework == 'onnxruntime':
+        self._op_type = "MatMulWithBias"
+        if framework == "onnxruntime":
             transpose_a = False
             transpose_b = False
             alpha = 1.0
             beta = 1.0
             for attr in node.attribute:
-                if attr.name == 'transA':
+                if attr.name == "transA":
                     transpose_a = bool(attr.i)
-                if attr.name == 'transB':
+                if attr.name == "transB":
                     transpose_b = bool(attr.i)
-                if attr.name == 'alpha':
+                if attr.name == "alpha":
                     alpha = attr.f
-                if attr.name == 'beta':
+                if attr.name == "beta":
                     beta = attr.f
             if transpose_a:
-                self._attr['src0_perm'] = '1,0'
+                self._attr["src0_perm"] = "1,0"
             # see OneDNN InnerProduct related requirements
             if not transpose_b:
-                self._attr['src1_perm'] = '1,0'
+                self._attr["src1_perm"] = "1,0"
             else:
-                self._attr['src1_perm'] = '0,1'
+                self._attr["src1_perm"] = "0,1"
             if alpha != 1.0:
-                self._attr['alpha'] = alpha
+                self._attr["alpha"] = alpha
             if beta != 1.0:
-                self._attr['beta'] = beta
+                self._attr["beta"] = beta

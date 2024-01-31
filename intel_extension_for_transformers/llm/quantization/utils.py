@@ -16,18 +16,19 @@
 # limitations under the License.
 
 
-import logging
 import gc
+import logging
 import math
 import os
+
 from accelerate import init_empty_weights
-from datasets import load_dataset
-from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from neural_compressor import quantization
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from neural_compressor.config import PostTrainingQuantConfig
+
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
+
 from ...utils.utils import is_ipex_available
-from transformers import AutoTokenizer
 
 if is_ipex_available():
     import intel_extension_for_pytorch as ipex
@@ -93,8 +94,7 @@ def _replace_linear(
     device="cpu",
     empty_weights=False,
 ):
-    """
-    Private method that wraps the recursion for module replacement.
+    """Private method that wraps the recursion for module replacement.
 
     Returns the converted model and a boolean that indicates if the conversion has been successfully or not.
     """
@@ -104,9 +104,14 @@ def _replace_linear(
         current_key_name.append(name)
         is_removed = False
 
-        if (isinstance(module, torch.nn.Linear) or isinstance(module, WeightOnlyLinear)
-            or (is_ipex_available() and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
-           and (name not in modules_to_not_convert):
+        if (
+            isinstance(module, torch.nn.Linear)
+            or isinstance(module, WeightOnlyLinear)
+            or (
+                is_ipex_available()
+                and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear)
+            )
+        ) and (name not in modules_to_not_convert):
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(
                 key in ".".join(current_key_name) for key in modules_to_not_convert
@@ -114,7 +119,11 @@ def _replace_linear(
                 with init_empty_weights():
                     in_features = module.in_features
                     out_features = module.out_features
-                    if device == "cpu" or device == torch.device("cpu") or device == "auto":
+                    if (
+                        device == "cpu"
+                        or device == torch.device("cpu")
+                        or device == "auto"
+                    ):
                         from .nn.modules import (
                             QuantizedLinearQBits,
                         )  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
@@ -131,8 +140,10 @@ def _replace_linear(
                             scheme=quantization_config.scheme,
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
-                        from intel_extension_for_pytorch.nn.utils._quantize_convert \
-                            import WeightOnlyLinear as ipex_linear  # pylint: disable=E0401
+                        from intel_extension_for_pytorch.nn.utils._quantize_convert import (
+                            WeightOnlyLinear as ipex_linear,
+                        )  # pylint: disable=E0401
+
                         model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
@@ -144,27 +155,50 @@ def _replace_linear(
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme,
                             compression_dtype=module.compression_dtype
-                            if hasattr(module, "compression_dtype") else torch.int8,
-                            compression_dim=module.compression_dim if hasattr(module, "compression_dim") else 0,
+                            if hasattr(module, "compression_dtype")
+                            else torch.int8,
+                            compression_dim=module.compression_dim
+                            if hasattr(module, "compression_dim")
+                            else 0,
                             device=device,
                             use_optimum_format=module.use_optimum_format
-                            if hasattr(module, "use_optimum_format") else False,
+                            if hasattr(module, "use_optimum_format")
+                            else False,
                         )
                         if quantization_config.algorithm == "GPTQ":
-                            g_idx = module.g_idx if hasattr(module, "g_idx") else \
-                                torch.zeros(in_features, dtype=torch.int32).to(device)
+                            g_idx = (
+                                module.g_idx
+                                if hasattr(module, "g_idx")
+                                else torch.zeros(in_features, dtype=torch.int32).to(
+                                    device
+                                )
+                            )
                         else:
                             g_idx = None
                         model._modules[name].set_scales_zps_gidx(
-                            module.scales if hasattr(module, "scales") else torch.ones(
-                                    (out_features, math.ceil(in_features / quantization_config.group_size)),
-                                    dtype=convert_dtype_str2torch(quantization_config.compute_dtype),
-                                    device=torch.device(device)),
+                            module.scales
+                            if hasattr(module, "scales")
+                            else torch.ones(
+                                (
+                                    out_features,
+                                    math.ceil(
+                                        in_features / quantization_config.group_size
+                                    ),
+                                ),
+                                dtype=convert_dtype_str2torch(
+                                    quantization_config.compute_dtype
+                                ),
+                                device=torch.device(device),
+                            ),
                             module.qzeros if hasattr(module, "qzeros") else None,
-                            g_idx
+                            g_idx,
                         )
                     else:
-                        raise Exception("{} device Unsupported weight only quantization!".format(device))
+                        raise Exception(
+                            "{} device Unsupported weight only quantization!".format(
+                                device
+                            )
+                        )
 
                     is_replaced = True
                     # Store the module class in case we need to transpose the weight later
@@ -178,6 +212,7 @@ def _replace_linear(
                             n_head = None
                             n_head_kv = None
                             from .gptq_utils import unpack_weight
+
                             int_weight, gptq_scales, gptq_zeros = unpack_weight(
                                 module.qweight,
                                 module.scales,
@@ -200,19 +235,23 @@ def _replace_linear(
                             )
                 else:
                     if not hasattr(module, "qweight"):
-                        n_pack = 8 // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]
+                        n_pack = (
+                            8 // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]
+                        )
                         weight = torch.zeros(
                             (math.ceil(out_features / n_pack), in_features),
-                            dtype=torch.int8, device=torch.device(device)
+                            dtype=torch.int8,
+                            device=torch.device(device),
                         )
                     model._modules[name].set_weights_bias(
                         module.qweight.data if hasattr(module, "qweight") else weight,
-                        None if module.bias is None else module.bias.data)
+                        None if module.bias is None else module.bias.data,
+                    )
                     del module
                     gc.collect()
                     is_removed = True
 
-        if not is_removed and len(list(module.children())) > 0: # pylint: disable=E1101
+        if not is_removed and len(list(module.children())) > 0:  # pylint: disable=E1101
             _, is_replaced = _replace_linear(
                 module,
                 modules_to_not_convert,
@@ -229,8 +268,10 @@ def _replace_linear(
 
 def convert_to_quantized_model(model, config, device="cpu"):
     if device == "xpu" or device == torch.device("xpu"):
-        import intel_extension_for_pytorch
-        assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
+
+        assert (
+            hasattr(torch, "xpu") and torch.xpu.is_available()
+        ), "There is no xpu device in this system!"
     calib_dataloader = config.calib_dataloader
     calib_func = config.calib_func
     calib_iters = config.calib_iters
@@ -246,9 +287,9 @@ def convert_to_quantized_model(model, config, device="cpu"):
         if config.tokenizer is None:
             logger.error(
                 "Please provide the tokenizer or provide calib_func directly,"
-                + " the following is how to get tokenizer. \n" +
-                " from transformer import AutoTokenizer \n" +
-                " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
+                + " the following is how to get tokenizer. \n"
+                + " from transformer import AutoTokenizer \n"
+                + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
             )
             exit(0)
 
@@ -261,8 +302,9 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 example = config.tokenizer(examples["code"])
             else:
                 logger.error(
-                    "Please check dataset prompt identifier," +
-                    " NeelNanda/pile-10k is default used calibration dataset.")
+                    "Please check dataset prompt identifier,"
+                    + " NeelNanda/pile-10k is default used calibration dataset."
+                )
                 exit(0)
             return example
 
@@ -273,7 +315,11 @@ def convert_to_quantized_model(model, config, device="cpu"):
             input_ids_padded = []
             for text in batch:
                 input_ids = text["input_ids"]
-                input_ids = input_ids[:512] if (len(input_ids) > 512 and config.algorithm != "GPTQ") else input_ids
+                input_ids = (
+                    input_ids[:512]
+                    if (len(input_ids) > 512 and config.algorithm != "GPTQ")
+                    else input_ids
+                )
                 input_ids_padded.append(input_ids)
             return torch.vstack(input_ids_padded)
 
@@ -286,19 +332,21 @@ def convert_to_quantized_model(model, config, device="cpu"):
     if calib_func is None and config.algorithm in ["AWQ"]:
 
         def default_calib_func(model):
-            """
-            This is the default calibration function, the dataset is NeelNanda/pile-10k,
-            the default calib_iters is 100.
-            """
+            """This is the default calibration function, the dataset is NeelNanda/pile-10k,
+            the default calib_iters is 100."""
             for i, (input_ids) in enumerate(calib_dataloader):
                 if i >= calib_iters:
                     break
-                model(input_ids=input_ids, )
+                model(
+                    input_ids=input_ids,
+                )
 
         calib_func = default_calib_func
-        logger.info("The default calibration function is used, " +
-                    "the calibration dataset is NeelNanda/pile-10k," +
-                    "batchsize is 1 and calibration iteration is 100.")
+        logger.info(
+            "The default calibration function is used, "
+            + "the calibration dataset is NeelNanda/pile-10k,"
+            + "batchsize is 1 and calibration iteration is 100."
+        )
     if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
         return replace_linear(model, None, None, config, device=device)
     else:
@@ -316,9 +364,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 else False,
                 "enable_mse_search": config.mse_range,
             },
-            "awq_args": config.algorithm_args.update({"enable_mse_search": config.mse_range})
-                if config.algorithm == "AWQ" and config.algorithm_args is not None else {},
-            "gptq_args": config.algorithm_args if config.algorithm == "GPTQ" else None
+            "awq_args": config.algorithm_args.update(
+                {"enable_mse_search": config.mse_range}
+            )
+            if config.algorithm == "AWQ" and config.algorithm_args is not None
+            else {},
+            "gptq_args": config.algorithm_args if config.algorithm == "GPTQ" else None,
         }
         conf = PostTrainingQuantConfig(
             approach="weight_only",
@@ -334,10 +385,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 },
             },
             op_name_dict={
-                '.*lm_head': {  # re.match
-                    "weight": {
-                        'dtype': 'fp32'
-                    },
+                ".*lm_head": {  # re.match
+                    "weight": {"dtype": "fp32"},
                 },
             },
             recipes=recipes,
@@ -347,20 +396,17 @@ def convert_to_quantized_model(model, config, device="cpu"):
         if config.algorithm in ["TEQ", "RTN", "GPTQ"]:
             calib_func = None
 
-        inc_model = quantization.fit(model,
-                                     conf,
-                                     calib_func=calib_func,
-                                     calib_dataloader=calib_dataloader)
+        inc_model = quantization.fit(
+            model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
+        )
         if device == "xpu" or device == torch.device("xpu"):
-            model = inc_model.export_compressed_model(compression_dtype=torch.int8,
-                                                      compression_dim=0,
-                                                      use_optimum_format=False,
-                                                      scale_dtype=convert_dtype_str2torch(config.scale_dtype))
-            q_model = replace_linear(model,
-                                     None,
-                                     None,
-                                     config,
-                                     device=device)
+            model = inc_model.export_compressed_model(
+                compression_dtype=torch.int8,
+                compression_dim=0,
+                use_optimum_format=False,
+                scale_dtype=convert_dtype_str2torch(config.scale_dtype),
+            )
+            q_model = replace_linear(model, None, None, config, device=device)
             return q_model.to("xpu")
         else:
             if config.algorithm == "GPTQ":
@@ -382,6 +428,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 return replace_linear(inc_model, None, None, config, device=device)
 
             return replace_linear(inc_model.model, None, None, config, device=device)
+
 
 def convert_dtype_str2torch(str_dtype):
     if str_dtype == "int8":
@@ -417,5 +464,7 @@ def get_bits(config):
     elif "int4" in config.weight_dtype:
         bits = 4
     else:
-        assert False, "Unsupported {} for quantize weight only by IPEX backend".format(config.weight_dtype)
+        assert False, "Unsupported {} for quantize weight only by IPEX backend".format(
+            config.weight_dtype
+        )
     return bits

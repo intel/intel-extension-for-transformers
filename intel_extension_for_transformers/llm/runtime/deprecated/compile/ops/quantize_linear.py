@@ -14,31 +14,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
 
 
-@operator_registry(operator_type='QuantizeLinear')
+@operator_registry(operator_type="QuantizeLinear")
 class QuantizeLinear(Operator):
     """Parse the QuantizeLinear operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
         """Extract the node attr from onnxruntime."""
-        self._op_type = 'Quantize'
-        if framework == 'onnxruntime':
-            self._attr['output_dtype'] = 'u8'
-            self._attr['quant_mode'] = 'zp_scale'
+        self._op_type = "Quantize"
+        if framework == "onnxruntime":
+            self._attr["output_dtype"] = "u8"
+            self._attr["quant_mode"] = "zp_scale"
 
 
-@operator_registry(operator_type='Quantize')
+@operator_registry(operator_type="Quantize")
 class Quantize(Operator):
     """Register the Quantize operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -46,6 +46,6 @@ class Quantize(Operator):
     def set_attr(self, framework, node):
         """Extract the node attr from onnxruntime."""
         # aten::quantize_per_tensor(%weight, %scale, %zero_point, %dtype)
-        self._attr['scale'] = node.inputsAt(1).toIValue()
-        self._attr['zero_point'] = node.inputsAt(2).toIValue()
-        self._attr['dtype'] = node.inputsAt(3).toIValue()
+        self._attr["scale"] = node.inputsAt(1).toIValue()
+        self._attr["zero_point"] = node.inputsAt(2).toIValue()
+        self._attr["dtype"] = node.inputsAt(3).toIValue()

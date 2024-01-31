@@ -17,22 +17,24 @@ For pattern tuning, it is mainly for two big patterns (Super Bert/ Merge QKV). T
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.loaders.loader import Loader
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors.extractor import Extractor
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.subgraph_matcher import SubGraphMatcher
+
 load = Loader()
 extract = Extractor()
 subgraph_match = SubGraphMatcher()
 graph = load(model_path)
 graph = extract(graph)
 # pattern tuning
-graph = subgraph_match(graph, tune = True)
+graph = subgraph_match(graph, tune=True)
 output = graph.inference([data])
 ```
 ## Graph Tuning for Dispatching Best Graph
 For graph tuning, it is mainly for the sparse graphs or dense graphs. In some cases such as small shapes or devices with ISA, the performance of dense ops maybe perform better than sparse ops. And sparse op will bring other transpose ops. We have an easy-to-use API to tune sparse graphs, dense graphs or mix graphs automatically. You just need add graph_dispatch after `compile`:
 ```python
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+
 model = compile(int8_model_path)
 # set shape for graph tuning
-model.graph_dispatch(inputs_shape = [shape_0, shape_1, shape_2])
+model.graph_dispatch(inputs_shape=[shape_0, shape_1, shape_2])
 output = model.inference([input_0, input_1, input_2])
 ```
 >**Note** Sparse and dense graph tuning only can be used on int8 models.
@@ -55,12 +57,14 @@ output = model.inference([input_0, input_1, input_2])
 ```python
 # load model from disk
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+
 model = Graph()
 model.graph_init(conf.yaml, model.bin)
 # or get model from compile
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+
 model = compile(model.onnx)
-options = {'enable_op_tuning': True}
+options = {"enable_op_tuning": True}
 model.execution_options = options
 # inference with fixed shape data
 model.inference([data])
@@ -88,11 +92,12 @@ InnerProduct 14124194128933833351 SparseLib 4,1024,384 0 2
 You can set the table file path and tuning warmup iterations if you want to simulate real deployment conditions.
 
 ```python
-options = {'enable_op_tuning': True,
-           # set tuning warmup iterations
-           'warmup_iter': num_iterations,
-           # set table file path
-           'dispatch_table_file_root': file_root,
+options = {
+    "enable_op_tuning": True,
+    # set tuning warmup iterations
+    "warmup_iter": num_iterations,
+    # set table file path
+    "dispatch_table_file_root": file_root,
 }
 model.execution_options = options
 # inference with multi-iterations
@@ -113,11 +118,12 @@ for i in range(iterations):
 # get performance here
 
 # 2. tuning
-options = {'enable_op_tuning': True,
-           # set tuning warmup iterations
-           'warmup_iter': num_iterations,
-           # set table file path
-           'dispatch_table_file_root': file_root,
+options = {
+    "enable_op_tuning": True,
+    # set tuning warmup iterations
+    "warmup_iter": num_iterations,
+    # set table file path
+    "dispatch_table_file_root": file_root,
 }
 model.execution_options = options
 for i in range(iterations):
@@ -125,7 +131,7 @@ for i in range(iterations):
 # get performance here
 
 # 3. after tuning
-options = {'enable_op_tuning': False}
+options = {"enable_op_tuning": False}
 model.execution_options = options
 for i in range(iterations):
     model.inference([data])

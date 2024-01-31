@@ -1,53 +1,71 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
+import time
+
 # pylint: disable=wrong-import-position
-from typing import Any, Optional, Callable
+from typing import Any, Callable, Optional
 
 import gptcache.processor.post
 import gptcache.processor.pre
-from gptcache import Cache, cache, Config
+from gptcache import Cache, Config, cache
 from gptcache.adapter.adapter import adapt
 from gptcache.embedding import (
-    Onnx,
-    Huggingface,
     SBERT,
-    FastText,
-    Data2VecAudio,
-    Timm,
-    ViT,
-    OpenAI,
     Cohere,
-    Rwkv,
+    Data2VecAudio,
+    FastText,
+    Huggingface,
+    Onnx,
+    OpenAI,
     PaddleNLP,
+    Rwkv,
+    Timm,
     UForm,
+    ViT,
 )
 from gptcache.embedding.base import BaseEmbedding
 from gptcache.manager import manager_factory
 from gptcache.manager.data_manager import DataManager
 from gptcache.processor.context import (
-    SummarizationContextProcess,
-    SelectiveContextProcess,
     ConcatContextProcess,
+    SelectiveContextProcess,
+    SummarizationContextProcess,
 )
 from gptcache.processor.post import temperature_softmax
 from gptcache.processor.pre import get_prompt
 from gptcache.similarity_evaluation import (
-    SearchDistanceEvaluation,
-    NumpyNormEvaluation,
-    OnnxModelEvaluation,
     ExactMatchEvaluation,
     KReciprocalEvaluation,
+    NumpyNormEvaluation,
+    OnnxModelEvaluation,
+    SearchDistanceEvaluation,
     SimilarityEvaluation,
 )
 from gptcache.utils import import_ruamel
-import time
-import sys
+
 sys.path.append("..")
+
 
 def _cache_data_converter(cache_data):
     # if kwargs.get("stream", False):
     #     return _construct_stream_resp_from_cache(cache_data)
     return _construct_resp_from_cache(cache_data)
-    """For cache results, do nothing"""
+    """For cache results, do nothing."""
     # return cache_data
+
 
 def _construct_resp_from_cache(return_message):
     return {
@@ -64,28 +82,29 @@ def _construct_resp_from_cache(return_message):
         "object": "chat.completion",
     }
 
+
 def _update_cache_callback_none(
     llm_data, update_cache_func, *args, **kwargs  # pylint: disable=W0613
 ) -> None:
-    """When updating cached data, do nothing, because currently only cached queries are processed"""
+    """When updating cached data, do nothing, because currently only cached queries are processed."""
     return None
 
 
 def _llm_handle_none(*llm_args, **llm_kwargs) -> None:  # pylint: disable=W0613
-    """Do nothing on a cache miss"""
+    """Do nothing on a cache miss."""
     return None
 
 
 def _update_cache_callback(
     llm_data, update_cache_func, *args, **kwargs
 ):  # pylint: disable=W0613
-    """Save the `llm_data` to cache storage"""
+    """Save the `llm_data` to cache storage."""
     update_cache_func(llm_data)
 
 
 def put(prompt: str, data: Any, **kwargs) -> None:
-    """put api, put qa pair information to GPTCache
-    Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache
+    """Put api, put qa pair information to GPTCache
+    Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache.
 
     :param prompt: the cache data key, usually question text
     :type prompt: str
@@ -106,6 +125,7 @@ def put(prompt: str, data: Any, **kwargs) -> None:
 
     def llm_handle(*llm_args, **llm_kwargs):  # pylint: disable=W0613
         return data
+
     adapt(
         llm_handle,
         _cache_data_converter,
@@ -117,8 +137,8 @@ def put(prompt: str, data: Any, **kwargs) -> None:
 
 
 def get(prompt: str, **kwargs) -> Any:
-    """get api, get the cache data according to the `prompt`
-    Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache
+    """Get api, get the cache data according to the `prompt`
+    Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache.
 
     :param prompt: the cache data key, usually question text
     :type prompt: str
@@ -155,7 +175,7 @@ def init_similar_cache(
     post_func: Callable = temperature_softmax,
     config: Config = Config(),
 ):
-    """Provide a quick way to initialize cache for api service
+    """Provide a quick way to initialize cache for api service.
 
     :param data_dir: cache data storage directory
     :type data_dir: str
@@ -205,11 +225,15 @@ def init_similar_cache(
     )
 
 
-def init_similar_cache_from_config(config_dir: str, embedding_model_dir: str, cache_obj: Optional[Cache] = None):
+def init_similar_cache_from_config(
+    config_dir: str, embedding_model_dir: str, cache_obj: Optional[Cache] = None
+):
     import_ruamel()
     from ruamel.yaml import YAML  # pylint: disable=C0415
+
     if config_dir:
         import os
+
         os.chdir(os.path.dirname(os.path.dirname(__file__)))
         with open(config_dir, "r", encoding="utf-8") as f:
             yaml = YAML(typ="unsafe", pure=True)
@@ -225,7 +249,7 @@ def init_similar_cache_from_config(config_dir: str, embedding_model_dir: str, ca
     embedding_config = init_conf.get("model_config", {})
     # if not embedding_config:
     #     embedding_config = init_conf.get("embedding_config", {})
-    embedding_config = {'model': embedding_model_dir}
+    embedding_config = {"model": embedding_model_dir}
     embedding_model = _get_model(embedding, embedding_config)
 
     storage_config = init_conf.get("storage_config", {})

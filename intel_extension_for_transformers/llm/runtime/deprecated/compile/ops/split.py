@@ -17,25 +17,26 @@
 
 """The neural engine operator mapping file."""
 
-from .op import Operator, operator_registry
-from .tensor import Tensor
 from ..graph_utils import list2str
+from .op import Operator, operator_registry
 
 
-@operator_registry(operator_type='Split')
+@operator_registry(operator_type="Split")
 class Split(Operator):
     """Parse the Split operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
     def set_attr(self, framework, node):
         """Extract the node attr from onnxruntime."""
-        if framework == 'onnxruntime':
+        if framework == "onnxruntime":
             axis = node.attribute[0].i
-            self._attr['axis'] = axis
+            self._attr["axis"] = axis
             if len(node.attribute) > 1:
                 split = node.attribute[1].ints
-                self._attr['split'] = list2str(split)
+                self._attr["split"] = list2str(split)
             else:
                 split = node.attribute[0].i
-                self._attr['split'] = list2str([split])
+                self._attr["split"] = list2str([split])

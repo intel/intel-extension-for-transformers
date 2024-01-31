@@ -17,14 +17,17 @@
 
 import os
 import sys
-from transformers import Seq2SeqTrainingArguments, HfArgumentParser
+
+from transformers import HfArgumentParser, Seq2SeqTrainingArguments
+
+from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
 from intel_extension_for_transformers.neural_chat.config import (
-    ModelArguments,
     DataArguments,
     FinetuningArguments,
+    ModelArguments,
     TextGenerationFinetuningConfig,
 )
-from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
+
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -55,6 +58,7 @@ def main():
         finetune_args=finetune_args,
     )
     finetune_model(finetune_cfg)
+
 
 if __name__ == "__main__":
     main()

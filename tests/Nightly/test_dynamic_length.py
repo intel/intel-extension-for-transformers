@@ -1,39 +1,57 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
-import onnx
 import shutil
-import torch
-import torch.utils.data as data
 import unittest
-import transformers
-import logging
+
 import numpy as np
+import torch.utils.data as data
+import transformers
 
-from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-from intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic import RobertaForQuestionAnswering
-from intel_extension_for_transformers.transformers.modeling.modeling_bert_dynamic import BertForQuestionAnswering
 from intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils import (
+    sample_layer_configuration,
     sample_length_configuration,
-    sample_layer_configuration
 )
-
 from intel_extension_for_transformers.transformers.dynamic.evolution import (
-    approx_ratio, inverse, store2str, Evolution
+    Evolution,
+    approx_ratio,
+    inverse,
+    store2str,
 )
+from intel_extension_for_transformers.transformers.modeling.modeling_bert_dynamic import (
+    BertForQuestionAnswering,
+)
+from intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic import (
+    RobertaForQuestionAnswering,
+)
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
-transformers.models.roberta.modeling_roberta.RobertaForQuestionAnswering = RobertaForQuestionAnswering
-transformers.models.bert.modeling_bert.BertForQuestionAnswering = BertForQuestionAnswering
+transformers.models.roberta.modeling_roberta.RobertaForQuestionAnswering = (
+    RobertaForQuestionAnswering
+)
+transformers.models.bert.modeling_bert.BertForQuestionAnswering = (
+    BertForQuestionAnswering
+)
 
 from transformers import (
-    AutoConfig,
     AutoModelForQuestionAnswering,
     AutoTokenizer,
     TrainingArguments,
 )
 
-from intel_extension_for_transformers.transformers import (
-    DynamicLengthConfig,
-)
-
+from intel_extension_for_transformers.transformers import DynamicLengthConfig
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
@@ -53,15 +71,20 @@ NUM_LAYERS = 6
 
 class DummyDataset(data.Dataset):
     def __init__(self, labels=False, type=None):
-        MODEL_NAME = BERT_MODEL if type=='bert' else MINILM_MODEL
+        MODEL_NAME = BERT_MODEL if type == "bert" else MINILM_MODEL
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
         self.sequence_a = "intel-extension-for-transformers is based in SH"
         self.sequence_b = "Where is intel-extension-for-transformers based?"
-        self.encoded_dict = self.tokenizer(self.sequence_a, self.sequence_b, padding="max_length", max_length=MAX_LENGTH)
+        self.encoded_dict = self.tokenizer(
+            self.sequence_a,
+            self.sequence_b,
+            padding="max_length",
+            max_length=MAX_LENGTH,
+        )
         if labels:
-            self.encoded_dict['start_positions'] = [21]
-            self.encoded_dict['end_positions'] = [25]
-        
+            self.encoded_dict["start_positions"] = [21]
+            self.encoded_dict["end_positions"] = [25]
+
     def __len__(self):
         return 1
 
@@ -71,8 +94,9 @@ class DummyDataset(data.Dataset):
 
 
 def check_onnx(model_path, dataloader):
-    import onnxruntime as ort
     import numpy as np
+    import onnxruntime as ort
+
     # Check onnxruntime
     ort_session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
     # Preprocess input for onnxruntime
@@ -80,21 +104,23 @@ def check_onnx(model_path, dataloader):
     input = next(it)
     input_names = list(input.keys())
     for k in input_names:
-        if 'label' in k:
+        if "label" in k:
             input.pop(k)
         else:
             input[k] = np.array(input[k])
     # Run onnxruntime inference session
-    ort_session.run(None, input,)
+    ort_session.run(
+        None,
+        input,
+    )
     return True
+
 
 class TestDynamicLengthInferenceRoberta(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.model = AutoModelForQuestionAnswering.from_pretrained(
-            MINILM_MODEL
-        )
-        self.dummy_dataset = DummyDataset(type='roberta')
+        self.model = AutoModelForQuestionAnswering.from_pretrained(MINILM_MODEL)
+        self.dummy_dataset = DummyDataset(type="roberta")
         self.dynamic_trainer = NLPTrainer(
             model=self.model,
             train_dataset=self.dummy_dataset,
@@ -103,34 +129,34 @@ class TestDynamicLengthInferenceRoberta(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        shutil.rmtree('./mlruns', ignore_errors=True)
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
-        shutil.rmtree('./dynamic-model.onnx', ignore_errors=True)
+        shutil.rmtree("./mlruns", ignore_errors=True)
+        shutil.rmtree("./tmp_trainer", ignore_errors=True)
+        shutil.rmtree("./dynamic-model.onnx", ignore_errors=True)
 
     def test_dynamic_inference(self):
         full_output = self.dynamic_trainer.predict(self.dummy_dataset).predictions
-        
+
         dynamic_length_config = DynamicLengthConfig(
-            const_rate=0.2,
-            max_length=MAX_LENGTH
+            const_rate=0.2, max_length=MAX_LENGTH
         )
         self.dynamic_trainer.set_dynamic_config(dynamic_length_config)
-        
+
         dynamic_output = self.dynamic_trainer.predict(self.dummy_dataset).predictions
-          
+
         self.assertTrue((full_output[0] != dynamic_output[0]).any())
-  
-        #check onnx
-        self.dynamic_trainer.export_to_onnx('dynamic-model.onnx')
-        self.assertTrue(check_onnx('dynamic-model.onnx', self.dynamic_trainer.get_eval_dataloader()))
+
+        # check onnx
+        self.dynamic_trainer.export_to_onnx("dynamic-model.onnx")
+        self.assertTrue(
+            check_onnx("dynamic-model.onnx", self.dynamic_trainer.get_eval_dataloader())
+        )
+
 
 class TestDynamicLengthInferenceBert(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.model = AutoModelForQuestionAnswering.from_pretrained(
-            BERT_MODEL
-        )
-        self.dummy_dataset = DummyDataset(type='bert')
+        self.model = AutoModelForQuestionAnswering.from_pretrained(BERT_MODEL)
+        self.dummy_dataset = DummyDataset(type="bert")
         self.dynamic_trainer = NLPTrainer(
             model=self.model,
             train_dataset=self.dummy_dataset,
@@ -139,38 +165,36 @@ class TestDynamicLengthInferenceBert(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        shutil.rmtree('./mlruns', ignore_errors=True)
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
-        shutil.rmtree('./dynamic-model.onnx', ignore_errors=True)
+        shutil.rmtree("./mlruns", ignore_errors=True)
+        shutil.rmtree("./tmp_trainer", ignore_errors=True)
+        shutil.rmtree("./dynamic-model.onnx", ignore_errors=True)
 
     def test_dynamic_inference(self):
         full_output = self.dynamic_trainer.predict(self.dummy_dataset).predictions
-        
+
         dynamic_length_config = DynamicLengthConfig(
-            const_rate=0.2,
-            max_length=MAX_LENGTH
+            const_rate=0.2, max_length=MAX_LENGTH
         )
         self.dynamic_trainer.set_dynamic_config(dynamic_length_config)
-        
-        dynamic_output = self.dynamic_trainer.predict(self.dummy_dataset).predictions
-          
-        self.assertTrue((full_output[0] != dynamic_output[0]).any())
-  
-        #check onnx
-        self.dynamic_trainer.export_to_onnx('dynamic-model.onnx')
-        self.assertTrue(check_onnx('dynamic-model.onnx', self.dynamic_trainer.get_eval_dataloader()))
 
+        dynamic_output = self.dynamic_trainer.predict(self.dummy_dataset).predictions
+
+        self.assertTrue((full_output[0] != dynamic_output[0]).any())
+
+        # check onnx
+        self.dynamic_trainer.export_to_onnx("dynamic-model.onnx")
+        self.assertTrue(
+            check_onnx("dynamic-model.onnx", self.dynamic_trainer.get_eval_dataloader())
+        )
 
 
 class TestDynamicLengthTrainingRoberta(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.model = AutoModelForQuestionAnswering.from_pretrained(
-            MINILM_MODEL
-        )
-        self.dummy_dataset = DummyDataset(labels=True,type='roberta')
+        self.model = AutoModelForQuestionAnswering.from_pretrained(MINILM_MODEL)
+        self.dummy_dataset = DummyDataset(labels=True, type="roberta")
         training_args = TrainingArguments(
-            output_dir='./results',
+            output_dir="./results",
             num_train_epochs=1,
         )
         self.dynamic_trainer = NLPTrainer(
@@ -182,10 +206,9 @@ class TestDynamicLengthTrainingRoberta(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        shutil.rmtree('./mlruns', ignore_errors=True)
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
-        shutil.rmtree('./results', ignore_errors=True)
-
+        shutil.rmtree("./mlruns", ignore_errors=True)
+        shutil.rmtree("./tmp_trainer", ignore_errors=True)
+        shutil.rmtree("./results", ignore_errors=True)
 
     def test_dynamic_training(self):
         dynamic_length_config = DynamicLengthConfig(
@@ -194,21 +217,20 @@ class TestDynamicLengthTrainingRoberta(unittest.TestCase):
             length_drop_ratio_bound=LENGTHDROP_RATIO,
             layer_dropout_prob=LAYER_DROPOUT_PROB,
             layer_dropout_bound=LAYER_DROPOUT_BOUND,
-            max_length=MAX_LENGTH
+            max_length=MAX_LENGTH,
         )
 
         self.dynamic_trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
         self.dynamic_trainer.train()
 
+
 class TestDynamicLengthTrainingBert(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.model = AutoModelForQuestionAnswering.from_pretrained(
-            BERT_MODEL
-        )
-        self.dummy_dataset = DummyDataset(labels=True,type='bert')
+        self.model = AutoModelForQuestionAnswering.from_pretrained(BERT_MODEL)
+        self.dummy_dataset = DummyDataset(labels=True, type="bert")
         training_args = TrainingArguments(
-            output_dir='./results',
+            output_dir="./results",
             num_train_epochs=1,
         )
         self.dynamic_trainer = NLPTrainer(
@@ -220,10 +242,9 @@ class TestDynamicLengthTrainingBert(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        shutil.rmtree('./mlruns', ignore_errors=True)
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
-        shutil.rmtree('./results', ignore_errors=True)
-
+        shutil.rmtree("./mlruns", ignore_errors=True)
+        shutil.rmtree("./tmp_trainer", ignore_errors=True)
+        shutil.rmtree("./results", ignore_errors=True)
 
     def test_dynamic_training(self):
         dynamic_length_config = DynamicLengthConfig(
@@ -232,7 +253,7 @@ class TestDynamicLengthTrainingBert(unittest.TestCase):
             length_drop_ratio_bound=LENGTHDROP_RATIO,
             layer_dropout_prob=LAYER_DROPOUT_PROB,
             layer_dropout_bound=LAYER_DROPOUT_BOUND,
-            max_length=MAX_LENGTH
+            max_length=MAX_LENGTH,
         )
 
         self.dynamic_trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
@@ -242,12 +263,10 @@ class TestDynamicLengthTrainingBert(unittest.TestCase):
 class TestEvolutionarySearchRoberta(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.model = AutoModelForQuestionAnswering.from_pretrained(
-            MINILM_MODEL
-        )
-        self.dummy_dataset = DummyDataset(labels=True,type='roberta')
+        self.model = AutoModelForQuestionAnswering.from_pretrained(MINILM_MODEL)
+        self.dummy_dataset = DummyDataset(labels=True, type="roberta")
         training_args = TrainingArguments(
-            output_dir='./results',
+            output_dir="./results",
         )
 
         self.dynamic_trainer = NLPTrainer(
@@ -257,38 +276,33 @@ class TestEvolutionarySearchRoberta(unittest.TestCase):
             eval_dataset=self.dummy_dataset,
         )
 
-
-
     @classmethod
     def tearDownClass(self):
-        shutil.rmtree('./mlruns', ignore_errors=True)
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
-        shutil.rmtree('./results', ignore_errors=True)
-
+        shutil.rmtree("./mlruns", ignore_errors=True)
+        shutil.rmtree("./tmp_trainer", ignore_errors=True)
+        shutil.rmtree("./results", ignore_errors=True)
 
     def test_dynamic_training(self):
-        
         dynamic_length_config = DynamicLengthConfig(
             evo_iter=EVO_ITER,
             population_size=POPULATION_SIZE,
             mutation_size=MUTATION_SIZE,
             crossover_size=CROSSOVER_SIZE,
             max_length=MAX_LENGTH,
-            evo_eval_metric='eval_loss' # dummy metric just for testing
+            evo_eval_metric="eval_loss",  # dummy metric just for testing
         )
 
         self.dynamic_trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
-        self.dynamic_trainer.run_evolutionary_search() 
+        self.dynamic_trainer.run_evolutionary_search()
+
 
 class TestEvolutionarySearchBert(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.model = AutoModelForQuestionAnswering.from_pretrained(
-            BERT_MODEL
-        )
-        self.dummy_dataset = DummyDataset(labels=True,type='bert')
+        self.model = AutoModelForQuestionAnswering.from_pretrained(BERT_MODEL)
+        self.dummy_dataset = DummyDataset(labels=True, type="bert")
         training_args = TrainingArguments(
-            output_dir='./results',
+            output_dir="./results",
         )
 
         self.dynamic_trainer = NLPTrainer(
@@ -298,48 +312,51 @@ class TestEvolutionarySearchBert(unittest.TestCase):
             eval_dataset=self.dummy_dataset,
         )
 
-
-
     @classmethod
     def tearDownClass(self):
-        shutil.rmtree('./mlruns', ignore_errors=True)
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
-        shutil.rmtree('./results', ignore_errors=True)
-
+        shutil.rmtree("./mlruns", ignore_errors=True)
+        shutil.rmtree("./tmp_trainer", ignore_errors=True)
+        shutil.rmtree("./results", ignore_errors=True)
 
     def test_search(self):
-        
         dynamic_length_config = DynamicLengthConfig(
             evo_iter=EVO_ITER,
             population_size=POPULATION_SIZE,
             mutation_size=MUTATION_SIZE,
             crossover_size=CROSSOVER_SIZE,
             max_length=MAX_LENGTH,
-            evo_eval_metric='eval_loss'
+            evo_eval_metric="eval_loss",
         )
 
         self.dynamic_trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
         # self.dynamic_trainer.run_evolutionary_search() # dummy metric just for testing
 
     def test_search_functions(self):
-        dummy_ratios = [inverse(r) for r in np.linspace(approx_ratio(0.2,n=NUM_LAYERS,l=MAX_LENGTH), 1, POPULATION_SIZE + 2)[1:-1]]
-        self.assertTrue( len(dummy_ratios) == POPULATION_SIZE, msg='{0},{1}'.format(len(dummy_ratios), POPULATION_SIZE))
-        self.assertTrue( all(i < 1 for i in dummy_ratios), msg='{0}'.format(dummy_ratios))
-        res = store2str(gene=(MAX_LENGTH,), macs=1234, score=88, method='dummy')
-        subs = ('MACs','score','method')
-        self.assertTrue( all(i in res for i in subs), msg='{0}'.format(res))
-        evo = Evolution(self.model,MAX_LENGTH, 'cpu', None, eval_metric='eval_loss')
-        
+        dummy_ratios = [
+            inverse(r)
+            for r in np.linspace(
+                approx_ratio(0.2, n=NUM_LAYERS, l=MAX_LENGTH), 1, POPULATION_SIZE + 2
+            )[1:-1]
+        ]
+        self.assertTrue(
+            len(dummy_ratios) == POPULATION_SIZE,
+            msg="{0},{1}".format(len(dummy_ratios), POPULATION_SIZE),
+        )
+        self.assertTrue(
+            all(i < 1 for i in dummy_ratios), msg="{0}".format(dummy_ratios)
+        )
+        res = store2str(gene=(MAX_LENGTH,), macs=1234, score=88, method="dummy")
+        subs = ("MACs", "score", "method")
+        self.assertTrue(all(i in res for i in subs), msg="{0}".format(res))
+        evo = Evolution(self.model, MAX_LENGTH, "cpu", None, eval_metric="eval_loss")
 
 
 class TestSampleConfiguration(unittest.TestCase):
-   
     def test_sample_length_config(self):
- 
-        no_drop_lc = tuple( MAX_LENGTH for _ in range(NUM_LAYERS))
+        no_drop_lc = tuple(MAX_LENGTH for _ in range(NUM_LAYERS))
         lc = sample_length_configuration(MAX_LENGTH, NUM_LAYERS)
 
-        self.assertTrue( lc == no_drop_lc, msg='{0}, {1}'.format(lc, no_drop_lc))
+        self.assertTrue(lc == no_drop_lc, msg="{0}, {1}".format(lc, no_drop_lc))
 
         rate = 0.1
         next_length = MAX_LENGTH
@@ -349,31 +366,30 @@ class TestSampleConfiguration(unittest.TestCase):
             lc_const_drop += (next_length,)
 
         lc = sample_length_configuration(MAX_LENGTH, NUM_LAYERS, length_drop_ratio=rate)
-        self.assertTrue( lc == lc_const_drop, msg='{0}, {1}'.format(lc, lc_const_drop))
+        self.assertTrue(lc == lc_const_drop, msg="{0}, {1}".format(lc, lc_const_drop))
         lc = sample_length_configuration(MAX_LENGTH, NUM_LAYERS, length_drop_prob=0.2)
-        self.assertTrue( lc[-1] < MAX_LENGTH , msg='{0}, {1}'.format(lc[-1], MAX_LENGTH))
-        lc = sample_length_configuration(MAX_LENGTH, NUM_LAYERS, length_drop_ratio_bound=0.2)
-        self.assertTrue( lc[-1] < MAX_LENGTH , msg='{0}, {1}'.format(lc[-1], MAX_LENGTH))
+        self.assertTrue(lc[-1] < MAX_LENGTH, msg="{0}, {1}".format(lc[-1], MAX_LENGTH))
+        lc = sample_length_configuration(
+            MAX_LENGTH, NUM_LAYERS, length_drop_ratio_bound=0.2
+        )
+        self.assertTrue(lc[-1] < MAX_LENGTH, msg="{0}, {1}".format(lc[-1], MAX_LENGTH))
 
-        no_drop_lc = tuple( l for l in range(NUM_LAYERS))
+        no_drop_lc = tuple(l for l in range(NUM_LAYERS))
         lc = sample_layer_configuration(NUM_LAYERS, layer_dropout=0)
-        self.assertTrue( lc == no_drop_lc, msg='{0}, {1}'.format(lc, no_drop_lc))
-        drop_rate = NUM_LAYERS-3
+        self.assertTrue(lc == no_drop_lc, msg="{0}, {1}".format(lc, no_drop_lc))
+        drop_rate = NUM_LAYERS - 3
         lc = sample_layer_configuration(NUM_LAYERS, layer_dropout=drop_rate)
         expected = tuple(i for i in range(drop_rate))
-        self.assertTrue( lc == expected, msg='{0}, {1}'.format(lc, expected))
+        self.assertTrue(lc == expected, msg="{0}, {1}".format(lc, expected))
         layer_conf = sample_layer_configuration(NUM_LAYERS, layer_dropout_prob=0.2)
-        length_conf = sample_length_configuration(MAX_LENGTH, NUM_LAYERS, layer_config=layer_conf, length_drop_ratio=0.1)
-        self.assertTrue( len(length_conf) == NUM_LAYERS , msg='{0}, {1}'.format(length_conf, layer_conf))
-
-
-       
-
-        
-
-
+        length_conf = sample_length_configuration(
+            MAX_LENGTH, NUM_LAYERS, layer_config=layer_conf, length_drop_ratio=0.1
+        )
+        self.assertTrue(
+            len(length_conf) == NUM_LAYERS,
+            msg="{0}, {1}".format(length_conf, layer_conf),
+        )
 
 
 if __name__ == "__main__":
     unittest.main()
-   

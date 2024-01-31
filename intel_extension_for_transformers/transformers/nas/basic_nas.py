@@ -19,10 +19,12 @@
 
 import os
 
-from intel_extension_for_transformers.transformers.config import NASConfig
 from neural_compressor.conf.config import Conf
 from neural_compressor.experimental.nas.nas import NASBase
 from neural_compressor.experimental.nas.nas_utils import nas_registry
+
+from intel_extension_for_transformers.transformers.config import NASConfig
+
 
 @nas_registry("Basic")
 class BasicNAS(NASBase):
@@ -60,8 +62,9 @@ class BasicNAS(NASBase):
         Returns:
             Evaluated metrics of the model.
         """
-        assert self._train_func is not None and self._eval_func is not None, \
-            "train_func and eval_func must be set."
+        assert (
+            self._train_func is not None and self._eval_func is not None
+        ), "train_func and eval_func must be set."
         self._train_func(model)
         return self._eval_func(model)
 
@@ -70,7 +73,7 @@ class BasicNAS(NASBase):
         if isinstance(conf_fname_or_obj, str):
             if os.path.isfile(conf_fname_or_obj):
                 self.conf = Conf(conf_fname_or_obj).usr_cfg
-            else: # pragma: no cover
+            else:  # pragma: no cover
                 raise FileNotFoundError(
                     "{} is not a file, please provide a NAS config file path.".format(
                         conf_fname_or_obj
@@ -78,7 +81,7 @@ class BasicNAS(NASBase):
                 )
         elif isinstance(conf_fname_or_obj, NASConfig):
             self.config = conf_fname_or_obj.config
-        else: # pragma: no cover
+        else:  # pragma: no cover
             raise NotImplementedError(
                 "Please provide a str path to the config file or an object of NASConfig."
             )
@@ -87,9 +90,9 @@ class BasicNAS(NASBase):
         self.init_search_cfg(self.config.nas)
 
     @property
-    def train_func(self): # pragma: no cover
+    def train_func(self):  # pragma: no cover
         """Not support get train_func."""
-        assert False, 'Should not try to get the value of `train_func` attribute.'
+        assert False, "Should not try to get the value of `train_func` attribute."
 
     @train_func.setter
     def train_func(self, user_train_func):
@@ -107,9 +110,9 @@ class BasicNAS(NASBase):
         self._train_func = user_train_func
 
     @property
-    def eval_func(self): # pragma: no cover
+    def eval_func(self):  # pragma: no cover
         """Not support get eval_func."""
-        assert False, 'Should not try to get the value of `eval_func` attribute.'
+        assert False, "Should not try to get the value of `eval_func` attribute."
 
     @eval_func.setter
     def eval_func(self, user_eval_func):
@@ -126,4 +129,4 @@ class BasicNAS(NASBase):
 
     def __repr__(self):
         """Class representation."""
-        return 'BasicNAS' # pragma: no cover
+        return "BasicNAS"  # pragma: no cover

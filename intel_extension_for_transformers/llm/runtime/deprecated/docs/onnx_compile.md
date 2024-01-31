@@ -46,9 +46,10 @@ Compiling a model to IR is much easy. You just use compile API in python as foll
 ```python
 # import compile api from neural engine
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+
 # compile onnx model to neural engine ir
 graph = compile("./model_and_tokenizer/fp32-model.onnx")
 # save the graph and get the final ir
 # the yaml and bin file will stored in <ir_path> folder
-graph.save('ir_path')
+graph.save("ir_path")
 ```

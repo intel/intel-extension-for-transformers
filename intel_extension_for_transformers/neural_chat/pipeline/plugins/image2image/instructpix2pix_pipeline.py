@@ -14,18 +14,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Pipeline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline"""
+"""Pipeline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline."""
 
+import copy
 import inspect
 from typing import Callable, List, Optional, Union
 
 import numpy as np
-import torch
-import copy
 import PIL
-from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
-
+import torch
 from diffusers.models import AutoencoderKL, UNet2DConditionModel
+from diffusers.pipeline_utils import DiffusionPipeline
+from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
+from diffusers.pipelines.stable_diffusion.safety_checker import (
+    StableDiffusionSafetyChecker,
+)
 from diffusers.schedulers import KarrasDiffusionSchedulers
 from diffusers.utils import (
     PIL_INTERPOLATION,
@@ -33,12 +36,8 @@ from diffusers.utils import (
     is_accelerate_available,
     logging,
     randn_tensor,
-    replace_example_docstring,
 )
-from diffusers.pipeline_utils import DiffusionPipeline
-from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
-from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
-
+from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -54,7 +53,10 @@ def preprocess(image):
         w, h = image[0].size
         w, h = map(lambda x: x - x % 8, (w, h))  # resize to integer multiple of 8
 
-        image = [np.array(i.resize((w, h), resample=PIL_INTERPOLATION["lanczos"]))[None, :] for i in image]
+        image = [
+            np.array(i.resize((w, h), resample=PIL_INTERPOLATION["lanczos"]))[None, :]
+            for i in image
+        ]
         image = np.concatenate(image, axis=0)
         image = np.array(image).astype(np.float32) / 255.0
         image = image.transpose(0, 3, 1, 2)
@@ -66,8 +68,7 @@ def preprocess(image):
 
 
 class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
-    r"""
-    Pipeline for pixel-level image editing by following text instructions. Based on Stable Diffusion.
+    r"""Pipeline for pixel-level image editing by following text instructions. Based on Stable Diffusion.
 
     This model inherits from [`DiffusionPipeline`]. Check the superclass documentation for the generic methods the
     library implements for all the pipelines (such as downloading or saving, running on a particular device, etc.)
@@ -157,8 +158,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         callback_steps: Optional[int] = 1,
         engine_graph: Optional[list] = [],
     ):
-        r"""
-        Function invoked when calling the pipeline for generation.
+        r"""Function invoked when calling the pipeline for generation.
 
         Args:
              prompt (`str` or `List[str]`, *optional*):
@@ -264,7 +264,9 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         # here `guidance_scale` is defined analog to the guidance weight `w` of equation (2)
         # of the Imagen paper: https://arxiv.org/pdf/2205.11487.pdf . `guidance_scale = 1`
         # corresponds to doing no classifier free guidance.
-        do_classifier_free_guidance = guidance_scale > 1.0 and image_guidance_scale >= 1.0
+        do_classifier_free_guidance = (
+            guidance_scale > 1.0 and image_guidance_scale >= 1.0
+        )
         # check if scheduler is in sigmas space
         scheduler_is_in_sigma_space = hasattr(self.scheduler, "sigmas")
 
@@ -333,21 +335,29 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
                 # Expand the latents if we are doing classifier free guidance.
                 # The latents are expanded 3 times because for pix2pix the guidance\
                 # is applied for both the text and the input image.
-                latent_model_input = torch.cat([latents] * 3) if do_classifier_free_guidance else latents
+                latent_model_input = (
+                    torch.cat([latents] * 3) if do_classifier_free_guidance else latents
+                )
 
                 # concat latents, image_latents in the channel dimension
-                scaled_latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
-                scaled_latent_model_input = torch.cat([scaled_latent_model_input, image_latents], dim=1)
+                scaled_latent_model_input = self.scheduler.scale_model_input(
+                    latent_model_input, t
+                )
+                scaled_latent_model_input = torch.cat(
+                    [scaled_latent_model_input, image_latents], dim=1
+                )
 
                 # Original Pytorch Diffuser Unet Code: predict the noise residual
-                #noise_pred = self.unet(scaled_latent_model_input, t, encoder_hidden_states=prompt_embeds).sample
-                
+                # noise_pred = self.unet(scaled_latent_model_input, t, encoder_hidden_states=prompt_embeds).sample
+
                 # The ITREX Unet Code
                 scaled_latent_model_input = scaled_latent_model_input.contiguous()
                 prompt_embeds = prompt_embeds.contiguous()
                 t_1d = torch.tensor([t], dtype=torch.float32).contiguous()
-                engine_output = engine_graph[1].inference([scaled_latent_model_input, t_1d, prompt_embeds])
-                noise_pred = torch.from_numpy(engine_output['out_sample:0'])
+                engine_output = engine_graph[1].inference(
+                    [scaled_latent_model_input, t_1d, prompt_embeds]
+                )
+                noise_pred = torch.from_numpy(engine_output["out_sample:0"])
 
                 # Hack:
                 # For karras style schedulers the model does classifier free guidance using the
@@ -360,7 +370,11 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
 
                 # perform guidance
                 if do_classifier_free_guidance:
-                    noise_pred_text, noise_pred_image, noise_pred_uncond = noise_pred.chunk(3)
+                    (
+                        noise_pred_text,
+                        noise_pred_image,
+                        noise_pred_uncond,
+                    ) = noise_pred.chunk(3)
                     noise_pred = (
                         noise_pred_uncond
                         + guidance_scale * (noise_pred_text - noise_pred_image)
@@ -377,10 +391,14 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
                     noise_pred = (noise_pred - latents) / (-sigma)
 
                 # compute the previous noisy sample x_t -> x_t-1
-                latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs).prev_sample
+                latents = self.scheduler.step(
+                    noise_pred, t, latents, **extra_step_kwargs
+                ).prev_sample
 
                 # call the callback, if provided
-                if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):
+                if i == len(timesteps) - 1 or (
+                    (i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0
+                ):
                     progress_bar.update()
                     if callback is not None and i % callback_steps == 0:
                         callback(i, t, latents)
@@ -389,7 +407,9 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         image = self.decode_latents(latents, engine_graph[2])
 
         # 11. Run safety checker
-        image, has_nsfw_concept = self.run_safety_checker(image, device, prompt_embeds.dtype)
+        image, has_nsfw_concept = self.run_safety_checker(
+            image, device, prompt_embeds.dtype
+        )
 
         # 12. Convert to PIL
         if output_type == "pil":
@@ -398,13 +418,16 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         if not return_dict:
             return (image, has_nsfw_concept)
 
-        return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
+        return StableDiffusionPipelineOutput(
+            images=image, nsfw_content_detected=has_nsfw_concept
+        )
 
     # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.
     # StableDiffusionPipeline.enable_sequential_cpu_offload
     def enable_sequential_cpu_offload(self, gpu_id=0):
-        r"""
-        Offloads all models to CPU using accelerate, significantly reducing memory usage. When called, unet,
+        r"""Offloads all models to CPU using accelerate, significantly reducing memory usage.
+
+        When called, unet,
         text_encoder, vae and safety checker have their state dicts saved to CPU and then are moved to a
         `torch.device('meta') and loaded to GPU only when their specific submodule has its `forward` method called.
         """
@@ -419,14 +442,17 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
             cpu_offload(cpu_offloaded_model, device)
 
         if self.safety_checker is not None:
-            cpu_offload(self.safety_checker, execution_device=device, offload_buffers=True)
+            cpu_offload(
+                self.safety_checker, execution_device=device, offload_buffers=True
+            )
 
     @property
     # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.
     # StableDiffusionPipeline._execution_device
     def _execution_device(self):
-        r"""
-        Returns the device on which the pipeline's models will be executed. After calling
+        r"""Returns the device on which the pipeline's models will be executed.
+
+        After calling
         `pipeline.enable_sequential_cpu_offload()` the execution device can only be inferred from Accelerate's module
         hooks.
         """
@@ -452,8 +478,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         prompt_embeds: Optional[torch.FloatTensor] = None,
         negative_prompt_embeds: Optional[torch.FloatTensor] = None,
     ):
-        r"""
-        Encodes the prompt into text encoder hidden states.
+        r"""Encodes the prompt into text encoder hidden states.
 
         Args:
              prompt (`str` or `List[str]`, *optional*):
@@ -492,11 +517,13 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
                 return_tensors="pt",
             )
             text_input_ids = text_inputs.input_ids
-            untruncated_ids = self.tokenizer(prompt, padding="longest", return_tensors="pt").input_ids
+            untruncated_ids = self.tokenizer(
+                prompt, padding="longest", return_tensors="pt"
+            ).input_ids
 
-            if untruncated_ids.shape[-1] >= text_input_ids.shape[-1] and not torch.equal(
-                text_input_ids, untruncated_ids
-            ):
+            if untruncated_ids.shape[-1] >= text_input_ids.shape[
+                -1
+            ] and not torch.equal(text_input_ids, untruncated_ids):
                 removed_text = self.tokenizer.batch_decode(
                     untruncated_ids[:, self.tokenizer.model_max_length - 1 : -1]
                 )
@@ -505,7 +532,10 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
                     f" {self.tokenizer.model_max_length} tokens: {removed_text}"
                 )
 
-            if hasattr(self.text_encoder.config, "use_attention_mask") and self.text_encoder.config.use_attention_mask:
+            if (
+                hasattr(self.text_encoder.config, "use_attention_mask")
+                and self.text_encoder.config.use_attention_mask
+            ):
                 attention_mask = text_inputs.attention_mask.to(device)
             else:
                 attention_mask = None
@@ -519,7 +549,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
             # prompt_embeds = torch.from_numpy(prompt_embeds['last_hidden_state:0']).reshape(
             #     bsz, seq_length, -1)
 
-            #Original Pytorch Diffuser Text Encoder Code
+            # Original Pytorch Diffuser Text Encoder Code
             prompt_embeds = self.text_encoder(
                 text_input_ids.to(device),
                 attention_mask=attention_mask,
@@ -531,7 +561,9 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         bs_embed, seq_len, _ = prompt_embeds.shape
         # duplicate text embeddings for each generation per prompt, using mps friendly method
         prompt_embeds = prompt_embeds.repeat(1, num_images_per_prompt, 1)
-        prompt_embeds = prompt_embeds.view(bs_embed * num_images_per_prompt, seq_len, -1)
+        prompt_embeds = prompt_embeds.view(
+            bs_embed * num_images_per_prompt, seq_len, -1
+        )
 
         # get unconditional embeddings for classifier free guidance
         if do_classifier_free_guidance and negative_prompt_embeds is None:
@@ -563,19 +595,27 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
                 return_tensors="pt",
             )
 
-            if hasattr(self.text_encoder.config, "use_attention_mask") and self.text_encoder.config.use_attention_mask:
+            if (
+                hasattr(self.text_encoder.config, "use_attention_mask")
+                and self.text_encoder.config.use_attention_mask
+            ):
                 attention_mask = uncond_input.attention_mask.to(device)
             else:
                 attention_mask = None
 
             # The ITREX Text Encdoer Code
-            negative_prompt_embeds = text_encoder_graph.inference([uncond_input.input_ids])
+            negative_prompt_embeds = text_encoder_graph.inference(
+                [uncond_input.input_ids]
+            )
             bsz, seq_length = uncond_input.input_ids.shape
-            encoder_hidden_state = negative_prompt_embeds['last_hidden_state:0']
+            encoder_hidden_state = negative_prompt_embeds["last_hidden_state:0"]
             if encoder_hidden_state.dtype == np.int16:
-                negative_prompt_embeds['last_hidden_state:0'] = bf16_to_fp32(encoder_hidden_state)
-            negative_prompt_embeds = torch.from_numpy(negative_prompt_embeds['last_hidden_state:0']).reshape(
-                bsz, seq_length, -1)
+                negative_prompt_embeds["last_hidden_state:0"] = bf16_to_fp32(
+                    encoder_hidden_state
+                )
+            negative_prompt_embeds = torch.from_numpy(
+                negative_prompt_embeds["last_hidden_state:0"]
+            ).reshape(bsz, seq_length, -1)
 
             # Original Pytorch Diffuser Text Encoder Code
             # negative_prompt_embeds = self.text_encoder(
@@ -588,17 +628,25 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
             # duplicate unconditional embeddings for each generation per prompt, using mps friendly method
             seq_len = negative_prompt_embeds.shape[1]
 
-            negative_prompt_embeds = negative_prompt_embeds.to(dtype=self.text_encoder.dtype, device=device)
+            negative_prompt_embeds = negative_prompt_embeds.to(
+                dtype=self.text_encoder.dtype, device=device
+            )
 
-            negative_prompt_embeds = negative_prompt_embeds.repeat(1, num_images_per_prompt, 1)
-            negative_prompt_embeds = negative_prompt_embeds.view(batch_size * num_images_per_prompt, seq_len, -1)
+            negative_prompt_embeds = negative_prompt_embeds.repeat(
+                1, num_images_per_prompt, 1
+            )
+            negative_prompt_embeds = negative_prompt_embeds.view(
+                batch_size * num_images_per_prompt, seq_len, -1
+            )
 
             # For classifier free guidance, we need to do two forward passes.
             # Here we concatenate the unconditional and text embeddings into a single batch
             # to avoid doing two forward passes
             # pix2pix has two  negative embeddings, and unlike in other pipelines latents are ordered [prompt_embeds,
             # negative_prompt_embeds, negative_prompt_embeds]
-            prompt_embeds = torch.cat([prompt_embeds, negative_prompt_embeds, negative_prompt_embeds])
+            prompt_embeds = torch.cat(
+                [prompt_embeds, negative_prompt_embeds, negative_prompt_embeds]
+            )
 
         return prompt_embeds
 
@@ -606,7 +654,9 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
     # StableDiffusionPipeline.run_safety_checker
     def run_safety_checker(self, image, device, dtype):
         if self.safety_checker is not None:
-            safety_checker_input = self.feature_extractor(self.numpy_to_pil(image), return_tensors="pt").to(device)
+            safety_checker_input = self.feature_extractor(
+                self.numpy_to_pil(image), return_tensors="pt"
+            ).to(device)
             image, has_nsfw_concept = self.safety_checker(
                 images=image, clip_input=safety_checker_input.pixel_values.to(dtype)
             )
@@ -622,13 +672,17 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         # eta corresponds to η in DDIM paper: https://arxiv.org/abs/2010.02502
         # and should be between [0, 1]
 
-        accepts_eta = "eta" in set(inspect.signature(self.scheduler.step).parameters.keys())
+        accepts_eta = "eta" in set(
+            inspect.signature(self.scheduler.step).parameters.keys()
+        )
         extra_step_kwargs = {}
         if accepts_eta:
             extra_step_kwargs["eta"] = eta
 
         # check if the scheduler accepts generator
-        accepts_generator = "generator" in set(inspect.signature(self.scheduler.step).parameters.keys())
+        accepts_generator = "generator" in set(
+            inspect.signature(self.scheduler.step).parameters.keys()
+        )
         if accepts_generator:
             extra_step_kwargs["generator"] = generator
         return extra_step_kwargs
@@ -644,7 +698,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         # The ITREX Vae Codes
         latents = latents.contiguous()
         output = vae_decoder_graph.inference([latents])
-        image = torch.from_numpy(output['sample:0'])
+        image = torch.from_numpy(output["sample:0"])
 
         image = (image / 2 + 0.5).clamp(0, 1)
         # we always cast to float32 as this does not cause significant overhead and is compatible with bfloa16
@@ -653,10 +707,13 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
 
     def check_inputs(self, prompt, callback_steps):
         if not isinstance(prompt, str) and not isinstance(prompt, list):
-            raise ValueError(f"`prompt` has to be of type `str` or `list` but is {type(prompt)}")
+            raise ValueError(
+                f"`prompt` has to be of type `str` or `list` but is {type(prompt)}"
+            )
 
         if (callback_steps is None) or (
-            callback_steps is not None and (not isinstance(callback_steps, int) or callback_steps <= 0)
+            callback_steps is not None
+            and (not isinstance(callback_steps, int) or callback_steps <= 0)
         ):
             raise ValueError(
                 f"`callback_steps` has to be a positive integer but is {callback_steps} of type"
@@ -665,8 +722,23 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
 
     # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.
     # StableDiffusionPipeline.prepare_latents
-    def prepare_latents(self, batch_size, num_channels_latents, height, width, dtype, device, generator, latents=None):
-        shape = (batch_size, num_channels_latents, height // self.vae_scale_factor, width // self.vae_scale_factor)
+    def prepare_latents(
+        self,
+        batch_size,
+        num_channels_latents,
+        height,
+        width,
+        dtype,
+        device,
+        generator,
+        latents=None,
+    ):
+        shape = (
+            batch_size,
+            num_channels_latents,
+            height // self.vae_scale_factor,
+            width // self.vae_scale_factor,
+        )
         if isinstance(generator, list) and len(generator) != batch_size:
             raise ValueError(
                 f"You have passed a list of generators of length {len(generator)}, but requested an effective batch"
@@ -674,7 +746,9 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
             )
 
         if latents is None:
-            latents = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
+            latents = randn_tensor(
+                shape, generator=generator, device=device, dtype=dtype
+            )
         else:
             latents = latents.to(device)
 
@@ -683,7 +757,14 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         return latents
 
     def prepare_image_latents(
-        self, image, batch_size, num_images_per_prompt, dtype, device, do_classifier_free_guidance, generator=None
+        self,
+        image,
+        batch_size,
+        num_images_per_prompt,
+        dtype,
+        device,
+        do_classifier_free_guidance,
+        generator=None,
     ):
         if not isinstance(image, (torch.Tensor, PIL.Image.Image, list)):
             raise ValueError(
@@ -700,12 +781,18 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
             )
 
         if isinstance(generator, list):
-            image_latents = [self.vae.encode(image[i : i + 1]).latent_dist.mode() for i in range(batch_size)]
+            image_latents = [
+                self.vae.encode(image[i : i + 1]).latent_dist.mode()
+                for i in range(batch_size)
+            ]
             image_latents = torch.cat(image_latents, dim=0)
         else:
             image_latents = self.vae.encode(image).latent_dist.mode()
 
-        if batch_size > image_latents.shape[0] and batch_size % image_latents.shape[0] == 0:
+        if (
+            batch_size > image_latents.shape[0]
+            and batch_size % image_latents.shape[0] == 0
+        ):
             # expand image_latents for batch_size
             deprecation_message = (
                 f"You have passed {batch_size} text prompts (`prompt`), but only {image_latents.shape[0]} initial"
@@ -713,10 +800,20 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
                 " that this behavior is deprecated and will be removed in a version 1.0.0. Please make sure to update"
                 " your script to pass as many initial images as text prompts to suppress this warning."
             )
-            deprecate("len(prompt) != len(image)", "1.0.0", deprecation_message, standard_warn=False)
+            deprecate(
+                "len(prompt) != len(image)",
+                "1.0.0",
+                deprecation_message,
+                standard_warn=False,
+            )
             additional_image_per_prompt = batch_size // image_latents.shape[0]
-            image_latents = torch.cat([image_latents] * additional_image_per_prompt, dim=0)
-        elif batch_size > image_latents.shape[0] and batch_size % image_latents.shape[0] != 0:
+            image_latents = torch.cat(
+                [image_latents] * additional_image_per_prompt, dim=0
+            )
+        elif (
+            batch_size > image_latents.shape[0]
+            and batch_size % image_latents.shape[0] != 0
+        ):
             raise ValueError(
                 f"Cannot duplicate `image` of batch size {image_latents.shape[0]} to {batch_size} text prompts."
             )
@@ -725,23 +822,26 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
 
         if do_classifier_free_guidance:
             uncond_image_latents = torch.zeros_like(image_latents)
-            image_latents = torch.cat([image_latents, image_latents, uncond_image_latents], dim=0)
+            image_latents = torch.cat(
+                [image_latents, image_latents, uncond_image_latents], dim=0
+            )
 
         return image_latents
 
+
 def fp32_to_bf16(fp32_np):
-  assert(fp32_np.dtype==np.float32)
-  temp = copy.deepcopy(fp32_np)
-  int32_np = temp.view(dtype=np.int32)
-  int32_np = int32_np >> 16
-  bf16_np = int32_np.astype(np.uint16)
-  return bf16_np
+    assert fp32_np.dtype == np.float32
+    temp = copy.deepcopy(fp32_np)
+    int32_np = temp.view(dtype=np.int32)
+    int32_np = int32_np >> 16
+    bf16_np = int32_np.astype(np.uint16)
+    return bf16_np
+
 
 def bf16_to_fp32(bf16_np):
-  assert(bf16_np.dtype==np.int16)
-  temp = copy.deepcopy(bf16_np)
-  int32_np = temp.astype(dtype=np.int32)
-  int32_np = int32_np << 16
-  fp32_np = int32_np.view(np.float32)
-  return fp32_np
-
+    assert bf16_np.dtype == np.int16
+    temp = copy.deepcopy(bf16_np)
+    int32_np = temp.astype(dtype=np.int32)
+    int32_np = int32_np << 16
+    fp32_np = int32_np.view(np.float32)
+    return fp32_np

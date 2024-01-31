@@ -16,42 +16,50 @@
 # limitations under the License.
 
 import sys
-from typing import List
 
 from fastapi import APIRouter
-from ...cli.log import logger
 
-from .textchat_api import router as textchat_router
-from .voicechat_api import router as voicechat_router
-from .retrieval_api import router as retrieval_router
-from .text2image_api import router as text2image_router
-from .finetune_api import router as finetune_router
+from ...cli.log import logger
+from .codegen_api import router as codegen_router
 from .faceanimation_api import router as faceanimation_router
+from .finetune_api import router as finetune_router
 from .photoai_api import router as photoai_router
 from .plugin_audio_api import router as plugin_audio_router
 from .plugin_image2image_api import router as plugin_image2image_router
-from .codegen_api import router as codegen_router
+from .retrieval_api import router as retrieval_router
+from .text2image_api import router as text2image_router
+from .textchat_api import router as textchat_router
 from .tgi_api import router as tgi_router
+from .voicechat_api import router as voicechat_router
 
 _router = APIRouter()
 
 # Create a dictionary to map API names to their corresponding routers
 api_router_mapping = {
-    'textchat': textchat_router,
-    'voicechat': voicechat_router,
-    'retrieval': retrieval_router,
-    'text2image': text2image_router,
-    'finetune': finetune_router,
-    'faceanimation': faceanimation_router,
-    'photoai': photoai_router,
-    'plugin_audio': plugin_audio_router,
+    "textchat": textchat_router,
+    "voicechat": voicechat_router,
+    "retrieval": retrieval_router,
+    "text2image": text2image_router,
+    "finetune": finetune_router,
+    "faceanimation": faceanimation_router,
+    "photoai": photoai_router,
+    "plugin_audio": plugin_audio_router,
     "image2image": plugin_image2image_router,
-    'codegen': codegen_router,
-    'tgi': tgi_router
+    "codegen": codegen_router,
+    "tgi": tgi_router,
 }
 
-def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80):
-    """Setup router for FastAPI
+
+def setup_router(
+    api_list,
+    chatbot=None,
+    enable_llm=True,
+    use_deepspeed=False,
+    world_size=1,
+    host="0.0.0.0",
+    port=80,
+):
+    """Setup router for FastAPI.
 
     Args:
         api_list (List): List of API names

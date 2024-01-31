@@ -23,8 +23,9 @@ Consider this straightforward example: by providing the URL of the CES main page
 ```python
 # python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig, plugins
+
 plugins.retrieval.enable = True
-plugins.retrieval.args["input_path"]=["https://www.ces.tech/"]
+plugins.retrieval.args["input_path"] = ["https://www.ces.tech/"]
 conf = PipelineConfig(plugins=plugins)
 chatbot = build_chatbot(conf)
 response = chatbot.predict("When is CES 2024?")
@@ -52,6 +53,7 @@ Python Code for Audio Processing and TTS:
 ```python
 # Python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig, plugins
+
 plugins.asr.enable = True
 plugins.tts.enable = True
 plugins.tts.args["output_audio_path"] = "./response.wav"
@@ -84,6 +86,7 @@ We prioritize the safe and responsible use of NeuralChat for everyone. Neverthel
 ```python
 # python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
+
 plugins.safety_checker.enable = True
 conf = PipelineConfig(plugins=plugins)
 chatbot = build_chatbot(conf)
@@ -100,6 +103,7 @@ When LLM service encounters higher traffic levels, the expenses related to LLM A
 ```python
 # python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
+
 plugins.cache.enable = True
 conf = PipelineConfig(plugins=plugins)
 chatbot = build_chatbot(conf)
@@ -130,6 +134,7 @@ Nevertheless, users also have the option to explicitly specify this parameter, a
 ```python
 # Python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, MixedPrecisionConfig
+
 pipeline_cfg = PipelineConfig(optimization_config=MixedPrecisionConfig())
 chatbot = build_chatbot(pipeline_cfg)
 ```
@@ -141,10 +146,9 @@ Compared to normal quantization like W8A8, weight only quantization is probably 
 ```python
 # Python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
+
 loading_config = LoadingModelConfig(use_llm_runtime=True)
-config = PipelineConfig(
-    optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4_fullrange")
-)
+config = PipelineConfig(optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4_fullrange"))
 chatbot = build_chatbot(config)
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
@@ -156,10 +160,10 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 # Python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
+
 loading_config = LoadingModelConfig(use_llm_runtime=True)
 config = PipelineConfig(
-    optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4"),
-    loading_config=loading_config
+    optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4"), loading_config=loading_config
 )
 chatbot = build_chatbot(config)
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
@@ -177,7 +181,8 @@ neuralchat finetune --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/f
 ```python
 # Python code
 from intel_extension_for_transformers.neural_chat import finetune_model, TextGenerationFinetuningConfig
-finetune_cfg = TextGenerationFinetuningConfig() # support other finetuning config
+
+finetune_cfg = TextGenerationFinetuningConfig()  # support other finetuning config
 finetune_model(finetune_cfg)
 ```
 
@@ -196,4 +201,3 @@ For detailed fine-tuning instructions, please refer to the documentation below.
 [Text-To-Speech (TTS) model finetuning](./examples/finetuning/tts/README.md)
 
 And NeuralChat also provides Docker file tailored for easy fine-tuning. Explore details in [finetuning with Docker](./docker/finetuning/README.md).
-

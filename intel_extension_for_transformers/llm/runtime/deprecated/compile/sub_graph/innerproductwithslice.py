@@ -14,70 +14,66 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The InnerproductwithSlice Pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
-from .. import graph_utils as util
 import copy
 
+from .. import graph_utils as util
+from .pattern import Pattern, pattern_registry
 
-@pattern_registry(pattern_type='InnerproductwithSlice')
+
+@pattern_registry(pattern_type="InnerproductwithSlice")
 class InnerproductwithSlice(Pattern):
     """The InnerproductwithSlice pattern.
 
     Fuse the original sub-graph into the custom acceleration 'InnerproductwithSlice' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
-            'InnerproductwithSlice': [
+            "InnerproductwithSlice": [
                 {
-                    'patterns': {
-                        'in': [[(0, 'InnerProduct'), (1, 'Slice'), (2, 'Slice'), (3, 'Slice')]
-                                ],
-                        'out': [[(0, 'InnerProduct')]]
+                    "patterns": {
+                        "in": [
+                            [
+                                (0, "InnerProduct"),
+                                (1, "Slice"),
+                                (2, "Slice"),
+                                (3, "Slice"),
+                            ]
+                        ],
+                        "out": [[(0, "InnerProduct")]],
                     },
-                    'search_mode': 'op_type',
-                    'node_names': {
-                        0: 0
+                    "search_mode": "op_type",
+                    "node_names": {0: 0},
+                    "input_tensors": {
+                        0: [[{0: [0]}, {0: [1]}, {0: [2]}], [[0, 1, 2], 3]]
                     },
-                    'input_tensors': {
-                        0: [[{
-                            0: [0]
-                        }, {
-                            0: [1]
-                        }, {
-                            0: [2]
-                        }], [[0, 1, 2], 3]]
-                    },
-                    'output_tensors': {
-                        0: [[{
-                            3: [0]
-                        }], [[0], 1]]
-                    },
-                    'returns': [0]
+                    "output_tensors": {0: [[{3: [0]}], [[0], 1]]},
+                    "returns": [0],
                 },
             ]
         }
 
-
-        if model.framework_modeling_config['framework'] != 'torch':
+        if model.framework_modeling_config["framework"] != "torch":
             return model
-       
+
         def _set_attr(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
                 mat_node_idx = model.get_node_id(new_node_names[i][0])
                 ret_mat_node = ret_old_nodes[i][0]
                 if len(ret_mat_node.input_tensors) == 4:
-                    model.nodes[mat_node_idx].input_tensors.append(copy.deepcopy(
-                        ret_mat_node.input_tensors[-1]))
+                    model.nodes[mat_node_idx].input_tensors.append(
+                        copy.deepcopy(ret_mat_node.input_tensors[-1])
+                    )
                 model.nodes[mat_node_idx].attr = ret_old_nodes[i][0].attr
-        pattern_dict = pattern_mapping_config['InnerproductwithSlice'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductwithSlice",
-                                                                    pattern_dict, model)
+
+        pattern_dict = pattern_mapping_config["InnerproductwithSlice"][0]
+        model, new_node_names, ret_old_nodes = util.pattern_mapping(
+            "InnerproductwithSlice", pattern_dict, model
+        )
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)
 

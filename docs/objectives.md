@@ -30,5 +30,6 @@ or
 
 ```python
 from intel_extension_for_transformers.transformers import objectives
+
 performance = objectives.Objective(name="performance", greater_is_better=True, weight_ratio=None)
 ```

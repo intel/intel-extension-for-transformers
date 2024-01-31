@@ -20,6 +20,7 @@ from intel_extension_for_transformers.transformers.utils.utility import LazyImpo
 setfit = LazyImport("setfit")
 SetFitHead = setfit.SetFitHead
 
+
 class SetFitModel(setfit.SetFitModel):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

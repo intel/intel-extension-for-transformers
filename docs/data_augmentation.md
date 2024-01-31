@@ -44,10 +44,11 @@ pip install -v .
 Please refer to [example](tests/test_data_augmentation.py).
 ```python
 from intel_extension_for_transformers.utils.data_augmentation import DataAugmentation
+
 aug = DataAugmentation(augmenter_type="TextGenerationAug")
 aug.input_dataset = "dev.csv"
 aug.output_path = os.path.join(self.result_path, "test1.cvs")
-aug.augmenter_arguments = {'model_name_or_path': 'gpt2-medium'}
+aug.augmenter_arguments = {"model_name_or_path": "gpt2-medium"}
 aug.data_augment()
 raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", split="train")
 self.assertTrue(len(raw_datasets) == 10)
@@ -84,11 +85,12 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
         ```python
         from datasets import load_dataset
         from intel_extension_for_transformers.utils.utils import EOS
-        for split in {'train', 'validation'}:
-            dataset = load_dataset('glue', 'sst2', split=split)
-            with open('SST-2/' + split + '.txt', 'w') as fw:
+
+        for split in {"train", "validation"}:
+            dataset = load_dataset("glue", "sst2", split=split)
+            with open("SST-2/" + split + ".txt", "w") as fw:
                 for d in dataset:
-                    fw.write(str(d['label']) + '\t' + d['sentence'] + EOS + '\n')
+                    fw.write(str(d["label"]) + "\t" + d["sentence"] + EOS + "\n")
         ```
 
     - Fine-tune Causal Language Model
@@ -115,10 +117,11 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
 - Secondly, we generate labeled data. Given class labels sampled from the training set, we use the fine-tuned language model to predict sentences with below script:
     ```python
     from intel_extension_for_transformers.utils.data_augmentation import DataAugmentation
+
     aug = DataAugmentation(augmenter_type="TextGenerationAug")
     aug.input_dataset = "/your/original/training_set.csv"
     aug.output_path = os.path.join(self.result_path, "/your/augmented/dataset.cvs")
-    aug.augmenter_arguments = {'model_name_or_path': '/your/fine-tuned/model'}
+    aug.augmenter_arguments = {"model_name_or_path": "/your/fine-tuned/model"}
     aug.data_augment()
     ```
 

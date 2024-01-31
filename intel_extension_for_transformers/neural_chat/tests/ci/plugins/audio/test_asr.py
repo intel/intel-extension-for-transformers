@@ -15,11 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
-import unittest
 import os
+import unittest
+
 import torch
 from pydub import AudioSegment
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import (
+    AudioSpeechRecognition,
+)
 
 
 class TestASR(unittest.TestCase):
@@ -27,11 +31,13 @@ class TestASR(unittest.TestCase):
     def setUpClass(self):
         try:
             import habana_frameworks.torch.hpu as hthpu
+
             self.is_hpu_available = True
         except ImportError:
             self.is_hpu_available = False
         try:
             import intel_extension_for_pytorch as intel_ipex
+
             self.is_ipex_available = True
         except ImportError:
             self.is_ipex_available = False
@@ -40,13 +46,16 @@ class TestASR(unittest.TestCase):
         else:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
-        self.asr_cn = AudioSpeechRecognition("openai/whisper-small", language="zh", device=self.device)
-        self.asr_auto = AudioSpeechRecognition("openai/whisper-small", language="auto", device=self.device)
+        self.asr_cn = AudioSpeechRecognition(
+            "openai/whisper-small", language="zh", device=self.device
+        )
+        self.asr_auto = AudioSpeechRecognition(
+            "openai/whisper-small", language="auto", device=self.device
+        )
         if self.device == "cpu" and self.is_ipex_available:
             self.asr_bf16 = AudioSpeechRecognition("openai/whisper-small", bf16=True)
         else:
             self.asr_bf16 = None
-
 
     def test_audio2text(self):
         audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
@@ -94,6 +103,7 @@ class TestASR(unittest.TestCase):
         mixed_audio.export("welcome_mixed.mp3", format="wav")
         result = self.asr_auto.audio2text("welcome_mixed.mp3")
         self.assertEqual(result.lower(), "welcome to neural chat 欢迎使用".lower())
+
 
 if __name__ == "__main__":
     unittest.main()

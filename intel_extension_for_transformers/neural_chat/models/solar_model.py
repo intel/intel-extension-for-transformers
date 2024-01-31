@@ -15,9 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base_model import BaseModel, register_model_adapter
 import logging
-from fastchat.conversation import get_conv_template, Conversation, register_conv_template, SeparatorStyle
+
+from fastchat.conversation import (
+    Conversation,
+    SeparatorStyle,
+    get_conv_template,
+    register_conv_template,
+)
+
+from .base_model import BaseModel, register_model_adapter
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -40,10 +47,10 @@ register_conv_template(
     )
 )
 
+
 class SolarModel(BaseModel):
     def match(self, model_path: str):
-        """
-        Check if the provided model_path matches the current model.
+        """Check if the provided model_path matches the current model.
 
         Args:
             model_path (str): Path to a model.
@@ -54,8 +61,7 @@ class SolarModel(BaseModel):
         return "solar-" in model_path.lower() and "instruct" in model_path.lower()
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
-        """
-        Get the default conversation template for the given model path.
+        """Get the default conversation template for the given model path.
 
         Args:
             model_path (str): Path to the model.
@@ -65,5 +71,5 @@ class SolarModel(BaseModel):
         """
         return get_conv_template("solar")
 
-register_model_adapter(SolarModel)
 
+register_model_adapter(SolarModel)

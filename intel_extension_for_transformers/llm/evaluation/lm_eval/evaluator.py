@@ -15,30 +15,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from asyncore import write
-import os
 import random
-import re
-import time
-import numpy as np
-import json
 
 import lm_eval
-from lm_eval.base import LM, CachingLM
-from lm_eval.tasks import get_task_dict
-from lm_eval.utils import run_task_tests
+import numpy as np
+import transformers
 from lm_eval.evaluator import evaluate as evaluate_func
 from lm_eval.evaluator import make_table
+from lm_eval.tasks import get_task_dict
+from lm_eval.utils import run_task_tests
+
 from .models import huggingface
-import transformers
+
 MODEL_REGISTRY = {
     "hf-causal": huggingface.AutoCausalLM,
     "hf-seq2seq": huggingface.AutoSeq2SeqLM,
-
 }
+
 
 def itrex_bootstrap_stderr(f, xs, iters):
     from lm_eval.metrics import _bootstrap_internal, sample_stddev
+
     res = []
     chunk_size = min(1000, iters)
     it = _bootstrap_internal(f, chunk_size)
@@ -47,30 +44,34 @@ def itrex_bootstrap_stderr(f, xs, iters):
         res.extend(bootstrap)
     return sample_stddev(res)
 
+
 # to avoid out-of-memory caused by Popen for large language models.
 lm_eval.metrics.bootstrap_stderr = itrex_bootstrap_stderr
+
 
 def get_model(model_name):
     return MODEL_REGISTRY[model_name]
 
-def evaluate(model,
-             model_args=None,
-             tasks=[],
-             new_fewshot=0,
-             batch_size=None,
-             max_batch_size=None,
-             device="cpu",
-             no_cache=True,
-             limit=None,
-             bootstrap_iters=100000,
-             check_integrity=False,
-             decontamination_ngrams_path=None,
-             write_out=False,
-             output_base_path=None,
-             seed=1234,
-             user_model=None,
-             model_format='torch'
-            ):
+
+def evaluate(
+    model,
+    model_args=None,
+    tasks=[],
+    new_fewshot=0,
+    batch_size=None,
+    max_batch_size=None,
+    device="cpu",
+    no_cache=True,
+    limit=None,
+    bootstrap_iters=100000,
+    check_integrity=False,
+    decontamination_ngrams_path=None,
+    write_out=False,
+    output_base_path=None,
+    seed=1234,
+    user_model=None,
+    model_format="torch",
+):
     """Instantiate and evaluate a model on a list of tasks.
 
     :param model: Union[str, LM]
@@ -111,25 +112,24 @@ def evaluate(model,
     random.seed(seed)
     np.random.seed(seed)
     import torch
+
     torch.manual_seed(seed)
 
     assert tasks != [], "No tasks specified"
     if isinstance(model, str):
         if model_args is None:
             model_args = ""
-        kwargs =  {
-                "batch_size": batch_size,
-                "max_batch_size": max_batch_size,
-                "device": device,
-                "model_format": model_format
-            }
+        kwargs = {
+            "batch_size": batch_size,
+            "max_batch_size": max_batch_size,
+            "device": device,
+            "model_format": model_format,
+        }
         if user_model:
             kwargs["init_empty_weights"] = True
-        lm = get_model(model).create_from_arg_string(
-            model_args, kwargs
-        )
+        lm = get_model(model).create_from_arg_string(model_args, kwargs)
     elif isinstance(model, transformers.PreTrainedModel):
-        lm = get_model("hf-causal")(    # pylint: disable=E1125
+        lm = get_model("hf-causal")(  # pylint: disable=E1125
             pretrained=model,
             batch_size=batch_size,
             max_batch_size=max_batch_size,
@@ -165,7 +165,7 @@ def evaluate(model,
         bootstrap_iters=bootstrap_iters,
         decontamination_ngrams_path=decontamination_ngrams_path,
         write_out=write_out,
-        output_base_path=output_base_path
+        output_base_path=output_base_path,
     )
 
     print(make_table(results))

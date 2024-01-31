@@ -15,8 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.memory.memory import Memory, Buffer_Memory
 import unittest
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.memory.memory import (
+    Buffer_Memory,
+    Memory,
+)
+
 
 class TestMemory(unittest.TestCase):
     def setUp(self):
@@ -24,9 +29,9 @@ class TestMemory(unittest.TestCase):
 
     def tearDown(self) -> None:
         return super().tearDown()
-    
+
     def test_memory(self):
-        query ='hello'
+        query = "hello"
         answer = "Hello! It's nice to meet you. Is there something I can help you with or would you like to chat?"
         memory = Memory()
         memory.add(query, answer)
@@ -35,13 +40,14 @@ class TestMemory(unittest.TestCase):
         self.assertIn(text, context)
 
     def test_buffer_memory(self):
-        query ='hello'
+        query = "hello"
         answer = "Hello! It's nice to meet you. Is there something I can help you with or would you like to chat?"
         buffer_memory = Buffer_Memory()
         buffer_memory.add(query, answer)
         context = buffer_memory.get()
         text = "User Query: hello"
         self.assertIn(text, context)
+
 
 if __name__ == "__main__":
     unittest.main()

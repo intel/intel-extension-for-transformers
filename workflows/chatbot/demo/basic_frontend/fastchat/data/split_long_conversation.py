@@ -1,5 +1,17 @@
-"""
-Split long conversations based on certain max length.
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Split long conversations based on certain max length.
 
 Usage: python3 -m fastchat.data.split_long_conversation \
     --in sharegpt_clean.json \
@@ -7,14 +19,11 @@ Usage: python3 -m fastchat.data.split_long_conversation \
     --model-name-or-path $<model-name>
 """
 import argparse
-from concurrent.futures import ProcessPoolExecutor
 import json
-from typing import Dict, Sequence, Optional
+from concurrent.futures import ProcessPoolExecutor
 
 import transformers
 from tqdm import tqdm
-
-from fastchat import conversation as conversation_lib
 
 
 def make_sample(sample, start_idx, end_idx):
@@ -58,9 +67,7 @@ def split_one_sample(sample):
 
 
 def split_all(content, begin, end, tokenizer_, max_length_):
-    """
-    Keep the maximum round of conversations within the max token length constraint
-    """
+    """Keep the maximum round of conversations within the max token length constraint."""
     global tokenizer, max_length
     tokenizer = tokenizer_
     max_length = max_length_

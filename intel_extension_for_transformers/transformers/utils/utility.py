@@ -14,15 +14,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Utils for pytorch framework."""
 
 import argparse
 import os
-from typing import Optional, Tuple
-from neural_compressor.utils import logger
-from neural_compressor.utils.utility import LazyImport
 
+from neural_compressor.utils.utility import LazyImport
 
 CONFIG_NAME = "best_configure.yaml"
 ENGINE_MODEL_NAME = "model.bin"
@@ -38,15 +35,17 @@ SAFE_WEIGHTS_NAME = "model.safetensors"
 
 torch = LazyImport("torch")
 
+
 def str2bool(v):
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
 
 def distributed_init(
     backend="gloo",
@@ -96,9 +95,7 @@ def _build_inc_dataloader(dataloader):
 
 
 def generate_dummy_past_key_values(config, input_bs):
-    """
-    Generate the dummy past_key_values.
-    """
+    """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
 
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
@@ -155,10 +152,9 @@ def generate_dummy_past_key_values(config, input_bs):
     ]
     return tuple(past_key_values)
 
+
 def generate_dummy_past_key_values_for_inference(config, input_bs):
-    """
-    Generate the dummy past_key_values.
-    """
+    """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
 
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
@@ -207,10 +203,9 @@ def generate_dummy_past_key_values_for_inference(config, input_bs):
     ]
     return tuple(past_key_values)
 
+
 def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
-    """
-    Generate the dummy past_key_values.
-    """
+    """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
 
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
@@ -265,23 +260,23 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "imagegpt",
     "llama",
     "mistral",
-    "chatglm"
+    "chatglm",
 }
 
+
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
-    """Generate the dummy example inputs.
-    """
+    """Generate the dummy example inputs."""
     prompt = "Welcome to use Intel Extension for Transformers."
     prompt = [prompt] * batch_size
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
     if model_config.model_type in IPEX_OPT_LLM_SUPPORTED:
         past_key_values = generate_dummy_past_key_values_for_opt_llm(
-                                                                    config=model_config,
-                                                                    input_bs=batch_size,
-                                                                    num_beams=num_beams
-                                                                    )
+            config=model_config, input_bs=batch_size, num_beams=num_beams
+        )
     else:
-        past_key_values = generate_dummy_past_key_values(config=model_config, input_bs=batch_size)
+        past_key_values = generate_dummy_past_key_values(
+            config=model_config, input_bs=batch_size
+        )
 
     input_ids = input_ids[:, :512]
     attention_mask = torch.ones(input_ids.shape)
@@ -289,18 +284,19 @@ def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
 
     if model_config.model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
         example_inputs = {
-                    "input_ids": input_ids,
-                    "attention_mask": attention_mask,
-                    "position_ids": position_ids,
-                    "past_key_values": past_key_values
-                }
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "position_ids": position_ids,
+            "past_key_values": past_key_values,
+        }
     else:
         example_inputs = {
-                    "input_ids": input_ids,
-                    "attention_mask": attention_mask,
-                    "past_key_values": past_key_values
-                }
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "past_key_values": past_key_values,
+        }
     return example_inputs
+
 
 def recover_model_from_json(user_model, json_file_path, trust_remote_code=False):
     """Recover ipex model from JSON file.
@@ -315,6 +311,7 @@ def recover_model_from_json(user_model, json_file_path, trust_remote_code=False)
     """
     if user_model.config.model_type in IPEX_OPT_LLM_SUPPORTED:
         import intel_extension_for_pytorch as ipex
+
         qconfig = ipex.quantization.default_static_qconfig_mapping
         user_model = ipex.optimize_transformers(
             user_model.eval(),
@@ -327,9 +324,11 @@ def recover_model_from_json(user_model, json_file_path, trust_remote_code=False)
     # tokenizer
     if user_model.config.model_type == "llama":
         from transformers import LlamaTokenizer
+
         tokenizer = LlamaTokenizer.from_pretrained(user_model.config.name_or_path)
     else:
         from transformers import AutoTokenizer
+
         tokenizer = AutoTokenizer.from_pretrained(
             user_model.config.name_or_path, trust_remote_code=trust_remote_code
         )
@@ -338,6 +337,9 @@ def recover_model_from_json(user_model, json_file_path, trust_remote_code=False)
     example_inputs = get_example_inputs(user_model.config, tokenizer=tokenizer)
 
     # pylint: disable=E0611
-    from neural_compressor.utils.pytorch import recover_model_from_json as inc_recover_model_from_json
+    from neural_compressor.utils.pytorch import (
+        recover_model_from_json as inc_recover_model_from_json,
+    )
+
     user_model = inc_recover_model_from_json(user_model, json_file_path, example_inputs)
     return user_model

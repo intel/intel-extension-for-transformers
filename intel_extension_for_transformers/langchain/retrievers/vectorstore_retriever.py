@@ -14,8 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""The wrapper for Retriever based on langchain"""
+"""The wrapper for Retriever based on langchain."""
 from langchain_core.vectorstores import VectorStoreRetriever as VectorRetriever
 
 
@@ -24,12 +23,12 @@ class VectorStoreRetriever(VectorRetriever):
 
     def __init__(self, document_store=None, **kwargs):
         super().__init__(**kwargs)
-    
+
     def get_context(self, query):
-        context = ''
+        context = ""
         links = []
         retrieved_documents = self.get_relevant_documents(query)
         for doc in retrieved_documents:
             context = context + doc.page_content + " "
-            links.append(doc.metadata['source'])
+            links.append(doc.metadata["source"])
         return context.strip(), links

@@ -12,6 +12,7 @@ We offer an initial sensitive word dictionary located in this folder under the n
 
 ```python
 from intel_extension_for_transformers.neural_chat.plugins.security import SafetyChecker
+
 safety_checker = SafetyChecker()
 ```
 There is also a parm names `matchType` in `SafetyChecker`. We defaultly set `matchType=2` to maintain a good checking accuracy. The user can set it to 1 for a more strict mapping rule.

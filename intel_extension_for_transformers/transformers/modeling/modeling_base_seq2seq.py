@@ -23,19 +23,15 @@ import torch
 from huggingface_hub import hf_hub_download
 from neural_compressor.model.torch_model import IPEXModel, PyTorchModel
 from neural_compressor.utils.pytorch import load
-from transformers import AutoModel, PretrainedConfig
-from transformers.file_utils import add_start_docstrings
-from transformers.models.auto.auto_factory import _get_model_class
 from optimum.exporters import TasksManager
-
 from optimum.intel.neural_compressor import INCConfig
 from optimum.intel.utils.import_utils import is_transformers_version
 from optimum.modeling_base import OptimizedModel
-from ..utils.utility import (
-    DECODER_NAME,
-    ENCODER_NAME,
-    DECODER_WITH_PAST_NAME
-)
+from transformers import AutoModel, PretrainedConfig
+from transformers.file_utils import add_start_docstrings
+from transformers.models.auto.auto_factory import _get_model_class
+
+from ..utils.utility import DECODER_NAME, DECODER_WITH_PAST_NAME, ENCODER_NAME
 
 if is_transformers_version("<", "4.25.0"):
     from transformers.generation_utils import GenerationMixin
@@ -51,8 +47,10 @@ logger = logging.getLogger(__name__)
     """,
 )
 class INCBaseModelForSeq2SeqLM(OptimizedModel):
-    _AUTOMODELS_TO_TASKS = {cls_name: task for task,
-                                               cls_name in TasksManager._TRANSFORMERS_TASKS_TO_MODEL_LOADERS.items()}
+    _AUTOMODELS_TO_TASKS = {
+        cls_name: task
+        for task, cls_name in TasksManager._TRANSFORMERS_TASKS_TO_MODEL_LOADERS.items()
+    }
     base_model_prefix = "inc_model"
     auto_model_class = AutoModel
     export_feature = "text2text-generation"
@@ -62,7 +60,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         encoder_model,
         decoder_model,
         decoder_with_past_model=None,
-        config: PretrainedConfig=None,
+        config: PretrainedConfig = None,
         device: str = "CPU",
         model_save_dir: Optional[Union[str, Path, TemporaryDirectory]] = None,
         **kwargs,
@@ -81,7 +79,11 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         else:
             from transformers import GenerationConfig
 
-            self.generation_config = GenerationConfig.from_model_config(config) if self.can_generate() else None
+            self.generation_config = (
+                GenerationConfig.from_model_config(config)
+                if self.can_generate()
+                else None
+            )
 
     @staticmethod
     def load_model(file_name: Union[str, Path]):
@@ -97,8 +99,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         decoder_with_past_file_name: Optional[str] = DECODER_WITH_PAST_NAME,
         **kwargs,
     ):
-        """
-        Saves the model so that it can be re-loaded using the
+        """Saves the model so that it can be re-loaded using the
         [`from_pretrained`] class method.
 
         Arguments:
@@ -115,37 +116,65 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
                 the decoder model with a different name.
         """
         if isinstance(self.encoder_model, IPEXModel):
-            self.encoder_model.model.save(os.path.join(save_directory, encoder_file_name))
-            self.decoder_model.model.save(os.path.join(save_directory, decoder_file_name))
+            self.encoder_model.model.save(
+                os.path.join(save_directory, encoder_file_name)
+            )
+            self.decoder_model.model.save(
+                os.path.join(save_directory, decoder_file_name)
+            )
             if self.decoder_with_past_model is not None:
-                self.decoder_with_past_model.model.save(os.path.join(save_directory, decoder_with_past_file_name))
+                self.decoder_with_past_model.model.save(
+                    os.path.join(save_directory, decoder_with_past_file_name)
+                )
         elif isinstance(self.encoder_model, PyTorchModel):
             encoder_state_dict = self.encoder_model._model.state_dict()
             decoder_state_dict = self.decoder_model._model.state_dict()
             if self.decoder_with_past_model is not None:
-                decoder_with_past_state_dict = self.decoder_with_past_model._model.state_dict()
+                decoder_with_past_state_dict = (
+                    self.decoder_with_past_model._model.state_dict()
+                )
 
             if hasattr(self.encoder_model, "q_config"):
                 encoder_state_dict["best_configure"] = self.encoder_model.q_config
-            torch.save(encoder_state_dict, os.path.join(save_directory, encoder_file_name))
+            torch.save(
+                encoder_state_dict, os.path.join(save_directory, encoder_file_name)
+            )
             if hasattr(self.decoder_model, "q_config"):
                 decoder_state_dict["best_configure"] = self.decoder_model.q_config
-            torch.save(decoder_state_dict, os.path.join(save_directory, decoder_file_name))
+            torch.save(
+                decoder_state_dict, os.path.join(save_directory, decoder_file_name)
+            )
             if self.decoder_with_past_model is not None:
                 if hasattr(self.decoder_with_past_model, "q_config"):
-                    decoder_with_past_state_dict["best_configure"] = self.decoder_with_past_model.q_config
-                torch.save(decoder_with_past_state_dict, os.path.join(save_directory, decoder_with_past_file_name))
+                    decoder_with_past_state_dict[
+                        "best_configure"
+                    ] = self.decoder_with_past_model.q_config
+                torch.save(
+                    decoder_with_past_state_dict,
+                    os.path.join(save_directory, decoder_with_past_file_name),
+                )
         elif self.config.torchscript:
-            torch.jit.save(self.encoder_model, os.path.join(save_directory, encoder_file_name))
-            torch.jit.save(self.decoder_model, os.path.join(save_directory, decoder_file_name))
+            torch.jit.save(
+                self.encoder_model, os.path.join(save_directory, encoder_file_name)
+            )
+            torch.jit.save(
+                self.decoder_model, os.path.join(save_directory, decoder_file_name)
+            )
             if self.decoder_with_past_model is not None:
-                torch.jit.save(self.decoder_with_past_model, os.path.join(save_directory, decoder_with_past_file_name))
+                torch.jit.save(
+                    self.decoder_with_past_model,
+                    os.path.join(save_directory, decoder_with_past_file_name),
+                )
         else:
             encoder_state_dict = self.encoder_model.state_dict()
             decoder_state_dict = self.decoder_model.state_dict()
 
-            torch.save(encoder_state_dict, os.path.join(save_directory, encoder_file_name))
-            torch.save(decoder_state_dict, os.path.join(save_directory, decoder_file_name))
+            torch.save(
+                encoder_state_dict, os.path.join(save_directory, encoder_file_name)
+            )
+            torch.save(
+                decoder_state_dict, os.path.join(save_directory, decoder_file_name)
+            )
         logger.info(f"Model weights saved to {save_directory}")
 
     @classmethod
@@ -165,8 +194,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         torch_dtype: Optional[Union[str, "torch.dtype"]] = None,
         **kwargs,
     ):
-        """
-        Loads a model and its configuration file from a directory or the HF Hub.
+        """Loads a model and its configuration file from a directory or the HF Hub.
 
         Arguments:
             model_id (`str` or `Path`):
@@ -219,12 +247,17 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
                 encoder = cls.load_model(os.path.join(model_id, encoder_file_name))
                 decoder = cls.load_model(os.path.join(model_id, decoder_file_name))
                 decoder_with_past = (
-                    cls.load_model(os.path.join(model_id, decoder_with_past_file_name)) if use_cache else None
+                    cls.load_model(os.path.join(model_id, decoder_with_past_file_name))
+                    if use_cache
+                    else None
                 )
 
             # Load model from hub
             else:
-                model_file_names = {"encoder": encoder_file_name, "decoder": decoder_file_name}
+                model_file_names = {
+                    "encoder": encoder_file_name,
+                    "decoder": decoder_file_name,
+                }
                 if use_cache:
                     model_file_names["decoder_with_past"] = decoder_with_past_file_name
 
@@ -249,7 +282,11 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
 
                 encoder = cls.load_model(model_file_names["encoder"])
                 decoder = cls.load_model(model_file_names["decoder"])
-                decoder_with_past = cls.load_model(model_file_names["decoder_with_past"]) if use_cache else None
+                decoder_with_past = (
+                    cls.load_model(model_file_names["decoder_with_past"])
+                    if use_cache
+                    else None
+                )
         else:
             model_kwargs = {
                 "revision": revision,
@@ -265,7 +302,9 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
                 encoder = model.encoder
                 decoder = model
             else:
-                model_class = _get_model_class(config, cls.auto_model_class._model_mapping)
+                model_class = _get_model_class(
+                    config, cls.auto_model_class._model_mapping
+                )
                 model = model_class(config)
 
                 # Load the model from local directory
@@ -293,8 +332,12 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
                         local_files_only=local_files_only,
                     )
                 # Load the state dictionary of the model to verify whether the model is quantized or not
-                encoder_state_dict = torch.load(encoder_state_dict_path, map_location="cpu")
-                decoder_state_dict = torch.load(decoder_state_dict_path, map_location="cpu")
+                encoder_state_dict = torch.load(
+                    encoder_state_dict_path, map_location="cpu"
+                )
+                decoder_state_dict = torch.load(
+                    decoder_state_dict_path, map_location="cpu"
+                )
                 if (
                     "best_configure" in encoder_state_dict
                     and encoder_state_dict["best_configure"] is not None
@@ -340,8 +383,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         torch_dtype: Optional[Union[str, "torch.dtype"]] = None,
         **kwargs,
     ):
-        """
-        Export a vanilla Transformers model into an JIT model.
+        """Export a vanilla Transformers model into an JIT model.
 
         Arguments:
             model_id (`str` or `Path`):
@@ -379,7 +421,9 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         """
         encoder_file_name = os.path.join("encoder", ENCODER_NAME)
         decoder_file_name = os.path.join("decoder", DECODER_NAME)
-        decoder_with_past_file_name = os.path.join("decoder_with_past", DECODER_WITH_PAST_NAME)
+        decoder_with_past_file_name = os.path.join(
+            "decoder_with_past", DECODER_WITH_PAST_NAME
+        )
         if task is None:
             task = cls._auto_model_to_task(cls.auto_model_class)
 
@@ -401,58 +445,100 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         model.config.return_dict = False
         model.encoder.config.return_dict = False
         model.decoder.config.return_dict = False
-        encoder_signature = inspect.signature(model.encoder.forward) \
-            if hasattr(model.encoder, "forward") else inspect.signature(model.encoder.call)
-        decoder_signature = inspect.signature(model.forward) \
-            if hasattr(model, "forward") else inspect.signature(model.call)
-        onnx_config_class = TasksManager.get_exporter_config_constructor(model=model, exporter="onnx", task=task)
-        onnx_config = onnx_config_class(model.config, use_past=use_cache, use_past_in_inputs=use_cache)
+        encoder_signature = (
+            inspect.signature(model.encoder.forward)
+            if hasattr(model.encoder, "forward")
+            else inspect.signature(model.encoder.call)
+        )
+        decoder_signature = (
+            inspect.signature(model.forward)
+            if hasattr(model, "forward")
+            else inspect.signature(model.call)
+        )
+        onnx_config_class = TasksManager.get_exporter_config_constructor(
+            model=model, exporter="onnx", task=task
+        )
+        onnx_config = onnx_config_class(
+            model.config, use_past=use_cache, use_past_in_inputs=use_cache
+        )
         encoder_onnx_config = onnx_config.with_behavior("encoder")
         decoder_onnx_config = onnx_config.with_behavior("decoder", use_past=False)
         encoder_dummy_inputs = encoder_onnx_config.generate_dummy_inputs(framework="pt")
         decoder_dummy_inputs = decoder_onnx_config.generate_dummy_inputs(framework="pt")
         encoder_model_inputs = {
-            key: encoder_dummy_inputs[key] for key in encoder_signature.parameters \
-                if encoder_dummy_inputs.get(key, None) is not None
+            key: encoder_dummy_inputs[key]
+            for key in encoder_signature.parameters
+            if encoder_dummy_inputs.get(key, None) is not None
         }
         decoder_model_inputs = {
-            key: decoder_dummy_inputs[key] for key in decoder_signature.parameters \
-                if decoder_dummy_inputs.get(key, None) is not None
+            key: decoder_dummy_inputs[key]
+            for key in decoder_signature.parameters
+            if decoder_dummy_inputs.get(key, None) is not None
         }
         del decoder_model_inputs["attention_mask"]
-        decoder_model_inputs["encoder_outputs"] = (decoder_model_inputs["encoder_outputs"][0:1][0].to(torch_dtype),)
-        encoder_traced_model = torch.jit.trace(model.encoder, example_kwarg_inputs=encoder_model_inputs)
-        decoder_traced_model = torch.jit.trace(model, example_kwarg_inputs=decoder_model_inputs)
+        decoder_model_inputs["encoder_outputs"] = (
+            decoder_model_inputs["encoder_outputs"][0:1][0].to(torch_dtype),
+        )
+        encoder_traced_model = torch.jit.trace(
+            model.encoder, example_kwarg_inputs=encoder_model_inputs
+        )
+        decoder_traced_model = torch.jit.trace(
+            model, example_kwarg_inputs=decoder_model_inputs
+        )
         encoder_traced_model = torch.jit.freeze(encoder_traced_model.eval())
         decoder_traced_model = torch.jit.freeze(decoder_traced_model.eval())
         save_dir = TemporaryDirectory()
         save_dir_path = Path(save_dir.name)
         os.makedirs(os.path.join(save_dir_path, "encoder"))
         os.makedirs(os.path.join(save_dir_path, "decoder"))
-        torch.jit.save(encoder_traced_model, os.path.join(save_dir_path, encoder_file_name))
-        torch.jit.save(decoder_traced_model, os.path.join(save_dir_path, decoder_file_name))
+        torch.jit.save(
+            encoder_traced_model, os.path.join(save_dir_path, encoder_file_name)
+        )
+        torch.jit.save(
+            decoder_traced_model, os.path.join(save_dir_path, decoder_file_name)
+        )
         if use_cache:
-            decoder_with_past_onnx_config = onnx_config.with_behavior("decoder", use_past=True, use_past_in_inputs=True)
-            decoder_with_past_dummy_inputs = decoder_with_past_onnx_config.generate_dummy_inputs(framework="pt")
+            decoder_with_past_onnx_config = onnx_config.with_behavior(
+                "decoder", use_past=True, use_past_in_inputs=True
+            )
+            decoder_with_past_dummy_inputs = (
+                decoder_with_past_onnx_config.generate_dummy_inputs(framework="pt")
+            )
             decoder_with_past_model_inputs = {
-                key: decoder_with_past_dummy_inputs[key] for key in decoder_signature.parameters \
-                    if decoder_with_past_dummy_inputs.get(key, None) is not None
+                key: decoder_with_past_dummy_inputs[key]
+                for key in decoder_signature.parameters
+                if decoder_with_past_dummy_inputs.get(key, None) is not None
             }
-            decoder_with_past_model_inputs["encoder_outputs"] = \
-                (decoder_with_past_model_inputs["encoder_outputs"][0:1][0].to(torch_dtype),)
+            decoder_with_past_model_inputs["encoder_outputs"] = (
+                decoder_with_past_model_inputs["encoder_outputs"][0:1][0].to(
+                    torch_dtype
+                ),
+            )
             del decoder_with_past_model_inputs["attention_mask"]
             pkv = []
-            for i in range(len(decoder_with_past_model_inputs['past_key_values'])):
+            for i in range(len(decoder_with_past_model_inputs["past_key_values"])):
                 pkv.append([])
-                for j in range(len(decoder_with_past_model_inputs['past_key_values'][0])):
-                    pkv[i].append(decoder_with_past_model_inputs['past_key_values'][i][j].to(torch_dtype))
+                for j in range(
+                    len(decoder_with_past_model_inputs["past_key_values"][0])
+                ):
+                    pkv[i].append(
+                        decoder_with_past_model_inputs["past_key_values"][i][j].to(
+                            torch_dtype
+                        )
+                    )
                 pkv[i] = tuple(pkv[i])
-            decoder_with_past_model_inputs['past_key_values'] = tuple(pkv)
-            decoder_with_past_traced_model = \
-                torch.jit.trace(model, example_kwarg_inputs=decoder_with_past_model_inputs)
-            decoder_with_past_traced_model = torch.jit.freeze(decoder_with_past_traced_model.eval())
+            decoder_with_past_model_inputs["past_key_values"] = tuple(pkv)
+            decoder_with_past_traced_model = torch.jit.trace(
+                model, example_kwarg_inputs=decoder_with_past_model_inputs
+            )
+            decoder_with_past_traced_model = torch.jit.freeze(
+                decoder_with_past_traced_model.eval()
+            )
             os.makedirs(os.path.join(save_dir_path, "decoder_with_past"))
-            torch.jit.save(decoder_with_past_traced_model, os.path.join(save_dir_path, decoder_with_past_file_name))
+            torch.jit.save(
+                decoder_with_past_traced_model,
+                os.path.join(save_dir_path, decoder_with_past_file_name),
+            )
 
         config.torchscript = True
 
@@ -477,15 +563,11 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
 
     @classmethod
     def _auto_model_to_task(cls, auto_model_class):
-        """
-        Get the task corresponding to a class (for example AutoModelForXXX in transformers).
-        """
+        """Get the task corresponding to a class (for example AutoModelForXXX in transformers)."""
         return cls._AUTOMODELS_TO_TASKS[auto_model_class.__name__]
 
     def can_generate(self) -> bool:
-        """
-        Returns whether this model can generate sequences with `.generate()`.
-        """
+        """Returns whether this model can generate sequences with `.generate()`."""
         if isinstance(self, GenerationMixin):
             return True
         return False
@@ -495,7 +577,9 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         return self._device
 
     def to(self, device: Union[torch.device, str]):
-        self._device = device if isinstance(device, torch.device) else torch.device(device)
+        self._device = (
+            device if isinstance(device, torch.device) else torch.device(device)
+        )
         self.encoder.to(self._device)
         self.decoder.to(self._device)
         return self

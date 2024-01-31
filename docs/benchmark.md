@@ -30,11 +30,11 @@ The class `BenchmarkConfig` allows users to adjust the following parameters with
 ## Examples
 Example inputs or a dataloader is required for benchmark.
 ```py
-def get_example_inputs(model_name, dataset_name='sst2'):
+def get_example_inputs(model_name, dataset_name="sst2"):
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
-    dataset = load_dataset(dataset_name, split='validation')
-    text = dataset[0]['text'] if dataset_name=='lambada' else dataset[0]['sentence']
-    example_inputs = tokenizer(text, padding='max_length', max_length=195, return_tensors='pt')
+    dataset = load_dataset(dataset_name, split="validation")
+    text = dataset[0]["text"] if dataset_name == "lambada" else dataset[0]["sentence"]
+    example_inputs = tokenizer(text, padding="max_length", max_length=195, return_tensors="pt")
     return example_inputs
 ```
 ### Stock Pytorch Model
@@ -56,7 +56,7 @@ from intel_extension_for_transformers.transformers import BenchmarkConfig
 from intel_extension_for_transformers.transformers.benchmark import benchmark
 
 config = BenchmarkConfig(
-    backend='ipex',
+    backend="ipex",
     batch_size=16,
     cores_per_instance=4,
     num_of_instance=-1,

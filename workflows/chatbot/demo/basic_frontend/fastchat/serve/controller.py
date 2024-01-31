@@ -1,26 +1,35 @@
-"""
-A controller manages distributed workers.
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""A controller manages distributed workers.
+
 It sends worker addresses to clients.
 """
 import argparse
-import asyncio
 import dataclasses
-from enum import Enum, auto
 import json
-import logging
-import time
-from typing import List, Union
 import threading
+import time
+from enum import Enum, auto
+from typing import List
 
-from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse
 import numpy as np
 import requests
 import uvicorn
-
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse
 from fastchat.constants import CONTROLLER_HEART_BEAT_EXPIRATION
 from fastchat.utils import build_logger, server_error_msg
-
 
 logger = build_logger("controller", "controller.log")
 
@@ -36,7 +45,7 @@ class DispatchMethod(Enum):
         elif name == "shortest_queue":
             return cls.SHORTEST_QUEUE
         else:
-            raise ValueError(f"Invalid dispatch method")
+            raise ValueError("Invalid dispatch method")
 
 
 @dataclasses.dataclass
@@ -216,7 +225,7 @@ class Controller:
             for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
                 if chunk:
                     yield chunk + b"\0"
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException:
             logger.info(f"worker timeout: {worker_addr}")
             ret = {
                 "text": server_error_msg,

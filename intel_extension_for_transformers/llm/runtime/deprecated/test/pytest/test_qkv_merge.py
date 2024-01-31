@@ -15,14 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-import sys
 import os
+import sys
+import unittest
+
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+
 
 def is_win():
-    return sys.platform.startswith('win')
+    return sys.platform.startswith("win")
+
 
 class TestQKVMerge(unittest.TestCase):
     @classmethod
@@ -31,20 +33,27 @@ class TestQKVMerge(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        os.remove('qkv_merge_pattern_config')
+        os.remove("qkv_merge_pattern_config")
         pass
 
     def test_qkv_merge_1(self):
-        model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
+        model_path = (
+            "/tf_dataset2/inc-ut/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
+        )
         content = "pattern_switch:\n  'QKVMerge': True\n  'MultiHeadAttention': False"
-        pattern_config = "qkv_merge_pattern_config" 
+        pattern_config = "qkv_merge_pattern_config"
         with open("qkv_merge_pattern_config", "w") as file:
             file.write(content)
         if is_win():
-            model_path = "D:\\dataset\\nlptoolkit_ut_model\\onnx_best_acc_distilbert.onnx"
-            pattern_config = "D:\\dataset\\nlptoolkit_ut_model\\qkv_merge_pattern_config"
+            model_path = (
+                "D:\\dataset\\nlptoolkit_ut_model\\onnx_best_acc_distilbert.onnx"
+            )
+            pattern_config = (
+                "D:\\dataset\\nlptoolkit_ut_model\\qkv_merge_pattern_config"
+            )
         graph = compile(model_path, config=pattern_config)
         self.assertEqual(100, len(graph.nodes))
+
 
 if __name__ == "__main__":
     unittest.main()

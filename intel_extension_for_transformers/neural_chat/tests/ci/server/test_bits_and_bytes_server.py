@@ -16,29 +16,41 @@
 # limitations under the License.
 
 import unittest
+
 import torch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from intel_extension_for_transformers.neural_chat import build_chatbot
-from intel_extension_for_transformers.neural_chat import PipelineConfig
 from transformers.utils import is_bitsandbytes_available
+
+from intel_extension_for_transformers.neural_chat import PipelineConfig, build_chatbot
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import (
+    ChatCompletionRequest,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import (
+    router,
+)
 from intel_extension_for_transformers.transformers import BitsAndBytesConfig
-from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
 
 app = FastAPI()
 app.include_router(router)
 client = TestClient(app)
 
+
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         if not (is_bitsandbytes_available() and torch.cuda.is_available()):
             self.skipTest("Only test this UT case on Nvidia GPU.")
-        optimization_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
-                                                 bnb_4bit_use_double_quant=True,
-                                                 bnb_4bit_compute_dtype="bfloat16")
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m", device="cuda",
-                                optimization_config=optimization_config)
+        optimization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_compute_dtype="bfloat16",
+        )
+        config = PipelineConfig(
+            model_name_or_path="facebook/opt-125m",
+            device="cuda",
+            optimization_config=optimization_config,
+        )
         chatbot = build_chatbot(config)
         router.set_chatbot(chatbot)
 
@@ -49,6 +61,7 @@ class UnitTest(unittest.TestCase):
         )
         response = client.post("/v1/chat/completions", json=chat_request.dict())
         assert response.status_code == 200
+
 
 if __name__ == "__main__":
     unittest.main()

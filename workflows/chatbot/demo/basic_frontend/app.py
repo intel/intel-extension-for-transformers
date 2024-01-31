@@ -1,5 +1,17 @@
-import argparse
-from collections import defaultdict
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import datetime
 import json
 import os
@@ -10,22 +22,16 @@ os.system("pip install gradio==3.36.0")
 
 import gradio as gr
 import requests
-
-from fastchat.conversation import (
-    Conversation,
-    compute_skip_echo_len,
-    SeparatorStyle,
-)
 from fastchat.constants import LOGDIR
+from fastchat.conversation import Conversation, SeparatorStyle, compute_skip_echo_len
+from fastchat.serve.gradio_css import code_highlight_css
+from fastchat.serve.gradio_patch import Chatbot as grChatbot
 from fastchat.utils import (
     build_logger,
+    moderation_msg,
     server_error_msg,
     violates_moderation,
-    moderation_msg,
 )
-from fastchat.serve.gradio_patch import Chatbot as grChatbot
-from fastchat.serve.gradio_css import code_highlight_css
-
 
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
 
@@ -40,7 +46,7 @@ enable_moderation = False
 
 conv_template_bf16 = Conversation(
     system="A chat between a curious human and an artificial intelligence assistant. "
-           "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+    "The assistant gives helpful, detailed, and polite answers to the human's questions.",
     roles=("Human", "Assistant"),
     messages=(),
     offset=0,
@@ -83,6 +89,7 @@ conv_template_bf16 = Conversation(
     sep="\n",
     sep2="<|im_end|>",
 )
+
 
 def set_global_vars(controller_url_, enable_moderation_):
     global controller_url, enable_moderation
@@ -218,7 +225,9 @@ def post_process_code(code):
     return code
 
 
-def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: gr.Request):
+def http_bot(
+    state, model_selector, temperature, max_new_tokens, topk, request: gr.Request
+):
     logger.info(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
     model_name = model_selector
@@ -272,7 +281,7 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         "temperature": temperature,
         "max_new_tokens": max_new_tokens,
         "topk": topk,
-        "stop": "<|endoftext|>"
+        "stop": "<|endoftext|>",
     }
     logger.info(f"==== request ====\n{pload}")
 
@@ -310,8 +319,8 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
                     )
                     return
                 time.sleep(0.005)
-    except requests.exceptions.RequestException as e:
-        state.messages[-1][-1] = server_error_msg + f" (error_code: 4)"
+    except requests.exceptions.RequestException:
+        state.messages[-1][-1] = server_error_msg + " (error_code: 4)"
         yield (state, state.to_gradio_chatbot()) + (
             disable_btn,
             disable_btn,
@@ -431,11 +440,11 @@ gradio-app {
 
 .user, .bot {
     width: 80% !important;
-    
+
 }
 
 .bot {
-    white-space: pre-wrap !important;  
+    white-space: pre-wrap !important;
     line-height: 1.3 !important;
     display: flex;
     flex-direction: column;
@@ -451,7 +460,7 @@ gradio-app {
 #btn-list-style {
     background: #eee0;
     border: 1px solid #0053f4;
-}        
+}
 
 .title {
     font-size: 1.5rem;
@@ -512,7 +521,6 @@ footer {
 
 
 def build_single_model_ui(models):
- 
     notice_markdown = """
 <div class="title">
 <div style="
@@ -520,7 +528,7 @@ def build_single_model_ui(models):
 ">Large Language Model <p style="
     font-size: 0.8rem;
 ">4th Gen Intel® Xeon® with Intel® AMX</p></div>
- 
+
 </div>
 """
 
@@ -530,7 +538,7 @@ def build_single_model_ui(models):
             </div>
             <div class="acknowledgments">
             <p></p></div>
-            
+
         """
 
     state = gr.State()
@@ -555,7 +563,9 @@ def build_single_model_ui(models):
         with gr.Column(scale=1, min_width=50):
             send_btn = gr.Button(value="Send", visible=False, elem_id="btn-send-style")
 
-    with gr.Accordion("Parameters", open=False, visible=False, elem_id="btn-style") as parameter_row:
+    with gr.Accordion(
+        "Parameters", open=False, visible=False, elem_id="btn-style"
+    ) as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
@@ -582,15 +592,29 @@ def build_single_model_ui(models):
             label="TOP K",
         )
 
-
     with gr.Row(visible=False, elem_id="btn-style") as button_row:
-        upvote_btn = gr.Button(value="👍  Upvote", interactive=False, visible=False, elem_id="btn-list-style")
-        downvote_btn = gr.Button(value="👎  Downvote", interactive=False, visible=False, elem_id="btn-list-style")
-        flag_btn = gr.Button(value="⚠️  Flag", interactive=False, visible=False, elem_id="btn-list-style")
+        upvote_btn = gr.Button(
+            value="👍  Upvote",
+            interactive=False,
+            visible=False,
+            elem_id="btn-list-style",
+        )
+        downvote_btn = gr.Button(
+            value="👎  Downvote",
+            interactive=False,
+            visible=False,
+            elem_id="btn-list-style",
+        )
+        flag_btn = gr.Button(
+            value="⚠️  Flag", interactive=False, visible=False, elem_id="btn-list-style"
+        )
         # stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=False)
-        regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False, elem_id="btn-list-style")
-        clear_btn = gr.Button(value="🗑️  Clear history", interactive=False, elem_id="btn-list-style")
-
+        regenerate_btn = gr.Button(
+            value="🔄  Regenerate", interactive=False, elem_id="btn-list-style"
+        )
+        clear_btn = gr.Button(
+            value="🗑️  Clear history", interactive=False, elem_id="btn-list-style"
+        )
 
     gr.Markdown(learn_more_markdown)
 
@@ -678,7 +702,6 @@ def build_demo(models):
 
 
 if __name__ == "__main__":
-
     controller_url = "http://54.166.144.154:80"
     host = "0.0.0.0"
 
@@ -693,6 +716,4 @@ if __name__ == "__main__":
     demo = build_demo(models)
     demo.queue(
         concurrency_count=concurrency_count, status_update_rate=10, api_open=False
-    ).launch(
-        server_name=host, share=share, max_threads=200
-    )
+    ).launch(server_name=host, share=share, max_threads=200)

@@ -14,38 +14,49 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The MergedEmbeddingbag pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
+
 from .. import graph_utils as util
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='MergedEmbeddingbag')
+@pattern_registry(pattern_type="MergedEmbeddingbag")
 class MergedEmbeddingbag(Pattern):
     """The MergedEmbeddingbag pattern.
 
     Fuse the original sub-graph into the custom acceleration 'MergedEmbeddingbag' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
-            'MergedEmbeddingbag': [
+            "MergedEmbeddingbag": [
                 # DLRM onnx model
                 {
-                    'patterns': {
-                        'in': [[(0, 'Split'), (1, 'Squeeze'), (2, 'Shape'),
-                                (3, 'Gather'), (5, 'Unsqueeze'), (6, 'Concat'),
-                                (7, 'Slice'), (8, 'Shape'), (9, 'Gather'), (10, 'Loop')],
-                               [(), (4, 'Gather'), (6, 'Concat')]],
+                    "patterns": {
+                        "in": [
+                            [
+                                (0, "Split"),
+                                (1, "Squeeze"),
+                                (2, "Shape"),
+                                (3, "Gather"),
+                                (5, "Unsqueeze"),
+                                (6, "Concat"),
+                                (7, "Slice"),
+                                (8, "Shape"),
+                                (9, "Gather"),
+                                (10, "Loop"),
+                            ],
+                            [(), (4, "Gather"), (6, "Concat")],
+                        ],
                     },
                 },
             ]
         }
 
-        pattern = pattern_mapping_config['MergedEmbeddingbag'][0]['patterns']['in']
+        pattern = pattern_mapping_config["MergedEmbeddingbag"][0]["patterns"]["in"]
         patterns_nodes_name = util.search_pattern(pattern, model)
 
         if len(patterns_nodes_name) != 0:
@@ -67,12 +78,16 @@ class MergedEmbeddingbag(Pattern):
                 merged_embeddingbag_inputs.append(weight)
                 loop_output = loop_node.output_tensors[0]
                 merged_embeddingbag_outputs.append(loop_output)
-                for idx in range(len(pattern_nodes_name)-1):
+                for idx in range(len(pattern_nodes_name) - 1):
                     match_nodes_name.append(pattern_nodes_name[idx])
 
             merged_embeddingbag_node_name = "MergedEmbeddingbag_" + split_node.name
-            merged_embeddingbag_node = util.construct_node(merged_embeddingbag_node_name,
-            'MergedEmbeddingbag', merged_embeddingbag_inputs, merged_embeddingbag_outputs)
+            merged_embeddingbag_node = util.construct_node(
+                merged_embeddingbag_node_name,
+                "MergedEmbeddingbag",
+                merged_embeddingbag_inputs,
+                merged_embeddingbag_outputs,
+            )
 
             model.remove_nodes(match_nodes_name)
             model.insert_nodes(split_idx, [merged_embeddingbag_node])

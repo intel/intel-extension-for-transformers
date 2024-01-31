@@ -20,6 +20,7 @@ First, you should check whether the nodes' op_types in the pattern are registere
 ```python
 # make sure you have cloned intel_extension_for_transformers repo and installed intel_extension_for_transformers
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS
+
 # All the op_type names and objects are stored in `OPERATORS`
 print(OPERATORS)
 ```
@@ -38,7 +39,7 @@ Assume the `Sqrt` and `ReduceMean` in `LayerNorm` pattern are new op_types for [
 
 ```python
 # register the 'Sqrt' class in OPERATORS
-@operator_registry(operator_type='Sqrt')
+@operator_registry(operator_type="Sqrt")
 # all ops class will inherit the father class 'Operator'
 class Sqrt(Operator):
     def __init__(self):
@@ -56,28 +57,30 @@ from .op import Operator, operator_registry
 from .tensor import Tensor
 from ..graph_utils import list2str
 
-@operator_registry(operator_type='ReduceMean')
+
+@operator_registry(operator_type="ReduceMean")
 class ReduceMean(Operator):
     def __init__(self):
         super().__init__()
+
     # rewrite the 'set_attr' function to set the attributes
     def set_attr(self, framework, node):
         # other frameworks may also have the 'ReduceMean' op_type
-        if framework == 'onnxruntime':
+        if framework == "onnxruntime":
             # if node has 'keep_dims' attribute in origin model
             if len(node.attribute) == 2:
                 axis = node.attribute[1].ints
-                self._attr['keep_dims'] = bool(node.attribute[0].i)
+                self._attr["keep_dims"] = bool(node.attribute[0].i)
             # if node has not 'keep_dims' attribute in origin model
             if len(node.attribute) == 1:
-               axis = node.attribute[0].ints
+                axis = node.attribute[0].ints
             # in this 'LayerNorm' pattern, the axis just have on element in a list
             if len(axis) == 1:
-                self._attr['axis'] = axis[0]
+                self._attr["axis"] = axis[0]
             # if the axis list have several element, change the list to string
             # for example, [1, 2, 3] --> '1,2,3'
             else:
-                self._attr['axis'] = list2str(axis)
+                self._attr["axis"] = list2str(axis)
 ```
 
 After adding the two op classes, you can use the `OPERATORS` to check whether them be added successfully or not. Please do not forget reinstall the `intel_extension_for_transformers` in local for making your code changes effective.
@@ -93,7 +96,8 @@ pip install -v .
 ```python
 # check your code changes
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS
-'Sqrt' and 'ReduceMean' in OPERATORS
+
+"Sqrt" and "ReduceMean" in OPERATORS
 ```
 
 If nothing wrong, the output result should be `True`.
@@ -109,34 +113,31 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
   ```python
   # LayerNorm in distil_bert_base
   pattern_mapping_config = {
-              'LayerNorm': [
-      {
-      'patterns': {
-                   'in': [[(0, 'ReduceMean'), (1, 'Sub'), (2, 'Pow'), (3, 'ReduceMean'),
-                          (4, 'Add'), (5, 'Sqrt'), (6, 'Div'), (7,'Mul'), (8, 'Add')]],
-                   'out': [[(0, 'LayerNorm')]]
-                   },
-       'search_mode': 'op_type',
-       'node_names': {
-                      0: 8
-                     },
-       'input_tensors': {
-                          0: [[{
-                              0: [0]
-                          }, {
-                              7: [1]
-                          }, {
-                              8: [1]
-                          }], [[0, 1, 2], 3]]
-                         },
-       'output_tensors': {
-                          0: [[{
-                              8: [0]
-                          }], [[0], 1]]
-                      },
-       'returns': [4]
-       },
-    ]
+      "LayerNorm": [
+          {
+              "patterns": {
+                  "in": [
+                      [
+                          (0, "ReduceMean"),
+                          (1, "Sub"),
+                          (2, "Pow"),
+                          (3, "ReduceMean"),
+                          (4, "Add"),
+                          (5, "Sqrt"),
+                          (6, "Div"),
+                          (7, "Mul"),
+                          (8, "Add"),
+                      ]
+                  ],
+                  "out": [[(0, "LayerNorm")]],
+              },
+              "search_mode": "op_type",
+              "node_names": {0: 8},
+              "input_tensors": {0: [[{0: [0]}, {7: [1]}, {8: [1]}], [[0, 1, 2], 3]]},
+              "output_tensors": {0: [[{8: [0]}], [[0], 1]]},
+              "returns": [4],
+          },
+      ]
   }
   ```
 
@@ -148,6 +149,7 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
 
   ```python
   from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern import PATTERNS
+
   print(PATTERNS)
   ```
 
@@ -164,38 +166,35 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
   from collections import namedtuple, OrderedDict
   from .. import graph_utils as util
 
-  @pattern_registry(pattern_type='LayerNorm')
+
+  @pattern_registry(pattern_type="LayerNorm")
   class LayerNorm(Pattern):
       def __call__(self, model):
-
           pattern_mapping_config = {
-              'LayerNorm': [
+              "LayerNorm": [
                   # LayerNorm in distil_bert_base
                   {
-                      'patterns': {
-                          'in': [[(0, 'ReduceMean'), (1, 'Sub'), (2, 'Pow'), (3, 'ReduceMean'),
-                                  (4, 'Add'), (5, 'Sqrt'), (6, 'Div'), (7,'Mul'), (8, 'Add')]],
-                          'out': [[(0, 'LayerNorm')]]
+                      "patterns": {
+                          "in": [
+                              [
+                                  (0, "ReduceMean"),
+                                  (1, "Sub"),
+                                  (2, "Pow"),
+                                  (3, "ReduceMean"),
+                                  (4, "Add"),
+                                  (5, "Sqrt"),
+                                  (6, "Div"),
+                                  (7, "Mul"),
+                                  (8, "Add"),
+                              ]
+                          ],
+                          "out": [[(0, "LayerNorm")]],
                       },
-                      'search_mode': 'op_type',
-                      'node_names': {
-                          0: 8
-                      },
-                      'input_tensors': {
-                          0: [[{
-                              0: [0]
-                          }, {
-                              7: [1]
-                          }, {
-                              8: [1]
-                          }], [[0, 1, 2], 3]]
-                      },
-                      'output_tensors': {
-                          0: [[{
-                              8: [0]
-                          }], [[0], 1]]
-                      },
-                      'returns': [4]
+                      "search_mode": "op_type",
+                      "node_names": {0: 8},
+                      "input_tensors": {0: [[{0: [0]}, {7: [1]}, {8: [1]}], [[0, 1, 2], 3]]},
+                      "output_tensors": {0: [[{8: [0]}], [[0], 1]]},
+                      "returns": [4],
                   },
               ]
           }
@@ -205,7 +204,8 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
 
   ```python
   from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern import PATTERNS
-  'LayerNorm' in PATTERNS
+
+  "LayerNorm" in PATTERNS
   ```
 
   If nothing wrong, the output result should be `True`.
@@ -238,10 +238,10 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
 
   ```python
   # get the above LayerNorm pattern dict
-  pattern_dict = pattern_mapping_config['LayerNorm'][0]
+  pattern_dict = pattern_mapping_config["LayerNorm"][0]
   # get the intermediate graph (model) after fuse LayerNorm pattern
   # new_node_name and ret_old_nodes are used for set attributes later
-  model, new_node_names, ret_old_nodes = util.pattern_mapping('LayerNorm', pattern_dict, model)
+  model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNorm", pattern_dict, model)
   ```
 
 - Set the attributes of new pattern
@@ -254,13 +254,15 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
   def _set_attr(epsilon, node_names, model):
       attr = OrderedDict()
       # set the `epsilon` attribute
-      attr['epsilon'] = float(epsilon)
+      attr["epsilon"] = float(epsilon)
       ln_node_idx = model.get_node_id(node_names[0])
       # make the LayerNorm node in model have the corresponding attribute
       model.nodes[ln_node_idx].attr = attr
+
+
   # LayerNorm pattern mapping
-  pattern_dict = pattern_mapping_config['LayerNorm'][0]
-  model, new_node_names, ret_old_nodes = util.pattern_mapping('LayerNorm', pattern_dict, model)
+  pattern_dict = pattern_mapping_config["LayerNorm"][0]
+  model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNorm", pattern_dict, model)
   # if the model has the above LayerNorm pattern
   if len(new_node_names) != 0:
       # set the LayerNorm node attribute
@@ -278,38 +280,35 @@ from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
 
-@pattern_registry(pattern_type='LayerNorm')
+
+@pattern_registry(pattern_type="LayerNorm")
 class LayerNorm(Pattern):
     def __call__(self, model):
-
         pattern_mapping_config = {
-            'LayerNorm': [
+            "LayerNorm": [
                 # LayerNorm in distil_bert_base
                 {
-                    'patterns': {
-                        'in': [[(0, 'ReduceMean'), (1, 'Sub'), (2, 'Pow'), (3, 'ReduceMean'),
-                                (4, 'Add'), (5, 'Sqrt'), (6, 'Div'), (7,'Mul'), (8, 'Add')]],
-                        'out': [[(0, 'LayerNorm')]]
+                    "patterns": {
+                        "in": [
+                            [
+                                (0, "ReduceMean"),
+                                (1, "Sub"),
+                                (2, "Pow"),
+                                (3, "ReduceMean"),
+                                (4, "Add"),
+                                (5, "Sqrt"),
+                                (6, "Div"),
+                                (7, "Mul"),
+                                (8, "Add"),
+                            ]
+                        ],
+                        "out": [[(0, "LayerNorm")]],
                     },
-                    'search_mode': 'op_type',
-                    'node_names': {
-                        0: 8
-                    },
-                    'input_tensors': {
-                        0: [[{
-                            0: [0]
-                        }, {
-                            7: [1]
-                        }, {
-                            8: [1]
-                        }], [[0, 1, 2], 3]]
-                    },
-                    'output_tensors': {
-                        0: [[{
-                            8: [0]
-                        }], [[0], 1]]
-                    },
-                    'returns': [4]
+                    "search_mode": "op_type",
+                    "node_names": {0: 8},
+                    "input_tensors": {0: [[{0: [0]}, {7: [1]}, {8: [1]}], [[0, 1, 2], 3]]},
+                    "output_tensors": {0: [[{8: [0]}], [[0], 1]]},
+                    "returns": [4],
                 },
             ]
         }
@@ -317,15 +316,16 @@ class LayerNorm(Pattern):
         # general LayerNorm node attribute setting function
         def _set_attr(epsilon, node_names, model):
             attr = OrderedDict()
-            attr['epsilon'] = float(epsilon)
+            attr["epsilon"] = float(epsilon)
             ln_node_idx = model.get_node_id(node_names[0])
             model.nodes[ln_node_idx].attr = attr
+
         # use for-loop because you may add other LayerNorm pattern mapping dict
         # when meeting other different models
-        for i in range(len(pattern_mapping_config['LayerNorm'])):
+        for i in range(len(pattern_mapping_config["LayerNorm"])):
             # replace all the LayerNorm pattern in the model
-            pattern_dict = pattern_mapping_config['LayerNorm'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping('LayerNorm', pattern_dict, model)
+            pattern_dict = pattern_mapping_config["LayerNorm"][i]
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNorm", pattern_dict, model)
             if len(new_node_names) != 0:
                 # set the LayerNorm node attribute
                 for j in range(len(new_node_names)):

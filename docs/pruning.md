@@ -62,7 +62,7 @@ PrunerConfig defines which pruning algorithm to use and how to apply it during t
 
 - example:
     ```python
-    pruner_config = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
+    pruner_config = PrunerConfig(prune_type="BasicMagnitude", target_sparsity_ratio=0.9)
     ```
 
 ### Create an instance of PruningConfig

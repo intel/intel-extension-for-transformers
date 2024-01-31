@@ -17,22 +17,32 @@
 
 import argparse
 import os
-import json, types
-from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
-from intel_extension_for_transformers.neural_chat.config import (
-    PipelineConfig, GenerationConfig, LoadingModelConfig
-)
-
-from intel_extension_for_transformers.transformers import MixedPrecisionConfig
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionResponse
-from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import check_completion_request
-from intel_extension_for_transformers.neural_chat.cli.log import logger
+import types
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-app = FastAPI(title="NeuralChat Gaudi Serving Process", description="Serving", version="0.0.1")
+
+from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
+from intel_extension_for_transformers.neural_chat.cli.log import logger
+from intel_extension_for_transformers.neural_chat.config import (
+    GenerationConfig,
+    LoadingModelConfig,
+    PipelineConfig,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import (
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import (
+    check_completion_request,
+)
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig
+
+app = FastAPI(
+    title="NeuralChat Gaudi Serving Process", description="Serving", version="0.0.1"
+)
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -53,7 +63,7 @@ def parse_args():
     parser.add_argument(
         "--api_list",
         type=str,
-        nargs='+',
+        nargs="+",
         default=None,
         help="Restful API support list",
     )
@@ -180,9 +190,13 @@ def parse_args():
         help="bfloat16, float32 or float16",
     )
     parser.add_argument(
-        "--return_stats", action='store_true', default=False,)
+        "--return_stats",
+        action="store_true",
+        default=False,
+    )
     args = parser.parse_args()
     return args
+
 
 args = parse_args()
 base_model_path = args.base_model_path
@@ -199,9 +213,7 @@ if not 1.0 <= args.repetition_penalty <= 2.0:
 if not 1 <= args.num_beams <= 8:
     raise ValueError("Number of beams must be between 1 and 8.")
 if not 32 <= args.max_new_tokens <= 1024:
-    raise ValueError(
-        "The maximum number of new tokens must be between 32 and 1024."
-    )
+    raise ValueError("The maximum number of new tokens must be between 32 and 1024.")
 
 # User can use DeepSpeed to speedup the inference On Habana Gaudi processors.
 # If the DeepSpeed launcher is used, the env variable _ will be equal to /usr/local/bin/deepspeed
@@ -237,7 +249,7 @@ config = PipelineConfig(
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
     ),
-    optimization_config=MixedPrecisionConfig(dtype=args.dtype)
+    optimization_config=MixedPrecisionConfig(dtype=args.dtype),
 )
 chatbot = build_chatbot(config)
 gen_config = GenerationConfig(
@@ -253,11 +265,14 @@ gen_config = GenerationConfig(
     use_hpu_graphs=args.use_hpu_graphs,
     use_cache=args.use_kv_cache,
     num_return_sequences=args.num_return_sequences,
-    ipex_int8=args.ipex_int8
+    ipex_int8=args.ipex_int8,
 )
 
 if args.habana:
-    from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=E0401
+    from habana_frameworks.torch.distributed.hccl import (
+        initialize_distributed_hpu,
+    )  # pylint: disable=E0401
+
     world_size, rank, args.local_rank = initialize_distributed_hpu()
 
 if args.habana and rank in [-1, 0]:
@@ -265,10 +280,13 @@ if args.habana and rank in [-1, 0]:
     print(f"n_hpu: {world_size}, bf16")
 
 # warmup, the first time inference take longer because of graph compilation
-for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
+for new_text in chatbot.predict_stream(
+    query="Tell me about Intel Xeon.", config=gen_config
+)[0]:
     if args.local_rank in [-1, 0]:
         print(new_text, end="", flush=True)
-print("\n"*3)
+print("\n" * 3)
+
 
 @app.post("/v1/code_generation")
 async def chat_completion_endpoint(request: ChatCompletionRequest):
@@ -283,20 +301,25 @@ async def chat_completion_endpoint(request: ChatCompletionRequest):
                 continue
             setattr(gen_config, attr, value)
         if request.stream:
-            generator, _ = chatbot.predict_stream(query=request.prompt, config=gen_config)
+            generator, _ = chatbot.predict_stream(
+                query=request.prompt, config=gen_config
+            )
             if not isinstance(generator, types.GeneratorType):
                 generator = (generator,)
+
             def stream_generator():
                 for output in generator:
                     yield output + "\0"
+
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
             response = chatbot.predict(query=request.prompt, config=gen_config)
     except Exception as e:
         logger.error(f"An error occurred: {e}")
     else:
-        logger.info(f"Chat completion finished.")
+        logger.info("Chat completion finished.")
         return ChatCompletionResponse(response=response)
+
 
 if __name__ == "__main__":
     process_port = args.port + args.local_rank + 1

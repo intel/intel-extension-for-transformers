@@ -17,27 +17,35 @@
 
 import torch
 
+
 def is_optimum_habana_available():
     import importlib
+
     from transformers.utils.import_utils import is_optimum_available
 
     return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
 
+
 try:
     import habana_frameworks.torch.hpu as hthpu
+
     if is_optimum_habana_available():
         is_hpu_available = True
     else:
-        print("Should install optimum-habana when the environment has habana frameworks")
+        print(
+            "Should install optimum-habana when the environment has habana frameworks"
+        )
         is_hpu_available = False
 except ImportError:
     is_hpu_available = False
 
 try:
     import intel_extension_for_pytorch as intel_ipex
+
     is_ipex_available = True
 except ImportError:
     is_ipex_available = False
+
 
 def get_device_type():
     if torch.cuda.is_available():

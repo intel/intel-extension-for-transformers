@@ -15,9 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner import NamedEntityRecognition
-import unittest
 import os
+import unittest
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner import (
+    NamedEntityRecognition,
+)
 
 
 class TestNER(unittest.TestCase):
@@ -28,16 +31,16 @@ class TestNER(unittest.TestCase):
         return super().tearDown()
 
     def test_ner(self):
-        os.system('python -m spacy download en_core_web_lg')
+        os.system("python -m spacy download en_core_web_lg")
         ner_obj = NamedEntityRecognition()
         query = "Show me photos taken in Shanghai."
         result = ner_obj.ner_inference(query)
         _result = {
-            'period': [], 
-            'time': [], 
-            'location': ['Shanghai'], 
-            'name': [], 
-            'organization': []
+            "period": [],
+            "time": [],
+            "location": ["Shanghai"],
+            "name": [],
+            "organization": [],
         }
         self.assertEqual(result, _result)
 

@@ -14,27 +14,27 @@ parser.add_argument("--stage", type=str, default="collect_log")
 parser.add_argument("--gap", type=float, default=0.05)
 parser.add_argument("--model_test_type", type=str, default="optimize")
 args = parser.parse_args()
-print('====== collecting model test log =======')
-OS = 'linux'
-URL = '_blank'
+print("====== collecting model test log =======")
+OS = "linux"
+URL = "_blank"
 
 
 def get_cpu_name():
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         return platform.processor()
-    elif platform.system() == 'Linux':
+    elif platform.system() == "Linux":
         try:
-            with open('/proc/cpuinfo', 'r') as f:
+            with open("/proc/cpuinfo", "r") as f:
                 for line in f.readlines():
-                    if line.strip().startswith('model name'):
-                        return line.strip().split(':')[1].strip()
+                    if line.strip().startswith("model name"):
+                        return line.strip().split(":")[1].strip()
         except IOError:
             pass
-    return 'Unknown'
+    return "Unknown"
 
 
 def extract_cpu_number(cpu_name):
-    pattern = r'\d+'
+    pattern = r"\d+"
     match = re.search(pattern, cpu_name)
     if match:
         return match.group()
@@ -44,11 +44,11 @@ def extract_cpu_number(cpu_name):
 
 cpu_name = get_cpu_name()
 cpu_number = extract_cpu_number(cpu_name)
-cpu_platform_dict = {'1': 'skx', '2': "clx", '3': "icx", '4': 'spr'}
-PLATFORM = cpu_platform_dict.get(cpu_number[1], 'unknown')
+cpu_platform_dict = {"1": "skx", "2": "clx", "3": "icx", "4": "spr"}
+PLATFORM = cpu_platform_dict.get(cpu_number[1], "unknown")
 patterns = {
     "batch_size": re.compile(r"[B,b]atch size\s?[=,:] ([0-9]+)"),
-    "accuracy": re.compile(r'[A,a]ccuracy:\D+(\d+\.\d+)'),
+    "accuracy": re.compile(r"[A,a]ccuracy:\D+(\d+\.\d+)"),
     "throughput": re.compile(r"[T,t]hroughput:\D+(\d+\.\d+)"),
     "benchmark_only": re.compile(r"[T,t]hroughput sum\D+(\d+\.\d+)"),
 }
@@ -59,8 +59,8 @@ def get_model_tuning_dict_results():
     framework_version = get_framework_version(shlex.quote(args.framework))
 
     if os.path.exists(tuning_log):
-        print('tuning log found')
-        tmp = {'fp32_acc': 0, 'int8_acc': 0, 'tuning_trials': 0}
+        print("tuning log found")
+        tmp = {"fp32_acc": 0, "int8_acc": 0, "tuning_trials": 0}
         with open(tuning_log, "r") as f:
             for line in f:
                 parse_tuning_line(line, tmp)
@@ -71,11 +71,11 @@ def get_model_tuning_dict_results():
             "Framework": shlex.quote(args.framework),
             "Version": framework_version,
             "Model": shlex.quote(args.model),
-            "Strategy": tmp.get('strategy', 'basic'),
-            "Tune_time": tmp.get('tune_time'),
+            "Strategy": tmp.get("strategy", "basic"),
+            "Tune_time": tmp.get("tune_time"),
         }
         benchmark_accuracy_result_dict = {
-            'int8': {
+            "int8": {
                 "OS": OS,
                 "Platform": PLATFORM,
                 "Framework": shlex.quote(args.framework),
@@ -84,10 +84,10 @@ def get_model_tuning_dict_results():
                 "Mode": "Inference",
                 "Type": "Accuracy",
                 "BS": 1,
-                "Value": tmp.get('int8_acc'),
+                "Value": tmp.get("int8_acc"),
                 "Url": URL,
             },
-            'fp32': {
+            "fp32": {
                 "OS": OS,
                 "Platform": PLATFORM,
                 "Framework": shlex.quote(args.framework),
@@ -96,9 +96,9 @@ def get_model_tuning_dict_results():
                 "Mode": "Inference",
                 "Type": "Accuracy",
                 "BS": 1,
-                "Value": tmp.get('fp32_acc'),
+                "Value": tmp.get("fp32_acc"),
                 "Url": URL,
-            }
+            },
         }
         return tuning_result_dict, benchmark_accuracy_result_dict
     else:
@@ -113,7 +113,9 @@ def get_model_benchmark_dict_results():
         for root, dirs, files in os.walk(shlex.quote(args.logs_dir)):
             for name in files:
                 file_name = os.path.join(root, name)
-                if (("throughput" in name or "performance" in name) and precision in name):
+                if (
+                    "throughput" in name or "performance" in name
+                ) and precision in name:
                     for line in open(file_name, "r"):
                         result = parse_perf_line(line)
                         if result.get("throughput"):
@@ -138,8 +140,11 @@ def get_model_benchmark_dict_results():
 
 
 def get_refer_data():
-    refer_log = os.path.join(f"{args.logs_dir}_refer_log", f"{args.framework}-{args.model}",
-                             f"{args.framework}_{args.model}_summary.log")
+    refer_log = os.path.join(
+        f"{args.logs_dir}_refer_log",
+        f"{args.framework}-{args.model}",
+        f"{args.framework}_{args.model}_summary.log",
+    )
     result = {}
     if os.path.exists(refer_log):
         with open(refer_log, "r") as f:
@@ -149,8 +154,11 @@ def get_refer_data():
         for value in values:
             precision = value[keys.index("Precision")]
             Type = value[keys.index("Type")]
-            result[f"{precision}_{Type}"] = float(value[keys.index(
-                "Value")]) if value[keys.index("Value")] != "unknown" else "unknown"
+            result[f"{precision}_{Type}"] = (
+                float(value[keys.index("Value")])
+                if value[keys.index("Value")] != "unknown"
+                else "unknown"
+            )
         return result
     else:
         print(f"refer log file: {refer_log} not found")
@@ -164,21 +172,35 @@ def collect_log():
     print(f"tuning log dir is {tuning_log}")
     # get model tuning results
     if os.path.exists(tuning_log):
-        print('tuning log found')
-        tmp = {'fp32_acc': 0, 'int8_acc': 0, 'tuning_trials': 0}
+        print("tuning log found")
+        tmp = {"fp32_acc": 0, "int8_acc": 0, "tuning_trials": 0}
         with open(tuning_log, "r") as f:
             for line in f:
                 parse_tuning_line(line, tmp)
 
-        tuning_infos.append(';'.join([
-            OS, PLATFORM, shlex.quote(args.model_test_type), shlex.quote(args.framework), framework_version, shlex.quote(args.model),
-            tmp.get('strategy', 'basic'),
-            str(tmp.get('tune_time', 'na')),
-            str(tmp['tuning_trials']), URL, '0' + '\n'
-        ]))
+        tuning_infos.append(
+            ";".join(
+                [
+                    OS,
+                    PLATFORM,
+                    shlex.quote(args.model_test_type),
+                    shlex.quote(args.framework),
+                    framework_version,
+                    shlex.quote(args.model),
+                    tmp.get("strategy", "basic"),
+                    str(tmp.get("tune_time", "na")),
+                    str(tmp["tuning_trials"]),
+                    URL,
+                    "0" + "\n",
+                ]
+            )
+        )
 
-    precision_list = ['int8', 'fp32', "dynamic_int8"] if (
-        args.model_test_type == "deploy" and shlex.quote(args.framework) != "ipex") else ['int8', 'fp32']
+    precision_list = (
+        ["int8", "fp32", "dynamic_int8"]
+        if (args.model_test_type == "deploy" and shlex.quote(args.framework) != "ipex")
+        else ["int8", "fp32"]
+    )
 
     # get model performance results
     for precision in precision_list:
@@ -187,14 +209,17 @@ def collect_log():
         for root, dirs, files in os.walk(shlex.quote(args.logs_dir)):
             for name in files:
                 file_name = os.path.join(root, name)
-                if (("performance" in name or "throughput.log" in name) and precision in name
-                        and shlex.quote(args.framework) in name):
+                if (
+                    ("performance" in name or "throughput.log" in name)
+                    and precision in name
+                    and shlex.quote(args.framework) in name
+                ):
                     for line in open(file_name, "r"):
                         result = parse_perf_line(line)
                         throughput += result.get("throughput", 0.0)
                         bs = result.get("batch_size", bs)
         results.append(
-            f'{OS};{PLATFORM};{args.model_test_type};{args.framework};{framework_version};{precision.upper()};{args.model};Inference;Performance;{bs};{throughput};{URL}\n'
+            f"{OS};{PLATFORM};{args.model_test_type};{args.framework};{framework_version};{precision.upper()};{args.model};Inference;Performance;{bs};{throughput};{URL}\n"
         )
 
     # get model accuracy results
@@ -204,41 +229,68 @@ def collect_log():
         for root, dirs, files in os.walk(shlex.quote(args.logs_dir)):
             for name in files:
                 file_name = os.path.join(root, name)
-                if ("accuracy.log" in name and precision in name and shlex.quote(args.framework) in name):
+                if (
+                    "accuracy.log" in name
+                    and precision in name
+                    and shlex.quote(args.framework) in name
+                ):
                     for line in open(file_name, "r"):
                         result = parse_acc_line(line)
                         accuracy = result.get("accuracy", accuracy)
                         accuracy = accuracy / 100 if (1 < accuracy <= 100) else accuracy
                         bs = result.get("batch_size", bs)
         results.append(
-            f'{OS};{PLATFORM};{args.model_test_type};{args.framework};{framework_version};{precision.upper()};{args.model};Inference;Accuracy;{bs};{accuracy};{URL}\n'
+            f"{OS};{PLATFORM};{args.model_test_type};{args.framework};{framework_version};{precision.upper()};{args.model};Inference;Accuracy;{bs};{accuracy};{URL}\n"
         )
 
     # get model benchmark_only results
-    if (shlex.quote(args.model_test_type) == 'optimize'):
+    if shlex.quote(args.model_test_type) == "optimize":
         for precision in precision_list:
             benchmark_only = 0.0
             bs = 1
             for root, dirs, files in os.walk(shlex.quote(args.logs_dir)):
                 for name in files:
                     file_name = os.path.join(root, name)
-                    if ("benchmark_only" in name and precision in name and shlex.quote(args.framework) in name):
+                    if (
+                        "benchmark_only" in name
+                        and precision in name
+                        and shlex.quote(args.framework) in name
+                    ):
                         for line in open(file_name, "r"):
                             result = parse_benchmark_only_line(line)
                             benchmark_only = result.get("throughput", benchmark_only)
                             bs = result.get("batch_size", bs)
             results.append(
-                f'{OS};{PLATFORM};{args.model_test_type};{args.framework};{framework_version};{precision.upper()};{args.model};Inference;Benchmark;{bs};{benchmark_only};{URL}\n'
+                f"{OS};{PLATFORM};{args.model_test_type};{args.framework};{framework_version};{precision.upper()};{args.model};Inference;Benchmark;{bs};{benchmark_only};{URL}\n"
             )
 
     # write model logs
-    f = open(shlex.quote(args.output_dir) + '/' + shlex.quote(args.framework) + '_' + shlex.quote(args.model) + '_summary.log', "a")
+    f = open(
+        shlex.quote(args.output_dir)
+        + "/"
+        + shlex.quote(args.framework)
+        + "_"
+        + shlex.quote(args.model)
+        + "_summary.log",
+        "a",
+    )
     f.writelines(
-        "OS;Platform;Model_test_type;Framework;Version;Precision;Model;Mode;Type;BS;Value;Url\n")
+        "OS;Platform;Model_test_type;Framework;Version;Precision;Model;Mode;Type;BS;Value;Url\n"
+    )
     for result in results:
         f.writelines(str(result))
-    f2 = open(shlex.quote(args.output_dir) + '/' + shlex.quote(args.framework) + '_' + shlex.quote(args.model) + '_tuning_info.log', "a")
-    f2.writelines("OS;Platform;Model_test_type;Framework;Version;Model;Strategy;Tune_time\n")
+    f2 = open(
+        shlex.quote(args.output_dir)
+        + "/"
+        + shlex.quote(args.framework)
+        + "_"
+        + shlex.quote(args.model)
+        + "_tuning_info.log",
+        "a",
+    )
+    f2.writelines(
+        "OS;Platform;Model_test_type;Framework;Version;Model;Strategy;Tune_time\n"
+    )
     for tuning_info in tuning_infos:
         f2.writelines(str(tuning_info))
 
@@ -251,49 +303,51 @@ def get_tune_log():
         for file in files:
             if re.search(pattern, file):
                 return os.path.join(root, file)
-    return ''
+    return ""
 
 
 def parse_tuning_line(line, tmp):
     tuning_strategy = re.search(r"Tuning strategy:\s+([A-Za-z]+)", line)
     if tuning_strategy and tuning_strategy.group(1):
-        tmp['strategy'] = tuning_strategy.group(1)
+        tmp["strategy"] = tuning_strategy.group(1)
 
     baseline_acc = re.search(
         r"FP32 baseline is:\s+\[Accuracy:\s(\d+(\.\d+)?), Duration \(seconds\):\s*(\d+(\.\d+)?)\]",
-        line)
+        line,
+    )
     if baseline_acc and baseline_acc.group(1):
-        tmp['fp32_acc'] = float(baseline_acc.group(1))
+        tmp["fp32_acc"] = float(baseline_acc.group(1))
 
     tuned_acc = re.search(
         r"Best tune result is:\s+\[Accuracy:\s(\d+(\.\d+)?), Duration \(seconds\):\s(\d+(\.\d+)?)\]",
-        line)
+        line,
+    )
     if tuned_acc and tuned_acc.group(1):
-        tmp['int8_acc'] = float(tuned_acc.group(1))
+        tmp["int8_acc"] = float(tuned_acc.group(1))
 
     tune_trial = re.search(r"Tune \d*\s*result is:", line)
     if tune_trial:
-        tmp['tuning_trials'] += 1
+        tmp["tuning_trials"] += 1
 
     tune_time = re.search(r"Tuning time spend:\s+(\d+(\.\d+)?)s", line)
     if tune_time and tune_time.group(1):
-        tmp['tune_time'] = int(tune_time.group(1))
+        tmp["tune_time"] = int(tune_time.group(1))
 
     fp32_model_size = re.search(r"The input model size is:\s+(\d+(\.\d+)?)", line)
     if fp32_model_size and fp32_model_size.group(1):
-        tmp['fp32_model_size'] = int(fp32_model_size.group(1))
+        tmp["fp32_model_size"] = int(fp32_model_size.group(1))
 
     int8_model_size = re.search(r"The output model size is:\s+(\d+(\.\d+)?)", line)
     if int8_model_size and int8_model_size.group(1):
-        tmp['int8_model_size'] = int(int8_model_size.group(1))
+        tmp["int8_model_size"] = int(int8_model_size.group(1))
 
     total_mem_size = re.search(r"Total resident size\D*([0-9]+)", line)
     if total_mem_size and total_mem_size.group(1):
-        tmp['total_mem_size'] = float(total_mem_size.group(1))
+        tmp["total_mem_size"] = float(total_mem_size.group(1))
 
     max_mem_size = re.search(r"Maximum resident set size\D*([0-9]+)", line)
     if max_mem_size and max_mem_size.group(1):
-        tmp['max_mem_size'] = float(max_mem_size.group(1))
+        tmp["max_mem_size"] = float(max_mem_size.group(1))
 
 
 def parse_benchmark_log(key, line):
@@ -306,11 +360,17 @@ def parse_benchmark_log(key, line):
 def parse_perf_line(line):
     perf_data = {}
 
-    perf_data.update({"throughput": float(through)} if (
-        through := parse_benchmark_log("throughput", line)) else {})
+    perf_data.update(
+        {"throughput": float(through)}
+        if (through := parse_benchmark_log("throughput", line))
+        else {}
+    )
 
-    perf_data.update({"batch_size": int(batch_size)} if (
-        batch_size := parse_benchmark_log("batch_size", line)) else {})
+    perf_data.update(
+        {"batch_size": int(batch_size)}
+        if (batch_size := parse_benchmark_log("batch_size", line))
+        else {}
+    )
 
     return perf_data
 
@@ -318,11 +378,17 @@ def parse_perf_line(line):
 def parse_acc_line(line):
     accuracy_data = {}
 
-    accuracy_data.update({"accuracy": float(accuracy)} if (
-        accuracy := parse_benchmark_log("accuracy", line)) else {})
+    accuracy_data.update(
+        {"accuracy": float(accuracy)}
+        if (accuracy := parse_benchmark_log("accuracy", line))
+        else {}
+    )
 
-    accuracy_data.update({"batch_size": int(batch_size)} if (
-        batch_size := parse_benchmark_log("batch_size", line)) else {})
+    accuracy_data.update(
+        {"batch_size": int(batch_size)}
+        if (batch_size := parse_benchmark_log("batch_size", line))
+        else {}
+    )
 
     return accuracy_data
 
@@ -330,11 +396,17 @@ def parse_acc_line(line):
 def parse_benchmark_only_line(line):
     perf_data = {}
 
-    perf_data.update({"throughput": float(throughput)} if (
-        throughput := parse_benchmark_log("benchmark_only", line)) else {})
+    perf_data.update(
+        {"throughput": float(throughput)}
+        if (throughput := parse_benchmark_log("benchmark_only", line))
+        else {}
+    )
 
-    perf_data.update({"batch_size": int(batch_size)} if (
-        batch_size := parse_benchmark_log("batch_size", line)) else {})
+    perf_data.update(
+        {"batch_size": int(batch_size)}
+        if (batch_size := parse_benchmark_log("batch_size", line))
+        else {}
+    )
 
     return perf_data
 
@@ -347,7 +419,9 @@ def check_status(precision, precision_upper, check_accuracy=False):
     print(
         f"current_performance_data = {current_performance:.3f}, refer_performance_data = {refer_performance:.3f}"
     )
-    assert abs((refer_performance - current_performance) / refer_performance) <= args.gap
+    assert (
+        abs((refer_performance - current_performance) / refer_performance) <= args.gap
+    )
 
     if check_accuracy:
         _, accuracy_result = get_model_tuning_dict_results()
@@ -366,19 +440,20 @@ def get_framework_version(framework: str) -> None:
         "keras": "tensorflow",
         "onnxrt": "onnxruntime",
         "mxnet": "mxnet",
-        "pytorch": "torch"
+        "pytorch": "torch",
     }
     fw_module_name = fw_modules.get(framework, None)
     if fw_module_name is None:
-        return 'na'
+        return "na"
     import importlib
+
     fw_module = importlib.import_module(fw_module_name)
     version = fw_module.__version__
     print(f"Framework version is {version}")
     return version
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tuning_log = get_tune_log()
     refer = get_refer_data()
 

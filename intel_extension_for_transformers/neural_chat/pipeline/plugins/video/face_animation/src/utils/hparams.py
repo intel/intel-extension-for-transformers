@@ -15,11 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from glob import glob
 
 
 class HParams:
     """Spectrogram-related hyper parameters."""
+
     def __init__(self, **kwargs):
         self.data = {}
 
@@ -155,5 +155,9 @@ hparamsdebug = HParams(
 
 def hparams_debug_string():
     values = hparams.values()
-    hp = ["  %s: %s" % (name, values[name]) for name in sorted(values) if name != "sentences"]
+    hp = [
+        "  %s: %s" % (name, values[name])
+        for name in sorted(values)
+        if name != "sentences"
+    ]
     return "Hyperparameters:\n" + "\n".join(hp)

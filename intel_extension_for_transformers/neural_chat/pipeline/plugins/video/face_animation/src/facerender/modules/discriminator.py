@@ -15,18 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class DownBlock2d(nn.Module):
-    """
-    Simple block for processing video (encoder).
-    """
+    """Simple block for processing video (encoder)."""
 
-    def __init__(self, in_features, out_features, norm=False, kernel_size=4, pool=False, sn=False):
+    def __init__(
+        self, in_features, out_features, norm=False, kernel_size=4, pool=False, sn=False
+    ):
         super(DownBlock2d, self).__init__()
-        self.conv = nn.Conv2d(in_channels=in_features, out_channels=out_features, kernel_size=kernel_size)
+        self.conv = nn.Conv2d(
+            in_channels=in_features, out_channels=out_features, kernel_size=kernel_size
+        )
 
         if sn:
             self.conv = nn.utils.spectral_norm(self.conv)
@@ -50,18 +52,26 @@ class DownBlock2d(nn.Module):
 
 
 class Discriminator(nn.Module):
-    """
-    Discriminator similar to Pix2Pix
-    """
+    """Discriminator similar to Pix2Pix."""
 
-    def __init__(self, num_channels=3, block_expansion=64, num_blocks=4, max_features=512, sn=False, **kwargs):
+    def __init__(
+        self,
+        num_channels=3,
+        block_expansion=64,
+        num_blocks=4,
+        max_features=512,
+        sn=False,
+        **kwargs
+    ):
         super(Discriminator, self).__init__()
 
         down_blocks = []
         for i in range(num_blocks):
             down_blocks.append(
                 DownBlock2d(
-                    num_channels if i == 0 else min(max_features, block_expansion * (2**i)),
+                    num_channels
+                    if i == 0
+                    else min(max_features, block_expansion * (2**i)),
                     min(max_features, block_expansion * (2 ** (i + 1))),
                     norm=(i != 0),
                     kernel_size=4,
@@ -71,7 +81,9 @@ class Discriminator(nn.Module):
             )
 
         self.down_blocks = nn.ModuleList(down_blocks)
-        self.conv = nn.Conv2d(self.down_blocks[-1].conv.out_channels, out_channels=1, kernel_size=1)
+        self.conv = nn.Conv2d(
+            self.down_blocks[-1].conv.out_channels, out_channels=1, kernel_size=1
+        )
         # pylint: disable=E1102
         if sn:
             self.conv = nn.utils.spectral_norm(self.conv)
@@ -89,9 +101,7 @@ class Discriminator(nn.Module):
 
 
 class MultiScaleDiscriminator(nn.Module):
-    """
-    Multi-scale (scale) discriminator
-    """
+    """Multi-scale (scale) discriminator."""
 
     def __init__(self, scales=(), **kwargs):
         super(MultiScaleDiscriminator, self).__init__()

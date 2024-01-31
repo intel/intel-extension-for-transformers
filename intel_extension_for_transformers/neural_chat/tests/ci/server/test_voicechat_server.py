@@ -16,19 +16,29 @@
 # limitations under the License.
 
 
-import unittest
+import base64
 import os
 import re
-import base64
+import unittest
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from intel_extension_for_transformers.neural_chat import build_chatbot, plugins
-from intel_extension_for_transformers.neural_chat import PipelineConfig
+
+from intel_extension_for_transformers.neural_chat import (
+    PipelineConfig,
+    build_chatbot,
+    plugins,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import (
+    AudioSpeechRecognition,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts import (
+    TextToSpeech,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.voicechat_api import (
+    router,
+)
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
-from intel_extension_for_transformers.neural_chat.server.restful.voicechat_api import router
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts import TextToSpeech
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 
 app = FastAPI()
 app.include_router(router)
@@ -40,8 +50,9 @@ sample_audio_base64 = """UklGRiTAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQD
 def base64_to_audio(base64_string, output_file):
     audio_data = base64.b64decode(base64_string)
 
-    with open(output_file, 'wb') as audio_file:
+    with open(output_file, "wb") as audio_file:
         audio_file.write(audio_data)
+
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -49,18 +60,21 @@ class UnitTest(unittest.TestCase):
         if device != "cpu":
             self.skipTest("Only test this UT case on Intel CPU.")
 
-        plugins['tts']['class'] = TextToSpeech
-        plugins['tts']['enable'] = True
-        plugins['tts']['args']['output_audio_path'] = "./output_audio.wav"
-        plugins['tts']['args']['stream_mode'] = True
-        plugins['asr']['class'] = AudioSpeechRecognition
-        plugins['asr']['enable'] = True
-        plugins['tts']['instance'] = plugins['tts']['class'](device='cpu',
-                                        voice="default",
-                                        stream_mode=False,
-                                        output_audio_path="./output_audio.wav")
-        plugins['asr']['instance'] = plugins['asr']['class'](device='cpu',
-                                        model_name_or_path="openai/whisper-small")
+        plugins["tts"]["class"] = TextToSpeech
+        plugins["tts"]["enable"] = True
+        plugins["tts"]["args"]["output_audio_path"] = "./output_audio.wav"
+        plugins["tts"]["args"]["stream_mode"] = True
+        plugins["asr"]["class"] = AudioSpeechRecognition
+        plugins["asr"]["enable"] = True
+        plugins["tts"]["instance"] = plugins["tts"]["class"](
+            device="cpu",
+            voice="default",
+            stream_mode=False,
+            output_audio_path="./output_audio.wav",
+        )
+        plugins["asr"]["instance"] = plugins["asr"]["class"](
+            device="cpu", model_name_or_path="openai/whisper-small"
+        )
 
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
@@ -94,7 +108,7 @@ class UnitTest(unittest.TestCase):
             "text": "Hello, this is a test.",
             "voice": "male",
             "knowledge_id": "default",
-            "audio_output_path": "output_audio.wav"
+            "audio_output_path": "output_audio.wav",
         }
 
         response = client.post("/v1/talkingbot/llm_tts", json=tts_data)
@@ -107,6 +121,7 @@ class UnitTest(unittest.TestCase):
 
         assert response.status_code == 200
         assert "spk_id" in response.json()
+
 
 if __name__ == "__main__":
     unittest.main()

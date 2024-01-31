@@ -14,15 +14,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
+
 
 # Fused_op size + add + slice
 # This pattern is used for dealing with position_mask originally in bert model
-@operator_registry(operator_type='SlicePositionIds')
+@operator_registry(operator_type="SlicePositionIds")
 class SlicePositionIds(Operator):
     """Register the SlicePositionIds operator."""
 
@@ -34,8 +33,7 @@ class SlicePositionIds(Operator):
         """Extract the node attr."""
         if framework == "torch":
             self._op_type = "Slice"
-            self._attr['axes'] = node.inputsAt(1).toIValue()
-            self._attr['starts'] = node.inputsAt(2).toIValue()
-            self._attr['ends_with_tensor'] = 1
-            self._attr['steps'] = node.inputsAt(4).toIValue()
-
+            self._attr["axes"] = node.inputsAt(1).toIValue()
+            self._attr["starts"] = node.inputsAt(2).toIValue()
+            self._attr["ends_with_tensor"] = 1
+            self._attr["steps"] = node.inputsAt(4).toIValue()

@@ -14,37 +14,40 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The OutputData Pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
-from .. import graph_utils as util
 import copy
+from collections import OrderedDict
+
+from .. import graph_utils as util
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='OutputData')
+@pattern_registry(pattern_type="OutputData")
 class OutputData(Pattern):
     """The OutputData pattern.
 
     Fuse the original sub-graph into the custom acceleration 'OutputData' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         # make the output_data node in graph
-        if model.framework_modeling_config['framework'] == 'torch':
+        if model.framework_modeling_config["framework"] == "torch":
             model_output_tensors = OrderedDict()
             for name in model.output_tensors_name:
                 model_output_tensors[name] = None
             for node in model.nodes:
                 for output_tensor in node.output_tensors:
                     if output_tensor.name in model.output_tensors_name:
-                        model_output_tensors[output_tensor.name] = copy.deepcopy(output_tensor)
+                        model_output_tensors[output_tensor.name] = copy.deepcopy(
+                            output_tensor
+                        )
             tensors = [v for k, v in model_output_tensors.items() if v]
-            output_data_node = util.construct_node('output_data',
-                                                'Output',
-                                                input_tensors=tensors)
+            output_data_node = util.construct_node(
+                "output_data", "Output", input_tensors=tensors
+            )
             model.insert_nodes(len(model.nodes), [output_data_node])
             model.nodes[-1].attr = None
             return model
@@ -55,14 +58,18 @@ class OutputData(Pattern):
         for node in model.nodes:
             for output_tensor in node.output_tensors:
                 if output_tensor.name in model.output_tensors_name:
-                    model_output_tensors[output_tensor.name] = copy.deepcopy(output_tensor)
+                    model_output_tensors[output_tensor.name] = copy.deepcopy(
+                        output_tensor
+                    )
                 else:
-                    if not output_tensor.dest_op and node.op_type != 'Input':
-                        model_output_tensors[output_tensor.name] = copy.deepcopy(output_tensor)
+                    if not output_tensor.dest_op and node.op_type != "Input":
+                        model_output_tensors[output_tensor.name] = copy.deepcopy(
+                            output_tensor
+                        )
         tensors = [v for k, v in model_output_tensors.items() if v]
-        output_data_node = util.construct_node('output_data',
-                                               'Output',
-                                               input_tensors=tensors)
+        output_data_node = util.construct_node(
+            "output_data", "Output", input_tensors=tensors
+        )
         model.insert_nodes(len(model.nodes), [output_data_node])
         model.nodes[-1].attr = None
 

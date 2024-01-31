@@ -15,19 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
-from transformers import BertForSequenceClassification
-import numpy as np
-import os
-import sys
-import torch
 import copy
+import os
 import shutil
+import sys
+import unittest
+
+import numpy as np
+import torch
+from transformers import BertForSequenceClassification
+
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 
 
 def is_win():
-    return sys.platform.startswith('win')
+    return sys.platform.startswith("win")
 
 
 class TestSCBuffer(unittest.TestCase):
@@ -38,26 +40,31 @@ class TestSCBuffer(unittest.TestCase):
         torch_model = BertForSequenceClassification.from_pretrained(model_path)
         with torch.no_grad():
             inputs = {
-                'input_ids': torch.ones(1, 128, dtype=torch.int32),
-                'attention_mask': torch.ones(1, 128, dtype=torch.int32),
-                'token_type_ids': torch.ones(1, 128, dtype=torch.int32)
+                "input_ids": torch.ones(1, 128, dtype=torch.int32),
+                "attention_mask": torch.ones(1, 128, dtype=torch.int32),
+                "token_type_ids": torch.ones(1, 128, dtype=torch.int32),
             }
             outputs = torch_model(**inputs)
 
-            symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
+            symbolic_names = {0: "batch_size", 1: "max_seq_len"}
             torch.onnx.export(
                 torch_model,
-                (inputs['input_ids'], inputs['attention_mask'], inputs['token_type_ids']),
+                (
+                    inputs["input_ids"],
+                    inputs["attention_mask"],
+                    inputs["token_type_ids"],
+                ),
                 "onnx_fp32.onnx",
                 opset_version=11,
                 do_constant_folding=True,
-                input_names=['input_ids', 'input_mask', 'segment_ids'],
-                output_names=['output'],
+                input_names=["input_ids", "input_mask", "segment_ids"],
+                output_names=["output"],
                 dynamic_axes={
-                    'input_ids': symbolic_names,
-                    'input_mask': symbolic_names,
-                    'segment_ids': symbolic_names
-                })
+                    "input_ids": symbolic_names,
+                    "input_mask": symbolic_names,
+                    "segment_ids": symbolic_names,
+                },
+            )
         graph = compile("onnx_fp32.onnx")
         graph.save()
 
@@ -70,35 +77,44 @@ class TestSCBuffer(unittest.TestCase):
 
     def test_static_compressed_buffer(self):
         graph_true = compile("ir/")
-        inputs = [np.array([100, 101, 104, 90]).astype(np.int32).reshape(1,-1),
-                  np.array([1,1,1,1]).astype(np.int32).reshape(1,-1),
-                  np.array([1,1,1,1]).astype(np.int32).reshape(1,-1)]
+        inputs = [
+            np.array([100, 101, 104, 90]).astype(np.int32).reshape(1, -1),
+            np.array([1, 1, 1, 1]).astype(np.int32).reshape(1, -1),
+            np.array([1, 1, 1, 1]).astype(np.int32).reshape(1, -1),
+        ]
         data_true = copy.deepcopy(list(graph_true.inference(inputs).values())[0])
 
         graph_test = compile("ir/")
         # set execution options
-        options = {'activation_mem_compression': True,
-                   'dump_activation_dag': True,
-                   'execution_mode': 'inference'}
+        options = {
+            "activation_mem_compression": True,
+            "dump_activation_dag": True,
+            "execution_mode": "inference",
+        }
         graph_test.execution_options = options
-        graph_test.max_input_shapes_list = [[[1, 128], [1, 128], [1, 128]],
-                                            [[2, 128], [2, 128], [2, 128]]
-                                           ]
+        graph_test.max_input_shapes_list = [
+            [[1, 128], [1, 128], [1, 128]],
+            [[2, 128], [2, 128], [2, 128]],
+        ]
         out1 = copy.deepcopy(list(graph_test.inference(inputs).values())[0])
 
         # debug mode, no in-place
-        options = {'activation_mem_compression': True,
-                   'dump_activation_dag': True,
-                   'execution_mode': 'debug'}
+        options = {
+            "activation_mem_compression": True,
+            "dump_activation_dag": True,
+            "execution_mode": "debug",
+        }
         graph_test.execution_options = options
-        graph_test.max_input_shapes_list = [[[1, 128], [1, 128], [1, 128]],
-                                            [[2, 128], [2, 128], [2, 128]]
-                                           ]
+        graph_test.max_input_shapes_list = [
+            [[1, 128], [1, 128], [1, 128]],
+            [[2, 128], [2, 128], [2, 128]],
+        ]
         out2 = copy.deepcopy(list(graph_test.inference(inputs).values())[0])
 
         self.assertTrue(np.allclose(data_true, out1, atol=1e-4))
-        #self.assertTrue(np.allclose(data_true, out2, atol=1e-4))
+        # self.assertTrue(np.allclose(data_true, out2, atol=1e-4))
         self.assertTrue(os.path.exists("activation_dag.yaml"))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

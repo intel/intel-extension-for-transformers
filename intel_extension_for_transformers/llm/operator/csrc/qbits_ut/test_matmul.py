@@ -19,7 +19,7 @@ from ut_utils import *
 
 
 @capture_args
-@pytest.mark.parametrize("m", (256, ))
+@pytest.mark.parametrize("m", (256,))
 @pytest.mark.parametrize("n", (512,))
 @pytest.mark.parametrize("k", (1024,))
 @pytest.mark.parametrize("trans_matB", (True, False))
@@ -51,4 +51,4 @@ def test(m, n, k, trans_matB, dt, dump_tensor_info=True):
     if dump_tensor_info:
         print(tar_dst)
         print(ref_dst)
-    assert (torch.allclose(tar_dst, ref_dst, rtol=0.03))
+    assert torch.allclose(tar_dst, ref_dst, rtol=0.03)

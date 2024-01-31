@@ -15,12 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
 import inspect
-import time
-import pytest
-from functools import wraps
 import sys
+from functools import wraps
+
+import torch
 
 if sys.platform.startswith("linux"):
     torch.ops.load_library("../build/libqbits.so")
@@ -28,6 +27,7 @@ elif sys.platform.startswith("win"):
     torch.ops.load_library("../build/qbits.dll")
 else:
     sys.exit()
+
 
 def capture_args(f):
     @wraps(f)
@@ -37,8 +37,9 @@ def capture_args(f):
         bound_args.apply_defaults()
         arg_strs = []
         for name, value in bound_args.arguments.items():
-            arg_strs.append(f'{name}={value}')
-        result = ', '.join(arg_strs)
+            arg_strs.append(f"{name}={value}")
+        result = ", ".join(arg_strs)
         print(result)
         return f(*args, **kwargs)
+
     return wrapper

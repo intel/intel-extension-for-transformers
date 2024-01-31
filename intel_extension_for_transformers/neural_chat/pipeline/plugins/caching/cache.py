@@ -15,49 +15,56 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import time
+
 # pylint: disable=wrong-import-position
 from typing import Any
-import os
+
 import gptcache.processor.post
 import gptcache.processor.pre
-from gptcache import Cache, cache, Config
+from gptcache import Config, cache
 from gptcache.adapter.adapter import adapt
 from gptcache.embedding import (
-    Onnx,
-    Huggingface,
     SBERT,
-    FastText,
-    Data2VecAudio,
-    Timm,
-    ViT,
-    OpenAI,
     Cohere,
-    Rwkv,
+    Data2VecAudio,
+    FastText,
+    Huggingface,
+    Onnx,
+    OpenAI,
     PaddleNLP,
+    Rwkv,
+    Timm,
     UForm,
+    ViT,
 )
 from gptcache.manager import manager_factory
 from gptcache.processor.context import (
-    SummarizationContextProcess,
-    SelectiveContextProcess,
     ConcatContextProcess,
+    SelectiveContextProcess,
+    SummarizationContextProcess,
 )
 from gptcache.processor.post import temperature_softmax
 from gptcache.processor.pre import get_prompt
 from gptcache.similarity_evaluation import (
-    SearchDistanceEvaluation,
+    ExactMatchEvaluation,
+    KReciprocalEvaluation,
     NumpyNormEvaluation,
     OnnxModelEvaluation,
-    ExactMatchEvaluation,
-    KReciprocalEvaluation
+    SearchDistanceEvaluation,
 )
 from gptcache.utils import import_ruamel
-import time
+
 
 class ChatCache:
-    def __init__(self, config_dir: str=os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "./cache_config.yaml"),
-            embedding_model_dir: str="hkunlp/instructor-large"):
+    def __init__(
+        self,
+        config_dir: str = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "./cache_config.yaml"
+        ),
+        embedding_model_dir: str = "hkunlp/instructor-large",
+    ):
         self.cache_obj = cache
         self.init_similar_cache_from_config(config_dir, embedding_model_dir)
 
@@ -79,17 +86,19 @@ class ChatCache:
             "object": "chat.completion",
         }
 
-    def _update_cache_callback_none(self, llm_data, update_cache_func, *args, **kwargs): # pylint: disable=W0613
+    def _update_cache_callback_none(
+        self, llm_data, update_cache_func, *args, **kwargs
+    ):  # pylint: disable=W0613
         return None
 
-    def _llm_handle_none(self, *llm_args, **llm_kwargs): # pylint: disable=W0613
+    def _llm_handle_none(self, *llm_args, **llm_kwargs):  # pylint: disable=W0613
         return None
 
     def _update_cache_callback(self, llm_data, update_cache_func, *args, **kwargs):
         update_cache_func(llm_data)
 
     def put(self, prompt: str, data: Any, **kwargs):
-        def llm_handle(*llm_args, **llm_kwargs): # pylint: disable=W0613
+        def llm_handle(*llm_args, **llm_kwargs):  # pylint: disable=W0613
             return data
 
         adapt(
@@ -111,9 +120,16 @@ class ChatCache:
         )
         return res
 
-    def init_similar_cache(self, data_dir: str = "api_cache", pre_func=get_prompt,
-                           embedding=None, data_manager=None, evaluation=None,
-                           post_func=temperature_softmax, config=Config()):
+    def init_similar_cache(
+        self,
+        data_dir: str = "api_cache",
+        pre_func=get_prompt,
+        embedding=None,
+        data_manager=None,
+        evaluation=None,
+        post_func=temperature_softmax,
+        config=Config(),
+    ):
         if not embedding:
             embedding = Onnx()
         if not data_manager:
@@ -133,11 +149,15 @@ class ChatCache:
             config=config,
         )
 
-    def init_similar_cache_from_config(self, config_dir: str=os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "./cache_config.yaml"),
-            embedding_model_dir: str="hkunlp/instructor-large"):
+    def init_similar_cache_from_config(
+        self,
+        config_dir: str = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "./cache_config.yaml"
+        ),
+        embedding_model_dir: str = "hkunlp/instructor-large",
+    ):
         import_ruamel()
-        from ruamel.yaml import YAML # pylint: disable=C0415
+        from ruamel.yaml import YAML  # pylint: disable=C0415
 
         if config_dir:
             with open(config_dir, "r", encoding="utf-8") as f:
@@ -154,7 +174,7 @@ class ChatCache:
         embedding_config = init_conf.get("model_config", {})
         # if not embedding_config:
         #     embedding_config = init_conf.get("embedding_config", {})
-        embedding_config = {'model': embedding_model_dir}
+        embedding_config = {"model": embedding_model_dir}
         embedding_model = self._get_model(embedding, embedding_config)
 
         storage_config = init_conf.get("storage_config", {})

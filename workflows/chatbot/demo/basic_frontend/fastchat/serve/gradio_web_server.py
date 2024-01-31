@@ -1,5 +1,18 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import argparse
-from collections import defaultdict
 import datetime
 import json
 import os
@@ -8,22 +21,20 @@ import uuid
 
 import gradio as gr
 import requests
-
-from fastchat.conversation import (
-    get_default_conv_template,
-    compute_skip_echo_len,
-    SeparatorStyle,
-)
 from fastchat.constants import LOGDIR
+from fastchat.conversation import (
+    SeparatorStyle,
+    compute_skip_echo_len,
+    get_default_conv_template,
+)
+from fastchat.serve.gradio_css import code_highlight_css
+from fastchat.serve.gradio_patch import Chatbot as grChatbot
 from fastchat.utils import (
     build_logger,
+    moderation_msg,
     server_error_msg,
     violates_moderation,
-    moderation_msg,
 )
-from fastchat.serve.gradio_patch import Chatbot as grChatbot
-from fastchat.serve.gradio_css import code_highlight_css
-
 
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
 
@@ -273,8 +284,8 @@ def http_bot(state, model_selector, temperature, max_new_tokens, request: gr.Req
                     )
                     return
                 time.sleep(0.02)
-    except requests.exceptions.RequestException as e:
-        state.messages[-1][-1] = server_error_msg + f" (error_code: 4)"
+    except requests.exceptions.RequestException:
+        state.messages[-1][-1] = server_error_msg + " (error_code: 4)"
         yield (state, state.to_gradio_chatbot()) + (
             disable_btn,
             disable_btn,

@@ -15,20 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import sys
-import torch
-import torch.nn as nn
-import numpy as np
 import os
 import shutil
+import sys
+import unittest
+
+import torch
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
 
+
 def is_win():
-    return sys.platform.startswith('win')
+    return sys.platform.startswith("win")
+
 
 class TestTorchModel(unittest.TestCase):
     @classmethod
@@ -40,11 +42,13 @@ class TestTorchModel(unittest.TestCase):
         pass
 
     def test_1(self):
-        pt_file ='/tf_dataset2/inc-ut/nlptoolkit_ut_model/bert_mini_fp32.pt'
+        pt_file = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/bert_mini_fp32.pt"
         if is_win():
             pt_file = "D:\\dataset\\nlptoolkit_ut_model\\bert_mini_fp32.pt"
-        self.assertTrue(os.path.exists(pt_file),
-            'INT8 IR model is not found, please set your own model path!')
+        self.assertTrue(
+            os.path.exists(pt_file),
+            "INT8 IR model is not found, please set your own model path!",
+        )
         ids = torch.LongTensor([[1, 2, 3]])
         tok = torch.zeros_like(ids)
         att = torch.ones_like(ids)
@@ -53,17 +57,20 @@ class TestTorchModel(unittest.TestCase):
         example_in = torch.rand(8, 128)
         # TODO: enable check accuracy
         ref_out = traced_model(ids, tok, att, ids)[0].detach().numpy()
-        
+
         graph = compile(pt_file)
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin', load_weight=True)
-        self.assertTrue(newgraph.nodes[-1].name == 'output_data')
-        self.assertTrue(newgraph.nodes[-1].input_tensors[-1].name == '268')
+        newgraph.graph_init(
+            file_name + "/conf.yaml", file_name + "/model.bin", load_weight=True
+        )
+        self.assertTrue(newgraph.nodes[-1].name == "output_data")
+        self.assertTrue(newgraph.nodes[-1].input_tensors[-1].name == "268")
         # out = newgraph.inference([ids.numpy(), tok.numpy(), att.numpy(), ids.numpy()])
 
         # np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
         shutil.rmtree(file_name)
+
 
 if __name__ == "__main__":
     unittest.main()

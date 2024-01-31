@@ -1,19 +1,31 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Inference for LLM models."""
 import abc
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModel, AutoConfig
-
-from conversation import conv_templates, get_default_conv_template, SeparatorStyle
-from compression import compress_module
-
 import time
-import psutil
 
+import numpy as np
+import psutil
+import torch
+from compression import compress_module
+from conversation import SeparatorStyle, conv_templates, get_default_conv_template
 from torch import nn
 from torch.nn import functional as F
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+
 import intel_extension_for_transformers.llm.runtime.deprecated.compile as itrex_compile
-import numpy as np
-import random
+
 
 class ItrexWrapper(nn.Module):
     def __init__(self, graph):
@@ -31,8 +43,15 @@ class ItrexWrapper(nn.Module):
             # past_key_values = tuple([(torch.zeros([1,32,1,128]), torch.zeros([1,32,1,128])) for i in range(32)])
             # past_k_v = [past_key_values[i][j].cpu().numpy() for i in range(32) for j in range(2)]
             attention_mask_1 = attention_mask.cpu().numpy().astype(np.int32)
-            past_key_values = tuple([(torch.zeros([1,0,16,256]), torch.zeros([1,0,16,256])) for i in range(28)])
-            past_k_v = [past_key_values[i][j].cpu().numpy() for i in range(28) for j in range(2)]
+            past_key_values = tuple(
+                [
+                    (torch.zeros([1, 0, 16, 256]), torch.zeros([1, 0, 16, 256]))
+                    for i in range(28)
+                ]
+            )
+            past_k_v = [
+                past_key_values[i][j].cpu().numpy() for i in range(28) for j in range(2)
+            ]
         else:
             attention_mask = torch.ones(1, past_key_values[0][0].shape[-3] + 1)
             # attention_mask_1 = torch.cat([torch.zeros([1, 1]), attention_mask[:, 1:]], dim=-1)
@@ -47,7 +66,9 @@ class ItrexWrapper(nn.Module):
         print(past_k_v[0].shape)
 
         # predictions = self.graph.inference([input_ids_1, attention_mask_1] + past_k_v)
-        predictions = self.graph.inference([input_ids_1] + past_k_v + [attention_mask_1])
+        predictions = self.graph.inference(
+            [input_ids_1] + past_k_v + [attention_mask_1]
+        )
         outs = []
         for key in predictions:
             outs.append(predictions[key])
@@ -62,6 +83,7 @@ class ItrexWrapper(nn.Module):
 
         return logits, past_k_v
 
+
 class IpexWrapper(nn.Module):
     def __init__(self, model):
         super().__init__()
@@ -71,15 +93,18 @@ class IpexWrapper(nn.Module):
         # print("ipex-bf16")
         with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
             out = self.model(
-                input_ids, 
+                input_ids,
                 attention_mask=attention_mask,
                 past_key_values=past_key_values,
-                use_cache=True)
+                use_cache=True,
+            )
 
         return out
 
 
-def load_model(model_name, device, num_gpus, load_8bit=False, itrex=False, ipex=False, debug=False):
+def load_model(
+    model_name, device, num_gpus, load_8bit=False, itrex=False, ipex=False, debug=False
+):
     if device == "cpu":
         kwargs = {}
     elif device == "cuda":
@@ -89,14 +114,16 @@ def load_model(model_name, device, num_gpus, load_8bit=False, itrex=False, ipex=
         else:
             num_gpus = int(num_gpus)
             if num_gpus != 1:
-                kwargs.update({
-                    "device_map": "auto",
-                    "max_memory": {i: "13GiB" for i in range(num_gpus)},
-                })
+                kwargs.update(
+                    {
+                        "device_map": "auto",
+                        "max_memory": {i: "13GiB" for i in range(num_gpus)},
+                    }
+                )
     else:
         raise ValueError(f"Invalid device: {device}")
 
-    if 'mpt' in model_name:
+    if "mpt" in model_name:
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
     else:
@@ -104,40 +131,46 @@ def load_model(model_name, device, num_gpus, load_8bit=False, itrex=False, ipex=
         config = AutoConfig.from_pretrained(model_name)
 
     if ipex:
-        print('=='*10, "ipex")
+        print("==" * 10, "ipex")
         import intel_extension_for_pytorch as intel_ipex
+
         if "mpt" in model_name:
-            model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                    low_cpu_mem_usage=True,
-                                                    return_dict=True,
-                                                    torch_dtype=torch.bfloat16,
-                                                    trust_remote_code=True,
-                                                    max_seq_len=8192)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                low_cpu_mem_usage=True,
+                return_dict=True,
+                torch_dtype=torch.bfloat16,
+                trust_remote_code=True,
+                max_seq_len=8192,
+            )
         else:
-            model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                         low_cpu_mem_usage=True,
-                                                         return_dict=False)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name, low_cpu_mem_usage=True, return_dict=False
+            )
         model = intel_ipex.optimize(model.eval(), dtype=torch.bfloat16, inplace=True)
         model = IpexWrapper(model)
         setattr(model, "config", model.model.config)
     elif itrex:
-        print('=='*10, "itrex")
+        print("==" * 10, "itrex")
         graph = itrex_compile.compile(model_name)
         model = ItrexWrapper(graph)
         setattr(model, "config", config)
     else:
-        print('=='*10, "normal fp32")
+        print("==" * 10, "normal fp32")
         if "mpt" in model_name:
-            model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                        low_cpu_mem_usage=True,
-                                                        torch_dtype=torch.bfloat16,
-                                                        trust_remote_code=True,
-                                                        max_seq_len=8192)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.bfloat16,
+                trust_remote_code=True,
+                max_seq_len=8192,
+            )
         else:
-            model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                        low_cpu_mem_usage=True)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name, low_cpu_mem_usage=True
+            )
 
-    if not "mpt" in model_name:
+    if "mpt" not in model_name:
         special_tokens_dict = {}
         special_tokens_dict["eos_token"] = "</s>"
         special_tokens_dict["pad_token"] = "</s>"
@@ -155,15 +188,18 @@ def load_model(model_name, device, num_gpus, load_8bit=False, itrex=False, ipex=
 
     return model, tokenizer
 
-def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')):
-    """ Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
-        Args:
-            logits: logits distribution shape (vocabulary size)
-            top_k >0: keep only top k tokens with highest probability (top-k filtering).
-            top_p >0.0: keep the top tokens with cumulative probability >= top_p (nucleus filtering).
-                Nucleus filtering is described in Holtzman et al. (http://arxiv.org/abs/1904.09751)
+
+def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float("Inf")):
+    """Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
+    Args:
+        logits: logits distribution shape (vocabulary size)
+        top_k >0: keep only top k tokens with highest probability (top-k filtering).
+        top_p >0.0: keep the top tokens with cumulative probability >= top_p (nucleus filtering).
+            Nucleus filtering is described in Holtzman et al. (http://arxiv.org/abs/1904.09751)
     """
-    assert logits.dim() == 1  # batch size 1 for now - could be updated for more but the code would be less clear
+    assert (
+        logits.dim() == 1
+    )  # batch size 1 for now - could be updated for more but the code would be less clear
     top_k = min(top_k, logits.size(-1))  # Safety check
     if top_k > 0:
         # Remove all tokens with a probability less than the last token of the top-k
@@ -184,9 +220,11 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
         logits[indices_to_remove] = filter_value
     return logits
 
+
 @torch.inference_mode()
-def generate_stream(model, model_name, tokenizer, params, device,
-                    context_len=2048, stream_interval=2):
+def generate_stream(
+    model, model_name, tokenizer, params, device, context_len=2048, stream_interval=2
+):
     prompt = params["prompt"]
     l_prompt = len(prompt)
     conv = get_default_conv_template(model_name)
@@ -198,7 +236,7 @@ def generate_stream(model, model_name, tokenizer, params, device,
     stop_str = params.get("stop", None)
     stop_str = "</s>"
     topk = int(params.get("topk", 1))
-    print('topk: ', topk)
+    print("topk: ", topk)
 
     input_ids = tokenizer(prompt).input_ids
     output_ids = list(input_ids)
@@ -211,27 +249,30 @@ def generate_stream(model, model_name, tokenizer, params, device,
 
     for i in range(max_new_tokens):
         if i == 0:
-            st=time.time()
-            out = model(
-                torch.as_tensor([input_ids], device=device))
+            st = time.time()
+            out = model(torch.as_tensor([input_ids], device=device))
             # logits = out.logits
             # past_key_values = out.past_key_values
             logits = out[0]
             past_key_values = out[1]
-            print("first token latency:", time.time()-st)
+            print("first token latency:", time.time() - st)
         else:
-            st_n=time.time()
-            attention_mask = torch.ones(1, past_key_values[0][0].shape[-2] + 1, device=device)
+            st_n = time.time()
+            attention_mask = torch.ones(
+                1, past_key_values[0][0].shape[-2] + 1, device=device
+            )
             # for itrex gpt-j-6b bf16 [batch_size, seq_len, num_heads, head_size]
             # attention_mask = torch.ones(1, past_key_values[0][0].shape[-3] + 1, device=device)
-            out = model(input_ids=torch.as_tensor([[token]], device=device),
-                        attention_mask=attention_mask,
-                        past_key_values=past_key_values)
+            out = model(
+                input_ids=torch.as_tensor([[token]], device=device),
+                attention_mask=attention_mask,
+                past_key_values=past_key_values,
+            )
             # logits = out.logits
             # past_key_values = out.past_key_values
             logits = out[0]
             past_key_values = out[1]
-            print("Token:",i,"latency:",time.time()-st_n)
+            print("Token:", i, "latency:", time.time() - st_n)
 
         last_token_logits = logits[0][-1]
 
@@ -246,7 +287,6 @@ def generate_stream(model, model_name, tokenizer, params, device,
             # probs = torch.softmax(last_token_logits / temperature, dim=-1)
             # token = int(torch.multinomial(probs, num_samples=1))
 
-
             logits = logits[0, -1, :] / temperature
             filtered_logits = top_k_top_p_filtering(logits, top_k=topk, top_p=0.9)
             probabilities = F.softmax(filtered_logits, dim=-1)
@@ -254,9 +294,8 @@ def generate_stream(model, model_name, tokenizer, params, device,
 
             # torch.manual_seed(100)
             token = int(torch.multinomial(probabilities, 1))
-            
-        output_ids.append(token)
 
+        output_ids.append(token)
 
         if token == tokenizer.eos_token_id:
             stopped = True
@@ -266,7 +305,7 @@ def generate_stream(model, model_name, tokenizer, params, device,
         if i % stream_interval == 0 or i == max_new_tokens - 1 or stopped:
             output = tokenizer.decode(output_ids, skip_special_tokens=True)
             if i == 0 and tokenizer.decode([token]) in [".", ",", "?"]:
-                print("=="*20)
+                print("==" * 20)
                 print(output)
                 output = output[:-1]
                 output_ids[-1] = tokenizer.convert_tokens_to_ids("")
@@ -301,12 +340,19 @@ class ChatIO(abc.ABC):
         """Stream output."""
 
 
-def chat_loop(model_name: str, device: str, num_gpus: str, load_8bit: bool,
-              conv_template: str, temperature: float, max_new_tokens: int,
-              chatio: ChatIO, debug: bool):
+def chat_loop(
+    model_name: str,
+    device: str,
+    num_gpus: str,
+    load_8bit: bool,
+    conv_template: str,
+    temperature: float,
+    max_new_tokens: int,
+    chatio: ChatIO,
+    debug: bool,
+):
     # Model
-    model, tokenizer = load_model(model_name, device,
-        num_gpus, load_8bit, debug)
+    model, tokenizer = load_model(model_name, device, num_gpus, load_8bit, debug)
 
     # Chat
     conv = conv_templates[conv_template].copy()
@@ -335,7 +381,9 @@ def chat_loop(model_name: str, device: str, num_gpus: str, load_8bit: bool,
         }
 
         chatio.prompt_for_output(conv.roles[1])
-        output_stream = generate_stream_func(model, model_name, tokenizer, params, device)
+        output_stream = generate_stream_func(
+            model, model_name, tokenizer, params, device
+        )
         outputs = chatio.stream_output(output_stream, skip_echo_len)
         # NOTE: strip is important to align with the training data.
         conv.messages[-1][-1] = outputs.strip()

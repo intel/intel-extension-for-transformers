@@ -1,4 +1,3 @@
-
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -24,7 +23,6 @@ import warnings
 import numpy as np
 import tritonclient.http as httpclient
 from tritonclient.utils import *
-
 
 warnings.filterwarnings("ignore")
 
@@ -73,15 +71,17 @@ if __name__ == "__main__":
         print(json.dumps(triton_client.get_model_config(args.model_name), indent=4))
 
     inputs = []
-    inputs.append(httpclient.InferInput('INPUT0', [1], "BYTES"))
+    inputs.append(httpclient.InferInput("INPUT0", [1], "BYTES"))
     input_data0 = args.prompt
-    input_data0 = np.array([input_data0.encode("utf-8")],dtype=np.object_)
+    input_data0 = np.array([input_data0.encode("utf-8")], dtype=np.object_)
     inputs[0].set_data_from_numpy(input_data0)
     outputs = []
-    outputs.append(httpclient.InferRequestedOutput('OUTPUT0', binary_data=False))
+    outputs.append(httpclient.InferRequestedOutput("OUTPUT0", binary_data=False))
 
-    results = triton_client.infer(model_name=args.model_name, inputs=inputs, outputs=outputs)
-    output_data0 = results.as_numpy('OUTPUT0')
+    results = triton_client.infer(
+        model_name=args.model_name, inputs=inputs, outputs=outputs
+    )
+    output_data0 = results.as_numpy("OUTPUT0")
 
-    print("input:",input_data0)
-    print("output:",output_data0)
+    print("input:", input_data0)
+    print("output:", output_data0)

@@ -18,11 +18,10 @@
 
 from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
 
+
 def main():
     server_executor = NeuralChatServerExecutor()
-    server_executor(
-        config_file="./audio_service.yaml",
-        log_file="./audio_service.log")
+    server_executor(config_file="./audio_service.yaml", log_file="./audio_service.log")
 
 
 if __name__ == "__main__":

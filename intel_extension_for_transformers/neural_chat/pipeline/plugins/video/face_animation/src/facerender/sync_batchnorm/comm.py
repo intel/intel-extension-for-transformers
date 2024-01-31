@@ -15,15 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import queue
 import collections
+import queue
 import threading
 
 __all__ = ["FutureResult", "SlavePipe", "SyncMaster"]
 
 
 class FutureResult(object):
-    """A thread-safe future implementation. Used only as one-to-one pipe."""
+    """A thread-safe future implementation.
+
+    Used only as one-to-one pipe.
+    """
 
     def __init__(self):
         self._result = None
@@ -47,7 +50,9 @@ class FutureResult(object):
 
 
 _MasterRegistry = collections.namedtuple("MasterRegistry", ["result"])
-_SlavePipeBase = collections.namedtuple("_SlavePipeBase", ["identifier", "queue", "result"])
+_SlavePipeBase = collections.namedtuple(
+    "_SlavePipeBase", ["identifier", "queue", "result"]
+)
 
 
 class SlavePipe(_SlavePipeBase):
@@ -89,14 +94,12 @@ class SyncMaster(object):
         self.__init__(state["master_callback"])
 
     def register_slave(self, identifier):
-        """
-        Register an slave device.
+        """Register an slave device.
 
         Args:
             identifier: an identifier, usually is the device id.
 
         Returns: a `SlavePipe` object which can be used to communicate with the master device.
-
         """
         if self._activated:
             assert self._queue.empty(), "Queue is not clean before next initialization."
@@ -107,8 +110,7 @@ class SyncMaster(object):
         return SlavePipe(identifier, self._queue, future)
 
     def run_master(self, master_msg):
-        """
-        Main entry for the master device in each forward pass.
+        """Main entry for the master device in each forward pass.
         The messages were first collected from each devices (including the master device), and then
         an callback will be invoked to compute the message to be sent back to each devices
         (including the master device).
@@ -118,7 +120,6 @@ class SyncMaster(object):
             message when calling `master_callback`. For detailed usage, see `_SynchronizedBatchNorm` for an example.
 
         Returns: the message to be sent back to the master device.
-
         """
         self._activated = True
 

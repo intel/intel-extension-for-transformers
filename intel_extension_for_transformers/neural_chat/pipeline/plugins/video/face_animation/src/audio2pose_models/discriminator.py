@@ -15,8 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
-import torch.nn.functional as F
 from torch import nn
 
 
@@ -72,7 +70,11 @@ class ConvNormRelu(nn.Module):
                 raise NotImplementedError
         nn.init.kaiming_normal_(self.conv.weight)
 
-        self.act = nn.LeakyReLU(negative_slope=0.2, inplace=False) if leaky else nn.ReLU(inplace=True)
+        self.act = (
+            nn.LeakyReLU(negative_slope=0.2, inplace=False)
+            if leaky
+            else nn.ReLU(inplace=True)
+        )
 
     def forward(self, x):
         x = self.conv(x)
@@ -91,10 +93,20 @@ class PoseSequenceDiscriminator(nn.Module):
         leaky = self.cfg.MODEL.DISCRIMINATOR.LEAKY_RELU
 
         self.seq = nn.Sequential(
-            ConvNormRelu("1d", cfg.MODEL.DISCRIMINATOR.INPUT_CHANNELS, 256, downsample=True, leaky=leaky),  # B, 256, 64
+            ConvNormRelu(
+                "1d",
+                cfg.MODEL.DISCRIMINATOR.INPUT_CHANNELS,
+                256,
+                downsample=True,
+                leaky=leaky,
+            ),  # B, 256, 64
             ConvNormRelu("1d", 256, 512, downsample=True, leaky=leaky),  # B, 512, 32
-            ConvNormRelu("1d", 512, 1024, kernel_size=3, stride=1, padding=1, leaky=leaky),  # B, 1024, 16
-            nn.Conv1d(1024, 1, kernel_size=3, stride=1, padding=1, bias=True),  # B, 1, 16
+            ConvNormRelu(
+                "1d", 512, 1024, kernel_size=3, stride=1, padding=1, leaky=leaky
+            ),  # B, 1024, 16
+            nn.Conv1d(
+                1024, 1, kernel_size=3, stride=1, padding=1, bias=True
+            ),  # B, 1, 16
         )
 
     def forward(self, x):

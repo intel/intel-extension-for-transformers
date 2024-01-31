@@ -18,7 +18,6 @@
 # Length-Adaptive Transformer
 # Copyright (c) 2020-present NAVER Corp.
 # Apache License v2.0
-
 """Evolustion: Provide the evolustionary search for pytorch."""
 
 import csv
@@ -26,9 +25,12 @@ import logging
 import os
 import random
 import timeit
+
 import numpy as np
 import torch
+
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
+
 torchprofile = LazyImport("torchprofile")
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,7 @@ def approx_ratio(x, n=12, l=384):
         i = int(np.ceil(i * (1 - x)))  # i * x
         s += i
     return s / (n * l)
+
 
 def inverse(x):
     """Get the inverse number."""
@@ -62,8 +65,10 @@ def store2str(gene, macs, score, method, parents=None):
         store_str += f"| parent(s) {parents}"
     return store_str
 
+
 class Evolution(object):
     """Class of Evolution supports for evolutionary searching."""
+
     def __init__(
         self,
         model,
@@ -72,7 +77,7 @@ class Evolution(object):
         evaluate,
         lower_constraint=0,
         upper_constraint=None,
-        eval_metric='eval_f1'
+        eval_metric="eval_f1",
     ):
         """Init an Evolution instance."""
         self.model = model
@@ -94,22 +99,22 @@ class Evolution(object):
 
         self.store = {}  # gene: (macs, score, method, parent(s))
         self.population = []
-        self.eval_metric=eval_metric
+        self.eval_metric = eval_metric
 
     def load_store(self, store_file):
         """Load from a store file."""
         if not os.path.isfile(store_file):
             return
-        with open(store_file, 'r') as f:
-            for row in csv.reader(f, delimiter='\t'):
+        with open(store_file, "r") as f:
+            for row in csv.reader(f, delimiter="\t"):
                 row = tuple(eval(x) for x in row[:3])
                 self.store[row[0]] = row[1:3] + (0, None)
 
     def save_store(self, store_file):
         """Save into a store file."""
         store_keys = sorted(self.store.keys(), key=lambda x: self.store[x][0])
-        with open(store_file, 'w') as f:
-            writer = csv.writer(f, delimiter='\t')
+        with open(store_file, "w") as f:
+            writer = csv.writer(f, delimiter="\t")
             for gene in store_keys:
                 writer.writerow([str(gene)] + [str(x) for x in self.store[gene]])
 
@@ -127,8 +132,8 @@ class Evolution(object):
 
     def save_population(self, population_file, population):
         """Save population into a file."""
-        with open(population_file, 'w') as f:
-            writer = csv.writer(f, delimiter='\t')
+        with open(population_file, "w") as f:
+            writer = csv.writer(f, delimiter="\t")
             for gene in population:
                 writer.writerow([str(gene)] + [str(x) for x in self.store[gene]])
 
@@ -168,7 +173,7 @@ class Evolution(object):
             x0, y0 = self.store[gene0][:2]
             x1, y1 = self.store[gene1][:2]
             area += (x1 - x0) * y0
-        area /= (self.upper_constraint - self.lower_constraint)
+        area /= self.upper_constraint - self.lower_constraint
         return self.population, area
 
     def add_gene(self, gene, macs=None, score=None, method=0, parents=None):
@@ -195,9 +200,11 @@ class Evolution(object):
             logger.info(store2str(gene, macs, score, method, parents))
 
         macs = self.store[gene][0]
-        if macs >= self.lower_constraint \
-                and (self.upper_constraint is None or macs <= self.upper_constraint) \
-                and gene not in self.population:
+        if (
+            macs >= self.lower_constraint
+            and (self.upper_constraint is None or macs <= self.upper_constraint)
+            and gene not in self.population
+        ):
             self.population.append(gene)
             return True
         return False
@@ -208,16 +215,21 @@ class Evolution(object):
         mutated_gene = ()
         for i in range(self.model.config.num_hidden_layers):
             if np.random.uniform() < mutation_prob:
-                prev = (self.max_seq_length if i == 0 else mutated_gene[i - 1])
-                next = (2 if i == self.model.config.num_hidden_layers - 1 else gene[i + 1])
+                prev = self.max_seq_length if i == 0 else mutated_gene[i - 1]
+                next = (
+                    2 if i == self.model.config.num_hidden_layers - 1 else gene[i + 1]
+                )
                 mutated_gene += (random.randrange(next, prev + 1),)
             else:
                 mutated_gene += (gene[i],)
-        return self.add_gene(mutated_gene, method=1, parents=(gene,)) if not ray else mutated_gene, (gene,)
+        return self.add_gene(
+            mutated_gene, method=1, parents=(gene,)
+        ) if not ray else mutated_gene, (gene,)
 
     def crossover(self, ray=False):
         """Do the crossover."""
         gene0, gene1 = random.sample(self.population, 2)
         crossovered_gene = tuple((g0 + g1 + 1) // 2 for g0, g1 in zip(gene0, gene1))
-        return self.add_gene(crossovered_gene, method=2, parents=(gene0, gene1)) if not ray else \
-                 crossovered_gene, (gene0, gene1)
+        return self.add_gene(
+            crossovered_gene, method=2, parents=(gene0, gene1)
+        ) if not ray else crossovered_gene, (gene0, gene1)

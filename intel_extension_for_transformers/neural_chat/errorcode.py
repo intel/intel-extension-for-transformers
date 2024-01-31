@@ -19,14 +19,15 @@
 STORAGE_THRESHOLD_GB = 30
 GPU_MEMORY_THRESHOLD_MB = 6
 
+
 class ErrorCodes:
     # General Service Error Code - System related
-    ERROR_OUT_OF_MEMORY = 1001 # out of memory
-    ERROR_DEVICE_BUSY = 1002 # device busy
-    ERROR_DEVICE_NOT_FOUND = 1003 # device not exist
-    ERROR_OUT_OF_STORAGE = 1004 # out of storage
-    ERROR_DEVICE_NOT_SUPPORTED = 1005 # device not support
-    ERROR_PLUGIN_NOT_SUPPORTED = 1006 # plugin not support
+    ERROR_OUT_OF_MEMORY = 1001  # out of memory
+    ERROR_DEVICE_BUSY = 1002  # device busy
+    ERROR_DEVICE_NOT_FOUND = 1003  # device not exist
+    ERROR_OUT_OF_STORAGE = 1004  # out of storage
+    ERROR_DEVICE_NOT_SUPPORTED = 1005  # device not support
+    ERROR_PLUGIN_NOT_SUPPORTED = 1006  # plugin not support
 
     # General Service Error Code - Model related
     ERROR_MODEL_NOT_FOUND = 2001
@@ -74,7 +75,6 @@ class ErrorCodes:
         ERROR_OUT_OF_STORAGE: "System has run out of storage",
         ERROR_DEVICE_NOT_SUPPORTED: "Device is not supported",
         ERROR_PLUGIN_NOT_SUPPORTED: "Plugin is not supported",
-
         ERROR_MODEL_NOT_FOUND: "Requested model was not found",
         ERROR_MODEL_CONFIG_NOT_FOUND: "Model configuration not found",
         ERROR_TOKENIZER_NOT_FOUND: "Tokenizer not found",
@@ -82,19 +82,16 @@ class ErrorCodes:
         ERROR_INVALID_MODEL_VERSION: "Invalid model version",
         ERROR_MODEL_NOT_SUPPORTED: "Model is not supported",
         WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH: "Input sequence exceeds maximum length",
-
         ERROR_DATASET_NOT_FOUND: "Dataset was not found",
         ERROR_DATASET_CONFIG_NOT_FOUND: "Dataset configuration not found",
         ERROR_VALIDATION_FILE_NOT_FOUND: "Validation file not found",
         ERROR_TRAIN_FILE_NOT_FOUND: "Training file not found",
         ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION: "No write permission in dataset cache directory",
-
         ERROR_PTUN_FINETUNE_FAIL: "PTUN finetuning failed",
         ERROR_LORA_FINETUNE_FAIL: "LORA finetuning failed",
         ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL: "LLAMA Adaptor finetuning failed",
         ERROR_PREFIX_FINETUNE_FAIL: "Prefix finetuning failed",
         ERROR_PROMPT_FINETUNE_FAIL: "Prompt finetuning failed",
-
         ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL: "Weight-only quantization optimization failed",
         ERROR_AMP_OPTIMIZATION_FAIL: "AMP optimization failed",
         ERROR_AUDIO_FORMAT_NOT_SUPPORTED: "Audio format is not supported",
@@ -104,6 +101,5 @@ class ErrorCodes:
         ERROR_INTENT_DETECT_FAIL: "Intent detection failed",
         ERROR_MODEL_INFERENCE_FAIL: "Model inference failed",
         ERROR_BITS_AND_BYTES_OPTIMIZATION_FAIL: "Bits and bytes optimization failed",
-
-        ERROR_GENERIC: "Generic error"
+        ERROR_GENERIC: "Generic error",
     }

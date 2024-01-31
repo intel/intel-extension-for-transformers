@@ -13,20 +13,18 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import copy
-from dataclasses import dataclass, field
 import json
 import pathlib
-from typing import Dict, Optional, Sequence
+from dataclasses import dataclass, field
+from typing import Dict, Optional
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 import transformers
+from fastchat.conversation import SeparatorStyle, get_default_conv_template
+from torch.utils.data import Dataset
 from transformers import Trainer
 from transformers.trainer_pt_utils import LabelSmoother
-
-from fastchat.conversation import get_default_conv_template, SeparatorStyle
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 
@@ -70,7 +68,7 @@ def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: st
     if trainer.args.should_save:
         cpu_state_dict = {key: value.cpu() for key, value in state_dict.items()}
         del state_dict
-        trainer._save(output_dir, state_dict=cpu_state_dict)  # noqa
+        trainer._save(output_dir, state_dict=cpu_state_dict)
 
 
 def preprocess(

@@ -1,15 +1,13 @@
-import logging
-import os
-import numpy as np
-import random
-from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import OptimizedModel
-from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-from argparse import ArgumentParser
-import timeit
 import collections
 import json
+import logging
+import os
+import timeit
+from argparse import ArgumentParser
 from typing import Optional, Tuple
+
+import numpy as np
+from datasets import load_dataset, load_metric
 from tqdm.auto import tqdm
 from transformers import (
     AutoConfig,
@@ -18,17 +16,24 @@ from transformers import (
     DataCollatorWithPadding,
     EvalPrediction,
     TrainingArguments,
-    set_seed,
     is_torch_tpu_available,
+    set_seed,
 )
 from transformers.trainer_utils import PredictionOutput
+
+from intel_extension_for_transformers.transformers import OptimizedModel
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 os.environ["WANDB_DISABLED"] = "true"
 logger = logging.getLogger(__name__)
 
-arg_parser = ArgumentParser(description='Parse args')
-arg_parser.add_argument('--data_type', default = "int8", help='data type of model')
-arg_parser.add_argument('--model_name_or_path', default = "distilbert-base-uncased-distilled-squad", help = 'input model for benchmark')
+arg_parser = ArgumentParser(description="Parse args")
+arg_parser.add_argument("--data_type", default="int8", help="data type of model")
+arg_parser.add_argument(
+    "--model_name_or_path",
+    default="distilbert-base-uncased-distilled-squad",
+    help="input model for benchmark",
+)
 args = arg_parser.parse_args()
 
 
@@ -36,13 +41,20 @@ if is_torch_tpu_available():
     import torch_xla.core.xla_model as xm
     import torch_xla.debug.metrics as met
 
+
 class QuestionAnsweringTrainer(NLPTrainer):
     def __init__(self, *args, eval_examples=None, post_process_function=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.eval_examples = eval_examples
         self.post_process_function = post_process_function
 
-    def evaluate(self, eval_dataset=None, eval_examples=None, ignore_keys=None, metric_key_prefix: str = "eval"):
+    def evaluate(
+        self,
+        eval_dataset=None,
+        eval_examples=None,
+        ignore_keys=None,
+        metric_key_prefix: str = "eval",
+    ):
         eval_dataset = self.eval_dataset if eval_dataset is None else eval_dataset
         eval_dataloader = self.get_eval_dataloader(eval_dataset)
         eval_examples = self.eval_examples if eval_examples is None else eval_examples
@@ -50,7 +62,11 @@ class QuestionAnsweringTrainer(NLPTrainer):
         # Temporarily disable metric computation, we will do it in the loop here.
         compute_metrics = self.compute_metrics
         self.compute_metrics = None
-        eval_loop = self.prediction_loop if self.args.use_legacy_prediction_loop else self.evaluation_loop
+        eval_loop = (
+            self.prediction_loop
+            if self.args.use_legacy_prediction_loop
+            else self.evaluation_loop
+        )
         try:
             output = eval_loop(
                 eval_dataloader,
@@ -64,7 +80,9 @@ class QuestionAnsweringTrainer(NLPTrainer):
             self.compute_metrics = compute_metrics
 
         if self.post_process_function is not None and self.compute_metrics is not None:
-            eval_preds = self.post_process_function(eval_examples, eval_dataset, output.predictions)
+            eval_preds = self.post_process_function(
+                eval_examples, eval_dataset, output.predictions
+            )
             metrics = self.compute_metrics(eval_preds)
 
             # Prefix all keys with metric_key_prefix + '_'
@@ -80,16 +98,28 @@ class QuestionAnsweringTrainer(NLPTrainer):
             # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
             xm.master_print(met.metrics_report())
 
-        self.control = self.callback_handler.on_evaluate(self.args, self.state, self.control, metrics)
+        self.control = self.callback_handler.on_evaluate(
+            self.args, self.state, self.control, metrics
+        )
         return metrics
 
-    def predict(self, predict_dataset, predict_examples, ignore_keys=None, metric_key_prefix: str = "test"):
+    def predict(
+        self,
+        predict_dataset,
+        predict_examples,
+        ignore_keys=None,
+        metric_key_prefix: str = "test",
+    ):
         predict_dataloader = self.get_test_dataloader(predict_dataset)
 
         # Temporarily disable metric computation, we will do it in the loop here.
         compute_metrics = self.compute_metrics
         self.compute_metrics = None
-        eval_loop = self.prediction_loop if self.args.use_legacy_prediction_loop else self.evaluation_loop
+        eval_loop = (
+            self.prediction_loop
+            if self.args.use_legacy_prediction_loop
+            else self.evaluation_loop
+        )
         try:
             output = eval_loop(
                 predict_dataloader,
@@ -105,7 +135,9 @@ class QuestionAnsweringTrainer(NLPTrainer):
         if self.post_process_function is None or self.compute_metrics is None:
             return output
 
-        predictions = self.post_process_function(predict_examples, predict_dataset, output.predictions, "predict")
+        predictions = self.post_process_function(
+            predict_examples, predict_dataset, output.predictions, "predict"
+        )
         metrics = self.compute_metrics(predictions)
 
         # Prefix all keys with metric_key_prefix + '_'
@@ -113,7 +145,12 @@ class QuestionAnsweringTrainer(NLPTrainer):
             if not key.startswith(f"{metric_key_prefix}_"):
                 metrics[f"{metric_key_prefix}_{key}"] = metrics.pop(key)
 
-        return PredictionOutput(predictions=predictions.predictions, label_ids=predictions.label_ids, metrics=metrics)
+        return PredictionOutput(
+            predictions=predictions.predictions,
+            label_ids=predictions.label_ids,
+            metrics=metrics,
+        )
+
 
 def postprocess_qa_predictions(
     examples,
@@ -127,8 +164,7 @@ def postprocess_qa_predictions(
     prefix: Optional[str] = None,
     log_level: Optional[int] = logging.WARNING,
 ):
-    """
-    Post-processes the predictions of a question-answering model to convert them to answers that are substrings of the
+    """Post-processes the predictions of a question-answering model to convert them to answers that are substrings of the
     original contexts. This is the base postprocessing functions for models that only return start and end logits.
 
     Args:
@@ -162,11 +198,15 @@ def postprocess_qa_predictions(
     """
 
     if len(predictions) != 2:
-        raise ValueError("`predictions` should be a tuple with two elements (start_logits, end_logits).")
+        raise ValueError(
+            "`predictions` should be a tuple with two elements (start_logits, end_logits)."
+        )
     all_start_logits, all_end_logits = predictions
 
     if len(predictions[0]) != len(features):
-        raise ValueError(f"Got {len(predictions[0])} predictions and {len(features)} features.")
+        raise ValueError(
+            f"Got {len(predictions[0])} predictions and {len(features)} features."
+        )
 
     # Build a map example to its corresponding features.
     example_id_to_index = {k: i for i, k in enumerate(examples["id"])}
@@ -182,7 +222,9 @@ def postprocess_qa_predictions(
 
     # Logging.
     logger.setLevel(log_level)
-    logger.info(f"Post-processing {len(examples)} example predictions split into {len(features)} features.")
+    logger.info(
+        f"Post-processing {len(examples)} example predictions split into {len(features)} features."
+    )
 
     # Let's loop over all the examples!
     for example_index, example in enumerate(tqdm(examples)):
@@ -202,11 +244,16 @@ def postprocess_qa_predictions(
             offset_mapping = features[feature_index]["offset_mapping"]
             # Optional `token_is_max_context`, if provided we will remove answers that do not have the maximum context
             # available in the current feature.
-            token_is_max_context = features[feature_index].get("token_is_max_context", None)
+            token_is_max_context = features[feature_index].get(
+                "token_is_max_context", None
+            )
 
             # Update minimum null prediction.
             feature_null_score = start_logits[0] + end_logits[0]
-            if min_null_prediction is None or min_null_prediction["score"] > feature_null_score:
+            if (
+                min_null_prediction is None
+                or min_null_prediction["score"] > feature_null_score
+            ):
                 min_null_prediction = {
                     "offsets": (0, 0),
                     "score": feature_null_score,
@@ -215,7 +262,9 @@ def postprocess_qa_predictions(
                 }
 
             # Go through all possibilities for the `n_best_size` greater start and end logits.
-            start_indexes = np.argsort(start_logits)[-1 : -n_best_size - 1 : -1].tolist()
+            start_indexes = np.argsort(start_logits)[
+                -1 : -n_best_size - 1 : -1
+            ].tolist()
             end_indexes = np.argsort(end_logits)[-1 : -n_best_size - 1 : -1].tolist()
             for start_index in start_indexes:
                 for end_index in end_indexes:
@@ -231,16 +280,25 @@ def postprocess_qa_predictions(
                     ):
                         continue
                     # Don't consider answers with a length that is either < 0 or > max_answer_length.
-                    if end_index < start_index or end_index - start_index + 1 > max_answer_length:
+                    if (
+                        end_index < start_index
+                        or end_index - start_index + 1 > max_answer_length
+                    ):
                         continue
                     # Don't consider answer that don't have the maximum context available (if such information is
                     # provided).
-                    if token_is_max_context is not None and not token_is_max_context.get(str(start_index), False):
+                    if (
+                        token_is_max_context is not None
+                        and not token_is_max_context.get(str(start_index), False)
+                    ):
                         continue
 
                     prelim_predictions.append(
                         {
-                            "offsets": (offset_mapping[start_index][0], offset_mapping[end_index][1]),
+                            "offsets": (
+                                offset_mapping[start_index][0],
+                                offset_mapping[end_index][1],
+                            ),
                             "score": start_logits[start_index] + end_logits[end_index],
                             "start_logit": start_logits[start_index],
                             "end_logit": end_logits[end_index],
@@ -252,10 +310,14 @@ def postprocess_qa_predictions(
             null_score = min_null_prediction["score"]
 
         # Only keep the best `n_best_size` predictions.
-        predictions = sorted(prelim_predictions, key=lambda x: x["score"], reverse=True)[:n_best_size]
+        predictions = sorted(
+            prelim_predictions, key=lambda x: x["score"], reverse=True
+        )[:n_best_size]
 
         # Add back the minimum null prediction if it was removed because of its low score.
-        if version_2_with_negative and not any(p["offsets"] == (0, 0) for p in predictions):
+        if version_2_with_negative and not any(
+            p["offsets"] == (0, 0) for p in predictions
+        ):
             predictions.append(min_null_prediction)
 
         # Use the offsets to gather the answer text in the original context.
@@ -266,8 +328,12 @@ def postprocess_qa_predictions(
 
         # In the very rare edge case we have not a single non-null prediction, we create a fake prediction to avoid
         # failure.
-        if len(predictions) == 0 or (len(predictions) == 1 and predictions[0]["text"] == ""):
-            predictions.insert(0, {"text": "empty", "start_logit": 0.0, "end_logit": 0.0, "score": 0.0})
+        if len(predictions) == 0 or (
+            len(predictions) == 1 and predictions[0]["text"] == ""
+        ):
+            predictions.insert(
+                0, {"text": "empty", "start_logit": 0.0, "end_logit": 0.0, "score": 0.0}
+            )
 
         # Compute the softmax of all scores (we do it with numpy to stay independent from torch/tf in this file, using
         # the LogSumExp trick).
@@ -290,8 +356,14 @@ def postprocess_qa_predictions(
             best_non_null_pred = predictions[i]
 
             # Then we compare to the null prediction using the threshold.
-            score_diff = null_score - best_non_null_pred["start_logit"] - best_non_null_pred["end_logit"]
-            scores_diff_json[example["id"]] = float(score_diff)  # To be JSON-serializable.
+            score_diff = (
+                null_score
+                - best_non_null_pred["start_logit"]
+                - best_non_null_pred["end_logit"]
+            )
+            scores_diff_json[example["id"]] = float(
+                score_diff
+            )  # To be JSON-serializable.
             if score_diff > null_score_diff_threshold:
                 all_predictions[example["id"]] = ""
             else:
@@ -299,7 +371,14 @@ def postprocess_qa_predictions(
 
         # Make `predictions` JSON-serializable by casting np.float back to float.
         all_nbest_json[example["id"]] = [
-            {k: (float(v) if isinstance(v, (np.float16, np.float32, np.float64)) else v) for k, v in pred.items()}
+            {
+                k: (
+                    float(v)
+                    if isinstance(v, (np.float16, np.float32, np.float64))
+                    else v
+                )
+                for k, v in pred.items()
+            }
             for pred in predictions
         ]
 
@@ -309,14 +388,19 @@ def postprocess_qa_predictions(
             raise EnvironmentError(f"{output_dir} is not a directory.")
 
         prediction_file = os.path.join(
-            output_dir, "predictions.json" if prefix is None else f"{prefix}_predictions.json"
+            output_dir,
+            "predictions.json" if prefix is None else f"{prefix}_predictions.json",
         )
         nbest_file = os.path.join(
-            output_dir, "nbest_predictions.json" if prefix is None else f"{prefix}_nbest_predictions.json"
+            output_dir,
+            "nbest_predictions.json"
+            if prefix is None
+            else f"{prefix}_nbest_predictions.json",
         )
         if version_2_with_negative:
             null_odds_file = os.path.join(
-                output_dir, "null_odds.json" if prefix is None else f"{prefix}_null_odds.json"
+                output_dir,
+                "null_odds.json" if prefix is None else f"{prefix}_null_odds.json",
             )
 
         logger.info(f"Saving predictions to {prediction_file}.")
@@ -331,7 +415,6 @@ def postprocess_qa_predictions(
                 writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
 
     return all_predictions
-
 
 
 raw_datasets = load_dataset("squad")
@@ -351,11 +434,11 @@ log_level = training_args.get_process_log_level()
 if args.data_type == "int8":
     # Load the model obtained after Intel Neural Compressor (INC) quantization
     model = OptimizedModel.from_pretrained(
-          args.model_name_or_path,
-          from_tf=bool(".ckpt" in args.model_name_or_path),
-          config=config,
-          revision="main",
-          use_auth_token=None,
+        args.model_name_or_path,
+        from_tf=bool(".ckpt" in args.model_name_or_path),
+        config=config,
+        revision="main",
+        use_auth_token=None,
     )
 else:
     ## original fp32 model benchmarking
@@ -363,7 +446,7 @@ else:
         args.model_name_or_path,
         from_tf=bool(".ckpt" in args.model_name_or_path),
         config=config,
-        use_auth_token=None
+        use_auth_token=None,
     )
 
 # Preprocessing is slightly different for training and evaluation.
@@ -377,12 +460,15 @@ pad_on_right = tokenizer.padding_side == "right"
 
 max_seq_length = min(384, tokenizer.model_max_length)
 
+
 # Training preprocessing
 def prepare_train_features(examples):
     # Some of the questions have lots of whitespace on the left, which is not useful and will make the
     # truncation of the context fail (the tokenized question will take a lots of space). So we remove that
     # left whitespace
-    examples[question_column_name] = [q.lstrip() for q in examples[question_column_name]]
+    examples[question_column_name] = [
+        q.lstrip() for q in examples[question_column_name]
+    ]
 
     # Tokenize our examples with truncation and maybe padding, but keep the overflows using a stride. This results
     # in one example possible giving several features when a context is long, each of those features having a
@@ -440,13 +526,19 @@ def prepare_train_features(examples):
                 token_end_index -= 1
 
             # Detect if the answer is out of the span (in which case this feature is labeled with the CLS index).
-            if not (offsets[token_start_index][0] <= start_char and offsets[token_end_index][1] >= end_char):
+            if not (
+                offsets[token_start_index][0] <= start_char
+                and offsets[token_end_index][1] >= end_char
+            ):
                 tokenized_examples["start_positions"].append(cls_index)
                 tokenized_examples["end_positions"].append(cls_index)
             else:
                 # Otherwise move the token_start_index and token_end_index to the two ends of the answer.
                 # Note: we could go after the last offset if the answer is the last word (edge case).
-                while token_start_index < len(offsets) and offsets[token_start_index][0] <= start_char:
+                while (
+                    token_start_index < len(offsets)
+                    and offsets[token_start_index][0] <= start_char
+                ):
                     token_start_index += 1
                 tokenized_examples["start_positions"].append(token_start_index - 1)
                 while offsets[token_end_index][1] >= end_char:
@@ -454,6 +546,7 @@ def prepare_train_features(examples):
                 tokenized_examples["end_positions"].append(token_end_index + 1)
 
     return tokenized_examples
+
 
 if training_args.do_train:
     if "train" not in raw_datasets:
@@ -465,15 +558,18 @@ if training_args.do_train:
             batched=True,
             remove_columns=column_names,
             load_from_cache_file=True,
-            desc="Running tokenizer on train dataset"
+            desc="Running tokenizer on train dataset",
         )
+
 
 # Validation preprocessing
 def prepare_validation_features(examples):
     # Some of the questions have lots of whitespace on the left, which is not useful and will make the
     # truncation of the context fail (the tokenized question will take a lots of space). So we remove that
     # left whitespace
-    examples[question_column_name] = [q.lstrip() for q in examples[question_column_name]]
+    examples[question_column_name] = [
+        q.lstrip() for q in examples[question_column_name]
+    ]
 
     # Tokenize our examples with truncation and maybe padding, but keep the overflows using a stride. This results
     # in one example possible giving several features when a context is long, each of those features having a
@@ -515,6 +611,7 @@ def prepare_validation_features(examples):
 
     return tokenized_examples
 
+
 if training_args.do_eval:
     if "validation" not in raw_datasets:
         raise ValueError("--do_eval requires a validation dataset")
@@ -531,7 +628,10 @@ if training_args.do_eval:
     eval_dataset = eval_dataset.select(range(max_eval_samples))
 
 # Data collator
-data_collator = DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8 if training_args.fp16 else None)
+data_collator = DataCollatorWithPadding(
+    tokenizer, pad_to_multiple_of=8 if training_args.fp16 else None
+)
+
 
 # Post-processing:
 def post_processing_function(examples, features, predictions, stage="eval"):
@@ -549,12 +649,18 @@ def post_processing_function(examples, features, predictions, stage="eval"):
         prefix=stage,
     )
     # Format the result to the format the metric expects.
-    formatted_predictions = [{"id": k, "prediction_text": v} for k, v in predictions.items()]
+    formatted_predictions = [
+        {"id": k, "prediction_text": v} for k, v in predictions.items()
+    ]
 
-    references = [{"id": ex["id"], "answers": ex[answer_column_name]} for ex in examples]
+    references = [
+        {"id": ex["id"], "answers": ex[answer_column_name]} for ex in examples
+    ]
     return EvalPrediction(predictions=formatted_predictions, label_ids=references)
 
+
 metric = load_metric("squad")
+
 
 def compute_metrics(p: EvalPrediction):
     return metric.compute(predictions=p.predictions, references=p.label_ids)
@@ -583,7 +689,7 @@ max_eval_samples = 5000
 samples = min(max_eval_samples, len(eval_dataset))
 
 eval_f1_static = results.get("eval_f1")
-print('Batch size = {}'.format(training_args.per_device_eval_batch_size))
+print("Batch size = {}".format(training_args.per_device_eval_batch_size))
 print("Finally Eval eval_f1 Accuracy: {}".format(eval_f1_static))
 print("Latency: {:.3f} ms".format(evalTime / samples * 1000))
-print("Throughput: {} samples/sec".format(samples/evalTime))
+print("Throughput: {} samples/sec".format(samples / evalTime))

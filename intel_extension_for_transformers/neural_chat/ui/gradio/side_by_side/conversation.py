@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Conversation prompt template.
+"""Conversation prompt template.
 
 Now we support
 - Vicuna
@@ -30,8 +28,8 @@ Now we support
 """
 
 import dataclasses
-from enum import auto, Enum
-from typing import List, Tuple, Any
+from enum import Enum, auto
+from typing import Any, List
 
 
 class SeparatorStyle(Enum):

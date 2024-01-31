@@ -16,47 +16,51 @@
 # limitations under the License.
 
 
-from fastapi import APIRouter, Request
-from io import BytesIO
-import time
+import base64
 import json
+import queue
 import socket
 import threading
+import time
 import traceback
-import base64
-from PIL import Image
+from io import BytesIO
 from threading import Condition
-import queue
+
 import torch
+from fastapi import APIRouter, Request
+from PIL import Image
+
 from ...cli.log import logger
 from ...plugins import plugins
 
-class Task():
-    """ task class """
+
+class Task:
+    """Task class."""
+
     def __init__(self):
         self.cond = Condition()
         self.is_complete = False
         self.response = None
 
     def done(self):
-        """ function """
+        """function."""
         logger.info("task is done")
         self.cond.acquire()
         self.cond.notify()
         self.cond.release()
 
     def wait_for_done(self):
-        """ function """
+        """function."""
         self.cond.acquire()
         self.cond.wait_for(predicate=self.get_task_status, timeout=None)
         self.cond.release()
 
     def set_prompt(self, prompt):
-        """ function """
+        """function."""
         self.prompt = prompt
 
     def set_steps(self, num_inference_steps):
-        """ function """
+        """function."""
         self.num_inference_steps = num_inference_steps
 
     def set_scale(self, guidance_scale):
@@ -72,33 +76,35 @@ class Task():
         self.strength = strength
 
     def set_task_type(self, task_type):
-        """ set task type """
+        """Set task type."""
         self.task_type = task_type
 
     def set_start_time(self, time):
-        """ set_start_time for time-out """
+        """set_start_time for time-out."""
         self.start_time = time
 
     def get_task_status(self):
         return self.is_complete
 
-class TaskQueue():
-    """ TaskQueue """
+
+class TaskQueue:
+    """TaskQueue."""
+
     def __init__(self):
         self.queue = queue.Queue()
 
     def push(self, task):
-        """ function """
+        """function."""
         self.queue.put(task)
 
     def pop(self):
-        """ function """
+        """function."""
         item = self.queue.get_nowait()
         self.queue.task_done()
         return item
 
     def batch_pop(self, batch_size):
-        """ function """
+        """function."""
         result = []
         count = 0
         while count < batch_size and not self.queue.empty():
@@ -108,12 +114,13 @@ class TaskQueue():
         return result
 
     def empty(self):
-        """ function """
+        """function."""
         return self.queue.empty()
 
     def join(self):
-        """ function """
+        """function."""
         self.queue.join()
+
 
 class Worker(threading.Thread):
     def __init__(self, queue, cond, batch_size=1):
@@ -151,14 +158,17 @@ class Worker(threading.Thread):
                     continue
 
                 task = tasks[0]
-                generator = torch.Generator('cpu').manual_seed(task.seed)
+                generator = torch.Generator("cpu").manual_seed(task.seed)
                 img_byte = base64.b64decode(task.source_img)
                 init_image = Image.open(BytesIO(img_byte)).convert("RGB")
                 init_image = init_image.resize((512, 512))
-                image = plugins["image2image"]["instance"].image2image(prompt=task.prompt, image=init_image,
-                            num_inference_steps=task.num_inference_steps,
-                            guidance_scale=task.guidance_scale,
-                            generator=generator)
+                image = plugins["image2image"]["instance"].image2image(
+                    prompt=task.prompt,
+                    image=init_image,
+                    num_inference_steps=task.num_inference_steps,
+                    guidance_scale=task.guidance_scale,
+                    generator=generator,
+                )
                 task.is_complete = True
                 task.response = image
                 task.done()
@@ -167,13 +177,13 @@ class Worker(threading.Thread):
 
 
 class Image2ImageAPIRouter(APIRouter):
-
     def __init__(self) -> None:
         super().__init__()
         self.chatbot = None
         self.tq = TaskQueue()
         self.cond = threading.Condition()
-        self.worker = Worker(queue = self.tq, cond = self.cond)
+        self.worker = Worker(queue=self.tq, cond=self.cond)
+
 
 router = Image2ImageAPIRouter()
 
@@ -185,9 +195,11 @@ async def do_inference(request: Request):
         req = await request.json()
     except:
         logger.error("failed to load json of request: {0}".format(request))
-        return json.dumps(dict(ret_msg="load json failed: {0}".format(request), ret_code=4001))
+        return json.dumps(
+            dict(ret_msg="load json failed: {0}".format(request), ret_code=4001)
+        )
 
-    if not req or not "prompt" in req:
+    if not req or "prompt" not in req:
         logger.error("input data format error: {0}".format(request))
         return json.dumps(dict(ret_msg="input data format error", ret_code=4002))
 

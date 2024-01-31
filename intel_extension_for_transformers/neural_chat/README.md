@@ -65,6 +65,7 @@ Using Python Code:
 
 ```python
 from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+
 server_executor = NeuralChatServerExecutor()
 server_executor(config_file="./server/config/neuralchat.yaml", log_file="./neuralchat.log")
 ```
@@ -76,16 +77,17 @@ Once the service is running, you can observe an OpenAI-compatible endpoint `/v1/
 #### Using OpenAI Client Library
 ```python
 from openai import Client
+
 # Replace 'your_api_key' with your actual OpenAI API key
-api_key = 'your_api_key'
-backend_url = 'http://127.0.0.1:80/v1/chat/completions'
+api_key = "your_api_key"
+backend_url = "http://127.0.0.1:80/v1/chat/completions"
 client = Client(api_key=api_key, base_url=backend_url)
 response = client.ChatCompletion.create(
-      model="Intel/neural-chat-7b-v3-1",
-      messages=[
-          {"role": "system", "content": "You are a helpful assistant."},
-          {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."},
-      ]
+    model="Intel/neural-chat-7b-v3-1",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."},
+    ],
 )
 print(response)
 ```
@@ -107,8 +109,9 @@ curl http://127.0.0.1:80/v1/chat/completions \
 
 ```python
 import requests
-url = 'http://127.0.0.1:80/v1/chat/completions'
-headers = {'Content-Type': 'application/json'}
+
+url = "http://127.0.0.1:80/v1/chat/completions"
+headers = {"Content-Type": "application/json"}
 data = '{"model": "Intel/neural-chat-7b-v3-1", "messages": [ \
           {"role": "system", "content": "You are a helpful assistant."}, \
           {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}] \
@@ -130,6 +133,7 @@ from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain_core.vectorstores import VectorStoreRetriever
 from intel_extension_for_transformers.langchain.vectorstores import Chroma
+
 retriever = VectorStoreRetriever(vectorstore=Chroma(...))
 retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```
@@ -141,8 +145,14 @@ We provide optimized retrievers such as `VectorStoreRetriever`, `ChildParentRetr
 ```python
 from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever
 from langchain.vectorstores import Chroma
-retriever = ChildParentRetriever(vectorstore=Chroma(documents=child_documents), parentstore=Chroma(documents=parent_documents), search_type=xxx, search_kwargs={...})
-docs=retriever.get_relevant_documents("Intel")
+
+retriever = ChildParentRetriever(
+    vectorstore=Chroma(documents=child_documents),
+    parentstore=Chroma(documents=parent_documents),
+    search_type=xxx,
+    search_kwargs={...},
+)
+docs = retriever.get_relevant_documents("Intel")
 ```
 
 Please refer to this [documentation](./pipeline/plugins/retrieval/README.md) for more details.

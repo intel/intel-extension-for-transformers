@@ -16,7 +16,11 @@
 # limitations under the License.
 
 import unittest
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.security.safety_checker import SafetyChecker
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.security.safety_checker import (
+    SafetyChecker,
+)
+
 
 class TestSafetyChecker(unittest.TestCase):
     def setUp(self):
@@ -27,9 +31,9 @@ class TestSafetyChecker(unittest.TestCase):
 
     def test_safety_checker(self):
         safety_checker = SafetyChecker()
-        response = safety_checker.post_llm_inference_actions(response='ADMIN?')
+        response = safety_checker.post_llm_inference_actions(response="ADMIN?")
         self.assertTrue(response, "******")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

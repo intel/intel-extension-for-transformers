@@ -16,37 +16,46 @@
 # limitations under the License.
 
 import os
-import cv2
-import yaml
-import numpy as np
-import warnings
 import shlex
-from skimage import img_as_ubyte
+import warnings
+
+import cv2
+import numpy as np
 import safetensors
 import safetensors.torch
+import yaml
+from skimage import img_as_ubyte
 
 warnings.filterwarnings("ignore")
 
+import time
+
 import imageio
 import torch
-
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
-    facerender.modules.keypoint_detector import HEEstimator, KPDetector
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
-    facerender.modules.mapping import MappingNet
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
-    facerender.modules.generator import OcclusionAwareGenerator, OcclusionAwareSPADEGenerator
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
-    facerender.modules.make_animation import make_animation
-
 from pydub import AudioSegment
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
-    utils.face_enhancer import enhancer_with_len as face_enhancer
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
-    utils.paste_pic import paste_pic
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
-    utils.videoio import save_video_with_watermark
-import time
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.generator import (
+    OcclusionAwareSPADEGenerator,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.keypoint_detector import (
+    HEEstimator,
+    KPDetector,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.make_animation import (
+    make_animation,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.mapping import (
+    MappingNet,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.face_enhancer import (
+    enhancer_with_len as face_enhancer,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.paste_pic import (
+    paste_pic,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.videoio import (
+    save_video_with_watermark,
+)
 
 
 class AnimateFromCoeff:
@@ -54,13 +63,16 @@ class AnimateFromCoeff:
         with open(sadtalker_path["facerender_yaml"]) as f:
             config = yaml.safe_load(f)
         generator = OcclusionAwareSPADEGenerator(
-            **config["model_params"]["generator_params"], **config["model_params"]["common_params"]
+            **config["model_params"]["generator_params"],
+            **config["model_params"]["common_params"],
         )
         kp_extractor = KPDetector(
-            **config["model_params"]["kp_detector_params"], **config["model_params"]["common_params"]
+            **config["model_params"]["kp_detector_params"],
+            **config["model_params"]["common_params"],
         )
         he_estimator = HEEstimator(
-            **config["model_params"]["he_estimator_params"], **config["model_params"]["common_params"]
+            **config["model_params"]["he_estimator_params"],
+            **config["model_params"]["common_params"],
         )
         mapping = MappingNet(**config["model_params"]["mapping_params"])
 
@@ -80,7 +92,10 @@ class AnimateFromCoeff:
         if sadtalker_path is not None:
             if "checkpoint" in sadtalker_path:  # use safe tensor
                 self.load_cpk_facevid2vid_safetensor(
-                    sadtalker_path["checkpoint"], kp_detector=kp_extractor, generator=generator, he_estimator=None
+                    sadtalker_path["checkpoint"],
+                    kp_detector=kp_extractor,
+                    generator=generator,
+                    he_estimator=None,
                 )
             else:
                 self.load_cpk_facevid2vid(
@@ -90,12 +105,18 @@ class AnimateFromCoeff:
                     he_estimator=he_estimator,
                 )
         else:
-            raise AttributeError("Checkpoint should be specified for video head pose estimator.")
+            raise AttributeError(
+                "Checkpoint should be specified for video head pose estimator."
+            )
 
         if sadtalker_path["mappingnet_checkpoint"] is not None:
-            self.load_cpk_mapping(sadtalker_path["mappingnet_checkpoint"], mapping=mapping)
+            self.load_cpk_mapping(
+                sadtalker_path["mappingnet_checkpoint"], mapping=mapping
+            )
         else:
-            raise AttributeError("Checkpoint should be specified for video head pose estimator.")
+            raise AttributeError(
+                "Checkpoint should be specified for video head pose estimator."
+            )
 
         self.kp_extractor = kp_extractor
         self.generator = generator
@@ -110,7 +131,12 @@ class AnimateFromCoeff:
         self.device = device
 
     def load_cpk_facevid2vid_safetensor(
-        self, checkpoint_path, generator=None, kp_detector=None, he_estimator=None, device="cpu"
+        self,
+        checkpoint_path,
+        generator=None,
+        kp_detector=None,
+        he_estimator=None,
+        device="cpu",
     ):
         checkpoint = safetensors.torch.load_file(checkpoint_path)
 
@@ -159,14 +185,20 @@ class AnimateFromCoeff:
             try:
                 discriminator.load_state_dict(checkpoint["discriminator"])
             except:
-                print("No discriminator in the state-dict. Discriminator will be randomly initialized")
+                print(
+                    "No discriminator in the state-dict. Discriminator will be randomly initialized"
+                )
         if optimizer_generator is not None:
             optimizer_generator.load_state_dict(checkpoint["optimizer_generator"])
         if optimizer_discriminator is not None:
             try:
-                optimizer_discriminator.load_state_dict(checkpoint["optimizer_discriminator"])
-            except RuntimeError as e:
-                print("No discriminator optimizer in the state-dict. Optimizer will be not initialized")
+                optimizer_discriminator.load_state_dict(
+                    checkpoint["optimizer_discriminator"]
+                )
+            except RuntimeError:
+                print(
+                    "No discriminator optimizer in the state-dict. Optimizer will be not initialized"
+                )
         if optimizer_kp_detector is not None:
             optimizer_kp_detector.load_state_dict(checkpoint["optimizer_kp_detector"])
         if optimizer_he_estimator is not None:
@@ -191,7 +223,9 @@ class AnimateFromCoeff:
         if optimizer_mapping is not None:
             optimizer_mapping.load_state_dict(checkpoint["optimizer_mapping"])
         if optimizer_discriminator is not None:
-            optimizer_discriminator.load_state_dict(checkpoint["optimizer_discriminator"])
+            optimizer_discriminator.load_state_dict(
+                checkpoint["optimizer_discriminator"]
+            )
 
         return checkpoint["epoch"]
 
@@ -258,13 +292,17 @@ class AnimateFromCoeff:
             with open("workspace/rendering_video.mp4", "r") as f:
                 full_video_path = f.readline()
         else:
-            predictions_video = predictions_video.reshape((-1,) + predictions_video.shape[2:])
+            predictions_video = predictions_video.reshape(
+                (-1,) + predictions_video.shape[2:]
+            )
             predictions_video = predictions_video[:frame_num]
 
             video = []
             for idx in range(predictions_video.shape[0]):
                 image = predictions_video[idx]
-                image = np.transpose(image.data.cpu().numpy(), [1, 2, 0]).astype(np.float32)
+                image = np.transpose(image.data.cpu().numpy(), [1, 2, 0]).astype(
+                    np.float32
+                )
                 video.append(image)
             result = img_as_ubyte(video)
 
@@ -272,7 +310,10 @@ class AnimateFromCoeff:
             original_size = crop_info[0]
             if original_size:
                 result = [
-                    cv2.resize(result_i, (img_size, int(img_size * original_size[1] / original_size[0])))
+                    cv2.resize(
+                        result_i,
+                        (img_size, int(img_size * original_size[1] / original_size[0])),
+                    )
                     for result_i in result
                 ]
 
@@ -286,7 +327,9 @@ class AnimateFromCoeff:
 
             audio_path = x["audio_path"]
             audio_name = os.path.splitext(os.path.split(audio_path)[-1])[0]
-            new_audio_path = os.path.join(video_save_dir, shlex.quote(audio_name) + ".wav")
+            new_audio_path = os.path.join(
+                video_save_dir, shlex.quote(audio_name) + ".wav"
+            )
             start_time = 0
             # cog will not keep the .mp3 filename
             sound = AudioSegment.from_file(audio_path)
@@ -312,7 +355,9 @@ class AnimateFromCoeff:
                     full_video_path,
                     extended_crop=True if "ext" in preprocess.lower() else False,
                 )
-                print(f"The generated video is named {video_save_dir}/{video_name_full}")
+                print(
+                    f"The generated video is named {video_save_dir}/{video_name_full}"
+                )
             else:
                 full_video_path = av_path
             with open("workspace/rendering_video.mp4", "w") as f:
@@ -324,21 +369,32 @@ class AnimateFromCoeff:
         start_time = end_time
         if enhancer:
             video_name_enhancer = x["video_name"] + "_enhanced.mp4"
-            enhanced_path = os.path.join(video_save_dir, "temp_" + shlex.quote(video_name_enhancer))
+            enhanced_path = os.path.join(
+                video_save_dir, "temp_" + shlex.quote(video_name_enhancer)
+            )
             av_path_enhancer = os.path.join(video_save_dir, video_name_enhancer)
             return_path = av_path_enhancer
             enhanced_images = face_enhancer(
-                full_video_path, method=enhancer, bg_upsampler=background_enhancer, rank=rank, p_num=p_num, bf16=bf16
+                full_video_path,
+                method=enhancer,
+                bg_upsampler=background_enhancer,
+                rank=rank,
+                p_num=p_num,
+                bf16=bf16,
             )
 
             imageio.mimsave(enhanced_path, enhanced_images, fps=float(25))
-            save_video_with_watermark(enhanced_path, new_audio_path, av_path_enhancer, watermark=False)
-            print(f"The generated video is named {video_save_dir}/{video_name_enhancer}")
+            save_video_with_watermark(
+                enhanced_path, new_audio_path, av_path_enhancer, watermark=False
+            )
+            print(
+                f"The generated video is named {video_save_dir}/{video_name_enhancer}"
+            )
             os.remove(shlex.quote(enhanced_path))
             end_time = time.time()
             print(f"[***6/6***] enhancing takes: {end_time - start_time} sec")
         else:
-            print(f"[***6/6***] no enhancing")
+            print("[***6/6***] no enhancing")
         os.remove(shlex.quote(path))
         os.remove(shlex.quote(new_audio_path))
 

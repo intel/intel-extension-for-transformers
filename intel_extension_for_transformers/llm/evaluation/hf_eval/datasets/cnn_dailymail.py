@@ -14,24 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import argparse
 import copy
-import fnmatch
 import json
-import logging
 import os
 import random
-import sys
-import time
-from dataclasses import dataclass, field
-from typing import Dict, Optional, Sequence
+from typing import Dict, Sequence
 
 import nltk
-import numpy as np
 import torch
-import torch.nn.functional as F
 import transformers
-from tqdm import tqdm
 from transformers import AutoTokenizer
 
 nltk.download("punkt", quiet=False)
@@ -145,7 +136,7 @@ class CNNDAILYMAIL(object):
         self.calib = calib
 
     def load_dataset(self):
-        """Loads dataset"""
+        """Loads dataset."""
         with open(self.data_path, "r") as fid:
             list_data_dict = json.load(fid)
         if self.num_samples is not None:
@@ -167,7 +158,7 @@ class CNNDAILYMAIL(object):
         self.targets = targets
 
     def load_tokenizer(self):
-        """Returns the tokenizer"""
+        """Returns the tokenizer."""
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_path,
             model_max_length=2048,

@@ -15,16 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import sys
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import evaluate
 import numpy as np
 import torch
 import torch.nn as nn
+import transformers
 from datasets import load_dataset
 from peft import LoraConfig, TaskType, get_peft_model
-import transformers
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -32,8 +34,7 @@ from transformers import (
     PreTrainedTokenizerBase,
     TrainingArguments,
 )
-import logging
-import sys
+
 from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 logger = logging.getLogger(__name__)
@@ -47,9 +48,7 @@ logging.basicConfig(
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
-    """
+    """Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch."""
 
     model_name_or_path: Optional[str] = field(
         default=None,
@@ -111,9 +110,7 @@ class ModelArguments:
 
 @dataclass
 class DataTrainingArguments:
-    """
-    Arguments pertaining to what data we are going to input our model for training and eval.
-    """
+    """Arguments pertaining to what data we are going to input our model for training and eval."""
 
     dataset_name: Optional[str] = field(
         default="Intel/orca_dpo_pairs",
@@ -145,9 +142,7 @@ class DataTrainingArguments:
 
 @dataclass
 class FinetuningArguments:
-    """
-    Arguments of finetune we are going to apply on the model.
-    """
+    """Arguments of finetune we are going to apply on the model."""
 
     lora_rank: int = field(
         default=8,
@@ -194,14 +189,13 @@ def preprocess_function(examples):
         "attention_mask_k": [],
     }
     for system, question, response_j, response_k in zip(
-        examples["system"], examples["question"], examples["chosen"], examples["rejected"]
+        examples["system"],
+        examples["question"],
+        examples["chosen"],
+        examples["rejected"],
     ):
-        tokenized_j = tokenizer(
-            system + question + response_j, truncation=True
-        )
-        tokenized_k = tokenizer(
-            system + question + response_k, truncation=True
-        )
+        tokenized_j = tokenizer(system + question + response_j, truncation=True)
+        tokenized_k = tokenizer(system + question + response_k, truncation=True)
 
         new_examples["input_ids_j"].append(tokenized_j["input_ids"])
         new_examples["attention_mask_j"].append(tokenized_j["attention_mask"])
@@ -286,7 +280,7 @@ if __name__ == "__main__":
             )
         )
     else:
-        from optimum.habana import GaudiTrainingArguments, GaudiTrainer
+        from optimum.habana import GaudiTrainer, GaudiTrainingArguments
         from optimum.habana.utils import set_seed
 
         parser = HfArgumentParser(
@@ -435,7 +429,7 @@ if __name__ == "__main__":
 
     # Train the model, woohoo.
     if hasattr(training_args, "use_habana"):
-        from optimum.habana import GaudiTrainer, GaudiConfig
+        from optimum.habana import GaudiConfig, GaudiTrainer
 
         gaudi_config = GaudiConfig()
         gaudi_config.use_fused_adam = True

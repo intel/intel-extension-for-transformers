@@ -16,57 +16,51 @@
 # limitations under the License.
 """The TextEncoder_AttentionMaskAddReshape Pattern."""
 
-from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
+
 from .. import graph_utils as util
 from .. import logger
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='TextEncoder_AttentionMaskAddReshape')
+@pattern_registry(pattern_type="TextEncoder_AttentionMaskAddReshape")
 class TextEncoder_AttentionMaskAddReshape(Pattern):
     """The TextEncoder_AttentionMaskAddReshape pattern.
 
     Fuse the original sub-graph into the custom acceleration 'TextEncoder_AttentionMaskAddReshape' graph.
     The search strategy is based on the following pattern mapping configs for the stable diffusionV1-5.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             # for text encoder attention mask add (Reshape_6)
-            'TextEncoder_AttentionMaskAddReshape': [
+            "TextEncoder_AttentionMaskAddReshape": [
                 {
-                    'patterns': {
-                        'in': [
-                            [(0, 'Unsqueeze'), (3, 'Concat'), (4, 'Reshape'), (5, 'Add')],
-                            [(), (1, 'Unsqueeze'), (3, 'Concat')],
-                            [(), (2, 'Unsqueeze'), (3, 'Concat')],
+                    "patterns": {
+                        "in": [
+                            [
+                                (0, "Unsqueeze"),
+                                (3, "Concat"),
+                                (4, "Reshape"),
+                                (5, "Add"),
+                            ],
+                            [(), (1, "Unsqueeze"), (3, "Concat")],
+                            [(), (2, "Unsqueeze"), (3, "Concat")],
                         ],
-                        'out': [[(0, 'Reshape'), (1, 'Add')]]
+                        "out": [[(0, "Reshape"), (1, "Add")]],
                     },
-                    'search_mode': 'op_type',
-                    'node_names': {
-                        0: 4,
-                        1: 5
+                    "search_mode": "op_type",
+                    "node_names": {0: 4, 1: 5},
+                    "input_tensors": {
+                        0: [[{4: [0]}, {"input_data": [0]}], [[0, 1], 2]],
+                        1: [[{5: [1]}], [[1], 2]],
                     },
-                    'input_tensors': {
-                        0: [[{
-                            4: [0]
-                        }, {
-                            'input_data': [0]
-                        }], [[0, 1], 2]],
-                        1: [[{
-                            5: [1]
-                        }], [[1], 2]],
+                    "output_tensors": {
+                        0: [[{4: [0]}], [[0], 1]],
+                        1: [[{5: [0]}], [[0], 1]],
                     },
-                    'output_tensors': {
-                        0: [[{
-                            4: [0]
-                        }], [[0], 1]],
-                        1: [[{
-                            5: [0]
-                        }], [[0], 1]]
-                    },
-                    'returns': [3]
+                    "returns": [3],
                 },
             ]
         }
@@ -74,19 +68,26 @@ class TextEncoder_AttentionMaskAddReshape(Pattern):
         def _set_attr(hidden_size, node_names, model, reshape_idx=0):
             attr = OrderedDict()
             # bsz, hidden_size, max_seq, max_seq
-            attr['dst_shape'] = '-1,' + str(hidden_size) + ',-1,-1'
-            attr['dims'] = '0,1,1'
+            attr["dst_shape"] = "-1," + str(hidden_size) + ",-1,-1"
+            attr["dims"] = "0,1,1"
             reshape_node_idx = model.get_node_id(node_names[reshape_idx])
             model.nodes[reshape_node_idx].attr = attr
 
-        for i in range(len(pattern_mapping_config['TextEncoder_AttentionMaskAddReshape'])):
-            pattern_dict = pattern_mapping_config['TextEncoder_AttentionMaskAddReshape'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("TextEncoder_AttentionMaskAddReshape",
-                                                                        pattern_dict, model)
+        for i in range(
+            len(pattern_mapping_config["TextEncoder_AttentionMaskAddReshape"])
+        ):
+            pattern_dict = pattern_mapping_config[
+                "TextEncoder_AttentionMaskAddReshape"
+            ][i]
+            model, new_node_names, ret_old_nodes = util.pattern_mapping(
+                "TextEncoder_AttentionMaskAddReshape", pattern_dict, model
+            )
 
             if len(new_node_names) != 0:
-                logger.info('TextEncoder_AttentionMaskAddReshape matched...')
-                logger.debug('TextEncoder_AttentionMaskAddReshape = {}'.format(new_node_names))
+                logger.info("TextEncoder_AttentionMaskAddReshape matched...")
+                logger.debug(
+                    "TextEncoder_AttentionMaskAddReshape = {}".format(new_node_names)
+                )
                 for j in range(len(new_node_names)):
                     concat_node = ret_old_nodes[j][0]
                     hidden_size = int(concat_node.input_tensors[-3].data)

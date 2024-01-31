@@ -15,13 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import numpy as np
-import os
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 import copy
+import os
+import unittest
+
+import numpy as np
+
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import (
+    OPERATORS,
+)
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import (
+    Tensor,
+)
 
 
 class TestExecutionOptions(unittest.TestCase):
@@ -35,55 +41,88 @@ class TestExecutionOptions(unittest.TestCase):
 
     def test_execution_options(self):
         graph = Graph()
-        graph.framework_modeling_config['framework'] = 'onnxruntime'
-        input_data_node = OPERATORS['Input']()
+        graph.framework_modeling_config["framework"] = "onnxruntime"
+        input_data_node = OPERATORS["Input"]()
         input_tensors = []
         output_tensors = [Tensor(name="activation", shape=[-1, -1], dtype="fp32")]
-        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors, 
-                                output_tensors=output_tensors)
-        ip_node = OPERATORS['InnerProduct']()
-        input_tensors = [Tensor(name="activation", shape=[-1, -1], dtype="fp32"),
-                        Tensor(name="weight", shape=[256, 256], dtype="fp32",
-                        data=np.random.randn(256, 256).astype(np.float32)),
-                        Tensor(name="bias", shape=[256], dtype="fp32",
-                        data=np.random.randn(256).astype(np.float32))]
-        output_tensors = [Tensor(name='ip:0', source_op=['ip'], dest_op=['output_data']),
-                          Tensor(name='ip:1', source_op=['ip'], dest_op=['output_data'])]
-        ip_node.construct('ip', 'InnerProduct', input_tensors=input_tensors,
-                                output_tensors=output_tensors)
-        output_node = OPERATORS['Output']()
-        input_tensors = [Tensor(name='ip:0', source_op=['ip'], dest_op=['output_data'])]
+        input_data_node.construct(
+            "input_data",
+            "Input",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+        )
+        ip_node = OPERATORS["InnerProduct"]()
+        input_tensors = [
+            Tensor(name="activation", shape=[-1, -1], dtype="fp32"),
+            Tensor(
+                name="weight",
+                shape=[256, 256],
+                dtype="fp32",
+                data=np.random.randn(256, 256).astype(np.float32),
+            ),
+            Tensor(
+                name="bias",
+                shape=[256],
+                dtype="fp32",
+                data=np.random.randn(256).astype(np.float32),
+            ),
+        ]
+        output_tensors = [
+            Tensor(name="ip:0", source_op=["ip"], dest_op=["output_data"]),
+            Tensor(name="ip:1", source_op=["ip"], dest_op=["output_data"]),
+        ]
+        ip_node.construct(
+            "ip",
+            "InnerProduct",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+        )
+        output_node = OPERATORS["Output"]()
+        input_tensors = [Tensor(name="ip:0", source_op=["ip"], dest_op=["output_data"])]
         output_tensors = []
-        output_node.construct('output_data', 'Output', input_tensors=input_tensors,
-                                output_tensors=output_tensors)
+        output_node.construct(
+            "output_data",
+            "Output",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+        )
         graph.insert_nodes(len(graph.nodes), [input_data_node, ip_node, output_node])
-        graph.change_node_output_tensors('ip', -1, mode='remove')
-        options = {'enable_op_tuning': True,
-                   'dispatch_table_file_root': 'dispatch_table.txt',
-                   'execution_mode': 'tuning',
-                   'warmup_iter': 2
-                  }
+        graph.change_node_output_tensors("ip", -1, mode="remove")
+        options = {
+            "enable_op_tuning": True,
+            "dispatch_table_file_root": "dispatch_table.txt",
+            "execution_mode": "tuning",
+            "warmup_iter": 2,
+        }
         data = np.random.randn(128, 256).astype(np.float32)
         graph.execution_options = options
         output_tuning = []
         for i in range(10):
             out = graph.inference([data])
-            output_tuning.append(copy.deepcopy(out['ip:0']))
+            output_tuning.append(copy.deepcopy(out["ip:0"]))
         output_inference = []
-        options = {'enable_op_tuning': False,
-                   'dispatch_table_file_root': 'dispatch_table.txt',
-                   'execution_mode': 'inference'
-                   }
+        options = {
+            "enable_op_tuning": False,
+            "dispatch_table_file_root": "dispatch_table.txt",
+            "execution_mode": "inference",
+        }
         graph.execution_options = options
         for i in range(10):
             out = graph.inference([data])
-            output_inference.append(copy.deepcopy(out['ip:0']))
-        flag = np.allclose(np.array(output_tuning), np.array(output_inference), atol=1e-1,
-                           equal_nan=True)
-        self.assertTrue(os.path.exists(graph.execution_options.dispatch_table_file_root))
+            output_inference.append(copy.deepcopy(out["ip:0"]))
+        flag = np.allclose(
+            np.array(output_tuning),
+            np.array(output_inference),
+            atol=1e-1,
+            equal_nan=True,
+        )
+        self.assertTrue(
+            os.path.exists(graph.execution_options.dispatch_table_file_root)
+        )
         self.assertFalse(graph.execution_options.enable_op_tuning)
         self.assertTrue(flag)
         os.remove(graph.execution_options.dispatch_table_file_root)
+
 
 if __name__ == "__main__":
     unittest.main()

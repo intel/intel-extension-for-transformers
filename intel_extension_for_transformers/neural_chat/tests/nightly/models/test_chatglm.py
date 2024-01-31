@@ -15,10 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.models.chatglm_model import ChatGlmModel
-from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
-from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 import unittest
+
+from intel_extension_for_transformers.neural_chat import PipelineConfig, build_chatbot
+from intel_extension_for_transformers.neural_chat.models.chatglm_model import (
+    ChatGlmModel,
+)
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
+
 
 class TestChatGlmModel(unittest.TestCase):
     def setUp(self):
@@ -29,19 +33,26 @@ class TestChatGlmModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = ChatGlmModel().match(model_path='/tf_dataset2/models/pytorch/chatglm2-6b')
+        result = ChatGlmModel().match(
+            model_path="/tf_dataset2/models/pytorch/chatglm2-6b"
+        )
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
         if self.device == "hpu":
             self.skipTest("ChatGLM is not supported on HPU.")
-        result = ChatGlmModel().get_default_conv_template(model_path='/tf_dataset2/models/pytorch/chatglm2-6b')
-        self.assertIn('问', str(result))
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/pytorch/chatglm2-6b")
+        result = ChatGlmModel().get_default_conv_template(
+            model_path="/tf_dataset2/models/pytorch/chatglm2-6b"
+        )
+        self.assertIn("问", str(result))
+        config = PipelineConfig(
+            model_name_or_path="/tf_dataset2/models/pytorch/chatglm2-6b"
+        )
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("中国最大的城市是哪个？")
         print(result)
-        self.assertIn('上海', str(result))
+        self.assertIn("上海", str(result))
+
 
 if __name__ == "__main__":
     unittest.main()

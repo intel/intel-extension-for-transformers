@@ -17,22 +17,24 @@
 
 
 import unittest
+
 from intel_extension_for_transformers.neural_chat.server.server_commands import (
-    get_server_command, NeuralChatServerHelpCommand, 
-    get_client_command, NeuralChatClientHelpCommand,
-    neuralchat_server_execute, neuralchat_client_execute,
-    NeuralChatClientBaseCommand
+    NeuralChatClientHelpCommand,
+    NeuralChatServerHelpCommand,
+    get_client_command,
+    get_server_command,
+    neuralchat_client_execute,
+    neuralchat_server_execute,
 )
 
 
 class TestServerCommand(unittest.TestCase):
-
     def test_get_server_command(self):
-        res = get_server_command('neuralchat_server.help')
+        res = get_server_command("neuralchat_server.help")
         self.assertIs(res, NeuralChatServerHelpCommand)
-        
+
     def test_get_client_command(self):
-        res = get_client_command('neuralchat_client.help')
+        res = get_client_command("neuralchat_client.help")
         self.assertIs(res, NeuralChatClientHelpCommand)
 
     def test_neuralchat_server_execute(self):

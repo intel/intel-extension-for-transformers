@@ -21,14 +21,15 @@ from typing import List
 
 class Criterion(object):
     """Criterion class for distillation."""
+
     def __init__(
         self,
         name: str = "KNOWLEDGELOSS",
         temperature: float = 1.0,
-        loss_types: List = ['CE', 'CE'],
+        loss_types: List = ["CE", "CE"],
         loss_weight_ratio: List = [0.5, 0.5],
         layer_mappings: List = None,
-        add_origin_loss: bool = False
+        add_origin_loss: bool = False,
     ):
         """Init a Criterion object."""
         self.name = name
@@ -41,10 +42,11 @@ class Criterion(object):
 
 class DistillationCriterionMode(Enum):
     """Criterion mode class for distillation."""
+
     KNOWLEDGELOSS = "KnowledgeDistillationLoss"
     INTERMEDIATELAYERSLOSS = "IntermediateLayersKnowledgeDistillationLoss"
-    
 
 
-SUPPORTED_DISTILLATION_CRITERION_MODE = \
-    set([approach.name for approach in DistillationCriterionMode])
+SUPPORTED_DISTILLATION_CRITERION_MODE = set(
+    [approach.name for approach in DistillationCriterionMode]
+)

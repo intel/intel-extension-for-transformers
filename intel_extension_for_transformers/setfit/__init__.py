@@ -15,10 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .modeling import SetFitHead, SetFitModel
-from .trainer import SetFitTrainer
-from .trainer_distillation import DistillationSetFitTrainer
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
+
 
 setfit = LazyImport("setfit")
 add_templated_examples = setfit.add_templated_examples

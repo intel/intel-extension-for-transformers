@@ -20,8 +20,10 @@ import sys
 
 import model
 
-parser = argparse.ArgumentParser(prog='neural chat command line tool')
-parser.add_argument("--model", choices=['gpt-3.5-turbo', 'llama-7b-hf'], default='gpt-3.5-turbo')
+parser = argparse.ArgumentParser(prog="neural chat command line tool")
+parser.add_argument(
+    "--model", choices=["gpt-3.5-turbo", "llama-7b-hf"], default="gpt-3.5-turbo"
+)
 parser.add_argument("--endpoint", default=None, type=str)
 parser.add_argument("--key", default=None, type=str)
 
@@ -29,7 +31,7 @@ args = parser.parse_args()
 
 bot: model.ChatModel = None
 
-if args.model == 'gpt-3.5-turbo':
+if args.model == "gpt-3.5-turbo":
     if args.endpoint is not None:
         raise "OpenAI model does not need provide endpoint"
     if args.key is None:

@@ -13,30 +13,29 @@ The main purpose of graph fusion and optimization is to simplify the network and
 Here is an example of a pattern mapping dict (a LayerNorm pattern in doc [add_customized_pattern](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/add_customized_pattern.md)): 
 
 ```python
-{    'patterns': {
-                 'in': [[(0, 'ReduceMean'), (1, 'Sub'), (2, 'Pow'), (3, 'ReduceMean'), (4, 'Add'), (5, 'Sqrt'), (6, 'Div'), (7,'Mul'), (8, 'Add')]],
-                 'out': [[(0, 'LayerNorm')]]
-                 },
-     'search_mode': 'op_type',
-     'node_names': {
-                    0: 8
-                   },
-     'input_tensors': {
-                        0: [[{
-                            0: [0]
-                        }, {
-                            7: [1]
-                        }, {
-                            8: [1]
-                        }], [[0, 1, 2], 3]]
-                       },
-     'output_tensors': {
-                        0: [[{
-                            8: [0]
-                        }], [[0], 1]]
-                    },
-     'returns': [4]
-     }
+{
+    "patterns": {
+        "in": [
+            [
+                (0, "ReduceMean"),
+                (1, "Sub"),
+                (2, "Pow"),
+                (3, "ReduceMean"),
+                (4, "Add"),
+                (5, "Sqrt"),
+                (6, "Div"),
+                (7, "Mul"),
+                (8, "Add"),
+            ]
+        ],
+        "out": [[(0, "LayerNorm")]],
+    },
+    "search_mode": "op_type",
+    "node_names": {0: 8},
+    "input_tensors": {0: [[{0: [0]}, {7: [1]}, {8: [1]}], [[0, 1, 2], 3]]},
+    "output_tensors": {0: [[{8: [0]}], [[0], 1]]},
+    "returns": [4],
+}
 ```
 
 - `patterns` : gives the patterns representations before (`in`) and after (`out`) mapping. It is a dict with two keys (`in` and `out`), and the values are the corresponding pattern representations. About the representation, refer to [pattern_recognition](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/pattern_recognize.md).

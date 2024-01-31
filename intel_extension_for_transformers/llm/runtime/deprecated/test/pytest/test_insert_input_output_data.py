@@ -17,13 +17,24 @@
 
 import os
 import unittest
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.input_data import InputData
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.output_data import OutputData
 
-os.environ['GLOG_minloglevel'] = '2'
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import (
+    OPERATORS,
+)
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import (
+    Tensor,
+)
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.input_data import (
+    InputData,
+)
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.output_data import (
+    OutputData,
+)
+
+os.environ["GLOG_minloglevel"] = "2"
+
+
 class TestInsertInputOuputData(unittest.TestCase):
     @classmethod
     def setUpClass(self):
@@ -36,13 +47,17 @@ class TestInsertInputOuputData(unittest.TestCase):
     def test_input_output_data(self):
         # construct graph
         graph = Graph()
-        graph.framework_modeling_config['framework'] = 'onnxruntime'
+        graph.framework_modeling_config["framework"] = "onnxruntime"
         # insert input node
-        input_data_node = OPERATORS['ONNXINPUT']()
+        input_data_node = OPERATORS["ONNXINPUT"]()
         input_tensors = []
         output_tensors = [Tensor()]
-        input_data_node.construct('input_data', 'ONNXINPUT', input_tensors=input_tensors,
-                                output_tensors=output_tensors)
+        input_data_node.construct(
+            "input_data",
+            "ONNXINPUT",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+        )
         graph.insert_nodes(0, [input_data_node])
         # compile input and output
         graph = InputData()(graph)
@@ -51,6 +66,7 @@ class TestInsertInputOuputData(unittest.TestCase):
         self.assertEqual(2, len(graph.nodes))
         self.assertEqual("Input", graph.nodes[0].op_type)
         self.assertEqual("Output", graph.nodes[1].op_type)
+
 
 if __name__ == "__main__":
     unittest.main()

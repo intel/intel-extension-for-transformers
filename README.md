@@ -180,6 +180,7 @@ neuralchat_server start --config_file ./server/config/neuralchat.yaml
 ```python
 # Python Code
 from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+
 server_executor = NeuralChatServerExecutor()
 server_executor(config_file="./server/config/neuralchat.yaml", log_file="./neuralchat.log")
 ```
@@ -190,6 +191,7 @@ NeuralChat service can be accessible through [OpenAI client library](https://git
 
 ```python
 from intel_extension_for_transformers.neural_chat import build_chatbot
+
 chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
@@ -201,7 +203,8 @@ Below is the sample code to use the extended Transformers APIs. See more [exampl
 ```python
 from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v3-1"     
+
+model_name = "Intel/neural-chat-7b-v3-1"
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -218,12 +221,12 @@ from intel_extension_for_transformers.transformers import AutoModelForCausalLM, 
 
 # Download Hugging Face GPTQ/AWQ model or use local quantize model
 model_name = "PATH_TO_MODEL"  # local path to model
-woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ; use_autoround=True for AutoRound
+woq_config = WeightOnlyQuantConfig(use_gptq=True)  # use_awq=True for AWQ; use_autoround=True for AutoRound
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 outputs = model.generate(inputs)
 ```
 
@@ -234,13 +237,14 @@ from intel_extension_for_transformers.transformers.modeling import AutoModelForC
 from transformers import AutoTokenizer
 
 device_map = "xpu"
-model_name ="Qwen/Qwen-7B"
+model_name = "Qwen/Qwen-7B"
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 prompt = "Once upon a time, there existed a little girl,"
 inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
 
-model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
-                                              device_map=device_map, load_in_4bit=True)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name, trust_remote_code=True, device_map=device_map, load_in_4bit=True
+)
 
 # optimize the model with ipex, it will improve performance.
 model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
@@ -257,6 +261,7 @@ from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain_core.vectorstores import VectorStoreRetriever
 from intel_extension_for_transformers.langchain.vectorstores import Chroma
+
 retriever = VectorStoreRetriever(vectorstore=Chroma(...))
 retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```

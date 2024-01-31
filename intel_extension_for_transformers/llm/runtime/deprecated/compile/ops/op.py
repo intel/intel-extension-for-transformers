@@ -14,14 +14,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator file."""
 
-from abc import abstractmethod
-from collections import namedtuple, OrderedDict
-from .tensor import Tensor
-from .. import logger
-from ..graph_utils import list2str
+from collections import OrderedDict
+
 
 OPERATORS = {}
 
@@ -36,6 +32,7 @@ def operator_registry(operator_type):
     Returns:
         cls: The class of register.
     """
+
     def decorator_operator(cls):
         if isinstance(operator_type, str):
             type_list = [operator_type]
@@ -45,11 +42,12 @@ def operator_registry(operator_type):
             type_list = operator_type
         for type in type_list:
             if type in OPERATORS:
-                raise ValueError('Cannot have two operators with the same name')
+                raise ValueError("Cannot have two operators with the same name")
             OPERATORS[type] = cls
         return cls
 
     return decorator_operator
+
 
 def parseTorchListConstruct(lc_value):
     node = lc_value.node()
@@ -59,15 +57,16 @@ def parseTorchListConstruct(lc_value):
         values.append(in_val.toIValue())
     return values
 
+
 class Operator(object):
     """The class of neural engine operator."""
 
     def __init__(self):
         """The init function of this operator."""
-        self._name = ''
-        self._op_type = ''
-        self._input_tensors= []
-        self._output_tensors= []
+        self._name = ""
+        self._op_type = ""
+        self._input_tensors = []
+        self._output_tensors = []
         self._attr = OrderedDict()
         # ['extract_from_framework', 'construct']
         self._filling_method = None
@@ -132,56 +131,60 @@ class Operator(object):
 
     def extract(self, framework, node, framework_model, nodes_dict, engine_graph=None):
         """Extract the op from framework."""
-        from ..tf_utils import tf_extract_operator
         from ..onnx_utils import onnx_extract_operator
+        from ..tf_utils import tf_extract_operator
         from ..torch_utils import torch_extract_operator
 
         OP_EXTRACTORS = {
-            'tensorflow': tf_extract_operator,
-            'onnxruntime': onnx_extract_operator,
-            'torch': torch_extract_operator,
+            "tensorflow": tf_extract_operator,
+            "onnxruntime": onnx_extract_operator,
+            "torch": torch_extract_operator,
         }
         if framework == "torch":
             from ..torch_utils import get_node_name
+
             self._name = get_node_name(node)
         else:
             self._name = node.name
-        self._op_type, self._input_tensors, self._output_tensors = OP_EXTRACTORS[framework](
-            node, framework_model, nodes_dict, engine_graph)
+        self._op_type, self._input_tensors, self._output_tensors = OP_EXTRACTORS[
+            framework
+        ](node, framework_model, nodes_dict, engine_graph)
         self.set_attr(framework, node)
-        self._filling_method = 'extract_from_' + framework
+        self._filling_method = "extract_from_" + framework
 
-    def construct(self, name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict()):
+    def construct(
+        self, name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict()
+    ):
         """Make the op by set the attributes."""
         self._name = name
         self._op_type = op_type
         self._input_tensors = input_tensors
         self._output_tensors = output_tensors
         self._attr = attr
-        self._filling_method = 'construct'
+        self._filling_method = "construct"
 
     @property
     def config(self):
         """Get the op config in the graph."""
         conf_dict = OrderedDict()
         # conf_dict['type'] = self._op_type
-        conf_dict['type'] = self._op_type
+        conf_dict["type"] = self._op_type
         if len(self._input_tensors) > 0:
-            conf_dict['input'] = OrderedDict()
+            conf_dict["input"] = OrderedDict()
             for input_tensor in self._input_tensors:
-                if self._op_type == 'Input':
-                    conf_dict['input'][input_tensor.name] = input_tensor.config
+                if self._op_type == "Input":
+                    conf_dict["input"][input_tensor.name] = input_tensor.config
                 else:
-                    conf_dict['input'][input_tensor.name] = {}
+                    conf_dict["input"][input_tensor.name] = {}
         if len(self._output_tensors) > 0:
-            conf_dict['output'] = OrderedDict()
+            conf_dict["output"] = OrderedDict()
             for output_tensor in self._output_tensors:
-                if self._op_type == 'Input':
-                    conf_dict['output'][output_tensor.name] = output_tensor.config
+                if self._op_type == "Input":
+                    conf_dict["output"][output_tensor.name] = output_tensor.config
                 else:
-                    conf_dict['output'][output_tensor.name] = {}
+                    conf_dict["output"][output_tensor.name] = {}
 
         if isinstance(self._attr, dict) and len(self._attr.keys()) > 0:
-            conf_dict['attr'] = self._attr
+            conf_dict["attr"] = self._attr
 
         return conf_dict

@@ -15,17 +15,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import re
 import logging
+import re
 
-from neural_compressor.compression.pruner.utils import process_config, parse_to_prune, \
-    check_config, update_params
 from neural_compressor.compression.pruner.pruners import get_pruner
+from neural_compressor.compression.pruner.utils import (
+    check_config,
+    parse_to_prune,
+    process_config,
+    update_params,
+)
 
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 
-LazyImport('torch.nn')
-torch = LazyImport('torch')
+LazyImport("torch.nn")
+torch = LazyImport("torch")
 logger = logging.getLogger()
 
 
@@ -95,7 +99,10 @@ class Pruning:
         linear_conv_cnt = 0
         param_cnt = 0
         for name, module in self._model.named_modules():
-            if type(module).__name__ in ["Linear"] or re.search(r'Conv.d', type(module).__name__) != None:
+            if (
+                type(module).__name__ in ["Linear"]
+                or re.search(r"Conv.d", type(module).__name__) != None
+            ):
                 linear_conv_cnt += module.weight.numel()
 
         for n, param in self._model.named_parameters():
@@ -104,15 +111,22 @@ class Pruning:
             blockwise_over_matmul_gemm_conv = 0
             elementwise_over_matmul_gemm_conv = 0
         else:
-            blockwise_over_matmul_gemm_conv = float(pattern_sparsity_cnt) / linear_conv_cnt
-            elementwise_over_matmul_gemm_conv = float(element_sparsity_cnt) / linear_conv_cnt
+            blockwise_over_matmul_gemm_conv = (
+                float(pattern_sparsity_cnt) / linear_conv_cnt
+            )
+            elementwise_over_matmul_gemm_conv = (
+                float(element_sparsity_cnt) / linear_conv_cnt
+            )
         if param_cnt == 0:  # pragma: no cover
             elementwise_over_all = 0
         else:
-            elementwise_over_all = float(
-                element_sparsity_cnt) / param_cnt
+            elementwise_over_all = float(element_sparsity_cnt) / param_cnt
 
-        return elementwise_over_matmul_gemm_conv, elementwise_over_all, blockwise_over_matmul_gemm_conv
+        return (
+            elementwise_over_matmul_gemm_conv,
+            elementwise_over_all,
+            blockwise_over_matmul_gemm_conv,
+        )
 
     def _generate_pruners(self):
         """Obtain Pruner objects."""
@@ -124,8 +138,8 @@ class Pruning:
                 logger.warning("one pruner hooks no layers, please have a check")
 
             self.pruners.append(get_pruner(info, modules))
-            info['modules'] = [key for key in modules.keys()]
-            info['len_of_modules'] = len(info['modules'])
+            info["modules"] = [key for key in modules.keys()]
+            info["len_of_modules"] = len(info["modules"])
             logger.info(info)
 
     def on_train_begin(self):

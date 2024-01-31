@@ -1,5 +1,17 @@
-"""
-A model worker executes the model based on Cacheflow.
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""A model worker executes the model based on Cacheflow.
 
 Install Cacheflow first. Then, assuming controller is live:
 1. ray start --head
@@ -14,21 +26,20 @@ import json
 import threading
 import time
 import uuid
-from typing import List, Dict
+from typing import Dict, List
 
 import requests
 import torch
 import uvicorn
-from fastapi import FastAPI, Request, BackgroundTasks
-from fastapi.responses import StreamingResponse
-from transformers import AutoTokenizer
-
 from cacheflow.master.server import Server, initialize_ray_cluster
 from cacheflow.sampling_params import SamplingParams
 from cacheflow.sequence import Sequence, SequenceGroup
-from cacheflow.utils import Counter, get_gpu_memory, get_cpu_memory
+from cacheflow.utils import Counter, get_cpu_memory, get_gpu_memory
+from fastapi import BackgroundTasks, FastAPI, Request
+from fastapi.responses import StreamingResponse
 from fastchat.constants import WORKER_HEART_BEAT_INTERVAL
 from fastchat.utils import build_logger, pretty_print_semaphore
+from transformers import AutoTokenizer
 
 GB = 1 << 30
 TIMEOUT_TO_PREVENT_DEADLOCK = 1  # seconds

@@ -14,44 +14,40 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""The wrapper for Chroma retriever based on langchain"""
+"""The wrapper for Chroma retriever based on langchain."""
 from __future__ import annotations
-import base64
-import logging, os
+
+import logging
+import os
 import uuid
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
-    Iterable,
     List,
     Optional,
-    Tuple,
     Type,
 )
-import numpy as np
-from langchain_core.documents import Document
-from langchain.vectorstores.chroma import Chroma as Chroma_origin
-from langchain_core.embeddings import Embeddings
-from langchain_core.utils import xor_args
-from langchain_core.vectorstores import VectorStore
+
 import chromadb
 import chromadb.config
-_DEFAULT_PERSIST_DIR = './output'
+from langchain.vectorstores.chroma import Chroma as Chroma_origin
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
+
+_DEFAULT_PERSIST_DIR = "./output"
 _LANGCHAIN_DEFAULT_COLLECTION_NAME = "langchain"
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
 
 
 class Chroma(Chroma_origin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
+
     @classmethod
     def from_texts(
         cls: Type[Chroma],
@@ -149,9 +145,9 @@ class Chroma(Chroma_origin):
         """
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
-        if 'doc_id' in metadatas[0]: 
-            ids = [doc.metadata['doc_id'] for doc in documents]
-        if sign == 'child':
+        if "doc_id" in metadatas[0]:
+            ids = [doc.metadata["doc_id"] for doc in documents]
+        if sign == "child":
             persist_directory = persist_directory + "_child"
         return cls.from_texts(
             texts=texts,
@@ -166,21 +162,20 @@ class Chroma(Chroma_origin):
             **kwargs,
         )
 
-
     @classmethod
     def build(
-            cls: Type[Chroma],
-            documents: List[Document],
-            sign: Optional[str] = None,
-            embedding: Optional[Embeddings] = None,
-            metadatas: Optional[List[dict]] = None,
-            ids: Optional[List[str]] = None,
-            collection_name: str = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
-            persist_directory: Optional[str] = None,
-            client_settings: Optional[chromadb.config.Settings] = None,
-            client: Optional[chromadb.Client] = None,
-            collection_metadata: Optional[Dict] = None,
-            **kwargs: Any,
+        cls: Type[Chroma],
+        documents: List[Document],
+        sign: Optional[str] = None,
+        embedding: Optional[Embeddings] = None,
+        metadatas: Optional[List[dict]] = None,
+        ids: Optional[List[str]] = None,
+        collection_name: str = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
+        persist_directory: Optional[str] = None,
+        client_settings: Optional[chromadb.config.Settings] = None,
+        client: Optional[chromadb.Client] = None,
+        collection_metadata: Optional[Dict] = None,
+        **kwargs: Any,
     ) -> Chroma:
         if not persist_directory:
             persist_directory = _DEFAULT_PERSIST_DIR
@@ -213,20 +208,18 @@ class Chroma(Chroma_origin):
                 **kwargs,
             )
             return chroma_collection
-            
 
     @classmethod
     def reload(
-            cls: Type[Chroma],
-            collection_name: str = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
-            embedding: Optional[Embeddings] = None,
-            persist_directory: Optional[str] = None,
-            client_settings: Optional[chromadb.config.Settings] = None,
-            collection_metadata: Optional[Dict] = None,
-            client: Optional[chromadb.Client] = None,
-            relevance_score_fn: Optional[Callable[[float], float]] = None,
+        cls: Type[Chroma],
+        collection_name: str = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
+        embedding: Optional[Embeddings] = None,
+        persist_directory: Optional[str] = None,
+        client_settings: Optional[chromadb.config.Settings] = None,
+        collection_metadata: Optional[Dict] = None,
+        client: Optional[chromadb.Client] = None,
+        relevance_score_fn: Optional[Callable[[float], float]] = None,
     ) -> Chroma:
-        
         if not persist_directory:
             persist_directory = _DEFAULT_PERSIST_DIR
         chroma_collection = cls(
@@ -238,4 +231,3 @@ class Chroma(Chroma_origin):
             collection_metadata=collection_metadata,
         )
         return chroma_collection
-    

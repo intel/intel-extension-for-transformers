@@ -87,13 +87,16 @@ pip install neural-compressor
 ```python
 from datasets import load_dataset, load_metric
 import numpy as np
-from transformers import AutoConfig,AutoModelForSequenceClassification,AutoTokenizer, EvalPrediction
+from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer, EvalPrediction
+
 # load dataset and tokenizer
 raw_datasets = load_dataset("glue", "sst2")
 # pre-trained model is available on https://huggingface.co/models
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
 # preprocess dataset
-raw_datasets = raw_datasets.map(lambda e: tokenizer(e['sentence'], truncation=True, padding='max_length', max_length=128), batched=True)
+raw_datasets = raw_datasets.map(
+    lambda e: tokenizer(e["sentence"], truncation=True, padding="max_length", max_length=128), batched=True
+)
 ```
 #### 3.3 Model Compression
 Documentation for API usage can be found [here](https://github.com/intel/intel-extension-for-transformers/tree/main/docs)
@@ -101,23 +104,30 @@ Documentation for API usage can be found [here](https://github.com/intel/intel-e
 ```python
 from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
+
 # load config, model and metric
-config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
+config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english", num_labels=2)
 # pre-trained model is available on https://huggingface.co/models
-model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",config=config)
+model = AutoModelForSequenceClassification.from_pretrained(
+    "distilbert-base-uncased-finetuned-sst-2-english", config=config
+)
 model.config.label2id = {0: 0, 1: 1}
-model.config.id2label = {0: 'NEGATIVE', 1: 'POSITIVE'}
+model.config.id2label = {0: "NEGATIVE", 1: "POSITIVE"}
 metric = load_metric("glue", "sst2")
+
+
 def compute_metrics(p: EvalPrediction):
     preds = np.argmax(p.predictions, axis=1)
     return metric.compute(predictions=preds, references=p.label_ids)
 
+
 # Replace transformers.Trainer with NLPTrainer
-trainer = NLPTrainer(model=model,
+trainer = NLPTrainer(
+    model=model,
     train_dataset=raw_datasets["train"],
     eval_dataset=raw_datasets["validation"],
     compute_metrics=compute_metrics,
-    tokenizer=tokenizer
+    tokenizer=tokenizer,
 )
 # model quantization using trainer
 q_config = QuantizationConfig(metrics=[metrics.Metric(name="eval_accuracy")])
@@ -140,8 +150,9 @@ For deployment, we show how to use Neural Engine for model inference. For additi
 ```python
 import os
 from examples.deployment.neural_engine.common import log, set_log_file, load_graph, DummyDataLoader, compute_performance
+
 # reduce log size by setting GLOG_minloglevel=2
-os.environ['GLOG_minloglevel'] = '2'
+os.environ["GLOG_minloglevel"] = "2"
 # set log file
 set_log_file(log, "benchmark.log")
 # input model is quantized onnx model obtained in previous section
@@ -151,10 +162,9 @@ graph = load_graph(input_model)
 # define dataset shape and generate dataloader
 batch_size, seq_len, warm_up = 8, 128, 10
 shape = [batch_size, seq_len]
-dataset = DummyDataLoader(shapes=[shape,  shape], lows=[0, 0], highs=[128, 1], dtypes=['int32', 'int32'], iteration=100)
+dataset = DummyDataLoader(shapes=[shape, shape], lows=[0, 0], highs=[128, 1], dtypes=["int32", "int32"], iteration=100)
 # run performance benchmark
 compute_performance(dataset, graph, log, "benchmark.log", warm_up, batch_size, seq_len)
-
 ```
 Visit [Intel® Extension for Transformers online document](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html,) for more API details. 
 

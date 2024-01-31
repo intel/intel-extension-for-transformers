@@ -15,17 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import argparse
-import subprocess
+import logging
+import os
 import shlex
+import subprocess
 
 from pydub import AudioSegment
-import logging
+
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
 
 
@@ -44,35 +45,39 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
         filename_suffix = os.path.splitext(filename)[1]
         logging.info(filename)
         input_file_path = os.path.join(path, filename)
-        output_file_path = os.path.join(output_dir, os.path.splitext(filename)[0] + ".wav")
-        if filename_suffix == '.flv': # pragma: no cover
+        output_file_path = os.path.join(
+            output_dir, os.path.splitext(filename)[0] + ".wav"
+        )
+        if filename_suffix == ".flv":  # pragma: no cover
             sound = AudioSegment.from_flv(input_file_path)
             sound = sound.set_frame_rate(output_sample_rate)
             if is_mono:
                 sound = sound.set_channels(1)
             sound.export(os.path.join(output_file_path), format="wav")
-        elif filename_suffix == '.mp4' or filename_suffix == '.mp3':
+        elif filename_suffix == ".mp4" or filename_suffix == ".mp3":
             # file name should not contain space.
             if is_mono:
                 cmd = "ffmpeg -i {} -ac 1 -ar {} -f wav {}".format(
-                    input_file_path, output_sample_rate, output_file_path).split()
-            else: # pragma: no cover
+                    input_file_path, output_sample_rate, output_file_path
+                ).split()
+            else:  # pragma: no cover
                 cmd = "ffmpeg -i {} -ac 2 -ar {} -f wav {}".format(
-                    input_file_path, output_sample_rate, output_file_path).split()
+                    input_file_path, output_sample_rate, output_file_path
+                ).split()
             try:
                 subprocess.run(cmd, check=True)
-            except subprocess.CalledProcessError as e: # pragma: no cover
+            except subprocess.CalledProcessError as e:  # pragma: no cover
                 logging.error("Error while executing command: %s", e)
-        else: # pragma: no cover
+        else:  # pragma: no cover
             logging.info("file %s format not supported!", filename)
             continue
-        
 
-if __name__ == '__main__': # pragma: no cover
+
+if __name__ == "__main__":  # pragma: no cover
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--path", type=str, required=True)
-    parser.add_argument("--is_mono", type=str, default='True')
-    parser.add_argument("--sr", type=str, default='16000')
+    parser.add_argument("--is_mono", type=str, default="True")
+    parser.add_argument("--sr", type=str, default="16000")
     args = parser.parse_args()
     output_sample_rate = shlex.quote(args.sr)
     is_exist = os.path.exists(shlex.quote(args.path))

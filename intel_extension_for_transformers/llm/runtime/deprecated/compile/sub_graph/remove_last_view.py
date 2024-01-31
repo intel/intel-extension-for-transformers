@@ -14,17 +14,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The RemoveLastView Pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
-from .. import graph_utils as util
-from .subgraph_matcher import EXECUTOR_TYPE
-import numpy as np
-import copy
 
-@pattern_registry(pattern_type='RemoveLastView')
+
+from .pattern import Pattern, pattern_registry
+
+
+@pattern_registry(pattern_type="RemoveLastView")
 class RemoveLastView(Pattern):
     """The RemoveLastView pattern.
 
@@ -34,11 +31,11 @@ class RemoveLastView(Pattern):
 
     def __call__(self, model):
         """The __call__ function of this pattern class."""
-        if model.framework_modeling_config['framework'] != 'torch':
+        if model.framework_modeling_config["framework"] != "torch":
             return model
         remove_list = []
         for node in model.nodes:
-            if node.op_type == 'View':
+            if node.op_type == "View":
                 pre_node = model.get_node_by_name(node.input_tensors[0].source_op[0])
                 dst_node = model.get_node_by_name(node.output_tensors[0].dest_op[0])
                 node.output_tensors[0].source_op = [pre_node.name]
@@ -46,8 +43,11 @@ class RemoveLastView(Pattern):
                 dst_node.input_tensors[0].source_op = [pre_node.name]
                 for in_tensor in node.input_tensors[1:]:
                     source_node = model.get_node_by_name(in_tensor.source_op[0])
-                    if len(source_node.output_tensors) == 1 and len(source_node.output_tensors[0].dest_op) == 1 \
-                        and source_node.output_tensors[0].dest_op[0] == node.name:
+                    if (
+                        len(source_node.output_tensors) == 1
+                        and len(source_node.output_tensors[0].dest_op) == 1
+                        and source_node.output_tensors[0].dest_op[0] == node.name
+                    ):
                         remove_list.append((source_node.name))
                 remove_list.append(node.name)
         model.remove_nodes(remove_list)

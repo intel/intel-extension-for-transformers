@@ -14,65 +14,61 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The LlamaPostprocess pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
+
+
 from .. import graph_utils as util
 from ..ops import Tensor
-import numpy as np
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='LlamaPostprocess')
+@pattern_registry(pattern_type="LlamaPostprocess")
 class LlamaPostprocess(Pattern):
     """The LlamaPostprocess pattern.
 
     Fuse the original sub-graph into the custom acceleration 'LlamaPostprocess' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
-            'LlamaPostprocess': [
+            "LlamaPostprocess": [
                 # llama postprocess
                 {
-                    'patterns': {
-                        'in': [[(0, 'Gather'), (1, 'RmsNorm')]
-                              ],
-                        'out': [[(0, 'Reshape'), (1, 'Gather'),(2, 'Reshape'),
-                                 (3, 'RmsNorm')]]
+                    "patterns": {
+                        "in": [[(0, "Gather"), (1, "RmsNorm")]],
+                        "out": [
+                            [
+                                (0, "Reshape"),
+                                (1, "Gather"),
+                                (2, "Reshape"),
+                                (3, "RmsNorm"),
+                            ]
+                        ],
                     },
-                    'search_mode': 'op_type',
-                    'node_names': {
-                        0: 'llama_embeddings_before/reshape',
+                    "search_mode": "op_type",
+                    "node_names": {
+                        0: "llama_embeddings_before/reshape",
                         1: 0,
-                        2: 'llama_embeddings_after/reshape',
-                        3: 1
+                        2: "llama_embeddings_after/reshape",
+                        3: 1,
                     },
-                    'input_tensors': {
-                        0: [[{
-                            0: [1]
-                        }], [[0], 1]],
-                        1: [[{
-                            0: [0]
-                        }], [[1], 2]],
-                        2: [[{
-                            0: [1]
-                        }], [[1], 2]],
-                        3: [[{
-                            1: [1]
-                        }], [[1], 2]]
+                    "input_tensors": {
+                        0: [[{0: [1]}], [[0], 1]],
+                        1: [[{0: [0]}], [[1], 2]],
+                        2: [[{0: [1]}], [[1], 2]],
+                        3: [[{1: [1]}], [[1], 2]],
                     },
-                    'output_tensors': {
+                    "output_tensors": {
                         0: [[], [[], 1]],
                         1: [[], [[], 1]],
                         2: [[], [[], 1]],
-                        3: [[{
-                            1: [0]
-                        }], [[0], 1]],
+                        3: [[{1: [0]}], [[0], 1]],
                     },
-                    'returns': [1, 0]
+                    "returns": [1, 0],
                 }
             ]
         }
@@ -96,38 +92,47 @@ class LlamaPostprocess(Pattern):
 
         remove_shape = []
         for node in model.nodes:
-            if node.op_type == 'Output':
+            if node.op_type == "Output":
                 pre_node = model.get_node_by_name(node.input_tensors[0].source_op[0])
                 output_name = node.input_tensors[0].name
-                reshape_output = Tensor(name=output_name + "_reshape",
-                                    source_op=[node.name + "_reshape_node"],
-                                    dest_op=[],
-                                    dtype='fp32')
+                reshape_output = Tensor(
+                    name=output_name + "_reshape",
+                    source_op=[node.name + "_reshape_node"],
+                    dest_op=[],
+                    dtype="fp32",
+                )
                 reshape_op = util.construct_node(
                     node_name=node.name + "_reshape_node",
-                    op_type='Reshape',
-                    input_tensors=[node.input_tensors[0],
-                                   model.get_node_by_name('input_data').output_tensors[0]],
+                    op_type="Reshape",
+                    input_tensors=[
+                        node.input_tensors[0],
+                        model.get_node_by_name("input_data").output_tensors[0],
+                    ],
                     output_tensors=[reshape_output],
-                    attr=OrderedDict({'dst_shape': '-1,-1,32000', 'dims': '0,1'}))
+                    attr=OrderedDict({"dst_shape": "-1,-1,32000", "dims": "0,1"}),
+                )
                 insert_idx = model.get_node_id(node.name)
                 model.insert_nodes(insert_idx, [reshape_op])
                 node.input_tensors[0] = reshape_output
                 break
-            
-            if node.op_type == 'RmsNorm':
+
+            if node.op_type == "RmsNorm":
                 pre_node = model.get_node_by_name(node.input_tensors[0].source_op[0])
-                if 'output_dtype' in pre_node.attr:
-                    pre_node.attr['output_dtype'] = 'fp32'
+                if "output_dtype" in pre_node.attr:
+                    pre_node.attr["output_dtype"] = "fp32"
                 if pre_node.op_type == "Reshape":
-                    prepre_node = model.get_node_by_name(pre_node.input_tensors[0].source_op[0])
+                    prepre_node = model.get_node_by_name(
+                        pre_node.input_tensors[0].source_op[0]
+                    )
                     prepre_node.attr = None
-                    prepre_node.attr = OrderedDict({'axis': '0', 'batch_dims':'0'})
-                    prepre_node = model.get_node_by_name(prepre_node.input_tensors[0].source_op[0])
+                    prepre_node.attr = OrderedDict({"axis": "0", "batch_dims": "0"})
+                    prepre_node = model.get_node_by_name(
+                        prepre_node.input_tensors[0].source_op[0]
+                    )
                     prepre_node.attr = None
-                    prepre_node.attr = OrderedDict({'dst_shape': '-1'})
-            
-            if node.op_type == 'Shape':
+                    prepre_node.attr = OrderedDict({"dst_shape": "-1"})
+
+            if node.op_type == "Shape":
                 remove_shape.append(node.name)
-        model.remove_nodes(remove_shape)        
+        model.remove_nodes(remove_shape)
         return model

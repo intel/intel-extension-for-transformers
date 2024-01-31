@@ -11,4 +11,3 @@ concurrency:
 jobs:
   call-finetune-mpt-7b-chat:
     uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat.yml
-

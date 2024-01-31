@@ -32,10 +32,11 @@ With different model configurations, the NER plugins of varying precisions have 
 
 ```python
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner import NamedEntityRecognition
+
 ner_obj = NamedEntityRecognition
 # modify the query here for customized NER task
 query = "Show me photos taken in Shanghai today."
-result = ner_obj.inference(query=query) # add argument "bf16=True" for BF16 inference
+result = ner_obj.inference(query=query)  # add argument "bf16=True" for BF16 inference
 print("NER result: ", result)
 ```
 
@@ -43,8 +44,9 @@ print("NER result: ", result)
 
 ```python
 from ner_int import NamedEntityRecognitionINT
+
 # set compute_dtype='int8' and weight_dtype='int4' for INT4 inference
-ner_obj = NamedEntityRecognitionINT(compute_dtype='fp32', weight_dtype='int8')
+ner_obj = NamedEntityRecognitionINT(compute_dtype="fp32", weight_dtype="int8")
 query = "Show me photos taken in Shanghai today."
 result = ner_obj.inference(query=query)
 print("NER result: ", result)

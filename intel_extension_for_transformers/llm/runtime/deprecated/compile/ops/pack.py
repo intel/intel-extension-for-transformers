@@ -14,11 +14,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
 
 
 # tf 1.0 changes tf.pack -> tf.stack
@@ -29,15 +27,16 @@ from .tensor import Tensor
 # An int. The axis to stack along. Defaults to the first dimension. Negative values wrap around,
 # so the valid range is [-(D+1), D]
 # See also tf.concat, tf.tile, tf.repeat.
-@operator_registry(operator_type='Pack')
+@operator_registry(operator_type="Pack")
 class Pack(Operator):
     """Parse the Pack operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
         """Extract the node attr from tensorflow."""
-        if framework == 'tensorflow':
-            self._attr['axis'] = node.attr['axis'].i
-            self._attr['N'] = node.attr['N'].i
+        if framework == "tensorflow":
+            self._attr["axis"] = node.attr["axis"].i
+            self._attr["N"] = node.attr["N"].i

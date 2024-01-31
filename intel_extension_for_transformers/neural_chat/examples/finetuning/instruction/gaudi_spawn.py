@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-A simple launcher script for distributed training on HPUs.
+"""A simple launcher script for distributed training on HPUs.
 
 Single node:
 ::
@@ -38,13 +36,12 @@ from argparse import REMAINDER, ArgumentParser
 from optimum.habana.distributed import DistributedRunner
 from optimum.utils import logging
 
-
 logger = logging.get_logger(__name__)
 
 
 def parse_args():
-    """
-    Helper function parsing the command line options.
+    """Helper function parsing the command line options.
+
     @retval ArgumentParser
     """
     parser = ArgumentParser(
@@ -55,10 +52,23 @@ def parse_args():
     )
 
     # Optional arguments for the launch helper
-    parser.add_argument("--world_size", type=int, default=1, help="Number of HPUs to use (1 or 8)")
-    parser.add_argument("--hostfile", type=str, default=None, help="Path to the file where hosts are specified.")
-    parser.add_argument("--use_mpi", action="store_true", help="Use MPI for distributed training")
-    parser.add_argument("--use_deepspeed", action="store_true", help="Use DeepSpeed for distributed training")
+    parser.add_argument(
+        "--world_size", type=int, default=1, help="Number of HPUs to use (1 or 8)"
+    )
+    parser.add_argument(
+        "--hostfile",
+        type=str,
+        default=None,
+        help="Path to the file where hosts are specified.",
+    )
+    parser.add_argument(
+        "--use_mpi", action="store_true", help="Use MPI for distributed training"
+    )
+    parser.add_argument(
+        "--use_deepspeed",
+        action="store_true",
+        help="Use DeepSpeed for distributed training",
+    )
 
     # positional
     parser.add_argument(
@@ -93,7 +103,10 @@ def main():
     # Patch sys.argv
     sys.argv = [args.training_script] + args.training_script_args
     # Handle the case where arguments contain whitespaces
-    argv = ['"{}"'.format(arg) if " " in arg and arg[0] != '"' and arg[-1] != '"' else arg for arg in sys.argv]
+    argv = [
+        '"{}"'.format(arg) if " " in arg and arg[0] != '"' and arg[-1] != '"' else arg
+        for arg in sys.argv
+    ]
     command_list = [" ".join(argv)]
 
     distributed_runner = DistributedRunner(
@@ -110,4 +123,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

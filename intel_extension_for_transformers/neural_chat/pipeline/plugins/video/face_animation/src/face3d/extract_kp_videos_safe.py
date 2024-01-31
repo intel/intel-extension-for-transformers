@@ -15,19 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import cv2
-import time
-import glob
 import argparse
-import numpy as np
-from PIL import Image
-import torch
-from tqdm import tqdm
+import glob
+import os
+import time
 from itertools import cycle
+
+import cv2
+import numpy as np
+import torch
 from facexlib.alignment import init_alignment_model, landmark_98_to_68
 from facexlib.detection import init_detection_model
-from torch.multiprocessing import Pool, Process, set_start_method
+from PIL import Image
+from torch.multiprocessing import Pool, set_start_method
+from tqdm import tqdm
 
 
 class KeypointExtractor:
@@ -35,8 +36,12 @@ class KeypointExtractor:
         root_path = "gfpgan/weights"
 
         print("---------device-----------", device)
-        self.detector = init_alignment_model("awing_fan", device=device, model_rootpath=root_path)
-        self.det_net = init_detection_model("retinaface_resnet50", half=False, device=device, model_rootpath=root_path)
+        self.detector = init_alignment_model(
+            "awing_fan", device=device, model_rootpath=root_path
+        )
+        self.det_net = init_detection_model(
+            "retinaface_resnet50", half=False, device=device, model_rootpath=root_path
+        )
 
     def extract_keypoint(self, images, name=None, info=True):
         if isinstance(images, list):
@@ -66,9 +71,15 @@ class KeypointExtractor:
                         bboxes = self.det_net.detect_faces(images, 0.97)
 
                         bboxes = bboxes[0]
-                        img = img[int(bboxes[1]) : int(bboxes[3]), int(bboxes[0]) : int(bboxes[2]), :]
+                        img = img[
+                            int(bboxes[1]) : int(bboxes[3]),
+                            int(bboxes[0]) : int(bboxes[2]),
+                            :,
+                        ]
 
-                        keypoints = landmark_98_to_68(self.detector.get_landmarks(img))  # [0]
+                        keypoints = landmark_98_to_68(
+                            self.detector.get_landmarks(img)
+                        )  # [0]
 
                         #### keypoints to the original location
                         keypoints[:, 0] += int(bboxes[0])
@@ -114,12 +125,16 @@ def run(data):
     images = read_video(filename)
     name = filename.split("/")[-2:]
     os.makedirs(os.path.join(opt.output_dir, name[-2]), exist_ok=True)
-    kp_extractor.extract_keypoint(images, name=os.path.join(opt.output_dir, name[-2], name[-1]))
+    kp_extractor.extract_keypoint(
+        images, name=os.path.join(opt.output_dir, name[-2], name[-1])
+    )
 
 
 if __name__ == "__main__":
     set_start_method("spawn")
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument("--input_dir", type=str, help="the folder of the input files")
     parser.add_argument("--output_dir", type=str, help="the folder of the output files")
     parser.add_argument("--device_ids", type=str, default="0,1")
@@ -128,7 +143,9 @@ if __name__ == "__main__":
     opt = parser.parse_args()
     filenames = list()
     VIDEO_EXTENSIONS_LOWERCASE = {"mp4"}
-    VIDEO_EXTENSIONS = VIDEO_EXTENSIONS_LOWERCASE.union({f.upper() for f in VIDEO_EXTENSIONS_LOWERCASE})
+    VIDEO_EXTENSIONS = VIDEO_EXTENSIONS_LOWERCASE.union(
+        {f.upper() for f in VIDEO_EXTENSIONS_LOWERCASE}
+    )
     extensions = VIDEO_EXTENSIONS
 
     for ext in extensions:

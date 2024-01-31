@@ -55,31 +55,31 @@ torchrun --nnodes 1  --nproc_per_node 8  finetune_clm.py \
 
 ```
 python gaudi_spawn.py \
-        --world_size 8 --use_mpi finetune_clm.py \
-        --model_name_or_path "meta-llama/Llama-2-7b-chat-hf" \
-        --bf16 True \
-        --dataset_name "Intel/orca_dpo_pairs" \
-        --dataset_concatenation \
-        --per_device_train_batch_size 2 \
-        --per_device_eval_batch_size 2 \
-        --gradient_accumulation_steps 4 \
-        --evaluation_strategy "no" \
-        --save_strategy "steps" \
-        --save_steps 2000 \
-        --save_total_limit 1 \
-        --learning_rate 1e-4  \
-        --logging_steps 1 \
-        --do_train \
-        --num_train_epochs 3 \
-        --overwrite_output_dir \
-        --log_level info \
-        --output_dir ./llama2_7b_se \
-        --peft lora \
-        --use_fast_tokenizer false \
-        --device "hpu" \
-        --use_habana \
-        --use_lazy_mode \
-        --use_auth_token True
+--world_size 8 --use_mpi finetune_clm.py \
+--model_name_or_path "meta-llama/Llama-2-7b-chat-hf" \
+--bf16 True \
+--dataset_name "Intel/orca_dpo_pairs" \
+--dataset_concatenation \
+--per_device_train_batch_size 2 \
+--per_device_eval_batch_size 2 \
+--gradient_accumulation_steps 4 \
+--evaluation_strategy "no" \
+--save_strategy "steps" \
+--save_steps 2000 \
+--save_total_limit 1 \
+--learning_rate 1e-4  \
+--logging_steps 1 \
+--do_train \
+--num_train_epochs 3 \
+--overwrite_output_dir \
+--log_level info \
+--output_dir ./llama2_7b_se \
+--peft lora \
+--use_fast_tokenizer false \
+--device "hpu" \
+--use_habana \
+--use_lazy_mode \
+--use_auth_token True
 ```
 
 merge the adapter:

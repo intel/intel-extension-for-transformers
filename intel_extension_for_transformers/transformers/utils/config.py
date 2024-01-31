@@ -21,14 +21,15 @@ import json
 import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, Tuple, Union
+
+from transformers import PretrainedConfig
+
 from .utility import QUANT_CONFIG, SPARSITY_CONFIG, LazyImport, logger
-from transformers import BitsAndBytesConfig, PretrainedConfig
 
 torch = LazyImport("torch")
 
 
 class WeightOnlyQuantConfig(PretrainedConfig):
-
     def __init__(
         self,
         llm_int8_skip_modules=None,
@@ -51,9 +52,12 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         **kwargs,
     ):
         from intel_extension_for_transformers.llm.quantization.utils import (
-            convert_dtype_torch2str, )
+            convert_dtype_torch2str,
+        )
 
-        self.llm_int8_skip_modules = (llm_int8_skip_modules if llm_int8_skip_modules else [])
+        self.llm_int8_skip_modules = (
+            llm_int8_skip_modules if llm_int8_skip_modules else []
+        )
         self.weight_dtype = weight_dtype
         self.mse_range = mse_range
         self.use_double_quant = use_double_quant
@@ -85,7 +89,9 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             self.scale_dtype = scale_dtype
 
         if isinstance(double_quant_scale_dtype, torch.dtype):
-            self.double_quant_scale_dtype = convert_dtype_torch2str(double_quant_scale_dtype)
+            self.double_quant_scale_dtype = convert_dtype_torch2str(
+                double_quant_scale_dtype
+            )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
 
@@ -94,10 +100,16 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
         """
 
-        if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
+        if self.llm_int8_skip_modules is not None and not isinstance(
+            self.llm_int8_skip_modules, list
+        ):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
-        if self.compute_dtype is not None and self.compute_dtype not in ['fp32', 'bf16', 'int8']:
+        if self.compute_dtype is not None and self.compute_dtype not in [
+            "fp32",
+            "bf16",
+            "int8",
+        ]:
             raise ValueError("compute_dtype must be 'fp32', 'bf16', 'int8'.")
         elif self.compute_dtype is None:
             self.compute_dtype = "fp32"
@@ -105,22 +117,28 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if self.weight_dtype is None:
             self.weight_dtype = "nf4"
         elif self.weight_dtype not in [
-                "int8",
-                "int4_fullrange",
-                "int4_clip",
-                "nf4",
-                "fp4_e2m1_bnb",
-                "fp4_e2m1",
-                "fp8_e5m2",
-                "fp8_e4m3",
+            "int8",
+            "int4_fullrange",
+            "int4_clip",
+            "nf4",
+            "fp4_e2m1_bnb",
+            "fp4_e2m1",
+            "fp8_e5m2",
+            "fp8_e4m3",
         ]:
             raise ValueError(
-                f"weight_dtype must be a string in "
-                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'")
+                "weight_dtype must be a string in "
+                "'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+            )
 
-        if self.scale_dtype is not None and self.scale_dtype not in ["fp32", "fp8_e8m0"]:
-            raise ValueError(f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
-                             f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'")
+        if self.scale_dtype is not None and self.scale_dtype not in [
+            "fp32",
+            "fp8_e8m0",
+        ]:
+            raise ValueError(
+                "scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
+                "and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
+            )
         elif self.scale_dtype is None:
             self.scale_dtype = "fp32"
 
@@ -149,7 +167,9 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
         """
 
-        if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
+        if self.llm_int8_skip_modules is not None and not isinstance(
+            self.llm_int8_skip_modules, list
+        ):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
         if self.compute_dtype is not None and self.compute_dtype not in ["fp16"]:
@@ -157,19 +177,20 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         elif self.compute_dtype is None:
             self.compute_dtype = "fp16"
 
-        if self.algorithm not in ['RTN']:
-            raise ValueError("algorithm must be 'RTN' now. will support 'TEQ', 'AWQ' soon!")
+        if self.algorithm not in ["RTN"]:
+            raise ValueError(
+                "algorithm must be 'RTN' now. will support 'TEQ', 'AWQ' soon!"
+            )
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4_fullrange"
         elif self.weight_dtype not in [
-                "int4_fullrange",
+            "int4_fullrange",
         ]:
-            raise ValueError(f"weight_dtype must be a string in "
-                             f"'int4_fullrange'.")
+            raise ValueError("weight_dtype must be a string in " "'int4_fullrange'.")
 
         if self.scale_dtype is not None and self.scale_dtype not in ["fp16"]:
-            raise ValueError(f"scale_dtype must be a string in 'fp16'")
+            raise ValueError("scale_dtype must be a string in 'fp16'")
         elif self.scale_dtype is None:
             self.scale_dtype = "fp16"
 
@@ -189,7 +210,9 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             raise ValueError("group_size must be a int")
 
         if self.scheme not in ["sym"]:
-            raise ValueError("scheme: {} is not support, only support 'sym' now!".format(self.scheme))
+            raise ValueError(
+                "scheme: {} is not support, only support 'sym' now!".format(self.scheme)
+            )
         self.use_llm_runtime = False
 
     def post_init_runtime(self):
@@ -197,7 +220,9 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
         """
 
-        if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
+        if self.llm_int8_skip_modules is not None and not isinstance(
+            self.llm_int8_skip_modules, list
+        ):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
         # MX-compliant format
@@ -221,7 +246,11 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             self.compute_dtype = "fp32"
         else:
             if self.compute_dtype not in runtime_supported_compute_dtype:
-                raise ValueError("compute_dtype must be in {}.".format(runtime_supported_compute_dtype))
+                raise ValueError(
+                    "compute_dtype must be in {}.".format(
+                        runtime_supported_compute_dtype
+                    )
+                )
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
@@ -231,51 +260,67 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             self.weight_dtype = "fp4_e2m1"
         else:
             if self.weight_dtype not in runtime_supported_weight_dtype:
-                raise ValueError("weight_dtype must be in {}.".format(runtime_supported_weight_dtype))
+                raise ValueError(
+                    "weight_dtype must be in {}.".format(runtime_supported_weight_dtype)
+                )
 
         if self.scale_dtype is None:
             self.scale_dtype = "fp32"
         else:
             if self.scale_dtype not in runtime_supported_scale_dtype:
-                raise ValueError("scale_dtype must be in {}.".format(runtime_supported_scale_dtype))
+                raise ValueError(
+                    "scale_dtype must be in {}.".format(runtime_supported_scale_dtype)
+                )
 
         if self.group_size not in runtime_supported_group_size:
-            raise ValueError("group_size must be an integer in {}.".format(runtime_supported_group_size))
+            raise ValueError(
+                "group_size must be an integer in {}.".format(
+                    runtime_supported_group_size
+                )
+            )
 
         if self.scheme not in runtime_supported_scheme:
             raise ValueError("scheme must be in {}.".format(runtime_supported_scheme))
 
         if self.weight_dtype[:3] in ["fp8", "fp4", "nf4"]:
             if self.compute_dtype in ["int8"]:
-                print("WARNING: int8 compute dtype is not be supported in float quant types! "\
-                      "Fall back to fp32.")
+                print(
+                    "WARNING: int8 compute dtype is not be supported in float quant types! "
+                    "Fall back to fp32."
+                )
                 self.compute_dtype = "fp32"
             if self.scheme in ["asym"]:
-                print("WARNING: asym alg is not be supported in float quant types! "\
-                      "Fall back to sym.")
+                print(
+                    "WARNING: asym alg is not be supported in float quant types! "
+                    "Fall back to sym."
+                )
                 self.scheme = "sym"
             if self.scale_dtype in ["fp8"] and self.weight_dtype[:3] not in ["fp8"]:
-                print("WARNING: fp8 scale is only be supported in fp8 weight type. "\
-                      "Fall back to fp32.")
+                print(
+                    "WARNING: fp8 scale is only be supported in fp8 weight type. "
+                    "Fall back to fp32."
+                )
                 self.scale_dtype = "fp32"
-            if self.weight_dtype[:3] == "fp8" and self.scale_dtype not in ["fp8", "fp32"]:
-                print("WARNING: fp8 weight type only supports fp8 / fp32 scale now."\
-                      " Fall back to fp8.")
+            if self.weight_dtype[:3] == "fp8" and self.scale_dtype not in [
+                "fp8",
+                "fp32",
+            ]:
+                print(
+                    "WARNING: fp8 weight type only supports fp8 / fp32 scale now."
+                    " Fall back to fp8."
+                )
                 self.scale_dtype = "fp8"
 
         self.use_llm_runtime = True
 
     def quantization_method(self):
-        r"""
-        This method returns the quantization method used for the model.
-        """
+        r"""This method returns the quantization method used for the model."""
         # TODO: For training only
         pass
 
     @classmethod
     def from_dict(cls, config_dict, return_unused_kwargs=False, **kwargs):
-        """
-        Instantiates a [`WeightOnlyQuantConfig`] from a Python dictionary of parameters.
+        """Instantiates a [`WeightOnlyQuantConfig`] from a Python dictionary of parameters.
 
         Args:
             config_dict (`Dict[str, Any]`):
@@ -311,9 +356,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             config_dict = json.load(f)
         return cls.from_dict(config_dict, return_unused_kwargs, **kwargs)
 
-    def to_json_file(self, json_file_path: Union[str, os.PathLike], use_diff: bool = True):
-        """
-        Save this instance to a JSON file.
+    def to_json_file(
+        self, json_file_path: Union[str, os.PathLike], use_diff: bool = True
+    ):
+        """Save this instance to a JSON file.
 
         Args:
             json_file_path (`str` or `os.PathLike`):
@@ -323,9 +369,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             writer.write(self.to_json_string(use_diff=use_diff))
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Serializes this instance to a Python dictionary. Returns:
-            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance.
+        """Serializes this instance to a Python dictionary.
+
+        Returns:
+        `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance.
         """
 
         output = copy.deepcopy(self.__dict__)
@@ -343,8 +390,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         return config_dict
 
     def to_json_string(self, use_diff: bool = True) -> str:
-        """
-        Serializes this instance to a JSON string.
+        """Serializes this instance to a JSON string.
 
         Args:
             use_diff (`bool`, *optional*, defaults to `True`):
@@ -364,8 +410,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         return json.dumps(config_dict, indent=2, sort_keys=True) + "\n"
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
+        """Removes all attributes from config which correspond to the default config attributes for better readability and
         serializes to a Python dictionary.
 
         Returns:
@@ -385,9 +430,13 @@ class WeightOnlyQuantConfig(PretrainedConfig):
 
         return serializable_config_dict
 
-    def save_pretrained(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
-        """
-        Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
+    def save_pretrained(
+        self,
+        save_directory: Union[str, os.PathLike],
+        push_to_hub: bool = False,
+        **kwargs,
+    ):
+        """Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
         [`~PretrainedConfig.from_pretrained`] class method.
 
         Args:
@@ -403,7 +452,9 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self._set_token_in_kwargs(kwargs)
 
         if os.path.isfile(save_directory):
-            raise AssertionError(f"Provided path ({save_directory}) should be a directory, not a file")
+            raise AssertionError(
+                f"Provided path ({save_directory}) should be a directory, not a file"
+            )
 
         os.makedirs(save_directory, exist_ok=True)
 
@@ -429,10 +480,13 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             )
 
     @classmethod
-    def get_config_dict(cls, pretrained_model_name_or_path: Union[str, os.PathLike],
-                        **kwargs) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    def get_config_dict(
+        cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         cf = kwargs.pop("_configuration_file", QUANT_CONFIG)
-        return super().get_config_dict(pretrained_model_name_or_path, _configuration_file=cf, **kwargs)
+        return super().get_config_dict(
+            pretrained_model_name_or_path, _configuration_file=cf, **kwargs
+        )
 
 
 @dataclass
@@ -490,8 +544,7 @@ class SparsityConfig(PretrainedConfig):
 
     @classmethod
     def from_dict(cls, config_dict, return_unused_kwargs=False, **kwargs):
-        """
-        Instantiates a [`SparsityConfig`] from a Python dictionary of parameters.
+        """Instantiates a [`SparsityConfig`] from a Python dictionary of parameters.
 
         Args:
             config_dict (`Dict[str, Any]`):
@@ -527,9 +580,10 @@ class SparsityConfig(PretrainedConfig):
             config_dict = json.load(f)
         return cls.from_dict(config_dict, return_unused_kwargs, **kwargs)
 
-    def to_json_file(self, json_file_path: Union[str, os.PathLike], use_diff: bool = True):
-        """
-        Save this instance to a JSON file.
+    def to_json_file(
+        self, json_file_path: Union[str, os.PathLike], use_diff: bool = True
+    ):
+        """Save this instance to a JSON file.
 
         Args:
             json_file_path (`str` or `os.PathLike`):
@@ -539,9 +593,10 @@ class SparsityConfig(PretrainedConfig):
             writer.write(self.to_json_string(use_diff=use_diff))
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Serializes this instance to a Python dictionary. Returns:
-            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance.
+        """Serializes this instance to a Python dictionary.
+
+        Returns:
+        `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance.
         """
 
         output = copy.deepcopy(self.__dict__)
@@ -551,8 +606,7 @@ class SparsityConfig(PretrainedConfig):
         return f"{self.__class__.__name__} {self.to_json_string()}"
 
     def to_json_string(self, use_diff: bool = True) -> str:
-        """
-        Serializes this instance to a JSON string.
+        """Serializes this instance to a JSON string.
 
         Args:
             use_diff (`bool`, *optional*, defaults to `True`):
@@ -571,8 +625,7 @@ class SparsityConfig(PretrainedConfig):
         return json.dumps(config_dict, indent=2, sort_keys=True) + "\n"
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
+        """Removes all attributes from config which correspond to the default config attributes for better readability and
         serializes to a Python dictionary.
 
         Returns:
@@ -592,9 +645,13 @@ class SparsityConfig(PretrainedConfig):
 
         return serializable_config_dict
 
-    def save_pretrained(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
-        """
-        Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
+    def save_pretrained(
+        self,
+        save_directory: Union[str, os.PathLike],
+        push_to_hub: bool = False,
+        **kwargs,
+    ):
+        """Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
         [`~PretrainedConfig.from_pretrained`] class method.
 
         Args:
@@ -610,7 +667,9 @@ class SparsityConfig(PretrainedConfig):
         self._set_token_in_kwargs(kwargs)
 
         if os.path.isfile(save_directory):
-            raise AssertionError(f"Provided path ({save_directory}) should be a directory, not a file")
+            raise AssertionError(
+                f"Provided path ({save_directory}) should be a directory, not a file"
+            )
 
         os.makedirs(save_directory, exist_ok=True)
 
@@ -639,4 +698,6 @@ class SparsityConfig(PretrainedConfig):
     def get_config_dict(
         cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        return super().get_config_dict(pretrained_model_name_or_path, _configuration_file=SPARSITY_CONFIG, **kwargs)
+        return super().get_config_dict(
+            pretrained_model_name_or_path, _configuration_file=SPARSITY_CONFIG, **kwargs
+        )

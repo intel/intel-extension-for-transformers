@@ -16,16 +16,22 @@
 # limitations under the License.
 
 import unittest
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from intel_extension_for_transformers.neural_chat import build_chatbot
-from intel_extension_for_transformers.neural_chat import PipelineConfig
-from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
+
+from intel_extension_for_transformers.neural_chat import PipelineConfig, build_chatbot
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import (
+    ChatCompletionRequest,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import (
+    router,
+)
 
 app = FastAPI()
 app.include_router(router)
 client = TestClient(app)
+
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:

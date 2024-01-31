@@ -54,8 +54,9 @@ In the case of jsonl files, they should be formatted as dictionaries, such as: {
 ```python
 from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
-plugins.retrieval.enable=True
-plugins.retrieval.args["input_path"]="./Annual_report.pdf"
+
+plugins.retrieval.enable = True
+plugins.retrieval.args["input_path"] = "./Annual_report.pdf"
 config = PipelineConfig(plugins=plugins)
 ```
 
@@ -63,6 +64,7 @@ config = PipelineConfig(plugins=plugins)
 
 ```python
 from intel_extension_for_transformers.neural_chat import build_chatbot
+
 chatbot = build_chatbot(config)
 response = chatbot.predict("What is IDM 2.0?")
 ```
@@ -72,7 +74,7 @@ Checkout the full example [retrieval_chat.py](../../../examples/retrieval/retrie
 # Parameters
 Users have the flexibility to tailor the retrieval configuration to meet their individual needs and adapt to their local files. To customize a particular aspect of the retrieval plugin, you can adjust its settings as follows:
 ```python
-plugins.retrieval.args["xxx"]=xxx
+plugins.retrieval.args["xxx"] = xxx
 ```
 Below are the description for the available parameters in `agent_QA`,
 
@@ -110,7 +112,7 @@ To fully leverage the capabilities of our mutual chatbot platform, we have devel
 
 The user can select Chroma as the vectorstore for RAG with:
 ```python
-plugins.retrieval.args["vector_database"]="Chroma"
+plugins.retrieval.args["vector_database"] = "Chroma"
 ```
 Our Chroma API is easy to use and can be generalized to langchain platform. For a quick Chroma configuration, the user can directly set the parameters following the same step for [agent_QA](#parameters). Some of parameters for Chroma share the same value with agent_QA. The extra parameters for Chroma are:
 |  Parameters   |  Type | Description| Options|
@@ -125,6 +127,7 @@ from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain_core.vectorstores import VectorStoreRetriever
 from intel_extension_for_transformers.langchain.vectorstores import Chroma
+
 retriever = VectorStoreRetriever(vectorstore=Chroma(...))
 retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```
@@ -137,7 +140,7 @@ Originally, the Qdrant API within langchain was set up to allow configuration on
 
 The user can select Qdrant as the vectorstore for RAG with:
 ```python
-plugins.retrieval.args["vector_database"]="Qdrant"
+plugins.retrieval.args["vector_database"] = "Qdrant"
 ```
 Our Qdrant API is easy to use and can be generalized to langchain platform. For a quick Qdrant configuration, the user can directly set the parameters following the same step for [agent_QA](#parameters). Some of parameters for Qdrant share the same value with agent_QA. The extra parameters for Qdrant are:
 |  Parameters   |  Type | Description| Options|
@@ -154,6 +157,7 @@ from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain_core.vectorstores import VectorStoreRetriever
 from intel_extension_for_transformers.langchain.vectorstores import Qdrant
+
 retriever = VectorStoreRetriever(vectorstore=Qdrant(...))
 retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```
@@ -169,7 +173,7 @@ Our approach ensures that users have access to versatile and effective retrieval
 ### VectorStoreRetriever
 We've maintained most of the retrieval behaviors consistent with langchain, but we've also introduced additional content processing steps. These enhancements are specifically designed to better meet our needs for source-based retrieval. The user can select this retriever by:
 ```python
-plugins.retrieval.args["retrieval_type"]="default"
+plugins.retrieval.args["retrieval_type"] = "default"
 ```
 
 The basic parameters for `VectorStoreRetriever` are:
@@ -180,8 +184,8 @@ The basic parameters for `VectorStoreRetriever` are:
 
 The user can set the parameters for the retriever by: 
 ```python
-plugins.retrieval.args["search_type"]=xxx
-plugins.retrieval.args["search_kwargs"]=xxx
+plugins.retrieval.args["search_type"] = xxx
+plugins.retrieval.args["search_kwargs"] = xxx
 ```
 
 If "search_type"="similarity":
@@ -208,7 +212,7 @@ To navigate this challenge, we've developed a unique solution involving the `Chi
 
 The user can select this retriever by:
 ```python
-plugins.retrieval.args["retrieval_type"]="child_parent"
+plugins.retrieval.args["retrieval_type"] = "child_parent"
 ```
 
 Most parameters for `ChildParentRetriever` are will be automatically set by `agent_QA`. The user only needs to decide the `search_type` and `search_kwargs`.
@@ -219,8 +223,8 @@ Most parameters for `ChildParentRetriever` are will be automatically set by `age
 
 The user can set the parameters for the retriever by: 
 ```python
-plugins.retrieval.args["search_type"]=xxx
-plugins.retrieval.args["search_kwargs"]=xxx
+plugins.retrieval.args["search_type"] = xxx
+plugins.retrieval.args["search_kwargs"] = xxx
 ```
 If "search_type"="similarity":
 >search_kwargs={"k"=xxx}
@@ -234,6 +238,12 @@ This new retriever is also available for langchain users. Below is a toy example
 ```python
 from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever
 from langchain.vectorstores import Chroma
-retriever = ChildParentRetriever(vectorstore=Chroma(documents=child_documents), parentstore=Chroma(documents=parent_documents), search_type=xxx, search_kwargs={...})
-docs=retriever.get_relevant_documents("Intel")
+
+retriever = ChildParentRetriever(
+    vectorstore=Chroma(documents=child_documents),
+    parentstore=Chroma(documents=parent_documents),
+    search_type=xxx,
+    search_kwargs={...},
+)
+docs = retriever.get_relevant_documents("Intel")
 ```

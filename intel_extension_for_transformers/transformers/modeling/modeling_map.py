@@ -32,6 +32,10 @@
 
 
 import transformers
+
 from .gpt_bigcode.modeling_gpt_bigcode import GPTBigCodeForCausalLM
+
 # to use modeling modification base transformers 4.30.2:
-transformers.models.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeForCausalLM = GPTBigCodeForCausalLM
+transformers.models.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeForCausalLM = (
+    GPTBigCodeForCausalLM
+)

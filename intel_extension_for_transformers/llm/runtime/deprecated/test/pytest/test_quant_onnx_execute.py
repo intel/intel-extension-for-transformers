@@ -15,15 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import os
 import sys
 import unittest
+
 import numpy as np
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
-import copy
+
 
 def is_win():
-    return sys.platform.startswith('win')
+    return sys.platform.startswith("win")
+
+
 class TestQuantOnnxExecute(unittest.TestCase):
     @classmethod
     def setUpClass(self):
@@ -35,30 +40,41 @@ class TestQuantOnnxExecute(unittest.TestCase):
 
     def test_onnx_qlinear_compile(self):
         # set input data
-        input_0 = np.random.uniform(low=1, high=128, size=[1, 128]).astype('int32')
-        input_1 = np.random.uniform(low=1, high=1, size=[1, 128]).astype('int32')
-        input_2 = np.random.uniform(low=1, high=1, size=[1, 128]).astype('int32')
+        input_0 = np.random.uniform(low=1, high=128, size=[1, 128]).astype("int32")
+        input_1 = np.random.uniform(low=1, high=1, size=[1, 128]).astype("int32")
+        input_2 = np.random.uniform(low=1, high=1, size=[1, 128]).astype("int32")
         # compile and execute qlinear model
         qlinear_model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/qlinear/bert_mini_sst2_qlinear.onnx"
         if is_win():
-            qlinear_model_path = "D:\\dataset\\nlptoolkit_ut_model\\qlinear\\bert_mini_sst2_qlinear.onnx"
-        os.environ['GLOG_minloglevel'] = '2'
-        self.assertTrue(os.path.exists(qlinear_model_path),
-            'ONNX QLinear model is not found, please set your own model path!')
+            qlinear_model_path = (
+                "D:\\dataset\\nlptoolkit_ut_model\\qlinear\\bert_mini_sst2_qlinear.onnx"
+            )
+        os.environ["GLOG_minloglevel"] = "2"
+        self.assertTrue(
+            os.path.exists(qlinear_model_path),
+            "ONNX QLinear model is not found, please set your own model path!",
+        )
         qlinear_model = compile(qlinear_model_path)
         qlinear_output_dict = qlinear_model.inference([input_0, input_1, input_2])
-        qlinear_output = copy.deepcopy(list(qlinear_output_dict.values())[0])       
+        qlinear_output = copy.deepcopy(list(qlinear_output_dict.values())[0])
         # compile and execute qdq model
-        qdq_model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/qlinear/bert_mini_sst2_qdq.onnx"
+        qdq_model_path = (
+            "/tf_dataset2/inc-ut/nlptoolkit_ut_model/qlinear/bert_mini_sst2_qdq.onnx"
+        )
         if is_win():
-            qdq_model_path = "D:\\dataset\\nlptoolkit_ut_model\\qlinear\\bert_mini_sst2_qdq.onnx"
-        self.assertTrue(os.path.exists(qdq_model_path),
-            'ONNX QDQ model is not found, please set your own model path!')
+            qdq_model_path = (
+                "D:\\dataset\\nlptoolkit_ut_model\\qlinear\\bert_mini_sst2_qdq.onnx"
+            )
+        self.assertTrue(
+            os.path.exists(qdq_model_path),
+            "ONNX QDQ model is not found, please set your own model path!",
+        )
         qdq_model = compile(qdq_model_path)
         qdq_output_dict = qdq_model.inference([input_0, input_1, input_2])
         qdq_output = copy.deepcopy(list(qdq_output_dict.values())[0])
         # compare outputs
         self.assertTrue((qlinear_output == qdq_output).all())
+
 
 if __name__ == "__main__":
     unittest.main()

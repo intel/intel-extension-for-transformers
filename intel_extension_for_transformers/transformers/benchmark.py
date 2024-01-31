@@ -14,27 +14,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Benchmark: provide the inference functions for PyTorchBenchmark and ExecutorBenchmark."""
 import os
 import sys
-import torch
-import psutil
 from collections import UserDict
-from .utils.utility import remove_label
+
+import psutil
+import torch
 from neural_compressor import __version__ as nc_version
-from neural_compressor.utils import logger
 from neural_compressor.config import BenchmarkConfig as INCBenchmarkConfig
+from neural_compressor.utils import logger
 from packaging import version
+
 from .modeling import OptimizedModel
+from .utils.utility import remove_label
 
 if version.parse(nc_version).release < version.parse("2.2").release:
-    from neural_compressor.benchmark import _Benchmark as INCBenchmark  # pylint: disable=E0611
+    from neural_compressor.benchmark import (
+        _Benchmark as INCBenchmark,
+    )  # pylint: disable=E0611
 else:
-    from neural_compressor.benchmark import benchmark_with_raw_cmd  # pylint: disable=E0611
+    from neural_compressor.benchmark import (
+        benchmark_with_raw_cmd,
+    )  # pylint: disable=E0611
+
 
 def refactor_batch_size(value, batch_size, old_batch_size=-1):
-    """return batched data from value.
+    """Return batched data from value.
 
     Args:
         value (torch.Tensor): input data.
@@ -59,7 +65,7 @@ def refactor_batch_size(value, batch_size, old_batch_size=-1):
 
 
 def get_example_inputs(dataloader, batch_size=1):
-    """return batched data from dataloader.
+    """Return batched data from dataloader.
 
     Args:
         dataloader: dataloader.
@@ -70,11 +76,13 @@ def get_example_inputs(dataloader, batch_size=1):
     """
     it = iter(dataloader)
     data = next(it)
-    try:   # pragma: no cover
+    try:  # pragma: no cover
         for d, label in data:
             data = d
-        logger.info("Label is detected in dataloader. If the detection is wrong," + \
-                    "please add a fake label to avoid it.")
+        logger.info(
+            "Label is detected in dataloader. If the detection is wrong,"
+            + "please add a fake label to avoid it."
+        )
     except:
         pass
     old_batch_size = dataloader.batch_size
@@ -82,17 +90,17 @@ def get_example_inputs(dataloader, batch_size=1):
         batched_data = {}
         for k, v in data.items():
             batched_data[k] = refactor_batch_size(v, batch_size, old_batch_size)
-    elif isinstance(data, list) or isinstance(data, tuple):   # pragma: no cover
+    elif isinstance(data, list) or isinstance(data, tuple):  # pragma: no cover
         batched_data = []
         for v in data:
             batched_data.append(refactor_batch_size(v, batch_size, old_batch_size))
-    else:   # pragma: no cover
+    else:  # pragma: no cover
         batched_data = refactor_batch_size(data, batch_size, old_batch_size)
     return batched_data
 
 
 def preprocess_model(model, example_inputs, config, additional_cmd):
-    """convert model to torchscript and generate mode.
+    """Convert model to torchscript and generate mode.
 
     Args:
         model (torch.nn.Module): original model.
@@ -116,29 +124,32 @@ def preprocess_model(model, example_inputs, config, additional_cmd):
             example_inputs = tuple(example_inputs)
 
         if config.generate:
+
             class NewModel(torch.nn.Module):
                 def __init__(self, model) -> None:
                     super().__init__()
                     self.model = model
+
                 def forward(self, *args, **kwargs):
                     output = self.model.generate(*args, **kwargs)
                     return output
+
             model = NewModel(model)
             if isinstance(example_inputs, tuple):
-                example_inputs = example_inputs[0] #only input_ids is used.
+                example_inputs = example_inputs[0]  # only input_ids is used.
 
         with torch.no_grad():
             try:
                 model = torch.jit.trace(model, example_inputs)
                 model = torch.jit.freeze(model.eval())
-            except:   # pragma: no cover
+            except:  # pragma: no cover
                 model = torch.jit.trace(model, example_inputs, strict=False)
                 model = torch.jit.freeze(model.eval())
     return model, example_inputs, additional_cmd
 
 
 def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=None):
-    """function for benchmarking model.
+    """Function for benchmarking model.
 
     Args:
         model_name_or_path (str, torch.nn.Module or torch.jit.ScriptModule): model_name_or_path.
@@ -156,18 +167,18 @@ def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=N
         if isinstance(model, torch.jit.ScriptModule):
             already_jit_flag = True
     else:
-        if config.backend == 'ipex' or config.torchscript == True:
+        if config.backend == "ipex" or config.torchscript == True:
             model = OptimizedModel.from_pretrained(model_name_or_path, torchscript=True)
         else:
             model = OptimizedModel.from_pretrained(model_name_or_path)
         from_pretrain_flag = True
         if isinstance(model, torch.jit.ScriptModule):
             already_jit_flag = True
-            from_pretrain_flag = False # jit model can be saved directly.
+            from_pretrain_flag = False  # jit model can be saved directly.
 
     # set kwargs to model configuration
     model.eval()
-    if hasattr(model, 'config') and config.kwargs is not None:
+    if hasattr(model, "config") and config.kwargs is not None:
         for k, v in config.kwargs.items():
             setattr(model.config, k, v)
 
@@ -179,12 +190,13 @@ def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=N
         example_inputs = refactor_batch_size(example_inputs, config.batch_size)
 
     # handle generate and torchscript for eager model. not for ipex
-    if config.backend == 'ipex':
+    if config.backend == "ipex":
         additional_cmd += " --enable_ipex"
         # for ipex backend, we will convert model to torchscript if not.
         if not already_jit_flag:
-            config.torchscript=True
+            config.torchscript = True
             import intel_extension_for_pytorch as ipex
+
             model = ipex.optimize(model)
     if not already_jit_flag:
         model, example_inputs, additional_cmd = preprocess_model(
@@ -194,8 +206,8 @@ def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=N
             already_jit_flag = True
 
     # save preprocessed model and preprocessed input.
-    tmp_model_path = os.path.join(os.getcwd() + '/tmp_model.bin')
-    tmp_data_path = os.path.join(os.getcwd() + '/example_inputs.bin')
+    tmp_model_path = os.path.join(os.getcwd() + "/tmp_model.bin")
+    tmp_data_path = os.path.join(os.getcwd() + "/example_inputs.bin")
     torch.save(example_inputs, tmp_data_path)
     if already_jit_flag:
         model.save(tmp_model_path)
@@ -206,8 +218,10 @@ def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=N
         try:
             torch.save(model, tmp_model_path)
         except Exception as e:
-            assert from_pretrain_flag == True, "Please pass in " + \
-              "model_name_or_path instead of torch.nn.module, due to {}".format(e)
+            assert from_pretrain_flag == True, (
+                "Please pass in "
+                + "model_name_or_path instead of torch.nn.module, due to {}".format(e)
+            )
             torch.save(model.state_dict(), tmp_model_path)
     weight_size = os.path.getsize(tmp_model_path) / 1024 / 1024
     logger.info("Model size: {} MB".format(weight_size))
@@ -219,11 +233,18 @@ def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=N
     else:
         model_path = tmp_model_path
     current_path = os.path.abspath(__file__).rstrip("benchmark.py")
-    file_path = current_path + "utils/get_throughput.py \
+    file_path = (
+        current_path
+        + "utils/get_throughput.py \
         --model {} --data {} --batch_size {} --warmup {} \
         --iters {} {}".format(
-        model_path, tmp_data_path, config.batch_size, config.warmup,
-        config.iteration, additional_cmd
+            model_path,
+            tmp_data_path,
+            config.batch_size,
+            config.warmup,
+            config.iteration,
+            additional_cmd,
+        )
     )
     raw_cmd = "{} {}".format(sys.executable, file_path)
 
@@ -231,10 +252,10 @@ def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=N
     if config.num_of_instance == -1:
         cpu_counts = psutil.cpu_count(logical=False)
         config.num_of_instance = int(cpu_counts // config.cores_per_instance)
-    os.environ['NC_ENV_CONF'] = "False" # mark the start of benchmark
+    os.environ["NC_ENV_CONF"] = "False"  # mark the start of benchmark
     inc_conf = INCBenchmarkConfig(
         cores_per_instance=config.cores_per_instance,
-        num_of_instance=config.num_of_instance
+        num_of_instance=config.num_of_instance,
     )
     if version.parse(nc_version).release < version.parse("2.2").release:
         inc_bench = INCBenchmark(inc_conf)

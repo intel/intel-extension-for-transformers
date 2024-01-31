@@ -16,93 +16,97 @@
 # limitations under the License.
 """The TextEncoder_KVReshape Pattern."""
 
-from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
+
 from .. import graph_utils as util
 from .. import logger
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='TextEncoder_KVReshape')
+@pattern_registry(pattern_type="TextEncoder_KVReshape")
 class TextEncoder_KVReshape(Pattern):
     """The TextEncoder_KVReshape pattern.
 
     Fuse the original sub-graph into the custom acceleration 'TextEncoder_KVReshape' graph.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
-            'TextEncoder_KVReshape': [
+            "TextEncoder_KVReshape": [
                 # for text encoder k_proj and v_proj (reshape 0 & 1)
                 {
-                    'patterns': {
-                        'in': [[(0, 'Unsqueeze'), (2, 'Concat'), (3, 'Reshape'), (4, 'Transpose')],
-                               [(), (1, 'MatMulWithBias'), (3, 'Reshape')]],
-                        'out': [[(0, 'MatMulWithBias'), (1, 'Reshape'), (2, 'Transpose')]]
+                    "patterns": {
+                        "in": [
+                            [
+                                (0, "Unsqueeze"),
+                                (2, "Concat"),
+                                (3, "Reshape"),
+                                (4, "Transpose"),
+                            ],
+                            [(), (1, "MatMulWithBias"), (3, "Reshape")],
+                        ],
+                        "out": [
+                            [(0, "MatMulWithBias"), (1, "Reshape"), (2, "Transpose")]
+                        ],
                     },
-                    'search_mode': 'op_type',
-                    'node_names': {
-                        0: 1,
-                        1: 3,
-                        2: 4
-                    },
-                    'input_tensors': {
-                        0: [[{
-                            1: [0]
-                        }, {
-                            1: [1]
-                        }, {
-                            1: [2]
-                        }], [[0, 1, 2], 3]],
-                        1: [[{
-                            'input_data': [0]
-                        }], [[1], 2]],
+                    "search_mode": "op_type",
+                    "node_names": {0: 1, 1: 3, 2: 4},
+                    "input_tensors": {
+                        0: [[{1: [0]}, {1: [1]}, {1: [2]}], [[0, 1, 2], 3]],
+                        1: [[{"input_data": [0]}], [[1], 2]],
                         2: [[], [[], 1]],
                     },
-                    'output_tensors': {
-                        0: [[{
-                            1: [0]
-                        }], [[0], 1]],
-                        1: [[{
-                            3: [0]
-                        }], [[0], 1]],
-                        2: [[{
-                            4: [0]
-                        }], [[0], 1]],
+                    "output_tensors": {
+                        0: [[{1: [0]}], [[0], 1]],
+                        1: [[{3: [0]}], [[0], 1]],
+                        2: [[{4: [0]}], [[0], 1]],
                     },
-                    'returns': [2, 1, 4]
+                    "returns": [2, 1, 4],
                 },
             ]
         }
 
         def _set_attr(head_num, head_size, node_names, model):
             attr = OrderedDict()
-            attr['dst_shape'] = '-1,-1,' + str(head_num) + ',' + str(head_size)
-            attr['dims'] = '0'
+            attr["dst_shape"] = "-1,-1," + str(head_num) + "," + str(head_size)
+            attr["dims"] = "0"
 
             reshape_node_idx = model.get_node_id(node_names[1])
-            assert model.nodes[reshape_node_idx].op_type == 'Reshape'
+            assert model.nodes[reshape_node_idx].op_type == "Reshape"
             model.nodes[reshape_node_idx].attr = attr
 
         def _keep_attr(ret_old_nodes, node_names, model):
             output_node_names_idx = 0
             ret_old_names_idx = 1
-            MatMulWithBias_node_idx = model.get_node_id(node_names[output_node_names_idx])
-            assert ret_old_nodes[ret_old_names_idx].op_type == model.nodes[MatMulWithBias_node_idx].op_type
-            model.nodes[MatMulWithBias_node_idx].attr = ret_old_nodes[ret_old_names_idx].attr
+            MatMulWithBias_node_idx = model.get_node_id(
+                node_names[output_node_names_idx]
+            )
+            assert (
+                ret_old_nodes[ret_old_names_idx].op_type
+                == model.nodes[MatMulWithBias_node_idx].op_type
+            )
+            model.nodes[MatMulWithBias_node_idx].attr = ret_old_nodes[
+                ret_old_names_idx
+            ].attr
 
             output_node_names_idx = 2
             ret_old_names_idx = 2
             transpose_node_idx = model.get_node_id(node_names[output_node_names_idx])
-            assert ret_old_nodes[ret_old_names_idx].op_type == model.nodes[transpose_node_idx].op_type
+            assert (
+                ret_old_nodes[ret_old_names_idx].op_type
+                == model.nodes[transpose_node_idx].op_type
+            )
             model.nodes[transpose_node_idx].attr = ret_old_nodes[ret_old_names_idx].attr
 
-        for i in range(len(pattern_mapping_config['TextEncoder_KVReshape'])):
-            pattern_dict = pattern_mapping_config['TextEncoder_KVReshape'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("TextEncoder_KVReshape", pattern_dict,
-                                                                        model)
+        for i in range(len(pattern_mapping_config["TextEncoder_KVReshape"])):
+            pattern_dict = pattern_mapping_config["TextEncoder_KVReshape"][i]
+            model, new_node_names, ret_old_nodes = util.pattern_mapping(
+                "TextEncoder_KVReshape", pattern_dict, model
+            )
 
-            logger.info('TextEncoder_KVReshape matched...')
-            logger.debug('TextEncoder_KVReshape = {}'.format(new_node_names))
+            logger.info("TextEncoder_KVReshape matched...")
+            logger.debug("TextEncoder_KVReshape = {}".format(new_node_names))
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):
                     pack_node = ret_old_nodes[j][0]

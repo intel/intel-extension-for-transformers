@@ -72,9 +72,7 @@ neuralchat_server start --config_file ./server/config/neuralchat.yaml
 from neuralchat.server.neuralchat_server import NeuralChatServerExecutor
 
 server_executor = NeuralChatServerExecutor()
-server_executor(
-    config_file="./config/neuralchat.yaml", 
-    log_file="./log/neuralchat.log")
+server_executor(config_file="./config/neuralchat.yaml", log_file="./log/neuralchat.log")
 ```
 
 ## NeuralChat Client
@@ -96,10 +94,7 @@ from neuralchat.server.neuralchat_client import TextChatClientExecutor
 import json
 
 executor = TextChatClientExecutor()
-executor(
-    prompt="Tell me about Intel Xeon processors.",
-    server_ip="127.0.0.1",
-    port=8000)
+executor(prompt="Tell me about Intel Xeon processors.", server_ip="127.0.0.1", port=8000)
 ```
 
 ### Access voice chat service

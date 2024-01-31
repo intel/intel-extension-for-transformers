@@ -14,16 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Conversation prompt templates.
 
-"""
-Conversation prompt templates.
 We kindly request that you import fastchat instead of copying this file if you want to use it.
 You can contribute back the changes you want to make.
 """
 
 import dataclasses
-from enum import auto, IntEnum
-from typing import List, Any, Dict, Union
+from enum import IntEnum, auto
+from typing import Dict, List, Union
 
 
 class SeparatorStyle(IntEnum):
@@ -229,6 +228,7 @@ class Conversation:
 
     def update_last_message(self, message: str):
         """Update the last output.
+
         The last message is typically set to be None when constructing the prompt,
         so we need to update it in-place after getting the response from a model.
         """
@@ -1008,6 +1008,7 @@ register_conv_template(
     )
 )
 
+
 def compute_skip_echo_len(model_name, conv, prompt):
     model_name = model_name.lower()
     if "chatglm" in model_name:
@@ -1041,6 +1042,7 @@ def compute_skip_echo_len(model_name, conv, prompt):
     else:
         skip_echo_len = len(prompt) + 1 - prompt.count("</s>") * 3
     return skip_echo_len
+
 
 if __name__ == "__main__":
     print("Vicuna template:")

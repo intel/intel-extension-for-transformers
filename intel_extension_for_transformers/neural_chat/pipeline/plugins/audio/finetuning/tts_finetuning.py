@@ -15,19 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.config import TTSFinetuningConfig, TrainingArguments, TTSDatasetArguments, TTSModelArguments
-
-from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech
-from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
-from datasets import load_dataset, Audio, Dataset, Features, ClassLabel
 import os
-import torch
-from speechbrain.pretrained import EncoderClassifier
 from dataclasses import dataclass
-from typing import Any, Dict, List, Union
-from transformers import SpeechT5HifiGan
-import soundfile as sf
-from datasets import Dataset
+from typing import Dict, List, Union
+
+import torch
+from datasets import Audio, Dataset
+from speechbrain.pretrained import EncoderClassifier
+from transformers import (
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
+    SpeechT5ForTextToSpeech,
+    SpeechT5Processor,
+)
+
+from intel_extension_for_transformers.neural_chat.config import (
+    TTSFinetuningConfig,
+)
 
 
 @dataclass
@@ -36,8 +40,9 @@ class TTSDataCollatorWithPadding:
         self.model = model
         self.processor = processor
 
-    def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
-
+    def __call__(
+        self, features: List[Dict[str, Union[List[int], torch.Tensor]]]
+    ) -> Dict[str, torch.Tensor]:
         input_ids = [{"input_ids": feature["input_ids"]} for feature in features]
         label_features = [{"input_values": feature["labels"]} for feature in features]
         speaker_features = [feature["speaker_embeddings"] for feature in features]
@@ -59,12 +64,15 @@ class TTSDataCollatorWithPadding:
 
         # round down target lengths to multiple of reduction factor
         if self.model.config.reduction_factor > 1:
-            target_lengths = torch.tensor([
-                len(feature["input_values"]) for feature in label_features
-            ])
-            target_lengths = target_lengths.new([
-                length - length % self.model.config.reduction_factor for length in target_lengths
-            ])
+            target_lengths = torch.tensor(
+                [len(feature["input_values"]) for feature in label_features]
+            )
+            target_lengths = target_lengths.new(
+                [
+                    length - length % self.model.config.reduction_factor
+                    for length in target_lengths
+                ]
+            )
             max_length = max(target_lengths)
             batch["labels"] = batch["labels"][:, :max_length]
 
@@ -72,12 +80,13 @@ class TTSDataCollatorWithPadding:
         batch["speaker_embeddings"] = torch.tensor(speaker_features)
 
         return batch
- 
+
+
 class TTSFinetuning:
     def __init__(self, finetuning_config: TTSFinetuningConfig):
         self.dataset_args, self.model_args = (
             finetuning_config.dataset_args,
-            finetuning_config.model_args
+            finetuning_config.model_args,
         )
         self.audio_folder_path = self.dataset_args.audio_folder_path
         self.text_folder_path = self.dataset_args.text_folder_path
@@ -100,27 +109,35 @@ class TTSFinetuning:
                 with open(os.path.join(self.text_folder_path, text_name)) as f:
                     texts.append(f.read())
             else:
-                raise Exception("Check your audio folder! Currently only mp3 or wav files are supported!")
-        normalized_texts = [i.lower().replace(",","").replace(".", "") + "." for i in texts]
+                raise Exception(
+                    "Check your audio folder! Currently only mp3 or wav files are supported!"
+                )
+        normalized_texts = [
+            i.lower().replace(",", "").replace(".", "") + "." for i in texts
+        ]
         return texts, normalized_texts
 
     def _construct_audio_list(self):
         audio_names = os.listdir(self.audio_folder_path)
         audio_paths = [os.path.join(self.audio_folder_path, i) for i in audio_names]
         return audio_paths
-    
+
     def _construct_finetuning_dataset(self):
         raw_texts, normalized_texts = self._construct_text_list()
         audio_paths = self._construct_audio_list()
         if len(raw_texts) != len(audio_paths):
-            raise Exception("The length of files under the audio folder and the text folder should be the same!")
+            raise Exception(
+                "The length of files under the audio folder and the text folder should be the same!"
+            )
         L = len(audio_paths)
-        dataset = Dataset.from_dict({
-            "audio_id": [f"id{i+1}" for i in range(L)],
-            "audio": audio_paths,
-            'raw_text': raw_texts,
-            'normalized_text': normalized_texts,}).cast_column(
-                "audio", Audio(sampling_rate=16000))
+        dataset = Dataset.from_dict(
+            {
+                "audio_id": [f"id{i+1}" for i in range(L)],
+                "audio": audio_paths,
+                "raw_text": raw_texts,
+                "normalized_text": normalized_texts,
+            }
+        ).cast_column("audio", Audio(sampling_rate=16000))
         return dataset
 
     def _construct_training_arguments(self):
@@ -150,11 +167,13 @@ class TTSFinetuning:
         speaker_model = EncoderClassifier.from_hparams(
             source=spk_model_name,
             run_opts={"device": device},
-            savedir=os.path.join("/tmp", spk_model_name)
+            savedir=os.path.join("/tmp", spk_model_name),
         )
         with torch.no_grad():
             speaker_embeddings = speaker_model.encode_batch(torch.tensor(waveform))
-            speaker_embeddings = torch.nn.functional.normalize(speaker_embeddings, dim=2)
+            speaker_embeddings = torch.nn.functional.normalize(
+                speaker_embeddings, dim=2
+            )
             speaker_embeddings = speaker_embeddings.squeeze().cpu().numpy()
         return speaker_embeddings
 
@@ -185,12 +204,13 @@ class TTSFinetuning:
     def finetune(self):
         dataset = self._construct_finetuning_dataset()
         dataset = dataset.map(
-            self._prepare_dataset, remove_columns=dataset.column_names,
-        ).filter(
-            self._is_not_too_long, input_columns=["input_ids"]
-        )
+            self._prepare_dataset,
+            remove_columns=dataset.column_names,
+        ).filter(self._is_not_too_long, input_columns=["input_ids"])
         dataset = dataset.train_test_split(test_size=0.1)
-        data_collator = TTSDataCollatorWithPadding(model=self.model, processor=self.processor)
+        data_collator = TTSDataCollatorWithPadding(
+            model=self.model, processor=self.processor
+        )
 
         training_args = self._construct_training_arguments()
         trainer = Seq2SeqTrainer(

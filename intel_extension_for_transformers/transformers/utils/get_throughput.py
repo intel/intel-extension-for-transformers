@@ -14,13 +14,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Special file for triggering multiple instances for benchmarking."""
 import argparse
 import time
-import torch
 from collections import UserDict
+
+import torch
 from neural_compressor.utils import logger
+
 from intel_extension_for_transformers.transformers import OptimizedModel
 
 
@@ -51,16 +52,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate performance")
     parser.add_argument("--model", type=str, help="input model")
     parser.add_argument("--data", type=str, help="example inputs")
-    parser.add_argument("--batch_size", default=1, type=int, help="the batch size of input data")
+    parser.add_argument(
+        "--batch_size", default=1, type=int, help="the batch size of input data"
+    )
     parser.add_argument("--warmup", default=5, type=int, help="warmup iterations")
     parser.add_argument("--iters", default=20, type=int, help="total iterations")
-    parser.add_argument("--torchscript", action='store_true', help="the model is torchscript")
-    parser.add_argument("--generate", action='store_true', help="evaluate model.generate performance")
-    parser.add_argument("--from_pretrain", action='store_true', help="load model ")
-    parser.add_argument("--enable_ipex", action='store_true', help="load model ")
+    parser.add_argument(
+        "--torchscript", action="store_true", help="the model is torchscript"
+    )
+    parser.add_argument(
+        "--generate", action="store_true", help="evaluate model.generate performance"
+    )
+    parser.add_argument("--from_pretrain", action="store_true", help="load model ")
+    parser.add_argument("--enable_ipex", action="store_true", help="load model ")
     args = parser.parse_args()
     if args.enable_ipex:
-        import intel_extension_for_pytorch as ipex
+        pass
     if args.torchscript:
         model = torch.jit.load(args.model)
     else:

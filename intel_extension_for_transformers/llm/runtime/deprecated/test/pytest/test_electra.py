@@ -15,18 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
-from transformers import  AutoTokenizer
-import numpy as np
+import copy
 import os
 import sys
+import unittest
+
+import numpy as np
 import torch
-import copy
+from transformers import AutoTokenizer
+
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import (
+    autocast,
+    compile,
+)
 
 
 def is_win():
-    return sys.platform.startswith('win')
+    return sys.platform.startswith("win")
 
 
 class TestElectra(unittest.TestCase):
@@ -39,12 +44,17 @@ class TestElectra(unittest.TestCase):
         pass
 
     def test_electra(self):
-        root_dir = '/tf_dataset2/models/nlp_toolkit/chinese-legal-electra-base-generator/'
+        root_dir = (
+            "/tf_dataset2/models/nlp_toolkit/chinese-legal-electra-base-generator/"
+        )
         if is_win():
-            root_dir = 'D:\\dataset\\chinese-legal-electra-base-generator\\'
-        model_dir = root_dir + 'model.pt'
-        pattern_config = root_dir + 'bf16_pattern.conf'
-        self.assertTrue(os.path.exists(model_dir), 'model is not found, please set your own model path!')
+            root_dir = "D:\\dataset\\chinese-legal-electra-base-generator\\"
+        model_dir = root_dir + "model.pt"
+        pattern_config = root_dir + "bf16_pattern.conf"
+        self.assertTrue(
+            os.path.exists(model_dir),
+            "model is not found, please set your own model path!",
+        )
 
         # inputs
         tokenizer = AutoTokenizer.from_pretrained(root_dir)
@@ -53,22 +63,40 @@ class TestElectra(unittest.TestCase):
 
         # fp32 pt model
         jit_model = torch.jit.load(model_dir)
-        jit_out = jit_model(inputs.input_ids, inputs.attention_mask, inputs.token_type_ids)[0]
+        jit_out = jit_model(
+            inputs.input_ids, inputs.attention_mask, inputs.token_type_ids
+        )[0]
 
         # fp32 engine model
         fp32_eng = compile(model_dir)
         bs = inputs.input_ids.size()[0]
         seq_len = inputs.input_ids.size()[1]
-        fp32_eng_out = copy.deepcopy(list(fp32_eng.inference([inputs.input_ids.detach().numpy(),
-                                    inputs.attention_mask.detach().numpy(),
-                                    inputs.token_type_ids.detach().numpy()]).values())[0]).reshape(bs, seq_len, -1)
+        fp32_eng_out = copy.deepcopy(
+            list(
+                fp32_eng.inference(
+                    [
+                        inputs.input_ids.detach().numpy(),
+                        inputs.attention_mask.detach().numpy(),
+                        inputs.token_type_ids.detach().numpy(),
+                    ]
+                ).values()
+            )[0]
+        ).reshape(bs, seq_len, -1)
 
         # bf16 engine model
         with autocast("bf16"):
             bf16_eng = compile(model_dir, pattern_config)
-        bf16_eng_out = copy.deepcopy(list(bf16_eng.inference([inputs.input_ids.detach().numpy(),
-                                    inputs.attention_mask.detach().numpy(),
-                                    inputs.token_type_ids.detach().numpy()]).values())[0]).reshape(bs, seq_len, -1)
+        bf16_eng_out = copy.deepcopy(
+            list(
+                bf16_eng.inference(
+                    [
+                        inputs.input_ids.detach().numpy(),
+                        inputs.attention_mask.detach().numpy(),
+                        inputs.token_type_ids.detach().numpy(),
+                    ]
+                ).values()
+            )[0]
+        ).reshape(bs, seq_len, -1)
 
         fp32_flag = np.allclose(jit_out.detach().numpy(), fp32_eng_out, atol=1e0)
         bf16_flag = np.allclose(jit_out.detach().numpy(), bf16_eng_out, atol=1e0)
@@ -76,5 +104,5 @@ class TestElectra(unittest.TestCase):
         self.assertTrue(bf16_flag)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

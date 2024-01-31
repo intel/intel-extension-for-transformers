@@ -16,14 +16,16 @@
 # limitations under the License.
 
 
-
-import unittest
 import os
 import shutil
-from unittest import mock
-from intel_extension_for_transformers.neural_chat.models.model_utils import load_model, MODELS
-from intel_extension_for_transformers.transformers import MixedPrecisionConfig, BitsAndBytesConfig, WeightOnlyQuantConfig
+import unittest
+
+from intel_extension_for_transformers.neural_chat.models.model_utils import (
+    MODELS,
+    load_model,
+)
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
+
 
 class TestModelUtils(unittest.TestCase):
     def setUp(self) -> None:
@@ -37,17 +39,29 @@ class TestModelUtils(unittest.TestCase):
             shutil.rmtree("runtime_outs")
         return super().tearDown()
 
-    @unittest.skipIf(get_device_type() != 'hpu', "Only run this test on HPU")
+    @unittest.skipIf(get_device_type() != "hpu", "Only run this test on HPU")
     def test_load_model_on_hpu(self):
-        load_model(model_name=self.model_path, tokenizer_name=self.model_path, device="hpu", use_hpu_graphs=True)
+        load_model(
+            model_name=self.model_path,
+            tokenizer_name=self.model_path,
+            device="hpu",
+            use_hpu_graphs=True,
+        )
         self.assertTrue(self.model_path in MODELS)
         self.assertTrue(MODELS[self.model_path]["model"] is not None)
 
-    @unittest.skipIf(get_device_type() != 'hpu', "Only run this test on HPU")
+    @unittest.skipIf(get_device_type() != "hpu", "Only run this test on HPU")
     def test_load_model_on_hpu_with_deepspeed(self):
-        load_model(model_name=self.model_path, tokenizer_name=self.model_path, device="hpu", use_hpu_graphs=True, use_deepspeed=True)
+        load_model(
+            model_name=self.model_path,
+            tokenizer_name=self.model_path,
+            device="hpu",
+            use_hpu_graphs=True,
+            use_deepspeed=True,
+        )
         self.assertTrue(self.model_path in MODELS)
         self.assertTrue(MODELS[self.model_path]["model"] is not None)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

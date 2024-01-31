@@ -14,14 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The QKVMerge Pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
+
+import numpy as np
+
 from .. import graph_utils as util
 from ..ops import Tensor
-import numpy as np
+from .pattern import Pattern, pattern_registry
 
 
 @pattern_registry(pattern_type="QKVMerge")
@@ -31,8 +32,10 @@ class QKVMerge(Pattern):
     Fuse the original sub-graph into the custom acceleration 'QKVMerge' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
+
         def get_zero_ratio(matrix, block):
             sparse_ratio = -1
             if matrix.ndim == 2 and len(block) == 2:
@@ -44,8 +47,7 @@ class QKVMerge(Pattern):
                         is_zero_block = True
                         for br in range(block[0]):
                             for bc in range(block[1]):
-                                if matrix[mr * block[0] + br][mc * block[1] +
-                                                              bc] != 0:
+                                if matrix[mr * block[0] + br][mc * block[1] + bc] != 0:
                                     is_zero_block = False
                                     break
                             if not is_zero_block:
@@ -56,38 +58,40 @@ class QKVMerge(Pattern):
             return zero_ratio
 
         pattern_mapping_config = {
-            "QKVMerge": [{
-                "patterns": {
-                    "in": [
-                        [
-                            (0, "LayerNorm"),
-                            (1, "Quantize"),
-                            (2, "MatMulWithBias"),
-                            (5, "Reshape"),
-                            (10, "TransposeBatchMatMul"),
+            "QKVMerge": [
+                {
+                    "patterns": {
+                        "in": [
+                            [
+                                (0, "LayerNorm"),
+                                (1, "Quantize"),
+                                (2, "MatMulWithBias"),
+                                (5, "Reshape"),
+                                (10, "TransposeBatchMatMul"),
+                            ],
+                            [
+                                (0, "LayerNorm"),
+                                (1, "Quantize"),
+                                (3, "MatMulWithBias"),
+                                (6, "Reshape"),
+                                (8, "TransposeBatchMatMul"),
+                                (9, "Softmax"),
+                                (10, "TransposeBatchMatMul"),
+                            ],
+                            [
+                                (0, "LayerNorm"),
+                                (1, "Quantize"),
+                                (4, "MatMulWithBias"),
+                                (7, "Reshape"),
+                                (8, "TransposeBatchMatMul"),
+                                (9, "Softmax"),
+                                (10, "TransposeBatchMatMul"),
+                            ],
                         ],
-                        [
-                            (0, "LayerNorm"),
-                            (1, "Quantize"),
-                            (3, "MatMulWithBias"),
-                            (6, "Reshape"),
-                            (8, "TransposeBatchMatMul"),
-                            (9, "Softmax"),
-                            (10, "TransposeBatchMatMul"),
-                        ],
-                        [
-                            (0, "LayerNorm"),
-                            (1, "Quantize"),
-                            (4, "MatMulWithBias"),
-                            (7, "Reshape"),
-                            (8, "TransposeBatchMatMul"),
-                            (9, "Softmax"),
-                            (10, "TransposeBatchMatMul"),
-                        ],
-                    ],
-                },
-                "search_mode": "op_type",
-            }]
+                    },
+                    "search_mode": "op_type",
+                }
+            ]
         }
         for i in range(len(pattern_mapping_config["QKVMerge"])):
             pattern = pattern_mapping_config["QKVMerge"][i]["patterns"]["in"]
@@ -99,13 +103,16 @@ class QKVMerge(Pattern):
                 k_matmul = model.get_node_by_name(patterns_nodes_name[j][4])
                 matmuls = []
 
-                if ((v_matmul.attr.__contains__("output_dtype")
-                        and q_matmul.attr.__contains__("output_dtype")
-                        and k_matmul.attr.__contains__("output_dtype")
-                        and q_matmul.attr["output_dtype"] == v_matmul.attr["output_dtype"])
-                        or (v_matmul.attr.__contains__("output_dtype") == False
-                        and q_matmul.attr.__contains__("output_dtype") == False
-                        and k_matmul.attr.__contains__("output_dtype") == False)):
+                if (
+                    v_matmul.attr.__contains__("output_dtype")
+                    and q_matmul.attr.__contains__("output_dtype")
+                    and k_matmul.attr.__contains__("output_dtype")
+                    and q_matmul.attr["output_dtype"] == v_matmul.attr["output_dtype"]
+                ) or (
+                    v_matmul.attr.__contains__("output_dtype") == False
+                    and q_matmul.attr.__contains__("output_dtype") == False
+                    and k_matmul.attr.__contains__("output_dtype") == False
+                ):
                     matmuls.append(v_matmul)
                     matmuls.append(q_matmul)
                     matmuls.append(k_matmul)
@@ -115,8 +122,7 @@ class QKVMerge(Pattern):
 
                 zero_up_to_standard = True
                 for k in range(len(matmuls)):
-                    if get_zero_ratio(matmuls[k].input_tensors[1].data,
-                                      [1, 4]) < 0.7:
+                    if get_zero_ratio(matmuls[k].input_tensors[1].data, [1, 4]) < 0.7:
                         zero_up_to_standard = False
                         break
                 if zero_up_to_standard == True:
@@ -151,21 +157,27 @@ class QKVMerge(Pattern):
                             output_max_data = output_max_tensor[k].data
                         else:
                             weight_data = np.hstack(
-                                (weight_data, weight_tensor[k].data))
-                            bias_data = np.hstack(
-                                (bias_data, bias_tensor[k].data))
+                                (weight_data, weight_tensor[k].data)
+                            )
+                            bias_data = np.hstack((bias_data, bias_tensor[k].data))
                             src_min_data = np.hstack(
-                                (src_min_data, src_min_tensor[k].data))
+                                (src_min_data, src_min_tensor[k].data)
+                            )
                             src_max_data = np.hstack(
-                                (src_max_data, src_max_tensor[k].data))
+                                (src_max_data, src_max_tensor[k].data)
+                            )
                             weight_min_data = np.hstack(
-                                (weight_min_data, weight_min_tensor[k].data))
+                                (weight_min_data, weight_min_tensor[k].data)
+                            )
                             weight_max_data = np.hstack(
-                                (weight_max_data, weight_max_tensor[k].data))
+                                (weight_max_data, weight_max_tensor[k].data)
+                            )
                             output_min_data = np.hstack(
-                                (output_min_data, output_min_tensor[k].data))
+                                (output_min_data, output_min_tensor[k].data)
+                            )
                             output_max_data = np.hstack(
-                                (output_max_data, output_max_tensor[k].data))
+                                (output_max_data, output_max_tensor[k].data)
+                            )
 
                     # create merge matmul weight and bias tensor
                     merge_matmul_weight_tensor = Tensor(
@@ -244,12 +256,12 @@ class QKVMerge(Pattern):
                     )
 
                     # create merge matmul
-                    quantize.output_tensors[0].dest_op = [
-                        "merge_matmul" + str(j)
-                    ]
+                    quantize.output_tensors[0].dest_op = ["merge_matmul" + str(j)]
                     merge_matmul_attr = OrderedDict({"src1_perm": "1,0"})
-                    if (matmuls[0].attr.__contains__("output_dtype")):
-                        merge_matmul_attr["output_dtype"] = matmuls[0].attr["output_dtype"]
+                    if matmuls[0].attr.__contains__("output_dtype"):
+                        merge_matmul_attr["output_dtype"] = matmuls[0].attr[
+                            "output_dtype"
+                        ]
 
                     merge_matmul = util.construct_node(
                         node_name="merge_matmul" + str(j),
@@ -267,7 +279,7 @@ class QKVMerge(Pattern):
                             merge_matmul_output_max_tensor,
                         ],
                         output_tensors=[merge_matmul_out],
-                        attr=merge_matmul_attr
+                        attr=merge_matmul_attr,
                     )
                     # create split
                     split_attr = ""
@@ -277,27 +289,21 @@ class QKVMerge(Pattern):
                             split_attr += ","
                     split_output_tensors = []
                     for k in range(len(matmuls)):
-                        split_output_tensors.append(
-                            matmuls[k].output_tensors[0])
+                        split_output_tensors.append(matmuls[k].output_tensors[0])
                     split = util.construct_node(
                         node_name="Split" + str(j),
                         op_type="Split",
                         input_tensors=[merge_matmul_out],
                         # modify
                         output_tensors=split_output_tensors,
-                        attr=OrderedDict({
-                            "axis": 0,
-                            "split": split_attr
-                        }),
+                        attr=OrderedDict({"axis": 0, "split": split_attr}),
                     )
                     for k in range(len(split.output_tensors)):
                         split.output_tensors[k].source_op = "Split" + str(j)
 
                     # insert qkvmatmul and split
-                    model.insert_nodes(
-                        model.get_node_id(quantize.name) + 1, [split])
-                    model.insert_nodes(model.get_node_id(split.name),
-                                       [merge_matmul])
+                    model.insert_nodes(model.get_node_id(quantize.name) + 1, [split])
+                    model.insert_nodes(model.get_node_id(split.name), [merge_matmul])
                     # remove Kmatmul Qmatmul Vmatmul
                     remove_name = []
                     for k in range(len(matmuls)):

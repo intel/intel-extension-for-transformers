@@ -15,24 +15,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .op import Operator, operator_registry
-from .tensor import Tensor
-from ..graph_utils import list2str
 import numpy as np
 
+from ..graph_utils import list2str
+from .op import Operator, operator_registry
 
-@operator_registry(operator_type='Slice')
+
+@operator_registry(operator_type="Slice")
 class Slice(Operator):
     def __init__(self):
         super().__init__()
 
     def set_attr(self, framework, node):
-        if framework == 'onnxruntime':
+        if framework == "onnxruntime":
             keep_idx = [0]
             # axes and steps are optional input tensors
             name_idx = {1: "starts", 2: "ends", 3: "axes", 4: "steps"}
-            assert len(self._input_tensors) > 2, \
-                "wrong input_tensors in Slice Op, should have 3 input tensors at least."
+            assert (
+                len(self._input_tensors) > 2
+            ), "wrong input_tensors in Slice Op, should have 3 input tensors at least."
             for idx, input_tensor in enumerate(self._input_tensors):
                 if idx == 0:
                     continue
@@ -42,14 +43,16 @@ class Slice(Operator):
                     keep_idx.append(idx)
             self._input_tensors = [self._input_tensors[i] for i in keep_idx]
 
-        if framework == 'torch':
-            if node.kind() == 'aten::slice':
-                self._attr['axes'] = node.inputsAt(1).toIValue()
-                self._attr['starts'] = node.inputsAt(2).toIValue()
-                self._attr['ends'] = node.inputsAt(3).toIValue()   # TODO: check None type - 1
-                self._attr['steps'] = node.inputsAt(4).toIValue()
-            elif node.kind() == 'aten::select':
-                self._attr['axes'] = node.inputsAt(1).toIValue()
-                self._attr['starts'] = node.inputsAt(2).toIValue()
-                self._attr['ends'] = node.inputsAt(2).toIValue()
-                self._attr['steps'] = 1
+        if framework == "torch":
+            if node.kind() == "aten::slice":
+                self._attr["axes"] = node.inputsAt(1).toIValue()
+                self._attr["starts"] = node.inputsAt(2).toIValue()
+                self._attr["ends"] = node.inputsAt(
+                    3
+                ).toIValue()  # TODO: check None type - 1
+                self._attr["steps"] = node.inputsAt(4).toIValue()
+            elif node.kind() == "aten::select":
+                self._attr["axes"] = node.inputsAt(1).toIValue()
+                self._attr["starts"] = node.inputsAt(2).toIValue()
+                self._attr["ends"] = node.inputsAt(2).toIValue()
+                self._attr["steps"] = 1

@@ -14,26 +14,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import argparse
 import copy
-import fnmatch
-import json
-import logging
 import os
 import random
-import sys
-import time
-from dataclasses import dataclass, field
-from typing import Dict, Optional, Sequence
+from typing import Dict, Sequence
 
 import nltk
-import numpy as np
 import torch
-import torch.nn.functional as F
 import transformers
-from tqdm import tqdm
-from transformers import AutoTokenizer
 from datasets import load_dataset
+from transformers import AutoTokenizer
 
 nltk.download("punkt", quiet=False)
 random.seed(9973)
@@ -146,11 +136,11 @@ class CNNDAILYMAIL(object):
         self.calib = calib
 
     def wrap(self, example):
-        example['instruction'] = 'Summarize the following news article:'
+        example["instruction"] = "Summarize the following news article:"
         return example
 
     def load_dataset(self):
-        """Loads dataset"""
+        """Loads dataset."""
         list_data_dict = load_dataset("cnn_dailymail", "3.0.0")["validation"]
         if self.num_samples is not None:
             self.num_samples = min(self.num_samples, len(list_data_dict))
@@ -159,7 +149,9 @@ class CNNDAILYMAIL(object):
             PROMPT_DICT["prompt_input"],
             PROMPT_DICT["prompt_no_input"],
         )
-        sources = [prompt_input.format_map(self.wrap(example)) for example in list_data_dict]
+        sources = [
+            prompt_input.format_map(self.wrap(example)) for example in list_data_dict
+        ]
         targets = [f"{example['highlights']}" for example in list_data_dict]
         data_dict = preprocess(sources, targets, self.tokenizer)
 
@@ -169,7 +161,7 @@ class CNNDAILYMAIL(object):
         self.targets = targets
 
     def load_tokenizer(self):
-        """Returns the tokenizer"""
+        """Returns the tokenizer."""
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_path,
             model_max_length=2048,

@@ -33,4 +33,3 @@ neuralchat help
     voicechat = TextVoiceChatExecutor()
     voicechat(query="../../assets/audio/say_hello.wav", output_audio_path="response.wav")
     ```
-

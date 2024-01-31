@@ -14,35 +14,44 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The InputFile Pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
+
 from .. import graph_utils as util
+from .pattern import Pattern, pattern_registry
 
 
 # remove the input_file patterns in tensorflow model if it has
-@pattern_registry(pattern_type='InputFile')
+@pattern_registry(pattern_type="InputFile")
 class InputFile(Pattern):
     """The InputFile pattern.
 
     Fuse the original sub-graph into the custom acceleration 'InputFile' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         patterns = {
-            'InputFile': [
-                [[(0, 'Placeholder'), (2, 'Reshape'), (3, 'TensorSliceDataset'),
-                  (4, 'FlatMapDataset'), (5, 'MapAndBatchDataset'), (6, 'OptimizeDataset'),
-                  (7, 'ModelDataset'), (9, 'MakeIterator')],
-                 [(), (1, 'Placeholder'), (5, 'MapAndBatchDataset')],
-                 [(), (8, 'IteratorV2'), (9, 'MakeIterator')]],
+            "InputFile": [
+                [
+                    [
+                        (0, "Placeholder"),
+                        (2, "Reshape"),
+                        (3, "TensorSliceDataset"),
+                        (4, "FlatMapDataset"),
+                        (5, "MapAndBatchDataset"),
+                        (6, "OptimizeDataset"),
+                        (7, "ModelDataset"),
+                        (9, "MakeIterator"),
+                    ],
+                    [(), (1, "Placeholder"), (5, "MapAndBatchDataset")],
+                    [(), (8, "IteratorV2"), (9, "MakeIterator")],
+                ],
             ]
         }
 
-        in_pattern = patterns['InputFile'][0]
+        in_pattern = patterns["InputFile"][0]
         match_result = util.search_pattern(in_pattern, model)
         for each_ret in match_result:
             model.remove_nodes(each_ret[:-1])

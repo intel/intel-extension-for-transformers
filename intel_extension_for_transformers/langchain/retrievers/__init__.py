@@ -15,5 +15,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .vectorstore_retriever import VectorStoreRetriever
-from .child_parent_retriever import ChildParentRetriever

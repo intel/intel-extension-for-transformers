@@ -19,6 +19,7 @@ from intel_extension_for_transformers.transformers.utils.utility import LazyImpo
 
 setfit = LazyImport("setfit")
 
+
 class DistillationSetFitTrainer(setfit.DistillationSetFitTrainer):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

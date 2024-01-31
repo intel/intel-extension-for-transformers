@@ -15,14 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+
 from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+
 
 def main():
     server_executor = NeuralChatServerExecutor()
-    server_executor(
-        config_file="./photoai.yaml",
-        log_file="./photoai.log")
+    server_executor(config_file="./photoai.yaml", log_file="./photoai.log")
 
 
 if __name__ == "__main__":

@@ -14,12 +14,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Utility."""
 
 import importlib
 import sys
+
 import torch
+
 if sys.version_info < (3, 8):
     import importlib_metadata
 else:
@@ -27,10 +28,11 @@ else:
 
 
 def supported_gpus():
-    return ['flex', 'max', 'arc']
+    return ["flex", "max", "arc"]
+
 
 def get_gpu_family():
-    ''' Get gpu device family info.
+    """Get gpu device family info.
 
     Return 'flex'|'max'|'arc'| 'no_gpu'| assert
 
@@ -41,19 +43,19 @@ def get_gpu_family():
       'Intel(R) Data Center GPU Flex 170'
       'Intel(R) Data Center GPU Max 1100'
       'Intel(R) Arc(TM) A770 Graphics'
-    '''
+    """
 
-    import intel_extension_for_pytorch as ipex
+
     if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
-        return 'no_gpu'
+        return "no_gpu"
 
     name = torch.xpu.get_device_name()
-    if 'GPU Flex' in name:
-        result = 'flex'
-    elif 'GPU Max' in name:
-        result = 'max'
-    elif 'Arc(TM)' in name:
-        result = 'arc'
+    if "GPU Flex" in name:
+        result = "flex"
+    elif "GPU Max" in name:
+        result = "max"
+    elif "Arc(TM)" in name:
+        result = "arc"
     else:
         assert False, "Unsupported GPU device: {}".format(name)
 
@@ -62,6 +64,7 @@ def get_gpu_family():
     else:
         return result
 
+
 _ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
 _ipex_version = "N/A"
 if _ipex_available:
@@ -69,6 +72,7 @@ if _ipex_available:
         _ipex_version = importlib_metadata.version("intel_extension_for_pytorch")
     except importlib_metadata.PackageNotFoundError:
         _ipex_available = False
+
 
 def is_ipex_available():
     return _ipex_available

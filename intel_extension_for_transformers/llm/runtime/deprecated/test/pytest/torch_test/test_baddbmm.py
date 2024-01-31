@@ -15,18 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import sys
-import torch
-import torch.nn as nn
-import numpy as np
 import os
 import shutil
+import unittest
+
+import numpy as np
+import torch
+import torch.nn as nn
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
 torch.manual_seed(2)
+
 
 class Net(nn.Module):
     def __init__(self, alpha=1):
@@ -35,6 +37,7 @@ class Net(nn.Module):
 
     def forward(self, M, batch1, batch2):
         return torch.baddbmm(M, batch1, batch2, alpha=self.alpha)
+
 
 class TestTorchOP(unittest.TestCase):
     @classmethod
@@ -51,18 +54,18 @@ class TestTorchOP(unittest.TestCase):
         batch1 = torch.randn(10, 3, 4)
         batch2 = torch.randn(10, 4, 5)
         traced_model = torch.jit.trace(n, (M, batch1, batch2))
-        
-        torch.jit.save(traced_model, '{}.pt'.format(file_name))
+
+        torch.jit.save(traced_model, "{}.pt".format(file_name))
         ref_out = traced_model(M, batch1, batch2).detach().numpy()
-        
-        graph = compile('{}.pt'.format(file_name))
+
+        graph = compile("{}.pt".format(file_name))
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + "/conf.yaml", file_name + "/model.bin")
         out = newgraph.inference([item.numpy() for item in [M, batch1, batch2]])
 
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
-        os.remove('{}.pt'.format(file_name))
+        os.remove("{}.pt".format(file_name))
         shutil.rmtree(file_name)
 
     def test_2(self):
@@ -71,18 +74,18 @@ class TestTorchOP(unittest.TestCase):
         batch1 = torch.randn(10, 3, 4)
         batch2 = torch.randn(10, 4, 5)
         traced_model = torch.jit.trace(n, (M, batch1, batch2))
-        
-        torch.jit.save(traced_model, '{}.pt'.format(file_name))
+
+        torch.jit.save(traced_model, "{}.pt".format(file_name))
         ref_out = traced_model(M, batch1, batch2).detach().numpy()
-        
-        graph = compile('{}.pt'.format(file_name))
+
+        graph = compile("{}.pt".format(file_name))
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + "/conf.yaml", file_name + "/model.bin")
         out = newgraph.inference([item.numpy() for item in [M, batch1, batch2]])
 
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
-        os.remove('{}.pt'.format(file_name))
+        os.remove("{}.pt".format(file_name))
         shutil.rmtree(file_name)
 
 

@@ -44,13 +44,13 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
     {
         "instruction": "Explain why the following fraction is equivalent to 1/4",
         "input": "4/16",
-        "output": "The fraction 4/16 is equivalent to 1/4 because both numerators and denominators are divisible by 4. Dividing both the top and bottom numbers by 4 yields the fraction 1/4."
+        "output": "The fraction 4/16 is equivalent to 1/4 because both numerators and denominators are divisible by 4. Dividing both the top and bottom numbers by 4 yields the fraction 1/4.",
     }
-    # for examples with a empty input field 
+    # for examples with a empty input field
     {
         "instruction": "Give three tips for staying healthy.",
         "input": "",
-        "output": "1.Eat a balanced diet and make sure to include plenty of fruits and vegetables. \n2. Exercise regularly to keep your body active and strong. \n3. Get enough sleep and maintain a consistent sleep schedule."
+        "output": "1.Eat a balanced diet and make sure to include plenty of fruits and vegetables. \n2. Exercise regularly to keep your body active and strong. \n3. Get enough sleep and maintain a consistent sleep schedule.",
     }
     ```
 
@@ -61,7 +61,7 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
         ### Instruction:
         {instruction}
-    
+
         ### Input:
         {input}
 
@@ -87,15 +87,15 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
     - **Chat data format:** the data field is `messages` (keep same with [HuggingFaceH4/oasst1_en](https://huggingface.co/datasets/HuggingFaceH4/oasst1_en)), one of examples is:
     ```python
     {
-        "messages":[
+        "messages": [
             {
-                "content":"Can you give me a list of names for the title of a project I am working on? The project is a video game I am working on for school about a zombie apocalypse that happens in tribal times. And can you include these words in some way: \"Death, fire, tribal, ancient\"",
-                "role":"user"
+                "content": 'Can you give me a list of names for the title of a project I am working on? The project is a video game I am working on for school about a zombie apocalypse that happens in tribal times. And can you include these words in some way: "Death, fire, tribal, ancient"',
+                "role": "user",
             },
             {
-                "content":"Here are some potential names:\n\nThe ancient fire and the Tribe of death, \nthe Tribe of Fire and the Tribe of ghosts,\nThe curse of the fire of death,\nThe curse of the flaming Angels,\nThe black flame,",
-                "role":"assistant"
-            }
+                "content": "Here are some potential names:\n\nThe ancient fire and the Tribe of death, \nthe Tribe of Fire and the Tribe of ghosts,\nThe curse of the fire of death,\nThe curse of the flaming Angels,\nThe black flame,",
+                "role": "assistant",
+            },
         ]
     }
     ```
@@ -115,8 +115,8 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
     - **Summarization data format:** the main data fields are `article` and `highlights` (keep same with [cnn_dailymail](https://huggingface.co/datasets/cnn_dailymail)), one of examples is:
     ```python
     {
-        "article":"LONDON, England (Reuters) -- Harry Potter star Daniel Radcliffe gains access to a reported £20 million ($41.1 million) fortune as he turns 18 on Monday, but he insists the money won't cast a spell on him. Daniel Radcliffe as Harry Potter in Harry Potter and the Order of the Phoenix To the disappointment of gossip columnists around the world, the young actor says he has no plans to fritter his cash away on fast cars, drink and celebrity parties......",
-        "highlights":"Harry Potter star Daniel Radcliffe gets £20M fortune as he turns 18 Monday. Young actor says he has no plans to fritter his cash away. Radcliffe's earnings from first five Potter films have been held in trust fund."
+        "article": "LONDON, England (Reuters) -- Harry Potter star Daniel Radcliffe gains access to a reported £20 million ($41.1 million) fortune as he turns 18 on Monday, but he insists the money won't cast a spell on him. Daniel Radcliffe as Harry Potter in Harry Potter and the Order of the Phoenix To the disappointment of gossip columnists around the world, the young actor says he has no plans to fritter his cash away on fast cars, drink and celebrity parties......",
+        "highlights": "Harry Potter star Daniel Radcliffe gets £20M fortune as he turns 18 Monday. Young actor says he has no plans to fritter his cash away. Radcliffe's earnings from first five Potter films have been held in trust fund.",
     }
     ```
 

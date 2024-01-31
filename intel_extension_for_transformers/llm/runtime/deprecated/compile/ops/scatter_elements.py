@@ -14,26 +14,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
 
 
-@operator_registry(operator_type='ScatterElements')
+@operator_registry(operator_type="ScatterElements")
 class ScatterElements(Operator):
     """Parse the ScatterElements operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
         """Extract the node attr from onnxruntime."""
-        if framework == 'onnxruntime':
+        if framework == "onnxruntime":
             for attribute in node.attribute:
-                if attribute.name == 'axis':
-                    self._attr['axis'] = attribute.i
-            
-
-
+                if attribute.name == "axis":
+                    self._attr["axis"] = attribute.i

@@ -17,13 +17,16 @@
 
 import torch
 from torch import nn
-from torch.nn import functional as F
 
 
 class Conv2d(nn.Module):
-    def __init__(self, cin, cout, kernel_size, stride, padding, residual=False, *args, **kwargs):
+    def __init__(
+        self, cin, cout, kernel_size, stride, padding, residual=False, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
-        self.conv_block = nn.Sequential(nn.Conv2d(cin, cout, kernel_size, stride, padding), nn.BatchNorm2d(cout))
+        self.conv_block = nn.Sequential(
+            nn.Conv2d(cin, cout, kernel_size, stride, padding), nn.BatchNorm2d(cout)
+        )
         self.act = nn.ReLU()
         self.residual = residual
 
@@ -67,7 +70,9 @@ class AudioEncoder(nn.Module):
         # audio_sequences = (B, T, 1, 80, 16)
         B = audio_sequences.size(0)
 
-        audio_sequences = torch.cat([audio_sequences[:, i] for i in range(audio_sequences.size(1))], dim=0)
+        audio_sequences = torch.cat(
+            [audio_sequences[:, i] for i in range(audio_sequences.size(1))], dim=0
+        )
 
         audio_embedding = self.audio_encoder(audio_sequences)  # B, 512, 1, 1
         dim = audio_embedding.shape[1]

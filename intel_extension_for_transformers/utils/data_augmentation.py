@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Data augmentation API.
 
 Please refer to https://github.com/intel/intel-extension-for-transformers/blob/main/docs/data_augmentation.md.
@@ -23,26 +22,29 @@ Please refer to https://github.com/intel/intel-extension-for-transformers/blob/m
 import csv
 import json
 import math
+import os
+from enum import Enum
+from operator import methodcaller
+
 import nlpaug.augmenter.char as nac
 import nlpaug.augmenter.sentence as nas
 import nlpaug.augmenter.word as naw
 import numpy as np
-import os
 from datasets import load_dataset
-from enum import Enum
-from intel_extension_for_transformers.transformers.utils.utility import LazyImport
-from operator import methodcaller
 from tqdm import tqdm
+
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 
 torch = LazyImport("torch")
 
 DEFAULT_OUTPUT_FILE = "augmented_dataset"
 
-EOS = '</s>'
+EOS = "</s>"
 
 
 class AugmenterType(Enum):
     """Enumeration of types of augmentation."""
+
     TEXTGENERATIONAUG = "textgenerationaug"
     KEYBOARDAUG = "KeyboardAug"
     OCRAUG = "OcrAug"
@@ -55,7 +57,6 @@ AUGMENTER_MAPPING = {
     AugmenterType.OCRAUG.value: nac,
     AugmenterType.SPELLINGAUG.value: naw,
     AugmenterType.CONTEXTUALWORDEMBSFORSENTENCEAUG.value: nas,
-
 }
 
 
@@ -65,7 +66,9 @@ def get_augmenter_from_type(aug_type: str):
     The nlpaug is a library helps you with augmenting nlp for your machine learning projects.
     It provide many augmenter, please refer to https://github.com/makcedward/nlpaug#augmenter.
     """
-    assert aug_type in AUGMENTER_MAPPING, "Unsupported the augmenter type:{}".format(aug_type)
+    assert aug_type in AUGMENTER_MAPPING, "Unsupported the augmenter type:{}".format(
+        aug_type
+    )
     return AUGMENTER_MAPPING[aug_type]
 
 
@@ -83,6 +86,7 @@ class DataAugmentation:
         aug.augmenter_arguments = {'model_name_or_path': 'gpt2-medium'}
         aug.data_augment()
     """
+
     def __init__(self, augmenter_type: str):
         """Init an instance of DataAugmentation."""
         self._augmenter_type = AugmenterType[augmenter_type.upper()].value
@@ -203,33 +207,41 @@ class DataAugmentation:
 
     def data_augment(self):
         """Execute the process of data augmentation."""
-        assert self._input_dataset is not None, \
-            "Please pass the dataset name or " \
+        assert self._input_dataset is not None, (
+            "Please pass the dataset name or "
             "A csv or a json file to DataAugmentation.input_dataset."
+        )
 
-        assert self._column_names is not None, \
-            "Please pass column names " \
+        assert self._column_names is not None, (
+            "Please pass column names "
             "which you want to augmentation to DataAugmentation.column_names"
+        )
 
         extension = None
         if os.path.isfile(self._input_dataset):
             extension = self._input_dataset.split(".")[-1]
-            assert extension in ["csv", "json"], "`input dataset` should be a csv or a json file."
+            assert extension in [
+                "csv",
+                "json",
+            ], "`input dataset` should be a csv or a json file."
             if self._input_dataset.endswith(".csv"):
                 # Loading a dataset from local csv files
-                raw_datasets = load_dataset("csv", data_files=self._input_dataset, delimiter="\t", split="train")
-            else:   # pragma: no cover
+                raw_datasets = load_dataset(
+                    "csv", data_files=self._input_dataset, delimiter="\t", split="train"
+                )
+            else:  # pragma: no cover
                 # Loading a dataset from local json files
                 raw_datasets = load_dataset("json", data_files=self._input_dataset)
-        else:   # pragma: no cover
+        else:  # pragma: no cover
             if self._input_dataset == "glue":
-                assert self._data_config_or_task_name is not None, \
-                    "Please pass the task name to DataAugmentation.data_config_or_task_name."
+                assert (
+                    self._data_config_or_task_name is not None
+                ), "Please pass the task name to DataAugmentation.data_config_or_task_name."
             # Downloading and loading a dataset from the hub.
             raw_datasets = load_dataset(
                 self._input_dataset, self._data_config_or_task_name, split=self._split
             )
-        if extension is None:   # pragma: no cover
+        if extension is None:  # pragma: no cover
             extension = "csv"
 
         if os.path.isfile(self._output_path):
@@ -241,10 +253,10 @@ class DataAugmentation:
         else:
             path, name = os.path.split(self._output_path)
             os.makedirs(path, exist_ok=True)
-            self._output_path = \
-                os.path.join(
-                    path, name if name is not None else DEFAULT_OUTPUT_FILE + "." + extension
-                )
+            self._output_path = os.path.join(
+                path,
+                name if name is not None else DEFAULT_OUTPUT_FILE + "." + extension,
+            )
 
         if self._augmenter_type == AugmenterType.TEXTGENERATIONAUG.value:
             self.text_generation_augmentation(extension, raw_datasets)
@@ -255,7 +267,7 @@ class DataAugmentation:
         """Execute the process of text generation augmentation.
 
         Args:
-            extension: No used 
+            extension: No used
             raw_datasets: The original datasets, the datasets can be from huggingface datasets(like: glue/sst2) or
             the customer datasets, each sample should be:
                 'label' + '\t' + 'sentence' + EOS + '\n'
@@ -275,11 +287,12 @@ class DataAugmentation:
                               // default: EOS
             }
         """
-        assert self._augmenter_arguments is not None, \
-            "Please pass a pretrained model name or path to " \
-            "DataAugmentation.augmenter_arguments like: " \
-            "{'model_name_or_path': 'gpt2'," \
+        assert self._augmenter_arguments is not None, (
+            "Please pass a pretrained model name or path to "
+            "DataAugmentation.augmenter_arguments like: "
+            "{'model_name_or_path': 'gpt2',"
             "......}"
+        )
         from transformers import (
             AutoConfig,
             AutoModelForCausalLM,
@@ -295,7 +308,8 @@ class DataAugmentation:
             XLMTokenizer,
             XLMWithLMHeadModel,
             XLNetLMHeadModel,
-            XLNetTokenizer, pipeline,
+            XLNetTokenizer,
+            pipeline,
         )
 
         MODEL_CLASSES = {
@@ -311,14 +325,16 @@ class DataAugmentation:
         stop_token = self._augmenter_arguments.get("stop_token", EOS)
         num_return_sentences = self._augmenter_arguments.get("num_return_sentences", -1)
 
-        assert model_name_or_path is not None, \
-            "Please pass a pretrained model name or path to " \
-            "DataAugmentation.augmenter_arguments like: " \
-            "{'model_name_or_path': 'gpt2'," \
+        assert model_name_or_path is not None, (
+            "Please pass a pretrained model name or path to "
+            "DataAugmentation.augmenter_arguments like: "
+            "{'model_name_or_path': 'gpt2',"
             "......}"
+        )
         config = AutoConfig.from_pretrained(model_name_or_path)
-        assert config.model_type in MODEL_CLASSES, \
-            "Unsupported this model to augment data:{}".format(config.model_type)
+        assert (
+            config.model_type in MODEL_CLASSES
+        ), "Unsupported this model to augment data:{}".format(config.model_type)
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path,
@@ -328,11 +344,14 @@ class DataAugmentation:
         model.to(self.device)
 
         text_generator = pipeline(
-            "text-generation", model=model, tokenizer=tokenizer,
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer,
             device=-1 if self.device == torch.device("cpu") else 0,
         )
-        assert os.path.isfile(self._input_dataset), \
-            "Please ensure the input dataset is a txt file"
+        assert os.path.isfile(
+            self._input_dataset
+        ), "Please ensure the input dataset is a txt file"
         # map between the prefix and its number of occurrences in the input file
         label2count = dict()
         label2count[0] = 0
@@ -346,32 +365,39 @@ class DataAugmentation:
             lengths.append(length)
 
         from statistics import mean
+
         m = int(mean(lengths))
         std = int(np.std(lengths)) + 1
         max_length = m + std
         min_length = m - std
 
         total_count = sum(label2count.values())
-        factor = total_count if num_return_sentences <= 0 \
-                 else int(math.ceil(num_return_sentences / self._num_samples))
+        factor = (
+            total_count
+            if num_return_sentences <= 0
+            else int(math.ceil(num_return_sentences / self._num_samples))
+        )
         p0 = label2count[0] / total_count
         p1 = 1 - p0
 
         prefix_texts = np.random.choice([0, 1], size=(factor,), p=[p0, p1])
         augmented = set()
 
-        with open(self._output_path, 'w', encoding='utf8') as file:
-            file.write("label" + "\t" + "sentence" + '\n')
+        with open(self._output_path, "w", encoding="utf8") as file:
+            file.write("label" + "\t" + "sentence" + "\n")
             for prefix in tqdm(prefix_texts):
                 loops = 0
                 while loops < 2:
-                    text_inputs = str(prefix) + '\t'
+                    text_inputs = str(prefix) + "\t"
                     output_sequences = text_generator(
-                        text_inputs=text_inputs, early_stopping=True,
+                        text_inputs=text_inputs,
+                        early_stopping=True,
                         temperature=self._augmenter_arguments.get("temperature", 1.0),
                         top_k=self._augmenter_arguments.get("k", 0),
                         top_p=self._augmenter_arguments.get("p", 0.9),
-                        repetition_penalty=self._augmenter_arguments.get("repetition_penalty", 1.0),
+                        repetition_penalty=self._augmenter_arguments.get(
+                            "repetition_penalty", 1.0
+                        ),
                         do_sample=True,
                         num_return_sequences=self._num_samples,
                         clean_up_tokenization_spaces=True,
@@ -381,19 +407,24 @@ class DataAugmentation:
                     )
                     l_text_inputs = len(text_inputs.strip())
                     for seq in output_sequences:
-                        text = seq['generated_text']
-                        text = text[:text.find(stop_token) if stop_token and text.find(
-                            stop_token) > -1 else None].strip()
-                        text = text[:text.find('\n') if text.find('\n') > -1 else None].strip()
+                        text = seq["generated_text"]
+                        text = text[
+                            : text.find(stop_token)
+                            if stop_token and text.find(stop_token) > -1
+                            else None
+                        ].strip()
+                        text = text[
+                            : text.find("\n") if text.find("\n") > -1 else None
+                        ].strip()
                         if len(text) > l_text_inputs and text not in augmented:
-                            file.write(text + '\n')
+                            file.write(text + "\n")
                             augmented.add(text)
                             loops += 1
                     loops += 1
 
                     file.flush()
 
-    def mit_data_augmentation(self, extension, raw_datasets):   # pragma: no cover
+    def mit_data_augmentation(self, extension, raw_datasets):  # pragma: no cover
         """Execute the process of nlpaug data augmentation.
 
         nlpaug is the library helps you with augmenting nlp for your machine learning projects.
@@ -413,7 +444,7 @@ class DataAugmentation:
         aug = get_augmenter_from_type(self._augmenter_type)
         auger = methodcaller(self._augmenter_type, **args)(aug)
 
-        with open(self._output_path, 'w', encoding='utf8') as file:
+        with open(self._output_path, "w", encoding="utf8") as file:
             if extension == "json":
                 writer = json
             else:
@@ -427,7 +458,9 @@ class DataAugmentation:
                         text = auger.augment(sample[column], n=self._num_samples)
                         sample[column] = text
                 else:
-                    text = auger.augment(sample[self._column_names], n=self._num_samples)
+                    text = auger.augment(
+                        sample[self._column_names], n=self._num_samples
+                    )
                     sample[self._column_names] = text
                 if extension == "json":
                     text = writer.dumps(sample)

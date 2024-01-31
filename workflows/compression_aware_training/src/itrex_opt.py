@@ -25,18 +25,6 @@ import numpy as np
 import torch
 import transformers
 from datasets import load_dataset, load_metric
-
-# Need to use itrex domain toolkit
-from intel_extension_for_transformers.transformers import (
-    DistillationConfig,
-    PrunerConfig,
-    PruningConfig,
-    OptimizedModel,
-    QuantizationConfig,
-    metrics,
-    objectives,
-)
-from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
@@ -54,13 +42,24 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
-
 from utils import (
     DataTrainingArguments,
     ModelArguments,
     OptimizationArguments,
     task_to_keys,
 )
+
+# Need to use itrex domain toolkit
+from intel_extension_for_transformers.transformers import (
+    DistillationConfig,
+    OptimizedModel,
+    PrunerConfig,
+    PruningConfig,
+    QuantizationConfig,
+    metrics,
+    objectives,
+)
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 os.environ["WANDB_DISABLED"] = "true"
@@ -90,7 +89,7 @@ class ItrexOpt(object):
                 OptimizationArguments,
             )
         )
-        
+
         if config_file.endswith(".yaml"):
             model_args, data_args, training_args, optim_args = parser.parse_yaml_file(
                 yaml_file=os.path.abspath(config_file)
@@ -106,7 +105,6 @@ class ItrexOpt(object):
                 training_args,
                 optim_args,
             ) = parser.parse_args_into_dataclasses()
-
 
         self.model_args = model_args
         self.data_args = data_args
@@ -177,7 +175,6 @@ class ItrexOpt(object):
 
     def _load_data(self):
         if self.data_args.task_name is not None:
-
             if self.data_args.task_name == "emotion":
                 raw_datasets = load_dataset(f"SetFit/{self.data_args.task_name}")
             else:
@@ -529,7 +526,11 @@ class ItrexOpt(object):
 
         # Initialize and setup our itrexTrainer
         from neural_compressor.adaptor.torch_utils.symbolic_trace import symbolic_trace
-        self.model = symbolic_trace(self.model, self.optim_args.quantization_approach=="QuantizationAwareTraining")
+
+        self.model = symbolic_trace(
+            self.model,
+            self.optim_args.quantization_approach == "QuantizationAwareTraining",
+        )
 
         self.trainer = NLPTrainer(
             model=self.model,
@@ -644,12 +645,8 @@ class ItrexOpt(object):
         )
 
         # #############################################################################################
-        print(
-            "Step 6: Distill teacher model to student Model "
-        )
-        print(
-            "###############################################"
-        )
+        print("Step 6: Distill teacher model to student Model ")
+        print("###############################################")
 
         metric_name = (
             self.optim_args.metric_name
@@ -673,7 +670,6 @@ class ItrexOpt(object):
 
         # Initialize and setup our itrexTrainer
         if self.optim_args.distillation:
-
             if not self.training_args.do_eval:
                 raise ValueError("do_eval must be set to True for distillation.")
 
@@ -773,7 +769,6 @@ class ItrexOpt(object):
         model = self.trainer.quantize(quant_config=quantization_config)
 
         if self.optim_args.benchmark or self.optim_args.accuracy_only:
-
             results = self.trainer.evaluate()
             logger.info("metrics keys: {}".format(results.keys()))
             bert_task_acc_keys = [
@@ -903,9 +898,7 @@ class ItrexOpt(object):
         )
 
         # #############################################################################################
-        print(
-            "Step 6: Prune teacher model to student Model"
-        )
+        print("Step 6: Prune teacher model to student Model")
         print(
             "#####################################################################################"
         )
@@ -932,35 +925,50 @@ class ItrexOpt(object):
 
         # Initialize and setup our itrexTrainer
         if self.optim_args.sat and self.optim_args.orchestrate_optimizations:
-
             if not self.training_args.do_train:
                 raise ValueError("do_train must be set to True for pruning.")
 
             tune_metric = metrics.Metric(
-                name=metric_name, is_relative=self.optim_args.is_relative, criterion=self.optim_args.perf_tol
+                name=metric_name,
+                is_relative=self.optim_args.is_relative,
+                criterion=self.optim_args.perf_tol,
             )
-            prune_type = 'PatternLock' \
-                if self.optim_args.pruning_approach else self.optim_args.pruning_approach
-            target_sparsity_ratio = self.optim_args.target_sparsity_ratio \
-                if self.optim_args.target_sparsity_ratio else None
-            pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
-            pruning_conf = PruningConfig(framework="pytorch_fx",pruner_config=[pruner_config], metrics=tune_metric)
-            distillation_conf = DistillationConfig(framework="pytorch_fx", metrics=tune_metric)
-        
+            prune_type = (
+                "PatternLock"
+                if self.optim_args.pruning_approach
+                else self.optim_args.pruning_approach
+            )
+            target_sparsity_ratio = (
+                self.optim_args.target_sparsity_ratio
+                if self.optim_args.target_sparsity_ratio
+                else None
+            )
+            pruner_config = PrunerConfig(
+                prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio
+            )
+            pruning_conf = PruningConfig(
+                framework="pytorch_fx",
+                pruner_config=[pruner_config],
+                metrics=tune_metric,
+            )
+            distillation_conf = DistillationConfig(
+                framework="pytorch_fx", metrics=tune_metric
+            )
+
             objective = objectives.performance
             quantization_conf = QuantizationConfig(
                 approach=self.optim_args.quantization_approach,
                 max_trials=600,
                 metrics=[tune_metric],
-                objectives=[objective]
+                objectives=[objective],
             )
             conf_list = [pruning_conf, distillation_conf, quantization_conf]
-            model = self.trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=self.teacher_model)
+            model = self.trainer.orchestrate_optimizations(
+                config_list=conf_list, teacher_model=self.teacher_model
+            )
 
         # ############################################################
-        print(
-            "Step 8: run inference on pruned student Model for accuracy"
-        )
+        print("Step 8: run inference on pruned student Model for accuracy")
         print(
             "#########################################################################"
         )

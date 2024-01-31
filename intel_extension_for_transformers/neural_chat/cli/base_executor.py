@@ -16,24 +16,21 @@
 # limitations under the License.
 
 import argparse
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import List
 
-__all__ = ['BaseCommandExecutor']
+__all__ = ["BaseCommandExecutor"]
+
 
 class BaseCommandExecutor(ABC):
-    """
-        An abstract executor class of neuralchat server tasks.
-    """
+    """An abstract executor class of neuralchat server tasks."""
 
     def __init__(self):
         self.parser = argparse.ArgumentParser()
 
     @abstractmethod
     def execute(self, argv: List[str]) -> bool:
-        """
-        Command line entry. This method can only be accessed by a command line such as `neuralchat textchat`.
+        """Command line entry. This method can only be accessed by a command line such as `neuralchat textchat`.
 
         Args:
             argv (List[str]): Arguments from command line.
@@ -45,7 +42,5 @@ class BaseCommandExecutor(ABC):
 
     @abstractmethod
     def __call__(self, *arg, **kwargs):
-        """
-        Python API to call an executor.
-        """
+        """Python API to call an executor."""
         pass

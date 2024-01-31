@@ -14,17 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The AttentionBlock_WeightReshapeTo4D Pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
-from .. import graph_utils as util
-from .subgraph_matcher import EXECUTOR_TYPE
-import numpy as np
-import copy
 
-@pattern_registry(pattern_type='AttentionBlock_WeightReshapeTo4D')
+
+from .. import graph_utils as util
+from .pattern import Pattern, pattern_registry
+
+
+@pattern_registry(pattern_type="AttentionBlock_WeightReshapeTo4D")
 class AttentionBlock_WeightReshapeTo4D(Pattern):
     """The AttentionBlock_WeightReshapeTo4D pattern.
 
@@ -35,18 +33,22 @@ class AttentionBlock_WeightReshapeTo4D(Pattern):
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
-            'AttentionBlock_WeightReshapeTo4D': [
+            "AttentionBlock_WeightReshapeTo4D": [
                 {
-                    'patterns': {
-                        'in': [[(0, 'Reshape'), (1, 'Mul'), (2, 'Add'), (3, 'Sigmoid')]],
+                    "patterns": {
+                        "in": [
+                            [(0, "Reshape"), (1, "Mul"), (2, "Add"), (3, "Sigmoid")]
+                        ],
                     },
                 },
             ]
         }
 
-        pattern = pattern_mapping_config['AttentionBlock_WeightReshapeTo4D'][0]['patterns']['in']
+        pattern = pattern_mapping_config["AttentionBlock_WeightReshapeTo4D"][0][
+            "patterns"
+        ]["in"]
         patterns_nodes_name = util.search_pattern(pattern, model)
-        print('AttentionBlock_WeightReshapeTo4D = ', patterns_nodes_name)
+        print("AttentionBlock_WeightReshapeTo4D = ", patterns_nodes_name)
 
         if len(patterns_nodes_name) != 0:
             for j in range(len(patterns_nodes_name)):
@@ -54,4 +56,3 @@ class AttentionBlock_WeightReshapeTo4D(Pattern):
                 add_node.input_tensors[1].shape = [1, 512, 1, 1]
 
         return model
-

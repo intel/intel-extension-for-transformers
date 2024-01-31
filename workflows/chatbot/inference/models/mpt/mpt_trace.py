@@ -1,7 +1,22 @@
-import torch
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import Optional, Tuple
-from transformers.modeling_outputs import CausalLMOutputWithPast
+
+import torch
 from optimum.intel.generation.modeling import TSModelForCausalLM
+from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
 def jit_trace_mpt_7b(model):
@@ -18,8 +33,15 @@ def jit_trace_mpt_7b(model):
         pkv[-1] = tuple(pkv[-1])
     inputs["past_key_values"] = pkv
     with torch.inference_mode():
-        traced_model = torch.jit.trace(model, example_inputs=(inputs["input_ids"], inputs["past_key_values"],
-                                       inputs["attention_mask"]), strict=False)
+        traced_model = torch.jit.trace(
+            model,
+            example_inputs=(
+                inputs["input_ids"],
+                inputs["past_key_values"],
+                inputs["attention_mask"],
+            ),
+            strict=False,
+        )
         traced_model = torch.jit.freeze(traced_model.eval())
         traced_model(**inputs)
         traced_model(**inputs)
@@ -62,10 +84,14 @@ class MPTTSModelForCausalLM(TSModelForCausalLM):
         outputs = self.model(**inputs)
 
         if isinstance(outputs, tuple):
-            outputs = CausalLMOutputWithPast(logits=outputs[0], past_key_values=outputs[1] if self.use_cache else None)
+            outputs = CausalLMOutputWithPast(
+                logits=outputs[0],
+                past_key_values=outputs[1] if self.use_cache else None,
+            )
         else:
             outputs = CausalLMOutputWithPast(
-                logits=outputs["logits"], past_key_values=outputs["past_key_values"] if self.use_cache else None
+                logits=outputs["logits"],
+                past_key_values=outputs["past_key_values"] if self.use_cache else None,
             )
 
         return outputs

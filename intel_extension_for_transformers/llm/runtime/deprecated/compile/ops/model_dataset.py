@@ -14,33 +14,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
 
 
-@operator_registry(operator_type='ModelDataset')
+@operator_registry(operator_type="ModelDataset")
 class ModelDataset(Operator):
     """Parse the ModelDataset operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
         """Extract the node attr from tensorflow."""
-        if framework == 'tensorflow':
+        if framework == "tensorflow":
             from ..tf_utils import TF_DTYPE_ID
+
             output_shapes = []
-            shape_list = node.attr['output_shapes'].list.shape
+            shape_list = node.attr["output_shapes"].list.shape
             for each in shape_list:
                 tmp = []
                 shape = each.dim
                 for s in shape:
                     tmp.append(s.size)
                 output_shapes.append(tmp)
-            self._attr['output_shapes'] = output_shapes
-            output_types = node.attr['output_types'].list.type
+            self._attr["output_shapes"] = output_shapes
+            output_types = node.attr["output_types"].list.type
             output_types = [TF_DTYPE_ID[i] for i in output_types]
-            self._attr['output_types'] = output_types
+            self._attr["output_types"] = output_types

@@ -18,11 +18,10 @@
 
 from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
 
+
 def main():
     server_executor = NeuralChatServerExecutor()
-    server_executor(
-        config_file="./askdoc.yaml",
-        log_file="./askdoc.log")
+    server_executor(config_file="./askdoc.yaml", log_file="./askdoc.log")
 
 
 if __name__ == "__main__":

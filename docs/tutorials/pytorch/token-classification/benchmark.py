@@ -1,10 +1,9 @@
 import logging
 import os
+from argparse import ArgumentParser
+
 import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
-from intel_extension_for_transformers.transformers import OptimizedModel
-from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-from argparse import ArgumentParser
 from transformers import (
     AutoConfig,
     AutoModelForTokenClassification,
@@ -15,13 +14,20 @@ from transformers import (
     set_seed,
 )
 
+from intel_extension_for_transformers.transformers import OptimizedModel
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
+
 os.environ["WANDB_DISABLED"] = "true"
 
 logger = logging.getLogger(__name__)
 
-arg_parser = ArgumentParser(description='Parse args')
-arg_parser.add_argument('--data_type', default = "int8", help='data type of model')
-arg_parser.add_argument('--model_name_or_path', default = "elastic/distilbert-base-uncased-finetuned-conll03-english", help = 'input model for benchmark')
+arg_parser = ArgumentParser(description="Parse args")
+arg_parser.add_argument("--data_type", default="int8", help="data type of model")
+arg_parser.add_argument(
+    "--model_name_or_path",
+    default="elastic/distilbert-base-uncased-finetuned-conll03-english",
+    help="input model for benchmark",
+)
 args = arg_parser.parse_args()
 
 # download the dataset.
@@ -40,6 +46,7 @@ features = raw_datasets["train"].features
 text_column_name = "tokens"
 label_column_name = "ner_tags"
 
+
 # In the event the labels are not a `Sequence[ClassLabel]`, we will need to go through the dataset to get the
 # unique labels.
 def get_label_list(labels):
@@ -49,6 +56,7 @@ def get_label_list(labels):
     label_list = list(unique_labels)
     label_list.sort()
     return label_list
+
 
 # If the labels are of type ClassLabel, they are already integers and we have the map stored somewhere.
 # Otherwise, we have to get the list of labels manually.
@@ -89,11 +97,11 @@ else:
 if args.data_type == "int8":
     # Load the model obtained after Intel Neural Compressor (INC) quantization
     model = OptimizedModel.from_pretrained(
-          args.model_name_or_path,
-          from_tf=bool(".ckpt" in args.model_name_or_path),
-          config=config,
-          revision="main",
-          use_auth_token=None,
+        args.model_name_or_path,
+        from_tf=bool(".ckpt" in args.model_name_or_path),
+        config=config,
+        revision="main",
+        use_auth_token=None,
     )
 else:
     ## original fp32 model benchmarking
@@ -102,14 +110,16 @@ else:
         args.model_name_or_path,
         from_tf=bool(".ckpt" in args.model_name_or_path),
         config=config,
-        revision="main"
+        revision="main",
     )
 # Model has labels -> use them.
 if model.config.label2id != PretrainedConfig(num_labels=num_labels).label2id:
     if list(sorted(model.config.label2id.keys())) == list(sorted(label_list)):
         # Reorganize `label_list` to match the ordering of the model.
         if labels_are_int:
-            label_to_id = {i: int(model.config.label2id[l]) for i, l in enumerate(label_list)}
+            label_to_id = {
+                i: int(model.config.label2id[l]) for i, l in enumerate(label_list)
+            }
             label_list = [model.config.id2label[i] for i in range(num_labels)]
         else:
             label_list = [model.config.id2label[i] for i in range(num_labels)]
@@ -135,6 +145,7 @@ for idx, label in enumerate(label_list):
 
 # Padding strategy
 padding = "max_length"
+
 
 # Tokenize all texts and align the labels with them.
 def tokenize_and_align_labels(examples):
@@ -168,6 +179,7 @@ def tokenize_and_align_labels(examples):
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
 
+
 # train dataset
 train_dataset = raw_datasets["train"]
 with training_args.main_process_first(desc="train dataset map pre-processing"):
@@ -196,6 +208,7 @@ data_collator = DataCollatorForTokenClassification(tokenizer)
 metric = load_metric("seqeval")
 metric_name = "eval_f1"
 
+
 def compute_metrics(p):
     predictions, labels = p
     predictions = np.argmax(predictions, axis=2)
@@ -218,6 +231,7 @@ def compute_metrics(p):
         "accuracy": results["overall_accuracy"],
     }
 
+
 # Initialize the Trainer
 set_seed(training_args.seed)
 trainer = NLPTrainer(
@@ -231,12 +245,19 @@ trainer = NLPTrainer(
 )
 
 results = trainer.evaluate()
-bert_task_acc_keys = ['eval_loss', 'eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
-                              'eval_pearson', 'eval_mcc', 'eval_spearmanr']
+bert_task_acc_keys = [
+    "eval_loss",
+    "eval_f1",
+    "eval_accuracy",
+    "eval_matthews_correlation",
+    "eval_pearson",
+    "eval_mcc",
+    "eval_spearmanr",
+]
 
 throughput = results.get("eval_samples_per_second")
 eval_loss = results["eval_loss"]
-print('Batch size = {}'.format(training_args.per_device_eval_batch_size))
+print("Batch size = {}".format(training_args.per_device_eval_batch_size))
 print("Finally Eval eval_loss Accuracy: {}".format(eval_loss))
 print("Latency: {:.3f} ms".format(1000 / throughput))
 print("Throughput: {} samples/sec".format(throughput))

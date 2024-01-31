@@ -1,31 +1,40 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import unittest
 
-from transformers import (
-    AutoTokenizer,
-    pipeline,
-)
-import copy
 import torch
-from peft import LoraConfig
 import torch.utils.data as data
-from torch.utils.data import DataLoader
+from huggingface_hub import PyTorchModelHubMixin
+from peft import LoraConfig
+from tqdm import tqdm
+from transformers import AutoTokenizer, pipeline
 
-from intel_extension_for_transformers.transformers.ppo_core import (
-    LengthSampler,
-    set_seed,
-)
-from intel_extension_for_transformers.transformers.ppo_config import PPOConfig
-from intel_extension_for_transformers.transformers.ppo_trainer import PPOTrainer
 from intel_extension_for_transformers.transformers.modeling.trl_models import (
     AutoModelForCausalLMWithValueHead,
 )
-from huggingface_hub import PyTorchModelHubMixin
-from tqdm import tqdm
+from intel_extension_for_transformers.transformers.ppo_config import PPOConfig
+from intel_extension_for_transformers.transformers.ppo_core import (
+    LengthSampler,
+)
+from intel_extension_for_transformers.transformers.ppo_trainer import PPOTrainer
 
 MODEL_NAME = "hf-internal-testing/tiny-random-GPTJForCausalLM"
 REWARD_NAME = "hf-internal-testing/tiny-random-GPTJForSequenceClassification"
 os.environ["ACCELERATE_USE_IPEX"] = "false"
+
 
 class DummyDataset(data.Dataset):
     def __init__(self):
@@ -146,11 +155,11 @@ class TestPPO(unittest.TestCase):
         )
         for epoch, batch in epochs:
             question_tensors = batch["input_ids"]
-            response_tensors, ref_response= self.trainer.generate(
+            response_tensors, ref_response = self.trainer.generate(
                 question_tensors,
                 return_prompt=False,
                 length_sampler=LengthSampler(100, 120),
-                generate_ref_response= True,
+                generate_ref_response=True,
                 **generation_kwargs,
             )
             batch["response"] = self.dataset.tokenizer.batch_decode(
@@ -174,11 +183,11 @@ class TestPPO(unittest.TestCase):
         for epoch, batch in epochs:
             question_tensors = batch["input_ids"]
             for question_tensor in question_tensors:
-                response_tensor, ref_response= self.trainer.generate(
+                response_tensor, ref_response = self.trainer.generate(
                     question_tensor,
                     return_prompt=False,
                     length_sampler=LengthSampler(100, 120),
-                    generate_ref_response= True,
+                    generate_ref_response=True,
                     **generation_kwargs,
                 )
                 response = self.dataset.tokenizer.batch_decode(
@@ -237,7 +246,9 @@ class TestPPO(unittest.TestCase):
         self.config.early_stopping = True
         self.config.use_score_norm = True
         optimizer = torch.optim.SGD(self.model.parameters(), lr=1.0)
-        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda x: 1.0)
+        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+            optimizer, lr_lambda=lambda x: 1.0
+        )
         self.trainer = PPOTrainer(
             self.config,
             self.model,
@@ -339,6 +350,7 @@ class TestPPO(unittest.TestCase):
             # Run PPO step
             stats = self.trainer.step(question_tensors, response_tensors, rewards)
             self.trainer.log_stats(stats, batch, rewards)
+
 
 if __name__ == "__main__":
     unittest.main()

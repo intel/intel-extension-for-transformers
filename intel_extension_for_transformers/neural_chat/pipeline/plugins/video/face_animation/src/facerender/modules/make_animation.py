@@ -15,14 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=E0611
-from scipy.spatial import ConvexHull
+import contextlib
+import itertools
+import re
+
+import numpy as np
 import torch
 import torch.nn.functional as F
-import numpy as np
+
+# pylint: disable=E0611
+from scipy.spatial import ConvexHull
 from tqdm import tqdm
-import re, itertools
-import contextlib
 
 
 def normalize_kp(
@@ -35,7 +38,9 @@ def normalize_kp(
 ):
     if adapt_movement_scale:
         source_area = ConvexHull(kp_source["value"][0].data.cpu().numpy()).volume
-        driving_area = ConvexHull(kp_driving_initial["value"][0].data.cpu().numpy()).volume
+        driving_area = ConvexHull(
+            kp_driving_initial["value"][0].data.cpu().numpy()
+        ).volume
         adapt_movement_scale = np.sqrt(source_area) / np.sqrt(driving_area)
     else:
         adapt_movement_scale = 1
@@ -48,7 +53,9 @@ def normalize_kp(
         kp_new["value"] = kp_value_diff + kp_source["value"]
 
         if use_relative_jacobian:
-            jacobian_diff = torch.matmul(kp_driving["jacobian"], torch.inverse(kp_driving_initial["jacobian"]))
+            jacobian_diff = torch.matmul(
+                kp_driving["jacobian"], torch.inverse(kp_driving_initial["jacobian"])
+            )
             kp_new["jacobian"] = torch.matmul(jacobian_diff, kp_source["jacobian"])
 
     return kp_new
@@ -181,8 +188,8 @@ def make_animation(
     print(f"rank, p_num: {rank}, {p_num}")
     with torch.no_grad():
         predictions = []
-        import time
         import os
+        import time
 
         # with torch.cpu.amp.autocast():
         start_time = time.time()
@@ -257,7 +264,9 @@ def make_animation(
         padded_preds = [x for y in itertools.zip_longest(*aggregated_lst) for x in y]
         print("padded preds length:")
         print(len(padded_preds))
-        aggregated_predictions = [torch.from_numpy(i) for i in padded_preds if i is not None]
+        aggregated_predictions = [
+            torch.from_numpy(i) for i in padded_preds if i is not None
+        ]
         # predictions_ts = torch.stack(predictions, dim=1)
 
         predictions_ts = torch.stack(aggregated_predictions, dim=1)

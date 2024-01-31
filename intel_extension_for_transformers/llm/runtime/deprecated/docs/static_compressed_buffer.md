@@ -38,20 +38,21 @@ For example:
 past_k_v_0 = [[1, 32, 1, 128] for i in range(64)]
 past_k_v_1 = [[4, 32, 63, 128] for i in range(64)]
 graph.max_input_shapes_list = [
-                                # first iteration
-                                [[1, 32]] + [[1, 33]] + past_k_v_0,
-                                # the last iteration (beam size=4)
-                                [[4, 1]] + [[4, 64]] + past_k_v_1,
-                                ]
+    # first iteration
+    [[1, 32]] + [[1, 33]] + past_k_v_0,
+    # the last iteration (beam size=4)
+    [[4, 1]] + [[4, 64]] + past_k_v_1,
+]
 ```
 
 ## More Options
 For `Static Compressed Buffer`, `Neural Engine` supplies two extra options for debugging. They only works when turn on `activation_mem_compression`.
 ```python
-options = {'activation_mem_compression' : True,
-           # optional, save activation dag into the disk (path="activation_dag.yaml")
-           'dump_activation_dag': True,
-           # optional, no memory in-place in static compressed buffer
-           'execution_mode': 'debug'
-           }
+options = {
+    "activation_mem_compression": True,
+    # optional, save activation dag into the disk (path="activation_dag.yaml")
+    "dump_activation_dag": True,
+    # optional, no memory in-place in static compressed buffer
+    "execution_mode": "debug",
+}
 ```

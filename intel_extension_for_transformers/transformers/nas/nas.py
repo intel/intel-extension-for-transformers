@@ -21,19 +21,15 @@ NASBase class defines the common methods of different NAS approaches.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
 import os
-import shutil
 
-from collections.abc import Iterable
-from intel_extension_for_transformers.transformers.config import NASConfig
 from neural_compressor.conf.config import Conf
-from neural_compressor.experimental.nas.nas_utils import find_pareto_front, NASMethods
-from neural_compressor.experimental.nas.search_algorithms import \
-    BayesianOptimizationSearcher, GridSearcher, RandomSearcher
-from neural_compressor.utils.utility import logger, LazyImport
+from neural_compressor.experimental.nas.nas_utils import NASMethods
+from neural_compressor.utils.utility import LazyImport, logger
 
-torch = LazyImport('torch')
+from intel_extension_for_transformers.transformers.config import NASConfig
+
+torch = LazyImport("torch")
 
 
 class NAS(object):
@@ -54,16 +50,16 @@ class NAS(object):
         elif isinstance(conf_fname_or_obj, NASConfig):
             self.config = conf_fname_or_obj.config
         else:  # pragma: no cover
-            raise NotImplementedError(
-                "Please provide a str path to the config file."
-            )
+            raise NotImplementedError("Please provide a str path to the config file.")
         assert self.config.nas is not None, "nas section must be set"
-        if isinstance(self.config.nas.approach, str) and \
-                self.config.nas.approach.lower() in NASMethods:
+        if (
+            isinstance(self.config.nas.approach, str)
+            and self.config.nas.approach.lower() in NASMethods
+        ):
             method = self.config.nas.approach.lower()
         else:  # pragma: no cover
             logger.warning(
                 "NAS approach not set in config, use default NAS approach, i.e. Basic."
             )
-            method = 'basic'
+            method = "basic"
         return NASMethods[method](conf_fname_or_obj, *args, **kwargs)

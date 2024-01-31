@@ -17,15 +17,13 @@
 
 import cv2
 import numpy as np
-from PIL import Image
 import torch
-
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.face3d.extract_kp_videos_safe import KeypointExtractor
 from facexlib.alignment import landmark_98_to_68
-
-import numpy as np
 from PIL import Image
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.extract_kp_videos_safe import (
+    KeypointExtractor,
+)
 
 
 class Preprocessor:
@@ -34,9 +32,8 @@ class Preprocessor:
         self.predictor = KeypointExtractor(device)
 
     def get_landmark(self, img_np):
-        """get landmark with dlib
-        :return: np.array shape=(68, 2)
-        """
+        """Get landmark with dlib
+        :return: np.array shape=(68, 2)"""
         with torch.no_grad():
             dets = self.predictor.det_net.detect_faces(img_np, 0.97)
 
@@ -93,7 +90,10 @@ class Preprocessor:
         # Shrink.
         shrink = int(np.floor(qsize / output_size * 0.5))
         if shrink > 1:
-            rsize = (int(np.rint(float(img.size[0]) / shrink)), int(np.rint(float(img.size[1]) / shrink)))
+            rsize = (
+                int(np.rint(float(img.size[0]) / shrink)),
+                int(np.rint(float(img.size[1]) / shrink)),
+            )
             img = img.resize(rsize, Image.ANTIALIAS)
             quad /= shrink
             qsize /= shrink
@@ -147,7 +147,9 @@ class Preprocessor:
 
         if lm is None:
             raise Exception("can not detect the landmark from source image")
-        rsize, crop, quad = self.align_face(img=Image.fromarray(img_np), lm=lm, output_size=xsize)
+        rsize, crop, quad = self.align_face(
+            img=Image.fromarray(img_np), lm=lm, output_size=xsize
+        )
         clx, cly, crx, cry = crop
         lx, ly, rx, ry = quad
         lx, ly, rx, ry = int(lx), int(ly), int(rx), int(ry)

@@ -14,20 +14,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine torch extractor file."""
 
-from ..graph_utils import LazyImport
+from .. import graph_utils as util
 from .. import logger
 from ..graph.graph import Graph
+from ..graph_utils import LazyImport, construct_node, get_data_dtype
 from ..ops.op import OPERATORS
-from ..onnx_utils import graph_node_names_details
-from ..graph_utils import names_from_input, get_data_dtype, construct_node
 from ..ops.tensor import Tensor
 from ..torch_utils import get_node_name, op_maps
-from .. import graph_utils as util
 
-torch = LazyImport('torch')
+torch = LazyImport("torch")
+
 
 def removeUnusedNode(graph, unused_nodes):
     remove_list = []
@@ -40,6 +38,7 @@ def removeUnusedNode(graph, unused_nodes):
 
     for node in remove_list:
         node.destroy()
+
 
 def fuse_padding_seq(graph):
     old_g_0 = """
@@ -77,7 +76,10 @@ def fuse_padding_seq(graph):
             """
     graph_pairs = [(old_g_0, new_g_0), (old_g_1, new_g_1)]
     for g_pair in graph_pairs:
-        torch._C._jit_pass_custom_pattern_based_rewrite_graph(g_pair[0], g_pair[1], graph)
+        torch._C._jit_pass_custom_pattern_based_rewrite_graph(
+            g_pair[0], g_pair[1], graph
+        )
+
 
 def fuse_position_ids(graph):
     old_g_0 = """
@@ -94,8 +96,9 @@ def fuse_position_ids(graph):
             """
     graph_pairs = [(old_g_0, new_g_0)]
     for g_pair in graph_pairs:
-        torch._C._jit_pass_custom_pattern_based_rewrite_graph(g_pair[0], g_pair[1], graph)
-
+        torch._C._jit_pass_custom_pattern_based_rewrite_graph(
+            g_pair[0], g_pair[1], graph
+        )
 
 
 def fuse_view(graph):
@@ -118,6 +121,7 @@ def fuse_view(graph):
             """
     torch._C._jit_pass_custom_pattern_based_rewrite_graph(old_g, new_g, graph)
     torch._C._jit_pass_dce(graph)
+
 
 def fuse_gather_indices(graph):
     old_g = """
@@ -143,6 +147,7 @@ def fuse_gather_indices(graph):
     torch._C._jit_pass_custom_pattern_based_rewrite_graph(old_g, new_g, graph)
     torch._C._jit_pass_dce(graph)
 
+
 class TorchExtractor(object):
     """The TorchExtractor class.
 
@@ -156,6 +161,7 @@ class TorchExtractor(object):
     Return:
         Graph: Graph class, the new graph object
     """
+
     @classmethod
     def __call__(self, model):
         """The __call__ function of the extractor."""
@@ -163,16 +169,26 @@ class TorchExtractor(object):
         torch._C._jit_pass_dce(graph)
         torch._C._jit_pass_remove_inplace_ops(graph)
         torch._C._jit_pass_constant_propagation(graph)
-        removeUnusedNode(graph, ['aten::dropout', 'prim::NumToTensor', 'aten::to', 'aten::contiguous',
-                                 'aten::alias', 'aten::Int', 'aten::ScalarImplicit'])
-        logger.info('Start to extarct torch model ops...')
+        removeUnusedNode(
+            graph,
+            [
+                "aten::dropout",
+                "prim::NumToTensor",
+                "aten::to",
+                "aten::contiguous",
+                "aten::alias",
+                "aten::Int",
+                "aten::ScalarImplicit",
+            ],
+        )
+        logger.info("Start to extarct torch model ops...")
         fuse_padding_seq(graph)
         fuse_position_ids(graph)
         fuse_view(graph)
         fuse_gather_indices(graph)
-        
+
         new_graph = Graph()
-        new_graph.framework_modeling_config['framework'] = 'torch'
+        new_graph.framework_modeling_config["framework"] = "torch"
         graph_nodes_dict = {}
         util.quant_info_init()
 
@@ -183,16 +199,17 @@ class TorchExtractor(object):
             for val_user in in_tensor.uses():
                 next_node = val_user.user
                 dest_ops.append(get_node_name(next_node))
-            dtype = 'fp32'
-            if in_tensor.debugName() == 'position_ids':
+            dtype = "fp32"
+            if in_tensor.debugName() == "position_ids":
                 continue  # TODO: remove this
-            input_tensor = Tensor(name=in_tensor.debugName(),
+            input_tensor = Tensor(
+                name=in_tensor.debugName(),
                 source_op=[],
                 dest_op=dest_ops,
                 shape=[-1, -1],
                 data=None,
-                dtype=dtype
-                )
+                dtype=dtype,
+            )
             graph_nodes_dict[in_tensor.debugName()] = input_tensor
             model_input_tensors.append(input_tensor)
         for idx, out_tensor in enumerate(graph.outputs()):
@@ -200,7 +217,10 @@ class TorchExtractor(object):
 
         # parse weights
         for node in graph.nodes():
-            if node.kind() == 'prim::Constant' and node.outputsAt(0).type().kind() == 'TensorType':
+            if (
+                node.kind() == "prim::Constant"
+                and node.outputsAt(0).type().kind() == "TensorType"
+            ):
                 out_val = node.outputsAt(0)
                 tensor_name = out_val.debugName()
                 out_tensor = out_val.toIValue()
@@ -211,8 +231,10 @@ class TorchExtractor(object):
                 if out_tensor.dtype == torch.qint8:
                     # extrace min max from tensor
                     fp32_data = out_tensor.dequantize()
-                    if out_tensor.qscheme() == torch.per_channel_affine or \
-                       out_tensor.qscheme() == torch.per_channel_symmetric:
+                    if (
+                        out_tensor.qscheme() == torch.per_channel_affine
+                        or out_tensor.qscheme() == torch.per_channel_symmetric
+                    ):
                         # per_channel case
                         per_ch_scale = out_tensor.q_per_channel_scales().numpy()
                         fp32_max = per_ch_scale * 127
@@ -221,50 +243,67 @@ class TorchExtractor(object):
                         q_scale = torch.tensor(out_tensor.q_scale()).numpy()
                         fp32_max = q_scale * 127
                         fp32_min = -fp32_max
-                    dtype = 's8' + "_weight"
+                    dtype = "s8" + "_weight"
                     util.insert_quant_info(tensor_name, [fp32_min, fp32_max, dtype])
 
                     # ensure weight is sym quantized.
                     out_tensor = out_tensor.int_repr()
 
                 elif out_tensor.dtype == torch.quint8:
-                    logger.error("Tensor {} of uint8 is not supported.".format(tensor_name))
+                    logger.error(
+                        "Tensor {} of uint8 is not supported.".format(tensor_name)
+                    )
 
                 if out_tensor.dtype == torch.float64:
                     fp32_info = torch.finfo(torch.float32)
-                    if out_tensor.max().item() <= fp32_info.max and \
-                       out_tensor.min().item() >= fp32_info.min:
+                    if (
+                        out_tensor.max().item() <= fp32_info.max
+                        and out_tensor.min().item() >= fp32_info.min
+                    ):
                         out_tensor = out_tensor.to(torch.float32)
                     else:
-                        logger.error("Neural Engine does not support float64 dtype tensor {}."\
-                                     .format(tensor_name))
+                        logger.error(
+                            "Neural Engine does not support float64 dtype tensor {}.".format(
+                                tensor_name
+                            )
+                        )
                 if out_tensor.dtype == torch.int64:
                     int32_info = torch.iinfo(torch.int32)
-                    if out_tensor.max().item() <= int32_info.max and \
-                       out_tensor.min().item() >= int32_info.min:
+                    if (
+                        out_tensor.max().item() <= int32_info.max
+                        and out_tensor.min().item() >= int32_info.min
+                    ):
                         out_tensor = out_tensor.to(torch.int32)
                     else:
-                        logger.error("Neural Engine does not support int64 dtype tensor {}."\
-                                     .format(tensor_name))
+                        logger.error(
+                            "Neural Engine does not support int64 dtype tensor {}.".format(
+                                tensor_name
+                            )
+                        )
                 weight = out_tensor.detach().numpy()
-                weight_tensor = Tensor(name=tensor_name,
+                weight_tensor = Tensor(
+                    name=tensor_name,
                     source_op=[],
                     dest_op=dest_ops,
                     shape=list(out_tensor.shape),
                     data=weight,
-                    dtype=get_data_dtype(weight)
-                    )
+                    dtype=get_data_dtype(weight),
+                )
                 graph_nodes_dict[tensor_name] = weight_tensor
 
-
         for in_tensor in model_input_tensors:
-            if in_tensor.name.split('.')[0] in ['attention_mask', 'position_ids', 'input_ids', 'mask',
-                                                'token_type_ids']:
-                in_tensor.dtype = 'int32'  # TODO: refine this
-        input_data_node = construct_node('input_data',
-                                            'Input',
-                                            output_tensors=model_input_tensors)
-        #new_graph.inputs_dict = graph_nodes_dict
+            if in_tensor.name.split(".")[0] in [
+                "attention_mask",
+                "position_ids",
+                "input_ids",
+                "mask",
+                "token_type_ids",
+            ]:
+                in_tensor.dtype = "int32"  # TODO: refine this
+        input_data_node = construct_node(
+            "input_data", "Input", output_tensors=model_input_tensors
+        )
+        # new_graph.inputs_dict = graph_nodes_dict
         input_tensors_name = [item for item in graph_nodes_dict]
         new_graph.input_tensors_name = input_tensors_name
         for node in graph.nodes():
@@ -272,9 +311,9 @@ class TorchExtractor(object):
                 logger.warning("node kind {} is not mapped.".format(node.kind()))
             op_type = op_maps.get(node.kind(), node.kind())
             if op_type not in OPERATORS.keys():
-                    op_type = "OpAny"
+                op_type = "OpAny"
             new_node = OPERATORS[op_type]()
-            new_node.extract('torch', node, model, graph_nodes_dict)
+            new_node.extract("torch", node, model, graph_nodes_dict)
             new_graph.insert_nodes(len(new_graph.nodes), [new_node])
 
         new_graph.insert_nodes(0, [input_data_node])

@@ -14,37 +14,36 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
-from .op import Operator, operator_registry
-from .tensor import Tensor
 from ..graph_utils import list2str
+from .op import Operator, operator_registry
 
 
 # tf.math.reduce_mean(input_tensor, axis=None, keepdims=False, name=None)
 # If axis is None, all dimensions are reduced, and a tensor with a single element is returned.
-@operator_registry(operator_type='ReduceMean')
+@operator_registry(operator_type="ReduceMean")
 class ReduceMean(Operator):
     """Parse the ReduceMean operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
         """Extract the node attr from tensorflow."""
-        if framework == 'tensorflow':
-            self._attr['axis'] = self._input_tensors[1].data[0]
-            self._attr['keep_dims'] = node.attr['keep_dims'].b
+        if framework == "tensorflow":
+            self._attr["axis"] = self._input_tensors[1].data[0]
+            self._attr["keep_dims"] = node.attr["keep_dims"].b
         """Extract the node attr from onnxruntime."""
-        if framework == 'onnxruntime':
+        if framework == "onnxruntime":
             if len(node.attribute) == 2:
                 axis = node.attribute[1].ints
-                self._attr['keep_dims'] = bool(node.attribute[0].i)
+                self._attr["keep_dims"] = bool(node.attribute[0].i)
             if len(node.attribute) == 1:
-               axis = node.attribute[0].ints
+                axis = node.attribute[0].ints
 
             if len(axis) == 1:
-                self._attr['axis'] = axis[0]
+                self._attr["axis"] = axis[0]
             else:
-                self._attr['axis'] = list2str(axis)
+                self._attr["axis"] = list2str(axis)

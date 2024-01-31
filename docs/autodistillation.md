@@ -197,7 +197,7 @@ class Trainer:
         agent.eval_func = eval_func \
             if eval_func else eval_func_builtin
         return agent.search_loop()
-    
+
     def model_builder_builtin(self, model_arch_paras, model_cls):
         ...
         return model
@@ -402,73 +402,64 @@ Please refer to [example](../examples/huggingface/pytorch/language-modeling/dist
 #### AutoDistillation API in optimizer_tf
 ```python
 class TFOptimization:
-  ...
-def autodistill(
-        self,
-        autodistillation_config,
-        teacher_model: PreTrainedModel,
-        model_builder: Optional[Callable] = None,
-        model_cls: Optional[Callable] = None,
-        eval_func: Optional[Callable] = None,
-        train_func: Optional[Callable] = None
-        ):
-        self.autodistillation_config = autodistillation_config
-        if model_builder is None:
-            assert model_cls is not None, "Must specify model_cls to use the built-in " + \
-                "model_builder, e.g. model_cls=AutoModelForPreTraining, or you can use " + \
-                "the customized model_builder."
-            model_builder = partial(self.model_builder_builtin, model_cls=model_cls)
-        agent = AutoDistillation(model_builder, self.autodistillation_config, framework='tensorflow')
+    ...
 
-        def train_func_builtin(model):
-          ...
-        def eval_func_builtin(model):
-          ...
-        agent.framework = 'tensorflow'
-        agent.train_func = train_func \
-            if train_func else train_func_builtin
-        agent.eval_func = eval_func \
-            if eval_func else eval_func_builtin
-        # pylint: disable=E1101
-        os.makedirs(self.args.output_dir, exist_ok=True)
-        return agent.search(self.args.output_dir, model_cls)
+
+def autodistill(
+    self,
+    autodistillation_config,
+    teacher_model: PreTrainedModel,
+    model_builder: Optional[Callable] = None,
+    model_cls: Optional[Callable] = None,
+    eval_func: Optional[Callable] = None,
+    train_func: Optional[Callable] = None,
+):
+    self.autodistillation_config = autodistillation_config
+    if model_builder is None:
+        assert model_cls is not None, (
+            "Must specify model_cls to use the built-in "
+            + "model_builder, e.g. model_cls=AutoModelForPreTraining, or you can use "
+            + "the customized model_builder."
+        )
+        model_builder = partial(self.model_builder_builtin, model_cls=model_cls)
+    agent = AutoDistillation(model_builder, self.autodistillation_config, framework="tensorflow")
+
+    def train_func_builtin(model):
+        ...
+
+    def eval_func_builtin(model):
+        ...
+
+    agent.framework = "tensorflow"
+    agent.train_func = train_func if train_func else train_func_builtin
+    agent.eval_func = eval_func if eval_func else eval_func_builtin
+    # pylint: disable=E1101
+    os.makedirs(self.args.output_dir, exist_ok=True)
+    return agent.search(self.args.output_dir, model_cls)
+
 
 ### Usage for TFOptimization.autodistill
 optimizer = TFOptimization(
-  model=model,
-  args=args,
-  train_dataset=train_dataset,
-  eval_dataset=eval_dataset,
-  compute_metrics=compute_metrics)
+    model=model, args=args, train_dataset=train_dataset, eval_dataset=eval_dataset, compute_metrics=compute_metrics
+)
 autodistillation_config = AutoDistillationConfig(
-  search_space={
-      'hidden_size': [120, 240],
-      'intermediate_size': [256, 512]
-  },
-  search_algorithm=search_algorithm,
-  max_trials=max_trials,
-  metrics=[
-      metrics.Metric(name="eval_loss", greater_is_better=False)
-  ],
-  knowledge_transfer=TFDistillationConfig(
-      train_steps=[3],
-      loss_types=['CE', 'CE'],
-      loss_weights=[0.5, 0.5],
-      temperature=1.0
-  ),
-  regular_distillation=TFDistillationConfig(
-      train_steps=[3],
-      loss_types=['CE', 'CE'],
-      loss_weights=[0.5, 0.5],
-      temperature=1.0
-  )
-  )
+    search_space={"hidden_size": [120, 240], "intermediate_size": [256, 512]},
+    search_algorithm=search_algorithm,
+    max_trials=max_trials,
+    metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)],
+    knowledge_transfer=TFDistillationConfig(
+        train_steps=[3], loss_types=["CE", "CE"], loss_weights=[0.5, 0.5], temperature=1.0
+    ),
+    regular_distillation=TFDistillationConfig(
+        train_steps=[3], loss_types=["CE", "CE"], loss_weights=[0.5, 0.5], temperature=1.0
+    ),
+)
 best_model_archs = optimizer.autodistill(
-  autodistillation_config,
-  teacher_model,
-  model_cls=TFAutoModelForSequenceClassification,
-  train_func=None,
-  eval_func=None
+    autodistillation_config,
+    teacher_model,
+    model_cls=TFAutoModelForSequenceClassification,
+    train_func=None,
+    eval_func=None,
 )
 ```
 

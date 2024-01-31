@@ -16,10 +16,14 @@
 # limitations under the License.
 
 import unittest
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-import intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils as util
+
 import numpy as np
+
+import intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils as util
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import (
+    Tensor,
+)
 
 
 class TestBinaryOp(unittest.TestCase):
@@ -33,41 +37,51 @@ class TestBinaryOp(unittest.TestCase):
 
     def test_binary_op(self):
         model = Graph()
-        input_tensors = [Tensor(name="any", source_op=[], dest_op=['anyop'])]
-        output_tensors = [Tensor(name="any_out", source_op=['anyop'], dest_op=['mul'])]
-        any_node = util.construct_node('anyop', 'AnyOpTest', input_tensors=input_tensors,
-                                       output_tensors=output_tensors)
-        input_tensors = [Tensor(name="any_out", source_op=['anyop'], dest_op=['mul']),
-                         Tensor(name='mul_1', data=np.array(1).astype("int64"), shape=[])]
-        output_tensors = [Tensor(name='mul_out', source_op=['mul'], dest_op=['not'])]
-        Mul_node = util.construct_node('mul', 'Mul', input_tensors=input_tensors,
-                                       output_tensors=output_tensors)
-        input_tensors = [Tensor(name='mul_out', source_op=['mul'], dest_op=['not'])]
-        output_tensors = [Tensor(name='not_out', source_op=['not'], dest_op=['neg'])]
-        Not_node = util.construct_node('not', 'Not', input_tensors=input_tensors,
-                                        output_tensors=output_tensors)
-        input_tensors = [Tensor(name='not_out', source_op=['not'], dest_op=['neg'])]
-        output_tensors = [Tensor(name='neg_out', source_op=['neg'], dest_op=[])]
-        Neg_node = util.construct_node('neg', 'Neg', input_tensors=input_tensors,
-                                        output_tensors=output_tensors)
+        input_tensors = [Tensor(name="any", source_op=[], dest_op=["anyop"])]
+        output_tensors = [Tensor(name="any_out", source_op=["anyop"], dest_op=["mul"])]
+        any_node = util.construct_node(
+            "anyop",
+            "AnyOpTest",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+        )
+        input_tensors = [
+            Tensor(name="any_out", source_op=["anyop"], dest_op=["mul"]),
+            Tensor(name="mul_1", data=np.array(1).astype("int64"), shape=[]),
+        ]
+        output_tensors = [Tensor(name="mul_out", source_op=["mul"], dest_op=["not"])]
+        Mul_node = util.construct_node(
+            "mul", "Mul", input_tensors=input_tensors, output_tensors=output_tensors
+        )
+        input_tensors = [Tensor(name="mul_out", source_op=["mul"], dest_op=["not"])]
+        output_tensors = [Tensor(name="not_out", source_op=["not"], dest_op=["neg"])]
+        Not_node = util.construct_node(
+            "not", "Not", input_tensors=input_tensors, output_tensors=output_tensors
+        )
+        input_tensors = [Tensor(name="not_out", source_op=["not"], dest_op=["neg"])]
+        output_tensors = [Tensor(name="neg_out", source_op=["neg"], dest_op=[])]
+        Neg_node = util.construct_node(
+            "neg", "Neg", input_tensors=input_tensors, output_tensors=output_tensors
+        )
         Mul_node.set_attr("onnxruntime", None)
         Not_node.set_attr("onnxruntime", None)
         Neg_node.set_attr("onnxruntime", None)
         model.insert_nodes(0, [any_node, Mul_node, Not_node, Neg_node])
-        config = {'architecture': 'Transformers', 'layer': 3}
+        config = {"architecture": "Transformers", "layer": 3}
         model.framework_modeling_config = config
         config_1 = model.framework_modeling_config
-        val_0 = model.inquire_config_item('layer')
-        val_1 = config_1['layer']
-        id_0 = model.get_node_id('not')
-        model.rename_node('not', 'not_new')
-        id_1 = model.get_node_id('not_new')
-        self.assertEqual(any_node.op_type, 'AnyOpTest')
+        val_0 = model.inquire_config_item("layer")
+        val_1 = config_1["layer"]
+        id_0 = model.get_node_id("not")
+        model.rename_node("not", "not_new")
+        id_1 = model.get_node_id("not_new")
+        self.assertEqual(any_node.op_type, "AnyOpTest")
         self.assertEqual(Mul_node.input_tensors[1].data.dtype, np.float32)
         self.assertEqual(len(Not_node.input_tensors), 2)
         self.assertEqual(len(Neg_node.input_tensors), 2)
         self.assertEqual(val_0, val_1)
         self.assertEqual(id_0, id_1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -15,23 +15,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
-import unittest
-import numpy as np
 import os
+import platform
 import shutil
 import subprocess
-import platform
+import time
+import unittest
+
 import torch
 from transformers import BertForSequenceClassification
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 
 
 class TestPrimitiveCacheThroughput(unittest.TestCase):
-
     @classmethod
     def setUpClass(self):
-        self.skipTest(self, "currently not support Unit Test for dispatcher, but this function is supported. Will improve Unit Test very soon.")
+        self.skipTest(
+            self,
+            "currently not support Unit Test for dispatcher, but this function is supported. Will improve Unit Test very soon.",
+        )
         if platform.system().lower() == "windows":
             self.skipTest(self, "not support on windows yet")
         code = """
@@ -106,33 +109,38 @@ if __name__ == "__main__":
     run()
 
 """
-        with open('run.py', 'w', encoding='utf-8') as f:
+        with open("run.py", "w", encoding="utf-8") as f:
             f.write(code)
         # export onnx model
         model_path = "/tf_dataset2/models/nlp_toolkit/bert_mini_mrpc"
         torch_model = BertForSequenceClassification.from_pretrained(model_path)
         with torch.no_grad():
             inputs = {
-                'input_ids': torch.ones(1, 128, dtype=torch.int32),
-                'attention_mask': torch.ones(1, 128, dtype=torch.int32),
-                'token_type_ids': torch.ones(1, 128, dtype=torch.int32)
+                "input_ids": torch.ones(1, 128, dtype=torch.int32),
+                "attention_mask": torch.ones(1, 128, dtype=torch.int32),
+                "token_type_ids": torch.ones(1, 128, dtype=torch.int32),
             }
             outputs = torch_model(**inputs)
 
-            symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
+            symbolic_names = {0: "batch_size", 1: "max_seq_len"}
             torch.onnx.export(
                 torch_model,
-                (inputs['input_ids'], inputs['attention_mask'], inputs['token_type_ids']),
+                (
+                    inputs["input_ids"],
+                    inputs["attention_mask"],
+                    inputs["token_type_ids"],
+                ),
                 "onnx_fp32.onnx",
                 opset_version=11,
                 do_constant_folding=True,
-                input_names=['input_ids', 'input_mask', 'segment_ids'],
-                output_names=['output'],
+                input_names=["input_ids", "input_mask", "segment_ids"],
+                output_names=["output"],
                 dynamic_axes={
-                    'input_ids': symbolic_names,
-                    'input_mask': symbolic_names,
-                    'segment_ids': symbolic_names
-                })
+                    "input_ids": symbolic_names,
+                    "input_mask": symbolic_names,
+                    "segment_ids": symbolic_names,
+                },
+            )
         graph = compile("onnx_fp32.onnx")
         graph.save()
 
@@ -149,19 +157,21 @@ if __name__ == "__main__":
                 continue
 
     def test_primitive_cache_throughput(self):
-        cmd = "numactl -l -C 0-6 python run.py  log0_pc0.txt & " \
-              "numactl -l -C 7-13 python run.py log1_pc0.txt & " \
-              "numactl -l -C 14-20 python run.py log2_pc0.txt & " \
-              "numactl -l -C 21-27 python run.py log3_pc0.txt"
+        cmd = (
+            "numactl -l -C 0-6 python run.py  log0_pc0.txt & "
+            "numactl -l -C 7-13 python run.py log1_pc0.txt & "
+            "numactl -l -C 14-20 python run.py log2_pc0.txt & "
+            "numactl -l -C 21-27 python run.py log3_pc0.txt"
+        )
         # close engine primitive_cache
-        os.environ['ENGINE_PRIMITIVE_CACHE_OFF'] = '1'
-        os.environ['INST_NUM'] = '4'
-        os.environ['GLOG_minloglevel'] = '2'
+        os.environ["ENGINE_PRIMITIVE_CACHE_OFF"] = "1"
+        os.environ["INST_NUM"] = "4"
+        os.environ["GLOG_minloglevel"] = "2"
         # cycle buffer
-        if os.environ.get('DIRECT_BUFFER'):
-            del os.environ['DIRECT_BUFFER']
-        if os.environ.get('UNIFIED_BUFFER'):
-            del os.environ['UNIFIED_BUFFER']
+        if os.environ.get("DIRECT_BUFFER"):
+            del os.environ["DIRECT_BUFFER"]
+        if os.environ.get("UNIFIED_BUFFER"):
+            del os.environ["UNIFIED_BUFFER"]
 
         process = subprocess.Popen(cmd, shell=True)  # nosec
         process.wait()
@@ -181,15 +191,17 @@ if __name__ == "__main__":
 
         throughput_off = 0
         for i in range(4):
-            with open("log" + str(i) + "_pc0.txt", 'r') as f:
+            with open("log" + str(i) + "_pc0.txt", "r") as f:
                 throughput_off += int(f.readline().strip())
 
         # open engine primitive_cache
-        del os.environ['ENGINE_PRIMITIVE_CACHE_OFF']
-        cmd = "numactl -l -C 0-6 python run.py  log0_pc1.txt & " \
-              "numactl -l -C 7-13 python run.py log1_pc1.txt & " \
-              "numactl -l -C 14-20 python run.py log2_pc1.txt & " \
-              "numactl -l -C 21-27 python run.py log3_pc1.txt"
+        del os.environ["ENGINE_PRIMITIVE_CACHE_OFF"]
+        cmd = (
+            "numactl -l -C 0-6 python run.py  log0_pc1.txt & "
+            "numactl -l -C 7-13 python run.py log1_pc1.txt & "
+            "numactl -l -C 14-20 python run.py log2_pc1.txt & "
+            "numactl -l -C 21-27 python run.py log3_pc1.txt"
+        )
         process = subprocess.Popen(cmd, shell=True)  # nosec
         process.wait()
         if process.returncode != 0:
@@ -208,7 +220,7 @@ if __name__ == "__main__":
 
         throughput_on = 0
         for i in range(4):
-            with open("log" + str(i) + "_pc1.txt", 'r') as f:
+            with open("log" + str(i) + "_pc1.txt", "r") as f:
                 throughput_on += int(f.readline().strip())
 
         self.assertGreater(throughput_on, throughput_off)

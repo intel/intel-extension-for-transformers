@@ -1,11 +1,10 @@
 import logging
 import os
-import numpy as np
-import nltk 
-from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import metrics, OptimizedModel
-from intel_extension_for_transformers.transformers.trainer import NLPSeq2SeqTrainer
 from argparse import ArgumentParser
+
+import nltk
+import numpy as np
+from datasets import load_dataset, load_metric
 from transformers import (
     AutoConfig,
     AutoModelForSeq2SeqLM,
@@ -15,16 +14,23 @@ from transformers import (
     set_seed,
 )
 
+from intel_extension_for_transformers.transformers import OptimizedModel
+from intel_extension_for_transformers.transformers.trainer import NLPSeq2SeqTrainer
+
 os.environ["WANDB_DISABLED"] = "true"
 
 logger = logging.getLogger(__name__)
 
-arg_parser = ArgumentParser(description='Parse args')
-arg_parser.add_argument('--data_type', default = "int8", help='data type of model')
-arg_parser.add_argument('--model_name_or_path', default = "lvwerra/pegasus-samsum", help = 'input model for benchmark')
+arg_parser = ArgumentParser(description="Parse args")
+arg_parser.add_argument("--data_type", default="int8", help="data type of model")
+arg_parser.add_argument(
+    "--model_name_or_path",
+    default="lvwerra/pegasus-samsum",
+    help="input model for benchmark",
+)
 args = arg_parser.parse_args()
 
-dataset_name="samsum"
+dataset_name = "samsum"
 summarization_name_mapping = {
     "amazon_reviews_multi": ("review_body", "review_title"),
     "big_patent": ("description", "abstract"),
@@ -51,17 +57,19 @@ training_args = Seq2SeqTrainingArguments(
 
 raw_datasets = load_dataset(dataset_name)
 config = AutoConfig.from_pretrained(args.model_name_or_path, revision="main")
-tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=True, revision="main")
+tokenizer = AutoTokenizer.from_pretrained(
+    args.model_name_or_path, use_fast=True, revision="main"
+)
 
 ## start with int8 benchmarking
 if args.data_type == "int8":
     # Load the model obtained after Intel Neural Compressor (INC) quantization
     model = OptimizedModel.from_pretrained(
-          args.model_name_or_path,
-          from_tf=bool(".ckpt" in args.model_name_or_path),
-          config=config,
-          revision="main",
-          use_auth_token=None,
+        args.model_name_or_path,
+        from_tf=bool(".ckpt" in args.model_name_or_path),
+        config=config,
+        revision="main",
+        use_auth_token=None,
     )
 else:
     ## original fp32 model benchmarking
@@ -69,12 +77,14 @@ else:
         args.model_name_or_path,
         from_tf=bool(".ckpt" in args.model_name_or_path),
         config=config,
-        revision="main"
+        revision="main",
     )
     model.resize_token_embeddings(len(tokenizer))
 
 if model.config.decoder_start_token_id is None:
-    raise ValueError("Make sure that `config.decoder_start_token_id` is correctly defined")
+    raise ValueError(
+        "Make sure that `config.decoder_start_token_id` is correctly defined"
+    )
 
 if (
     hasattr(model.config, "max_position_embeddings")
@@ -94,7 +104,9 @@ elif training_args.do_eval:
 elif training_args.do_predict:
     column_names = raw_datasets["test"].column_names
 else:
-    logger.info("There is nothing to do. Please pass `do_train`, `do_eval` and/or `do_predict`.")
+    logger.info(
+        "There is nothing to do. Please pass `do_train`, `do_eval` and/or `do_predict`."
+    )
 
 
 # Get the column names for input/target.
@@ -106,12 +118,16 @@ summary_column = dataset_columns[1] if dataset_columns is not None else column_n
 max_target_length = 128
 padding = False
 
+
 def preprocess_function(examples):
     # remove pairs where at least one record is None
 
     inputs, targets = [], []
     for i in range(len(examples[text_column])):
-        if examples[text_column][i] is not None and examples[summary_column][i] is not None:
+        if (
+            examples[text_column][i] is not None
+            and examples[summary_column][i] is not None
+        ):
             inputs.append(examples[text_column][i])
             targets.append(examples[summary_column][i])
 
@@ -120,13 +136,16 @@ def preprocess_function(examples):
 
     # Setup the tokenizer for targets
     with tokenizer.as_target_tokenizer():
-        labels = tokenizer(targets, max_length=max_target_length, padding=padding, truncation=True)
+        labels = tokenizer(
+            targets, max_length=max_target_length, padding=padding, truncation=True
+        )
 
     # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore
     # padding in the loss.
     if padding == "max_length":
         labels["input_ids"] = [
-            [(l if l != tokenizer.pad_token_id else -100) for l in label] for label in labels["input_ids"]
+            [(l if l != tokenizer.pad_token_id else -100) for l in label]
+            for label in labels["input_ids"]
         ]
 
     model_inputs["labels"] = labels["input_ids"]
@@ -176,6 +195,7 @@ data_collator = DataCollatorForSeq2Seq(
 # Metric
 metric = load_metric("rouge")
 
+
 def postprocess_text(preds, labels):
     preds = [pred.strip() for pred in preds]
     labels = [label.strip() for label in labels]
@@ -185,6 +205,7 @@ def postprocess_text(preds, labels):
     labels = ["\n".join(nltk.sent_tokenize(label)) for label in labels]
 
     return preds, labels
+
 
 def compute_metrics(eval_preds):
     preds, labels = eval_preds
@@ -198,14 +219,19 @@ def compute_metrics(eval_preds):
     # Some simple post-processing
     decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
-    result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
+    result = metric.compute(
+        predictions=decoded_preds, references=decoded_labels, use_stemmer=True
+    )
     # Extract a few results from ROUGE
     result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
 
-    prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
+    prediction_lens = [
+        np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds
+    ]
     result["gen_len"] = np.mean(prediction_lens)
     result = {k: round(v, 4) for k, v in result.items()}
     return result
+
 
 # Initialize the Trainer
 set_seed(training_args.seed)
@@ -228,12 +254,19 @@ trainer.max_length = max_length
 trainer.num_beams = num_beams
 
 results = trainer.evaluate(max_length=max_length, num_beams=num_beams)
-bert_task_acc_keys = ['eval_loss', 'eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
-                              'eval_pearson', 'eval_mcc', 'eval_spearmanr']
+bert_task_acc_keys = [
+    "eval_loss",
+    "eval_f1",
+    "eval_accuracy",
+    "eval_matthews_correlation",
+    "eval_pearson",
+    "eval_mcc",
+    "eval_spearmanr",
+]
 
 throughput = results.get("eval_samples_per_second")
 eval_loss = results["eval_loss"]
-print('Batch size = {}'.format(training_args.per_device_eval_batch_size))
+print("Batch size = {}".format(training_args.per_device_eval_batch_size))
 print("Finally Eval eval_loss Accuracy: {}".format(eval_loss))
 print("Latency: {:.3f} ms".format(1000 / throughput))
 print("Throughput: {} samples/sec".format(throughput))

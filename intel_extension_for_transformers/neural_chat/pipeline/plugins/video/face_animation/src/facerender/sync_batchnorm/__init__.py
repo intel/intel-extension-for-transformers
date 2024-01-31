@@ -15,5 +15,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .batchnorm import SynchronizedBatchNorm1d, SynchronizedBatchNorm2d, SynchronizedBatchNorm3d
-from .replicate import DataParallelWithCallback, patch_replication_callback

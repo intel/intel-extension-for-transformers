@@ -14,15 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""The wrapper for Child-Parent retriever based on langchain"""
-from langchain_core.vectorstores import VectorStore
-from langchain_core.retrievers import BaseRetriever
-from langchain_core.pydantic_v1 import Field
+"""The wrapper for Child-Parent retriever based on langchain."""
 from enum import Enum
 from typing import List
-from langchain_core.documents import Document
+
 from langchain.callbacks.manager import CallbackManagerForRetrieverRun
+from langchain_core.documents import Document
+from langchain_core.pydantic_v1 import Field
+from langchain_core.retrievers import BaseRetriever
+from langchain_core.vectorstores import VectorStore
 
 
 class SearchType(str, Enum):
@@ -36,6 +36,7 @@ class SearchType(str, Enum):
 
 class ChildParentRetriever(BaseRetriever):
     """Retrieve from a set of multiple embeddings for the same document."""
+
     vectorstore: VectorStore
     parentstore: VectorStore
     id_key: str = "doc_id"
@@ -44,8 +45,11 @@ class ChildParentRetriever(BaseRetriever):
     search_type: SearchType = SearchType.similarity
     """Type of search to perform (similarity / mmr)"""
 
-    def _get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRun) -> List[Document]:
+    def _get_relevant_documents(
+        self, query: str, *, run_manager: CallbackManagerForRetrieverRun
+    ) -> List[Document]:
         """Get documents relevant to a query.
+
         Args:
             query: String to find relevant documents for
             run_manager: The callbacks handler to use
@@ -62,16 +66,16 @@ class ChildParentRetriever(BaseRetriever):
         ids = []
         for d in sub_docs:
             if d.metadata["identify_id"] not in ids:
-                ids.append(d.metadata['identify_id'])
+                ids.append(d.metadata["identify_id"])
         retrieved_documents = self.parentstore.get(ids)
         return retrieved_documents
 
     def get_context(self, query):
-        context = ''
+        context = ""
         links = []
         retrieved_documents = self.get_relevant_documents(query)
-        for doc in retrieved_documents['documents']:
+        for doc in retrieved_documents["documents"]:
             context = context + doc + " "
-        for meta in retrieved_documents['metadatas']:
-            links.append(meta['source'])
+        for meta in retrieved_documents["metadatas"]:
+            links.append(meta["source"])
         return context.strip(), links

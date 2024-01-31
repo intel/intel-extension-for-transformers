@@ -15,7 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def _get_version(default='x.x.x.dev'):
+
+def _get_version(default="x.x.x.dev"):
     try:
         from pkg_resources import DistributionNotFound, get_distribution
     except ImportError:

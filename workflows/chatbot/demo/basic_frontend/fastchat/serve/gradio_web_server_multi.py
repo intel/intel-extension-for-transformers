@@ -1,22 +1,39 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import argparse
 
 import gradio as gr
-
-from fastchat.utils import build_logger
-from fastchat.serve.gradio_patch import Chatbot as grChatbot
+from fastchat.serve.gradio_block_arena_anony import (
+    build_side_by_side_ui_anony,
+    load_demo_side_by_side_anony,
+    set_global_vars_anony,
+)
+from fastchat.serve.gradio_block_arena_named import (
+    build_side_by_side_ui_named,
+    load_demo_side_by_side_named,
+    set_global_vars_named,
+)
 from fastchat.serve.gradio_web_server import (
-    set_global_vars,
-    get_window_url_params,
     block_css,
     build_single_model_ui,
     get_model_list,
+    get_window_url_params,
     load_demo_single,
+    set_global_vars,
 )
-from fastchat.serve.gradio_block_arena_anony import (build_side_by_side_ui_anony,
-    load_demo_side_by_side_anony, set_global_vars_anony)
-from fastchat.serve.gradio_block_arena_named import (build_side_by_side_ui_named,
-    load_demo_side_by_side_named, set_global_vars_named)
-
+from fastchat.utils import build_logger
 
 logger = build_logger("gradio_web_server_multi", "gradio_web_server_multi.log")
 
@@ -31,8 +48,12 @@ def load_demo(url_params, request: gr.Request):
     single_updates = load_demo_single(models, url_params)
     side_by_side_anony_updates = load_demo_side_by_side_anony(models, url_params)
     side_by_side_named_updates = load_demo_side_by_side_named(models, url_params)
-    return ((gr.Tabs.update(selected=selected),) + single_updates +
-            side_by_side_anony_updates + side_by_side_named_updates)
+    return (
+        (gr.Tabs.update(selected=selected),)
+        + single_updates
+        + side_by_side_anony_updates
+        + side_by_side_named_updates
+    )
 
 
 def build_demo(models):

@@ -14,26 +14,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
-from .op import Operator, operator_registry
-from .tensor import Tensor
 import copy
 
+from .op import Operator, operator_registry
 
-@operator_registry(operator_type='OneHot')
+
+@operator_registry(operator_type="OneHot")
 class OneHot(Operator):
     """Parse the OneHot operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
         """Extract the node attr from tensorflow."""
-        if framework == 'tensorflow':
-            self._attr['axis'] = node.attr['axis'].i
-            self._attr['depth'] = int(self._input_tensors[1].data)
-            self._attr['on_value'] = int(self._input_tensors[2].data)  # float
-            self._attr['off_value'] = int(self._input_tensors[3].data)  # float
+        if framework == "tensorflow":
+            self._attr["axis"] = node.attr["axis"].i
+            self._attr["depth"] = int(self._input_tensors[1].data)
+            self._attr["on_value"] = int(self._input_tensors[2].data)  # float
+            self._attr["off_value"] = int(self._input_tensors[3].data)  # float
             self._input_tensors = [copy.deepcopy(self._input_tensors[0])]

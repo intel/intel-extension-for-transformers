@@ -1,24 +1,31 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import time
 
 import gradio as gr
 import numpy as np
-
 from fastchat.conversation import get_default_conv_template
-from fastchat.utils import (
-    build_logger,
-    violates_moderation,
-    moderation_msg,
-)
 from fastchat.serve.gradio_patch import Chatbot as grChatbot
 from fastchat.serve.gradio_web_server import (
-    http_bot,
-    get_conv_log_filename,
-    no_change_btn,
-    enable_btn,
     disable_btn,
+    get_conv_log_filename,
+    http_bot,
+    no_change_btn,
 )
-
+from fastchat.utils import build_logger, moderation_msg, violates_moderation
 
 logger = build_logger("gradio_web_server_multi", "gradio_web_server_multi.log")
 
@@ -26,6 +33,7 @@ num_models = 2
 enable_moderation = False
 anony_names = ["", ""]
 models = []
+
 
 def set_global_vars_anony(enable_moderation_):
     global enable_moderation
@@ -69,11 +77,17 @@ def vote_last_response(states, vote_type, model_selectors, request: gr.Request):
 
     if ":" not in model_selectors[0]:
         for i in range(15):
-            names = ("### Model A: " + states[0].model_name, "### Model B: " + states[1].model_name)
+            names = (
+                "### Model A: " + states[0].model_name,
+                "### Model B: " + states[1].model_name,
+            )
             yield names + ("",) + (disable_btn,) * 3
             time.sleep(0.2)
     else:
-        names = ("### Model A: " + states[0].model_name, "### Model B: " + states[1].model_name)
+        names = (
+            "### Model A: " + states[0].model_name,
+            "### Model B: " + states[1].model_name,
+        )
         yield names + ("",) + (disable_btn,) * 3
 
 
@@ -118,11 +132,16 @@ def regenerate(state0, state1, request: gr.Request):
 
 def clear_history(request: gr.Request):
     logger.info(f"clear_history (anony). ip: {request.client.host}")
-    return [None] * num_models + [None] * num_models + anony_names + [""] + [disable_btn] * 5
+    return (
+        [None] * num_models
+        + [None] * num_models
+        + anony_names
+        + [""]
+        + [disable_btn] * 5
+    )
 
 
-def share_click(state0, state1, model_selector0, model_selector1,
-                request: gr.Request):
+def share_click(state0, state1, model_selector0, model_selector1, request: gr.Request):
     logger.info(f"share (anony). ip: {request.client.host}")
     if state0 is not None and state1 is not None:
         vote_last_response(
@@ -136,11 +155,12 @@ def add_text(state0, state1, text, request: gr.Request):
 
     if states[0] is None:
         assert states[1] is None
-        weights = ([8, 4, 2, 1] + [1] * 32)[:len(models)]
+        weights = ([8, 4, 2, 1] + [1] * 32)[: len(models)]
         if len(models) > 1:
             weights = weights / np.sum(weights)
             model_left, model_right = np.random.choice(
-                models, size=(2,), p=weights, replace=False)
+                models, size=(2,), p=weights, replace=False
+            )
         else:
             model_left = model_right = models[0]
 
@@ -167,7 +187,9 @@ def add_text(state0, state1, text, request: gr.Request):
     if enable_moderation:
         flagged = violates_moderation(text)
         if flagged:
-            logger.info(f"violate moderation (anony). ip: {request.client.host}. text: {text}")
+            logger.info(
+                f"violate moderation (anony). ip: {request.client.host}. text: {text}"
+            )
             for i in range(num_models):
                 states[i].skip_next = True
             return (
@@ -240,7 +262,7 @@ def http_bot_all(
 
 def build_side_by_side_ui_anony(models):
     notice_markdown = """
-# ⚔️  Chatbot Arena ⚔️ 
+# ⚔️  Chatbot Arena ⚔️
 Rules:
 - Chat with two anonymous models side-by-side and vote for which one is better!
 - The names of the models will be revealed after your vote.
@@ -282,8 +304,9 @@ The service is a research preview intended for non-commercial use only, subject 
             for i in range(num_models):
                 label = "Model A" if i == 0 else "Model B"
                 with gr.Column():
-                    chatbots[i] = grChatbot(label=label, elem_id=f"chatbot{i}",
-                        visible=False).style(height=550)
+                    chatbots[i] = grChatbot(
+                        label=label, elem_id=f"chatbot{i}", visible=False
+                    ).style(height=550)
 
         with gr.Box() as button_row:
             with gr.Row():
@@ -350,10 +373,11 @@ The service is a research preview intended for non-commercial use only, subject 
         states + model_selectors + [temperature, max_output_tokens],
         states + chatbots + btn_list,
     )
-    clear_btn.click(clear_history, None, states + chatbots + model_selectors + [
-        textbox] + btn_list)
+    clear_btn.click(
+        clear_history, None, states + chatbots + model_selectors + [textbox] + btn_list
+    )
 
-    share_js="""
+    share_js = """
 function (a, b, c, d) {
     const captureElement = document.querySelector('#share-region');
     html2canvas(captureElement)
@@ -400,5 +424,3 @@ function (a, b, c, d) {
         button_row2,
         parameter_row,
     )
-
-

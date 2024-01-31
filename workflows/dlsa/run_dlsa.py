@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 #
-
-"""E2E DLSA fine-tuning and inference pipeline with ITREX"""
+"""E2E DLSA fine-tuning and inference pipeline with ITREX."""
 
 import os
 from contextlib import contextmanager
@@ -25,12 +24,10 @@ from typing import Optional
 import numpy as np
 import torch
 from datasets import load_dataset
-
 from neural_compressor.benchmark import fit
 from neural_compressor.config import BenchmarkConfig
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import logging as hf_logging
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -38,6 +35,8 @@ from transformers import (
     HfArgumentParser,
     TrainingArguments,
 )
+from transformers import logging as hf_logging
+
 from intel_extension_for_transformers.transformers import (
     OptimizedModel,
     QuantizationConfig,
@@ -51,7 +50,7 @@ hf_logging.set_verbosity_info()
 
 @dataclass
 class PredsLabels:
-    """Class for the labels of the predictions"""
+    """Class for the labels of the predictions."""
 
     def __init__(self, preds, labels):
         self.predictions = preds
@@ -60,14 +59,14 @@ class PredsLabels:
 
 @dataclass
 class DlsaPipeline:
-    """Class for the E2E DlsaPipeline"""
+    """Class for the E2E DlsaPipeline."""
 
     summary_msg: str = field(default_factory=str)
     sec_to_ns_scale: int = 1000000000
 
     @contextmanager
     def track(self, step):
-        """Function tracking the elapsed time for each phase in the Benchmark"""
+        """Function tracking the elapsed time for each phase in the Benchmark."""
         start = perf_counter_ns()
         yield
         ns = perf_counter_ns() - start  # pylint: disable=C0103
@@ -76,15 +75,13 @@ class DlsaPipeline:
         self.summary_msg += msg + "\n"
 
     def summary(self):
-        """Function printing the Benchmark Summary"""
+        """Function printing the Benchmark Summary."""
         print(f"\n{'#' * 30}\nBenchmark Summary:\n{'#' * 30}\n\n{self.summary_msg}")
 
 
 @dataclass
 class Arguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
-    """
+    """Arguments pertaining to which model/config/tokenizer we are going to fine-tune from."""
 
     model_name_or_path: str = field(
         default="distilbert-base-uncased",
@@ -146,14 +143,14 @@ class Arguments:
 
 
 def compute_metrics(p):  # pylint: disable=C0103
-    """Function calculating the total inference accuracy"""
+    """Function calculating the total inference accuracy."""
 
     preds = np.argmax(p.predictions, axis=1)
     return {"acc": (preds == p.label_ids).mean()}
 
 
 def save_train_metrics(train_result, trainer, max_train):
-    """Function saving the fine-tuning results"""
+    """Function saving the fine-tuning results."""
 
     # pytorch only
     if train_result:
@@ -164,7 +161,7 @@ def save_train_metrics(train_result, trainer, max_train):
 
 
 def predict(model, trainer):
-    """Prediction/evaluation loop"""
+    """Prediction/evaluation loop."""
 
     batch_size = trainer.args.per_device_eval_batch_size
     all_outputs, all_labels = [], []
@@ -194,7 +191,7 @@ def predict(model, trainer):
 
 
 def main():
-    """Function running the E2E DLSA pipeline"""
+    """Function running the E2E DLSA pipeline."""
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # args = HfArgumentParser(Arguments).parse_args_into_dataclasses()

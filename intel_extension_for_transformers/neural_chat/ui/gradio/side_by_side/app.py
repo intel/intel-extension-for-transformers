@@ -15,8 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
-from collections import defaultdict
 import datetime
 import json
 import os
@@ -25,21 +23,15 @@ import uuid
 
 os.system("pip install gradio==3.34.0")
 
+import sys
+
 import gradio as gr
 import requests
 
-import sys
-sys.path.insert(0, './')
-from conversation import (
-    Conversation,
-    SeparatorStyle,
-    compute_skip_echo_len
-)
+sys.path.insert(0, "./")
+from conversation import Conversation, SeparatorStyle, compute_skip_echo_len
 from fastchat.constants import LOGDIR
-from fastchat.utils import (
-    build_logger,
-    violates_moderation,
-)
+from fastchat.utils import build_logger, violates_moderation
 
 code_highlight_css = """
 #chatbot .hll { background-color: #ffffcc }
@@ -120,7 +112,6 @@ moderation_msg = (
 )
 
 
-
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
 
 headers = {"User-Agent": "NeuralChat Client"}
@@ -135,7 +126,7 @@ enable_moderation = False
 
 conv_template_bf16 = Conversation(
     system="A chat between a curious human and an artificial intelligence assistant. "
-           "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+    "The assistant gives helpful, detailed, and polite answers to the human's questions.",
     roles=("Human", "Assistant"),
     messages=(),
     offset=0,
@@ -179,7 +170,8 @@ conv_template_bf16 = Conversation(
     sep2="<|im_end|>",
 )
 
-def set_global_vars(baseline_url_, optimized_url_, enable_moderation_ ):
+
+def set_global_vars(baseline_url_, optimized_url_, enable_moderation_):
     global baseline_url, optimized_url, enable_moderation
     baseline_url = baseline_url_
     optimized_url = optimized_url_
@@ -269,7 +261,7 @@ def add_text(state, text, request: gr.Request):
                 no_change_btn,
             ) * 2
 
-    print('text', text, text[:1536])
+    print("text", text, text[:1536])
     text = text[:1536]  # Hard cut-off
     state.append_message(state.roles[0], text)
     state.append_message(state.roles[1], None)
@@ -288,7 +280,15 @@ def post_process_code(code):
     return code
 
 
-def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: gr.Request, choice_chatbot_url):
+def http_bot(
+    state,
+    model_selector,
+    temperature,
+    max_new_tokens,
+    topk,
+    request: gr.Request,
+    choice_chatbot_url,
+):
     logger.info(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
     model_name = model_selector
@@ -340,7 +340,7 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         "temperature": temperature,
         "max_new_tokens": max_new_tokens,
         "topk": topk,
-        "stop": "<|endoftext|>"
+        "stop": "<|endoftext|>",
     }
     logger.info(f"==== request ====\n{pload}")
 
@@ -376,8 +376,8 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
                     )
                     return
                 time.sleep(0.005)
-    except requests.exceptions.RequestException as e:
-        state.messages[-1][-1] = server_error_msg + f" (error_code: 4)"
+    except requests.exceptions.RequestException:
+        state.messages[-1][-1] = server_error_msg + " (error_code: 4)"
         yield (state, state.to_gradio_chatbot()) + (
             enable_btn,
             enable_btn,
@@ -506,10 +506,10 @@ gradio-app {
 }
 .user, .bot {
     width: 80% !important;
-    
+
 }
 .bot {
-    white-space: pre-wrap !important;  
+    white-space: pre-wrap !important;
     line-height: 1.3 !important;
     display: flex;
     flex-direction: column;
@@ -522,7 +522,7 @@ gradio-app {
 #btn-list-style {
     background: #eee0;
     border: 1px solid #0053f4;
-}        
+}
 .title {
     font-size: 1.5rem;
     font-weight: 700;
@@ -581,7 +581,7 @@ def build_single_model_ui(models):
 ">Future Gen Intel® Xeon® (codenamed Granite Rapids) with Intel® AMX</p></div>
 </div>
 """
-    learn_more_markdown =  """
+    learn_more_markdown = """
 <div class="footer"><p>Powered by <a href="https://github.com/intel/intel-extension-for-transformers" style="text-decoration: underline;" target="_blank">Intel Extension for Transformers</a> and <a href="https://github.com/intel/intel-extension-for-pytorch" style="text-decoration: underline;" target="_blank">Intel Extension for PyTorch</a></p>
 </div>
 <div class="acknowledgments">
@@ -614,7 +614,9 @@ def build_single_model_ui(models):
         with gr.Column(scale=1, min_width=50):
             send_btn = gr.Button(value="Send", visible=False, elem_id="btn-send-style")
 
-    with gr.Accordion("Parameters", open=False, visible=False, elem_id="btn-style") as parameter_row:
+    with gr.Accordion(
+        "Parameters", open=False, visible=False, elem_id="btn-style"
+    ) as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
@@ -641,26 +643,31 @@ def build_single_model_ui(models):
             label="TOP K",
         )
 
-
     with gr.Row(visible=False, elem_id="btn-style") as button_row:
-        regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False, elem_id="btn-list-style")
-        clear_btn = gr.Button(value="🗑️  Clear history", interactive=False, elem_id="btn-list-style")
-        choice_chatbot1 = gr.Textbox(label='hidden', value=baseline_url, visible=False)
-        choice_chatbot2 = gr.Textbox(label='hidden', value=optimized_url, visible=False)
-
-
+        regenerate_btn = gr.Button(
+            value="🔄  Regenerate", interactive=False, elem_id="btn-list-style"
+        )
+        clear_btn = gr.Button(
+            value="🗑️  Clear history", interactive=False, elem_id="btn-list-style"
+        )
+        choice_chatbot1 = gr.Textbox(label="hidden", value=baseline_url, visible=False)
+        choice_chatbot2 = gr.Textbox(label="hidden", value=optimized_url, visible=False)
 
     gr.Markdown(learn_more_markdown)
 
     # Register listeners
     btn_list = [regenerate_btn, clear_btn]
-  
-    regenerate_btn.click(regenerate, state1, [state1, chatbot1, textbox] + btn_list).then(
+
+    regenerate_btn.click(
+        regenerate, state1, [state1, chatbot1, textbox] + btn_list
+    ).then(
         http_bot,
         [state1, model_selector, temperature, max_output_tokens, topk, choice_chatbot1],
         [state1, chatbot1] + btn_list,
     )
-    regenerate_btn.click(regenerate, state2, [state2, chatbot2, textbox] + btn_list).then(
+    regenerate_btn.click(
+        regenerate, state2, [state2, chatbot2, textbox] + btn_list
+    ).then(
         http_bot,
         [state2, model_selector, temperature, max_output_tokens, topk, choice_chatbot2],
         [state2, chatbot2] + btn_list,
@@ -700,7 +707,17 @@ def build_single_model_ui(models):
         [state2, chatbot2] + btn_list,
     )
 
-    return state1, state2, model_selector, chatbot1, chatbot2, textbox, send_btn, button_row, parameter_row
+    return (
+        state1,
+        state2,
+        model_selector,
+        chatbot1,
+        chatbot2,
+        textbox,
+        send_btn,
+        button_row,
+        parameter_row,
+    )
 
 
 def build_demo(models):
@@ -747,7 +764,6 @@ def build_demo(models):
 
 
 if __name__ == "__main__":
-
     baseline_url = "http://XX"
     optimized_url = "http://XX"
     host = "0.0.0.0"
@@ -762,6 +778,4 @@ if __name__ == "__main__":
     demo = build_demo(models)
     demo.queue(
         concurrency_count=concurrency_count, status_update_rate=10, api_open=False
-    ).launch(
-        server_name=host, share=share, max_threads=200
-    )
+    ).launch(server_name=host, share=share, max_threads=200)

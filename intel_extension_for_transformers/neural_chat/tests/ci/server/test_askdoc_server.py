@@ -15,15 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 import os
+import unittest
 from unittest.mock import patch
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from intel_extension_for_transformers.neural_chat.server.restful.retrieval_api import router
-from intel_extension_for_transformers.neural_chat import build_chatbot, plugins
-from intel_extension_for_transformers.neural_chat import PipelineConfig
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent import Agent_QA
+
+from intel_extension_for_transformers.neural_chat import (
+    PipelineConfig,
+    build_chatbot,
+    plugins,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.retrieval_api import (
+    router,
+)
 
 app = FastAPI()
 app.include_router(router)
@@ -47,7 +53,7 @@ Latest Standards: Use the latest standards including C++ 20, SYCL, and OpenMP 5.
 gaudi2_content = """
 Habana Gaudi2 and 4th Gen Intel Xeon Scalable processors deliver leading performance and optimal cost savings for AI training.
 Today, MLCommons published results of its industry AI performance benchmark, MLPerf Training 3.0, in which both the Habana® Gaudi®2 deep learning accelerator and the 4th Gen Intel® Xeon® Scalable processor delivered impressive training results.
-The latest MLPerf Training 3.0 results underscore the performance of Intel's products on an array of deep learning models. The maturity of Gaudi2-based software and systems for training was demonstrated at scale on the large language model, GPT-3. Gaudi2 is one of only two semiconductor solutions to submit performance results to the benchmark for LLM training of GPT-3. 
+The latest MLPerf Training 3.0 results underscore the performance of Intel's products on an array of deep learning models. The maturity of Gaudi2-based software and systems for training was demonstrated at scale on the large language model, GPT-3. Gaudi2 is one of only two semiconductor solutions to submit performance results to the benchmark for LLM training of GPT-3.
 
 Gaudi2 also provides substantially competitive cost advantages to customers, both in server and system costs. The accelerator’s MLPerf-validated performance on GPT-3, computer vision and natural language models, plus upcoming software advances make Gaudi2 an extremely compelling price/performance alternative to Nvidia's H100.
 On the CPU front, the deep learning training performance of 4th Gen Xeon processors with Intel AI engines demonstrated that customers can build with Xeon-based servers a single universal AI system for data pre-processing, model training and deployment to deliver the right combination of AI performance, efficiency, accuracy and scalability.
@@ -73,7 +79,7 @@ class UnitTest(unittest.TestCase):
             print(f"File created at {self.gaudi2_doc}")
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         plugins.retrieval.enable = True
-        plugins.retrieval.args["input_path"]="./oneapi.txt"
+        plugins.retrieval.args["input_path"] = "./oneapi.txt"
         chatbot = build_chatbot(config)
         router.set_chatbot(chatbot)
 
@@ -81,6 +87,7 @@ class UnitTest(unittest.TestCase):
     def tearDownClass(cls) -> None:
         # delete created resources
         import shutil
+
         if os.path.exists("./out_persist"):
             shutil.rmtree("./out_persist")
         if os.path.exists("./photoai_retrieval_docs"):
@@ -155,7 +162,7 @@ class UnitTest(unittest.TestCase):
             "knowledge_base_id": gaudi2_kb_id,
             "stream": False,
             "max_new_tokens": 64,
-            "return_link": False
+            "return_link": False,
         }
         response = client.post("/v1/aiphotos/askdoc/chat", json=query_params)
         assert response.status_code == 200
@@ -176,7 +183,7 @@ class UnitTest(unittest.TestCase):
             "knowledge_base_id": gaudi2_kb_id,
             "stream": True,
             "max_new_tokens": 64,
-            "return_link": False
+            "return_link": False,
         }
         response = client.post("/v1/aiphotos/askdoc/chat", json=query_params)
         assert response.status_code == 200
@@ -186,10 +193,12 @@ class UnitTest(unittest.TestCase):
             "question": "When is CES 2024?",
             "answer": "CES 2024 taking place Jan. 9-12, in Las Vegas.",
             "feedback": "1",  # Feedback can be '1' for like or '0' for dislike
-            "comments": "Good answer."
+            "comments": "Good answer.",
         }
         # Mocking the MysqlDb class
-        with patch('intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.MysqlDb') as mock_mysql_db:
+        with patch(
+            "intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.MysqlDb"
+        ) as mock_mysql_db:
             mock_instance = mock_mysql_db.return_value
             mock_instance.insert.return_value = None
             response = client.post("/v1/aiphotos/askdoc/feedback", json=feedback_data)
@@ -199,19 +208,39 @@ class UnitTest(unittest.TestCase):
 
     def test_get_feedback_from_db(self):
         feedback_data = [
-            {'feedback_id': 1, 'question': 'Question 1', 'answer': 'Answer 1', 'feedback_result': 1, 'feedback_time': '2023-01-01', "comments": "Comments 1"},
-            {'feedback_id': 2, 'question': 'Question 2', 'answer': 'Answer 2', 'feedback_result': 0, 'feedback_time': '2023-01-02', "comments": "Comments 2"},
+            {
+                "feedback_id": 1,
+                "question": "Question 1",
+                "answer": "Answer 1",
+                "feedback_result": 1,
+                "feedback_time": "2023-01-01",
+                "comments": "Comments 1",
+            },
+            {
+                "feedback_id": 2,
+                "question": "Question 2",
+                "answer": "Answer 2",
+                "feedback_result": 0,
+                "feedback_time": "2023-01-02",
+                "comments": "Comments 2",
+            },
         ]
 
         # Mocking the MysqlDb class and fetch_all method
-        with patch('intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.MysqlDb') as mock_mysql_db:
+        with patch(
+            "intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.MysqlDb"
+        ) as mock_mysql_db:
             mock_instance = mock_mysql_db.return_value
             mock_instance.fetch_all.return_value = feedback_data
 
             response = client.get("/v1/aiphotos/askdoc/downloadFeedback")
             assert response.status_code == 200
-            assert response.headers['content-type'] == 'text/csv; charset=utf-8'
-            assert 'attachment;filename=feedback' in response.headers['content-disposition']
+            assert response.headers["content-type"] == "text/csv; charset=utf-8"
+            assert (
+                "attachment;filename=feedback"
+                in response.headers["content-disposition"]
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

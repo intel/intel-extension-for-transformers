@@ -15,9 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import shutil
-import uuid
-import os
+
 import cv2
 import ffmpeg
 
@@ -41,6 +39,4 @@ def save_video_with_watermark(video, audio, save_path, watermark=False):
     # os.system(cmd)
     input_video = ffmpeg.input(video)
     input_audio = ffmpeg.input(audio)
-    ffmpeg.concat(input_video, input_audio, v=1, a=1).output(
-        save_path
-    ).run()
+    ffmpeg.concat(input_video, input_audio, v=1, a=1).output(save_path).run()

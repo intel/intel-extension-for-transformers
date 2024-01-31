@@ -15,65 +15,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datasets
 import logging
 import os
+import re
 import sys
+
+import datasets
+import evaluate
+import numpy as np
+import torch
 import transformers
-from transformers.modeling_utils import unwrap_model
 from datasets import load_dataset
 from peft import (
     LoraConfig,
-    PromptEncoderConfig,
+    PeftConfig,
+    PeftModel,
     PrefixTuningConfig,
+    PromptEncoderConfig,
     PromptTuningConfig,
     TaskType,
-    PeftModel,
-    PeftConfig,
     get_peft_model,
-    get_peft_model_state_dict,
-    prepare_model_for_kbit_training
+    prepare_model_for_kbit_training,
 )
 from peft.tuners.adaption_prompt import AdaptionPromptConfig
 from transformers import (
     AutoConfig,
-    AutoModelForCausalLM,
     AutoTokenizer,
-    DataCollatorForSeq2Seq,
-    Trainer,
-    TrainingArguments,
-    Seq2SeqTrainer,
-    Seq2SeqTrainingArguments,
-    AutoModelForSeq2SeqLM,
     BitsAndBytesConfig,
-    set_seed
+    DataCollatorForSeq2Seq,
+    Seq2SeqTrainer,
+    Trainer,
+    set_seed,
 )
-from transformers.trainer_utils import is_main_process, get_last_checkpoint
-import re
-import numpy as np
-import evaluate
-import torch
-import importlib.util
-from transformers.utils.import_utils import is_optimum_available, is_bitsandbytes_available
-from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
+from transformers.integrations.deepspeed import is_deepspeed_available
+from transformers.modeling_utils import unwrap_model
+from transformers.trainer_utils import get_last_checkpoint, is_main_process
+from transformers.utils.import_utils import (
+    is_bitsandbytes_available,
+)
+
 from intel_extension_for_transformers.neural_chat.config import BaseFinetuningConfig
-from transformers.integrations.deepspeed import (
-    is_deepspeed_available,
-)
 from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
+from .data_utils import ALPACA_PROMPT_DICT, preprocess_dataset
 
 if is_bitsandbytes_available():
-    import bitsandbytes as bnb # pylint: disable=E0401
+    import bitsandbytes as bnb  # pylint: disable=E0401
 
 
 class Finetuning:
     def __init__(self, finetuning_config: BaseFinetuningConfig):
         self.model_args, self.data_args, self.training_args, self.finetune_args = (
-            finetuning_config.model_args, 
-            finetuning_config.data_args, 
+            finetuning_config.model_args,
+            finetuning_config.data_args,
             finetuning_config.training_args,
-            finetuning_config.finetune_args
+            finetuning_config.finetune_args,
         )
         if finetuning_config.finetune_args.device == "auto":
             if torch.cuda.is_available():
@@ -83,8 +79,9 @@ class Finetuning:
         if finetuning_config.finetune_args.device == "cpu":
             Arguments = type(finetuning_config.training_args)
             training_args = {
-                k: getattr(finetuning_config.training_args, k) \
-                    for k in Arguments.__dataclass_fields__.keys() if Arguments.__dataclass_fields__[k].init
+                k: getattr(finetuning_config.training_args, k)
+                for k in Arguments.__dataclass_fields__.keys()
+                if Arguments.__dataclass_fields__[k].init
             }
             training_args["no_cuda"] = True
             self.training_args = Arguments(**training_args)
@@ -220,7 +217,9 @@ class Finetuning:
                 model_args.model_name_or_path, **config_kwargs
             )
         else:
-            raise ValueError("Please provide value for model_name_or_path or config_name.")
+            raise ValueError(
+                "Please provide value for model_name_or_path or config_name."
+            )
         return config
 
     def load_tokenizer(self, model_args):
@@ -247,10 +246,17 @@ class Finetuning:
         return tokenizer
 
     def finetune(self):
-        model_args, data_args, training_args, finetune_args = \
-            self.model_args, self.data_args, self.training_args, self.finetune_args
-        if training_args.device.type != "cpu" and \
-            not (is_bitsandbytes_available() and torch.cuda.is_available() and training_args.device.type == "cuda"):
+        model_args, data_args, training_args, finetune_args = (
+            self.model_args,
+            self.data_args,
+            self.training_args,
+            self.finetune_args,
+        )
+        if training_args.device.type != "cpu" and not (
+            is_bitsandbytes_available()
+            and torch.cuda.is_available()
+            and training_args.device.type == "cuda"
+        ):
             finetune_args.qlora = False
         self.device_map = None
         self.bitsandbytes_quant_config = None
@@ -262,8 +268,9 @@ class Finetuning:
             object.__setattr__(training_args, "ddp_find_unused_parameters", False)
             finetune_args.peft = "lora"
             compute_dtype = (
-                torch.float16 if training_args.fp16 else
-                    (torch.bfloat16 if training_args.bf16 else torch.float32)
+                torch.float16
+                if training_args.fp16
+                else (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
             self.load_in_4bit = finetune_args.bits == 4
             self.load_in_8bit = finetune_args.bits == 8
@@ -284,20 +291,23 @@ class Finetuning:
                 )
             if finetune_args.full_finetune:
                 raise ValueError(
-                    f"qlora and full_finetune can't be True at the same time."
+                    "qlora and full_finetune can't be True at the same time."
                 )
         elif finetune_args.full_finetune:
             if finetune_args.bits not in [16, 32]:
-                raise ValueError(
-                    f"full finetune only support 16 and 32 bits."
-                )
+                raise ValueError("full finetune only support 16 and 32 bits.")
 
         config = self.load_model_config(self.model_args)
-        if config.architectures[0].endswith("ForCausalLM") \
-            or config.architectures[0].endswith("QWenLMHeadModel"):
-            self.finetune_clm(model_args, data_args, training_args, finetune_args, config)
+        if config.architectures[0].endswith("ForCausalLM") or config.architectures[
+            0
+        ].endswith("QWenLMHeadModel"):
+            self.finetune_clm(
+                model_args, data_args, training_args, finetune_args, config
+            )
         elif config.architectures[0].endswith("ForConditionalGeneration"):
-            self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
+            self.finetune_seq2seq(
+                model_args, data_args, training_args, finetune_args, config
+            )
         else:
             raise NotImplementedError(
                 "Unsupported architecture {}, only support CausalLM (CLM) \
@@ -315,21 +325,24 @@ class Finetuning:
                 elif self.finetune_args.bits == 4:
                     cls = bnb.nn.Linear4bit
             elif self.training_args.device.type == "cpu":
-                from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits
+                from intel_extension_for_transformers.llm.quantization.nn.modules import (
+                    QuantizedLinearQBits,
+                )
+
                 cls = QuantizedLinearQBits
 
         lora_module_names = set()
         for name, module in model.named_modules():
             if isinstance(module, cls):
-                names = name.split('.')
+                names = name.split(".")
                 lora_module_names.add(names[0] if len(names) == 1 else names[-1])
 
-        if 'lm_head' in lora_module_names: # needed for 16-bit
-            lora_module_names.remove('lm_head')
+        if "lm_head" in lora_module_names:  # needed for 16-bit
+            lora_module_names.remove("lm_head")
         return list(lora_module_names)
 
     def finetune_clm(self, model_args, data_args, training_args, finetune_args, config):
-        if finetune_args.device == 'hpu':
+        if finetune_args.device == "hpu":
             if not is_hpu_available:
                 raise ImportError(
                     "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
@@ -352,19 +365,26 @@ class Finetuning:
         # Load model
         if model_args.model_name_or_path:
             model_dtype = (
-                torch.float16 if training_args.fp16 else
-                    (torch.bfloat16 if training_args.bf16 else torch.float32)
+                torch.float16
+                if training_args.fp16
+                else (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
             kwargs = {}
             if finetune_args.qlora and training_args.device.type == "cpu":
-                from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-                kwargs['use_llm_runtime'] = False
+                from intel_extension_for_transformers.transformers.modeling import (
+                    AutoModelForCausalLM,
+                )
+
+                kwargs["use_llm_runtime"] = False
             else:
                 from transformers import AutoModelForCausalLM
 
             low_cpu_mem_usage = True
             if is_deepspeed_available():
-                from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
+                from transformers.integrations.deepspeed import (
+                    is_deepspeed_zero3_enabled,
+                )
+
                 if is_deepspeed_zero3_enabled():
                     low_cpu_mem_usage = False
 
@@ -382,18 +402,25 @@ class Finetuning:
                 low_cpu_mem_usage=low_cpu_mem_usage,
                 load_in_4bit=self.load_in_4bit,
                 load_in_8bit=self.load_in_8bit,
-                **kwargs
+                **kwargs,
             )
             if finetune_args.qlora:
                 model = prepare_model_for_kbit_training(
-                    model, use_gradient_checkpointing=training_args.gradient_checkpointing
+                    model,
+                    use_gradient_checkpointing=training_args.gradient_checkpointing,
                 )
             if training_args.gradient_checkpointing:
                 model.gradient_checkpointing_enable()
-            if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
-                re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE) or
-                re.search("starcoder", model_args.model_name_or_path, re.IGNORECASE)):
-                tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
+            if not (
+                re.search("mpt", model_args.model_name_or_path, re.IGNORECASE)
+                or re.search(
+                    "neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE
+                )
+                or re.search("starcoder", model_args.model_name_or_path, re.IGNORECASE)
+            ):
+                tokenizer.padding_side = (
+                    "left"  # allow batched inference, while mpt series don't support
+                )
         else:
             raise ValueError(
                 "Must provide model_name_or_path to load a pretrained CausalLM model."
@@ -401,7 +428,8 @@ class Finetuning:
         # add special tokens
         if data_args.special_tokens:
             additional_special_tokens = {
-                "additional_special_tokens": data_args.special_tokens}
+                "additional_special_tokens": data_args.special_tokens
+            }
             tokenizer.add_special_tokens(additional_special_tokens)
 
         # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
@@ -435,7 +463,9 @@ class Finetuning:
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
-        raw_datasets, preprocess_function = preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args)
+        raw_datasets, preprocess_function = preprocess_dataset(
+            raw_datasets, tokenizer, data_args, finetune_args
+        )
         column_names = list(raw_datasets["train"].features)
 
         with training_args.main_process_first(desc="dataset map pre-processing"):
@@ -447,6 +477,7 @@ class Finetuning:
             )
 
         if data_args.dataset_concatenation:
+
             def concatenate_data(dataset, max_seq_length):
                 concatenated_dataset = {}
                 for column in dataset.features:
@@ -534,7 +565,7 @@ class Finetuning:
             if model_dtype == torch.bfloat16:
                 model = model.to(model_dtype)
 
-            if finetune_args.device != 'hpu':
+            if finetune_args.device != "hpu":
                 # Initialize our Trainer
                 trainer = Trainer(
                     model=model,
@@ -545,7 +576,10 @@ class Finetuning:
                     data_collator=data_collator,
                 )
             else:
-                from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611 E0401
+                from optimum.habana import (  # pylint: disable=E0611 E0401
+                    GaudiConfig,
+                    GaudiTrainer,
+                )
 
                 gaudi_config = GaudiConfig()
                 gaudi_config.use_fused_adam = True
@@ -564,10 +598,11 @@ class Finetuning:
             trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
             trainer.save_model()
         if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
-            tokenizer.padding_side = "right" # padding on the right is needed to cut off padding in `complete_code`
+            tokenizer.padding_side = "right"  # padding on the right is needed to cut off padding in `complete_code`
             tokenizer.truncation_side = "left"
             unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
+
             class Eval_Args:
                 n_samples = 20
                 limit = 20
@@ -591,9 +626,13 @@ class Finetuning:
                 max_memory_per_gpu = None
                 modeltype = "causal"
                 limit_start = 0
-                batch_size = 20 # batch_size <= n_samples if do_sample.
+                batch_size = 20  # batch_size <= n_samples if do_sample.
+
             eval_args = Eval_Args()
-            from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
+            from intel_extension_for_transformers.llm.evaluation.lm_code_eval import (
+                evaluate,
+            )
+
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
@@ -610,46 +649,68 @@ class Finetuning:
             unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
             from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
                         results = evaluate(
-                                model="hf-causal",
-                                model_args='pretrained='+model_args.model_name_or_path+\
-                                        ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
-                                user_model=unwrapped_model,
-                                device=unwrapped_model.device.type,
-                                batch_size=training_args.per_device_eval_batch_size,
-                                tasks=finetune_args.lm_eval_tasks,
-                                limit=data_args.max_eval_samples)
+                            model="hf-causal",
+                            model_args="pretrained="
+                            + model_args.model_name_or_path
+                            + ",tokenizer="
+                            + model_args.model_name_or_path
+                            + ",dtype=float16",
+                            user_model=unwrapped_model,
+                            device=unwrapped_model.device.type,
+                            batch_size=training_args.per_device_eval_batch_size,
+                            tasks=finetune_args.lm_eval_tasks,
+                            limit=data_args.max_eval_samples,
+                        )
                         self.logger.info(results)
 
         if finetune_args.task == "summarization":
             unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
             from .eval_utils import compute_rouge_metric
+
             gen_kwargs = {
-                    "num_beams": data_args.num_beams,
-                    "max_new_tokens": data_args.max_target_length,
-                    }
+                "num_beams": data_args.num_beams,
+                "max_new_tokens": data_args.max_target_length,
+            }
             with training_args.main_process_first(desc="summarization eval"):
                 if is_main_process(training_args.local_rank):
-                    results = compute_rouge_metric(unwrapped_model, tokenizer, eval_dataset,
-                            training_args, gen_kwargs)
+                    results = compute_rouge_metric(
+                        unwrapped_model,
+                        tokenizer,
+                        eval_dataset,
+                        training_args,
+                        gen_kwargs,
+                    )
                     self.logger.info(results)
 
-    def finetune_seq2seq(self, model_args, data_args, training_args, finetune_args, config):
+    def finetune_seq2seq(
+        self, model_args, data_args, training_args, finetune_args, config
+    ):
         # Detecting last checkpoint.
         last_checkpoint = None
-        if os.path.isdir(training_args.output_dir) \
-           and training_args.do_train and not training_args.overwrite_output_dir:
+        if (
+            os.path.isdir(training_args.output_dir)
+            and training_args.do_train
+            and not training_args.overwrite_output_dir
+        ):
             last_checkpoint = get_last_checkpoint(training_args.output_dir)
-            if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
+            if (
+                last_checkpoint is None
+                and len(os.listdir(training_args.output_dir)) > 0
+            ):
                 raise ValueError(
                     f"Output directory ({training_args.output_dir}) already exists and is not empty. "
                     "Use --overwrite_output_dir to overcome."
                 )
-            elif last_checkpoint is not None and training_args.resume_from_checkpoint is None:
+            elif (
+                last_checkpoint is not None
+                and training_args.resume_from_checkpoint is None
+            ):
                 self.logger.info(
                     f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change "
                     "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
@@ -678,13 +739,23 @@ class Finetuning:
             examples["labels"] = []
             for instruction, input, response in zip(instructions, inputs, responses):
                 if input == "":
-                    prompt = ALPACA_PROMPT_DICT["prompt_without_input"].format(instruction=instruction)
+                    prompt = ALPACA_PROMPT_DICT["prompt_without_input"].format(
+                        instruction=instruction
+                    )
                 else:
-                    prompt = ALPACA_PROMPT_DICT["prompt_with_input"].format(instruction=instruction, input=input)
+                    prompt = ALPACA_PROMPT_DICT["prompt_with_input"].format(
+                        instruction=instruction, input=input
+                    )
 
-                history = tokenizer(prompt, max_length=data_args.max_source_length,
-                        truncation=True, add_special_tokens=False)
-                gt_resp = tokenizer(response, max_length=data_args.max_target_length, truncation=True)
+                history = tokenizer(
+                    prompt,
+                    max_length=data_args.max_source_length,
+                    truncation=True,
+                    add_special_tokens=False,
+                )
+                gt_resp = tokenizer(
+                    response, max_length=data_args.max_target_length, truncation=True
+                )
                 input_ids = history.input_ids
                 labels = gt_resp.input_ids
                 examples["input_ids"].append(input_ids)
@@ -701,7 +772,9 @@ class Finetuning:
                 max_train_samples = min(len(train_dataset), data_args.max_train_samples)
                 train_dataset = train_dataset.select(range(max_train_samples))
             # Create train feature from dataset
-            with training_args.main_process_first(desc="train dataset map pre-processing"):
+            with training_args.main_process_first(
+                desc="train dataset map pre-processing"
+            ):
                 train_dataset = train_dataset.map(
                     prepare_features,
                     batched=True,
@@ -719,6 +792,7 @@ class Finetuning:
         metric = evaluate.load("rouge")
 
         import nltk
+
         nltk.download("punkt", quiet=True)
 
         def postprocess_text(preds, labels):
@@ -743,14 +817,19 @@ class Finetuning:
             decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
             # Some simple post-processing
-            decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
+            decoded_preds, decoded_labels = postprocess_text(
+                decoded_preds, decoded_labels
+            )
 
-            result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
+            result = metric.compute(
+                predictions=decoded_preds, references=decoded_labels, use_stemmer=True
+            )
             result = {k: round(v * 100, 4) for k, v in result.items()}
-            prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
+            prediction_lens = [
+                np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds
+            ]
             result["gen_len"] = np.mean(prediction_lens)
             return result
-
 
         if training_args.do_eval:
             if "validation" not in raw_datasets:
@@ -761,7 +840,9 @@ class Finetuning:
                 max_eval_samples = min(len(eval_examples), data_args.max_eval_samples)
                 eval_examples = eval_examples.select(range(max_eval_samples))
             # Validation Feature Creation
-            with training_args.main_process_first(desc="validation dataset map pre-processing"):
+            with training_args.main_process_first(
+                desc="validation dataset map pre-processing"
+            ):
                 eval_dataset = eval_examples.map(
                     prepare_features,
                     batched=True,
@@ -781,20 +862,24 @@ class Finetuning:
                     # like past_key_values, but logits always come first
                     logits = logits[0]
                 return logits.argmax(dim=-1)
-        
+
         if training_args.do_train:
             # download model & vocab.
 
             # Load model
             if model_args.model_name_or_path:
                 model_dtype = (
-                    torch.float16 if training_args.fp16 else
-                        (torch.bfloat16 if training_args.bf16 else torch.float32)
+                    torch.float16
+                    if training_args.fp16
+                    else (torch.bfloat16 if training_args.bf16 else torch.float32)
                 )
                 kwargs = {}
                 if finetune_args.qlora and training_args.device.type == "cpu":
-                    from intel_extension_for_transformers.transformers.modeling import AutoModelForSeq2SeqLM
-                    kwargs['use_llm_runtime'] = False
+                    from intel_extension_for_transformers.transformers.modeling import (
+                        AutoModelForSeq2SeqLM,
+                    )
+
+                    kwargs["use_llm_runtime"] = False
                 else:
                     from transformers import AutoModelForSeq2SeqLM
                 model = AutoModelForSeq2SeqLM.from_pretrained(
@@ -809,15 +894,18 @@ class Finetuning:
                     torch_dtype=model_dtype,
                     load_in_4bit=self.load_in_4bit,
                     load_in_8bit=self.load_in_8bit,
-                    **kwargs
+                    **kwargs,
                 )
                 model.resize_token_embeddings(len(tokenizer))
             else:
-                raise ValueError("Must provide model_name_or_path to load a pretrained Seq2SeqLM model.")
+                raise ValueError(
+                    "Must provide model_name_or_path to load a pretrained Seq2SeqLM model."
+                )
 
             if finetune_args.qlora:
                 model = prepare_model_for_kbit_training(
-                    model, use_gradient_checkpointing=training_args.gradient_checkpointing
+                    model,
+                    use_gradient_checkpointing=training_args.gradient_checkpointing,
                 )
             if training_args.gradient_checkpointing:
                 model.gradient_checkpointing_enable()
@@ -847,20 +935,22 @@ class Finetuning:
 
         if training_args.do_eval and not training_args.do_train:
             config = PeftConfig.from_pretrained(model_args.model_name_or_path)
-            model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path)
+            model = AutoModelForSeq2SeqLM.from_pretrained(
+                config.base_model_name_or_path
+            )
             model = PeftModel.from_pretrained(model, model_args.model_name_or_path)
 
         # ignore tokenizer pad token in the loss
         label_pad_token_id = -100
         # Data collator
         data_collator = DataCollatorForSeq2Seq(
-                tokenizer,
-                model=model,
-                label_pad_token_id=label_pad_token_id,
-                pad_to_multiple_of=8)
+            tokenizer,
+            model=model,
+            label_pad_token_id=label_pad_token_id,
+            pad_to_multiple_of=8,
+        )
 
-
-        if finetune_args.device != 'hpu':
+        if finetune_args.device != "hpu":
             # Create Trainer instance
             trainer = Seq2SeqTrainer(
                 model=model,
@@ -869,10 +959,16 @@ class Finetuning:
                 train_dataset=train_dataset if training_args.do_train else None,
                 eval_dataset=eval_dataset if training_args.do_eval else None,
                 compute_metrics=compute_metrics,
-                preprocess_logits_for_metrics=preprocess_logits_for_metrics if training_args.do_eval else None,
-                )
+                preprocess_logits_for_metrics=preprocess_logits_for_metrics
+                if training_args.do_eval
+                else None,
+            )
         else:
-            from optimum.habana import GaudiConfig, GaudiSeq2SeqTrainer # pylint: disable=E0611 E0401
+            from optimum.habana import (  # pylint: disable=E0611 E0401
+                GaudiConfig,
+                GaudiSeq2SeqTrainer,
+            )
+
             gaudi_config = GaudiConfig()
             gaudi_config.use_fused_adam = True
             gaudi_config.use_fused_clip_norm = True
@@ -884,9 +980,10 @@ class Finetuning:
                 train_dataset=train_dataset if training_args.do_train else None,
                 eval_dataset=eval_dataset if training_args.do_eval else None,
                 compute_metrics=compute_metrics,
-                preprocess_logits_for_metrics=preprocess_logits_for_metrics if training_args.do_eval else None,
-                )
-
+                preprocess_logits_for_metrics=preprocess_logits_for_metrics
+                if training_args.do_eval
+                else None,
+            )
 
         # Training
         if training_args.do_train:
@@ -902,7 +999,9 @@ class Finetuning:
 
             metrics = train_result.metrics
             max_train_samples = (
-                data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
+                data_args.max_train_samples
+                if data_args.max_train_samples is not None
+                else len(train_dataset)
             )
             metrics["train_samples"] = min(max_train_samples, len(train_dataset))
 
@@ -915,8 +1014,11 @@ class Finetuning:
             self.logger.info("*** Evaluate ***")
             metrics = trainer.evaluate()
 
-            max_eval_samples = data_args.max_eval_samples \
-                        if data_args.max_eval_samples is not None else len(eval_dataset)
+            max_eval_samples = (
+                data_args.max_eval_samples
+                if data_args.max_eval_samples is not None
+                else len(eval_dataset)
+            )
             metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
 
             trainer.log_metrics("eval", metrics)

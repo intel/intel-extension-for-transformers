@@ -1,42 +1,45 @@
-"""
-A model worker executes the model.
-"""
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""A model worker executes the model."""
 import argparse
 import asyncio
-import dataclasses
-import logging
 import json
 import os
-import time
-from typing import List, Union
 import threading
+import time
 import uuid
 
-from fastapi import FastAPI, Request, BackgroundTasks
-from fastapi.responses import StreamingResponse
 import requests
+from fastapi import BackgroundTasks, FastAPI, Request
+from fastapi.responses import StreamingResponse
 
 try:
     from transformers import (
-        AutoTokenizer,
-        AutoModelForCausalLM,
-        LlamaTokenizer,
         AutoModel,
+        AutoModelForCausalLM,
+        AutoTokenizer,
+        LlamaTokenizer,
     )
 except ImportError:
-    from transformers import (
-        AutoTokenizer,
-        AutoModelForCausalLM,
-        LLaMATokenizer,
-        AutoModel,
-    )
+    pass
+
 import torch
 import uvicorn
-
 from fastchat.constants import WORKER_HEART_BEAT_INTERVAL
-from fastchat.serve.inference import load_model, generate_stream
+from fastchat.serve.inference import generate_stream, load_model
 from fastchat.serve.serve_chatglm import chatglm_generate_stream
-from fastchat.utils import build_logger, server_error_msg, pretty_print_semaphore
+from fastchat.utils import build_logger, pretty_print_semaphore, server_error_msg
 
 GB = 1 << 30
 
@@ -234,7 +237,7 @@ if __name__ == "__main__":
         "--gpus",
         type=str,
         default=None,
-        help="A single GPU like 1 or multiple GPUs like 0,2"
+        help="A single GPU like 1 or multiple GPUs like 0,2",
     )
     parser.add_argument(
         "--max-gpu-memory",
@@ -250,9 +253,11 @@ if __name__ == "__main__":
 
     if args.gpus:
         if args.num_gpus and len(args.gpus.split(",")) < int(args.num_gpus):
-            raise ValueError(f"Larger --num-gpus ({args.num_gpus}) than --gpus {args.gpus}!")
+            raise ValueError(
+                f"Larger --num-gpus ({args.num_gpus}) than --gpus {args.gpus}!"
+            )
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
-    
+
     worker = ModelWorker(
         args.controller_address,
         args.worker_address,

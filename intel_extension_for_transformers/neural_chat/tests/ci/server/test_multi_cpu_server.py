@@ -17,15 +17,19 @@
 
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from intel_extension_for_transformers.neural_chat.server.multi_cpu_server import (
-    parse_args, prepare_params, warmup
+    parse_args,
+    prepare_params,
+    warmup,
 )
 
 
-@patch('intel_extension_for_transformers.neural_chat.server.multi_cpu_server.build_chatbot')
+@patch(
+    "intel_extension_for_transformers.neural_chat.server.multi_cpu_server.build_chatbot"
+)
 class TestMultiCPUServer(unittest.TestCase):
-    
     def test_parse_args(self, mock_build_chatbot):
         args = parse_args()
         print(args)
@@ -33,10 +37,10 @@ class TestMultiCPUServer(unittest.TestCase):
 
     def test_prepare_params_warmup(self, mock_build_chatbot):
         mock_chatbot = MagicMock()
-        mock_chatbot.predict_stream.return_value = [['How ', 'are ', 'you', '?']]
+        mock_chatbot.predict_stream.return_value = [["How ", "are ", "you", "?"]]
         mock_build_chatbot.return_value = mock_chatbot
         args, config, chatbot, gen_config = prepare_params()
-        self.assertEqual(config.device, 'cpu')
+        self.assertEqual(config.device, "cpu")
 
         try:
             warmup(args, chatbot, gen_config)

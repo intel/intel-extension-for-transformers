@@ -14,16 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
 
 
-@operator_registry(operator_type='Concat')
+@operator_registry(operator_type="Concat")
 class Concat(Operator):
     """Parse the Concat operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -32,9 +31,8 @@ class Concat(Operator):
         """Extract the node attr from onnxruntime."""
         if framework == "onnxruntime":
             if node.attribute[0].type == 2:
-                self._attr['axis'] = node.attribute[0].i
+                self._attr["axis"] = node.attribute[0].i
             elif node.attribute[0].type == 7:
-                self._attr['axis'] = node.attribute[0].ints
+                self._attr["axis"] = node.attribute[0].ints
         if framework == "torch":
-            self._attr['axis'] = node.inputsAt(node.inputsSize() - 1).toIValue()
-            
+            self._attr["axis"] = node.inputsAt(node.inputsSize() - 1).toIValue()

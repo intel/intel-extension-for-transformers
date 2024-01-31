@@ -17,14 +17,15 @@
 
 
 import os
-import torch
 from functools import reduce
 from operator import mul
+
+import torch
 from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
 from peft.tuners.lora import LoraLayer, LoraModel
 from peft.utils.other import transpose
-from intel_extension_for_transformers.llm.quantization.autograd import matmul_kbit
 
+from intel_extension_for_transformers.llm.quantization.autograd import matmul_kbit
 
 torch.ops.load_library(
     os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../..", "libqbits.so")
@@ -175,7 +176,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
         q_config,
         bias=None,
     ):
-
         if q_config.gptq_quantize_config["desc_act"]:
             int_weight2 = int_weight.clone()
             group_size = q_config.gptq_quantize_config["group_size"]
@@ -269,8 +269,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             )
 
     def merge(self, safe_merge: bool = False) -> None:
-        """
-        Merge the active adapter weights into the base weights
+        """Merge the active adapter weights into the base weights.
 
         Args:
             safe_merge (`bool`, *optional*):

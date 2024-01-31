@@ -14,21 +14,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""This script defines deep neural networks for Deep3DFaceRecon_pytorch
-"""
+"""This script defines deep neural networks for Deep3DFaceRecon_pytorch."""
 
 import os
-from torch.optim import lr_scheduler
+
 import torch
-from torch import Tensor
 import torch.nn as nn
+from torch import Tensor
+from torch.optim import lr_scheduler
 
 try:
     from torch.hub import load_state_dict_from_url
 except ImportError:
     from torch.utils.model_zoo import load_url as load_state_dict_from_url
-from typing import Type, Any, Callable, Union, List, Optional
+
+from typing import Any, Callable, List, Optional, Type, Union
+
 from kornia.geometry import warp_affine
 
 
@@ -48,7 +49,7 @@ def filter_state_dict(state_dict, remove_name="fc"):
 
 
 def get_scheduler(optimizer, opt):
-    """Return a learning rate scheduler
+    """Return a learning rate scheduler.
 
     Parameters:
         optimizer          -- the optimizer of the network
@@ -61,18 +62,28 @@ def get_scheduler(optimizer, opt):
     if opt.lr_policy == "linear":
 
         def lambda_rule(epoch):
-            lr_l = 1.0 - max(0, epoch + opt.epoch_count - opt.n_epochs) / float(opt.n_epochs + 1)
+            lr_l = 1.0 - max(0, epoch + opt.epoch_count - opt.n_epochs) / float(
+                opt.n_epochs + 1
+            )
             return lr_l
 
         scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_rule)
     elif opt.lr_policy == "step":
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=opt.lr_decay_epochs, gamma=0.2)
+        scheduler = lr_scheduler.StepLR(
+            optimizer, step_size=opt.lr_decay_epochs, gamma=0.2
+        )
     elif opt.lr_policy == "plateau":
-        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.2, threshold=0.01, patience=5)
+        scheduler = lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode="min", factor=0.2, threshold=0.01, patience=5
+        )
     elif opt.lr_policy == "cosine":
-        scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=opt.n_epochs, eta_min=0)
+        scheduler = lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=opt.n_epochs, eta_min=0
+        )
     else:
-        return NotImplementedError("learning rate policy [%s] is not implemented", opt.lr_policy)
+        return NotImplementedError(
+            "learning rate policy [%s] is not implemented", opt.lr_policy
+        )
     return scheduler
 
 
@@ -149,8 +160,10 @@ model_urls = {
 }
 
 
-def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
-    """3x3 convolution with padding"""
+def conv3x3(
+    in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1
+) -> nn.Conv2d:
+    """3x3 convolution with padding."""
     return nn.Conv2d(
         in_planes,
         out_planes,
@@ -163,8 +176,10 @@ def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, d
     )
 
 
-def conv1x1(in_planes: int, out_planes: int, stride: int = 1, bias: bool = False) -> nn.Conv2d:
-    """1x1 convolution"""
+def conv1x1(
+    in_planes: int, out_planes: int, stride: int = 1, bias: bool = False
+) -> nn.Conv2d:
+    """1x1 convolution."""
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=bias)
 
 
@@ -308,14 +323,22 @@ class ResNet(nn.Module):
         self.use_last_fc = use_last_fc
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(
+            3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False
+        )
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
+        self.layer2 = self._make_layer(
+            block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0]
+        )
+        self.layer3 = self._make_layer(
+            block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1]
+        )
+        self.layer4 = self._make_layer(
+            block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2]
+        )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         if self.use_last_fc:
@@ -361,7 +384,14 @@ class ResNet(nn.Module):
         layers = []
         layers.append(
             block(
-                self.inplanes, planes, stride, downsample, self.groups, self.base_width, previous_dilation, norm_layer
+                self.inplanes,
+                planes,
+                stride,
+                downsample,
+                self.groups,
+                self.base_width,
+                previous_dilation,
+                norm_layer,
             )
         )
         self.inplanes = planes * block.expansion
@@ -457,7 +487,9 @@ def resnet101(pretrained: bool = False, progress: bool = True, **kwargs: Any) ->
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
-    return _resnet("resnet101", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs)
+    return _resnet(
+        "resnet101", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs
+    )
 
 
 def resnet152(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
@@ -468,10 +500,14 @@ def resnet152(pretrained: bool = False, progress: bool = True, **kwargs: Any) ->
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
-    return _resnet("resnet152", Bottleneck, [3, 8, 36, 3], pretrained, progress, **kwargs)
+    return _resnet(
+        "resnet152", Bottleneck, [3, 8, 36, 3], pretrained, progress, **kwargs
+    )
 
 
-def resnext50_32x4d(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
+def resnext50_32x4d(
+    pretrained: bool = False, progress: bool = True, **kwargs: Any
+) -> ResNet:
     r"""ResNeXt-50 32x4d model from
     `"Aggregated Residual Transformation for Deep Neural Networks" <https://arxiv.org/pdf/1611.05431.pdf>`_.
 
@@ -481,10 +517,14 @@ def resnext50_32x4d(pretrained: bool = False, progress: bool = True, **kwargs: A
     """
     kwargs["groups"] = 32
     kwargs["width_per_group"] = 4
-    return _resnet("resnext50_32x4d", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
+    return _resnet(
+        "resnext50_32x4d", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs
+    )
 
 
-def resnext101_32x8d(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
+def resnext101_32x8d(
+    pretrained: bool = False, progress: bool = True, **kwargs: Any
+) -> ResNet:
     r"""ResNeXt-101 32x8d model from
     `"Aggregated Residual Transformation for Deep Neural Networks" <https://arxiv.org/pdf/1611.05431.pdf>`_.
 
@@ -494,10 +534,14 @@ def resnext101_32x8d(pretrained: bool = False, progress: bool = True, **kwargs: 
     """
     kwargs["groups"] = 32
     kwargs["width_per_group"] = 8
-    return _resnet("resnext101_32x8d", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs)
+    return _resnet(
+        "resnext101_32x8d", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs
+    )
 
 
-def wide_resnet50_2(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
+def wide_resnet50_2(
+    pretrained: bool = False, progress: bool = True, **kwargs: Any
+) -> ResNet:
     r"""Wide ResNet-50-2 model from
     `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.
 
@@ -511,10 +555,14 @@ def wide_resnet50_2(pretrained: bool = False, progress: bool = True, **kwargs: A
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     kwargs["width_per_group"] = 64 * 2
-    return _resnet("wide_resnet50_2", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
+    return _resnet(
+        "wide_resnet50_2", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs
+    )
 
 
-def wide_resnet101_2(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
+def wide_resnet101_2(
+    pretrained: bool = False, progress: bool = True, **kwargs: Any
+) -> ResNet:
     r"""Wide ResNet-101-2 model from
     `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.
 
@@ -528,7 +576,9 @@ def wide_resnet101_2(pretrained: bool = False, progress: bool = True, **kwargs: 
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     kwargs["width_per_group"] = 64 * 2
-    return _resnet("wide_resnet101_2", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs)
+    return _resnet(
+        "wide_resnet101_2", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs
+    )
 
 
 func_dict = {"resnet18": (resnet18, 512), "resnet50": (resnet50, 2048)}

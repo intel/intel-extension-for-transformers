@@ -15,8 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 import unittest
+
+from intel_extension_for_transformers.neural_chat import PipelineConfig, build_chatbot
+
 
 class TestPhi2Model(unittest.TestCase):
     def setUp(self):
@@ -26,12 +28,12 @@ class TestPhi2Model(unittest.TestCase):
         return super().tearDown()
 
     def test_code_gen(self):
-        config = PipelineConfig(
-            model_name_or_path="/tf_dataset2/models/pytorch/phi-2")
+        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/pytorch/phi-2")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("Calculate 99+22=")
         print(result)
         self.assertIn("99 plus 22 equals 121", str(result))
+
 
 if __name__ == "__main__":
     unittest.main()

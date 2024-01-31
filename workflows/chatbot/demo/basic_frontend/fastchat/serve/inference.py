@@ -1,36 +1,47 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Inference for FastChat models."""
 import abc
-from typing import Optional
 import warnings
+from typing import Optional
 
 import torch
 
 try:
     from transformers import (
-        AutoTokenizer,
-        AutoModelForCausalLM,
-        LlamaTokenizer,
-        LlamaForCausalLM,
-        AutoModel,
-        AutoModelForSeq2SeqLM,
         AutoConfig,
+        AutoModel,
+        AutoModelForCausalLM,
+        AutoModelForSeq2SeqLM,
+        AutoTokenizer,
+        LlamaForCausalLM,
+        LlamaTokenizer,
     )
 except ImportError:
     from transformers import (
         AutoTokenizer,
         AutoModelForCausalLM,
-        LLaMATokenizer,
         LLamaForCausalLM,
         AutoModel,
         AutoModelForSeq2SeqLM,
-        AutoConfig,
     )
 
 from fastchat.conversation import (
+    SeparatorStyle,
+    compute_skip_echo_len,
     conv_templates,
     get_default_conv_template,
-    compute_skip_echo_len,
-    SeparatorStyle,
 )
 from fastchat.serve.compression import load_compress_model
 from fastchat.serve.monkey_patch_non_inplace import (
@@ -106,12 +117,16 @@ def load_model(
         replace_llama_attn_with_non_inplace_operations()
     else:
         raise ValueError(f"Invalid device: {device}")
-    
+
     if load_8bit:
         if num_gpus != 1 and num_gpus != "1":
-            warnings.warn("8-bit quantization is not supported for multi-gpu inference.")
+            warnings.warn(
+                "8-bit quantization is not supported for multi-gpu inference."
+            )
         else:
-            return load_compress_model(model_path=model_path, device=device, torch_dtype=kwargs["torch_dtype"])
+            return load_compress_model(
+                model_path=model_path, device=device, torch_dtype=kwargs["torch_dtype"]
+            )
 
     if "chatglm" in model_path:
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
@@ -141,7 +156,6 @@ def load_model(
             model_path, low_cpu_mem_usage=True, **kwargs
         )
         raise_warning_for_old_weights(model_path, model)
-
 
     if (device == "cuda" and num_gpus == 1) or device == "mps":
         model.to(device)

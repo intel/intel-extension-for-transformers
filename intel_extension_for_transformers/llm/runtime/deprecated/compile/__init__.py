@@ -16,4 +16,3 @@
 # limitations under the License.
 """The module of compile."""
 
-from .compile import compile, autocast

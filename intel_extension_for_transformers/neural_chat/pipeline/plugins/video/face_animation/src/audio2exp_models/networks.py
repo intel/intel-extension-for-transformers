@@ -20,9 +20,22 @@ from torch import nn
 
 
 class Conv2d(nn.Module):
-    def __init__(self, cin, cout, kernel_size, stride, padding, residual=False, use_act=True, *args, **kwargs):
+    def __init__(
+        self,
+        cin,
+        cout,
+        kernel_size,
+        stride,
+        padding,
+        residual=False,
+        use_act=True,
+        *args,
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
-        self.conv_block = nn.Sequential(nn.Conv2d(cin, cout, kernel_size, stride, padding), nn.BatchNorm2d(cout))
+        self.conv_block = nn.Sequential(
+            nn.Conv2d(cin, cout, kernel_size, stride, padding), nn.BatchNorm2d(cout)
+        )
         self.act = nn.ReLU()
         self.residual = residual
         self.use_act = use_act

@@ -14,12 +14,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
-from .tensor import Tensor
-from ..graph_utils import list2str
 
 
 # tf.transpose(a, perm=None, conjugate=False, name='transpose')
@@ -29,9 +26,10 @@ from ..graph_utils import list2str
 # If conjugate is True and a.dtype is either complex64 or complex128 then the values of a are
 # conjugated and transposed.
 # normally, we don't need the param 'conjugate'
-@operator_registry(operator_type='Sin')
+@operator_registry(operator_type="Sin")
 class Sin(Operator):
     """Parse the Sin operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -39,4 +37,4 @@ class Sin(Operator):
     def set_attr(self, framework, node):
         """Extract the node attr from onnxruntime."""
         if framework == "onnxruntime":
-            self._attr['algorithm'] = 'sin'
+            self._attr["algorithm"] = "sin"

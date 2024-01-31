@@ -15,6 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import sys
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -24,25 +27,21 @@ from peft import LoraConfig
 from tqdm import tqdm
 from transformers import (
     Adafactor,
+    AutoModelForSequenceClassification,
     AutoTokenizer,
     HfArgumentParser,
     pipeline,
-    AutoModelForSequenceClassification,
 )
 
+from intel_extension_for_transformers.transformers.modeling.trl_models import (
+    AutoModelForCausalLMWithValueHead,
+)
+from intel_extension_for_transformers.transformers.ppo_config import PPOConfig
 from intel_extension_for_transformers.transformers.ppo_core import (
     LengthSampler,
     set_seed,
 )
-from intel_extension_for_transformers.transformers.ppo_config import PPOConfig
 from intel_extension_for_transformers.transformers.ppo_trainer import PPOTrainer
-from intel_extension_for_transformers.transformers.modeling.trl_models import (
-    AutoModelForCausalLMWithValueHead,
-)
-
-import sys
-import logging
-import time
 
 logger = logging.getLogger(__name__)
 # Setup logging
@@ -57,8 +56,7 @@ def build_dataset(
     tokenizer,
     dataset_name,
 ):
-    """
-    Build dataset for training. This builds the dataset from `load_dataset`, one should
+    """Build dataset for training. This builds the dataset from `load_dataset`, one should
     customize this function to train the model on its own dataset.
 
     Args:
@@ -106,9 +104,7 @@ def collator(data):
 
 @dataclass
 class ScriptArguments:
-    """
-    The name of the Casual LM model we wish to fine with PPO
-    """
+    """The name of the Casual LM model we wish to fine with PPO."""
 
     # NOTE: gpt2 models use Conv1D instead of Linear layers which are not yet supported in 8 bit mode
     # models like gpt-neo* models are more suitable.
@@ -392,8 +388,8 @@ if __name__ == "__main__":
         t2 = time.time()
         # Run PPO step
         stats = ppo_trainer.step(question_tensors, response_tensors, rewards)
-        stats["time/ppo/rollout"] = t1-t0
-        stats["time/ppo/evaluate"] = t2-t1
+        stats["time/ppo/rollout"] = t1 - t0
+        stats["time/ppo/evaluate"] = t2 - t1
         ppo_trainer.log_stats(stats, batch, rewards)
         epochs.update(1)
 

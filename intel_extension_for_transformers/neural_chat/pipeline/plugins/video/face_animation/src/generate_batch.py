@@ -16,12 +16,13 @@
 # limitations under the License.
 
 import os
-
-from tqdm import tqdm
-import torch
-import numpy as np
 import random
+
+import numpy as np
 import scipy.io as scio
+import torch
+from tqdm import tqdm
+
 import intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.audio as audio
 
 
@@ -29,7 +30,9 @@ def crop_pad_audio(wav, audio_length):
     if len(wav) > audio_length:
         wav = wav[:audio_length]
     elif len(wav) < audio_length:
-        wav = np.pad(wav, [0, audio_length - len(wav)], mode="constant", constant_values=0)
+        wav = np.pad(
+            wav, [0, audio_length - len(wav)], mode="constant", constant_values=0
+        )
     return wav
 
 
@@ -48,7 +51,17 @@ def generate_blink_seq(num_frames):
     while frame_id in range(num_frames):
         start = 80
         if frame_id + start + 9 <= num_frames - 1:
-            ratio[frame_id + start : frame_id + start + 9, 0] = [0.5, 0.6, 0.7, 0.9, 1, 0.9, 0.7, 0.6, 0.5]
+            ratio[frame_id + start : frame_id + start + 9, 0] = [
+                0.5,
+                0.6,
+                0.7,
+                0.9,
+                1,
+                0.9,
+                0.7,
+                0.6,
+                0.5,
+            ]
             frame_id = frame_id + start + 9
         else:
             break
@@ -63,7 +76,13 @@ def generate_blink_seq_randomly(num_frames):
     while frame_id in range(num_frames):
         start = random.choice(range(min(10, num_frames), min(int(num_frames / 2), 70)))
         if frame_id + start + 5 <= num_frames - 1:
-            ratio[frame_id + start : frame_id + start + 5, 0] = [0.5, 0.9, 1.0, 0.9, 0.5]
+            ratio[frame_id + start : frame_id + start + 5, 0] = [
+                0.5,
+                0.9,
+                1.0,
+                0.9,
+                0.5,
+            ]
             frame_id = frame_id + start + 5
         else:
             break

@@ -1,12 +1,25 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Adopted from https://github.com/gradio-app/gradio/blob/main/gradio/components.py
 Fix a markdown render problem.
 """
 from __future__ import annotations
 
+import nh3
 from gradio.components import *
 from markdown2 import Markdown
-import nh3
 
 
 class _Keywords(Enum):
@@ -54,8 +67,8 @@ class Chatbot(Changeable, Selectable, IOComponent, JSONSerializable):
         # self.md = utils.get_markdown_parser()
         self.md = Markdown(extras=["fenced-code-blocks", "tables", "break-on-newline"])
         self.select: EventListenerMethod
-        """
-        Event listener for when the user selects message from Chatbot.
+        """Event listener for when the user selects message from Chatbot.
+
         Uses event data gradio.SelectData to carry `value` referring to text of selected message, and `index` tuple to refer to [message, participant] index.
         See EventData documentation on how to use this event data.
         """
@@ -153,9 +166,7 @@ class Chatbot(Changeable, Selectable, IOComponent, JSONSerializable):
         return processed_messages
 
     def style(self, height: int | None = None, **kwargs):
-        """
-        This method can be used to change the appearance of the Chatbot component.
-        """
+        """This method can be used to change the appearance of the Chatbot component."""
         if height is not None:
             self._style["height"] = height
         if kwargs.get("color_map") is not None:

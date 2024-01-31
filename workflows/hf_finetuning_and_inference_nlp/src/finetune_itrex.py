@@ -13,28 +13,20 @@
 # and limitations under the License.
 #
 
-import numpy as np
-import torch
-from torch.utils.data import DataLoader
 from os import path
-from tqdm import tqdm
+
+import torch
+from finetune import DlsaFinetune
 from transformers import (
     AutoModelForSequenceClassification,
-    DataCollatorWithPadding,
-    Trainer,
 )
-from intel_extension_for_transformers.transformers import (
-    QuantizationConfig,
-    PruningConfig,
-    PrunerConfig,
-    metrics,
-    objectives,
+from utils import (
+    compute_metrics,
+    save_performance_metrics,
+    save_train_metrics,
 )
-from intel_extension_for_transformers.transformers.trainer import (
-    NLPTrainer,
-)
-from finetune import DlsaFinetune
-from utils import PredsLabels, compute_metrics, save_train_metrics, save_test_metrics, save_performance_metrics
+
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 
 class FinetuneItrex(DlsaFinetune):
@@ -47,7 +39,8 @@ class FinetuneItrex(DlsaFinetune):
     def _load_model(self):
         with self.track("Load Model"):
             self.model = AutoModelForSequenceClassification.from_pretrained(
-                self.args.model_name_or_path, num_labels=self.num_labels if self.num_labels is not None else None
+                self.args.model_name_or_path,
+                num_labels=self.num_labels if self.num_labels is not None else None,
             )
 
     def _do_finetune(self):
@@ -65,18 +58,29 @@ class FinetuneItrex(DlsaFinetune):
                     tokenizer=self.tokenizer,
                 )
 
-                if self.args.dtype_ft == "bf16" and not (self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
-                    raise ValueError("BF16 with both IPEX and OneDNN disabled is currently not implemented...")
+                if self.args.dtype_ft == "bf16" and not (
+                    self.training_args.use_ipex
+                    or vars(self.args).get("use_onednn", True)
+                ):
+                    raise ValueError(
+                        "BF16 with both IPEX and OneDNN disabled is currently not implemented..."
+                    )
 
-                with torch.backends.mkldnn.flags(enabled = self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
+                with torch.backends.mkldnn.flags(
+                    enabled=self.training_args.use_ipex
+                    or vars(self.args).get("use_onednn", True)
+                ):
                     train_result = self.trainer.train()
-                
+
                 self.trainer.save_model()
-                
+
                 save_train_metrics(train_result, self.trainer, len(self.train_data))
-               
+
     def _do_infer(self):
-        with torch.backends.mkldnn.flags(enabled = self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
+        with torch.backends.mkldnn.flags(
+            enabled=self.training_args.use_ipex
+            or vars(self.args).get("use_onednn", True)
+        ):
             if self.training_args.do_predict:
                 with self.track("Inference"):
                     if not self.args.save_detailed_performance_metrics:
@@ -85,5 +89,10 @@ class FinetuneItrex(DlsaFinetune):
                             f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
                         )
                     else:
-                        save_performance_metrics(self.trainer, self.train_data,
-                                path.join(self.training_args.output_dir, self.args.finetune_output) )
+                        save_performance_metrics(
+                            self.trainer,
+                            self.train_data,
+                            path.join(
+                                self.training_args.output_dir, self.args.finetune_output
+                            ),
+                        )

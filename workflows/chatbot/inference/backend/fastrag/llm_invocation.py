@@ -1,10 +1,29 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import logging
 from typing import Dict, List, Optional, Type, Union
 
 import torch
 from haystack.modeling.utils import initialize_device_settings
 from haystack.nodes.prompt.prompt_node import PromptModel, PromptModelInvocationLayer
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, GenerationConfig
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    GenerationConfig,
+)
 from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
 
 logger = logging.getLogger(__name__)
@@ -70,12 +89,16 @@ class TransformersDecoderInvocationLayer(PromptModelInvocationLayer):
 
         if len(model_input_kwargs) > 0:
             logger.info(
-                "Using model input kwargs %s in %s", model_input_kwargs, self.__class__.__name__
+                "Using model input kwargs %s in %s",
+                model_input_kwargs,
+                self.__class__.__name__,
             )
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, padding_side="left")
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, padding_side="left"
+        )
         self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path, torch_dtype=torch.bfloat16
         )
@@ -125,7 +148,9 @@ class TransformersDecoderInvocationLayer(PromptModelInvocationLayer):
             # inputs = self.tokenizer(prompt, return_tensors="pt")
             inputs = inputs.to("cuda" if self.use_gpu else "cpu")
             with torch.no_grad():
-                output = self.model.generate(**inputs, generation_config=generation_config)
+                output = self.model.generate(
+                    **inputs, generation_config=generation_config
+                )
                 output = output[0][inputs["input_ids"].shape[-1] :]
         generated_texts = self.tokenizer.decode(output, skip_special_tokens=True)
         return [generated_texts]
@@ -174,6 +199,7 @@ class FastRAGPromptModel(PromptModel):
         self.model_invocation_layer = self.create_invocation_layer()
 
     def invoke(self, prompt: Union[str, List[str]], **kwargs) -> List[str]:
-        output = self.model_invocation_layer.invoke(prompt=prompt, **kwargs, **self.model_kwargs)
+        output = self.model_invocation_layer.invoke(
+            prompt=prompt, **kwargs, **self.model_kwargs
+        )
         return output
-

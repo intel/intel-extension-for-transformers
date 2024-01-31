@@ -17,16 +17,18 @@ import logging
 from typing import Dict, Optional, Tuple, Union
 
 import torch
-from torch.nn import CrossEntropyLoss
-from optimum.utils import NormalizedConfigManager
 import transformers
+from optimum.intel.utils.import_utils import is_transformers_version
+from optimum.utils import NormalizedConfigManager
 from transformers import AutoConfig, AutoModelForSeq2SeqLM
-from transformers.file_utils import add_start_docstrings, add_start_docstrings_to_model_forward
+from transformers.file_utils import (
+    add_start_docstrings,
+    add_start_docstrings_to_model_forward,
+)
 from transformers.modeling_outputs import BaseModelOutput, Seq2SeqLMOutput
 from transformers.utils import is_torch_fx_proxy
-from optimum.intel.utils.import_utils import is_transformers_version
-from .modeling_base_seq2seq import INCBaseModelForSeq2SeqLM
 
+from .modeling_base_seq2seq import INCBaseModelForSeq2SeqLM
 
 if is_transformers_version("<", "4.25.0"):
     from transformers.generation_utils import GenerationMixin
@@ -142,17 +144,26 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
         use_cache: bool = True,
         **kwargs,
     ):
-        super().__init__(encoder_model=encoder_model, decoder_model=decoder_model,
-                         decoder_with_past_model=decoder_with_past_model, config=config, **kwargs)
+        super().__init__(
+            encoder_model=encoder_model,
+            decoder_model=decoder_model,
+            decoder_with_past_model=decoder_with_past_model,
+            config=config,
+            **kwargs,
+        )
         self._device = torch.device("cpu")
         self.main_input_name = "input_ids"
         self.use_cache = use_cache
-        self.normalized_config = NormalizedConfigManager.get_normalized_config_class(config.model_type)(config)
+        self.normalized_config = NormalizedConfigManager.get_normalized_config_class(
+            config.model_type
+        )(config)
         self.model_dim = kwargs.pop("model_dim", None)
         self.model_parallel = kwargs.pop("model_parallel", None)
         self.encoder = INCEncoder(self.encoder_model, self._device, config)
         self.decoder = INCDecoder(self.decoder_model, self._device, config)
-        self.decoder_with_past = INCDecoder(self.decoder_with_past_model, self._device, config)
+        self.decoder_with_past = INCDecoder(
+            self.decoder_with_past_model, self._device, config
+        )
         self.to(self._device)
 
         # Avoid warnings when creating a transformers pipeline
@@ -179,22 +190,31 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
     ) -> Seq2SeqLMOutput:
         # Encode if needed : first prediction pass
         if encoder_outputs is None:
-            encoder_outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
+            encoder_outputs = self.encoder(
+                input_ids=input_ids, attention_mask=attention_mask
+            )
 
         labels = kwargs.get("labels", None)
         decoder_inputs_embeds = kwargs.get("decoder_inputs_embeds", None)
-        if labels is not None and decoder_input_ids is None and decoder_inputs_embeds is None:
+        if (
+            labels is not None
+            and decoder_input_ids is None
+            and decoder_inputs_embeds is None
+        ):
             # get decoder inputs from shifting lm labels to the right
             decoder_input_ids = self._shift_right(labels)
 
         # Decode
-        encoder_hidden_states = encoder_outputs[0] \
-            if isinstance(encoder_outputs, tuple) else encoder_outputs.last_hidden_state
+        encoder_hidden_states = (
+            encoder_outputs[0]
+            if isinstance(encoder_outputs, tuple)
+            else encoder_outputs.last_hidden_state
+        )
         if past_key_values is None:
             decoder_outputs = self.decoder(
                 input_ids=decoder_input_ids,
                 encoder_hidden_states=encoder_hidden_states,
-                attention_mask=decoder_attention_mask
+                attention_mask=decoder_attention_mask,
             )
             if not self.config.return_dict:
                 if isinstance(decoder_outputs, tuple):
@@ -202,14 +222,16 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
                 else:
                     return decoder_outputs.values()
             if isinstance(decoder_outputs, tuple):
-                return Seq2SeqLMOutput(logits=decoder_outputs[0], past_key_values=decoder_outputs[1])
+                return Seq2SeqLMOutput(
+                    logits=decoder_outputs[0], past_key_values=decoder_outputs[1]
+                )
             return decoder_outputs
         elif self.decoder_with_past.model is None:
             decoder_outputs = self.decoder(
                 input_ids=decoder_input_ids,
                 past_key_values=past_key_values,
                 encoder_hidden_states=encoder_hidden_states,
-                attention_mask=decoder_attention_mask
+                attention_mask=decoder_attention_mask,
             )
             if not self.config.return_dict:
                 if isinstance(decoder_outputs, tuple):
@@ -217,7 +239,9 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
                 else:
                     return decoder_outputs.values()
             if isinstance(decoder_outputs, tuple):
-                return Seq2SeqLMOutput(logits=decoder_outputs[0], past_key_values=decoder_outputs[1])
+                return Seq2SeqLMOutput(
+                    logits=decoder_outputs[0], past_key_values=decoder_outputs[1]
+                )
             return decoder_outputs
         else:
             decoder_outputs = self.decoder_with_past(
@@ -231,7 +255,9 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
                 else:
                     return decoder_outputs.values()
             if isinstance(decoder_outputs, tuple):
-                return Seq2SeqLMOutput(logits=decoder_outputs[0], past_key_values=decoder_outputs[1])
+                return Seq2SeqLMOutput(
+                    logits=decoder_outputs[0], past_key_values=decoder_outputs[1]
+                )
             return decoder_outputs
 
     def prepare_inputs_for_generation(
@@ -272,7 +298,11 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
         for layer_past in past:
             # Cached cross_attention states don't have to be reordered -> they are always the same
             reordered_past += (
-                tuple(past_state.index_select(0, beam_idx) for past_state in layer_past[:2]) + layer_past[2:],
+                tuple(
+                    past_state.index_select(0, beam_idx)
+                    for past_state in layer_past[:2]
+                )
+                + layer_past[2:],
             )
         return reordered_past
 
@@ -289,8 +319,12 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
         # shift inputs to the right
         if is_torch_fx_proxy(input_ids):
             # Item assignment is not supported natively for proxies.
-            shifted_input_ids = torch.full(input_ids.shape[:-1] + (1,), decoder_start_token_id)
-            shifted_input_ids = torch.cat([shifted_input_ids, input_ids[..., :-1]], dim=-1)
+            shifted_input_ids = torch.full(
+                input_ids.shape[:-1] + (1,), decoder_start_token_id
+            )
+            shifted_input_ids = torch.cat(
+                [shifted_input_ids, input_ids[..., :-1]], dim=-1
+            )
         else:
             shifted_input_ids = input_ids.new_zeros(input_ids.shape)
             shifted_input_ids[..., 1:] = input_ids[..., :-1].clone()
@@ -332,8 +366,7 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
 
 
 class INCEncoder(torch.nn.Module):
-    """
-    Encoder model for inference.
+    """Encoder model for inference.
 
     Arguments:
         model (PyTorch model or neural-compressor model):
@@ -357,11 +390,7 @@ class INCEncoder(torch.nn.Module):
         attention_mask: torch.LongTensor = None,
         **kwargs,
     ) -> BaseModelOutput:
-
-        inputs = {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask
-        }
+        inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
 
         outputs = self.model(**inputs)
 
@@ -379,14 +408,15 @@ class INCEncoder(torch.nn.Module):
         return self.forward(*args, **kwargs)
 
     def to(self, device: Union[torch.device, str]):
-        self._device = device if isinstance(device, torch.device) else torch.device(device)
+        self._device = (
+            device if isinstance(device, torch.device) else torch.device(device)
+        )
         self.model.to(self._device)
         return self
 
 
 class INCDecoder(torch.nn.Module):
-    """
-    Decoder model for inference.
+    """Decoder model for inference.
 
     Arguments:
         model (PyTorch model or neural-compressor model):
@@ -412,8 +442,8 @@ class INCDecoder(torch.nn.Module):
         past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
         attention_mask: Optional[torch.LongTensor] = None,
         encoder_attention_mask: Optional[torch.LongTensor] = None,
-        return_dict = True,
-        **kwargs
+        return_dict=True,
+        **kwargs,
     ) -> Seq2SeqLMOutput:
         inputs = {}
 
@@ -449,6 +479,8 @@ class INCDecoder(torch.nn.Module):
         return self.forward(*args, **kwargs)
 
     def to(self, device: Union[torch.device, str]):
-        self._device = device if isinstance(device, torch.device) else torch.device(device)
+        self._device = (
+            device if isinstance(device, torch.device) else torch.device(device)
+        )
         self.model.to(self._device)
         return self

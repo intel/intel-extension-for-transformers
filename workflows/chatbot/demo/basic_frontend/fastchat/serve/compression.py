@@ -1,16 +1,30 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import dataclasses
 import gc
 import glob
 import os
 
+import torch
+import torch.nn as nn
 from accelerate import init_empty_weights
 from accelerate.utils import set_module_tensor_to_device
-import torch
 from torch import Tensor
-import torch.nn as nn
 from torch.nn import functional as F
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig 
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 
 @dataclasses.dataclass
@@ -60,12 +74,14 @@ def compress_module(module, target_device):
         compress_module(child, target_device)
 
 
-def get_compressed_list(module, prefix=''):
+def get_compressed_list(module, prefix=""):
     compressed_list = []
     for attr_str in dir(module):
         target_attr = getattr(module, attr_str)
         if type(target_attr) == torch.nn.Linear:
-            full_name = f"{prefix}.{attr_str}.weight" if prefix else f"{attr_str}.weight"
+            full_name = (
+                f"{prefix}.{attr_str}.weight" if prefix else f"{attr_str}.weight"
+            )
             compressed_list.append(full_name)
     for name, child in module.named_children():
         child_prefix = f"{prefix}.{name}" if prefix else name
@@ -74,16 +90,26 @@ def get_compressed_list(module, prefix=''):
     return compressed_list
 
 
-def apply_compressed_weight(module, compressed_state_dict, target_device, prefix=''):
+def apply_compressed_weight(module, compressed_state_dict, target_device, prefix=""):
     for attr_str in dir(module):
         target_attr = getattr(module, attr_str)
         if type(target_attr) == torch.nn.Linear:
-            full_name = f"{prefix}.{attr_str}.weight" if prefix else f"{attr_str}.weight"
-            setattr(module, attr_str,
-                CLinear(compressed_state_dict[full_name], target_attr.bias, target_device))
+            full_name = (
+                f"{prefix}.{attr_str}.weight" if prefix else f"{attr_str}.weight"
+            )
+            setattr(
+                module,
+                attr_str,
+                CLinear(
+                    compressed_state_dict[full_name], target_attr.bias, target_device
+                ),
+            )
     for name, child in module.named_children():
         child_prefix = f"{prefix}.{name}" if prefix else name
-        apply_compressed_weight(child, compressed_state_dict, target_device, child_prefix)
+        apply_compressed_weight(
+            child, compressed_state_dict, target_device, child_prefix
+        )
+
 
 def load_compress_model(model_path, device, torch_dtype):
     # partially load model
@@ -92,8 +118,9 @@ def load_compress_model(model_path, device, torch_dtype):
     files = glob.glob(base_pattern)
 
     with init_empty_weights():
-        config = AutoConfig.from_pretrained(model_path, low_cpu_mem_usage=True,
-            torch_dtype=torch_dtype)
+        config = AutoConfig.from_pretrained(
+            model_path, low_cpu_mem_usage=True, torch_dtype=torch_dtype
+        )
         model = AutoModelForCausalLM.from_config(config)
         linear_weights = get_compressed_list(model)
 
@@ -104,7 +131,9 @@ def load_compress_model(model_path, device, torch_dtype):
         for name in tmp_state_dict:
             if name in linear_weights:
                 tensor = tmp_state_dict[name].to(device).data.to(torch_dtype)
-                compressed_state_dict[name] = compress(tensor, default_compression_config)
+                compressed_state_dict[name] = compress(
+                    tensor, default_compression_config
+                )
             else:
                 compressed_state_dict[name] = tmp_state_dict[name].to(device)
             tmp_state_dict[name] = None
@@ -114,12 +143,15 @@ def load_compress_model(model_path, device, torch_dtype):
 
     for name in model.state_dict():
         if name not in linear_weights:
-            set_module_tensor_to_device(model, name, device, value=compressed_state_dict[name])
+            set_module_tensor_to_device(
+                model, name, device, value=compressed_state_dict[name]
+            )
     apply_compressed_weight(model, compressed_state_dict, device)
 
     model.to(device)
 
     return model, tokenizer
+
 
 def compress(tensor, config):
     """Simulate group-wise quantization."""

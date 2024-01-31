@@ -54,6 +54,7 @@ pip install --upgrade openai
 
 ```python
 import openai
+
 # to get proper authentication, make sure to use a valid key that's listed in
 # the --api-keys flag. if no flag value is provided, the `api_key` will be ignored.
 openai.api_key = "EMPTY"
@@ -69,8 +70,7 @@ print(prompt + completion.choices[0].text)
 
 # create a chat completion
 completion = openai.ChatCompletion.create(
-  model=model,
-  messages=[{"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}]
+    model=model, messages=[{"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}]
 )
 # print the completion
 print(completion.choices[0].message.content)
@@ -108,4 +108,3 @@ curl http://localhost:80/v1/completions \
     "temperature": 0.5
   }'
 ```
-

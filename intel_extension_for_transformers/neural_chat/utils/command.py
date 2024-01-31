@@ -17,7 +17,8 @@
 
 from collections import defaultdict
 
-__all__ = ['NeuralChatCommandDict']
+__all__ = ["NeuralChatCommandDict"]
+
 
 class NeuralChatCommandDict(defaultdict):
     def __init__(self):

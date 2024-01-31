@@ -17,10 +17,10 @@
 
 
 import operator
-import torch
 from functools import reduce
+
+import torch
 from torch import Tensor
-from typing import Tuple, Optional, List
 
 
 def prod(iterable):

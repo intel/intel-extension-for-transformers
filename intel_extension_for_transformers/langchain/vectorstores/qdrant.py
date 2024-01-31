@@ -15,32 +15,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import logging
-from typing import Any, Type, List, Optional, TYPE_CHECKING
+import os
+from typing import TYPE_CHECKING, Any, List, Optional
 
+from langchain.vectorstores.qdrant import Qdrant as Qdrant_origin
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
-from langchain.vectorstores.qdrant import Qdrant as Qdrant_origin
+
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
 
 if TYPE_CHECKING:
-    from qdrant_client.conversions import common_types
+    pass
 
-_DEFAULT_PERSIST_DIR = './output'
+_DEFAULT_PERSIST_DIR = "./output"
 
 qdrant_client = LazyImport("qdrant_client")
 
-class Qdrant(Qdrant_origin):
 
+class Qdrant(Qdrant_origin):
     _LANGCHAIN_DEFAULT_COLLECTION_NAME = "langchain"
-        
+
     @classmethod
     def from_documents(
         cls,
@@ -50,7 +51,7 @@ class Qdrant(Qdrant_origin):
         location: Optional[str] = None,
         url: Optional[str] = None,
         api_key: Optional[str] = None,
-        host: Optional[str]= None,
+        host: Optional[str] = None,
         persist_directory: Optional[str] = None,
         collection_name: Optional[str] = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
         force_recreate: Optional[bool] = False,
@@ -62,10 +63,10 @@ class Qdrant(Qdrant_origin):
             documents (List[Document]): List of documents to add to the vectorstore.
             embedding (Optional[Embeddings]): A subclass of `Embeddings`, responsible for text vectorization.
             sign (Optional[str], optional): sign for retrieval_type of 'child_parent'. Defaults to None.
-            location (Optional[str], optional): 
+            location (Optional[str], optional):
                 If `:memory:` - use in-memory Qdrant instance.
                 If `str` - use it as a `url` parameter.
-                If `None` - fallback to relying on `host` and `port` parameters. 
+                If `None` - fallback to relying on `host` and `port` parameters.
                 Defaults to None.
             url (Optional[str], optional): either host or str of "Optional[scheme], host, Optional[port],
                 Optional[prefix]". Defaults to None.
@@ -74,11 +75,19 @@ class Qdrant(Qdrant_origin):
                 'localhost'. Defaults to None.
             persist_directory (Optional[str], optional): Path in which the vectors will be stored while using
                 local mode. Defaults to None.
-            collection_name (Optional[str], optional): Name of the Qdrant collection to be used. 
+            collection_name (Optional[str], optional): Name of the Qdrant collection to be used.
                 Defaults to _LANGCHAIN_DEFAULT_COLLECTION_NAME.
             force_recreate (bool, optional): _description_. Defaults to False.
         """
-        if sum([param is not None for param in (location, url, host, persist_directory)]) == 0:
+        if (
+            sum(
+                [
+                    param is not None
+                    for param in (location, url, host, persist_directory)
+                ]
+            )
+            == 0
+        ):
             # One of 'location', 'url', 'host' or 'persist_directory' should be specified.
             persist_directory = _DEFAULT_PERSIST_DIR
             if sign == "child":
@@ -86,18 +95,19 @@ class Qdrant(Qdrant_origin):
         texts = [d.page_content for d in documents]
         metadatas = [d.metadata for d in documents]
         return cls.from_texts(
-            texts, 
-            embedding, 
-            metadatas=metadatas, 
+            texts,
+            embedding,
+            metadatas=metadatas,
             location=location,
             url=url,
             api_key=api_key,
             host=host,
-            path=persist_directory, 
+            path=persist_directory,
             collection_name=collection_name,
             force_recreate=force_recreate,
-            **kwargs)
-    
+            **kwargs,
+        )
+
     @classmethod
     def build(
         cls,
@@ -107,7 +117,7 @@ class Qdrant(Qdrant_origin):
         location: Optional[str] = None,
         url: Optional[str] = None,
         api_key: Optional[str] = None,
-        host: Optional[str]= None,
+        host: Optional[str] = None,
         persist_directory: Optional[str] = None,
         collection_name: Optional[str] = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
         force_recreate: Optional[bool] = False,
@@ -119,10 +129,10 @@ class Qdrant(Qdrant_origin):
             documents (List[Document]): List of documents to add to the vectorstore.
             embedding (Optional[Embeddings]): A subclass of `Embeddings`, responsible for text vectorization.
             sign (Optional[str], optional): sign for retrieval_type of 'child_parent'. Defaults to None.
-            location (Optional[str], optional): 
+            location (Optional[str], optional):
                 If `:memory:` - use in-memory Qdrant instance.
                 If `str` - use it as a `url` parameter.
-                If `None` - fallback to relying on `host` and `port` parameters. 
+                If `None` - fallback to relying on `host` and `port` parameters.
                 Defaults to None.
             url (Optional[str], optional): either host or str of "Optional[scheme], host, Optional[port],
                 Optional[prefix]". Defaults to None.
@@ -131,37 +141,37 @@ class Qdrant(Qdrant_origin):
                 'localhost'. Defaults to None.
             persist_directory (Optional[str], optional): Path in which the vectors will be stored while using
                 local mode. Defaults to None.
-            collection_name (Optional[str], optional): Name of the Qdrant collection to be used. 
+            collection_name (Optional[str], optional): Name of the Qdrant collection to be used.
                 Defaults to _LANGCHAIN_DEFAULT_COLLECTION_NAME.
             force_recreate (bool, optional): _description_. Defaults to False.
-            kwargs: 
+            kwargs:
                 Current used:
                     port (Optional[int], optional): Port of the REST API interface. Defaults to 6333.
                     grpc_port (int, optional): Port of the gRPC interface. Defaults to 6334.
-                    prefer_grpc (bool, optional): If true - use gPRC interface whenever possible in custom methods. 
+                    prefer_grpc (bool, optional): If true - use gPRC interface whenever possible in custom methods.
                         Defaults to False.
                     https (Optional[bool], optional): If true - use HTTPS(SSL) protocol.
-                    prefix (Optional[str], optional): 
+                    prefix (Optional[str], optional):
                         If not None - add prefix to the REST URL path.
                         Example: service/v1 will result in
                             http://localhost:6333/service/v1/{qdrant-endpoint} for REST API.
-                    timeout (Optional[float], optional): 
+                    timeout (Optional[float], optional):
                         Timeout for REST and gRPC API requests.
-                    
+
                     distance_func (str, optional): Distance function. One of: "Cosine" / "Euclid" / "Dot".
                         Defaults to "Cosine".
-                    content_payload_key (str, optional): A payload key used to store the content of the document. 
+                    content_payload_key (str, optional): A payload key used to store the content of the document.
                         Defaults to CONTENT_KEY.
                     metadata_payload_key (str, optional): A payload key used to store the metadata of the document.
                         Defaults to METADATA_KEY.
                     vector_name (Optional[str], optional): Name of the vector to be used internally in Qdrant.
                         Defaults to VECTOR_NAME.
                     shard_number (Optional[int], optional): Number of shards in collection.
-                    replication_factor (Optional[int], optional): 
+                    replication_factor (Optional[int], optional):
                         Replication factor for collection.
                         Defines how many copies of each shard will be created.
                         Have effect only in distributed mode.
-                    write_consistency_factor (Optional[int], optional): 
+                    write_consistency_factor (Optional[int], optional):
                         Write consistency factor for collection.
                         Defines how many replicas should apply the operation for us to consider
                         it successful. Increasing this number will make the collection more
@@ -178,14 +188,22 @@ class Qdrant(Qdrant_origin):
                     hnsw_config (Optional[common_types.HnswConfigDiff], optional): Params for HNSW index.
                     optimizers_config (Optional[common_types.OptimizersConfigDiff], optional): Params for optimizer.
                     wal_config (Optional[common_types.WalConfigDiff], optional): Params for Write-Ahead-Log.
-                    quantization_config (Optional[common_types.QuantizationConfig], optional): 
+                    quantization_config (Optional[common_types.QuantizationConfig], optional):
                         Params for quantization, if None - quantization will be disable.
-                    init_from (Optional[common_types.InitFrom], optional): 
+                    init_from (Optional[common_types.InitFrom], optional):
                         Use data stored in another collection to initialize this collection.
                     on_disk (Optional[bool], optional): if True, vectors will be stored on disk.
                         If None, default value will be used.
         """
-        if sum([param is not None for param in (location, url, host, persist_directory)]) == 0:
+        if (
+            sum(
+                [
+                    param is not None
+                    for param in (location, url, host, persist_directory)
+                ]
+            )
+            == 0
+        ):
             # One of 'location', 'url', 'host' or 'persist_directory' should be specified.
             persist_directory = _DEFAULT_PERSIST_DIR
             if sign == "child":
@@ -204,7 +222,7 @@ class Qdrant(Qdrant_origin):
                     path=persist_directory,
                     collection_name=collection_name,
                     force_recreate=force_recreate,
-                    **kwargs
+                    **kwargs,
                 )
                 return qdrant_collection
         else:
@@ -222,8 +240,7 @@ class Qdrant(Qdrant_origin):
                 **kwargs,
             )
             return qdrant_collection
-        
-    
+
     @classmethod
     def reload(
         cls,
@@ -231,7 +248,7 @@ class Qdrant(Qdrant_origin):
         location: Optional[str] = None,
         url: Optional[str] = None,
         api_key: Optional[str] = None,
-        host: Optional[str]= None,
+        host: Optional[str] = None,
         persist_directory: Optional[str] = None,
         collection_name: Optional[str] = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
         force_recreate: bool = False,
@@ -241,10 +258,10 @@ class Qdrant(Qdrant_origin):
 
         Args:
             embedding (Optional[Embeddings]): A subclass of `Embeddings`, responsible for text vectorization.
-            location (Optional[str], optional): 
+            location (Optional[str], optional):
                 If `:memory:` - use in-memory Qdrant instance.
                 If `str` - use it as a `url` parameter.
-                If `None` - fallback to relying on `host` and `port` parameters. 
+                If `None` - fallback to relying on `host` and `port` parameters.
                 Defaults to None.
             url (Optional[str], optional): either host or str of "Optional[scheme], host, Optional[port],
                 Optional[prefix]". Defaults to None.
@@ -253,17 +270,25 @@ class Qdrant(Qdrant_origin):
                 'localhost'. Defaults to None.
             persist_directory (Optional[str], optional): Path in which the vectors will be stored while using
                 local mode. Defaults to None.
-            collection_name (Optional[str], optional): Name of the Qdrant collection to be used. 
+            collection_name (Optional[str], optional): Name of the Qdrant collection to be used.
                 Defaults to _LANGCHAIN_DEFAULT_COLLECTION_NAME.
             force_recreate (bool, optional): _description_. Defaults to False.
         """
-        if sum([param is not None for param in (location, url, host, persist_directory)]) == 0:
+        if (
+            sum(
+                [
+                    param is not None
+                    for param in (location, url, host, persist_directory)
+                ]
+            )
+            == 0
+        ):
             # One of 'location', 'url', 'host' or 'persist_directory' should be specified.
             persist_directory = _DEFAULT_PERSIST_DIR
 
         # for a single quick embedding to get vector size
         tmp_texts = ["foo"]
-        
+
         qdrant_collection = cls.construct_instance(
             texts=tmp_texts,
             embedding=embedding,
@@ -274,17 +299,17 @@ class Qdrant(Qdrant_origin):
             path=persist_directory,
             collection_name=collection_name,
             force_recreate=force_recreate,
-            **kwargs
+            **kwargs,
         )
         return qdrant_collection
-    
-    
+
     def is_local(
         self,
     ):
         """Determine whether a client is local."""
-        if hasattr(self.client, "_client") and \
-            isinstance(self.client._client, qdrant_client.local.qdrant_local.QdrantLocal):
+        if hasattr(self.client, "_client") and isinstance(
+            self.client._client, qdrant_client.local.qdrant_local.QdrantLocal
+        ):
             return True
         else:
             return False

@@ -15,34 +15,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import shutil
-import torch
-from time import strftime
-import os, sys, time
-from argparse import ArgumentParser
 import logging
+import os
+import shutil
+import sys
+import time
+from argparse import ArgumentParser
+from time import strftime
+
+import torch
+
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.utils.preprocess import CropAndExtract
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.test_audio2coeff import Audio2Coeff
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.facerender.animate import AnimateFromCoeff
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.generate_batch import get_data
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.generate_facerender_batch import get_facerender_data
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.utils.init_path import init_path
-
-from datetime import datetime
 import json
 import random
+from datetime import datetime
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.animate import (
+    AnimateFromCoeff,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.generate_batch import (
+    get_data,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.generate_facerender_batch import (
+    get_facerender_data,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.test_audio2coeff import (
+    Audio2Coeff,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.init_path import (
+    init_path,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.preprocess import (
+    CropAndExtract,
+)
+
 
 def main(args):
     all_start_timestamp = datetime.timestamp(datetime.now())
@@ -57,9 +68,12 @@ def main(args):
     batch_size = args.batch_size
 
     current_root_path = os.path.split(sys.argv[0])[0]
-    
+
     sadtalker_paths = init_path(
-        args.checkpoint_dir, os.path.join(current_root_path, "src/config"), args.size, args.preprocess
+        args.checkpoint_dir,
+        os.path.join(current_root_path, "src/config"),
+        args.size,
+        args.preprocess,
     )
 
     # init model
@@ -79,10 +93,16 @@ def main(args):
     logging.info("3DMM Extraction for source image")
 
     first_coeff_path, crop_pic_path, crop_info = preprocess_model.generate(
-        pic_path, first_frame_dir, args.preprocess, source_image_flag=True, pic_size=args.size
+        pic_path,
+        first_frame_dir,
+        args.preprocess,
+        source_image_flag=True,
+        pic_size=args.size,
     )
     end_time = time.time()
-    logging.info("[***3/6***]: preprocess_model.generate takes: %s sec", end_time - start_time)
+    logging.info(
+        "[***3/6***]: preprocess_model.generate takes: %s sec", end_time - start_time
+    )
     start_time = end_time
 
     if first_coeff_path is None:
@@ -174,27 +194,60 @@ def main(args):
         # print(save_dir)
         # shutil.rmtree(save_dir)
         shutil.rmtree(args.result_dir, ignore_errors=True)
-    logging.info("Face animation done: %s sec", datetime.timestamp(datetime.now()) - all_start_timestamp)
+    logging.info(
+        "Face animation done: %s sec",
+        datetime.timestamp(datetime.now()) - all_start_timestamp,
+    )
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
-        "--driven_audio", default="./examples/driven_audio/bus_chinese.wav", help="path to driven audio"
+        "--driven_audio",
+        default="./examples/driven_audio/bus_chinese.wav",
+        help="path to driven audio",
     )
     parser.add_argument(
-        "--source_image", default="./examples/source_image/full_body_1.png", help="path to source image"
+        "--source_image",
+        default="./examples/source_image/full_body_1.png",
+        help="path to source image",
     )
-    parser.add_argument("--checkpoint_dir", default="./checkpoints", help="path to output")
+    parser.add_argument(
+        "--checkpoint_dir", default="./checkpoints", help="path to output"
+    )
     parser.add_argument("--result_dir", default="./results", help="path to output")
-    parser.add_argument("--pose_style", type=int, default=0, help="input pose style from [0, 46)")
-    parser.add_argument("--batch_size", type=int, default=2, help="the batch size of facerender")
-    parser.add_argument("--size", type=int, default=256, help="the image size of the facerender")
-    parser.add_argument("--expression_scale", type=float, default=1.0, help="the expression scale of facerender")
-    parser.add_argument("--enhancer", type=str, default=None, help="Face enhancer, [gfpgan, RestoreFormer]")
-    parser.add_argument("--background_enhancer", type=str, default=None, help="background enhancer, [realesrgan]")
+    parser.add_argument(
+        "--pose_style", type=int, default=0, help="input pose style from [0, 46)"
+    )
+    parser.add_argument(
+        "--batch_size", type=int, default=2, help="the batch size of facerender"
+    )
+    parser.add_argument(
+        "--size", type=int, default=256, help="the image size of the facerender"
+    )
+    parser.add_argument(
+        "--expression_scale",
+        type=float,
+        default=1.0,
+        help="the expression scale of facerender",
+    )
+    parser.add_argument(
+        "--enhancer",
+        type=str,
+        default=None,
+        help="Face enhancer, [gfpgan, RestoreFormer]",
+    )
+    parser.add_argument(
+        "--background_enhancer",
+        type=str,
+        default=None,
+        help="background enhancer, [realesrgan]",
+    )
     parser.add_argument("--cpu", dest="cpu", action="store_true")
     parser.add_argument(
-        "--still", action="store_true", help="can crop back to the original videos for the full body aniamtion"
+        "--still",
+        action="store_true",
+        help="can crop back to the original videos for the full body aniamtion",
     )
     parser.add_argument(
         "--preprocess",
@@ -202,15 +255,24 @@ if __name__ == "__main__":
         choices=["crop", "extcrop", "resize", "full", "extfull"],
         help="how to preprocess the images",
     )
-    parser.add_argument("--verbose", action="store_true", help="saving the intermedia output or not")
+    parser.add_argument(
+        "--verbose", action="store_true", help="saving the intermedia output or not"
+    )
 
     # distributed infer
     parser.add_argument("--rank", type=int, default=0)
     parser.add_argument("--p_num", type=int, default=1)
     # bf16
-    parser.add_argument("--bf16", dest="bf16", action="store_true", help="whether to use bf16")
+    parser.add_argument(
+        "--bf16", dest="bf16", action="store_true", help="whether to use bf16"
+    )
     # result video path
-    parser.add_argument("--output_video_path", type=str, default="./response.mp4", help="the result video path")
+    parser.add_argument(
+        "--output_video_path",
+        type=str,
+        default="./response.mp4",
+        help="the result video path",
+    )
 
     args = parser.parse_args()
     if torch.cuda.is_available() and not args.cpu:

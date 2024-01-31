@@ -15,31 +15,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import re
 import unicodedata
-import PyPDF2
+
 import pandas as pd
-import re, json
-from langchain.document_loaders import UnstructuredMarkdownLoader
-from docx import Document as DDocument
+import PyPDF2
 from bs4 import BeautifulSoup
+from docx import Document as DDocument
+from langchain.document_loaders import UnstructuredMarkdownLoader
 
 
 def uni_pro(text):
     """Check if the character is ASCII or falls in the category of non-spacing marks."""
-    normalized_text = unicodedata.normalize('NFKD', text)
-    filtered_text = ''
+    normalized_text = unicodedata.normalize("NFKD", text)
+    filtered_text = ""
     for char in normalized_text:
-        if ord(char) < 128 or unicodedata.category(char) == 'Mn':
+        if ord(char) < 128 or unicodedata.category(char) == "Mn":
             filtered_text += char
     return filtered_text
 
 
 def read_pdf(pdf_path):
     """Read the pdf file."""
-    pdf_file = open(pdf_path, 'rb')
+    pdf_file = open(pdf_path, "rb")
     pdf_reader = PyPDF2.PdfReader(pdf_file)
 
-    text = ''
+    text = ""
     for num in range(len(pdf_reader.pages)):
         page = pdf_reader.pages[num]
         text += page.extract_text()
@@ -48,16 +50,16 @@ def read_pdf(pdf_path):
 
 def read_html(html_path):
     """Read the html file."""
-    with open(html_path, 'r', encoding="utf-8") as file:
+    with open(html_path, "r", encoding="utf-8") as file:
         html = file.read()
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text(strip=True)
     return text
 
 
 def read_txt(txt_path):
     """Read txt file."""
-    with open(txt_path, 'r') as file:
+    with open(txt_path, "r") as file:
         text = file.read()
     return text
 
@@ -65,7 +67,7 @@ def read_txt(txt_path):
 def read_docx(doc_path):
     """Read docx file."""
     doc = DDocument(doc_path)
-    text = ''
+    text = ""
     for paragraph in doc.paragraphs:
         text += paragraph.text
     return text
@@ -81,7 +83,7 @@ def read_md(md_path):
 def load_json(input, process, max_length, min_length):
     """Load and process json file."""
     data = []
-    with open(input, 'r') as file:
+    with open(input, "r") as file:
         for line in file:
             json_obj = json.loads(line)
             data.append(json_obj)
@@ -89,32 +91,32 @@ def load_json(input, process, max_length, min_length):
     new_sens = []
     new_collect = []
     for sub in data:
-        sub['content'].replace('#', " ")
-        sub['content'] = re.sub(r'\s+', ' ', sub['content'])
+        sub["content"].replace("#", " ")
+        sub["content"] = re.sub(r"\s+", " ", sub["content"])
         if not process:
-            if len(sub['content']) < min_length:
+            if len(sub["content"]) < min_length:
                 continue
-            new_doc = [sub['content'], sub['link']]
+            new_doc = [sub["content"], sub["link"]]
             new_collect.append(new_doc)
         else:
             for sub in data:
-                sub['content'].replace('#', " ")
-                if len(sub['content'])<min_length:
+                sub["content"].replace("#", " ")
+                if len(sub["content"]) < min_length:
                     continue
-                split_sen = re.split(r'[.?!]', sub['content'])
+                split_sen = re.split(r"[.?!]", sub["content"])
                 for num in range(len(split_sen)):
-                    split_sen[num] = re.sub(r'\s+', ' ', split_sen[num])
-                    if num +1 < len(split_sen):
-                        if len(split_sen[num]) >max_length:
+                    split_sen[num] = re.sub(r"\s+", " ", split_sen[num])
+                    if num + 1 < len(split_sen):
+                        if len(split_sen[num]) > max_length:
                             new_sens.append(split_sen[num].strip())
                         else:
-                            split_sen[num +1] =split_sen[num] +split_sen[num+1]
+                            split_sen[num + 1] = split_sen[num] + split_sen[num + 1]
                     else:
                         new_sens.append(split_sen[num])
 
             paragraphs = list(set(new_sens))
             for paragraph in paragraphs:
-                new_doc = [paragraph, sub['link']]
+                new_doc = [paragraph, sub["link"]]
                 new_collect.append(new_doc)
     return new_collect
 
@@ -124,51 +126,53 @@ def load_xlsx(input):
     df = pd.read_excel(input)
     header = df.columns.tolist()
     all_data = []
-    if 'Questions' in header and 'Answers' in header:
+    if "Questions" in header and "Answers" in header:
         for index, row in df.iterrows():
-            sub = "User Query: " + row['Questions'] + "Answer: " + row["Answers"]
-            sub=sub.replace('#', " ")
-            sub = sub.replace(r'\t', " ")
-            sub = sub.replace('\n', ' ')
-            sub = sub.replace('\n\n', ' ')
-            sub = re.sub(r'\s+', ' ', sub)
+            sub = "User Query: " + row["Questions"] + "Answer: " + row["Answers"]
+            sub = sub.replace("#", " ")
+            sub = sub.replace(r"\t", " ")
+            sub = sub.replace("\n", " ")
+            sub = sub.replace("\n\n", " ")
+            sub = re.sub(r"\s+", " ", sub)
             new_doc = [sub, input]
             all_data.append(new_doc)
-    elif 'question' in header and 'answer' in header and 'link' in header:
+    elif "question" in header and "answer" in header and "link" in header:
         for index, row in df.iterrows():
-            sub = "Question: " + row['question'] + " Answer: " + row["answer"]
-            sub = sub.replace('#', " ")
-            sub = sub.replace(r'\t', " ")
-            sub = sub.replace('\n', ' ')
-            sub = sub.replace('\n\n', ' ')
-            sub = re.sub(r'\s+', ' ', sub)
-            all_data.append([sub, row['link']])
-    elif 'context' in header and 'link' in header:
+            sub = "Question: " + row["question"] + " Answer: " + row["answer"]
+            sub = sub.replace("#", " ")
+            sub = sub.replace(r"\t", " ")
+            sub = sub.replace("\n", " ")
+            sub = sub.replace("\n\n", " ")
+            sub = re.sub(r"\s+", " ", sub)
+            all_data.append([sub, row["link"]])
+    elif "context" in header and "link" in header:
         for index, row in df.iterrows():
-            sub = row['context']
-            sub = sub.replace('#', " ")
-            sub = sub.replace(r'\t', " ")
-            sub = sub.replace('\n', ' ')
-            sub = sub.replace('\n\n', ' ')
-            sub = re.sub(r'\s+', ' ', sub)
-            all_data.append([sub, row['link']])
+            sub = row["context"]
+            sub = sub.replace("#", " ")
+            sub = sub.replace(r"\t", " ")
+            sub = sub.replace("\n", " ")
+            sub = sub.replace("\n\n", " ")
+            sub = re.sub(r"\s+", " ", sub)
+            all_data.append([sub, row["link"]])
     return all_data
 
+
 def load_csv(input):
-    """ Load the csv file."""
+    """Load the csv file."""
     df = pd.read_csv(input)
     all_data = []
     documents = []
     for index, row in df.iterrows():
-        sub = "User Query: " + row['question'] + "Answer: " + row["correct_answer"]
+        sub = "User Query: " + row["question"] + "Answer: " + row["correct_answer"]
         all_data.append(sub)
 
     for data in all_data:
-        data.replace('#', " ")
-        data = re.sub(r'\s+', ' ', data)
+        data.replace("#", " ")
+        data = re.sub(r"\s+", " ", data)
         new_doc = [data, input]
         documents.append(new_doc)
     return documents
+
 
 def load_structured_data(input, process, max_length, min_length):
     """Load structured context."""
@@ -179,6 +183,7 @@ def load_structured_data(input, process, max_length, min_length):
     elif input.endswith("csv"):
         content = load_csv(input)
     return content
+
 
 def load_unstructured_data(input):
     """Load unstructured context."""
@@ -193,30 +198,31 @@ def load_unstructured_data(input):
     elif input.endswith("md"):
         text = read_md(input)
 
-    text = text.replace('\n', '')
-    text = text.replace('\n\n', '')
+    text = text.replace("\n", "")
+    text = text.replace("\n\n", "")
     text = uni_pro(text)
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r"\s+", " ", text)
     return text
+
 
 def get_chuck_data(content, max_length, min_length, input):
     """Process the context to make it maintain a suitable length for the generation."""
-    sentences = re.split('(?<=[!.?])', content)
+    sentences = re.split("(?<=[!.?])", content)
 
     paragraphs = []
     current_length = 0
     count = 0
     current_paragraph = ""
     for sub_sen in sentences:
-        count +=1
+        count += 1
         sentence_length = len(sub_sen)
         if current_length + sentence_length <= max_length:
             current_paragraph += sub_sen
             current_length += sentence_length
-            if count == len(sentences) and len(current_paragraph.strip())>min_length:
-                paragraphs.append([current_paragraph.strip() ,input])
+            if count == len(sentences) and len(current_paragraph.strip()) > min_length:
+                paragraphs.append([current_paragraph.strip(), input])
         else:
-            paragraphs.append([current_paragraph.strip() ,input])
+            paragraphs.append([current_paragraph.strip(), input])
             current_paragraph = sub_sen
             current_length = sentence_length
 

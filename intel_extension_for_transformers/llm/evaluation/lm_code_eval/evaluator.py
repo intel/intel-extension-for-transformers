@@ -15,24 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import random
-import re
-import time
-import numpy as np
-import json
 import fnmatch
+import json
+
 from accelerate import Accelerator
-import torch
-import lm_eval # pylint: disable=E0611, E0401
-from lm_eval.arguments import EvalArguments # pylint: disable=E0611, E0401
-from lm_eval.evaluator import Evaluator # pylint: disable=E0611, E0401
-from lm_eval.tasks import ALL_TASKS # pylint: disable=E0611, E0401
+from lm_eval.evaluator import Evaluator  # pylint: disable=E0611, E0401
+from lm_eval.tasks import ALL_TASKS  # pylint: disable=E0611, E0401
 
 
 def pattern_match(patterns, source_list):
     """Returns a list containing all values of the source_list that
-    match at least one of the patterns"""
+    match at least one of the patterns."""
     task_names = set()
     for pattern in patterns:
         for matching in fnmatch.filter(source_list, pattern):
@@ -40,18 +33,18 @@ def pattern_match(patterns, source_list):
     return list(task_names)
 
 
-def evaluate(model,
-             tokenizer,
-             tasks,
-             batch_size,
-             args,
-            ):
-    """Instantiate and evaluate a model on a list of tasks.
-
-    """
+def evaluate(
+    model,
+    tokenizer,
+    tasks,
+    batch_size,
+    args,
+):
+    """Instantiate and evaluate a model on a list of tasks."""
     try:
+        import datasets
         import transformers
-        import  datasets
+
         transformers.logging.set_verbosity_error()
         datasets.logging.set_verbosity_error()
     except:
@@ -105,5 +98,5 @@ def evaluate(model,
 
         with open(args.metric_output_path, "w") as f:
             f.write(dumped)
-    
+
     return results

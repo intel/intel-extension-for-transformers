@@ -1,3 +1,16 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """This module provides a ChatGPT-compatible Restful API for chat completion.
 
 Usage:
@@ -6,27 +19,25 @@ python3 -m fastchat.serve.api
 
 Reference: https://platform.openai.com/docs/api-reference/chat/create
 """
-import asyncio
-from typing import Union, Dict, List, Any
-
 import argparse
+import asyncio
 import json
 import logging
+from typing import Any, Dict, List, Union
 
 import fastapi
-from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import uvicorn
-from pydantic import BaseSettings
-
+from fastapi.middleware.cors import CORSMiddleware
+from fastchat.conversation import SeparatorStyle, get_default_conv_template
 from fastchat.protocol.chat_completion import (
     ChatCompletionRequest,
     ChatCompletionResponse,
-    ChatMessage,
     ChatCompletionResponseChoice,
+    ChatMessage,
 )
-from fastchat.conversation import get_default_conv_template, SeparatorStyle
 from fastchat.serve.inference import compute_skip_echo_len
+from pydantic import BaseSettings
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +65,7 @@ async def show_available_models():
 
 @app.post("/v1/chat/completions")
 async def create_chat_completion(request: ChatCompletionRequest):
-    """Creates a completion for the chat message"""
+    """Creates a completion for the chat message."""
     payload, skip_echo_len = generate_payload(
         request.model,
         request.messages,
@@ -67,7 +78,9 @@ async def create_chat_completion(request: ChatCompletionRequest):
     # TODO: batch the requests. maybe not necessary if using CacheFlow worker
     chat_completions = []
     for i in range(request.n):
-        content = asyncio.create_task(chat_completion(request.model, payload, skip_echo_len))
+        content = asyncio.create_task(
+            chat_completion(request.model, payload, skip_echo_len)
+        )
         chat_completions.append(content)
 
     for i, content_task in enumerate(chat_completions):
@@ -186,10 +199,18 @@ if __name__ == "__main__":
     )
     parser.add_argument("--host", type=str, default="localhost", help="host name")
     parser.add_argument("--port", type=int, default=8000, help="port number")
-    parser.add_argument("--allow-credentials", action="store_true", help="allow credentials")
-    parser.add_argument("--allowed-origins", type=json.loads, default=["*"], help="allowed origins")
-    parser.add_argument("--allowed-methods", type=json.loads, default=["*"], help="allowed methods")
-    parser.add_argument("--allowed-headers", type=json.loads, default=["*"], help="allowed headers")
+    parser.add_argument(
+        "--allow-credentials", action="store_true", help="allow credentials"
+    )
+    parser.add_argument(
+        "--allowed-origins", type=json.loads, default=["*"], help="allowed origins"
+    )
+    parser.add_argument(
+        "--allowed-methods", type=json.loads, default=["*"], help="allowed methods"
+    )
+    parser.add_argument(
+        "--allowed-headers", type=json.loads, default=["*"], help="allowed headers"
+    )
 
     args = parser.parse_args()
 

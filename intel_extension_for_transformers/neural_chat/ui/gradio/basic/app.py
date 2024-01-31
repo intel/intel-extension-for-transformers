@@ -15,30 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
-from collections import defaultdict
 import datetime
 import json
 import os
 import time
-import uuid
 
 os.system("pip install gradio==3.36.0")
+
+import sys
 
 import gradio as gr
 import requests
 
-import sys
-sys.path.insert(0, './')
-from conversation import (
-    get_conv_template,
-    compute_skip_echo_len
-)
+sys.path.insert(0, "./")
+from conversation import compute_skip_echo_len, get_conv_template
 from fastchat.constants import LOGDIR
-from fastchat.utils import (
-    build_logger,
-    violates_moderation,
-)
+from fastchat.utils import build_logger, violates_moderation
 
 code_highlight_css = """
 #chatbot .hll { background-color: #ffffcc }
@@ -175,6 +167,7 @@ enable_moderation = False
 #     sep2="<|im_end|>",
 # )
 
+
 def set_global_vars(controller_url_, enable_moderation_):
     global controller_url, enable_moderation
     controller_url = controller_url_
@@ -307,7 +300,9 @@ def post_process_code(code):
     return code
 
 
-def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: gr.Request):
+def http_bot(
+    state, model_selector, temperature, max_new_tokens, topk, request: gr.Request
+):
     logger.info(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
     model_name = model_selector
@@ -327,11 +322,11 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         # First round of Conversation
         if "Llama-2-7b-chat-hf" in model_name:
             model_name = "llama-2"
-        elif "chatglm"  in model_name:
-            model_name = model_name.split('-')[0]
-        new_state = get_conv_template(model_name.split('/')[-1])
-        #new_state.conv_id = uuid.uuid4().hex
-        #new_state.model_name = state.model_name or model_selector
+        elif "chatglm" in model_name:
+            model_name = model_name.split("-")[0]
+        new_state = get_conv_template(model_name.split("/")[-1])
+        # new_state.conv_id = uuid.uuid4().hex
+        # new_state.model_name = state.model_name or model_selector
         new_state.append_message(new_state.roles[0], state.messages[-2][1])
         new_state.append_message(new_state.roles[1], None)
         state = new_state
@@ -372,7 +367,7 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         output = ""
         for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
             if chunk:
-                if chunk.strip() == b'data: [DONE]':
+                if chunk.strip() == b"data: [DONE]":
                     break
                 data = json.loads(chunk.decode())
                 # print("data======", data, skip_echo_len)
@@ -393,8 +388,8 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
                     )
                     return
                 time.sleep(0.005)
-    except requests.exceptions.RequestException as e:
-        state.messages[-1][-1] = server_error_msg + f" (error_code: 4)"
+    except requests.exceptions.RequestException:
+        state.messages[-1][-1] = server_error_msg + " (error_code: 4)"
         yield (state, state.to_gradio_chatbot()) + (
             disable_btn,
             disable_btn,
@@ -607,7 +602,6 @@ footer {
 
 
 def build_single_model_ui(models):
-
     notice_markdown = """
 <div class="title">
 <div style="
@@ -625,7 +619,7 @@ def build_single_model_ui(models):
     #         <div class="acknowledgments">
     #         <p></p></div>
 
-    learn_more_markdown =  """<div class="footer">
+    learn_more_markdown = """<div class="footer">
                     <p>Powered by <a href="https://github.com/intel/intel-extension-for-transformers" style="text-decoration: underline;" target="_blank">Intel Extension for Transformers</a> and <a href="https://github.com/intel/intel-extension-for-pytorch" style="text-decoration: underline;" target="_blank">Intel Extension for PyTorch</a>
                     </p>
             </div>
@@ -656,7 +650,9 @@ def build_single_model_ui(models):
         with gr.Column(scale=1, min_width=50):
             send_btn = gr.Button(value="Send", visible=False, elem_id="btn-send-style")
 
-    with gr.Accordion("Parameters", open=False, visible=False, elem_id="btn-style") as parameter_row:
+    with gr.Accordion(
+        "Parameters", open=False, visible=False, elem_id="btn-style"
+    ) as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
@@ -683,15 +679,29 @@ def build_single_model_ui(models):
             label="TOP K",
         )
 
-
     with gr.Row(visible=False, elem_id="btn-style") as button_row:
-        upvote_btn = gr.Button(value="👍  Upvote", interactive=False, visible=False, elem_id="btn-list-style")
-        downvote_btn = gr.Button(value="👎  Downvote", interactive=False, visible=False, elem_id="btn-list-style")
-        flag_btn = gr.Button(value="⚠️  Flag", interactive=False, visible=False, elem_id="btn-list-style")
+        upvote_btn = gr.Button(
+            value="👍  Upvote",
+            interactive=False,
+            visible=False,
+            elem_id="btn-list-style",
+        )
+        downvote_btn = gr.Button(
+            value="👎  Downvote",
+            interactive=False,
+            visible=False,
+            elem_id="btn-list-style",
+        )
+        flag_btn = gr.Button(
+            value="⚠️  Flag", interactive=False, visible=False, elem_id="btn-list-style"
+        )
         # stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=False)
-        regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False, elem_id="btn-list-style")
-        clear_btn = gr.Button(value="🗑️  Clear history", interactive=False, elem_id="btn-list-style")
-
+        regenerate_btn = gr.Button(
+            value="🔄  Regenerate", interactive=False, elem_id="btn-list-style"
+        )
+        clear_btn = gr.Button(
+            value="🗑️  Clear history", interactive=False, elem_id="btn-list-style"
+        )
 
     gr.Markdown(learn_more_markdown)
 
@@ -779,7 +789,6 @@ def build_demo(models):
 
 
 if __name__ == "__main__":
-
     controller_url = "http://127.0.0.1:8000"
     host = "0.0.0.0"
 
@@ -794,6 +803,4 @@ if __name__ == "__main__":
     demo = build_demo(models)
     demo.queue(
         concurrency_count=concurrency_count, status_update_rate=10, api_open=False
-    ).launch(
-        server_name=host, server_port=80, share=share, max_threads=200
-    )
+    ).launch(server_name=host, server_port=80, share=share, max_threads=200)

@@ -15,17 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import os
+import signal
 import subprocess
 import sys
-import os
+
 import psutil
-import signal
-import logging
+
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
+
+
 class SadTalker:
     """Faster Talking Face Animation."""
 
@@ -79,7 +83,9 @@ class SadTalker:
             )
         multi_instance_cmd += "wait < <(jobs -p) \nrm -rf logs"
         logging.info(multi_instance_cmd)
-        p = subprocess.Popen(multi_instance_cmd, preexec_fn=os.setsid, shell=True, executable="/bin/bash")  # nosec
+        p = subprocess.Popen(
+            multi_instance_cmd, preexec_fn=os.setsid, shell=True, executable="/bin/bash"
+        )  # nosec
         try:
             p.communicate()
         except KeyboardInterrupt:
@@ -99,7 +105,9 @@ class SadTalker:
         )
         instance_cmd += "wait < <(jobs -p) \nrm -rf logs"
         logging.info(instance_cmd)
-        p = subprocess.Popen(instance_cmd, preexec_fn=os.setsid, shell=True, executable="/bin/bash")  # nosec
+        p = subprocess.Popen(
+            instance_cmd, preexec_fn=os.setsid, shell=True, executable="/bin/bash"
+        )  # nosec
         try:
             p.communicate()
         except KeyboardInterrupt:

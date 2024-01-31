@@ -14,15 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
 
 
-@operator_registry(operator_type='LogSoftmax')
+@operator_registry(operator_type="LogSoftmax")
 class LogSoftmax(Operator):
     """Parse the LogSoftmax operator to the neural engine."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -31,5 +31,5 @@ class LogSoftmax(Operator):
         """Extract the node attr from frameworks."""
         if framework == "onnxruntime":
             for attribute in node.attribute:
-                if attribute.name == 'axis':
-                    self._attr['axis'] = attribute.i
+                if attribute.name == "axis":
+                    self._attr["axis"] = attribute.i

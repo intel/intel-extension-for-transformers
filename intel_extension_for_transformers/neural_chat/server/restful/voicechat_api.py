@@ -15,23 +15,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from fastapi import APIRouter, Request
-from fastapi.responses import StreamingResponse
+import base64
 from typing import Optional
+
+import torch
+from fastapi import APIRouter, File, Request, UploadFile
+from fastapi.responses import StreamingResponse
+
 from ...cli.log import logger
-from fastapi import File, UploadFile, Form
 from ...config import GenerationConfig
 from ...plugins import plugins
-import base64
-import torch
+
 
 class VoiceChatAPIRouter(APIRouter):
-
     def __init__(self) -> None:
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, chatbot, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80) -> None:
+    def set_chatbot(
+        self, chatbot, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80
+    ) -> None:
         self.chatbot = chatbot
         self.use_deepspeed = use_deepspeed
         self.world_size = world_size
@@ -51,20 +54,26 @@ class VoiceChatAPIRouter(APIRouter):
         except Exception as e:
             raise Exception(e)
 
-    async def handle_voice_chat_request(self, prompt: str, voice: str, audio_output_path: Optional[str]=None) -> str:
+    async def handle_voice_chat_request(
+        self, prompt: str, voice: str, audio_output_path: Optional[str] = None
+    ) -> str:
         chatbot = self.get_chatbot()
         try:
             plugins.tts.args["voice"] = voice
             config = GenerationConfig(audio_output_path=audio_output_path)
             result, link = chatbot.chat_stream(query=prompt, config=config)
+
             def audio_file_generate(result):
                 for path in result:
-                    with open(path,mode="rb") as file:
+                    with open(path, mode="rb") as file:
                         bytes = file.read()
                         data = base64.b64encode(bytes)
                     yield f"data: {data}\n\n"
-                yield f"data: [DONE]\n\n"
-            return StreamingResponse(audio_file_generate(result), media_type="text/event-stream")
+                yield "data: [DONE]\n\n"
+
+            return StreamingResponse(
+                audio_file_generate(result), media_type="text/event-stream"
+            )
         except Exception as e:
             raise Exception(e)
 
@@ -72,7 +81,9 @@ class VoiceChatAPIRouter(APIRouter):
         chatbot = self.get_chatbot()
         try:
             spk_embedding = chatbot.tts.create_speaker_embedding(spk_id)
-            torch.save(spk_embedding, f'../../../../speaker_embeddings/spk_embed_{spk_id}.pt')
+            torch.save(
+                spk_embedding, f"../../../../speaker_embeddings/spk_embed_{spk_id}.pt"
+            )
         except Exception as e:
             logger.info(f"create spk embedding fails! {e}")
             return {"create_spk": "fail"}
@@ -85,18 +96,20 @@ router = VoiceChatAPIRouter()
 # However, SSE isn't suitable for transmitting audio files directly.
 # As a solution, we should split the API into /v1/voicechat/asr and /v1/voicechat/llm_tts.
 
+
 @router.post("/v1/talkingbot/asr")
 async def handle_talkingbot_asr(file: UploadFile = File(...)):
     file_name = file.filename
-    logger.info(f'Received file: {file_name}')
-    with open("tmp_audio_bytes", 'wb') as fout:
+    logger.info(f"Received file: {file_name}")
+    with open("tmp_audio_bytes", "wb") as fout:
         content = await file.read()
         fout.write(content)
     from pydub import AudioSegment
+
     audio = AudioSegment.from_file("tmp_audio_bytes")
     audio = audio.set_frame_rate(16000)
     # bytes to wav
-    file_name = file_name +'.wav'
+    file_name = file_name + ".wav"
     audio.export(f"{file_name}", format="wav")
     asr_result = router.handle_voice_asr_request(file_name)
     return {"asr_result": asr_result}
@@ -108,11 +121,16 @@ async def talkingbot(request: Request):
     text = data["text"]
     voice = data["voice"]
     knowledge_id = data["knowledge_id"]
-    audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio"
+    audio_output_path = (
+        data["audio_output_path"] if "audio_output_path" in data else "output_audio"
+    )
 
-    logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
+    logger.info(
+        f"Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}"
+    )
 
     return await router.handle_voice_chat_request(text, voice, audio_output_path)
+
 
 @router.post("/v1/talkingbot/create_embedding")
 async def create_speaker_embedding(file: UploadFile = File(...)):
@@ -120,11 +138,13 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     file_name = file.filename
     # generate a unique id
     import uuid
+
     spk_id = f"spk_{str(uuid.uuid1())[:8]}"
-    with open(f"tmp_spk_{file_name}", 'wb') as fout:
+    with open(f"tmp_spk_{file_name}", "wb") as fout:
         content = await file.read()
         fout.write(content)
     from pydub import AudioSegment
+
     audio = AudioSegment.from_file(f"tmp_spk_{file_name}")
     audio.export(f"{spk_id}", format="mp3")
 

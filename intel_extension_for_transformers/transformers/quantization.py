@@ -14,20 +14,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Quantization: specify the supported quantization mode."""
 
 from enum import Enum
+
 from transformers.utils.versions import require_version
 
 try:
     require_version("neural_compressor>=1.9.0")
 except:
-    require_version("neural_compressor_full>=1.9.0", "To fix: pip install neural_compressor")
+    require_version(
+        "neural_compressor_full>=1.9.0", "To fix: pip install neural_compressor"
+    )
 
 
 class QuantizationMode(Enum):
     """Currently support three quantization modes."""
+
     POSTTRAININGSTATIC = "post_training_static_quant"
     POSTTRAININGDYNAMIC = "post_training_dynamic_quant"
     QUANTIZATIONAWARETRAINING = "quant_aware_training"

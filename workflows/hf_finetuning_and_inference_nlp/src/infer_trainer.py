@@ -14,12 +14,10 @@
 #
 
 
-from transformers import (
-    AutoModelForSequenceClassification,
-    Trainer
-)
 from os import path
+
 from infer import DlsaInference
+from transformers import AutoModelForSequenceClassification, Trainer
 from utils import compute_metrics, save_performance_metrics
 
 
@@ -31,8 +29,10 @@ class TrainerInfer(DlsaInference):
         return super()._preprocess()
 
     def _load_model(self):
-        with self.track('Load Model'):
-            self.model = AutoModelForSequenceClassification.from_pretrained(self.args.model_name_or_path)
+        with self.track("Load Model"):
+            self.model = AutoModelForSequenceClassification.from_pretrained(
+                self.args.model_name_or_path
+            )
 
             if self.args.dtype_inf == "bf16":
                 self.training_args.bf16 = True
@@ -41,17 +41,22 @@ class TrainerInfer(DlsaInference):
                 model=self.model,  # the instantiated HF model to be trained
                 args=self.training_args,  # training arguments, defined above
                 compute_metrics=compute_metrics,  # evaluation metrics
-                tokenizer=self.tokenizer
+                tokenizer=self.tokenizer,
             )
 
     def _do_infer(self):
         if self.training_args.do_predict:
-            with self.track('Inference'):
+            with self.track("Inference"):
                 if not self.args.save_detailed_performance_metrics:
                     preds, _, metrics = self.trainer.predict(self.test_data)
                     print(
-                            f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
-                        )
+                        f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
+                    )
                 else:
-                    save_performance_metrics(self.trainer, self.test_data, 
-                                            path.join(self.training_args.output_dir, self.args.inference_output) )
+                    save_performance_metrics(
+                        self.trainer,
+                        self.test_data,
+                        path.join(
+                            self.training_args.output_dir, self.args.inference_output
+                        ),
+                    )

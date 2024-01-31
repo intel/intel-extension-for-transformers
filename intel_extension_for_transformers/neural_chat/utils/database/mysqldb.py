@@ -15,10 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .config import get_settings
 from contextlib import contextmanager
 
+from .config import get_settings
+
 global_settings = get_settings()
+
 
 class MysqlDb(object):
     def __init__(self):
@@ -27,18 +29,21 @@ class MysqlDb(object):
         self._db = global_settings.mysql_db
         self._user = global_settings.mysql_user
         self._passwd = global_settings.mysql_password
-        self._charset = 'utf8'
+        self._charset = "utf8"
         self._connect()
 
     def _connect(self):
         from pymysql import connect, cursors
-        self._conn = connect(host=self._host,
-                             port=self._port,
-                             user=self._user,
-                             passwd=self._passwd,
-                             db=self._db,
-                             charset=self._charset,
-                             cursorclass=cursors.DictCursor)
+
+        self._conn = connect(
+            host=self._host,
+            port=self._port,
+            user=self._user,
+            passwd=self._passwd,
+            db=self._db,
+            charset=self._charset,
+            cursorclass=cursors.DictCursor,
+        )
         self._cursor = self._conn.cursor()
 
     def _set_db(self, db):
@@ -61,6 +66,7 @@ class MysqlDb(object):
 
     def fetch_one(self, sql, params=None):
         from pymysql.converters import escape_string
+
         escape_sql = escape_string(sql)
         print(f"escape sql: {escape_sql}")
         self._cursor.execute(escape_sql, params)
@@ -68,6 +74,7 @@ class MysqlDb(object):
 
     def fetch_all(self, sql, params=None):
         from pymysql.converters import escape_string
+
         escape_sql = escape_string(sql)
         print(f"escape sql: {escape_sql}")
         self._cursor.execute(escape_sql, params)
@@ -84,4 +91,3 @@ class MysqlDb(object):
 
     def _edit(self, sql, params):
         return self._cursor.execute(sql, params)
-

@@ -14,21 +14,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from fastapi.responses import StreamingResponse, FileResponse
-from fastapi import APIRouter
 from typing import Optional
-from ...cli.log import logger
-from fastapi import File, UploadFile, Form
+
+from fastapi import APIRouter, File, Form, UploadFile
+from fastapi.responses import FileResponse
 from pydub import AudioSegment
-from ...config import GenerationConfig
-import base64
-import torch
-from typing import Optional
-from fastapi import Query
+
+from ...cli.log import logger
 
 
-class FaceAnimationAPIRouter(APIRouter): # pragma: no cover
-
+class FaceAnimationAPIRouter(APIRouter):  # pragma: no cover
     def __init__(self) -> None:
         super().__init__()
         self.chatbot = None
@@ -59,47 +54,54 @@ class FaceAnimationAPIRouter(APIRouter): # pragma: no cover
         except:
             raise Exception("Exception occurred when generating image from text.")
         else:
-            logger.info(f'Face animation finished. Generated video path: {video_path}')
+            logger.info(f"Face animation finished. Generated video path: {video_path}")
             return FileResponse(video_path)
 
 
 router = FaceAnimationAPIRouter()
 
+
 @router.post("/v1/talkingbot/face_animation")
-async def handle_talkingbot_face_animation(image: UploadFile = File(...),
-                                           audio: Optional[UploadFile] = None,
-                                           text: Optional[str] = Form(None),
-                                           mode: Optional[str] = Form("fast"),
-                                           voice: Optional[str] = Form(None)): # pragma: no cover
+async def handle_talkingbot_face_animation(
+    image: UploadFile = File(...),
+    audio: Optional[UploadFile] = None,
+    text: Optional[str] = Form(None),
+    mode: Optional[str] = Form("fast"),
+    voice: Optional[str] = Form(None),
+):  # pragma: no cover
     audio_file_name = audio.filename if audio else ""
     image_file_name = image.filename
-    logger.info(f'Received audio: {audio_file_name}')
-    logger.info(f'Received image: {image_file_name}')
-    logger.info(f'Use mode: {mode}')
+    logger.info(f"Received audio: {audio_file_name}")
+    logger.info(f"Received image: {image_file_name}")
+    logger.info(f"Use mode: {mode}")
     if text is None and audio_file_name == "":
         raise Exception("The driven audio and input text should not be both None!")
     # write to image file
-    with open(f"tmp_image.jpg", 'wb') as fout:
+    with open("tmp_image.jpg", "wb") as fout:
         content = await image.read()
         fout.write(content)
     if audio_file_name != "":
-        with open("tmp_audio_bytes", 'wb') as fout:
+        with open("tmp_audio_bytes", "wb") as fout:
             content = await audio.read()
             fout.write(content)
         audio = AudioSegment.from_file("tmp_audio_bytes")
         audio = audio.set_frame_rate(16000)
         # bytes to wav
-        audio.export(f"tmp_audio.wav", format="wav")
+        audio.export("tmp_audio.wav", format="wav")
 
-        response = await router.handle_face_animation(image_path=f"tmp_image.jpg",
-                                                audio_path=f"tmp_audio.wav",
-                                                text=None,
-                                                mode=mode,
-                                                voice=None)
+        response = await router.handle_face_animation(
+            image_path="tmp_image.jpg",
+            audio_path="tmp_audio.wav",
+            text=None,
+            mode=mode,
+            voice=None,
+        )
     else:
-        response = await router.handle_face_animation(image_path=f"tmp_image.jpg",
-                                                audio_path=None,
-                                                text=text,
-                                                mode=mode,
-                                                voice=voice)
+        response = await router.handle_face_animation(
+            image_path="tmp_image.jpg",
+            audio_path=None,
+            text=text,
+            mode=mode,
+            voice=voice,
+        )
     return response

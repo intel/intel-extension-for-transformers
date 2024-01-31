@@ -16,15 +16,18 @@
 # limitations under the License.
 """The module of Neural Engine."""
 
+import os.path as path
 import subprocess
 import sys
+
 import intel_extension_for_transformers
-import os.path as path
 
 
 def neural_engine_bin():
-    ''' Entry point for C++ interface '''
+    """Entry point for C++ interface."""
     neural_engine_bin = path.join(
-        intel_extension_for_transformers.__path__[0], 'neural_engine_bin')
-    raise SystemExit(subprocess.call(
-        [neural_engine_bin] + sys.argv[1:], close_fds=False))
+        intel_extension_for_transformers.__path__[0], "neural_engine_bin"
+    )
+    raise SystemExit(
+        subprocess.call([neural_engine_bin] + sys.argv[1:], close_fds=False)
+    )

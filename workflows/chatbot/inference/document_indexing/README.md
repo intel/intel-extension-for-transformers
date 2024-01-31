@@ -41,8 +41,9 @@ When it comes to dense indexing, users have the flexibility to choose their pref
 
 Alternatively, users can also utilize GPT models from OpenAI. To incorporate a GPT model into the process, minor adjustments need to be made to the following code:
  ```python
-from langchain.embeddings import OpenAIEmbeddings
-embeddings = OpenAIEmbeddings()
+ from langchain.embeddings import OpenAIEmbeddings
+
+ embeddings = OpenAIEmbeddings()
  ```
 
 The user can start the dense indexing with,

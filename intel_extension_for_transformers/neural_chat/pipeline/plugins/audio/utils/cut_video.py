@@ -14,24 +14,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import subprocess
-import os
 import argparse
-import shlex
 import logging
+import os
+import shlex
+import subprocess
+
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
+
+
 def get_length(filename):
-    result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
-                             "format=duration", "-of",
-                             "default=noprint_wrappers=1:nokey=1", filename],
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            filename,
+        ],
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
+        stderr=subprocess.STDOUT,
+    )
     # print("Total seconds:", float(result.stdout))
     return float(result.stdout)
+
 
 def cut_video(args, outdir):
     path = shlex.quote(args.path)
@@ -54,7 +67,7 @@ def cut_video(args, outdir):
         end_min = 0
         end_sec = 0
         mark = 0
-        
+
         for i in range(0, min + 1, delta_X):
             logging.info("i: %s", i)
             if min >= delta_X:
@@ -72,23 +85,45 @@ def cut_video(args, outdir):
                     end_min = t_min
 
                 if i == t_min:
-                    end_sec = t_second  
+                    end_sec = t_second
 
-                start_hour = '0' + str(start_hour) if len(str(start_hour)) == 1 else str(start_hour)
-                start_min = '0' + str(start_min) if len(str(start_min)) == 1 else str(start_min)
-                start_sec = '0' + str(start_sec) if len(str(start_sec)) == 1 else str(start_sec)
-                end_hour = '0' + str(end_hour) if len(str(end_hour)) == 1 else str(end_hour)
-                end_min = '0' + str(end_min) if len(str(end_min)) == 1 else str(end_min)
-                end_sec = '0' + str(end_sec) if len(str(end_sec)) == 1 else str(end_sec)
+                start_hour = (
+                    "0" + str(start_hour)
+                    if len(str(start_hour)) == 1
+                    else str(start_hour)
+                )
+                start_min = (
+                    "0" + str(start_min) if len(str(start_min)) == 1 else str(start_min)
+                )
+                start_sec = (
+                    "0" + str(start_sec) if len(str(start_sec)) == 1 else str(start_sec)
+                )
+                end_hour = (
+                    "0" + str(end_hour) if len(str(end_hour)) == 1 else str(end_hour)
+                )
+                end_min = "0" + str(end_min) if len(str(end_min)) == 1 else str(end_min)
+                end_sec = "0" + str(end_sec) if len(str(end_sec)) == 1 else str(end_sec)
 
                 name, _ = os.path.splitext(file_name)
                 name = str(name) + "_" + str(mark)
                 mark += 1
-                command = 'ffmpeg -i {} -ss {}:{}:{} -to {}:{}:{} -ac 1 -ar {} -f wav {}'.format(
-                    os.path.join(path,file_name), start_hour, start_min, start_sec, end_hour,
-                    end_min, end_sec, shlex.quote(args.sr), os.path.join(save_path, str(name))+'.wav').split()
-                logging.info("%s hours, %s minutes, %s seconds", start_hour, start_min, start_sec)
-                logging.info("%s hours, %s minutes, %s seconds", end_hour, end_min, end_sec)
+                command = "ffmpeg -i {} -ss {}:{}:{} -to {}:{}:{} -ac 1 -ar {} -f wav {}".format(
+                    os.path.join(path, file_name),
+                    start_hour,
+                    start_min,
+                    start_sec,
+                    end_hour,
+                    end_min,
+                    end_sec,
+                    shlex.quote(args.sr),
+                    os.path.join(save_path, str(name)) + ".wav",
+                ).split()
+                logging.info(
+                    "%s hours, %s minutes, %s seconds", start_hour, start_min, start_sec
+                )
+                logging.info(
+                    "%s hours, %s minutes, %s seconds", end_hour, end_min, end_sec
+                )
                 try:
                     subprocess.run(command, check=True)
                 except subprocess.CalledProcessError as e:
@@ -96,13 +131,13 @@ def cut_video(args, outdir):
                 start_hour = int(end_hour)
                 start_min = int(end_min)
                 start_sec = int(end_sec)
-            
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--path", type=str, required=True)
-    parser.add_argument("--min", type=str, default='10')
-    parser.add_argument("--sr", type=str, default='16000')
+    parser.add_argument("--min", type=str, default="10")
+    parser.add_argument("--sr", type=str, default="16000")
     parser.add_argument("--out_path", type=str, default="../raw")
     args = parser.parse_args()
 

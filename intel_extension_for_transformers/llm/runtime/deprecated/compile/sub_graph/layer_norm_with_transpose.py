@@ -14,68 +14,68 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The LayerNormWithTranspose Pattern."""
 
-from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
-from .. import graph_utils as util
 import copy
+from collections import OrderedDict
+
+from .. import graph_utils as util
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='LayerNormWithTranspose')
+@pattern_registry(pattern_type="LayerNormWithTranspose")
 class LayerNormWithTranspose(Pattern):
     """The LayerNormWithTranspose pattern.
 
     Fuse the original sub-graph into the custom acceleration 'LayerNormWithTranspose' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
-            'LayerNormWithTranspose': [
+            "LayerNormWithTranspose": [
                 {
-                    'patterns': {
-                        'in': [[(0, 'MatMulWithBiasAdd'), (1, 'LayerNorm'), (2, 'Transpose')]],
-                        'out': [[(0, 'MatMulWithBiasAdd'), (1, 'LayerNorm'), (2, 'Reshape'),
-                                 (3, 'Transpose')]]
+                    "patterns": {
+                        "in": [
+                            [
+                                (0, "MatMulWithBiasAdd"),
+                                (1, "LayerNorm"),
+                                (2, "Transpose"),
+                            ]
+                        ],
+                        "out": [
+                            [
+                                (0, "MatMulWithBiasAdd"),
+                                (1, "LayerNorm"),
+                                (2, "Reshape"),
+                                (3, "Transpose"),
+                            ]
+                        ],
                     },
-                    'search_mode': 'op_type',
-                    'node_names': {
+                    "search_mode": "op_type",
+                    "node_names": {
                         0: 0,
                         1: 1,
-                        2: 'reshape_3d_before_transpose',
+                        2: "reshape_3d_before_transpose",
                         3: 2,
                     },
-                    'input_tensors': {
-                        0: [[{
-                            0: [0]
-                        }, {
-                            0: [1]
-                        }, {
-                            0: [2]
-                        }, {
-                            0: [3]
-                        }], [[0, 1, 2, 3], 4]],
-                        1: [[{
-                            1: [1]
-                        }, {
-                            1: [2]
-                        }], [[1, 2], 3]],
-                        2: [[{
-                            'input_data': [0]
-                        }], [[1], 2]],
-                        3: [[], [[], 1]]
+                    "input_tensors": {
+                        0: [
+                            [{0: [0]}, {0: [1]}, {0: [2]}, {0: [3]}],
+                            [[0, 1, 2, 3], 4],
+                        ],
+                        1: [[{1: [1]}, {1: [2]}], [[1, 2], 3]],
+                        2: [[{"input_data": [0]}], [[1], 2]],
+                        3: [[], [[], 1]],
                     },
-                    'output_tensors': {
+                    "output_tensors": {
                         0: [[], [[], 1]],
                         1: [[], [[], 1]],
                         2: [[], [[], 1]],
-                        3: [[{
-                            2: [0]
-                        }], [[0], 1]]
+                        3: [[{2: [0]}], [[0], 1]],
                     },
-                    'returns': [0, 1, 2]
+                    "returns": [0, 1, 2],
                 },
             ]
         }
@@ -83,8 +83,8 @@ class LayerNormWithTranspose(Pattern):
         def _set_attr(old_nodes, node_names, model):
             reshape_attr = OrderedDict()
             hidden_size = str(model.inquire_config_item("hidden_size"))
-            reshape_attr['dst_shape'] = '-1,-1,' + hidden_size
-            reshape_attr['dims'] = '1,0'
+            reshape_attr["dst_shape"] = "-1,-1," + hidden_size
+            reshape_attr["dims"] = "1,0"
 
             reshape_idx = 0
             idx = 0
@@ -92,13 +92,16 @@ class LayerNormWithTranspose(Pattern):
                 if model.get_node_by_name(node_names[idx]).op_type == "Reshape":
                     reshape_idx = idx
                     idx += 1
-                model.get_node_by_name(new_node_names[j][idx]).attr = copy.deepcopy(n.attr)
+                model.get_node_by_name(new_node_names[j][idx]).attr = copy.deepcopy(
+                    n.attr
+                )
                 idx += 1
             model.get_node_by_name(new_node_names[j][reshape_idx]).attr = reshape_attr
 
-        pattern_dict = pattern_mapping_config['LayerNormWithTranspose'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNormWithTranspose",
-                                                                    pattern_dict, model)
+        pattern_dict = pattern_mapping_config["LayerNormWithTranspose"][0]
+        model, new_node_names, ret_old_nodes = util.pattern_mapping(
+            "LayerNormWithTranspose", pattern_dict, model
+        )
         if len(new_node_names) != 0:
             for j in range(len(new_node_names)):
                 _set_attr(ret_old_nodes[j], new_node_names[j], model)

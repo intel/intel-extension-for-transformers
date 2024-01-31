@@ -25,8 +25,9 @@ Only support TensorFlow and ONNX models for now.
 
 ```python
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
-model = compile('/path/to/your/model')
-model.save('/ir/path')   # Engine graph could be saved to path
+
+model = compile("/path/to/your/model")
+model.save("/ir/path")  # Engine graph could be saved to path
 ```
 
 Engine graph could be saved as yaml and weight bin.
@@ -97,8 +98,9 @@ Parse the yaml and weight bin to Engine Graph through Python API
 
 ```python
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+
 model = Graph()
-model.graph_init('./ir/conf.yaml', './ir/model.bin')
+model.graph_init("./ir/conf.yaml", "./ir/model.bin")
 input_data = [input_0, input_1, input_2]
 out = model.inference(input_data)
 ```

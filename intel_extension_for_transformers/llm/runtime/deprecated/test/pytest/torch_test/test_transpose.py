@@ -15,17 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import sys
-import torch
-import torch.nn as nn
-import numpy as np
 import os
 import shutil
+import unittest
+
+import numpy as np
+import torch
+import torch.nn as nn
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
+
 
 class Net(nn.Module):
     def __init__(self):
@@ -34,6 +36,7 @@ class Net(nn.Module):
     def forward(self, x):
         x = torch.transpose(x, 0, 1)
         return x
+
 
 class TestTorchOP(unittest.TestCase):
     @classmethod
@@ -48,41 +51,42 @@ class TestTorchOP(unittest.TestCase):
         n = Net()
         example_in = torch.rand(3, 4, 5)
         traced_model = torch.jit.trace(n, example_in)
-        
-        torch.jit.save(traced_model, '{}.pt'.format(file_name))
+
+        torch.jit.save(traced_model, "{}.pt".format(file_name))
         # torch.onnx.export(n, example_in, '{}.onnx'.format(file_name))
         ref_out = traced_model(example_in).detach().numpy()
         print(ref_out.shape)
-        
-        graph = compile('{}.pt'.format(file_name))
+
+        graph = compile("{}.pt".format(file_name))
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + "/conf.yaml", file_name + "/model.bin")
         out = newgraph.inference([example_in.numpy()])
 
         np.testing.assert_array_equal(ref_out, [*out.values()][0])
-        os.remove('{}.pt'.format(file_name))
+        os.remove("{}.pt".format(file_name))
         shutil.rmtree(file_name)
 
     def test_2(self):
         n = Net()
         example_in = torch.rand(3, 4)
         traced_model = torch.jit.trace(n, example_in)
-        
-        torch.jit.save(traced_model, '{}.pt'.format(file_name))
+
+        torch.jit.save(traced_model, "{}.pt".format(file_name))
         # torch.onnx.export(n, example_in, '{}.onnx'.format(file_name))
         ref_out = traced_model(example_in).detach().numpy()
         print(ref_out.shape)
-        
-        graph = compile('{}.pt'.format(file_name))
+
+        graph = compile("{}.pt".format(file_name))
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + "/conf.yaml", file_name + "/model.bin")
         out = newgraph.inference([example_in.numpy()])
 
         np.testing.assert_array_equal(ref_out, [*out.values()][0])
-        os.remove('{}.pt'.format(file_name))
+        os.remove("{}.pt".format(file_name))
         shutil.rmtree(file_name)
+
 
 if __name__ == "__main__":
     unittest.main()

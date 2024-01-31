@@ -15,33 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-import os
 from dataclasses import dataclass, field
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
 import torch
-from datasets import Dataset, load_dataset
-from peft import LoraConfig
+from datasets import load_dataset
+from peft import (
+    LoraConfig,
+)
 from transformers import (
-    CONFIG_MAPPING,
     MODEL_FOR_CAUSAL_LM_MAPPING,
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     HfArgumentParser,
     TrainingArguments,
-    default_data_collator,
 )
 
-from peft import (
-    prepare_model_for_int8_training,
-    LoraConfig,
-    PeftModel,
-    get_peft_model,
-    get_peft_model_state_dict,
-    set_peft_model_state_dict,
-)
 from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
@@ -51,9 +41,7 @@ IGNORE_INDEX = -100
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
-    """
+    """Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch."""
 
     model_name_or_path: Optional[str] = field(
         default=None,
@@ -65,7 +53,10 @@ class ModelArguments:
     )
     model_type: Optional[str] = field(
         default=None,
-        metadata={"help": "If training from scratch, pass a model type from the list: " + ", ".join(MODEL_TYPES)},
+        metadata={
+            "help": "If training from scratch, pass a model type from the list: "
+            + ", ".join(MODEL_TYPES)
+        },
     )
     config_overrides: Optional[str] = field(
         default=None,
@@ -77,22 +68,34 @@ class ModelArguments:
         },
     )
     config_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained config name or path if not the same as model_name"
+        },
     )
     tokenizer_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained tokenizer name or path if not the same as model_name"
+        },
     )
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
+        metadata={
+            "help": "Where do you want to store the pretrained models downloaded from huggingface.co"
+        },
     )
     use_fast_tokenizer: bool = field(
         default=True,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
+        metadata={
+            "help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."
+        },
     )
     model_revision: str = field(
         default="main",
-        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+        metadata={
+            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
+        },
     )
     use_auth_token: bool = field(
         default=False,
@@ -114,21 +117,25 @@ class ModelArguments:
         },
     )
 
+
 @dataclass
 class DataTrainingArguments:
-    """
-    Arguments pertaining to what data we are going to input our model for training and eval.
-    """
+    """Arguments pertaining to what data we are going to input our model for training and eval."""
 
     dataset_name: Optional[str] = field(
-        default=None, metadata={"help": "The name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     dataset_config_name: Optional[str] = field(
-        default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={
+            "help": "The configuration name of the dataset to use (via the datasets library)."
+        },
     )
     streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
     overwrite_cache: bool = field(
-        default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
+        default=False,
+        metadata={"help": "Overwrite the cached training and evaluation sets"},
     )
     validation_split_percentage: Optional[int] = field(
         default=2,
@@ -142,22 +149,25 @@ class DataTrainingArguments:
     )
     max_prompt_length: int = field(
         default=512,
-        metadata={"help": "Maximum source sequence length. Sequences will be right padded (and possibly truncated)."},
+        metadata={
+            "help": "Maximum source sequence length. Sequences will be right padded (and possibly truncated)."
+        },
     )
     max_length: int = field(
         default=1024,
-        metadata={"help": "Maximum target sequence length. Sequences will be right padded (and possibly truncated)."},
+        metadata={
+            "help": "Maximum target sequence length. Sequences will be right padded (and possibly truncated)."
+        },
     )
     pad_max: bool = field(
-        default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
+        default=False,
+        metadata={"help": "Overwrite the cached training and evaluation sets"},
     )
 
 
 @dataclass
 class FinetuningArguments:
-    """
-    Arguments of finetune we are going to apply on the model.
-    """
+    """Arguments of finetune we are going to apply on the model."""
 
     lora_rank: int = field(
         default=8,
@@ -177,9 +187,13 @@ class FinetuningArguments:
     )
     lora_all_linear: bool = field(
         default=True,
-        metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
+        metadata={
+            "help": "if True, will add adaptor for all linear for lora finetuning"
+        },
     )
-    beta: float = field(default=0.1, metadata={"help": "the beta parameter for DPO loss"})
+    beta: float = field(
+        default=0.1, metadata={"help": "the beta parameter for DPO loss"}
+    )
 
 
 def find_all_linear_names(model):
@@ -187,31 +201,49 @@ def find_all_linear_names(model):
     lora_module_names = set()
     for name, module in model.named_modules():
         if isinstance(module, cls):
-            names = name.split('.')
+            names = name.split(".")
             lora_module_names.add(names[0] if len(names) == 1 else names[-1])
 
-    if 'lm_head' in lora_module_names: # needed for 16-bit
-        lora_module_names.remove('lm_head')
+    if "lm_head" in lora_module_names:  # needed for 16-bit
+        lora_module_names.remove("lm_head")
     return list(lora_module_names)
 
 
 if __name__ == "__main__":
-
     if not is_hpu_available:
         from transformers import set_seed
-        parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, FinetuningArguments))
+
+        parser = HfArgumentParser(
+            (
+                ModelArguments,
+                DataTrainingArguments,
+                TrainingArguments,
+                FinetuningArguments,
+            )
+        )
         load_in_4bit = True
     else:
         from optimum.habana import GaudiTrainingArguments
         from optimum.habana.utils import set_seed
+
         parser = HfArgumentParser(
-            (ModelArguments, DataTrainingArguments, GaudiTrainingArguments, FinetuningArguments)
+            (
+                ModelArguments,
+                DataTrainingArguments,
+                GaudiTrainingArguments,
+                FinetuningArguments,
+            )
         )
 
         # not support bisandbytes currently
         load_in_4bit = False
 
-    model_args, data_args, training_args, finetune_args = parser.parse_args_into_dataclasses()
+    (
+        model_args,
+        data_args,
+        training_args,
+        finetune_args,
+    ) = parser.parse_args_into_dataclasses()
 
     if training_args.use_cpu:
         load_in_4bit = False
@@ -243,10 +275,12 @@ if __name__ == "__main__":
             streaming=data_args.streaming,
         )
 
-
     def return_prompt_and_responses(samples) -> Dict[str, str]:
         return {
-            "prompt": [system + question for system,question in zip(samples["system"], samples["question"])],
+            "prompt": [
+                system + question
+                for system, question in zip(samples["system"], samples["question"])
+            ],
             "chosen": samples["chosen"],
             "rejected": samples["rejected"],
         }
@@ -269,9 +303,10 @@ if __name__ == "__main__":
     # model config
     config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
     torch_dtype = (
-            model_args.torch_dtype if model_args.torch_dtype in ["auto", None] 
-            else getattr(torch, model_args.torch_dtype)
-            )
+        model_args.torch_dtype
+        if model_args.torch_dtype in ["auto", None]
+        else getattr(torch, model_args.torch_dtype)
+    )
 
     # load policy model
     model = AutoModelForCausalLM.from_pretrained(
@@ -282,7 +317,7 @@ if __name__ == "__main__":
         load_in_4bit=load_in_4bit,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None
+        use_auth_token=True if model_args.use_auth_token else None,
     )
     model.config.use_cache = False
 
@@ -295,7 +330,7 @@ if __name__ == "__main__":
         load_in_4bit=load_in_4bit,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None
+        use_auth_token=True if model_args.use_auth_token else None,
     )
     model_ref.config.use_cache = False
 
@@ -306,51 +341,51 @@ if __name__ == "__main__":
         "use_auth_token": True if model_args.use_auth_token else None,
     }
 
-    tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_args.model_name_or_path, **tokenizer_kwargs
+    )
     tokenizer.pad_token = tokenizer.eos_token
-
 
     # Training preprocessing
     def prepare_features(examples):
-
         prompts = {p.strip() for p in examples["prompt"]}
         chosens = {c.strip() for c in examples["chosen"]}
         rejects = {r.strip() for r in examples["rejected"]}
 
         examples = {
-                "prompt": [],
-                "chosen": [],
-                "rejected": [],
-                "chosen_response_only": [],
-                "rejected_response_only": [],
-                "chosen_input_ids": [],
-                "chosen_attention_mask": [],
-                "chosen_labels": [],
-                "rejected_input_ids": [],
-                "rejected_attention_mask": [],
-                "rejected_labels": [],
-                "prompt_input_ids": [],
-                "prompt_attention_mask": []}
+            "prompt": [],
+            "chosen": [],
+            "rejected": [],
+            "chosen_response_only": [],
+            "rejected_response_only": [],
+            "chosen_input_ids": [],
+            "chosen_attention_mask": [],
+            "chosen_labels": [],
+            "rejected_input_ids": [],
+            "rejected_attention_mask": [],
+            "rejected_labels": [],
+            "prompt_input_ids": [],
+            "prompt_attention_mask": [],
+        }
 
         for prompt, chosen, reject in zip(prompts, chosens, rejects):
-
             prompt_tokens = tokenizer.tokenize(prompt)
 
             if len(prompt_tokens) > data_args.max_prompt_length:
-                prompt_tokens = prompt_tokens[:data_args.max_prompt_length]
+                prompt_tokens = prompt_tokens[: data_args.max_prompt_length]
 
             prompt_ids = tokenizer.convert_tokens_to_ids(prompt_tokens)
             prompt_mask = [1] * len(prompt_ids)
 
             max_resp = data_args.max_length - len(prompt_ids)
             chosen_tokens = tokenizer.tokenize(chosen)
-            chosen_tokens = chosen_tokens[:max_resp - 1]
+            chosen_tokens = chosen_tokens[: max_resp - 1]
             chosen_tokens.append(tokenizer.eos_token)
             chosen_ids = tokenizer.convert_tokens_to_ids(chosen_tokens)
             chosen_mask = [1] * len(chosen_ids)
 
             reject_tokens = tokenizer.tokenize(reject)
-            reject_tokens = reject_tokens[:max_resp - 1]
+            reject_tokens = reject_tokens[: max_resp - 1]
             reject_tokens.append(tokenizer.eos_token)
             reject_ids = tokenizer.convert_tokens_to_ids(reject_tokens)
             reject_mask = [1] * len(reject_ids)
@@ -424,17 +459,25 @@ if __name__ == "__main__":
         )
 
     def collate_fn(batch):
-        input_ids = [torch.tensor(ins["chosen_input_ids"]) for ins in batch] +\
-                [torch.tensor(ins["rejected_input_ids"]) for ins in batch]
-        labels = [torch.tensor(ins["chosen_labels"]) for ins in batch] +\
-                [torch.tensor(ins["rejected_labels"]) for ins in batch]
-        attention_mask = [torch.tensor(ins["chosen_attention_mask"]) for ins in batch] +\
-                [torch.tensor(ins["rejected_attention_mask"]) for ins in batch]
+        input_ids = [torch.tensor(ins["chosen_input_ids"]) for ins in batch] + [
+            torch.tensor(ins["rejected_input_ids"]) for ins in batch
+        ]
+        labels = [torch.tensor(ins["chosen_labels"]) for ins in batch] + [
+            torch.tensor(ins["rejected_labels"]) for ins in batch
+        ]
+        attention_mask = [
+            torch.tensor(ins["chosen_attention_mask"]) for ins in batch
+        ] + [torch.tensor(ins["rejected_attention_mask"]) for ins in batch]
 
         input_ids = torch.nn.utils.rnn.pad_sequence(
-                input_ids, batch_first=True, padding_value=tokenizer.eos_token_id)
-        labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=IGNORE_INDEX)
-        attention_mask = torch.nn.utils.rnn.pad_sequence(attention_mask, batch_first=True, padding_value=0)
+            input_ids, batch_first=True, padding_value=tokenizer.eos_token_id
+        )
+        labels = torch.nn.utils.rnn.pad_sequence(
+            labels, batch_first=True, padding_value=IGNORE_INDEX
+        )
+        attention_mask = torch.nn.utils.rnn.pad_sequence(
+            attention_mask, batch_first=True, padding_value=0
+        )
         return dict(
             input_ids=input_ids,
             labels=labels,
@@ -454,7 +497,7 @@ if __name__ == "__main__":
             "fc_in",
             "fc_out",
             "wte",
-            "Wqkv"
+            "Wqkv",
         ]
 
     peft_config = LoraConfig(
@@ -471,7 +514,9 @@ if __name__ == "__main__":
     if not hasattr(training_args, "use_habana"):
         from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
     else:
-        from intel_extension_for_transformers.transformers.dpo_trainer import GaudiDPOTrainer as DPOTrainer
+        from intel_extension_for_transformers.transformers.dpo_trainer import (
+            GaudiDPOTrainer as DPOTrainer,
+        )
 
     # 5. initialize the DPO trainer
     dpo_trainer = DPOTrainer(

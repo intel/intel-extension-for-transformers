@@ -1,15 +1,37 @@
-import time
-import logging
-from typing import Dict, List, Optional, Type, Union
-from utils import detect_language
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import logging
+import time
+from typing import Dict, List, Optional, Type, Union
+
+import intel_extension_for_pytorch as ipex
 import torch
 from haystack.modeling.utils import initialize_device_settings
 from haystack.nodes.prompt.prompt_node import PromptModel, PromptModelInvocationLayer
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, GenerationConfig, StoppingCriteria, StoppingCriteriaList
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    StoppingCriteria,
+    StoppingCriteriaList,
+)
 from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
-import intel_extension_for_pytorch as ipex
+from utils import detect_language
+
 logger = logging.getLogger(__name__)
+
 
 class StopOnTokensWithPeriod(StoppingCriteria):
     def __init__(self, min_length: int, start_length: int, stop_token_id: list[int]):
@@ -30,6 +52,7 @@ class StopOnTokensWithPeriod(StoppingCriteria):
                 if input_ids[0][input_ids.shape[-1] - 1] == stop_id:
                     return True
         return False
+
 
 class TransformersDecoderInvocationLayer(PromptModelInvocationLayer):
     def __init__(
@@ -91,18 +114,24 @@ class TransformersDecoderInvocationLayer(PromptModelInvocationLayer):
 
         if len(model_input_kwargs) > 0:
             logger.info(
-                "Using model input kwargs %s in %s", model_input_kwargs, self.__class__.__name__
+                "Using model input kwargs %s in %s",
+                model_input_kwargs,
+                self.__class__.__name__,
             )
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True, use_fast=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, trust_remote_code=True, use_fast=True
+        )
         self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-        self.model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-                                                    low_cpu_mem_usage=True,
-                                                    return_dict=True,
-                                                    torch_dtype=torch.bfloat16,
-                                                    max_seq_len=8192,
-                                                    trust_remote_code=True)
+        self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path,
+            low_cpu_mem_usage=True,
+            return_dict=True,
+            torch_dtype=torch.bfloat16,
+            max_seq_len=8192,
+            trust_remote_code=True,
+        )
         self.model = ipex.optimize(self.model, dtype=torch.bfloat16)
         if self.use_gpu:
             self.model = self.model.to("cuda")
@@ -143,33 +172,45 @@ class TransformersDecoderInvocationLayer(PromptModelInvocationLayer):
         start_time = time.time()
         if kwargs and "prompt" in kwargs:
             prompt = kwargs.pop("prompt")
-            if detect_language(prompt) == 'Chinese':
+            if detect_language(prompt) == "Chinese":
                 generate_kwargs["max_new_tokens"] = 512
             input_tokens = self.tokenizer.batch_encode_plus(
                 [prompt], return_tensors="pt", padding=True
             )
             input_token_len = input_tokens.input_ids.shape[-1]
-            stop_token_ids = self.tokenizer.convert_tokens_to_ids(["<|im_end|>", "<|endoftext|>"])
+            stop_token_ids = self.tokenizer.convert_tokens_to_ids(
+                ["<|im_end|>", "<|endoftext|>"]
+            )
             stop_token_ids.append(self.model.generation_config.eos_token_id)
             stop_token_ids.append(self.tokenizer(".", return_tensors="pt").input_ids)
             stop_token_ids.append(self.tokenizer("!", return_tensors="pt").input_ids)
             stop_token_ids.append(self.tokenizer("。", return_tensors="pt").input_ids)
             stop_token_ids.append(self.tokenizer("！", return_tensors="pt").input_ids)
-            stop = StopOnTokensWithPeriod(min_length=108, start_length=input_token_len, stop_token_id=stop_token_ids)
+            stop = StopOnTokensWithPeriod(
+                min_length=108,
+                start_length=input_token_len,
+                stop_token_id=stop_token_ids,
+            )
             generate_kwargs["stopping_criteria"] = StoppingCriteriaList([stop])
             with torch.no_grad():
-                with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16, cache_enabled=True):
+                with torch.cpu.amp.autocast(
+                    enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                ):
                     output = self.model.generate(**input_tokens, **generate_kwargs)
-        generated_texts = self.tokenizer.decode(output.sequences[0], skip_special_tokens=True)
+        generated_texts = self.tokenizer.decode(
+            output.sequences[0], skip_special_tokens=True
+        )
         print("The inference time======", time.time() - start_time)
         if "Response:" in generated_texts:
-            result =  generated_texts.split("Response:")[1].strip()
+            result = generated_texts.split("Response:")[1].strip()
         return [result]
 
     @classmethod
     def supports(cls, model_name_or_path: str) -> bool:
         try:
-            config = AutoConfig.from_pretrained(model_name_or_path, trust_remote_code=True)
+            config = AutoConfig.from_pretrained(
+                model_name_or_path, trust_remote_code=True
+            )
         except OSError:
             # This is needed so OpenAI models are skipped over
             return False
@@ -208,5 +249,7 @@ class MptPromptModel(PromptModel):
         self.model_invocation_layer = self.create_invocation_layer()
 
     def invoke(self, prompt: Union[str, List[str]], **kwargs) -> List[str]:
-        output = self.model_invocation_layer.invoke(prompt=prompt, **kwargs, **self.model_kwargs)
+        output = self.model_invocation_layer.invoke(
+            prompt=prompt, **kwargs, **self.model_kwargs
+        )
         return output

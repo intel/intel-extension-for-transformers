@@ -1,25 +1,36 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import copy
-import mlflow
-import numpy as np
 import os
 import shutil
-import torch.utils.data as data
 import unittest
+
+import mlflow
+import numpy as np
 from datasets import load_dataset, load_metric
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, set_seed
+
 from intel_extension_for_transformers.transformers import (
     DistillationConfig,
     DistillationCriterionMode,
-    metrics,
+    NoTrainerOptimizer,
     OptimizedModel,
-    NoTrainerOptimizer
+    metrics,
 )
-from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from intel_extension_for_transformers.transformers.distillation import Criterion
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    set_seed,
-)
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 os.environ["WANDB_DISABLED"] = "true"
 
@@ -29,21 +40,21 @@ class TestDistillation(unittest.TestCase):
     def setUpClass(self):
         set_seed(42)
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            'distilbert-base-uncased'
+            "distilbert-base-uncased"
         )
         self.teacher_model = AutoModelForSequenceClassification.from_pretrained(
-            'distilbert-base-uncased-finetuned-sst-2-english'
+            "distilbert-base-uncased-finetuned-sst-2-english"
         )
         self.optimizer = NoTrainerOptimizer(self.model)
         raw_datasets = load_dataset("glue", "sst2")["validation"]
         tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+
         def preprocess_function(examples):
             # Tokenize the texts
-            args = (
-                (examples['sentence'],)
-            )
+            args = (examples["sentence"],)
             result = tokenizer(*args, padding=True, max_length=64, truncation=True)
             return result
+
         raw_datasets = raw_datasets.map(
             preprocess_function, batched=True, load_from_cache_file=True
         )
@@ -52,15 +63,17 @@ class TestDistillation(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
-        shutil.rmtree('./distilled_model', ignore_errors=True)
+        shutil.rmtree("./tmp_trainer", ignore_errors=True)
+        shutil.rmtree("./distilled_model", ignore_errors=True)
 
     def test_fx_model_distil(self):
         metric = load_metric("accuracy")
+
         def compute_metrics(p):
             preds = p.predictions
             preds = np.argmax(preds, axis=1)
             return metric.compute(predictions=preds, references=p.label_ids)
+
         origin_weight = copy.deepcopy(self.model.classifier.weight)
         for mode in DistillationCriterionMode:
             print("Distillation approach:", mode.value)
@@ -71,21 +84,25 @@ class TestDistillation(unittest.TestCase):
                 compute_metrics=compute_metrics,
             )
             metric_ = metrics.Metric(name="eval_accuracy")
-            criterion = Criterion(
-                name='IntermediateLayersLoss',
-                layer_mappings=[['classifier', 'classifier']],
-                loss_types=['MSE'],
-                loss_weight_ratio=[1.0],
-                add_origin_loss=False
-            ) if mode.value == "IntermediateLayersKnowledgeDistillationLoss" else None
+            criterion = (
+                Criterion(
+                    name="IntermediateLayersLoss",
+                    layer_mappings=[["classifier", "classifier"]],
+                    loss_types=["MSE"],
+                    loss_weight_ratio=[1.0],
+                    add_origin_loss=False,
+                )
+                if mode.value == "IntermediateLayersKnowledgeDistillationLoss"
+                else None
+            )
             distillation_conf = DistillationConfig(metrics=metric_, criterion=criterion)
             distilled_model = self.trainer.distill(
                 distillation_config=distillation_conf, teacher_model=self.teacher_model
             )
             # By default, model will be saved in tmp_trainer dir.
-            self.trainer.save_model('./distilled_model')
+            self.trainer.save_model("./distilled_model")
             loaded_model = OptimizedModel.from_pretrained(
-                './distilled_model',
+                "./distilled_model",
             )
             distilled_weight = copy.deepcopy(distilled_model.classifier.weight)
             loaded_weight = copy.deepcopy(loaded_model.classifier.weight)
@@ -105,11 +122,13 @@ class TestDistillation(unittest.TestCase):
         self.trainer = NLPTrainer(self.model)
 
         distillation_conf = DistillationConfig()
-        self.trainer.distill(distillation_conf,
-                           teacher_model=self.teacher_model,
-                           provider="inc",
-                           train_func = train_func,
-                           eval_func = eval_func,)
+        self.trainer.distill(
+            distillation_conf,
+            teacher_model=self.teacher_model,
+            provider="inc",
+            train_func=train_func,
+            eval_func=eval_func,
+        )
 
     def test_no_trainer_distill(self):
         def eval_func(model):
@@ -121,10 +140,14 @@ class TestDistillation(unittest.TestCase):
         distillation_conf = DistillationConfig()
         self.optimizer.eval_func = eval_func
         self.optimizer.train_func = train_func
-        self.optimizer.distill(distillation_conf,
-                           teacher_model=self.teacher_model,
-                           provider="inc",
-                           train_func = train_func,
-                           eval_func = eval_func,)
+        self.optimizer.distill(
+            distillation_conf,
+            teacher_model=self.teacher_model,
+            provider="inc",
+            train_func=train_func,
+            eval_func=eval_func,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

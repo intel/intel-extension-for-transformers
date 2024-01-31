@@ -15,18 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from fastapi import APIRouter, Request
-from fastapi.responses import StreamingResponse
-from typing import Optional, List
-from ...cli.log import logger
-from fastapi import File, UploadFile
-from pydub import AudioSegment
-from ...plugins import plugins, get_plugin_instance
 import base64
+from typing import List, Optional
+
 import torch
+from fastapi import APIRouter, File, Request, UploadFile
+from fastapi.responses import StreamingResponse
+from pydub import AudioSegment
+
+from ...cli.log import logger
+from ...plugins import get_plugin_instance, plugins
+
 
 class AudioPluginAPIRouter(APIRouter):
-
     def __init__(self) -> None:
         super().__init__()
         self.chatbot = None
@@ -37,28 +38,33 @@ class AudioPluginAPIRouter(APIRouter):
             return asr.audio2text(filename)
         except Exception as e:
             raise Exception(e)
-        
-    async def handle_voice_tts_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
-        
-        plugins.tts.args['voice'] = voice
-        plugins.tts.args['output_audio_path'] = audio_output_path
+
+    async def handle_voice_tts_request(
+        self, text: str, voice: str, audio_output_path: Optional[str] = None
+    ) -> str:
+        plugins.tts.args["voice"] = voice
+        plugins.tts.args["output_audio_path"] = audio_output_path
         tts = get_plugin_instance("tts")
         try:
             result = tts.post_llm_inference_actions(text)
+
             def audio_file_generate(result):
                 if isinstance(result, List):
                     for path in result:
-                        with open(path,mode="rb") as file:
+                        with open(path, mode="rb") as file:
                             bytes = file.read()
                             data = base64.b64encode(bytes)
                         yield f"data: {data}\n\n"
                 else:
-                    with open(result,mode="rb") as file:
+                    with open(result, mode="rb") as file:
                         bytes = file.read()
                         data = base64.b64encode(bytes)
                     yield f"data: {data}\n\n"
-                yield f"data: [DONE]\n\n"
-            return StreamingResponse(audio_file_generate(result), media_type="text/event-stream")
+                yield "data: [DONE]\n\n"
+
+            return StreamingResponse(
+                audio_file_generate(result), media_type="text/event-stream"
+            )
         except Exception as e:
             raise Exception(e)
 
@@ -66,7 +72,9 @@ class AudioPluginAPIRouter(APIRouter):
         tts = get_plugin_instance("tts")
         try:
             spk_embedding = tts.create_speaker_embedding(spk_id)
-            torch.save(spk_embedding, f'../../assets/speaker_embeddings/spk_embed_{spk_id}.pt')
+            torch.save(
+                spk_embedding, f"../../assets/speaker_embeddings/spk_embed_{spk_id}.pt"
+            )
             logger.info(f"create spk embedding succeed! {spk_id}")
         except Exception as e:
             logger.info(f"create spk embedding fails! {e}")
@@ -80,14 +88,14 @@ router = AudioPluginAPIRouter()
 @router.post("/plugin/audio/asr")
 async def handle_talkingbot_asr(file: UploadFile = File(...)):
     file_name = file.filename
-    logger.info(f'Received file: {file_name}')
-    with open("tmp_audio_bytes", 'wb') as fout:
+    logger.info(f"Received file: {file_name}")
+    with open("tmp_audio_bytes", "wb") as fout:
         content = await file.read()
         fout.write(content)
     audio = AudioSegment.from_file("tmp_audio_bytes")
     audio = audio.set_frame_rate(16000)
     # bytes to wav
-    file_name = file_name +'.wav'
+    file_name = file_name + ".wav"
     audio.export(f"{file_name}", format="wav")
     asr_result = router.handle_voice_asr_request(file_name)
     return {"asr_result": asr_result}
@@ -98,9 +106,11 @@ async def talkingbot(request: Request):
     data = await request.json()
     text = data["text"]
     voice = data["voice"]
-    audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio.wav"
+    audio_output_path = (
+        data["audio_output_path"] if "audio_output_path" in data else "output_audio.wav"
+    )
 
-    logger.info(f'Received prompt: {text}, and use voice: {voice}')
+    logger.info(f"Received prompt: {text}, and use voice: {voice}")
 
     return await router.handle_voice_tts_request(text, voice, audio_output_path)
 
@@ -111,8 +121,9 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     file_name = file.filename
     # generate a unique id
     import uuid
+
     spk_id = f"spk_{str(uuid.uuid1())[:8]}"
-    with open(f"tmp_spk_{file_name}", 'wb') as fout:
+    with open(f"tmp_spk_{file_name}", "wb") as fout:
         content = await file.read()
         fout.write(content)
     audio = AudioSegment.from_file(f"tmp_spk_{file_name}")

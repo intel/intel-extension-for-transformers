@@ -15,27 +15,25 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dataclasses import dataclass, field
 import logging
 import pathlib
 import typing
+from dataclasses import dataclass, field
 
+import transformers
 from deepspeed import zero
 from deepspeed.runtime.zero.partition_parameters import ZeroParamStatus
-from peft import LoraConfig, get_peft_model
-import transformers
-from transformers import Trainer
-
+from fastchat.train.llama_flash_attn_monkey_patch import (
+    replace_llama_attn_with_flash_attn,
+)
 from fastchat.train.train import (
     DataArguments,
     ModelArguments,
     TrainingArguments,
     make_supervised_data_module,
 )
-
-from fastchat.train.llama_flash_attn_monkey_patch import (
-    replace_llama_attn_with_flash_attn,
-)
+from peft import LoraConfig, get_peft_model
+from transformers import Trainer
 
 replace_llama_attn_with_flash_attn()
 

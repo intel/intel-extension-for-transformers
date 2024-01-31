@@ -1,5 +1,17 @@
-"""
-Chat with a model with command line interface.
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Chat with a model with command line interface.
 
 Usage:
 python3 -m fastchat.serve.cli --model ~/model_weights/llama-7b
@@ -8,32 +20,35 @@ import argparse
 import os
 import re
 
+from fastchat.serve.inference import ChatIO, chat_loop
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import InMemoryHistory
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.live import Live
+from rich.markdown import Markdown
 
-from fastchat.serve.inference import chat_loop, ChatIO
 
 def is_safe_input(input_text):
     # Define a regular expression pattern to match safe input
-    safe_pattern = r'^[a-zA-Z0-9\s,.!?]+$'
+    safe_pattern = r"^[a-zA-Z0-9\s,.!?]+$"
     return re.match(safe_pattern, input_text) is not None
+
 
 class SimpleChatIO(ChatIO):
     def prompt_for_input(self, role) -> str:
         query = input(f"{role}: ").strip()
         # Validate user input
         if not query:
-            print('Input cannot be empty. Please try again.')
+            print("Input cannot be empty. Please try again.")
             return None
 
         # Perform input validation
         if not is_safe_input(query):
-            print('Invalid characters in input. Please use only letters, numbers, and common punctuation.')
+            print(
+                "Invalid characters in input. Please use only letters, numbers, and common punctuation."
+            )
             return None
         return query
 
@@ -118,7 +133,9 @@ class RichChatIO(ChatIO):
 def main(args):
     if args.gpus:
         if args.num_gpus and len(args.gpus.split(",")) < int(args.num_gpus):
-            raise ValueError(f"Larger --num-gpus ({args.num_gpus}) than --gpus {args.gpus}!")
+            raise ValueError(
+                f"Larger --num-gpus ({args.num_gpus}) than --gpus {args.gpus}!"
+            )
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
     if args.style == "simple":
         chatio = SimpleChatIO()
@@ -158,7 +175,7 @@ if __name__ == "__main__":
         "--gpus",
         type=str,
         default=None,
-        help="A single GPU like 1 or multiple GPUs like 0,2"
+        help="A single GPU like 1 or multiple GPUs like 0,2",
     )
     parser.add_argument("--num-gpus", type=str, default="1")
     parser.add_argument(

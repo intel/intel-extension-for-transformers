@@ -14,14 +14,11 @@
 #
 
 
-from transformers import (
-    AutoModelForSequenceClassification,
-    Trainer
-)
 from os import path
-from finetune import DlsaFinetune
-from utils import compute_metrics, save_performance_metrics, save_train_metrics
 
+from finetune import DlsaFinetune
+from transformers import AutoModelForSequenceClassification, Trainer
+from utils import compute_metrics, save_performance_metrics, save_train_metrics
 
 
 class FinetuneTrainer(DlsaFinetune):
@@ -32,32 +29,39 @@ class FinetuneTrainer(DlsaFinetune):
         return super()._preprocess()
 
     def _load_model(self):
-        with self.track('Load Model'):
-            self.model = AutoModelForSequenceClassification.from_pretrained(self.args.model_name_or_path)
+        with self.track("Load Model"):
+            self.model = AutoModelForSequenceClassification.from_pretrained(
+                self.args.model_name_or_path
+            )
 
             self.trainer = Trainer(
                 model=self.model,  # the instantiated HF model to be trained
                 args=self.training_args,  # training arguments, defined above
                 train_dataset=self.train_data,  # training dataset
                 compute_metrics=compute_metrics,  # evaluation metrics
-                tokenizer=self.tokenizer
+                tokenizer=self.tokenizer,
             )
 
     def _do_finetune(self):
         if self.training_args.do_train:
-            with self.track('Fine-Tune'):
+            with self.track("Fine-Tune"):
                 train_result = self.trainer.train()
                 self.trainer.save_model()
                 save_train_metrics(train_result, self.trainer, len(self.train_data))
 
     def _do_infer(self):
         if self.training_args.do_predict:
-            with self.track('Inference'):
+            with self.track("Inference"):
                 if not self.args.save_detailed_performance_metrics:
                     preds, _, metrics = self.trainer.predict(self.test_data)
                     print(
-                            f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
-                        )
+                        f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
+                    )
                 else:
-                    save_performance_metrics(self.trainer, self.train_data, 
-                                path.join(self.training_args.output_dir, self.args.finetune_output) )
+                    save_performance_metrics(
+                        self.trainer,
+                        self.train_data,
+                        path.join(
+                            self.training_args.output_dir, self.args.finetune_output
+                        ),
+                    )

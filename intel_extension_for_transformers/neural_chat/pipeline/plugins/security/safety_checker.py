@@ -17,17 +17,22 @@
 
 """Function to check the intent of the input user query with LLM."""
 from __future__ import division
+
+import logging
+import os
+
 from .dict import defaultSensitiveWordSet
 from .stopword import defaultStopwords
-import os
-import logging
+
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
 
 doc_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/pipeline/plugins/security/"
+
+
 def convert_fullwidth_to_halfwidth(query):
     """Converting Full-width Characters to Half-width Characters."""
     content = ""
@@ -35,10 +40,11 @@ def convert_fullwidth_to_halfwidth(query):
         mid_char = ord(uchar)
         if mid_char == 12288:
             mid_char = 32
-        elif (mid_char > 65280 and mid_char < 65375):
+        elif mid_char > 65280 and mid_char < 65375:
             mid_char -= 65248
         content += chr(mid_char)
     return content
+
 
 class SafetyChecker:
     def __init__(self, dict_path=None, matchType=2):
@@ -53,7 +59,7 @@ class SafetyChecker:
             else:
                 logging.info("Can't find stopword.txt")
                 raise Exception("[SafetyChecker ERROR] Sensitive check file not found!")
-            self.Stopwords = [i.split('\n')[0] for i in f.readlines()]
+            self.Stopwords = [i.split("\n")[0] for i in f.readlines()]
             if os.path.exists(os.path.join(dict_path, "dict.txt")):
                 f1 = open(os.path.join(dict_path, "dict.txt"), encoding="utf8")
             elif os.path.exists(os.path.join(doc_path, "dict.txt")):
@@ -69,7 +75,7 @@ class SafetyChecker:
         """Initialize the sensitive word dictory."""
         sensitiveWordTree = dict()
         for category, key in self.sensitiveWordSet:
-            if type(key) == 'unicode' and type(category) == 'unicode':
+            if type(key) == "unicode" and type(category) == "unicode":
                 pass
             else:
                 key = str(key)
@@ -101,7 +107,6 @@ class SafetyChecker:
                 flag = True
         return flag
 
-
     def _checkSensitiveWord(self, txt, beginIndex):
         """Check if the input token contains sensitive word."""
         flag = False
@@ -130,13 +135,13 @@ class SafetyChecker:
         return tmpFlag, category
 
     def _get_sensitive_word(self, context):
-        """get the sensitive word."""
+        """Get the sensitive word."""
         sensitiveWordList = list()
         for i in range(len(context)):
             length = self._checkSensitiveWord(context, i)[0]
             category = self._checkSensitiveWord(context, i)[1]
             if length > 0:
-                word = context[i:i + length]
+                word = context[i : i + length]
                 sensitiveWordList.append(category + ":" + word)
                 i = i + length - 1
         return sensitiveWordList

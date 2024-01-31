@@ -14,23 +14,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine base extractor file.
 
-   This is the base extractor class for tensorflow and onnx.
-   Please refer to onnx_extractor.py and tf_extractor.py for more details.
+This is the base extractor class for tensorflow and onnx.
+Please refer to onnx_extractor.py and tf_extractor.py for more details.
 """
 
-from .tf_extractor import TensorflowExtractor
-from .onnx_extractor import ONNXExtractor
-from .torch_extractor import TorchExtractor
 from .. import logger
-from ..graph_utils import get_model_fwk_name
+from .onnx_extractor import ONNXExtractor
+from .tf_extractor import TensorflowExtractor
+from .torch_extractor import TorchExtractor
 
 EXTRACTORS = {
-    'tensorflow': TensorflowExtractor,
-    'onnxruntime': ONNXExtractor,
-    'torch': TorchExtractor,
+    "tensorflow": TensorflowExtractor,
+    "onnxruntime": ONNXExtractor,
+    "torch": TorchExtractor,
 }
 
 
@@ -41,10 +39,10 @@ class Extractor(object):
     Do additional extraction of operation attributes without modifying of graph topology.
     """
 
-    def __call__(self, model, pattern_config = None):
+    def __call__(self, model, pattern_config=None):
         """The __call__ function of the base extractor class."""
         framework = model[1]
         extractor = EXTRACTORS[framework]()
         model = extractor(model[0])
-        logger.info('Extract {} model done...'.format(framework))
+        logger.info("Extract {} model done...".format(framework))
         return model

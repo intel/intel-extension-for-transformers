@@ -65,21 +65,20 @@ Please refer to [example](../examples/huggingface/pytorch/text-classification/di
 
 ### Tensorflow Script:
 ```python
-from intel_extension_for_transformers.transformers import (DistillationConfig, metrics)
+from intel_extension_for_transformers.transformers import DistillationConfig, metrics
 from intel_extension_for_transformers.transformers.distillation import Criterion
 
 optimizer = TFOptimization(...)
 metric_ = metrics.Metric(name="eval_accuracy")
-criterion = Criterion(name='KnowledgeLoss',
-                    layer_mappings=[['classifier', 'classifier']],
-                    loss_types=['CE', 'CE'],
-                    loss_weight_ratio=[0.5, 0.5],
-                    add_origin_loss=False)
-distillation_conf = DistillationConfig(metrics=metric_,
-                                        criterion=criterion)
-distilled_model = optimizer.distill(
-            distillation_config=distillation_conf,
-            teacher_model=teacher_model)
+criterion = Criterion(
+    name="KnowledgeLoss",
+    layer_mappings=[["classifier", "classifier"]],
+    loss_types=["CE", "CE"],
+    loss_weight_ratio=[0.5, 0.5],
+    add_origin_loss=False,
+)
+distillation_conf = DistillationConfig(metrics=metric_, criterion=criterion)
+distilled_model = optimizer.distill(distillation_config=distillation_conf, teacher_model=teacher_model)
 ```
 Please refer to [example](../examples/huggingface/tensorflow/text-classification/distillation/run_glue.py) for the details.
 ### Create an Instance of Metric
@@ -106,7 +105,7 @@ The criterion used in training phase.
 
 - example:
     ```python
-    criterion = Criterion(name='KnowledgeLoss')
+    criterion = Criterion(name="KnowledgeLoss")
     ```
 
 ### Create an Instance of DistillationConfig
@@ -128,7 +127,5 @@ The DistillationConfig contains all the information related to the model distill
 - Distill with Trainer
     NLPTrainer inherits from transformers.Trainer, so you can create a trainer as in examples of Transformers. Then you can distill model with trainer.distill function.
     ```python
-    model = trainer.distill(
-        distillation_config=d_conf, teacher_model=teacher_model
-    )
+    model = trainer.distill(distillation_config=d_conf, teacher_model=teacher_model)
     ```

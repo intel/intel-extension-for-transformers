@@ -1,14 +1,26 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
-import unittest
 import shutil
+import unittest
+
 import neural_compressor.adaptor.pytorch as nc_torch
-from intel_extension_for_transformers.transformers.pipeline import pipeline
 from packaging.version import Version
-from transformers import (
-    set_seed,
-    AutoConfig,
-    AutoTokenizer,
-)
+from transformers import AutoConfig, AutoTokenizer, set_seed
+
+from intel_extension_for_transformers.transformers.pipeline import pipeline
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["GLOG_minloglevel"] = "2"
@@ -23,7 +35,7 @@ message = "The output scores should be close to 0.9999."
 class TestPipeline(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
+        shutil.rmtree("./tmp_trainer", ignore_errors=True)
 
     def test_fp32_pt_model(self):
         text_classifier = pipeline(
@@ -32,7 +44,7 @@ class TestPipeline(unittest.TestCase):
             framework="pt",
         )
         outputs = text_classifier("This is great !")
-        self.assertAlmostEqual(outputs[0]['score'], 0.9999, None, message, 0.0001)
+        self.assertAlmostEqual(outputs[0]["score"], 0.9999, None, message, 0.0001)
 
     def test_int8_pt_model(self):
         text_classifier = pipeline(
@@ -41,15 +53,19 @@ class TestPipeline(unittest.TestCase):
             framework="pt",
         )
         outputs = text_classifier("This is great !")
-        self.assertAlmostEqual(outputs[0]['score'], 0.8, None, message, 0.3)
+        self.assertAlmostEqual(outputs[0]["score"], 0.8, None, message, 0.3)
 
-@unittest.skipIf(PT_VERSION.release >= Version("1.12.0").release,
-    "Please use PyTroch 1.11 or lower version for executor backend")
+
+@unittest.skipIf(
+    PT_VERSION.release >= Version("1.12.0").release,
+    "Please use PyTroch 1.11 or lower version for executor backend",
+)
 class TestExecutorPipeline(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         set_seed(42)
         from test_quantization import TestQuantization
+
         TestQuantization.setUpClass()
         cls.config = AutoConfig.from_pretrained(MODEL_NAME)
         cls.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
@@ -57,6 +73,7 @@ class TestExecutorPipeline(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         from test_quantization import TestQuantization
+
         TestQuantization.tearDownClass()
 
     def test_fp32_executor_model(self):
@@ -64,29 +81,29 @@ class TestExecutorPipeline(unittest.TestCase):
             task="text-classification",
             config=self.config,
             tokenizer=self.tokenizer,
-            model='tmp_trainer/fp32-model.onnx',
-            model_kwargs={'backend': "executor"},
+            model="tmp_trainer/fp32-model.onnx",
+            model_kwargs={"backend": "executor"},
         )
         outputs = text_classifier(
             "But believe it or not , it 's one of the most "
             "beautiful , evocative works I 've seen ."
         )
-        self.assertAlmostEqual(outputs[0]['score'], 0.9999, None, message, 0.0001)
+        self.assertAlmostEqual(outputs[0]["score"], 0.9999, None, message, 0.0001)
 
     def test_int8_executor_model(self):
         text_classifier = pipeline(
             task="text-classification",
             config=self.config,
             tokenizer=self.tokenizer,
-            model='tmp_trainer/int8-model.onnx',
-            model_kwargs={'backend': "executor"},
+            model="tmp_trainer/int8-model.onnx",
+            model_kwargs={"backend": "executor"},
         )
         outputs = text_classifier(
             "But believe it or not , it 's one of the most "
             "beautiful , evocative works I 've seen ."
         )
         # increase score range to cater data fluctuations.
-        self.assertAlmostEqual(outputs[0]['score'], 0.8, None, message, 0.3)
+        self.assertAlmostEqual(outputs[0]["score"], 0.8, None, message, 0.3)
 
 
 if __name__ == "__main__":

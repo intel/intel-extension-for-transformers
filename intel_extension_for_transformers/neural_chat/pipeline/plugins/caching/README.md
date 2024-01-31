@@ -36,6 +36,7 @@ Before using the functionality of caching plugin, you need to initialize the cac
 
 ```python
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.cache import CachePlugin
+
 cache_plugin = CachePlugin()
 cache_plugin.init_similar_cache_from_config()
 ```

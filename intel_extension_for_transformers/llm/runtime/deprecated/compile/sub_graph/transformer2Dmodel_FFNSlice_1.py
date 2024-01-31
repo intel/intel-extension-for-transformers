@@ -16,58 +16,69 @@
 # limitations under the License.
 """The Transformer2Dmodel_FFNInputSlice_1 pattern."""
 
-from .pattern import Pattern, pattern_registry
 from .. import graph_utils as util
 from .. import logger
+from .pattern import Pattern, pattern_registry
 
 
-@pattern_registry(pattern_type='Transformer2Dmodel_FFNInputSlice_1')
+@pattern_registry(pattern_type="Transformer2Dmodel_FFNInputSlice_1")
 class Transformer2Dmodel_FFNInputSlice_1(Pattern):
     """The Transformer2Dmodel_FFNInputSlice_1 pattern.
 
     Fuse the original sub-graph into the custom acceleration 'Transformer2Dmodel_FFNInputSlice_1' graph.
     The search strategy is based on the following pattern mapping configs for the stable textEncoderV1-5.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
-            'Transformer2Dmodel_FFNInputSlice_1': [
+            "Transformer2Dmodel_FFNInputSlice_1": [
                 {
-                    'patterns': {
-                        'in': [[(0, 'Shape'), (1, 'Gather'), (2, 'Add'), (3, 'Div'), (4, 'Mul'),
-                                (6, 'Slice')], [(3, 'Div'), (5, 'Mul'), (6, 'Slice')]],
-                        'out': [[(0, 'Slice')]]
+                    "patterns": {
+                        "in": [
+                            [
+                                (0, "Shape"),
+                                (1, "Gather"),
+                                (2, "Add"),
+                                (3, "Div"),
+                                (4, "Mul"),
+                                (6, "Slice"),
+                            ],
+                            [(3, "Div"), (5, "Mul"), (6, "Slice")],
+                        ],
+                        "out": [[(0, "Slice")]],
                     },
-                    'search_mode': 'op_type',
-                    'node_names': {
+                    "search_mode": "op_type",
+                    "node_names": {
                         0: 6,
                     },
-                    'input_tensors': {
-                        0: [[{
-                            0: [0]
-                        }], [[0], 1]],
+                    "input_tensors": {
+                        0: [[{0: [0]}], [[0], 1]],
                     },
-                    'output_tensors': {
-                        0: [[{
-                            6: [0]
-                        }], [[0], 1]]
-                    },
-                    'returns': [0, 1, 2, 3, 4, 5, 6]
+                    "output_tensors": {0: [[{6: [0]}], [[0], 1]]},
+                    "returns": [0, 1, 2, 3, 4, 5, 6],
                 },
             ]
         }
 
-        for i in range(len(pattern_mapping_config['Transformer2Dmodel_FFNInputSlice_1'])):
-            pattern_dict = pattern_mapping_config['Transformer2Dmodel_FFNInputSlice_1'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("Transformer2Dmodel_FFNInputSlice_1",
-                                                                        pattern_dict, model)
+        for i in range(
+            len(pattern_mapping_config["Transformer2Dmodel_FFNInputSlice_1"])
+        ):
+            pattern_dict = pattern_mapping_config["Transformer2Dmodel_FFNInputSlice_1"][
+                i
+            ]
+            model, new_node_names, ret_old_nodes = util.pattern_mapping(
+                "Transformer2Dmodel_FFNInputSlice_1", pattern_dict, model
+            )
 
             if len(new_node_names) != 0:
-                logger.info('Transformer2Dmodel_FFNInputSlice_1 matched...')
-                logger.debug('Transformer2Dmodel_FFNInputSlice_1 = {}'.format(new_node_names))
+                logger.info("Transformer2Dmodel_FFNInputSlice_1 matched...")
+                logger.debug(
+                    "Transformer2Dmodel_FFNInputSlice_1 = {}".format(new_node_names)
+                )
                 for j in range(len(new_node_names)):
                     # the first new node
-                    assert ret_old_nodes[j][6].op_type == 'Slice'
+                    assert ret_old_nodes[j][6].op_type == "Slice"
                     slice_node_idx = model.get_node_id(new_node_names[j][0])
                     model.nodes[slice_node_idx].attr = ret_old_nodes[j][6].attr
 

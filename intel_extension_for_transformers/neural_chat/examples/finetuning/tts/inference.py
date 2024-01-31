@@ -15,22 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech
-from datasets import load_dataset, Audio, Dataset, Features, ClassLabel
-import os
-import torch
-from speechbrain.pretrained import EncoderClassifier
-from dataclasses import dataclass
-from typing import Any, Dict, List, Union
-from transformers import SpeechT5HifiGan
-import soundfile as sf
-from datetime import datetime
-from num2words import num2words
 import logging
+import os
+from datetime import datetime
+
+import soundfile as sf
+import torch
+from datasets import Audio, Dataset
+from num2words import num2words
+from speechbrain.pretrained import EncoderClassifier
+from transformers import SpeechT5HifiGan, SpeechT5Processor
+
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
 
 workdir = os.getcwd()
@@ -43,8 +42,10 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 speaker_model = EncoderClassifier.from_hparams(
     source=spk_model_name,
     run_opts={"device": device},
-    savedir=os.path.join("/tmp", spk_model_name)
+    savedir=os.path.join("/tmp", spk_model_name),
 )
+
+
 def create_speaker_embedding(waveform):
     with torch.no_grad():
         speaker_embeddings = speaker_model.encode_batch(torch.tensor(waveform))
@@ -52,10 +53,20 @@ def create_speaker_embedding(waveform):
         speaker_embeddings = speaker_embeddings.squeeze().cpu().numpy()
     return speaker_embeddings
 
-audio_dataset = Dataset.from_dict({"audio": [os.path.join(workdir, "audios/samples_mp3_ted_speakers_FeiFeiLi_sample-0.mp3")]}).cast_column("audio", Audio(sampling_rate=16000))
-sembeddings = create_speaker_embedding(audio_dataset[0]["audio"]['array'])
+
+audio_dataset = Dataset.from_dict(
+    {
+        "audio": [
+            os.path.join(
+                workdir, "audios/samples_mp3_ted_speakers_FeiFeiLi_sample-0.mp3"
+            )
+        ]
+    }
+).cast_column("audio", Audio(sampling_rate=16000))
+sembeddings = create_speaker_embedding(audio_dataset[0]["audio"]["array"])
 speaker_embeddings = torch.tensor(sembeddings).unsqueeze(0)
 vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(device)
+
 
 def correct_abbreviation(text):
     correct_dict = {
@@ -84,7 +95,7 @@ def correct_abbreviation(text):
         "W": "doubleliu",
         "X": "ex",
         "Y": "wy",
-        "Z": "zed"
+        "Z": "zed",
     }
     words = text.split()
     results = []
@@ -99,8 +110,9 @@ def correct_abbreviation(text):
             results.append(word)
     return " ".join(results)
 
+
 def correct_number(text):
-    """Ignore the year or other exception right now"""
+    """Ignore the year or other exception right now."""
     words = text.split()
     results = []
     for idx, word in enumerate(words):
@@ -129,7 +141,9 @@ while True:
         text = correct_abbreviation(text)
         text = correct_number(text)
         inputs = processor(text=text, return_tensors="pt")
-        spectrogram = model.generate_speech(inputs["input_ids"].to(device), speaker_embeddings.to(device))
+        spectrogram = model.generate_speech(
+            inputs["input_ids"].to(device), speaker_embeddings.to(device)
+        )
         with torch.no_grad():
             speech = vocoder(spectrogram)
         now = datetime.now()
@@ -138,4 +152,3 @@ while True:
     except Exception as e:
         logging.info("Catch exception: %s", e)
         logging.info("Restarting\n")
-		

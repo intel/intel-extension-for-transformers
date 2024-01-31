@@ -187,11 +187,7 @@ The QuantizationConfig contains all the information related to the model quantiz
 
 - example:
     ```python
-    q_config = QuantizationConfig(
-        approach="PostTrainingDynamic",
-        metrics=[metric],
-        objectives=[objective]
-    )
+    q_config = QuantizationConfig(approach="PostTrainingDynamic", metrics=[metric], objectives=[objective])
     ```
 
 ### Quantization with Trainer

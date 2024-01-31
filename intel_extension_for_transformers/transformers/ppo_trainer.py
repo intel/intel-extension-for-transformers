@@ -15,14 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import importlib
 import inspect
+import logging
 import math
 import os
+import sys
 import time
 import typing
 import warnings
 from contextlib import nullcontext
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 import datasets
 import numpy as np
@@ -30,7 +33,7 @@ import torch
 import torch.nn.functional as F
 from accelerate.utils import ProjectConfiguration, is_deepspeed_available
 from datasets import Dataset
-from huggingface_hub import whoami
+from huggingface_hub import PyTorchModelHubMixin, whoami
 from packaging import version
 from torch.optim import Adam
 from transformers import (
@@ -40,6 +43,12 @@ from transformers import (
     PreTrainedTokenizerFast,
 )
 
+from .modeling.trl_models import (
+    SUPPORTED_ARCHITECTURES,
+    PreTrainedModelWrapper,
+    create_reference_model,
+)
+from .ppo_config import PPOConfig
 from .ppo_core import (
     WANDB_PADDING,
     PPODecorators,
@@ -55,26 +64,17 @@ from .ppo_core import (
     stack_dicts,
     stats_to_np,
 )
-from .modeling.trl_models import (
-    SUPPORTED_ARCHITECTURES,
-    PreTrainedModelWrapper,
-    create_reference_model,
-)
-from .ppo_config import PPOConfig
-from huggingface_hub import PyTorchModelHubMixin
-from typing import List, Optional, Tuple, Union
-import importlib, sys
 
-import logging
 logger = logging.getLogger(__name__)
 
 
 @torch.no_grad()
 def get_global_statistics(
     accelerator, xs: torch.Tensor, mask=None, device="cpu"
-) -> Tuple[float, float, int]: # pragma: no cover
-    """
-    Computes element-wise mean and variance of the tensor across processes. Reference:
+) -> Tuple[float, float, int]:  # pragma: no cover
+    """Computes element-wise mean and variance of the tensor across processes.
+
+    Reference:
     https://github.com/OpenLMLab/MOSS-RLHF/blob/40b91eb2f2b71b16919addede0341d2bef70825d/utils.py#L57C1-L73C75
     """
     if accelerator.device.type != "hpu":
@@ -97,8 +97,9 @@ def get_global_statistics(
 
 class RunningMoments:
     def __init__(self, accelerator):
-        """
-        Calculates the running mean and standard deviation of a data stream. Reference:
+        """Calculates the running mean and standard deviation of a data stream.
+
+        Reference:
         https://github.com/OpenLMLab/MOSS-RLHF/blob/40b91eb2f2b71b16919addede0341d2bef70825d/utils.py#L75
         """
         self.mean = 0
@@ -109,9 +110,7 @@ class RunningMoments:
 
     @torch.no_grad()
     def update(self, xs: torch.Tensor) -> Tuple[float, float]:
-        """
-        Updates running moments from batch's moments computed across ranks
-        """
+        """Updates running moments from batch's moments computed across ranks."""
         if self.accelerator.use_distributed:  # pragma: no cover
             xs_mean, xs_var, xs_count = get_global_statistics(self.accelerator, xs)
         else:
@@ -182,7 +181,7 @@ def is_torch_greater_2_0() -> bool:
     return torch_version >= "2.0"
 
 
-if is_deepspeed_available(): # pragma: no cover
+if is_deepspeed_available():  # pragma: no cover
     import deepspeed  # pylint: disable=E0611, E0401
 
 MODEL_CARD_TEMPLATE = """---
@@ -275,8 +274,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         num_shared_layers: Optional[int] = None,
         lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
     ):
-        """
-        Initialize PPOTrainer.
+        """Initialize PPOTrainer.
 
         Args:
             config (`PPOConfig`):
@@ -311,7 +309,7 @@ class PPOTrainer(PyTorchModelHubMixin):
             raise ValueError(f"config must be a PPOConfig, got {type(config)}")
         if not isinstance(tokenizer, (PreTrainedTokenizerBase)):
             raise ValueError(
-                f"tokenizer must be a PreTrainedTokenizerBase like a PreTrainedTokenizer or a PreTrainedTokenizerFast"
+                "tokenizer must be a PreTrainedTokenizerBase like a PreTrainedTokenizer or a PreTrainedTokenizerFast"
                 " got {type(tokenizer)}"
             )
         if not isinstance(model, (SUPPORTED_ARCHITECTURES)):
@@ -320,8 +318,10 @@ class PPOTrainer(PyTorchModelHubMixin):
                 "{SUPPORTED_ARCHITECTURES}"
             )
         # Step 1: Initialize Accelerator
-        if config.use_habana: # pragma: no cover
-            from optimum.habana.accelerate import GaudiAccelerator as Accelerator # pylint: disable=E0611, E0401
+        if config.use_habana:  # pragma: no cover
+            from optimum.habana.accelerate import (
+                GaudiAccelerator as Accelerator,
+            )  # pylint: disable=E0611, E0401
         else:
             from accelerate import Accelerator
         self.accelerator = Accelerator(
@@ -447,7 +447,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         else:
             self.kl_ctl = FixedKLController(self.config.init_kl_coef)
 
-        if self.accelerator.distributed_type == "MULTI_HPU": # pragma: no cover
+        if self.accelerator.distributed_type == "MULTI_HPU":  # pragma: no cover
             from accelerate.utils import DistributedDataParallelKwargs
 
             kwargs = {}
@@ -474,7 +474,7 @@ class PPOTrainer(PyTorchModelHubMixin):
             self.dataloader,
             self.lr_scheduler,
         )
-        if is_deepspeed_used: # pragma: no cover
+        if is_deepspeed_used:  # pragma: no cover
             # Quantized models are already set on the correct device
             if not self.is_peft_model and not (
                 getattr(self.ref_model.pretrained_model, "is_loaded_in_8bit", False)
@@ -496,7 +496,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         self.current_step = 0
 
         # init variables for pushing model to hub
-        if config.push_to_hub_if_best_kwargs: # pragma: no cover
+        if config.push_to_hub_if_best_kwargs:  # pragma: no cover
             if "repo_id" not in config.push_to_hub_if_best_kwargs:
                 raise ValueError(
                     "You have to specify repo_id in order to push the model to the hub!"
@@ -516,14 +516,13 @@ class PPOTrainer(PyTorchModelHubMixin):
         PPODecorators.optimize_device_cache = self.config.optimize_device_cache
 
         self.running = RunningMoments(self.accelerator)
-        if config.use_habana: # pragma: no cover
+        if config.use_habana:  # pragma: no cover
             import habana_frameworks.torch.core as htcore  # pylint: disable=E0611, E0401
 
             self.htcore = htcore
 
     def _filter_kwargs(self, kwargs, target_func):
-        """
-        filter the keyword arguments that are supported by the target function.
+        """Filter the keyword arguments that are supported by the target function.
 
         Args:
             kwargs (dict):
@@ -540,8 +539,7 @@ class PPOTrainer(PyTorchModelHubMixin):
     def prepare_dataloader(
         self, dataset: Union[torch.utils.data.Dataset, Dataset], data_collator=None
     ):
-        """
-        Prepare the dataloader for training.
+        """Prepare the dataloader for training.
 
         Args:
             dataset (Union[`torch.utils.data.Dataset`, `datasets.Dataset`]):
@@ -553,7 +551,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         Returns:
             `torch.utils.data.DataLoader`: PyTorch dataloader
         """
-        if isinstance(dataset, Dataset): # pragma: no cover
+        if isinstance(dataset, Dataset):  # pragma: no cover
             dataset = self._remove_unused_columns(dataset)
         dataloader = torch.utils.data.DataLoader(
             dataset,
@@ -574,7 +572,7 @@ class PPOTrainer(PyTorchModelHubMixin):
             self._signature_columns += ["label", "query", "response"]
 
     # Adapted from transformers.Trainer._remove_unused_columns
-    def _remove_unused_columns(self, dataset: "Dataset"): # pragma: no cover
+    def _remove_unused_columns(self, dataset: "Dataset"):  # pragma: no cover
         if not self.config.remove_unused_columns:
             return dataset
         self._set_signature_columns_if_needed()
@@ -603,8 +601,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         generate_ref_response: bool = False,
         **generation_kwargs,
     ):
-        """
-        Generate response with the model given the query tensor.
+        """Generate response with the model given the query tensor.
         call the `generate` method of the model.
 
         Args:
@@ -627,7 +624,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         if generate_ref_response:
             ref_model = self.ref_model if self.ref_model is not None else self.model
         if isinstance(query_tensor, List):
-            if self.config.use_habana: # pragma: no cover
+            if self.config.use_habana:  # pragma: no cover
                 self.wrap_generation_for_hpu_graph_mode(self.model)
             response = self._generate_batched(
                 self.model,
@@ -639,7 +636,7 @@ class PPOTrainer(PyTorchModelHubMixin):
             )
             if generate_ref_response:
                 with self.optional_peft_ctx():
-                    if self.config.use_habana: # pragma: no cover
+                    if self.config.use_habana:  # pragma: no cover
                         self.wrap_generation_for_hpu_graph_mode(ref_model)
                     ref_response = self._generate_batched(
                         ref_model,
@@ -658,14 +655,14 @@ class PPOTrainer(PyTorchModelHubMixin):
 
             if length_sampler is not None:
                 generation_kwargs["max_new_tokens"] = length_sampler()
-            if self.config.use_habana: # pragma: no cover
+            if self.config.use_habana:  # pragma: no cover
                 self.wrap_generation_for_hpu_graph_mode(self.model)
             response = self.accelerator.unwrap_model(self.model).generate(
                 input_ids=query_tensor.unsqueeze(dim=0), **generation_kwargs
             )
             if generate_ref_response:
                 with self.optional_peft_ctx():
-                    if self.config.use_habana: # pragma: no cover
+                    if self.config.use_habana:  # pragma: no cover
                         self.wrap_generation_for_hpu_graph_mode(ref_model)
                     ref_response = ref_model.generate(
                         input_ids=query_tensor.unsqueeze(dim=0), **generation_kwargs
@@ -727,7 +724,7 @@ class PPOTrainer(PyTorchModelHubMixin):
                     return_tensors="pt",
                 ).to(self.current_device)
 
-            if self.config.use_habana: # pragma: no cover
+            if self.config.use_habana:  # pragma: no cover
                 generation_kwargs["ignore_eos"] = False
                 generation_kwargs["lazy_mode"] = True
                 generation_kwargs["hpu_graphs"] = True
@@ -762,8 +759,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         scores: List[torch.FloatTensor],
         masks: Optional[List[torch.LongTensor]] = None,
     ):
-        """
-        Check if the input data is valid for training.
+        """Check if the input data is valid for training.
 
         Args:
             batch_size (int):
@@ -825,8 +821,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         scores: List[torch.FloatTensor],
         response_masks: Optional[List[torch.LongTensor]] = None,
     ):
-        """
-        Run a PPO optimisation step given a list of queries, model responses, and rewards.
+        """Run a PPO optimisation step given a list of queries, model responses, and rewards.
 
         Args:
             queries (List[`torch.LongTensor`]):
@@ -869,7 +864,7 @@ class PPOTrainer(PyTorchModelHubMixin):
             ).to(dtype=scores_dtype)
 
         # if we want to push best model to the hub
-        if hasattr(self, "highest_reward"): # pragma: no cover
+        if hasattr(self, "highest_reward"):  # pragma: no cover
             if self.compare_step % self.config.compare_steps == 0:
                 curr_mean_reward = scores.mean()
                 # if the best reward ever seen
@@ -886,7 +881,9 @@ class PPOTrainer(PyTorchModelHubMixin):
 
         model_inputs = self.prepare_model_inputs(queries, responses)
 
-        if self.is_distributed and not self.config.pad_for_acceleration: # pragma: no cover
+        if (
+            self.is_distributed and not self.config.pad_for_acceleration
+        ):  # pragma: no cover
             pad_first = self.tokenizer.padding_side == "left"
 
             model_inputs["input_ids"] = self.accelerator.pad_across_processes(
@@ -921,7 +918,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         full_kl_penalty = self.config.kl_penalty == "full"
 
         with torch.no_grad():
-            if self.config.use_habana: # pragma: no cover
+            if self.config.use_habana:  # pragma: no cover
                 self.unwrap_generation_for_hpu_graph_mode(self.model)
                 self.wrap_fw_for_hpu_graph_mode(self.model)
                 if self.ref_model is not None:
@@ -986,10 +983,11 @@ class PPOTrainer(PyTorchModelHubMixin):
         t = time.time()
         all_stats = []
         early_stop = False
-        if self.config.use_habana: # pragma: no cover
+        if self.config.use_habana:  # pragma: no cover
             self.unwrap_fw_for_hpu_graph_mode(self.model)
-            import habana_frameworks.torch as ht # pylint: disable=E0611, E0401
-            model=self.accelerator.unwrap_model(self.model)
+            import habana_frameworks.torch as ht  # pylint: disable=E0611, E0401
+
+            model = self.accelerator.unwrap_model(self.model)
             if not hasattr(model, "wrap_train_in_graph"):
                 ht.hpu.ModuleCacher()(model=model, inplace=True)
                 setattr(model, "wrap_train_in_graph", model.forward)
@@ -1111,8 +1109,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         return stats
 
     def _early_stop(self, policykl):
-        r"""
-        Handles the early stopping logic. If the policy KL is greater than the target KL, then the gradient is zeroed
+        r"""Handles the early stopping logic. If the policy KL is greater than the target KL, then the gradient is zeroed
         and the optimization step is skipped.
         This also handles the multi-gpu case where the policy KL is averaged across all processes.
 
@@ -1145,9 +1142,8 @@ class PPOTrainer(PyTorchModelHubMixin):
                 early_stop = True
         return early_stop
 
-    def gather_stats(self, stats): # pragma: no cover
-        """
-        Gather stats from all processes. Useful in the context of distributed training.
+    def gather_stats(self, stats):  # pragma: no cover
+        """Gather stats from all processes. Useful in the context of distributed training.
 
         Args:
             stats (dict[str, Any]):
@@ -1169,7 +1165,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         return stats
 
     def prepare_model_inputs(self, queries: torch.Tensor, responses: torch.Tensor):
-        if self.is_encoder_decoder: # pragma: no cover
+        if self.is_encoder_decoder:  # pragma: no cover
             input_data = self.data_collator(
                 [
                     {"input_ids": q, "attention_mask": torch.ones_like(q)}
@@ -1254,8 +1250,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         return_logits: bool = False,
         response_masks: Optional[torch.Tensor] = None,
     ):
-        """
-        Calculate model outputs in multiple batches.
+        """Calculate model outputs in multiple batches.
 
         Args:
             queries (`torch.LongTensor`):
@@ -1291,7 +1286,7 @@ class PPOTrainer(PyTorchModelHubMixin):
             if response_masks is not None:
                 response_masks_batch = response_masks[i * fbs : (i + 1) * fbs]
             logits, _, values = model(**input_kwargs)
-            if self.is_encoder_decoder: # pragma: no cover
+            if self.is_encoder_decoder:  # pragma: no cover
                 input_ids = input_kwargs["decoder_input_ids"]
                 attention_mask = input_kwargs["decoder_attention_mask"]
             else:
@@ -1303,7 +1298,7 @@ class PPOTrainer(PyTorchModelHubMixin):
             masks[:, :-1] = attention_mask[:, 1:]
 
             for j in range(len(query_batch)):
-                if self.is_encoder_decoder: # pragma: no cover
+                if self.is_encoder_decoder:  # pragma: no cover
                     # Decoder sentence starts always in the index 1 after padding in the Enc-Dec Models
                     start = 1
                     end = attention_mask[j, :].sum() - 1
@@ -1353,8 +1348,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         advantages: torch.FloatTensor,
         returns: torch.FloatTensor,
     ):
-        """
-        Train one PPO minibatch
+        """Train one PPO minibatch.
 
         Args:
             logprobs (`torch.FloatTensor`):
@@ -1384,7 +1378,7 @@ class PPOTrainer(PyTorchModelHubMixin):
                     self.model_params, self.config.max_grad_norm
                 )
         self.optimizer.step()
-        if self.config.use_habana: # pragma: no cover
+        if self.config.use_habana:  # pragma: no cover
             self.htcore.mark_step()
         # we call optimizer.zero_grad() every time and let `accelerator` handle accumulation
         # see https://huggingface.co/docs/accelerate/usage_guides/gradient_accumulation#the-finished-code
@@ -1398,8 +1392,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         ref_logprobs: torch.FloatTensor,
         masks: torch.LongTensor,
     ):
-        """
-        Compute per token rewards from scores and KL-penalty.
+        """Compute per token rewards from scores and KL-penalty.
 
         Args:
             scores (`torch.FloatTensor`):
@@ -1484,8 +1477,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         advantages: torch.FloatTensor,
         returns: torch.FloatTensor,
     ):
-        """
-        Calculate policy and value losses.
+        """Calculate policy and value losses.
 
         Args:
             old_logprobs (`torch.FloatTensor`):
@@ -1567,9 +1559,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         return pg_loss, self.config.vf_coef * vf_loss, flatten_dict(stats)
 
     def record_step_stats(self, kl_coef: float, **data):
-        """
-        Record training step statistics.
-
+        """Record training step statistics.
 
         Args:
             kl_coef (`float`):
@@ -1647,8 +1637,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         rewards: List[torch.FloatTensor],
         columns_to_log: List[str] = ["query", "response"],
     ):
-        """
-        A function that logs all the training stats. Call it at the end of each epoch.
+        """A function that logs all the training stats. Call it at the end of each epoch.
 
         Args:
             stats (dict[str, Any]):
@@ -1770,7 +1759,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         self.tokenizer.save_pretrained(save_directory)
         self.create_model_card(save_directory)
 
-    def _prepare_deepspeed(self, model: PreTrainedModelWrapper): # pragma: no cover
+    def _prepare_deepspeed(self, model: PreTrainedModelWrapper):  # pragma: no cover
         deepspeed_plugin = self.accelerator.state.deepspeed_plugin
         config_kwargs = deepspeed_plugin.deepspeed_config
         if model is not None:
@@ -1808,24 +1797,34 @@ class PPOTrainer(PyTorchModelHubMixin):
         model.eval()
         return model
 
-    def wrap_fw_for_hpu_graph_mode(self, model: PreTrainedModelWrapper): # pragma: no cover
+    def wrap_fw_for_hpu_graph_mode(
+        self, model: PreTrainedModelWrapper
+    ):  # pragma: no cover
         model = self.accelerator.unwrap_model(model)
         if hasattr(model, "hpu_graph_fw"):
             model.forward = model.hpu_graph_fw
         else:
-            from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0611, E0401
+            from habana_frameworks.torch.hpu import (
+                wrap_in_hpu_graph,
+            )  # pylint: disable=E0611, E0401
 
             model.orig_fw = model.forward
             model = wrap_in_hpu_graph(model)
             model.hpu_graph_fw = model.forward
 
-    def unwrap_fw_for_hpu_graph_mode(self, model: PreTrainedModelWrapper): # pragma: no cover
+    def unwrap_fw_for_hpu_graph_mode(
+        self, model: PreTrainedModelWrapper
+    ):  # pragma: no cover
         model = self.accelerator.unwrap_model(model)
         if hasattr(model, "orig_fw"):
             model.forward = model.orig_fw
 
-    def wrap_generation_for_hpu_graph_mode(self, model: PreTrainedModelWrapper): # pragma: no cover
-        from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0611, E0401
+    def wrap_generation_for_hpu_graph_mode(
+        self, model: PreTrainedModelWrapper
+    ):  # pragma: no cover
+        from habana_frameworks.torch.hpu import (
+            wrap_in_hpu_graph,
+        )  # pylint: disable=E0611, E0401
 
         model = self.accelerator.unwrap_model(model)
         if getattr(model, "is_peft_model", False):
@@ -1851,7 +1850,9 @@ class PPOTrainer(PyTorchModelHubMixin):
                 model.pretrained_model = wrap_in_hpu_graph(model.pretrained_model)
                 model.pretrained_model.hpu_graph_fw = model.pretrained_model.forward
 
-    def unwrap_generation_for_hpu_graph_mode(self, model: PreTrainedModelWrapper): # pragma: no cover
+    def unwrap_generation_for_hpu_graph_mode(
+        self, model: PreTrainedModelWrapper
+    ):  # pragma: no cover
         model = self.accelerator.unwrap_model(model)
         if getattr(model, "is_peft_model", False):
             if hasattr(model.pretrained_model.base_model.model, "orig_fw"):

@@ -1,11 +1,10 @@
 import logging
 import os
-import numpy as np
 import random
-from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import OptimizedModel
-from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from argparse import ArgumentParser
+
+import numpy as np
+from datasets import load_dataset, load_metric
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -15,6 +14,9 @@ from transformers import (
     TrainingArguments,
     set_seed,
 )
+
+from intel_extension_for_transformers.transformers import OptimizedModel
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 os.environ["WANDB_DISABLED"] = "true"
 task_to_keys = {
@@ -30,9 +32,13 @@ task_to_keys = {
 }
 logger = logging.getLogger(__name__)
 
-arg_parser = ArgumentParser(description='Parse args')
-arg_parser.add_argument('--data_type', default = "int8", help='data type of model')
-arg_parser.add_argument('--model_name_or_path', default = "textattack/bert-base-uncased-MRPC", help = 'input model for benchmark')
+arg_parser = ArgumentParser(description="Parse args")
+arg_parser.add_argument("--data_type", default="int8", help="data type of model")
+arg_parser.add_argument(
+    "--model_name_or_path",
+    default="textattack/bert-base-uncased-MRPC",
+    help="input model for benchmark",
+)
 args = arg_parser.parse_args()
 
 # download the dataset.
@@ -53,23 +59,21 @@ config = AutoConfig.from_pretrained(
     args.model_name_or_path,
     num_labels=num_labels,
     finetuning_task="mrpc",
-    revision="main"
+    revision="main",
 )
 tokenizer = AutoTokenizer.from_pretrained(
-    args.model_name_or_path,
-    use_fast=True,
-    revision="main"
+    args.model_name_or_path, use_fast=True, revision="main"
 )
 
 ## start with int8 benchmarking
 if args.data_type == "int8":
     # Load the model obtained after Intel Neural Compressor (INC) quantization
     model = OptimizedModel.from_pretrained(
-          args.model_name_or_path,
-          from_tf=bool(".ckpt" in args.model_name_or_path),
-          config=config,
-          revision="main",
-          use_auth_token=None,
+        args.model_name_or_path,
+        from_tf=bool(".ckpt" in args.model_name_or_path),
+        config=config,
+        revision="main",
+        use_auth_token=None,
     )
 else:
     ## original fp32 model benchmarking
@@ -77,7 +81,7 @@ else:
         args.model_name_or_path,
         from_tf=bool(".ckpt" in args.model_name_or_path),
         config=config,
-        revision="main"
+        revision="main",
     )
 
 # Preprocessing the raw_datasets
@@ -90,7 +94,9 @@ if model.config.label2id != PretrainedConfig(num_labels=num_labels).label2id:
     # Some have all caps in their config, some don't.
     label_name_to_id = {k.lower(): v for k, v in model.config.label2id.items()}
     if list(sorted(label_name_to_id.keys())) == list(sorted(label_list)):
-        label_to_id = {i: int(label_name_to_id[label_list[i]]) for i in range(num_labels)}
+        label_to_id = {
+            i: int(label_name_to_id[label_list[i]]) for i in range(num_labels)
+        }
     else:
         logger.warning(
             f"Your model seems to have been trained with labels, but they don't match the dataset: "
@@ -102,17 +108,25 @@ if label_to_id is not None:
     model.config.id2label = {id: label for label, id in config.label2id.items()}
 max_seq_length = min(128, tokenizer.model_max_length)
 
+
 def preprocess_function(examples):
     # Tokenize the texts
     args = (
-        (examples[sentence1_key],) if sentence2_key is None else (examples[sentence1_key], examples[sentence2_key])
+        (examples[sentence1_key],)
+        if sentence2_key is None
+        else (examples[sentence1_key], examples[sentence2_key])
     )
-    result = tokenizer(*args, padding=padding, max_length=max_seq_length, truncation=True)
+    result = tokenizer(
+        *args, padding=padding, max_length=max_seq_length, truncation=True
+    )
 
     # Map labels to IDs (not necessary for GLUE tasks)
     if label_to_id is not None and "label" in examples:
-        result["label"] = [(label_to_id[l] if l != -1 else -1) for l in examples["label"]]
+        result["label"] = [
+            (label_to_id[l] if l != -1 else -1) for l in examples["label"]
+        ]
     return result
+
 
 with training_args.main_process_first(desc="dataset map pre-processing"):
     raw_datasets = raw_datasets.map(
@@ -139,15 +153,17 @@ metric = load_metric("glue", "mrpc")
 
 metric_name = "eval_accuracy"
 
+
 # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
 # predictions and label_ids field) and has to return a dictionary string to float.
 def compute_metrics(p: EvalPrediction):
     preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
-    preds =  np.argmax(preds, axis=1)
+    preds = np.argmax(preds, axis=1)
     result = metric.compute(predictions=preds, references=p.label_ids)
     if len(result) > 1:
         result["combined_score"] = np.mean(list(result.values())).item()
     return result
+
 
 # Data collator will default to DataCollatorWithPadding, so we change it if we already did the padding.
 data_collator = None
@@ -166,12 +182,19 @@ trainer = NLPTrainer(
 
 
 results = trainer.evaluate()
-bert_task_acc_keys = ['eval_loss', 'eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
-                              'eval_pearson', 'eval_mcc', 'eval_spearmanr']
+bert_task_acc_keys = [
+    "eval_loss",
+    "eval_f1",
+    "eval_accuracy",
+    "eval_matthews_correlation",
+    "eval_pearson",
+    "eval_mcc",
+    "eval_spearmanr",
+]
 
 throughput = results.get("eval_samples_per_second")
 eval_loss = results["eval_loss"]
-print('Batch size = {}'.format(training_args.per_device_eval_batch_size))
+print("Batch size = {}".format(training_args.per_device_eval_batch_size))
 print("Finally Eval eval_loss Accuracy: {}".format(eval_loss))
 print("Latency: {:.3f} ms".format(1000 / throughput))
 print("Throughput: {} samples/sec".format(throughput))

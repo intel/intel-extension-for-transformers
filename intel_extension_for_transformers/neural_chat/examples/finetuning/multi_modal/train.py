@@ -16,23 +16,21 @@
 # limitations under the License.
 
 import os
-from dataclasses import dataclass, field
-import logging
 import pathlib
-from typing import Dict, Optional, Sequence, List
+from dataclasses import dataclass, field
+from typing import Optional
 
 import torch
-
 import transformers
-
-from transformers import AutoTokenizer, set_seed, BitsAndBytesConfig, AutoConfig
-from transformers.integrations.deepspeed import is_deepspeed_available
 from llava_utils import *
+from transformers import AutoConfig, AutoTokenizer
+from transformers.integrations.deepspeed import is_deepspeed_available
 
 if is_hpu_available:
     from optimum.habana import GaudiTrainingArguments as TrainingArguments
 else:
     from transformers import TrainingArguments
+
 
 @dataclass
 class ModelArguments:
@@ -40,30 +38,35 @@ class ModelArguments:
     freeze_backbone: bool = field(default=False)
     tune_mm_mlp_adapter: bool = field(default=False)
     vision_tower: Optional[str] = field(default=None)
-    mm_vision_select_layer: Optional[int] = field(default=-1)   # default to the last layer
+    mm_vision_select_layer: Optional[int] = field(
+        default=-1
+    )  # default to the last layer
     pretrain_mm_mlp_adapter: Optional[str] = field(default=None)
-    mm_projector_type: Optional[str] = field(default='linear')
+    mm_projector_type: Optional[str] = field(default="linear")
     mm_use_im_start_end: bool = field(default=False)
     mm_use_im_patch_token: bool = field(default=True)
     mm_vision_select_feature: Optional[str] = field(default="patch")
     trust_remote_code: Optional[bool] = field(
         default=False,
-        metadata={"help": "Enable unpickling of arbitrary code in AutoModelForCausalLM#from_pretrained."}
+        metadata={
+            "help": "Enable unpickling of arbitrary code in AutoModelForCausalLM#from_pretrained."
+        },
     )
     use_auth_token: Optional[bool] = field(
         default=False,
-        metadata={"help": "Enables using Huggingface auth token from Git Credentials."}
+        metadata={"help": "Enables using Huggingface auth token from Git Credentials."},
     )
 
 
 @dataclass
 class DataArguments:
-    data_path: str = field(default=None,
-                           metadata={"help": "Path to the training data."})
+    data_path: str = field(
+        default=None, metadata={"help": "Path to the training data."}
+    )
     lazy_preprocess: bool = False
     is_multimodal: bool = False
     image_folder: Optional[str] = field(default=None)
-    image_aspect_ratio: str = 'square'
+    image_aspect_ratio: str = "square"
     template: Optional[str] = field(default="v1")
 
 
@@ -77,22 +80,22 @@ class TrainingArguments(TrainingArguments):
     model_max_length: int = field(
         default=512,
         metadata={
-            "help":
-            "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
+            "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
         },
     )
     double_quant: bool = field(
         default=True,
-        metadata={"help": "Compress the quantization statistics through double quantization."}
+        metadata={
+            "help": "Compress the quantization statistics through double quantization."
+        },
     )
     quant_type: str = field(
         default="nf4",
-        metadata={"help": "Quantization data type to use. Should be one of `fp4` or `nf4`."}
+        metadata={
+            "help": "Quantization data type to use. Should be one of `fp4` or `nf4`."
+        },
     )
-    bits: int = field(
-        default=16,
-        metadata={"help": "How many bits to use."}
-    )
+    bits: int = field(default=16, metadata={"help": "How many bits to use."})
     lora_enable: bool = False
     lora_r: int = 64
     lora_alpha: int = 16
@@ -104,15 +107,20 @@ class TrainingArguments(TrainingArguments):
 
 
 def train():
-
     parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments))
+        (ModelArguments, DataArguments, TrainingArguments)
+    )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-    compute_dtype = (torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))
+    compute_dtype = (
+        torch.float16
+        if training_args.fp16
+        else (torch.bfloat16 if training_args.bf16 else torch.float32)
+    )
 
     quantization_config = None
     if training_args.bits in [4, 8]:
         from transformers import BitsAndBytesConfig
+
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=training_args.bits == 4,
             load_in_8bit=training_args.bits == 8,
@@ -121,13 +129,14 @@ def train():
             llm_int8_has_fp16_weight=False,
             bnb_4bit_compute_dtype=compute_dtype,
             bnb_4bit_use_double_quant=training_args.double_quant,
-            bnb_4bit_quant_type=training_args.quant_type # {'fp4', 'nf4'}
-            )
+            bnb_4bit_quant_type=training_args.quant_type,  # {'fp4', 'nf4'}
+        )
 
     low_cpu_mem_usage = True
     device_map = {"": training_args.device}
     if is_deepspeed_available():
         from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
+
         if is_deepspeed_zero3_enabled():
             low_cpu_mem_usage = False
             device_map = None
@@ -140,38 +149,54 @@ def train():
 
     use_fast = True
     if config.architectures[0] == "LlamaForCausalLM":
-        from intel_extension_for_transformers.transformers.modeling.llava_models.llava_llama \
-                import LlavaLlamaForCausalLM
+        from intel_extension_for_transformers.transformers.modeling.llava_models.llava_llama import (
+            LlavaLlamaForCausalLM,
+        )
+
         model = LlavaLlamaForCausalLM.from_pretrained(
-                model_args.model_name_or_path,
-                cache_dir=training_args.cache_dir,
-                load_in_4bit=training_args.bits == 4,
-                load_in_8bit=training_args.bits == 8,
-                low_cpu_mem_usage=low_cpu_mem_usage,
-                device_map=device_map,
-                quantization_config=quantization_config,
-                torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
-                trust_remote_code=model_args.trust_remote_code,
-                use_auth_token=model_args.use_auth_token
-                )
+            model_args.model_name_or_path,
+            cache_dir=training_args.cache_dir,
+            load_in_4bit=training_args.bits == 4,
+            load_in_8bit=training_args.bits == 8,
+            low_cpu_mem_usage=low_cpu_mem_usage,
+            device_map=device_map,
+            quantization_config=quantization_config,
+            torch_dtype=(
+                torch.float32
+                if training_args.fp16
+                else (torch.bfloat16 if training_args.bf16 else torch.float32)
+            ),
+            trust_remote_code=model_args.trust_remote_code,
+            use_auth_token=model_args.use_auth_token,
+        )
         use_fast = False
     elif config.architectures[0] == "MistralForCausalLM":
-        from intel_extension_for_transformers.transformers.modeling.llava_models.llava_mistral \
-                import LlavaMistralForCausalLM
+        from intel_extension_for_transformers.transformers.modeling.llava_models.llava_mistral import (
+            LlavaMistralForCausalLM,
+        )
+
         model = LlavaMistralForCausalLM.from_pretrained(
-                model_args.model_name_or_path,
-                cache_dir=training_args.cache_dir,
-                load_in_4bit=training_args.bits == 4,
-                load_in_8bit=training_args.bits == 8,
-                low_cpu_mem_usage=low_cpu_mem_usage,
-                device_map=device_map,
-                quantization_config=quantization_config,
-                torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
-                trust_remote_code=model_args.trust_remote_code,
-                use_auth_token=model_args.use_auth_token
-                )
+            model_args.model_name_or_path,
+            cache_dir=training_args.cache_dir,
+            load_in_4bit=training_args.bits == 4,
+            load_in_8bit=training_args.bits == 8,
+            low_cpu_mem_usage=low_cpu_mem_usage,
+            device_map=device_map,
+            quantization_config=quantization_config,
+            torch_dtype=(
+                torch.float32
+                if training_args.fp16
+                else (torch.bfloat16 if training_args.bf16 else torch.float32)
+            ),
+            trust_remote_code=model_args.trust_remote_code,
+            use_auth_token=model_args.use_auth_token,
+        )
     else:
-        raise ValueError("No llava implementation for the model {}".format(model_args.model_name_or_path))
+        raise ValueError(
+            "No llava implementation for the model {}".format(
+                model_args.model_name_or_path
+            )
+        )
 
     # for training
     model.config.use_cache = False
@@ -182,19 +207,24 @@ def train():
     if training_args.bits in [4, 8]:
         # Prepare the model (freeze, cast FP32, enable_require_grads, activate gradient checkpointing)
         from peft import prepare_model_for_kbit_training
-        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=training_args.gradient_checkpointing)
 
+        model = prepare_model_for_kbit_training(
+            model, use_gradient_checkpointing=training_args.gradient_checkpointing
+        )
 
     if training_args.gradient_checkpointing:
         if hasattr(model, "enable_input_require_grads"):
             model.enable_input_require_grads()
         else:
+
             def make_inputs_require_grad(module, input, output):
                 output.requires_grad_(True)
+
             model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
 
     if training_args.lora_enable:
         from peft import LoraConfig, get_peft_model
+
         lora_config = LoraConfig(
             r=training_args.lora_r,
             lora_alpha=training_args.lora_alpha,
@@ -211,30 +241,34 @@ def train():
         model = get_peft_model(model, lora_config)
 
     tokenizer = AutoTokenizer.from_pretrained(
-            model_args.model_name_or_path,
-            cache_dir=training_args.cache_dir,
-            model_max_length=training_args.model_max_length,
-            padding_side="right",
-            trust_remote_code=model_args.trust_remote_code,
-            use_fast=use_fast
-            )
+        model_args.model_name_or_path,
+        cache_dir=training_args.cache_dir,
+        model_max_length=training_args.model_max_length,
+        padding_side="right",
+        trust_remote_code=model_args.trust_remote_code,
+        use_fast=use_fast,
+    )
 
     tokenizer.pad_token = tokenizer.unk_token
 
     # set vision module
     model.get_model().initialize_vision_modules(
-            model_args=model_args,
-            fsdp=training_args.fsdp
-            )
+        model_args=model_args, fsdp=training_args.fsdp
+    )
     vision_tower = model.get_vision_tower()
-    vision_tower.to(dtype=torch.bfloat16 if training_args.bf16 else torch.float16, device=training_args.device)
+    vision_tower.to(
+        dtype=torch.bfloat16 if training_args.bf16 else torch.float16,
+        device=training_args.device,
+    )
     data_args.image_processor = vision_tower.image_processor
     data_args.is_multimodal = True
     model.config.image_aspect_ratio = data_args.image_aspect_ratio
     model.config.tokenizer_padding_side = tokenizer.padding_side
     model.config.tokenizer_model_max_length = tokenizer.model_max_length
 
-    model.config.tune_mm_mlp_adapter = training_args.tune_mm_mlp_adapter = model_args.tune_mm_mlp_adapter
+    model.config.tune_mm_mlp_adapter = (
+        training_args.tune_mm_mlp_adapter
+    ) = model_args.tune_mm_mlp_adapter
     if model_args.tune_mm_mlp_adapter:
         model.requires_grad_(False)
         for p in model.get_model().mm_projector.parameters():
@@ -246,9 +280,13 @@ def train():
             p.requires_grad = False
 
     if training_args.bits in [4, 8]:
-        model.get_model().mm_projector.to(dtype=compute_dtype, device=training_args.device)
+        model.get_model().mm_projector.to(
+            dtype=compute_dtype, device=training_args.device
+        )
 
-    model.config.mm_use_im_start_end = data_args.mm_use_im_start_end = model_args.mm_use_im_start_end
+    model.config.mm_use_im_start_end = (
+        data_args.mm_use_im_start_end
+    ) = model_args.mm_use_im_start_end
     model.config.mm_projector_lr = training_args.mm_projector_lr
     training_args.use_im_start_end = model_args.mm_use_im_start_end
     model.config.mm_use_im_patch_token = model_args.mm_use_im_patch_token
@@ -256,39 +294,42 @@ def train():
 
     if training_args.bits in [4, 8]:
         from peft.tuners.lora import LoraLayer
+
         for name, module in model.named_modules():
             if isinstance(module, LoraLayer):
                 if training_args.bf16:
                     module = module.to(torch.bfloat16)
-            if 'norm' in name:
+            if "norm" in name:
                 module = module.to(torch.float32)
-            if 'lm_head' in name or 'embed_tokens' in name:
-                if hasattr(module, 'weight'):
+            if "lm_head" in name or "embed_tokens" in name:
+                if hasattr(module, "weight"):
                     if training_args.bf16 and module.weight.dtype == torch.float32:
                         module = module.to(torch.bfloat16)
 
-
-    data_module = make_supervised_data_module(tokenizer=tokenizer,
-                                              data_args=data_args)
+    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
 
     if is_hpu_available:
         from optimum.habana import GaudiConfig
+
         gaudi_config = GaudiConfig()
         gaudi_config.use_fused_adam = True
         gaudi_config.use_fused_clip_norm = True
 
         from llava_trainer import GaudiLLaVATrainer
-        trainer = GaudiLLaVATrainer(model=model,
-                gaudi_config=gaudi_config,
-                tokenizer=tokenizer,
-                args=training_args,
-                **data_module)
+
+        trainer = GaudiLLaVATrainer(
+            model=model,
+            gaudi_config=gaudi_config,
+            tokenizer=tokenizer,
+            args=training_args,
+            **data_module
+        )
     else:
         from llava_trainer import LLaVATrainer
-        trainer = LLaVATrainer(model=model,
-                tokenizer=tokenizer,
-                args=training_args,
-                **data_module)
+
+        trainer = LLaVATrainer(
+            model=model, tokenizer=tokenizer, args=training_args, **data_module
+        )
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         trainer.train(resume_from_checkpoint=True)
@@ -309,10 +350,14 @@ def train():
         if training_args.local_rank == 0 or training_args.local_rank == -1:
             model.config.save_pretrained(training_args.output_dir)
             model.save_pretrained(training_args.output_dir, state_dict=state_dict)
-            torch.save(non_lora_state_dict, os.path.join(training_args.output_dir, 'non_lora_trainables.bin'))
+            torch.save(
+                non_lora_state_dict,
+                os.path.join(training_args.output_dir, "non_lora_trainables.bin"),
+            )
     else:
-        safe_save_model_for_hf_trainer(trainer=trainer,
-                                       output_dir=training_args.output_dir)
+        safe_save_model_for_hf_trainer(
+            trainer=trainer, output_dir=training_args.output_dir
+        )
 
 
 if __name__ == "__main__":

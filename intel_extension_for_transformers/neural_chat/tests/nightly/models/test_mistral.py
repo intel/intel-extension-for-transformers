@@ -15,10 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.models.mistral_model import MistralModel
-from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
-from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 import unittest
+
+from intel_extension_for_transformers.neural_chat import PipelineConfig, build_chatbot
+from intel_extension_for_transformers.neural_chat.models.mistral_model import (
+    MistralModel,
+)
+
 
 class TestMistralModel(unittest.TestCase):
     def setUp(self):
@@ -29,19 +32,23 @@ class TestMistralModel(unittest.TestCase):
 
     def test_match(self):
         result = MistralModel().match(
-            model_path='/tf_dataset2/models/pytorch/Mistral-7B-v0.1')
+            model_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+        )
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
         result = MistralModel().get_default_conv_template(
-            model_path='/tf_dataset2/models/pytorch/Mistral-7B-v0.1')
+            model_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+        )
         self.assertIn("[INST]{system_message}", str(result))
         config = PipelineConfig(
-            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1")
+            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+        )
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(result)
-        self.assertIn('Intel Xeon Scalable processors', str(result))
+        self.assertIn("Intel Xeon Scalable processors", str(result))
+
 
 if __name__ == "__main__":
     unittest.main()

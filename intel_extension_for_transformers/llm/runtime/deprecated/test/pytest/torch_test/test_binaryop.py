@@ -15,39 +15,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import sys
-import torch
-import torch.nn as nn
-import numpy as np
 import os
 import shutil
+import unittest
+
+import numpy as np
+import torch
+import torch.nn as nn
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
 
+
 class Net(nn.Module):
     def __init__(self, algo):
         super(Net, self).__init__()
-        if algo == 'div':
+        if algo == "div":
             self.binaryop = torch.div
-        elif algo == 'mul':
+        elif algo == "mul":
             self.binaryop = torch.mul
-        elif algo == 'add':
+        elif algo == "add":
             self.binaryop = torch.add
-        elif algo == 'sub':
+        elif algo == "sub":
             self.binaryop = torch.sub
-        elif algo == 'gt':
+        elif algo == "gt":
             self.binaryop = torch.gt
-        elif algo == 'lt':
+        elif algo == "lt":
             self.binaryop = torch.lt
-        elif algo == 'eq':
+        elif algo == "eq":
             self.binaryop = torch.eq
-        elif algo == 'ne':
+        elif algo == "ne":
             self.binaryop = torch.ne
+
     def forward(self, x, y):
         return self.binaryop(x, y)
+
 
 class TestTorchOP(unittest.TestCase):
     @classmethod
@@ -59,39 +63,39 @@ class TestTorchOP(unittest.TestCase):
         pass
 
     def test_1(self):
-        n = Net('div')
+        n = Net("div")
         example_in = torch.rand(3, 256)
         example_in2 = torch.rand(256)
         traced_model = torch.jit.trace(n, (example_in, example_in2))
-        torch.jit.save(traced_model, '{}.pt'.format(file_name))
+        torch.jit.save(traced_model, "{}.pt".format(file_name))
         ref_out = traced_model(example_in, example_in2).detach().numpy()
-        
-        graph = compile('{}.pt'.format(file_name))
+
+        graph = compile("{}.pt".format(file_name))
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + "/conf.yaml", file_name + "/model.bin")
         out = newgraph.inference([example_in.numpy(), example_in2.numpy()])
 
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
-        os.remove('{}.pt'.format(file_name))
+        os.remove("{}.pt".format(file_name))
         shutil.rmtree(file_name)
 
     def test_2(self):
-        n = Net('mul')
+        n = Net("mul")
         example_in = torch.rand(3, 256)
         example_in2 = torch.rand(256)
         traced_model = torch.jit.trace(n, (example_in, example_in2))
-        torch.jit.save(traced_model, '{}.pt'.format(file_name))
+        torch.jit.save(traced_model, "{}.pt".format(file_name))
         ref_out = traced_model(example_in, example_in2).detach().numpy()
-        
-        graph = compile('{}.pt'.format(file_name))
+
+        graph = compile("{}.pt".format(file_name))
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + "/conf.yaml", file_name + "/model.bin")
         out = newgraph.inference([example_in.numpy(), example_in2.numpy()])
 
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
-        os.remove('{}.pt'.format(file_name))
+        os.remove("{}.pt".format(file_name))
         shutil.rmtree(file_name)
 
     # def test_3(self):
@@ -99,10 +103,10 @@ class TestTorchOP(unittest.TestCase):
     #     example_in = torch.rand(3, 256)
     #     example_in2 = torch.rand(256)
     #     traced_model = torch.jit.trace(n, (example_in, example_in2))
-    #     
+    #
     #     torch.jit.save(traced_model, '{}.pt'.format(file_name))
     #     ref_out = traced_model(example_in, example_in2).detach().numpy()
-        
+
     #     graph = compile('{}.pt'.format(file_name))
     #     graph.save(file_name)
     #     newgraph = Graph()
@@ -118,10 +122,10 @@ class TestTorchOP(unittest.TestCase):
     #     example_in = torch.rand(3, 256)
     #     example_in2 = torch.rand(256)
     #     traced_model = torch.jit.trace(n, (example_in, example_in2))
-    #     
+    #
     #     torch.jit.save(traced_model, '{}.pt'.format(file_name))
     #     ref_out = traced_model(example_in, example_in2).detach().numpy()
-        
+
     #     graph = compile('{}.pt'.format(file_name))
     #     graph.save(file_name)
     #     newgraph = Graph()
@@ -137,10 +141,10 @@ class TestTorchOP(unittest.TestCase):
     #     example_in = torch.rand(3, 256)
     #     example_in2 = torch.rand(256)
     #     traced_model = torch.jit.trace(n, (example_in, example_in2))
-    #     
+    #
     #     torch.jit.save(traced_model, '{}.pt'.format(file_name))
     #     ref_out = traced_model(example_in, example_in2).detach().numpy()
-        
+
     #     graph = compile('{}.pt'.format(file_name))
     #     graph.save(file_name)
     #     newgraph = Graph()
@@ -156,10 +160,10 @@ class TestTorchOP(unittest.TestCase):
     #     example_in = torch.rand(3, 256)
     #     example_in2 = torch.rand(256)
     #     traced_model = torch.jit.trace(n, (example_in, example_in2))
-    #     
+    #
     #     torch.jit.save(traced_model, '{}.pt'.format(file_name))
     #     ref_out = traced_model(example_in, example_in2).detach().numpy()
-        
+
     #     graph = compile('{}.pt'.format(file_name))
     #     graph.save(file_name)
     #     newgraph = Graph()
@@ -175,10 +179,10 @@ class TestTorchOP(unittest.TestCase):
     #     example_in = torch.rand(3, 256)
     #     example_in2 = torch.rand(256)
     #     traced_model = torch.jit.trace(n, (example_in, example_in2))
-    #     
+    #
     #     torch.jit.save(traced_model, '{}.pt'.format(file_name))
     #     ref_out = traced_model(example_in, example_in2).detach().numpy()
-        
+
     #     graph = compile('{}.pt'.format(file_name))
     #     graph.save(file_name)
     #     newgraph = Graph()
@@ -194,10 +198,10 @@ class TestTorchOP(unittest.TestCase):
     #     example_in = torch.rand(3, 256)
     #     example_in2 = torch.rand(256)
     #     traced_model = torch.jit.trace(n, (example_in, example_in2))
-    #     
+    #
     #     torch.jit.save(traced_model, '{}.pt'.format(file_name))
     #     ref_out = traced_model(example_in, example_in2).detach().numpy()
-        
+
     #     graph = compile('{}.pt'.format(file_name))
     #     graph.save(file_name)
     #     newgraph = Graph()

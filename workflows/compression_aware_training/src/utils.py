@@ -32,8 +32,8 @@ task_to_keys = {
 
 @dataclass
 class DataTrainingArguments:
-    """
-    Arguments pertaining to what data we are going to input our model for training and eval.
+    """Arguments pertaining to what data we are going to input our model for training and eval.
+
     Using `HfArgumentParser` we can turn this class
     into argparse arguments to be able to specify them on
     the command line.
@@ -132,9 +132,7 @@ class DataTrainingArguments:
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
-    """
+    """Arguments pertaining to which model/config/tokenizer we are going to fine-tune from."""
 
     model_name_or_path: str = field(
         metadata={
@@ -182,9 +180,7 @@ class ModelArguments:
 
 @dataclass
 class OptimizationArguments:
-    """
-    Arguments pertaining to what type of optimization we are going to apply on the model.
-    """
+    """Arguments pertaining to what type of optimization we are going to apply on the model."""
 
     sat: bool = field(
         default=False,
@@ -204,7 +200,9 @@ class OptimizationArguments:
     )
     tolerance_mode: Optional[str] = field(
         default="absolute",
-        metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
+        metadata={
+            "help": "Metric tolerance model, expected to be relative or absolute."
+        },
     )
     quantization: bool = field(
         default=False,
@@ -212,8 +210,10 @@ class OptimizationArguments:
     )
     quantization_approach: Optional[str] = field(
         default="PostTrainingStatic",
-        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining."},
+        metadata={
+            "help": "Quantization approach. Supported approach are PostTrainingStatic, "
+            "PostTrainingDynamic and QuantizationAwareTraining."
+        },
     )
     metric_name: Optional[str] = field(
         default=None,
@@ -221,33 +221,32 @@ class OptimizationArguments:
     )
     is_relative: Optional[bool] = field(
         default=True,
-        metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
+        metadata={
+            "help": "Metric tolerance model, expected to be relative or absolute."
+        },
     )
     perf_tol: Optional[float] = field(
         default=0.01,
         metadata={"help": "Performance tolerance when optimizing the model."},
     )
-    int8: bool = field(
-        default=False,
-        metadata={"help":"run benchmark."}
-    )
+    int8: bool = field(default=False, metadata={"help": "run benchmark."})
     distillation: bool = field(
         default=False,
         metadata={"help": "Whether or not to apply distillation."},
     )
     teacher_model_name_or_path: str = field(
         default=False,
-        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
+        metadata={
+            "help": "Path to pretrained model or model identifier from huggingface.co/models"
+        },
     )
     orchestrate_optimizations: bool = field(
-        default=False,
-        metadata={"help":"for one shot."}
+        default=False, metadata={"help": "for one shot."}
     )
-    benchmark: bool = field(
-        default=False,
-        metadata={"help": "run benchmark."}
-    )
+    benchmark: bool = field(default=False, metadata={"help": "run benchmark."})
     accuracy_only: bool = field(
         default=False,
-        metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."}
+        metadata={
+            "help": "Whether to only test accuracy for model tuned by Neural Compressor."
+        },
     )

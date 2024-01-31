@@ -16,10 +16,10 @@
 # limitations under the License.
 
 import os
-from dotenv import load_dotenv
 from functools import lru_cache
-from pydantic import BaseSettings
 
+from dotenv import load_dotenv
+from pydantic import BaseSettings
 
 load_dotenv()
 

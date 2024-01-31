@@ -16,11 +16,11 @@
 # limitations under the License.
 """The neural engine optimizer module."""
 
-from .graph import Graph
 from . import graph_utils as util
 from . import logger
+from .graph import Graph
 
-OPTIMIZED_WEIGHT_FORMAT_TAG = {'FP8': ['ANY', 'INT8', 'FP8_4E3M', 'FP8_5E2M']}
+OPTIMIZED_WEIGHT_FORMAT_TAG = {"FP8": ["ANY", "INT8", "FP8_4E3M", "FP8_5E2M"]}
 
 
 class Optimizer:
@@ -28,16 +28,16 @@ class Optimizer:
 
     def __init__(self, graph, input_shape=None, *args, **kwargs):
         """The optimizer initialization.
-        
+
         Args:
             graph: neural engine Graph class
             input_shape: list of list, model input data shape list
         """
-        assert isinstance(graph, Graph), 'graph must be an instance of Graph class'
+        assert isinstance(graph, Graph), "graph must be an instance of Graph class"
         self.graph = graph
         self.input_shape = input_shape
-        self.cast_dtype = util.get_autocast_info()['cast_type']
-        self.weight_dtype = util.get_autocast_info().get('weight_dtype', 'native')
+        self.cast_dtype = util.get_autocast_info()["cast_type"]
+        self.weight_dtype = util.get_autocast_info().get("weight_dtype", "native")
         try:
             util.get_environ_info()
         except:
@@ -51,27 +51,41 @@ class Optimizer:
 
     def weight_optimization(self):
         """Optimize weight format."""
-        if self.cast_dtype == 'bf16' and self.weight_dtype.upper() in \
-           OPTIMIZED_WEIGHT_FORMAT_TAG['FP8']:
+        if (
+            self.cast_dtype == "bf16"
+            and self.weight_dtype.upper() in OPTIMIZED_WEIGHT_FORMAT_TAG["FP8"]
+        ):
             self._weight_fp8_dispatch(self.weight_dtype.upper())
 
     def _weight_fp8_dispatch(self, w_tag):
         """Optimize BF16 graph by using FP8 weight format."""
-        tag2env = {'INT8': 'NE_WEIGHT_INT8', 'FP8_4E3M': 'NE_WEIGHT_FP8_4E3M',
-                   'FP8_5E2M': 'NE_WEIGHT_FP8_5E2M'}
+        tag2env = {
+            "INT8": "NE_WEIGHT_INT8",
+            "FP8_4E3M": "NE_WEIGHT_FP8_4E3M",
+            "FP8_5E2M": "NE_WEIGHT_FP8_5E2M",
+        }
         util.del_environ_vars(list(tag2env.values()))
         util.remove_environ_info_items(list(tag2env.values()))
-        if w_tag == 'ANY':
+        if w_tag == "ANY":
             # TODO: Consider to add best fp8 weight format search
-            best_tag = 'INT8'
-            logger.info('Using FP8 weight storage format {} for BF16 model inference'.format(
-                        best_tag))
-            util.insert_environ_info(tag2env[best_tag], '1')
+            best_tag = "INT8"
+            logger.info(
+                "Using FP8 weight storage format {} for BF16 model inference".format(
+                    best_tag
+                )
+            )
+            util.insert_environ_info(tag2env[best_tag], "1")
         elif w_tag in tag2env:
             env_key = tag2env[w_tag]
-            logger.info('Using FP8 weight storage format {} for BF16 model inference'.format(
-                        w_tag))
-            util.insert_environ_info(env_key, '1')
+            logger.info(
+                "Using FP8 weight storage format {} for BF16 model inference".format(
+                    w_tag
+                )
+            )
+            util.insert_environ_info(env_key, "1")
         else:
-            logger.warning('Unknown FP8 weight compression format, please use {}'.format(
-                           OPTIMIZED_WEIGHT_FORMAT_TAG['FP8']))
+            logger.warning(
+                "Unknown FP8 weight compression format, please use {}".format(
+                    OPTIMIZED_WEIGHT_FORMAT_TAG["FP8"]
+                )
+            )

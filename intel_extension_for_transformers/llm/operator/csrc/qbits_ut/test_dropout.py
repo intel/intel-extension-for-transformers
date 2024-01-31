@@ -23,7 +23,7 @@ from ut_utils import *
 @pytest.mark.parametrize("n", (87, 4096))
 @pytest.mark.parametrize("data_type", ("fp32", "bf16"))
 @pytest.mark.parametrize("p", (0.2, 0.8))
-def test(m, n, data_type, p,  dump_info=True):
+def test(m, n, data_type, p, dump_info=True):
     weight = torch.rand(m, n, dtype=torch.float)
     grad = torch.rand(m, n, dtype=torch.float)
     if data_type == "bf16":
@@ -31,11 +31,11 @@ def test(m, n, data_type, p,  dump_info=True):
         grad = grad.to(torch.bfloat16)
     bk_grad = grad.clone()
     mask = torch.ops.qbits_customop.dropout_fwd(weight, p)
-    num_zero = (m*n-torch.nonzero(mask.reshape(-1)).numel())
-    dropout_p = num_zero/(m*n)
+    num_zero = m * n - torch.nonzero(mask.reshape(-1)).numel()
+    dropout_p = num_zero / (m * n)
     if dump_info:
-        print("input p:"+str(p))
-        print("dropout p:"+str(dropout_p))
+        print("input p:" + str(p))
+        print("dropout p:" + str(dropout_p))
     if not torch.allclose(torch.tensor(p), torch.tensor(dropout_p), 0.03):
         print("fail")
     torch.ops.qbits_customop.dropout_bwd(grad, mask)
@@ -43,4 +43,4 @@ def test(m, n, data_type, p,  dump_info=True):
     if dump_info:
         print(grad)
         print(bk_grad)
-    assert (torch.allclose(grad, bk_grad, 0.01))
+    assert torch.allclose(grad, bk_grad, 0.01)

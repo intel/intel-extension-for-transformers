@@ -17,11 +17,19 @@
 
 import unittest
 from collections import OrderedDict
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS, Operator
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices import AttentionOutputLayerNormLengthAdaptiveExpandIndices
+
 import numpy as np
+
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import (
+    OPERATORS,
+)
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import (
+    Tensor,
+)
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices import (
+    AttentionOutputLayerNormLengthAdaptiveExpandIndices,
+)
 
 
 class TestAttentionReshape(unittest.TestCase):
@@ -35,68 +43,152 @@ class TestAttentionReshape(unittest.TestCase):
 
     def test_attention_reshape_0(self):
         graph = Graph()
-        graph.framework_modeling_config['framework'] = 'onnxruntime'
-        input_data_node = OPERATORS['Input']()
+        graph.framework_modeling_config["framework"] = "onnxruntime"
+        input_data_node = OPERATORS["Input"]()
         input_tensors = []
-        output_tensors = [Tensor(name='input_data'), Tensor(), Tensor()]
-        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors,
-                                output_tensors=output_tensors)
+        output_tensors = [Tensor(name="input_data"), Tensor(), Tensor()]
+        input_data_node.construct(
+            "input_data",
+            "Input",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+        )
 
-        constantofshape_node = OPERATORS['ConstantOfShape']()
-        input_tensors = [Tensor(name = 'input0', data=np.array(1), shape=[1])]
-        output_tensors = [Tensor(name='output0', source_op=['constantofshape'], dest_op=['mul']),
-                          Tensor(name='constantofshape_output0', source_op=['constantofshape'], dest_op=['where'])]
+        constantofshape_node = OPERATORS["ConstantOfShape"]()
+        input_tensors = [Tensor(name="input0", data=np.array(1), shape=[1])]
+        output_tensors = [
+            Tensor(name="output0", source_op=["constantofshape"], dest_op=["mul"]),
+            Tensor(
+                name="constantofshape_output0",
+                source_op=["constantofshape"],
+                dest_op=["where"],
+            ),
+        ]
 
-        constantofshape_node.construct('constantofshape', 'ConstantOfShape', input_tensors=input_tensors,
-                                output_tensors=output_tensors)
+        constantofshape_node.construct(
+            "constantofshape",
+            "ConstantOfShape",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+        )
 
-        mul_node = OPERATORS['Mul']()
+        mul_node = OPERATORS["Mul"]()
 
-        input_tensors =  [Tensor(name='output0', source_op=['constantofshape'], dest_op=['mul']),
-                          Tensor(name ='mul_input1', data=np.array(1), shape=[1])]
-        output_tensors = [Tensor(name='mul_output', source_op=['mul'], dest_op=['equal'])]
-        mul_node.construct('mul', 'Mul', input_tensors=input_tensors, output_tensors=output_tensors)
+        input_tensors = [
+            Tensor(name="output0", source_op=["constantofshape"], dest_op=["mul"]),
+            Tensor(name="mul_input1", data=np.array(1), shape=[1]),
+        ]
+        output_tensors = [
+            Tensor(name="mul_output", source_op=["mul"], dest_op=["equal"])
+        ]
+        mul_node.construct(
+            "mul", "Mul", input_tensors=input_tensors, output_tensors=output_tensors
+        )
 
-        equal_node = OPERATORS['Equal']()
-        input_tensors =  [Tensor(name ='equal_input0', data=np.array([-1,1,1,-1]), shape=[4]),
-                Tensor(name='mul_output', source_op=['mul'], dest_op=['equal'])]
-        output_tensors = [Tensor(name='equal_output', source_op=['equal'], dest_op=['where'])]
-        equal_node.construct('equal', 'Equal', input_tensors=input_tensors, output_tensors=output_tensors)
+        equal_node = OPERATORS["Equal"]()
+        input_tensors = [
+            Tensor(name="equal_input0", data=np.array([-1, 1, 1, -1]), shape=[4]),
+            Tensor(name="mul_output", source_op=["mul"], dest_op=["equal"]),
+        ]
+        output_tensors = [
+            Tensor(name="equal_output", source_op=["equal"], dest_op=["where"])
+        ]
+        equal_node.construct(
+            "equal", "Equal", input_tensors=input_tensors, output_tensors=output_tensors
+        )
 
-        where_node = OPERATORS['Where']()
-        input_tensors = [Tensor(name='equal_output', source_op=['equal'], dest_op=['where']),
-                         Tensor(name='constantofshape_output0', source_op=['constantofshape'],dest_op=['where']),
-                         Tensor(name ='where_input2', data=np.array([-1,1,1,-1]), shape=[1])]
-        output_tensors = [Tensor(name='where_output', source_op=['where'], dest_op=['expand'])]
-        where_node.construct('where', 'Where', input_tensors=input_tensors, output_tensors=output_tensors)
+        where_node = OPERATORS["Where"]()
+        input_tensors = [
+            Tensor(name="equal_output", source_op=["equal"], dest_op=["where"]),
+            Tensor(
+                name="constantofshape_output0",
+                source_op=["constantofshape"],
+                dest_op=["where"],
+            ),
+            Tensor(name="where_input2", data=np.array([-1, 1, 1, -1]), shape=[1]),
+        ]
+        output_tensors = [
+            Tensor(name="where_output", source_op=["where"], dest_op=["expand"])
+        ]
+        where_node.construct(
+            "where", "Where", input_tensors=input_tensors, output_tensors=output_tensors
+        )
 
+        unsqueeze_node = OPERATORS["Unsqueeze"]()
+        input_tensors = [
+            Tensor(name="unsqueeze_input0", data=np.array(1), shape=[2, 12, 384, 384]),
+            Tensor(name="unsqueeze_input1", data=np.array(1), shape=[1]),
+        ]
+        output_tensors = [
+            Tensor(name="unsqueeze_output", source_op=["unsqueeze"], dest_op=["expand"])
+        ]
+        unsqueeze_node.construct(
+            "unsqueeze",
+            "Unsqueeze",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+            attr=OrderedDict({"axes": "1"}),
+        )
 
-        unsqueeze_node = OPERATORS['Unsqueeze']()
-        input_tensors = [Tensor(name ='unsqueeze_input0', data=np.array(1), shape=[2,12,384,384]),
-                         Tensor(name='unsqueeze_input1', data=np.array(1), shape=[1])]
-        output_tensors = [Tensor(name='unsqueeze_output', source_op=['unsqueeze'], dest_op=['expand'])]
-        unsqueeze_node.construct('unsqueeze', 'Unsqueeze', input_tensors=input_tensors,
-                                output_tensors=output_tensors,attr=OrderedDict({'axes': '1'}))
+        expand_node = OPERATORS["Expand"]()
+        input_tensors = [
+            Tensor(
+                name="unsqueeze_output", source_op=["unsqueeze"], dest_op=["expand"]
+            ),
+            Tensor(name="where_output", source_op=["where"], dest_op=["expand"]),
+        ]
+        output_tensors = [
+            Tensor(
+                name="expand_output", source_op=["expand"], dest_op=["gatherelements"]
+            )
+        ]
+        expand_node.construct(
+            "expand",
+            "Expand",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+        )
 
-        expand_node = OPERATORS['Expand']()
-        input_tensors = [Tensor(name='unsqueeze_output', source_op=['unsqueeze'], dest_op=['expand']),
-                         Tensor(name='where_output', source_op=['where'], dest_op=['expand'])]
-        output_tensors = [Tensor(name='expand_output', source_op=['expand'], dest_op=['gatherelements'])]
-        expand_node.construct('expand', 'Expand', input_tensors=input_tensors,
-                                output_tensors=output_tensors)
+        gatherelements_node = OPERATORS["GatherElements"]()
+        input_tensors = [
+            Tensor(name="gatherelements_input0", data=np.array(1), shape=[1]),
+            Tensor(
+                name="expand_output", source_op=["expand"], dest_op=["gatherelements"]
+            ),
+        ]
+        output_tensors = [
+            Tensor(
+                name="gatherelements_output",
+                source_op=["gatherelements"],
+                dest_op=["empty"],
+            )
+        ]
+        gatherelements_node.construct(
+            "gatherelements",
+            "GatherElements",
+            input_tensors=input_tensors,
+            output_tensors=output_tensors,
+            attr=OrderedDict({"axis": "1"}),
+        )
 
-        gatherelements_node = OPERATORS['GatherElements']()
-        input_tensors = [Tensor(name='gatherelements_input0',data = np.array(1),shape=[1]),
-                         Tensor(name='expand_output', source_op=['expand'], dest_op=['gatherelements'])]
-        output_tensors = [Tensor(name='gatherelements_output', source_op=['gatherelements'], dest_op=['empty'])]
-        gatherelements_node.construct('gatherelements', 'GatherElements', input_tensors=input_tensors, output_tensors=output_tensors, attr=OrderedDict({'axis': '1'}))
-
-        graph.insert_nodes(len(graph.nodes), [input_data_node, constantofshape_node, mul_node, equal_node, where_node,unsqueeze_node, expand_node,gatherelements_node])
+        graph.insert_nodes(
+            len(graph.nodes),
+            [
+                input_data_node,
+                constantofshape_node,
+                mul_node,
+                equal_node,
+                where_node,
+                unsqueeze_node,
+                expand_node,
+                gatherelements_node,
+            ],
+        )
 
         graph = AttentionOutputLayerNormLengthAdaptiveExpandIndices()(graph)
 
         self.assertEqual(3, len(graph.nodes))
-        self.assertEqual('expand', graph.nodes[1].name)
+        self.assertEqual("expand", graph.nodes[1].name)
 
 
 if __name__ == "__main__":

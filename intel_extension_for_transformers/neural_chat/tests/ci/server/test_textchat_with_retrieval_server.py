@@ -15,15 +15,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 import os
+import unittest
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from intel_extension_for_transformers.neural_chat import build_chatbot, plugins
-from intel_extension_for_transformers.neural_chat import PipelineConfig
-from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent import Agent_QA
+
+from intel_extension_for_transformers.neural_chat import (
+    PipelineConfig,
+    build_chatbot,
+    plugins,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent import (
+    Agent_QA,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import (
+    ChatCompletionRequest,
+)
+from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import (
+    router,
+)
 
 app = FastAPI()
 app.include_router(router)
@@ -44,6 +55,7 @@ Offload Support: Information about SYCL*, OpenMP, and parallel processing option
 Latest Standards: Use the latest standards including C++ 20, SYCL, and OpenMP 5.0 and 5.1 for GPU offload.
 """
 
+
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -55,12 +67,15 @@ class UnitTest(unittest.TestCase):
             file.write(oneapi_content)
         print(f"File created at {self.oneapi_doc}")
 
-        plugins["retrieval"]['class'] = Agent_QA
-        plugins["retrieval"]["instance"] = plugins["retrieval"]['class'](input_path="./oneapi.txt")
+        plugins["retrieval"]["class"] = Agent_QA
+        plugins["retrieval"]["instance"] = plugins["retrieval"]["class"](
+            input_path="./oneapi.txt"
+        )
 
     def tearDown(self) -> None:
         # delete created resources
         import shutil
+
         if os.path.exists("./output"):
             shutil.rmtree("./output")
         if os.path.exists("./oneapi.txt"):
@@ -73,6 +88,7 @@ class UnitTest(unittest.TestCase):
         )
         response = client.post("/v1/chat/completions", json=chat_request.dict())
         assert response.status_code == 200
+
 
 if __name__ == "__main__":
     unittest.main()

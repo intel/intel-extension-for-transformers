@@ -15,19 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import sys
-import torch
-import torch.nn as nn
-import numpy as np
 import os
 import shutil
+import unittest
+
+import numpy as np
+import torch
+import torch.nn as nn
+from intel_extension_for_pytorch.quantization import convert, prepare
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-from intel_extension_for_pytorch.quantization import prepare, convert
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
 torch.manual_seed(2)
+
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -37,14 +40,16 @@ class Net(nn.Module):
         x = self.conv(x)
         return x
 
+
 def weight_init(m):
     if isinstance(m, nn.Linear):
         nn.init.xavier_normal_(m.weight)
     elif isinstance(m, nn.Conv2d):
-        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+        nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
     elif isinstance(m, nn.BatchNorm2d):
         nn.init.constant_(m.weight, 1)
         nn.init.constant_(m.bias, 0)
+
 
 class TestTorchOP(unittest.TestCase):
     @classmethod
@@ -56,10 +61,20 @@ class TestTorchOP(unittest.TestCase):
         pass
 
     def test_1(self):
-        from torch.ao.quantization import MinMaxObserver, PerChannelMinMaxObserver, QConfig
-        qconfig = QConfig(activation=MinMaxObserver.with_args(qscheme=torch.per_tensor_affine, dtype=torch.quint8),
-                        weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric))
-        
+        from torch.ao.quantization import (
+            MinMaxObserver,
+            QConfig,
+        )
+
+        qconfig = QConfig(
+            activation=MinMaxObserver.with_args(
+                qscheme=torch.per_tensor_affine, dtype=torch.quint8
+            ),
+            weight=MinMaxObserver.with_args(
+                dtype=torch.qint8, qscheme=torch.per_tensor_symmetric
+            ),
+        )
+
         n = Net().eval()
         n.apply(weight_init)
         example_in = torch.rand(3, 16, 13, 13)
@@ -68,24 +83,35 @@ class TestTorchOP(unittest.TestCase):
         convert_model = convert(prepared_model)
 
         traced_model = torch.jit.trace(convert_model, example_in)
-        torch.jit.save(traced_model, '{}.pt'.format(file_name))
+        torch.jit.save(traced_model, "{}.pt".format(file_name))
         ref_out = traced_model(example_in).detach().numpy()
 
-        graph = compile('{}.pt'.format(file_name))
+        graph = compile("{}.pt".format(file_name))
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + "/conf.yaml", file_name + "/model.bin")
         out = newgraph.inference([example_in.numpy()])
-        
+
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
-        os.remove('{}.pt'.format(file_name))
+        os.remove("{}.pt".format(file_name))
         shutil.rmtree(file_name)
 
     def test_2(self):
-        from torch.ao.quantization import MinMaxObserver, PerChannelMinMaxObserver, QConfig
-        qconfig = QConfig(activation=MinMaxObserver.with_args(qscheme=torch.per_tensor_affine, dtype=torch.quint8),
-                        weight=PerChannelMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_channel_symmetric))
-        
+        from torch.ao.quantization import (
+            MinMaxObserver,
+            PerChannelMinMaxObserver,
+            QConfig,
+        )
+
+        qconfig = QConfig(
+            activation=MinMaxObserver.with_args(
+                qscheme=torch.per_tensor_affine, dtype=torch.quint8
+            ),
+            weight=PerChannelMinMaxObserver.with_args(
+                dtype=torch.qint8, qscheme=torch.per_channel_symmetric
+            ),
+        )
+
         n = Net().eval()
         n.apply(weight_init)
         example_in = torch.rand(3, 16, 13, 13)
@@ -94,18 +120,19 @@ class TestTorchOP(unittest.TestCase):
         convert_model = convert(prepared_model)
 
         traced_model = torch.jit.trace(convert_model, example_in)
-        torch.jit.save(traced_model, '{}.pt'.format(file_name))
+        torch.jit.save(traced_model, "{}.pt".format(file_name))
         ref_out = traced_model(example_in).detach().numpy()
 
-        graph = compile('{}.pt'.format(file_name))
+        graph = compile("{}.pt".format(file_name))
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + "/conf.yaml", file_name + "/model.bin")
         out = newgraph.inference([example_in.numpy()])
-        
+
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
-        os.remove('{}.pt'.format(file_name))
+        os.remove("{}.pt".format(file_name))
         shutil.rmtree(file_name)
+
 
 if __name__ == "__main__":
     unittest.main()

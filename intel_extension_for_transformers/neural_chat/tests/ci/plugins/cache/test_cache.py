@@ -15,10 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache import ChatCache
-from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
+import os
+import shutil
 import unittest
-import os, shutil
+
+from intel_extension_for_transformers.neural_chat import PipelineConfig, build_chatbot
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache import (
+    ChatCache,
+)
+
 
 class TestChatCache(unittest.TestCase):
     def setUp(self):
@@ -28,13 +33,13 @@ class TestChatCache(unittest.TestCase):
         if os.path.exists("./gptcache_data") and os.path.isdir("./gptcache_data"):
             try:
                 shutil.rmtree("./gptcache_data")
-                print(f"The directory gptcache_data has been successfully deleted.")
+                print("The directory gptcache_data has been successfully deleted.")
             except Exception as e:
                 print(f"An error occurred while deleting the directory: {e}")
         else:
-            print(f"The directory gptcache_data does not exist.")
+            print("The directory gptcache_data does not exist.")
         return super().tearDown()
-    
+
     def test_chat_cache(self):
         cache_plugin = ChatCache(embedding_model_dir="hkunlp/instructor-large")
         cache_plugin.init_similar_cache_from_config()
@@ -46,7 +51,8 @@ class TestChatCache(unittest.TestCase):
         cache_plugin.put(prompt, response)
 
         answer = cache_plugin.get(prompt)
-        self.assertIn('Intel Xeon Scalable', str(answer['choices'][0]['text']))
+        self.assertIn("Intel Xeon Scalable", str(answer["choices"][0]["text"]))
+
 
 if __name__ == "__main__":
     unittest.main()

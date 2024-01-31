@@ -15,12 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 import os
-from unittest.mock import patch, MagicMock
+import unittest
+from unittest.mock import MagicMock, patch
+
 from yacs.config import CfgNode
-from intel_extension_for_transformers.neural_chat.server.neuralchat_server import NeuralChatServerExecutor, app, get_config
+
 from intel_extension_for_transformers.neural_chat import plugins
+from intel_extension_for_transformers.neural_chat.server.neuralchat_server import (
+    NeuralChatServerExecutor,
+    app,
+)
+
 
 def build_fake_yaml_basic():
     fake_yaml = """
@@ -33,8 +39,9 @@ device: "auto"
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune'， 'photoai']
 tasks_list: ['textchat']
     """
-    with open('neuralchat.yaml', 'w', encoding="utf-8") as f:
+    with open("neuralchat.yaml", "w", encoding="utf-8") as f:
         f.write(fake_yaml)
+
 
 class TestNeuralChatServerExecutor(unittest.TestCase):
     def setUp(self):
@@ -42,94 +49,109 @@ class TestNeuralChatServerExecutor(unittest.TestCase):
         build_fake_yaml_basic()
 
     def tearDown(self):
-        os.remove('neuralchat.yaml')
+        os.remove("neuralchat.yaml")
 
     def test_init_plugin_as_service(self):
         config = CfgNode()
-        config.host = '127.0.0.1'
+        config.host = "127.0.0.1"
         config.port = 8000
         config.use_deepspeed = True
         config.plugin_as_service = True
-        config.device = 'cpu'
-        config.model_name_or_path = 'facebook/opt-125m'
-        config.tasks_list = ['textchat']
+        config.device = "cpu"
+        config.model_name_or_path = "facebook/opt-125m"
+        config.tasks_list = ["textchat"]
         with patch.dict(plugins, {}):
             self.assertTrue(self.executor.init(config))
 
     def test_init_chatbot_as_service(self):
         config = CfgNode()
-        config.host = '127.0.0.1'
+        config.host = "127.0.0.1"
         config.port = 8000
-        config.device = 'cpu'
-        config.model_name_or_path = 'facebook/opt-125m'
-        config.tasks_list = ['textchat']
+        config.device = "cpu"
+        config.model_name_or_path = "facebook/opt-125m"
+        config.tasks_list = ["textchat"]
         with patch.dict(plugins, {}):
             self.assertTrue(self.executor.init(config))
 
     def test_init_chatbot_as_service_with_deepspeed(self):
         config = CfgNode()
-        config.host = '127.0.0.1'
+        config.host = "127.0.0.1"
         config.port = 8000
         config.use_deepspeed = True
-        config.device = 'cpu'
-        config.model_name_or_path = 'facebook/opt-125m'
-        config.tasks_list = ['textchat']
+        config.device = "cpu"
+        config.model_name_or_path = "facebook/opt-125m"
+        config.tasks_list = ["textchat"]
         with patch.dict(plugins, {}):
             self.assertTrue(self.executor.init(config))
 
     def test_init_chatbot_as_service_with_deepspeed_habana(self):
         config = CfgNode()
-        config.host = '127.0.0.1'
+        config.host = "127.0.0.1"
         config.port = 8000
         config.use_deepspeed = True
-        config.device = 'hpu'
-        config.model_name_or_path = 'facebook/opt-125m'
-        config.tasks_list = ['textchat']
+        config.device = "hpu"
+        config.model_name_or_path = "facebook/opt-125m"
+        config.tasks_list = ["textchat"]
         with patch.dict(plugins, {}):
             self.assertTrue(self.executor.init(config))
 
     def test_execute_success(self):
-        argv = ['--config_file', 'neuralchat.yaml', '--log_file', 'app.log']
+        argv = ["--config_file", "neuralchat.yaml", "--log_file", "app.log"]
 
-        with patch('intel_extension_for_transformers.neural_chat.server.neuralchat_server.get_config') as mock_get_config, \
-             patch('intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor.init') as mock_init, \
-             patch('uvicorn.run') as mock_run:
-
+        with patch(
+            "intel_extension_for_transformers.neural_chat.server.neuralchat_server.get_config"
+        ) as mock_get_config, patch(
+            "intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor.init"
+        ) as mock_init, patch(
+            "uvicorn.run"
+        ) as mock_run:
             mock_get_config.return_value = MagicMock()
             mock_init.return_value = True
             self.executor.execute(argv)
             mock_init.assert_called_once_with(mock_get_config.return_value)
-            mock_run.assert_called_once_with(app, host=mock_get_config.return_value.host,
-                                             port=mock_get_config.return_value.port)
+            mock_run.assert_called_once_with(
+                app,
+                host=mock_get_config.return_value.host,
+                port=mock_get_config.return_value.port,
+            )
 
     def test_execute_failure(self):
-        argv = ['--config_file', 'neuralchat.yaml', '--log_file', 'app.log']
+        argv = ["--config_file", "neuralchat.yaml", "--log_file", "app.log"]
 
-        with patch('intel_extension_for_transformers.neural_chat.server.neuralchat_server.get_config') as mock_get_config, \
-             patch('intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor.init') as mock_init, \
-             patch('uvicorn.run') as mock_run:
-
+        with patch(
+            "intel_extension_for_transformers.neural_chat.server.neuralchat_server.get_config"
+        ) as mock_get_config, patch(
+            "intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor.init"
+        ) as mock_init, patch(
+            "uvicorn.run"
+        ) as mock_run:
             mock_get_config.return_value = MagicMock()
             mock_init.return_value = False
             self.executor.execute(argv)
             mock_init.assert_called_once_with(mock_get_config.return_value)
             mock_run.assert_not_called()
 
-    @patch('uvicorn.run')
+    @patch("uvicorn.run")
     def test_execute_exception(self, mock_run):
-        mock_run.side_effect = Exception('Uvicorn run failed simulation for unit test')
-        self.executor.execute(['--config_file', 'neuralchat.yaml', '--log_file', 'app.log'])
+        mock_run.side_effect = Exception("Uvicorn run failed simulation for unit test")
+        self.executor.execute(
+            ["--config_file", "neuralchat.yaml", "--log_file", "app.log"]
+        )
         mock_run.assert_called_once()
 
-    @patch.object(NeuralChatServerExecutor, '__call__')
+    @patch.object(NeuralChatServerExecutor, "__call__")
     def test_execute_exception_call(self, mock_call):
-        mock_call.side_effect = Exception('Failed to start server simulation for unit test')
+        mock_call.side_effect = Exception(
+            "Failed to start server simulation for unit test"
+        )
         with self.assertRaises(SystemExit) as cm:
-            self.executor.execute(['--config_file', 'neuralchat.yaml', '--log_file', 'app.log'])
+            self.executor.execute(
+                ["--config_file", "neuralchat.yaml", "--log_file", "app.log"]
+            )
 
         self.assertEqual(cm.exception.code, -1)
-        mock_call.assert_called_once_with('neuralchat.yaml', 'app.log')
+        mock_call.assert_called_once_with("neuralchat.yaml", "app.log")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
-

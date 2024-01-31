@@ -15,24 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from torch import nn
-
-import torch.nn.functional as F
 import torch
-
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
-    facerender.sync_batchnorm import SynchronizedBatchNorm2d as BatchNorm2d
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
-    facerender.sync_batchnorm import SynchronizedBatchNorm3d as BatchNorm3d
+import torch.nn.functional as F
 
 # pylint: disable=E1102
 import torch.nn.utils.spectral_norm as spectral_norm
+from torch import nn
+
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm import (
+    SynchronizedBatchNorm2d as BatchNorm2d,
+)
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm import (
+    SynchronizedBatchNorm3d as BatchNorm3d,
+)
 
 
 def kp2gaussian(kp, spatial_size, kp_variance):
-    """
-    Transform a keypoint into gaussian like representation
-    """
+    """Transform a keypoint into gaussian like representation."""
     mean = kp["value"]
 
     coordinate_grid = make_coordinate_grid(spatial_size, mean.type())
@@ -54,9 +53,7 @@ def kp2gaussian(kp, spatial_size, kp_variance):
 
 
 def make_coordinate_grid_2d(spatial_size, type):
-    """
-    Create a meshgrid [-1,1] x [-1,1] of given spatial_size.
-    """
+    """Create a meshgrid [-1,1] x [-1,1] of given spatial_size."""
     h, w = spatial_size
     x = torch.arange(w).type(type)
     y = torch.arange(h).type(type)
@@ -94,18 +91,31 @@ def make_coordinate_grid(spatial_size, type):
 class ResBottleneck(nn.Module):
     def __init__(self, in_features, stride):
         super(ResBottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=in_features, out_channels=in_features // 4, kernel_size=1)
-        self.conv2 = nn.Conv2d(
-            in_channels=in_features // 4, out_channels=in_features // 4, kernel_size=3, padding=1, stride=stride
+        self.conv1 = nn.Conv2d(
+            in_channels=in_features, out_channels=in_features // 4, kernel_size=1
         )
-        self.conv3 = nn.Conv2d(in_channels=in_features // 4, out_channels=in_features, kernel_size=1)
+        self.conv2 = nn.Conv2d(
+            in_channels=in_features // 4,
+            out_channels=in_features // 4,
+            kernel_size=3,
+            padding=1,
+            stride=stride,
+        )
+        self.conv3 = nn.Conv2d(
+            in_channels=in_features // 4, out_channels=in_features, kernel_size=1
+        )
         self.norm1 = BatchNorm2d(in_features // 4, affine=True)
         self.norm2 = BatchNorm2d(in_features // 4, affine=True)
         self.norm3 = BatchNorm2d(in_features, affine=True)
 
         self.stride = stride
         if self.stride != 1:
-            self.skip = nn.Conv2d(in_channels=in_features, out_channels=in_features, kernel_size=1, stride=stride)
+            self.skip = nn.Conv2d(
+                in_channels=in_features,
+                out_channels=in_features,
+                kernel_size=1,
+                stride=stride,
+            )
             self.norm4 = BatchNorm2d(in_features, affine=True)
 
     def forward(self, x):
@@ -126,17 +136,21 @@ class ResBottleneck(nn.Module):
 
 
 class ResBlock2d(nn.Module):
-    """
-    Res block, preserve spatial resolution.
-    """
+    """Res block, preserve spatial resolution."""
 
     def __init__(self, in_features, kernel_size, padding):
         super(ResBlock2d, self).__init__()
         self.conv1 = nn.Conv2d(
-            in_channels=in_features, out_channels=in_features, kernel_size=kernel_size, padding=padding
+            in_channels=in_features,
+            out_channels=in_features,
+            kernel_size=kernel_size,
+            padding=padding,
         )
         self.conv2 = nn.Conv2d(
-            in_channels=in_features, out_channels=in_features, kernel_size=kernel_size, padding=padding
+            in_channels=in_features,
+            out_channels=in_features,
+            kernel_size=kernel_size,
+            padding=padding,
         )
         self.norm1 = BatchNorm2d(in_features, affine=True)
         self.norm2 = BatchNorm2d(in_features, affine=True)
@@ -153,17 +167,21 @@ class ResBlock2d(nn.Module):
 
 
 class ResBlock3d(nn.Module):
-    """
-    Res block, preserve spatial resolution.
-    """
+    """Res block, preserve spatial resolution."""
 
     def __init__(self, in_features, kernel_size, padding):
         super(ResBlock3d, self).__init__()
         self.conv1 = nn.Conv3d(
-            in_channels=in_features, out_channels=in_features, kernel_size=kernel_size, padding=padding
+            in_channels=in_features,
+            out_channels=in_features,
+            kernel_size=kernel_size,
+            padding=padding,
         )
         self.conv2 = nn.Conv3d(
-            in_channels=in_features, out_channels=in_features, kernel_size=kernel_size, padding=padding
+            in_channels=in_features,
+            out_channels=in_features,
+            kernel_size=kernel_size,
+            padding=padding,
         )
         self.norm1 = BatchNorm3d(in_features, affine=True)
         self.norm2 = BatchNorm3d(in_features, affine=True)
@@ -180,15 +198,17 @@ class ResBlock3d(nn.Module):
 
 
 class UpBlock2d(nn.Module):
-    """
-    Upsampling block for use in decoder.
-    """
+    """Upsampling block for use in decoder."""
 
     def __init__(self, in_features, out_features, kernel_size=3, padding=1, groups=1):
         super(UpBlock2d, self).__init__()
 
         self.conv = nn.Conv2d(
-            in_channels=in_features, out_channels=out_features, kernel_size=kernel_size, padding=padding, groups=groups
+            in_channels=in_features,
+            out_channels=out_features,
+            kernel_size=kernel_size,
+            padding=padding,
+            groups=groups,
         )
         self.norm = BatchNorm2d(out_features, affine=True)
 
@@ -201,15 +221,17 @@ class UpBlock2d(nn.Module):
 
 
 class UpBlock3d(nn.Module):
-    """
-    Upsampling block for use in decoder.
-    """
+    """Upsampling block for use in decoder."""
 
     def __init__(self, in_features, out_features, kernel_size=3, padding=1, groups=1):
         super(UpBlock3d, self).__init__()
 
         self.conv = nn.Conv3d(
-            in_channels=in_features, out_channels=out_features, kernel_size=kernel_size, padding=padding, groups=groups
+            in_channels=in_features,
+            out_channels=out_features,
+            kernel_size=kernel_size,
+            padding=padding,
+            groups=groups,
         )
         self.norm = BatchNorm3d(out_features, affine=True)
 
@@ -223,14 +245,16 @@ class UpBlock3d(nn.Module):
 
 
 class DownBlock2d(nn.Module):
-    """
-    Downsampling block for use in encoder.
-    """
+    """Downsampling block for use in encoder."""
 
     def __init__(self, in_features, out_features, kernel_size=3, padding=1, groups=1):
         super(DownBlock2d, self).__init__()
         self.conv = nn.Conv2d(
-            in_channels=in_features, out_channels=out_features, kernel_size=kernel_size, padding=padding, groups=groups
+            in_channels=in_features,
+            out_channels=out_features,
+            kernel_size=kernel_size,
+            padding=padding,
+            groups=groups,
         )
         self.norm = BatchNorm2d(out_features, affine=True)
         self.pool = nn.AvgPool2d(kernel_size=(2, 2))
@@ -244,18 +268,18 @@ class DownBlock2d(nn.Module):
 
 
 class DownBlock3d(nn.Module):
-    """
-    Downsampling block for use in encoder.
-    """
+    """Downsampling block for use in encoder."""
 
     def __init__(self, in_features, out_features, kernel_size=3, padding=1, groups=1):
         super(DownBlock3d, self).__init__()
-        """
-        self.conv = nn.Conv3d(in_channels=in_features, out_channels=out_features, kernel_size=kernel_size,
-                              padding=padding, groups=groups, stride=(1, 2, 2))
-        """
+        """self.conv = nn.Conv3d(in_channels=in_features, out_channels=out_features, kernel_size=kernel_size,
+                              padding=padding, groups=groups, stride=(1, 2, 2))"""
         self.conv = nn.Conv3d(
-            in_channels=in_features, out_channels=out_features, kernel_size=kernel_size, padding=padding, groups=groups
+            in_channels=in_features,
+            out_channels=out_features,
+            kernel_size=kernel_size,
+            padding=padding,
+            groups=groups,
         )
         self.norm = BatchNorm3d(out_features, affine=True)
         self.pool = nn.AvgPool3d(kernel_size=(1, 2, 2))
@@ -269,14 +293,18 @@ class DownBlock3d(nn.Module):
 
 
 class SameBlock2d(nn.Module):
-    """
-    Simple block, preserve spatial resolution.
-    """
+    """Simple block, preserve spatial resolution."""
 
-    def __init__(self, in_features, out_features, groups=1, kernel_size=3, padding=1, lrelu=False):
+    def __init__(
+        self, in_features, out_features, groups=1, kernel_size=3, padding=1, lrelu=False
+    ):
         super(SameBlock2d, self).__init__()
         self.conv = nn.Conv2d(
-            in_channels=in_features, out_channels=out_features, kernel_size=kernel_size, padding=padding, groups=groups
+            in_channels=in_features,
+            out_channels=out_features,
+            kernel_size=kernel_size,
+            padding=padding,
+            groups=groups,
         )
         self.norm = BatchNorm2d(out_features, affine=True)
         if lrelu:
@@ -292,9 +320,7 @@ class SameBlock2d(nn.Module):
 
 
 class Encoder(nn.Module):
-    """
-    Hourglass Encoder
-    """
+    """Hourglass Encoder."""
 
     def __init__(self, block_expansion, in_features, num_blocks=3, max_features=256):
         super(Encoder, self).__init__()
@@ -303,7 +329,9 @@ class Encoder(nn.Module):
         for i in range(num_blocks):
             down_blocks.append(
                 DownBlock3d(
-                    in_features if i == 0 else min(max_features, block_expansion * (2**i)),
+                    in_features
+                    if i == 0
+                    else min(max_features, block_expansion * (2**i)),
                     min(max_features, block_expansion * (2 ** (i + 1))),
                     kernel_size=3,
                     padding=1,
@@ -319,9 +347,7 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    """
-    Hourglass Decoder
-    """
+    """Hourglass Decoder."""
 
     def __init__(self, block_expansion, in_features, num_blocks=3, max_features=256):
         super(Decoder, self).__init__()
@@ -329,15 +355,24 @@ class Decoder(nn.Module):
         up_blocks = []
 
         for i in range(num_blocks)[::-1]:
-            in_filters = (1 if i == num_blocks - 1 else 2) * min(max_features, block_expansion * (2 ** (i + 1)))
+            in_filters = (1 if i == num_blocks - 1 else 2) * min(
+                max_features, block_expansion * (2 ** (i + 1))
+            )
             out_filters = min(max_features, block_expansion * (2**i))
-            up_blocks.append(UpBlock3d(in_filters, out_filters, kernel_size=3, padding=1))
+            up_blocks.append(
+                UpBlock3d(in_filters, out_filters, kernel_size=3, padding=1)
+            )
 
         self.up_blocks = nn.ModuleList(up_blocks)
         # self.out_filters = block_expansion
         self.out_filters = block_expansion + in_features
 
-        self.conv = nn.Conv3d(in_channels=self.out_filters, out_channels=self.out_filters, kernel_size=3, padding=1)
+        self.conv = nn.Conv3d(
+            in_channels=self.out_filters,
+            out_channels=self.out_filters,
+            kernel_size=3,
+            padding=1,
+        )
         self.norm = BatchNorm3d(self.out_filters, affine=True)
 
     def forward(self, x):
@@ -355,9 +390,7 @@ class Decoder(nn.Module):
 
 
 class Hourglass(nn.Module):
-    """
-    Hourglass architecture.
-    """
+    """Hourglass architecture."""
 
     def __init__(self, block_expansion, in_features, num_blocks=3, max_features=256):
         super(Hourglass, self).__init__()
@@ -370,11 +403,17 @@ class Hourglass(nn.Module):
 
 
 class KPHourglass(nn.Module):
-    """
-    Hourglass architecture.
-    """
+    """Hourglass architecture."""
 
-    def __init__(self, block_expansion, in_features, reshape_features, reshape_depth, num_blocks=3, max_features=256):
+    def __init__(
+        self,
+        block_expansion,
+        in_features,
+        reshape_features,
+        reshape_depth,
+        num_blocks=3,
+        max_features=256,
+    ):
         super(KPHourglass, self).__init__()
 
         self.down_blocks = nn.Sequential()
@@ -382,7 +421,9 @@ class KPHourglass(nn.Module):
             self.down_blocks.add_module(
                 "down" + str(i),
                 DownBlock2d(
-                    in_features if i == 0 else min(max_features, block_expansion * (2**i)),
+                    in_features
+                    if i == 0
+                    else min(max_features, block_expansion * (2**i)),
                     min(max_features, block_expansion * (2 ** (i + 1))),
                     kernel_size=3,
                     padding=1,
@@ -390,13 +431,20 @@ class KPHourglass(nn.Module):
             )
 
         in_filters = min(max_features, block_expansion * (2**num_blocks))
-        self.conv = nn.Conv2d(in_channels=in_filters, out_channels=reshape_features, kernel_size=1)
+        self.conv = nn.Conv2d(
+            in_channels=in_filters, out_channels=reshape_features, kernel_size=1
+        )
 
         self.up_blocks = nn.Sequential()
         for i in range(num_blocks):
             in_filters = min(max_features, block_expansion * (2 ** (num_blocks - i)))
-            out_filters = min(max_features, block_expansion * (2 ** (num_blocks - i - 1)))
-            self.up_blocks.add_module("up" + str(i), UpBlock3d(in_filters, out_filters, kernel_size=3, padding=1))
+            out_filters = min(
+                max_features, block_expansion * (2 ** (num_blocks - i - 1))
+            )
+            self.up_blocks.add_module(
+                "up" + str(i),
+                UpBlock3d(in_filters, out_filters, kernel_size=3, padding=1),
+            )
 
         self.reshape_depth = reshape_depth
         self.out_filters = out_filters
@@ -412,9 +460,7 @@ class KPHourglass(nn.Module):
 
 
 class AntiAliasInterpolation2d(nn.Module):
-    """
-    Band-limited downsampling, for better preservation of the input signal.
-    """
+    """Band-limited downsampling, for better preservation of the input signal."""
 
     def __init__(self, channels, scale):
         super(AntiAliasInterpolation2d, self).__init__()
@@ -428,7 +474,9 @@ class AntiAliasInterpolation2d(nn.Module):
         # The gaussian kernel is the product of the
         # gaussian function of each dimension.
         kernel = 1
-        meshgrids = torch.meshgrid([torch.arange(size, dtype=torch.float32) for size in kernel_size])
+        meshgrids = torch.meshgrid(
+            [torch.arange(size, dtype=torch.float32) for size in kernel_size]
+        )
         for size, std, mgrid in zip(kernel_size, sigma, meshgrids):
             mean = (size - 1) / 2
             kernel *= torch.exp(-((mgrid - mean) ** 2) / (2 * std**2))
@@ -463,7 +511,9 @@ class SPADE(nn.Module):
         self.param_free_norm = nn.InstanceNorm2d(norm_nc, affine=False)
         nhidden = 128
 
-        self.mlp_shared = nn.Sequential(nn.Conv2d(label_nc, nhidden, kernel_size=3, padding=1), nn.ReLU())
+        self.mlp_shared = nn.Sequential(
+            nn.Conv2d(label_nc, nhidden, kernel_size=3, padding=1), nn.ReLU()
+        )
         self.mlp_gamma = nn.Conv2d(nhidden, norm_nc, kernel_size=3, padding=1)
         self.mlp_beta = nn.Conv2d(nhidden, norm_nc, kernel_size=3, padding=1)
 
@@ -485,8 +535,12 @@ class SPADEResnetBlock(nn.Module):
         fmiddle = min(fin, fout)
         self.use_se = use_se
         # create conv layers
-        self.conv_0 = nn.Conv2d(fin, fmiddle, kernel_size=3, padding=dilation, dilation=dilation)
-        self.conv_1 = nn.Conv2d(fmiddle, fout, kernel_size=3, padding=dilation, dilation=dilation)
+        self.conv_0 = nn.Conv2d(
+            fin, fmiddle, kernel_size=3, padding=dilation, dilation=dilation
+        )
+        self.conv_1 = nn.Conv2d(
+            fmiddle, fout, kernel_size=3, padding=dilation, dilation=dilation
+        )
         if self.learned_shortcut:
             self.conv_s = nn.Conv2d(fin, fout, kernel_size=1, bias=False)
         # apply spectral norm if specified
@@ -520,7 +574,14 @@ class SPADEResnetBlock(nn.Module):
 
 
 class audio2image(nn.Module):
-    def __init__(self, generator, kp_extractor, he_estimator_video, he_estimator_audio, train_params):
+    def __init__(
+        self,
+        generator,
+        kp_extractor,
+        he_estimator_video,
+        he_estimator_audio,
+        train_params,
+    ):
         super().__init__()
         # Attributes
         self.generator = generator
@@ -628,6 +689,10 @@ class audio2image(nn.Module):
         pose_generated = self.he_estimator_audio(target_audio)
         kp_canonical = self.kp_extractor(source_image)
         kp_source = self.keypoint_transformation(kp_canonical, pose_source)
-        kp_transformed_generated = self.keypoint_transformation(kp_canonical, pose_generated)
-        generated = self.generator(source_image, kp_source=kp_source, kp_driving=kp_transformed_generated)
+        kp_transformed_generated = self.keypoint_transformation(
+            kp_canonical, pose_generated
+        )
+        generated = self.generator(
+            source_image, kp_source=kp_source, kp_driving=kp_transformed_generated
+        )
         return generated

@@ -1,5 +1,17 @@
-"""
-Apply the delta weights on top of a base model.
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Apply the delta weights on top of a base model.
 
 Usage:
 python3 -m fastchat.model.apply_delta --base ~/model_weights/llama-7b --target ~/model_weights/vicuna-7b --delta lmsys/vicuna-7b-delta-v1.1
@@ -12,12 +24,10 @@ import os
 import shutil
 import tempfile
 
-from huggingface_hub import snapshot_download
 import torch
-from torch import nn
+from huggingface_hub import snapshot_download
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
-
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 GB = 1 << 30
 

@@ -15,13 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
-import intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils as util
 import os
-import torch
-import onnx
 import shutil
+import unittest
+
+import onnx
+import torch
+
+import intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils as util
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+
 
 class Net(torch.nn.Module):
     def __init__(self):
@@ -31,6 +34,7 @@ class Net(torch.nn.Module):
     def forward(self, x):
         x = self.linear(x)
         return x
+
 
 class TestFWK(unittest.TestCase):
     @classmethod
@@ -45,19 +49,20 @@ class TestFWK(unittest.TestCase):
         n = Net()
         example_in = torch.rand(3, 30)
         torch_model = torch.jit.trace(n, example_in)
-        torch.onnx.export(n, example_in, 'test_fwk.onnx')
-        torch.jit.save(torch_model, 'test_fwk.pt')
-        onnx_model = onnx.load('test_fwk.onnx')
-        graph = compile('test_fwk.pt')
-        graph.save('test_fwk.ir')
-        self.assertEqual(util.get_model_fwk_name(torch_model), 'torch')
-        self.assertEqual(util.get_model_fwk_name('test_fwk.pt'), 'torch')
-        self.assertEqual(util.get_model_fwk_name(onnx_model), 'onnxruntime')
-        self.assertEqual(util.get_model_fwk_name('test_fwk.onnx'), 'onnxruntime')
-        self.assertEqual(util.get_model_fwk_name('test_fwk.ir'), 'neural engine')
-        os.remove('test_fwk.pt')
-        os.remove('test_fwk.onnx')
-        shutil.rmtree('test_fwk.ir')
+        torch.onnx.export(n, example_in, "test_fwk.onnx")
+        torch.jit.save(torch_model, "test_fwk.pt")
+        onnx_model = onnx.load("test_fwk.onnx")
+        graph = compile("test_fwk.pt")
+        graph.save("test_fwk.ir")
+        self.assertEqual(util.get_model_fwk_name(torch_model), "torch")
+        self.assertEqual(util.get_model_fwk_name("test_fwk.pt"), "torch")
+        self.assertEqual(util.get_model_fwk_name(onnx_model), "onnxruntime")
+        self.assertEqual(util.get_model_fwk_name("test_fwk.onnx"), "onnxruntime")
+        self.assertEqual(util.get_model_fwk_name("test_fwk.ir"), "neural engine")
+        os.remove("test_fwk.pt")
+        os.remove("test_fwk.onnx")
+        shutil.rmtree("test_fwk.ir")
+
 
 if __name__ == "__main__":
     unittest.main()
