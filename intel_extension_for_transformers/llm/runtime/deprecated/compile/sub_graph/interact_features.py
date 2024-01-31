@@ -36,7 +36,7 @@ class InteractFeatures(Pattern):
                 # DLRM onnx model
                 {
                     'patterns': {
-                        'in': [[(0, 'Relu'), (1, 'Shape'), (2, 'Gather'), (3, 'Unsqueeze'), 
+                        'in': [[(0, 'Relu'), (1, 'Shape'), (2, 'Gather'), (3, 'Unsqueeze'),
                                 (7, 'Concat'), (9, 'Reshape')],
                                [(0, 'Relu'), (4, 'Shape'), (5, 'Gather'), (6, 'Unsqueeze'),
                                 (7, 'Concat')],
@@ -52,7 +52,7 @@ class InteractFeatures(Pattern):
                     'input_tensors': {
                         0: [[{0: [0]}], [[0], 1]],
                         1: [[], [[], 1]],
-                        2: [[{1: [0]}], [[1], 2]], 
+                        2: [[{1: [0]}], [[1], 2]],
                     },
                     'output_tensors': {
                         0 : [[{0: [0]}], [[0], 1]],
@@ -124,7 +124,7 @@ class InteractFeatures(Pattern):
                         ret_old_nodes[j][2].name)
                     model.nodes[relu_node_idx].output_tensors[0].dest_op.remove(
                         ret_old_nodes[j][3].name)
-                
+
             elif len(new_node_names) != 0 and i == 1:
                 for j in range(len(new_node_names)):
                     matmul_attr = OrderedDict()

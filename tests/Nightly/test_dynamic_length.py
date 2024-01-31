@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import onnx
 import shutil
@@ -61,7 +75,7 @@ class DummyDataset(data.Dataset):
         if labels:
             self.encoded_dict['start_positions'] = [21]
             self.encoded_dict['end_positions'] = [25]
-        
+
     def __len__(self):
         return 1
 
@@ -109,17 +123,17 @@ class TestDynamicLengthInferenceRoberta(unittest.TestCase):
 
     def test_dynamic_inference(self):
         full_output = self.dynamic_trainer.predict(self.dummy_dataset).predictions
-        
+
         dynamic_length_config = DynamicLengthConfig(
             const_rate=0.2,
             max_length=MAX_LENGTH
         )
         self.dynamic_trainer.set_dynamic_config(dynamic_length_config)
-        
+
         dynamic_output = self.dynamic_trainer.predict(self.dummy_dataset).predictions
-          
+
         self.assertTrue((full_output[0] != dynamic_output[0]).any())
-  
+
         #check onnx
         self.dynamic_trainer.export_to_onnx('dynamic-model.onnx')
         self.assertTrue(check_onnx('dynamic-model.onnx', self.dynamic_trainer.get_eval_dataloader()))
@@ -145,17 +159,17 @@ class TestDynamicLengthInferenceBert(unittest.TestCase):
 
     def test_dynamic_inference(self):
         full_output = self.dynamic_trainer.predict(self.dummy_dataset).predictions
-        
+
         dynamic_length_config = DynamicLengthConfig(
             const_rate=0.2,
             max_length=MAX_LENGTH
         )
         self.dynamic_trainer.set_dynamic_config(dynamic_length_config)
-        
+
         dynamic_output = self.dynamic_trainer.predict(self.dummy_dataset).predictions
-          
+
         self.assertTrue((full_output[0] != dynamic_output[0]).any())
-  
+
         #check onnx
         self.dynamic_trainer.export_to_onnx('dynamic-model.onnx')
         self.assertTrue(check_onnx('dynamic-model.onnx', self.dynamic_trainer.get_eval_dataloader()))
@@ -267,7 +281,7 @@ class TestEvolutionarySearchRoberta(unittest.TestCase):
 
 
     def test_dynamic_training(self):
-        
+
         dynamic_length_config = DynamicLengthConfig(
             evo_iter=EVO_ITER,
             population_size=POPULATION_SIZE,
@@ -278,7 +292,7 @@ class TestEvolutionarySearchRoberta(unittest.TestCase):
         )
 
         self.dynamic_trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
-        self.dynamic_trainer.run_evolutionary_search() 
+        self.dynamic_trainer.run_evolutionary_search()
 
 class TestEvolutionarySearchBert(unittest.TestCase):
     @classmethod
@@ -308,7 +322,7 @@ class TestEvolutionarySearchBert(unittest.TestCase):
 
 
     def test_search(self):
-        
+
         dynamic_length_config = DynamicLengthConfig(
             evo_iter=EVO_ITER,
             population_size=POPULATION_SIZE,
@@ -329,13 +343,13 @@ class TestEvolutionarySearchBert(unittest.TestCase):
         subs = ('MACs','score','method')
         self.assertTrue( all(i in res for i in subs), msg='{0}'.format(res))
         evo = Evolution(self.model,MAX_LENGTH, 'cpu', None, eval_metric='eval_loss')
-        
+
 
 
 class TestSampleConfiguration(unittest.TestCase):
-   
+
     def test_sample_length_config(self):
- 
+
         no_drop_lc = tuple( MAX_LENGTH for _ in range(NUM_LAYERS))
         lc = sample_length_configuration(MAX_LENGTH, NUM_LAYERS)
 
@@ -367,13 +381,13 @@ class TestSampleConfiguration(unittest.TestCase):
         self.assertTrue( len(length_conf) == NUM_LAYERS , msg='{0}, {1}'.format(length_conf, layer_conf))
 
 
-       
 
-        
+
+
 
 
 
 
 if __name__ == "__main__":
     unittest.main()
-   
+

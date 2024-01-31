@@ -8,4 +8,3 @@ Here we introduce performance relates issues  for users who might want detailed 
 
    docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/profiling.md
    docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/validated_data.md
-

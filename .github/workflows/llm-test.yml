@@ -50,7 +50,7 @@ jobs:
       - name: Binary build
         run: |
           cd ${{ github.workspace }}
-          conda activate llm-test || source activate llm-test 
+          conda activate llm-test || source activate llm-test
           pip install build --upgrade
           pip install -r requirements.txt
           python setup.py sdist bdist_wheel
@@ -66,13 +66,13 @@ jobs:
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/models
           bash run_llm.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --conda_env_name=llm-test --precision=int8
-      
+
       - name: FP8 Benchmark
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/models
           bash run_llm.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --conda_env_name=llm-test --precision=fp8
-      
-  
+
+
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
@@ -145,4 +145,4 @@ jobs:
             echo "[Performance Regression] Some model performance regression occurred, please check artifacts and reports."
             exit 1
           fi
-  
+

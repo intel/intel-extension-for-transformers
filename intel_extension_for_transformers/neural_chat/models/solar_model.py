@@ -66,4 +66,3 @@ class SolarModel(BaseModel):
         return get_conv_template("solar")
 
 register_model_adapter(SolarModel)
-

@@ -1,9 +1,9 @@
 datasets
-torch
-transformers>=4.32.0
-sentencepiece
-peft
+einops
 evaluate
 nltk
+peft
 rouge_score
-einops
+sentencepiece
+torch
+transformers>=4.32.0

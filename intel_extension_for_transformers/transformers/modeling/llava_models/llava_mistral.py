@@ -21,7 +21,7 @@ import torch
 import torch.nn as nn
 
 from transformers import AutoConfig, AutoModelForCausalLM
-from transformers import MistralConfig, MistralModel, MistralForCausalLM # pylint: disable=E0611 
+from transformers import MistralConfig, MistralModel, MistralForCausalLM # pylint: disable=E0611
 
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from .multimodal_encoder.builder import build_vision_tower

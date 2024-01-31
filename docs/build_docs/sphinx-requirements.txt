@@ -1,8 +1,8 @@
-sphinx
-sphinx_rtd_theme
+breathe
 recommonmark
+setuptools_scm[toml]>=6.2
+sphinx
+sphinx-autoapi
 sphinx-markdown-tables
 sphinx-md
-sphinx-autoapi
-breathe
-setuptools_scm[toml]>=6.2
+sphinx_rtd_theme

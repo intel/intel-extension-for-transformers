@@ -103,7 +103,7 @@ class Orchestrate_optimizer:
 
         Args:
             output_dir: the path to save config.json and pytorch_model.bin.
-            tokenizer (object, optional): the tokenizer object, use it if you want to 
+            tokenizer (object, optional): the tokenizer object, use it if you want to
                                           save tokenizer.json in output_dir. Defaults to None.
         """
         os.makedirs(shlex.quote(output_dir), exist_ok=True)
@@ -176,7 +176,7 @@ class NoTrainerOptimizer:   # pragma: no cover
     @eval_func.setter
     def eval_func(self, func: Callable):
         """Set the evaluation function.
-            
+
         Args:
             func: evaluation function.
         """
@@ -185,7 +185,7 @@ class NoTrainerOptimizer:   # pragma: no cover
     @train_func.setter
     def train_func(self, func: Callable):
         """Set the train function.
-        
+
         Args:
             func: train function.
         """
@@ -194,7 +194,7 @@ class NoTrainerOptimizer:   # pragma: no cover
     @provider.setter
     def provider(self, provider):
         """Set the provider.
-        
+
         Args:
             provider: optimization provider.
         """
@@ -203,7 +203,7 @@ class NoTrainerOptimizer:   # pragma: no cover
     @calib_dataloader.setter
     def calib_dataloader(self, dataloader):
         """Set the calibration dataloader.
-        
+
         Args:
             dataloader: calibration dataloader.
         """
@@ -220,7 +220,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         provider: str = Provider.INC.value,
     ):
         """Init a Quantization object with config.
-        
+
         Args:
             quant_config: quantization config.
             provider: define the quantization provider.
@@ -281,7 +281,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         calib_dataloader=None,
     ):
         """Prepare for invoking the _inc_quantize function.
-        
+
         Args:
             quant_config: quantization config.
             provider: define the quantization provider.
@@ -313,7 +313,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         provider: str = Provider.INC.value,
     ):
         """Init a Pruning object with config.
-        
+
         Args:
             pruning_config: pruning config.
             provider: define the pruning provider.
@@ -340,7 +340,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         train_func: Optional[Callable] = None,
     ):
         """Do the pruning.
-        
+
         Args:
             pruning_config: pruning config.
             provider: define the pruning provider.
@@ -373,7 +373,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         provider: str = Provider.INC.value,
     ):
         """Init a Distillation object with config and the teacher model.
-        
+
         Args:
             distillation_config: distillation config.
             teacher_model: set the teacher model.
@@ -403,7 +403,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         train_func: Optional[Callable] = None,
     ):
         """Do the distillation.
-        
+
         Args:
             distillation_config: distillation config.
             teacher_model: set the teacher model.
@@ -432,7 +432,7 @@ class NoTrainerOptimizer:   # pragma: no cover
 
     def _save_inc_int8(self, opt_model, output_dir):
         """Save the optimized model in the output directory.
-        
+
         Args:
             opt_model: optimized model.
             output_dir: output path.
@@ -450,7 +450,7 @@ class NoTrainerOptimizer:   # pragma: no cover
 
         Args:
             output_dir: the path to save config.json and pytorch_model.bin.
-            tokenizer (object, optional): the tokenizer object, use it if you want to 
+            tokenizer (object, optional): the tokenizer object, use it if you want to
                                           save tokenizer.json in output_dir. Defaults to None.
         """
         os.makedirs(shlex.quote(output_dir), exist_ok=True)

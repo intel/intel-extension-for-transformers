@@ -7,6 +7,6 @@ spec:
   storageClassName: {{ .Values.pvc.scn }} # nfs-client
   accessModes:
     - "ReadWriteOnce"
-  resources: 
+  resources:
     requests:
       storage: {{ .Values.pvc.resources }}

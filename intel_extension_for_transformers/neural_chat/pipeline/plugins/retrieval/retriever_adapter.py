@@ -30,7 +30,7 @@ class RetrieverAdapter():
 
     def __init__(self, retrieval_type='default', document_store=None, child_document_store= None, **kwargs):
         self.retrieval_type = retrieval_type
-        
+
         if self.retrieval_type == "default":
             self.retriever = VectorStoreRetriever(vectorstore = document_store, **kwargs)
         elif self.retrieval_type == "child_parent":

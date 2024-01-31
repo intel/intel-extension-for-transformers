@@ -42,19 +42,19 @@ torch = LazyImport("torch")
 class AutoDistillation(NASBase):
     """The framework class is designed for handling the whole pipeline of AutoDistillation.
 
-    AutoDistillation is composed of three major stages, i.e. Model Exploration, Flash Distillation, 
+    AutoDistillation is composed of three major stages, i.e. Model Exploration, Flash Distillation,
     and Evaluation.
-    In Model Exploration, a search engine will search for a better compressed model from the architecture 
+    In Model Exploration, a search engine will search for a better compressed model from the architecture
     design space in each iteration.
     Flash Distillation is the stage for training the searched model to discover its potential.
-    In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. 
+    In Evaluation stage, the trained model will be evaluated to measure its performances (e.g.
     the prediction accuracy, the hardware performance etc.) in order to select the best model architecture.
     """
     def __init__(self, model_builder, conf_fname_or_obj, framework='pytorch'):
         """Init an AutoDistillation instance base on config.
 
         Args:
-        model_builder (function obj): A function to build model instance with the specified 
+        model_builder (function obj): A function to build model instance with the specified
             model architecture parameters.
         conf_fname_or_obj (string or obj): The path to the YAML configuration file or
             a configuration object containing search setting, flash distillation settings, etc.
@@ -68,7 +68,7 @@ class AutoDistillation(NASBase):
 
     def search(self, res_save_path=None, model_cls=None):
         """Auto distillation search process.
-        
+
         Returns:
             Best model architecture found in search process.
         """
@@ -129,7 +129,7 @@ class AutoDistillation(NASBase):
             )
             self.search_results[tuple(model_arch_paras.values())] = metrics
 
-            if (self.framework != "pytorch" or not torch.distributed.is_initialized() 
+            if (self.framework != "pytorch" or not torch.distributed.is_initialized()
               or torch.distributed.get_rank() == 0):
                 self._search_algorithm.get_feedback(sum(self.metrics_conversion(metrics)))
                 print(f'res_save_path: {res_save_path}, save_path = {save_path}')
@@ -179,7 +179,7 @@ class AutoDistillation(NASBase):
 
     def load_search_results(self, path):
         """Load previous search results.
-        
+
         Args:
             path: The file path which stores the previous results.
         """

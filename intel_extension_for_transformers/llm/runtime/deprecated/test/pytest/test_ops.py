@@ -35,7 +35,7 @@ class TestOps(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         pass
-    
+
     def test_all(self):
         all_node = node_def_pb2.NodeDef()
         all_node.name = 'all'
@@ -58,7 +58,7 @@ class TestOps(unittest.TestCase):
         assert_node_test.set_attr('tensorflow', assert_node)
         summarize = assert_node_test.attr['summarize']
         self.assertEqual(3, summarize)
-    
+
     def test_batch_matmul(self):
         batch_matmul_node = node_def_pb2.NodeDef()
         batch_matmul_node.name = 'batch_matmul'
@@ -72,7 +72,7 @@ class TestOps(unittest.TestCase):
         transpose_b = batch_matmul_node_test.attr['transpose_b']
         self.assertFalse(transpose_a)
         self.assertTrue(transpose_b)
-    
+
     def test_cast(self):
         cast_node = NodeProto()
         cast_node.name =  'cast'
@@ -83,7 +83,7 @@ class TestOps(unittest.TestCase):
         cast_node_test.set_attr('onnxruntime', cast_node)
         dst_dtype = cast_node_test.attr['DstT']
         self.assertEqual('fp32', dst_dtype)
-    
+
     def test_concat(self):
         concat_node = NodeProto()
         concat_node.name =  'concat'
@@ -94,7 +94,7 @@ class TestOps(unittest.TestCase):
         concat_node_test.set_attr('onnxruntime', concat_node)
         axis = concat_node_test.attr['axis']
         self.assertSequenceEqual([1, 2], axis)
-    
+
     def test_add(self):
         add_node = NodeProto()
         add_node.name = 'add'
@@ -104,7 +104,7 @@ class TestOps(unittest.TestCase):
         add_node_test.name = add_node.name
         name = add_node_test.name
         self.assertEqual('add', name)
-    
+
     def test_constant_of_shape(self):
         constant_of_shape_node = NodeProto()
         constant_of_shape_node.name = 'constant_of_shape'
@@ -124,7 +124,7 @@ class TestOps(unittest.TestCase):
         dequantize_linear_node_test.name = dequantize_linear_node.name
         name = dequantize_linear_node_test.name
         self.assertEqual('dequantize_linear', name)
-    
+
     def test_div(self):
         div_node = NodeProto()
         div_node.name = 'div'
@@ -134,7 +134,7 @@ class TestOps(unittest.TestCase):
         div_node_test.name = div_node.name
         name = div_node_test.name
         self.assertEqual('div', name)
-    
+
     def test_equal(self):
         equal_node = NodeProto()
         equal_node.name = 'equal'
@@ -144,7 +144,7 @@ class TestOps(unittest.TestCase):
         equal_node_test.name = equal_node.name
         name = equal_node_test.name
         self.assertEqual('equal', name)
-    
+
     def test_expand(self):
         expand_node = NodeProto()
         expand_node.name = 'expand'
@@ -154,7 +154,7 @@ class TestOps(unittest.TestCase):
         expand_node_test.name = expand_node.name
         name = expand_node_test.name
         self.assertEqual('expand', name)
-    
+
     def test_non_zero(self):
         non_zero_node = NodeProto()
         non_zero_node.name = 'non_zero'
@@ -164,7 +164,7 @@ class TestOps(unittest.TestCase):
         non_zero_node_test.name = non_zero_node.name
         name = non_zero_node_test.name
         self.assertEqual('non_zero', name)
-    
+
     def test_qlinear_matmul(self):
         qlinear_matmul_node = NodeProto()
         qlinear_matmul_node.name = 'qlinear_matmul'
@@ -174,7 +174,7 @@ class TestOps(unittest.TestCase):
         qlinear_matmul_node_test.name = qlinear_matmul_node.name
         name = qlinear_matmul_node_test.name
         self.assertEqual('qlinear_matmul', name)
-    
+
     def test_qlinear_add(self):
         qlinear_add_node = NodeProto()
         qlinear_add_node.name = 'qlinear_add'
@@ -184,7 +184,7 @@ class TestOps(unittest.TestCase):
         qlinear_add_node_test.name = qlinear_add_node.name
         name = qlinear_add_node_test.name
         self.assertEqual('qlinear_add', name)
-    
+
     def test_qlinear_mul(self):
         qlinear_mul_node = NodeProto()
         qlinear_mul_node.name = 'qlinear_mul'
@@ -194,7 +194,7 @@ class TestOps(unittest.TestCase):
         qlinear_mul_node_test.name = qlinear_mul_node.name
         name = qlinear_mul_node_test.name
         self.assertEqual('qlinear_mul', name)
-    
+
     def test_where(self):
         where_node = NodeProto()
         where_node.name = 'where'
@@ -214,7 +214,7 @@ class TestOps(unittest.TestCase):
         erf_node_test.name = erf_node.name
         name = erf_node_test.name
         self.assertEqual('erf', name)
-    
+
     def test_fill(self):
         fill_node = node_def_pb2.NodeDef()
         fill_node.name = 'fill'
@@ -224,7 +224,7 @@ class TestOps(unittest.TestCase):
         fill_node_test.name = fill_node.name
         name = fill_node_test.name
         self.assertEqual('fill', name)
-    
+
     def test_flat_map_dataset(self):
         flat_map_dataset_node = node_def_pb2.NodeDef()
         flat_map_dataset_node.name = 'flat_map_dataset'
@@ -234,7 +234,7 @@ class TestOps(unittest.TestCase):
         flat_map_dataset_node_test.name = flat_map_dataset_node.name
         name = flat_map_dataset_node_test.name
         self.assertEqual('flat_map_dataset', name)
-    
+
     def test_identity(self):
         identity_node = node_def_pb2.NodeDef()
         identity_node.name = 'identity'
@@ -244,7 +244,7 @@ class TestOps(unittest.TestCase):
         identity_node_test.name = identity_node.name
         name = identity_node_test.name
         self.assertEqual('identity', name)
-    
+
     def test_innerproduct(self):
         innerproduct_node = node_def_pb2.NodeDef()
         innerproduct_node.name = 'innerproduct'
@@ -254,7 +254,7 @@ class TestOps(unittest.TestCase):
         innerproduct_node_test.name = innerproduct_node.name
         name = innerproduct_node_test.name
         self.assertEqual('innerproduct', name)
-    
+
     def test_less_equal(self):
         less_equal_node = node_def_pb2.NodeDef()
         less_equal_node.name = 'less_equal'
@@ -264,7 +264,7 @@ class TestOps(unittest.TestCase):
         less_equal_node_test.name = less_equal_node.name
         name = less_equal_node_test.name
         self.assertEqual('less_equal', name)
-    
+
     def test_make_iterator(self):
         make_iterator_node = node_def_pb2.NodeDef()
         make_iterator_node.name = 'make_iterator'
@@ -284,7 +284,7 @@ class TestOps(unittest.TestCase):
         matmul_with_bias_tanh_node_test.name = matmul_with_bias_tanh_node.name
         name = matmul_with_bias_tanh_node_test.name
         self.assertEqual('matmul_with_bias_tanh', name)
-    
+
     def test_pow(self):
         pow_node = node_def_pb2.NodeDef()
         pow_node.name = 'pow'
@@ -294,7 +294,7 @@ class TestOps(unittest.TestCase):
         pow_node_test.name = pow_node.name
         name = pow_node_test.name
         self.assertEqual('pow', name)
-    
+
     def test_real_div(self):
         real_div_node = node_def_pb2.NodeDef()
         real_div_node.name = 'real_div'
@@ -304,7 +304,7 @@ class TestOps(unittest.TestCase):
         real_div_node_test.name = real_div_node.name
         name = real_div_node_test.name
         self.assertEqual('real_div', name)
-    
+
     def test_sqrt(self):
         sqrt_node = node_def_pb2.NodeDef()
         sqrt_node.name = 'sqrt'
@@ -314,7 +314,7 @@ class TestOps(unittest.TestCase):
         sqrt_node_test.name = sqrt_node.name
         name = sqrt_node_test.name
         self.assertEqual('sqrt', name)
-    
+
     def test_square(self):
         square_node = node_def_pb2.NodeDef()
         square_node.name = 'square'
@@ -324,7 +324,7 @@ class TestOps(unittest.TestCase):
         square_node_test.name = square_node.name
         name = square_node_test.name
         self.assertEqual('square', name)
-    
+
     def test_stop_gradient(self):
         stop_gradient_node = node_def_pb2.NodeDef()
         stop_gradient_node.name = 'stop_gradient'
@@ -334,7 +334,7 @@ class TestOps(unittest.TestCase):
         stop_gradient_node_test.name = stop_gradient_node.name
         name = stop_gradient_node_test.name
         self.assertEqual('stop_gradient', name)
-    
+
     def test_tanh(self):
         tanh_node = node_def_pb2.NodeDef()
         tanh_node.name = 'tanh'
@@ -344,7 +344,7 @@ class TestOps(unittest.TestCase):
         tanh_node_test.name = tanh_node.name
         name = tanh_node_test.name
         self.assertEqual('tanh', name)
-    
+
     def test_tensor_slice_dataset(self):
         tensor_slice_dataset_node = node_def_pb2.NodeDef()
         tensor_slice_dataset_node.name = 'tensor_slice_dataset'
@@ -354,7 +354,7 @@ class TestOps(unittest.TestCase):
         tensor_slice_dataset_node_test.name = tensor_slice_dataset_node.name
         name = tensor_slice_dataset_node_test.name
         self.assertEqual('tensor_slice_dataset', name)
-    
+
     def test_fused_batch_matmul_v2(self):
         fused_batch_matmul_v2_node = node_def_pb2.NodeDef()
         fused_batch_matmul_v2_node.name = 'fused_batch_matmul_v2'
@@ -368,7 +368,7 @@ class TestOps(unittest.TestCase):
         adj_y = fused_batch_matmul_v2_node_test.attr['transpose_b']
         self.assertFalse(adj_x)
         self.assertTrue(adj_y)
-    
+
     def test_fused_batch_norm_v3(self):
         fused_batch_norm_v3_node = node_def_pb2.NodeDef()
         fused_batch_norm_v3_node.name = 'fused_batch_norm_v3'
@@ -387,7 +387,7 @@ class TestOps(unittest.TestCase):
         self.assertEqual(0.0010000000474974513, epsilon)
         self.assertEqual(1, exponential_avg_factor)
         self.assertTrue(is_training)
-    
+
     def test_fused_gemm(self):
         fused_gemm_node = NodeProto()
         fused_gemm_node.name = 'fused_gemm'
@@ -412,7 +412,7 @@ class TestOps(unittest.TestCase):
         self.assertEqual(2, alpha)
         self.assertEqual(2, beta)
         self.assertEqual('InnerProduct', op_type)
-    
+
     def test_gemm(self):
         gemm_node = NodeProto()
         gemm_node.name = 'gemm'
@@ -434,12 +434,12 @@ class TestOps(unittest.TestCase):
         self.assertEqual(2, alpha)
         self.assertEqual(2, beta)
         self.assertEqual('MatMulWithBias', op_type)
-    
+
     def test_quantize_linear(self):
         quantize_linear_node = NodeProto()
         quantize_linear_node.name = 'quantize_linear'
         quantize_linear_node.op_type = 'QuantizeLinear'
-        
+
         quantize_linear_node_test = OPERATORS['QuantizeLinear']()
         quantize_linear_node_test.set_attr('onnxruntime', quantize_linear_node)
         output_dtype = quantize_linear_node_test.attr['output_dtype']
@@ -465,7 +465,7 @@ class TestOps(unittest.TestCase):
         self.assertTrue(transpose_a)
         self.assertFalse(transpose_b)
         self.assertEqual(0.125, alpha)
-    
+
     def test_fused_matmul_tensorflow(self):
         fused_matmul_node = node_def_pb2.NodeDef()
         fused_matmul_node.name = 'fused_matmul'
@@ -480,7 +480,7 @@ class TestOps(unittest.TestCase):
         src1_perm = fused_matmul_node_test.attr['src1_perm']
         self.assertEqual('1,0', src0_perm)
         self.assertEqual('0,1', src1_perm)
-    
+
     def test_gather_onnx(self):
         gather_node = NodeProto()
         gather_node.name = 'gather'
@@ -495,7 +495,7 @@ class TestOps(unittest.TestCase):
         axis = gather_node_test.attr['axis']
         self.assertEqual(0, batch_dims)
         self.assertEqual(0, axis)
-    
+
     def test_gather_tensorflow(self):
         gather_node = node_def_pb2.NodeDef()
         gather_node.name = 'gather'
@@ -508,7 +508,7 @@ class TestOps(unittest.TestCase):
         axis = gather_node_test.attr['axis']
         self.assertEqual(0, batch_dims)
         self.assertEqual(0, axis)
-    
+
     def test_reduce_mean_onnx(self):
         reduce_mean_node = NodeProto()
         reduce_mean_node.name = 'reduce_mean'
@@ -522,7 +522,7 @@ class TestOps(unittest.TestCase):
         axis = reduce_mean_node_test.attr['axis']
         self.assertFalse(keep_dims)
         self.assertEqual(0, axis)
-    
+
     def test_reduce_mean_tensorflow(self):
         reduce_mean_node = node_def_pb2.NodeDef()
         reduce_mean_node.name = 'reduce_mean'
@@ -536,7 +536,7 @@ class TestOps(unittest.TestCase):
         axis = reduce_mean_node_test.attr['axis']
         self.assertFalse(keep_dims)
         self.assertEqual(0, axis)
-    
+
     def test_squeeze_onnx(self):
         squeeze_node = NodeProto()
         squeeze_node.name = 'squeeze'
@@ -547,7 +547,7 @@ class TestOps(unittest.TestCase):
         squeeze_node_test.set_attr('onnxruntime', squeeze_node)
         axis = squeeze_node_test.attr['axis']
         self.assertEqual('0,1,2', axis)
-    
+
     def test_squeeze_tensorflow(self):
         squeeze_node = node_def_pb2.NodeDef()
         squeeze_node.name = 'squeeze'
@@ -571,7 +571,7 @@ class TestOps(unittest.TestCase):
         attr = {'output_shapes': a(b(shape_list)),
                      'output_types': a(e([3]))}
         fake_node = f(attr)
-        
+
         op_type_list = ['IteratorGetNext', 'IteratorV2', 'OptimizeDataset', 'MapAndBatchDataset']
         for op_type in op_type_list:
             iterator_get_next_node_test = OPERATORS[op_type]()
@@ -581,7 +581,7 @@ class TestOps(unittest.TestCase):
             output_types = iterator_get_next_node_test.attr['output_types']
             self.assertSequenceEqual([[-1, 128]], output_shapes)
             self.assertSequenceEqual(['int32'], output_types)
-    
+
     def test_quantize_v2(self):
         quantize_v2_node = node_def_pb2.NodeDef()
         quantize_v2_node.name = 'quantize_v2'
@@ -593,7 +593,7 @@ class TestOps(unittest.TestCase):
         op_type = quantize_v2_node_test.op_type
         self.assertEqual('u8', output_dtype)
         self.assertEqual('Quantize', op_type)
-    
+
     def test_quantized_fused_matmul_and_dequantize(self):
         quantized_fused_matmul_and_dequantize_node = node_def_pb2.NodeDef()
         quantized_fused_matmul_and_dequantize_node.name = 'quantized_fused_matmul_and_dequantize'
@@ -610,7 +610,7 @@ class TestOps(unittest.TestCase):
 
         quantized_fused_matmul_and_dequantize_node_test = OPERATORS[
                                                 '_QuantizedFusedMatMulAndDequantize']()
-        quantized_fused_matmul_and_dequantize_node_test.set_attr('tensorflow', 
+        quantized_fused_matmul_and_dequantize_node_test.set_attr('tensorflow',
                                                 quantized_fused_matmul_and_dequantize_node)
         src0_perm = quantized_fused_matmul_and_dequantize_node_test.attr['src0_perm']
         src1_perm = quantized_fused_matmul_and_dequantize_node_test.attr['src1_perm']
@@ -622,7 +622,7 @@ class TestOps(unittest.TestCase):
         self.assertEqual(1.0, epsilon)
         self.assertEqual(['add'], fused_ops)
         self.assertEqual('fp32', output_dtype)
-    
+
     def test_quantized_matmul_with_bias_and_dequantize(self):
         quantized_matmul_with_bias_and_dequantize_node = node_def_pb2.NodeDef()
         quantized_matmul_with_bias_and_dequantize_node.name = \
@@ -632,11 +632,11 @@ class TestOps(unittest.TestCase):
                                                 attr_value_pb2.AttrValue(b=True))
         quantized_matmul_with_bias_and_dequantize_node.attr['transpose_b'].CopyFrom(
                                                 attr_value_pb2.AttrValue(b=False))
-        
+
 
         quantized_matmul_with_bias_and_dequantize_node_test = OPERATORS[
                                                 'QuantizedMatMulWithBiasAndDequantize']()
-        quantized_matmul_with_bias_and_dequantize_node_test.set_attr('tensorflow', 
+        quantized_matmul_with_bias_and_dequantize_node_test.set_attr('tensorflow',
                                                 quantized_matmul_with_bias_and_dequantize_node)
         transpose_a = quantized_matmul_with_bias_and_dequantize_node_test.attr['transpose_a']
         transpose_b = quantized_matmul_with_bias_and_dequantize_node_test.attr['transpose_b']
@@ -652,7 +652,7 @@ class TestOps(unittest.TestCase):
         layer_normalization_node.attribute.append(make_attribute('stash_type', 1))
         layer_normalization_node.attribute.append(make_attribute('axis', 3))
         layer_normalization_node.attribute.append(make_attribute('epsilon', 1.0))
-        
+
         op_type_list = ['LayerNormalization', '_MklLayerNorm']
         for op_type in op_type_list:
             layer_normalization_node_test = OPERATORS[op_type]()
@@ -663,7 +663,7 @@ class TestOps(unittest.TestCase):
             self.assertEqual(3, axis)
             self.assertEqual(1.0, epsilon)
             self.assertEqual('LayerNorm', op_type)
-        
+
     def test_one_hot(self):
         one_hot_node = node_def_pb2.NodeDef()
         one_hot_node.name = 'one_hot'
@@ -683,7 +683,7 @@ class TestOps(unittest.TestCase):
         self.assertEqual(1, on_value)
         self.assertEqual(2, off_value)
         self.assertEqual(1, len(one_hot_node_test.input_tensors))
-    
+
     def test_onnx_input(self):
         a = namedtuple('fake_node', ['name', 'type'])
         b = namedtuple('type', ['tensor_type'])
@@ -720,7 +720,7 @@ class TestOps(unittest.TestCase):
         dst_perm = transpose_node_test.attr['dst_perm']
         self.assertEqual('0,1,2,3', src_perm)
         self.assertEqual('0,2,3,1', dst_perm)
-    
+
     def test_unpack(self):
         unpack_node = node_def_pb2.NodeDef()
         unpack_node.name = 'unpack'
@@ -734,7 +734,7 @@ class TestOps(unittest.TestCase):
         num = unpack_node_test.attr['num']
         self.assertEqual(0, axis)
         self.assertEqual(2, num)
-    
+
     def test_unsqueeze(self):
         unsqueeze_node = NodeProto()
         unsqueeze_node.name = 'unsqueeze'
@@ -745,7 +745,7 @@ class TestOps(unittest.TestCase):
         unsqueeze_node_test.set_attr('onnxruntime', unsqueeze_node)
         axes = unsqueeze_node_test.attr['axes']
         self.assertEqual('0,2,3,1', axes)
-    
+
     def test_range(self):
         range_node = NodeProto()
         range_node.name = 'range'
@@ -755,7 +755,7 @@ class TestOps(unittest.TestCase):
         range_node_test.name = range_node.name
         name = range_node_test.name
         self.assertEqual('range', name)
-    
+
     def test_relu(self):
         relu_node = NodeProto()
         relu_node.name = 'relu'
@@ -765,7 +765,7 @@ class TestOps(unittest.TestCase):
         relu_node_test.name = relu_node.name
         name = relu_node_test.name
         self.assertEqual('relu', name)
-    
+
     def test_matmul_with_bias_relu(self):
         mat_node = NodeProto()
         mat_node.name = 'matmul_with_bias_relu'
@@ -775,7 +775,7 @@ class TestOps(unittest.TestCase):
         mat_node_test.name = mat_node.name
         name = mat_node_test.name
         self.assertEqual('matmul_with_bias_relu', name)
-    
+
     def test_matmul(self):
         mat_node = NodeProto()
         mat_node.name = 'matmul'
@@ -785,7 +785,7 @@ class TestOps(unittest.TestCase):
         mat_node_test.name = mat_node.name
         name = mat_node_test.name
         self.assertEqual('matmul', name)
-    
+
     def test_quantize(self):
         qat_node = NodeProto()
         qat_node.name = 'quantize'
@@ -795,7 +795,7 @@ class TestOps(unittest.TestCase):
         qat_node_test.name = qat_node.name
         name = qat_node_test.name
         self.assertEqual('quantize', name)
-    
+
     def test_not(self):
         not_node = NodeProto()
         not_node.name = 'not'
@@ -805,7 +805,7 @@ class TestOps(unittest.TestCase):
         not_node_test.name = not_node.name
         name = not_node_test.name
         self.assertEqual('not', name)
-    
+
     def test_cumsum(self):
         cumsum_node = NodeProto()
         cumsum_node.name = 'cumsum'
@@ -815,7 +815,7 @@ class TestOps(unittest.TestCase):
         cumsum_node_test.name = cumsum_node.name
         name = cumsum_node_test.name
         self.assertEqual('cumsum', name)
-    
+
     def test_onehot(self):
         onehot_node = NodeProto()
         onehot_node.name = 'onehot'
@@ -825,7 +825,7 @@ class TestOps(unittest.TestCase):
         onehot_node_test.name = onehot_node.name
         name = onehot_node_test.name
         self.assertEqual('onehot', name)
-    
+
     def test_toke_type_ids(self):
         token_node = NodeProto()
         token_node.name = 'toke_type_ids'
@@ -835,7 +835,7 @@ class TestOps(unittest.TestCase):
         token_node_test.name = token_node.name
         name = token_node_test.name
         self.assertEqual('toke_type_ids', name)
-    
+
     def test_positio_ids(self):
         position_node = NodeProto()
         position_node.name = 'position_ids'
@@ -845,7 +845,7 @@ class TestOps(unittest.TestCase):
         position_node_test.name = position_node.name
         name = position_node_test.name
         self.assertEqual('position_ids', name)
-    
+
     def test_loop(self):
         loop_node = NodeProto()
         loop_node.name = 'loop'
@@ -855,7 +855,7 @@ class TestOps(unittest.TestCase):
         loop_node_test.name = loop_node.name
         name = loop_node_test.name
         self.assertEqual('loop', name)
-    
+
     def test_sigmoid(self):
         sigmoid_node = NodeProto()
         sigmoid_node.name = 'sigmoid'
@@ -865,7 +865,7 @@ class TestOps(unittest.TestCase):
         sigmoid_node_test.name = sigmoid_node.name
         name = sigmoid_node_test.name
         self.assertEqual('sigmoid', name)
-    
+
     def test_matmul_with_bias_sigmoid(self):
         mat_node = NodeProto()
         mat_node.name = 'matmul_with_bias_sigmoid'
@@ -875,7 +875,7 @@ class TestOps(unittest.TestCase):
         mat_node_test.name = mat_node.name
         name = mat_node_test.name
         self.assertEqual('matmul_with_bias_sigmoid', name)
-    
+
     def test_embedding_bag(self):
         eb_node = NodeProto()
         eb_node.name = 'embedding_bag'
@@ -885,7 +885,7 @@ class TestOps(unittest.TestCase):
         eb_node_test.name = eb_node.name
         name = eb_node_test.name
         self.assertEqual('embedding_bag', name)
-    
+
     def test_flatten(self):
         flatten_node = NodeProto()
         flatten_node.name = 'flatten'
