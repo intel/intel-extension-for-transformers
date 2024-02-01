@@ -64,7 +64,7 @@ class TestMultiCPUServer(unittest.TestCase):
         chatbot, gen_config = construct_chatbot(mock_args)
         self.assertEqual(gen_config.device, "cpu")
         mock_build_chatbot.assert_called_once()
-        
+
     def test_warmup(self):
         mock_chatbot = MagicMock()
         mock_chatbot.predict_stream.return_value = [['How ', 'are ', 'you', '?']]
