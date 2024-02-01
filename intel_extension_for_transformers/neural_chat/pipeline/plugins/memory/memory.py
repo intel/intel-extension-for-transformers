@@ -20,7 +20,7 @@
 class Memory:
     def __init__(self):
         self.chat_memory = []
-    
+
     def clear(self):
         self.chat_memory.clear()
 

@@ -72,7 +72,7 @@ class InnerproductWithSwish(Pattern):
                 attr['append_op'] = 'swish'
                 model.nodes[mat_node_idx].attr = attr
         pattern_dict = pattern_mapping_config['InnerproductWithSwish'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductWithSwish", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductWithSwish",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)

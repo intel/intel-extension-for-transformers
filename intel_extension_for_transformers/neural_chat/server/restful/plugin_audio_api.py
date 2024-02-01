@@ -37,9 +37,9 @@ class AudioPluginAPIRouter(APIRouter):
             return asr.audio2text(filename)
         except Exception as e:
             raise Exception(e)
-        
+
     async def handle_voice_tts_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
-        
+
         plugins.tts.args['voice'] = voice
         plugins.tts.args['output_audio_path'] = audio_output_path
         tts = get_plugin_instance("tts")

@@ -127,5 +127,5 @@ class ConvReshape(Pattern):
                 conv_node_idx = model.get_node_id(new_node_names[i][0])
                 model.nodes[conv_node_idx].attr = ret_old_nodes[i][1].attr
                 model.nodes[conv_node_idx].attr['src_perm'] = ret_old_nodes[i][0].attr['dst_perm']
-    
+
         return model

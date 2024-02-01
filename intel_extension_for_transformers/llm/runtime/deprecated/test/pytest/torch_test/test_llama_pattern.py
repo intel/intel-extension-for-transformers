@@ -293,4375 +293,4375 @@ model:
         '479':
           dtype: fp32
           shape: [32000, 5120]
-           
+
         '483':
           dtype: s64
           shape: [1]
-           
+
         aten::pow_2539_other:
           dtype: fp32
           shape: [1]
-           
+
         '485':
           dtype: fp32
           shape: [1]
-           
+
         '486':
           dtype: fp32
           shape: [5120]
-           
+
         '487':
           dtype: fp32
           shape: [5120]
-           
+
         '488':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3436_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '489':
           dtype: fp32
           shape: [5120]
-           
+
         '490':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3437_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '491':
           dtype: fp32
           shape: [5120]
-           
+
         '492':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3438_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '493':
           dtype: fp32
           shape: [1, 1, 2048, 128]
-           
+
         '494':
           dtype: fp32
           shape: [1, 1, 2048, 128]
-           
+
         '495':
           dtype: s64
           shape: [1]
-           
+
         aten::neg_4508_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4510_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '496':
           dtype: fp32
           shape: [1]
-           
+
         '497':
           dtype: fp32
           shape: [1]
-           
+
         '498':
           dtype: fp32
           shape: [5120]
-           
+
         '499':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3439_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2550_other:
           dtype: fp32
           shape: [1]
-           
+
         '500':
           dtype: fp32
           shape: [5120]
-           
+
         '501':
           dtype: fp32
           shape: [5120]
-           
+
         '502':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3440_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '503':
           dtype: fp32
           shape: [5120]
-           
+
         '504':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3441_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '505':
           dtype: fp32
           shape: [13824]
-           
+
         '506':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3442_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2551_other:
           dtype: fp32
           shape: [1]
-           
+
         '507':
           dtype: fp32
           shape: [5120]
-           
+
         '508':
           dtype: fp32
           shape: [5120]
-           
+
         '509':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3443_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '510':
           dtype: fp32
           shape: [5120]
-           
+
         '511':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3444_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '512':
           dtype: fp32
           shape: [5120]
-           
+
         '513':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3445_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4540_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4542_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '514':
           dtype: fp32
           shape: [5120]
-           
+
         '515':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3446_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2563_other:
           dtype: fp32
           shape: [1]
-           
+
         '516':
           dtype: fp32
           shape: [5120]
-           
+
         '517':
           dtype: fp32
           shape: [5120]
-           
+
         '518':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3447_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '519':
           dtype: fp32
           shape: [5120]
-           
+
         '520':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3448_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '521':
           dtype: fp32
           shape: [13824]
-           
+
         '522':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3449_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2564_other:
           dtype: fp32
           shape: [1]
-           
+
         '523':
           dtype: fp32
           shape: [5120]
-           
+
         '524':
           dtype: fp32
           shape: [5120]
-           
+
         '525':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3450_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '526':
           dtype: fp32
           shape: [5120]
-           
+
         '527':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3451_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '528':
           dtype: fp32
           shape: [5120]
-           
+
         '529':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3452_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4572_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4574_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '530':
           dtype: fp32
           shape: [5120]
-           
+
         '531':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3453_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2576_other:
           dtype: fp32
           shape: [1]
-           
+
         '532':
           dtype: fp32
           shape: [5120]
-           
+
         '533':
           dtype: fp32
           shape: [5120]
-           
+
         '534':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3454_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '535':
           dtype: fp32
           shape: [5120]
-           
+
         '536':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3455_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '537':
           dtype: fp32
           shape: [13824]
-           
+
         '538':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3456_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2577_other:
           dtype: fp32
           shape: [1]
-           
+
         '539':
           dtype: fp32
           shape: [5120]
-           
+
         '540':
           dtype: fp32
           shape: [5120]
-           
+
         '541':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3457_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '542':
           dtype: fp32
           shape: [5120]
-           
+
         '543':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3458_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '544':
           dtype: fp32
           shape: [5120]
-           
+
         '545':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3459_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4604_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4606_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '546':
           dtype: fp32
           shape: [5120]
-           
+
         '547':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3460_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2589_other:
           dtype: fp32
           shape: [1]
-           
+
         '548':
           dtype: fp32
           shape: [5120]
-           
+
         '549':
           dtype: fp32
           shape: [5120]
-           
+
         '550':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3461_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '551':
           dtype: fp32
           shape: [5120]
-           
+
         '552':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3462_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '553':
           dtype: fp32
           shape: [13824]
-           
+
         '554':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3463_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2590_other:
           dtype: fp32
           shape: [1]
-           
+
         '555':
           dtype: fp32
           shape: [5120]
-           
+
         '556':
           dtype: fp32
           shape: [5120]
-           
+
         '557':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3464_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '558':
           dtype: fp32
           shape: [5120]
-           
+
         '559':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3465_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '560':
           dtype: fp32
           shape: [5120]
-           
+
         '561':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3466_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4636_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4638_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '562':
           dtype: fp32
           shape: [5120]
-           
+
         '563':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3467_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2602_other:
           dtype: fp32
           shape: [1]
-           
+
         '564':
           dtype: fp32
           shape: [5120]
-           
+
         '565':
           dtype: fp32
           shape: [5120]
-           
+
         '566':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3468_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '567':
           dtype: fp32
           shape: [5120]
-           
+
         '568':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3469_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '569':
           dtype: fp32
           shape: [13824]
-           
+
         '570':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3470_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2603_other:
           dtype: fp32
           shape: [1]
-           
+
         '571':
           dtype: fp32
           shape: [5120]
-           
+
         '572':
           dtype: fp32
           shape: [5120]
-           
+
         '573':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3471_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '574':
           dtype: fp32
           shape: [5120]
-           
+
         '575':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3472_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '576':
           dtype: fp32
           shape: [5120]
-           
+
         '577':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3473_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4668_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4670_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '578':
           dtype: fp32
           shape: [5120]
-           
+
         '579':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3474_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2615_other:
           dtype: fp32
           shape: [1]
-           
+
         '580':
           dtype: fp32
           shape: [5120]
-           
+
         '581':
           dtype: fp32
           shape: [5120]
-           
+
         '582':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3475_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '583':
           dtype: fp32
           shape: [5120]
-           
+
         '584':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3476_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '585':
           dtype: fp32
           shape: [13824]
-           
+
         '586':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3477_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2616_other:
           dtype: fp32
           shape: [1]
-           
+
         '587':
           dtype: fp32
           shape: [5120]
-           
+
         '588':
           dtype: fp32
           shape: [5120]
-           
+
         '589':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3478_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '590':
           dtype: fp32
           shape: [5120]
-           
+
         '591':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3479_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '592':
           dtype: fp32
           shape: [5120]
-           
+
         '593':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3480_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4700_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4702_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '594':
           dtype: fp32
           shape: [5120]
-           
+
         '595':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3481_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2628_other:
           dtype: fp32
           shape: [1]
-           
+
         '596':
           dtype: fp32
           shape: [5120]
-           
+
         '597':
           dtype: fp32
           shape: [5120]
-           
+
         '598':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3482_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '599':
           dtype: fp32
           shape: [5120]
-           
+
         '600':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3483_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '601':
           dtype: fp32
           shape: [13824]
-           
+
         '602':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3484_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2629_other:
           dtype: fp32
           shape: [1]
-           
+
         '603':
           dtype: fp32
           shape: [5120]
-           
+
         '604':
           dtype: fp32
           shape: [5120]
-           
+
         '605':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3485_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '606':
           dtype: fp32
           shape: [5120]
-           
+
         '607':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3486_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '608':
           dtype: fp32
           shape: [5120]
-           
+
         '609':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3487_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4732_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4734_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '610':
           dtype: fp32
           shape: [5120]
-           
+
         '611':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3488_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2641_other:
           dtype: fp32
           shape: [1]
-           
+
         '612':
           dtype: fp32
           shape: [5120]
-           
+
         '613':
           dtype: fp32
           shape: [5120]
-           
+
         '614':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3489_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '615':
           dtype: fp32
           shape: [5120]
-           
+
         '616':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3490_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '617':
           dtype: fp32
           shape: [13824]
-           
+
         '618':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3491_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2642_other:
           dtype: fp32
           shape: [1]
-           
+
         '619':
           dtype: fp32
           shape: [5120]
-           
+
         '620':
           dtype: fp32
           shape: [5120]
-           
+
         '621':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3492_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '622':
           dtype: fp32
           shape: [5120]
-           
+
         '623':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3493_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '624':
           dtype: fp32
           shape: [5120]
-           
+
         '625':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3494_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4764_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4766_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '626':
           dtype: fp32
           shape: [5120]
-           
+
         '627':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3495_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2654_other:
           dtype: fp32
           shape: [1]
-           
+
         '628':
           dtype: fp32
           shape: [5120]
-           
+
         '629':
           dtype: fp32
           shape: [5120]
-           
+
         '630':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3496_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '631':
           dtype: fp32
           shape: [5120]
-           
+
         '632':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3497_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '633':
           dtype: fp32
           shape: [13824]
-           
+
         '634':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3498_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2655_other:
           dtype: fp32
           shape: [1]
-           
+
         '635':
           dtype: fp32
           shape: [5120]
-           
+
         '636':
           dtype: fp32
           shape: [5120]
-           
+
         '637':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3499_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '638':
           dtype: fp32
           shape: [5120]
-           
+
         '639':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3500_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '640':
           dtype: fp32
           shape: [5120]
-           
+
         '641':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3501_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4796_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4798_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '642':
           dtype: fp32
           shape: [5120]
-           
+
         '643':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3502_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2667_other:
           dtype: fp32
           shape: [1]
-           
+
         '644':
           dtype: fp32
           shape: [5120]
-           
+
         '645':
           dtype: fp32
           shape: [5120]
-           
+
         '646':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3503_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '647':
           dtype: fp32
           shape: [5120]
-           
+
         '648':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3504_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '649':
           dtype: fp32
           shape: [13824]
-           
+
         '650':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3505_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2668_other:
           dtype: fp32
           shape: [1]
-           
+
         '651':
           dtype: fp32
           shape: [5120]
-           
+
         '652':
           dtype: fp32
           shape: [5120]
-           
+
         '653':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3506_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '654':
           dtype: fp32
           shape: [5120]
-           
+
         '655':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3507_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '656':
           dtype: fp32
           shape: [5120]
-           
+
         '657':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3508_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4828_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4830_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '658':
           dtype: fp32
           shape: [5120]
-           
+
         '659':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3509_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2680_other:
           dtype: fp32
           shape: [1]
-           
+
         '660':
           dtype: fp32
           shape: [5120]
-           
+
         '661':
           dtype: fp32
           shape: [5120]
-           
+
         '662':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3510_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '663':
           dtype: fp32
           shape: [5120]
-           
+
         '664':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3511_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '665':
           dtype: fp32
           shape: [13824]
-           
+
         '666':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3512_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2681_other:
           dtype: fp32
           shape: [1]
-           
+
         '667':
           dtype: fp32
           shape: [5120]
-           
+
         '668':
           dtype: fp32
           shape: [5120]
-           
+
         '669':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3513_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '670':
           dtype: fp32
           shape: [5120]
-           
+
         '671':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3514_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '672':
           dtype: fp32
           shape: [5120]
-           
+
         '673':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3515_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4860_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4862_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '674':
           dtype: fp32
           shape: [5120]
-           
+
         '675':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3516_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2693_other:
           dtype: fp32
           shape: [1]
-           
+
         '676':
           dtype: fp32
           shape: [5120]
-           
+
         '677':
           dtype: fp32
           shape: [5120]
-           
+
         '678':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3517_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '679':
           dtype: fp32
           shape: [5120]
-           
+
         '680':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3518_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '681':
           dtype: fp32
           shape: [13824]
-           
+
         '682':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3519_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2694_other:
           dtype: fp32
           shape: [1]
-           
+
         '683':
           dtype: fp32
           shape: [5120]
-           
+
         '684':
           dtype: fp32
           shape: [5120]
-           
+
         '685':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3520_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '686':
           dtype: fp32
           shape: [5120]
-           
+
         '687':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3521_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '688':
           dtype: fp32
           shape: [5120]
-           
+
         '689':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3522_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4892_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4894_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '690':
           dtype: fp32
           shape: [5120]
-           
+
         '691':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3523_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2706_other:
           dtype: fp32
           shape: [1]
-           
+
         '692':
           dtype: fp32
           shape: [5120]
-           
+
         '693':
           dtype: fp32
           shape: [5120]
-           
+
         '694':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3524_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '695':
           dtype: fp32
           shape: [5120]
-           
+
         '696':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3525_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '697':
           dtype: fp32
           shape: [13824]
-           
+
         '698':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3526_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2707_other:
           dtype: fp32
           shape: [1]
-           
+
         '699':
           dtype: fp32
           shape: [5120]
-           
+
         '700':
           dtype: fp32
           shape: [5120]
-           
+
         '701':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3527_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '702':
           dtype: fp32
           shape: [5120]
-           
+
         '703':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3528_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '704':
           dtype: fp32
           shape: [5120]
-           
+
         '705':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3529_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4924_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4926_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '706':
           dtype: fp32
           shape: [5120]
-           
+
         '707':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3530_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2719_other:
           dtype: fp32
           shape: [1]
-           
+
         '708':
           dtype: fp32
           shape: [5120]
-           
+
         '709':
           dtype: fp32
           shape: [5120]
-           
+
         '710':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3531_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '711':
           dtype: fp32
           shape: [5120]
-           
+
         '712':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3532_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '713':
           dtype: fp32
           shape: [13824]
-           
+
         '714':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3533_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2720_other:
           dtype: fp32
           shape: [1]
-           
+
         '715':
           dtype: fp32
           shape: [5120]
-           
+
         '716':
           dtype: fp32
           shape: [5120]
-           
+
         '717':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3534_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '718':
           dtype: fp32
           shape: [5120]
-           
+
         '719':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3535_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '720':
           dtype: fp32
           shape: [5120]
-           
+
         '721':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3536_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4956_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4958_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '722':
           dtype: fp32
           shape: [5120]
-           
+
         '723':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3537_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2732_other:
           dtype: fp32
           shape: [1]
-           
+
         '724':
           dtype: fp32
           shape: [5120]
-           
+
         '725':
           dtype: fp32
           shape: [5120]
-           
+
         '726':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3538_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '727':
           dtype: fp32
           shape: [5120]
-           
+
         '728':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3539_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '729':
           dtype: fp32
           shape: [13824]
-           
+
         '730':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3540_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2733_other:
           dtype: fp32
           shape: [1]
-           
+
         '731':
           dtype: fp32
           shape: [5120]
-           
+
         '732':
           dtype: fp32
           shape: [5120]
-           
+
         '733':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3541_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '734':
           dtype: fp32
           shape: [5120]
-           
+
         '735':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3542_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '736':
           dtype: fp32
           shape: [5120]
-           
+
         '737':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3543_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_4988_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_4990_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '738':
           dtype: fp32
           shape: [5120]
-           
+
         '739':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3544_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2745_other:
           dtype: fp32
           shape: [1]
-           
+
         '740':
           dtype: fp32
           shape: [5120]
-           
+
         '741':
           dtype: fp32
           shape: [5120]
-           
+
         '742':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3545_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '743':
           dtype: fp32
           shape: [5120]
-           
+
         '744':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3546_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '745':
           dtype: fp32
           shape: [13824]
-           
+
         '746':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3547_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2746_other:
           dtype: fp32
           shape: [1]
-           
+
         '747':
           dtype: fp32
           shape: [5120]
-           
+
         '748':
           dtype: fp32
           shape: [5120]
-           
+
         '749':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3548_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '750':
           dtype: fp32
           shape: [5120]
-           
+
         '751':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3549_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '752':
           dtype: fp32
           shape: [5120]
-           
+
         '753':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3550_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5020_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5022_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '754':
           dtype: fp32
           shape: [5120]
-           
+
         '755':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3551_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2758_other:
           dtype: fp32
           shape: [1]
-           
+
         '756':
           dtype: fp32
           shape: [5120]
-           
+
         '757':
           dtype: fp32
           shape: [5120]
-           
+
         '758':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3552_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '759':
           dtype: fp32
           shape: [5120]
-           
+
         '760':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3553_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '761':
           dtype: fp32
           shape: [13824]
-           
+
         '762':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3554_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2759_other:
           dtype: fp32
           shape: [1]
-           
+
         '763':
           dtype: fp32
           shape: [5120]
-           
+
         '764':
           dtype: fp32
           shape: [5120]
-           
+
         '765':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3555_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '766':
           dtype: fp32
           shape: [5120]
-           
+
         '767':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3556_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '768':
           dtype: fp32
           shape: [5120]
-           
+
         '769':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3557_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5052_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5054_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '770':
           dtype: fp32
           shape: [5120]
-           
+
         '771':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3558_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2771_other:
           dtype: fp32
           shape: [1]
-           
+
         '772':
           dtype: fp32
           shape: [5120]
-           
+
         '773':
           dtype: fp32
           shape: [5120]
-           
+
         '774':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3559_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '775':
           dtype: fp32
           shape: [5120]
-           
+
         '776':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3560_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '777':
           dtype: fp32
           shape: [13824]
-           
+
         '778':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3561_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2772_other:
           dtype: fp32
           shape: [1]
-           
+
         '779':
           dtype: fp32
           shape: [5120]
-           
+
         '780':
           dtype: fp32
           shape: [5120]
-           
+
         '781':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3562_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '782':
           dtype: fp32
           shape: [5120]
-           
+
         '783':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3563_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '784':
           dtype: fp32
           shape: [5120]
-           
+
         '785':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3564_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5084_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5086_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '786':
           dtype: fp32
           shape: [5120]
-           
+
         '787':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3565_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2784_other:
           dtype: fp32
           shape: [1]
-           
+
         '788':
           dtype: fp32
           shape: [5120]
-           
+
         '789':
           dtype: fp32
           shape: [5120]
-           
+
         '790':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3566_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '791':
           dtype: fp32
           shape: [5120]
-           
+
         '792':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3567_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '793':
           dtype: fp32
           shape: [13824]
-           
+
         '794':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3568_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2785_other:
           dtype: fp32
           shape: [1]
-           
+
         '795':
           dtype: fp32
           shape: [5120]
-           
+
         '796':
           dtype: fp32
           shape: [5120]
-           
+
         '797':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3569_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '798':
           dtype: fp32
           shape: [5120]
-           
+
         '799':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3570_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '800':
           dtype: fp32
           shape: [5120]
-           
+
         '801':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3571_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5116_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5118_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '802':
           dtype: fp32
           shape: [5120]
-           
+
         '803':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3572_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2797_other:
           dtype: fp32
           shape: [1]
-           
+
         '804':
           dtype: fp32
           shape: [5120]
-           
+
         '805':
           dtype: fp32
           shape: [5120]
-           
+
         '806':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3573_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '807':
           dtype: fp32
           shape: [5120]
-           
+
         '808':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3574_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '809':
           dtype: fp32
           shape: [13824]
-           
+
         '810':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3575_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2798_other:
           dtype: fp32
           shape: [1]
-           
+
         '811':
           dtype: fp32
           shape: [5120]
-           
+
         '812':
           dtype: fp32
           shape: [5120]
-           
+
         '813':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3576_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '814':
           dtype: fp32
           shape: [5120]
-           
+
         '815':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3577_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '816':
           dtype: fp32
           shape: [5120]
-           
+
         '817':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3578_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5148_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5150_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '818':
           dtype: fp32
           shape: [5120]
-           
+
         '819':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3579_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2810_other:
           dtype: fp32
           shape: [1]
-           
+
         '820':
           dtype: fp32
           shape: [5120]
-           
+
         '821':
           dtype: fp32
           shape: [5120]
-           
+
         '822':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3580_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '823':
           dtype: fp32
           shape: [5120]
-           
+
         '824':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3581_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '825':
           dtype: fp32
           shape: [13824]
-           
+
         '826':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3582_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2811_other:
           dtype: fp32
           shape: [1]
-           
+
         '827':
           dtype: fp32
           shape: [5120]
-           
+
         '828':
           dtype: fp32
           shape: [5120]
-           
+
         '829':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3583_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '830':
           dtype: fp32
           shape: [5120]
-           
+
         '831':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3584_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '832':
           dtype: fp32
           shape: [5120]
-           
+
         '833':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3585_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5180_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5182_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '834':
           dtype: fp32
           shape: [5120]
-           
+
         '835':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3586_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2823_other:
           dtype: fp32
           shape: [1]
-           
+
         '836':
           dtype: fp32
           shape: [5120]
-           
+
         '837':
           dtype: fp32
           shape: [5120]
-           
+
         '838':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3587_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '839':
           dtype: fp32
           shape: [5120]
-           
+
         '840':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3588_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '841':
           dtype: fp32
           shape: [13824]
-           
+
         '842':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3589_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2824_other:
           dtype: fp32
           shape: [1]
-           
+
         '843':
           dtype: fp32
           shape: [5120]
-           
+
         '844':
           dtype: fp32
           shape: [5120]
-           
+
         '845':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3590_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '846':
           dtype: fp32
           shape: [5120]
-           
+
         '847':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3591_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '848':
           dtype: fp32
           shape: [5120]
-           
+
         '849':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3592_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5212_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5214_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '850':
           dtype: fp32
           shape: [5120]
-           
+
         '851':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3593_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2836_other:
           dtype: fp32
           shape: [1]
-           
+
         '852':
           dtype: fp32
           shape: [5120]
-           
+
         '853':
           dtype: fp32
           shape: [5120]
-           
+
         '854':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3594_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '855':
           dtype: fp32
           shape: [5120]
-           
+
         '856':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3595_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '857':
           dtype: fp32
           shape: [13824]
-           
+
         '858':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3596_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2837_other:
           dtype: fp32
           shape: [1]
-           
+
         '859':
           dtype: fp32
           shape: [5120]
-           
+
         '860':
           dtype: fp32
           shape: [5120]
-           
+
         '861':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3597_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '862':
           dtype: fp32
           shape: [5120]
-           
+
         '863':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3598_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '864':
           dtype: fp32
           shape: [5120]
-           
+
         '865':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3599_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5244_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5246_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '866':
           dtype: fp32
           shape: [5120]
-           
+
         '867':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3600_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2849_other:
           dtype: fp32
           shape: [1]
-           
+
         '868':
           dtype: fp32
           shape: [5120]
-           
+
         '869':
           dtype: fp32
           shape: [5120]
-           
+
         '870':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3601_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '871':
           dtype: fp32
           shape: [5120]
-           
+
         '872':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3602_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '873':
           dtype: fp32
           shape: [13824]
-           
+
         '874':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3603_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2850_other:
           dtype: fp32
           shape: [1]
-           
+
         '875':
           dtype: fp32
           shape: [5120]
-           
+
         '876':
           dtype: fp32
           shape: [5120]
-           
+
         '877':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3604_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '878':
           dtype: fp32
           shape: [5120]
-           
+
         '879':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3605_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '880':
           dtype: fp32
           shape: [5120]
-           
+
         '881':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3606_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5276_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5278_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '882':
           dtype: fp32
           shape: [5120]
-           
+
         '883':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3607_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2862_other:
           dtype: fp32
           shape: [1]
-           
+
         '884':
           dtype: fp32
           shape: [5120]
-           
+
         '885':
           dtype: fp32
           shape: [5120]
-           
+
         '886':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3608_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '887':
           dtype: fp32
           shape: [5120]
-           
+
         '888':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3609_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '889':
           dtype: fp32
           shape: [13824]
-           
+
         '890':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3610_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2863_other:
           dtype: fp32
           shape: [1]
-           
+
         '891':
           dtype: fp32
           shape: [5120]
-           
+
         '892':
           dtype: fp32
           shape: [5120]
-           
+
         '893':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3611_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '894':
           dtype: fp32
           shape: [5120]
-           
+
         '895':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3612_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '896':
           dtype: fp32
           shape: [5120]
-           
+
         '897':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3613_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5308_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5310_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '898':
           dtype: fp32
           shape: [5120]
-           
+
         '899':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3614_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2875_other:
           dtype: fp32
           shape: [1]
-           
+
         '900':
           dtype: fp32
           shape: [5120]
-           
+
         '901':
           dtype: fp32
           shape: [5120]
-           
+
         '902':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3615_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '903':
           dtype: fp32
           shape: [5120]
-           
+
         '904':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3616_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '905':
           dtype: fp32
           shape: [13824]
-           
+
         '906':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3617_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2876_other:
           dtype: fp32
           shape: [1]
-           
+
         '907':
           dtype: fp32
           shape: [5120]
-           
+
         '908':
           dtype: fp32
           shape: [5120]
-           
+
         '909':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3618_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '910':
           dtype: fp32
           shape: [5120]
-           
+
         '911':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3619_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '912':
           dtype: fp32
           shape: [5120]
-           
+
         '913':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3620_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5340_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5342_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '914':
           dtype: fp32
           shape: [5120]
-           
+
         '915':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3621_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2888_other:
           dtype: fp32
           shape: [1]
-           
+
         '916':
           dtype: fp32
           shape: [5120]
-           
+
         '917':
           dtype: fp32
           shape: [5120]
-           
+
         '918':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3622_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '919':
           dtype: fp32
           shape: [5120]
-           
+
         '920':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3623_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '921':
           dtype: fp32
           shape: [13824]
-           
+
         '922':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3624_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2889_other:
           dtype: fp32
           shape: [1]
-           
+
         '923':
           dtype: fp32
           shape: [5120]
-           
+
         '924':
           dtype: fp32
           shape: [5120]
-           
+
         '925':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3625_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '926':
           dtype: fp32
           shape: [5120]
-           
+
         '927':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3626_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '928':
           dtype: fp32
           shape: [5120]
-           
+
         '929':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3627_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5372_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5374_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '930':
           dtype: fp32
           shape: [5120]
-           
+
         '931':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3628_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2901_other:
           dtype: fp32
           shape: [1]
-           
+
         '932':
           dtype: fp32
           shape: [5120]
-           
+
         '933':
           dtype: fp32
           shape: [5120]
-           
+
         '934':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3629_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '935':
           dtype: fp32
           shape: [5120]
-           
+
         '936':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3630_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '937':
           dtype: fp32
           shape: [13824]
-           
+
         '938':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3631_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2902_other:
           dtype: fp32
           shape: [1]
-           
+
         '939':
           dtype: fp32
           shape: [5120]
-           
+
         '940':
           dtype: fp32
           shape: [5120]
-           
+
         '941':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3632_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '942':
           dtype: fp32
           shape: [5120]
-           
+
         '943':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3633_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '944':
           dtype: fp32
           shape: [5120]
-           
+
         '945':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3634_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5404_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5406_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '946':
           dtype: fp32
           shape: [5120]
-           
+
         '947':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3635_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2914_other:
           dtype: fp32
           shape: [1]
-           
+
         '948':
           dtype: fp32
           shape: [5120]
-           
+
         '949':
           dtype: fp32
           shape: [5120]
-           
+
         '950':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3636_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '951':
           dtype: fp32
           shape: [5120]
-           
+
         '952':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3637_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '953':
           dtype: fp32
           shape: [13824]
-           
+
         '954':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3638_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2915_other:
           dtype: fp32
           shape: [1]
-           
+
         '955':
           dtype: fp32
           shape: [5120]
-           
+
         '956':
           dtype: fp32
           shape: [5120]
-           
+
         '957':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3639_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '958':
           dtype: fp32
           shape: [5120]
-           
+
         '959':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3640_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '960':
           dtype: fp32
           shape: [5120]
-           
+
         '961':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3641_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5436_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5438_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '962':
           dtype: fp32
           shape: [5120]
-           
+
         '963':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3642_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2927_other:
           dtype: fp32
           shape: [1]
-           
+
         '964':
           dtype: fp32
           shape: [5120]
-           
+
         '965':
           dtype: fp32
           shape: [5120]
-           
+
         '966':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3643_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '967':
           dtype: fp32
           shape: [5120]
-           
+
         '968':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3644_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '969':
           dtype: fp32
           shape: [13824]
-           
+
         '970':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3645_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2928_other:
           dtype: fp32
           shape: [1]
-           
+
         '971':
           dtype: fp32
           shape: [5120]
-           
+
         '972':
           dtype: fp32
           shape: [5120]
-           
+
         '973':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3646_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '974':
           dtype: fp32
           shape: [5120]
-           
+
         '975':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3647_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '976':
           dtype: fp32
           shape: [5120]
-           
+
         '977':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3648_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5468_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5470_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '978':
           dtype: fp32
           shape: [5120]
-           
+
         '979':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3649_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2940_other:
           dtype: fp32
           shape: [1]
-           
+
         '980':
           dtype: fp32
           shape: [5120]
-           
+
         '981':
           dtype: fp32
           shape: [5120]
-           
+
         '982':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3650_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '983':
           dtype: fp32
           shape: [5120]
-           
+
         '984':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3651_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '985':
           dtype: fp32
           shape: [13824]
-           
+
         '986':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3652_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2941_other:
           dtype: fp32
           shape: [1]
-           
+
         '987':
           dtype: fp32
           shape: [5120]
-           
+
         '988':
           dtype: fp32
           shape: [5120]
-           
+
         '989':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3653_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '990':
           dtype: fp32
           shape: [5120]
-           
+
         '991':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3654_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '992':
           dtype: fp32
           shape: [5120]
-           
+
         '993':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3655_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5500_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5502_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '994':
           dtype: fp32
           shape: [5120]
-           
+
         '995':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3656_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2953_other:
           dtype: fp32
           shape: [1]
-           
+
         '996':
           dtype: fp32
           shape: [5120]
-           
+
         '997':
           dtype: fp32
           shape: [5120]
-           
+
         '998':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3657_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '999':
           dtype: fp32
           shape: [5120]
-           
+
         '1000':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3658_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1001':
           dtype: fp32
           shape: [13824]
-           
+
         '1002':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3659_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2954_other:
           dtype: fp32
           shape: [1]
-           
+
         '1003':
           dtype: fp32
           shape: [5120]
-           
+
         '1004':
           dtype: fp32
           shape: [5120]
-           
+
         '1005':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3660_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1006':
           dtype: fp32
           shape: [5120]
-           
+
         '1007':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3661_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1008':
           dtype: fp32
           shape: [5120]
-           
+
         '1009':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3662_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5532_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5534_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '1010':
           dtype: fp32
           shape: [5120]
-           
+
         '1011':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3663_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2966_other:
           dtype: fp32
           shape: [1]
-           
+
         '1012':
           dtype: fp32
           shape: [5120]
-           
+
         '1013':
           dtype: fp32
           shape: [5120]
-           
+
         '1014':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3664_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1015':
           dtype: fp32
           shape: [5120]
-           
+
         '1016':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3665_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1017':
           dtype: fp32
           shape: [13824]
-           
+
         '1018':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3666_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2967_other:
           dtype: fp32
           shape: [1]
-           
+
         '1019':
           dtype: fp32
           shape: [5120]
-           
+
         '1020':
           dtype: fp32
           shape: [5120]
-           
+
         '1021':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3667_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1022':
           dtype: fp32
           shape: [5120]
-           
+
         '1023':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3668_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1024':
           dtype: fp32
           shape: [5120]
-           
+
         '1025':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3669_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5564_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5566_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '1026':
           dtype: fp32
           shape: [5120]
-           
+
         '1027':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3670_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2979_other:
           dtype: fp32
           shape: [1]
-           
+
         '1028':
           dtype: fp32
           shape: [5120]
-           
+
         '1029':
           dtype: fp32
           shape: [5120]
-           
+
         '1030':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3671_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1031':
           dtype: fp32
           shape: [5120]
-           
+
         '1032':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3672_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1033':
           dtype: fp32
           shape: [13824]
-           
+
         '1034':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3673_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2980_other:
           dtype: fp32
           shape: [1]
-           
+
         '1035':
           dtype: fp32
           shape: [5120]
-           
+
         '1036':
           dtype: fp32
           shape: [5120]
-           
+
         '1037':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3674_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1038':
           dtype: fp32
           shape: [5120]
-           
+
         '1039':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3675_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1040':
           dtype: fp32
           shape: [5120]
-           
+
         '1041':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3676_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5596_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5598_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '1042':
           dtype: fp32
           shape: [5120]
-           
+
         '1043':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3677_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2992_other:
           dtype: fp32
           shape: [1]
-           
+
         '1044':
           dtype: fp32
           shape: [5120]
-           
+
         '1045':
           dtype: fp32
           shape: [5120]
-           
+
         '1046':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3678_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1047':
           dtype: fp32
           shape: [5120]
-           
+
         '1048':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3679_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1049':
           dtype: fp32
           shape: [13824]
-           
+
         '1050':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3680_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_2993_other:
           dtype: fp32
           shape: [1]
-           
+
         '1051':
           dtype: fp32
           shape: [5120]
-           
+
         '1052':
           dtype: fp32
           shape: [5120]
-           
+
         '1053':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3681_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1054':
           dtype: fp32
           shape: [5120]
-           
+
         '1055':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3682_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1056':
           dtype: fp32
           shape: [5120]
-           
+
         '1057':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3683_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5628_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5630_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '1058':
           dtype: fp32
           shape: [5120]
-           
+
         '1059':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3684_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3005_other:
           dtype: fp32
           shape: [1]
-           
+
         '1060':
           dtype: fp32
           shape: [5120]
-           
+
         '1061':
           dtype: fp32
           shape: [5120]
-           
+
         '1062':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3685_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1063':
           dtype: fp32
           shape: [5120]
-           
+
         '1064':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3686_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1065':
           dtype: fp32
           shape: [13824]
-           
+
         '1066':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3687_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3006_other:
           dtype: fp32
           shape: [1]
-           
+
         '1067':
           dtype: fp32
           shape: [5120]
-           
+
         '1068':
           dtype: fp32
           shape: [5120]
-           
+
         '1069':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3688_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1070':
           dtype: fp32
           shape: [5120]
-           
+
         '1071':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3689_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1072':
           dtype: fp32
           shape: [5120]
-           
+
         '1073':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3690_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5660_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5662_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '1074':
           dtype: fp32
           shape: [5120]
-           
+
         '1075':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3691_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3018_other:
           dtype: fp32
           shape: [1]
-           
+
         '1076':
           dtype: fp32
           shape: [5120]
-           
+
         '1077':
           dtype: fp32
           shape: [5120]
-           
+
         '1078':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3692_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1079':
           dtype: fp32
           shape: [5120]
-           
+
         '1080':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3693_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1081':
           dtype: fp32
           shape: [13824]
-           
+
         '1082':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3694_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3019_other:
           dtype: fp32
           shape: [1]
-           
+
         '1083':
           dtype: fp32
           shape: [5120]
-           
+
         '1084':
           dtype: fp32
           shape: [5120]
-           
+
         '1085':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3695_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1086':
           dtype: fp32
           shape: [5120]
-           
+
         '1087':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3696_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1088':
           dtype: fp32
           shape: [5120]
-           
+
         '1089':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3697_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5692_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5694_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '1090':
           dtype: fp32
           shape: [5120]
-           
+
         '1091':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3698_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3031_other:
           dtype: fp32
           shape: [1]
-           
+
         '1092':
           dtype: fp32
           shape: [5120]
-           
+
         '1093':
           dtype: fp32
           shape: [5120]
-           
+
         '1094':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3699_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1095':
           dtype: fp32
           shape: [5120]
-           
+
         '1096':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3700_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1097':
           dtype: fp32
           shape: [13824]
-           
+
         '1098':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3701_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3032_other:
           dtype: fp32
           shape: [1]
-           
+
         '1099':
           dtype: fp32
           shape: [5120]
-           
+
         '1100':
           dtype: fp32
           shape: [5120]
-           
+
         '1101':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3702_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1102':
           dtype: fp32
           shape: [5120]
-           
+
         '1103':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3703_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1104':
           dtype: fp32
           shape: [5120]
-           
+
         '1105':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3704_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5724_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5726_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '1106':
           dtype: fp32
           shape: [5120]
-           
+
         '1107':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3705_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3044_other:
           dtype: fp32
           shape: [1]
-           
+
         '1108':
           dtype: fp32
           shape: [5120]
-           
+
         '1109':
           dtype: fp32
           shape: [5120]
-           
+
         '1110':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3706_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1111':
           dtype: fp32
           shape: [5120]
-           
+
         '1112':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3707_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1113':
           dtype: fp32
           shape: [13824]
-           
+
         '1114':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3708_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3045_other:
           dtype: fp32
           shape: [1]
-           
+
         '1115':
           dtype: fp32
           shape: [5120]
-           
+
         '1116':
           dtype: fp32
           shape: [5120]
-           
+
         '1117':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3709_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1118':
           dtype: fp32
           shape: [5120]
-           
+
         '1119':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3710_bias:
           dtype: fp32
           shape: [5120]
-           
+
         '1120':
           dtype: fp32
           shape: [5120]
-           
+
         '1121':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3711_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::neg_5756_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         aten::neg_5758_mul_val:
           dtype: fp32
           shape: [1]
-           
+
         '1122':
           dtype: fp32
           shape: [5120]
-           
+
         '1123':
           dtype: s8
           shape: [5120, 5120]
-           
+
         aten::linear_3712_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3057_other:
           dtype: fp32
           shape: [1]
-           
+
         '1124':
           dtype: fp32
           shape: [5120]
-           
+
         '1125':
           dtype: fp32
           shape: [5120]
-           
+
         '1126':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3713_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1127':
           dtype: fp32
           shape: [5120]
-           
+
         '1128':
           dtype: s8
           shape: [13824, 5120]
-           
+
         aten::linear_3714_bias:
           dtype: fp32
           shape: [13824]
-           
+
         '1129':
           dtype: fp32
           shape: [13824]
-           
+
         '1130':
           dtype: s8
           shape: [5120, 13824]
-           
+
         aten::linear_3715_bias:
           dtype: fp32
           shape: [5120]
-           
+
         aten::pow_3058_other:
           dtype: fp32
           shape: [1]
-           
+
         '1131':
           dtype: fp32
           shape: [5120]
-           
+
         '1132':
           dtype: fp32
           shape: [5120]
-           
+
         '1133':
           dtype: s8
           shape: [32000, 5120]
-           
+
         aten::linear_3716_bias:
           dtype: fp32
           shape: [32000]
-           
+
     aten::size_0:
       type: Shape
       input:
@@ -32138,7 +32138,7 @@ model:
         llamagraph = p_fusion(llamagraph)
         newlen = len(llamagraph.nodes)
         self.assertTrue(oldlen != newlen)
-        
+
 
 if __name__ == "__main__":
     unittest.main()

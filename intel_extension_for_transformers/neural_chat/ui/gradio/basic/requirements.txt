@@ -1,10 +1,10 @@
-pip
-torch==2.1.0
 diffusers==0.8.1
-transformers
-requests
+fschat
+gradio
 huggingface_hub
 markdown2
 nh3
-gradio
-fschat
+pip
+requests
+torch==2.1.0
+transformers

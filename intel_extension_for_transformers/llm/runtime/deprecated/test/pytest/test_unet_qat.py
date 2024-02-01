@@ -119,7 +119,7 @@ class TestUnet(unittest.TestCase):
         self.assertTrue(os.path.exists(model_dir), 'model is not found, please set your own model path!')
 
         graph = compile(model_dir, config=qat_unet_pattern_config)
-        
+
         input_0_path = root_dir + 'sample.pt'
         inputs_0 = torch.load(input_0_path)
         inputs_1 = torch.tensor([301], dtype=torch.float32)
