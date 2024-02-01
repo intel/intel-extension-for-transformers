@@ -15,8 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-deepspeed --include localhost:0,1 \
-    --master_port 29501 \
+python3 ./gaudi_spawn.py --use_deepspeed --world_size 4 \
     train.py \
     --deepspeed scripts/zero2.json \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \

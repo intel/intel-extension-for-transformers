@@ -141,7 +141,7 @@ class LastLayerShape(Pattern):
 
         # bert_mlperf
         pattern_dict = pattern_mapping_config['LastLayerShape'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("LastLayerShape", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("LastLayerShape",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
@@ -163,7 +163,7 @@ class LastLayerShape(Pattern):
 
         # bert_base_mrpc
         pattern_dict = pattern_mapping_config['LastLayerShape'][1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("LastLayerShape", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("LastLayerShape",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
@@ -190,7 +190,7 @@ class LastLayerShape(Pattern):
 
         # roberta_base / distil_bert
         pattern_dict = pattern_mapping_config['LastLayerShape'][2]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("LastLayerShape", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("LastLayerShape",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):

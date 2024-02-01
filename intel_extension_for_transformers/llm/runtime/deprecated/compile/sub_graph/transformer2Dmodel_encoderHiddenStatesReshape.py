@@ -90,7 +90,7 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
 
                 matmul_node.input_tensors[0] = new_node.output_tensors[0]
                 all_dest_op.append(matmul_node.name)
-                
+
             # only insert one node to reshape the encoder_hidden_satates.
             new_node.output_tensors[0].dest_op = all_dest_op
             assert first_matmul_node_idx != -1
@@ -139,7 +139,7 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
 
                 matmul_node.input_tensors[0] = new_node.output_tensors[0]
                 all_dest_op.append(matmul_node.name)
-                
+
             # only insert one node to reshape the encoder_hidden_satates.
             new_node.output_tensors[0].dest_op = all_dest_op
             assert first_matmul_node_idx != -1

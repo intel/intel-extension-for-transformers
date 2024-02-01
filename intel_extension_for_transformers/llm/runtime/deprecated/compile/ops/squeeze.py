@@ -53,4 +53,3 @@ class Squeeze(Operator):
                 self._input_tensors.pop()
         if framework == 'torch':
             self._attr['axes'] = node.inputsAt(1).toIValue()
-

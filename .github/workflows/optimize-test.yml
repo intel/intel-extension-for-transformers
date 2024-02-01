@@ -104,13 +104,13 @@ jobs:
             docker exec ${{ env.CONTAINER_NAME }} \
             bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
             && bash run_optimize.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode='tuning'"
-        
+
       - name: INT8 Benchmark
         run: |
             docker exec ${{ env.CONTAINER_NAME }} \
             bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
             && bash run_optimize.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=int8 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
-        
+
       - name: FP32 Benchmark
         run: |
             docker exec ${{ env.CONTAINER_NAME }} \
@@ -127,7 +127,7 @@ jobs:
              --output_dir=/intel-extension-for-transformers/${{matrix.framework}}_${{matrix.modelName}} \
              --build_id=${{ github.run_id }} \
              --model_test_type=optimize"
-        
+
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
@@ -136,7 +136,7 @@ jobs:
           path: ${{ github.workspace }}/${{ matrix.framework }}_${{ matrix.modelName }}
           if-no-files-found: ignore # 'warn' or 'ignore' are also available, defaults to `warn`
           retention-days: 60 # 1 <= retention-days <= 90
-    
+
   Genreate-Report:
     runs-on: itrex-node-spell
     needs: [Optimize-Workflow]
@@ -156,7 +156,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: ${{ env.OUT_SCRIPT_PATH }}/log
-        
+
       - name: Analysis Summary
         run: |
             cd ${{ env.OUT_SCRIPT_PATH }}
@@ -178,7 +178,7 @@ jobs:
           search_artifacts: false
           skip_unpack: false
           if_no_artifact_found: warn
-        
+
       - name: Display structure of downloaded files
         run: cd ${{ env.OUT_SCRIPT_PATH }}/log && ls -R
 
@@ -194,7 +194,7 @@ jobs:
           MR_source_branch: ${{ github.head_ref }}
           ghprbActualCommit: ${{ github.event.pull_request.head.sha }}
 
-      
+
       - name: Publish Report
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}

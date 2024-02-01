@@ -164,7 +164,7 @@ def vad_collector(sample_rate, frame_duration_ms,
 
 def main(args):
     is_dir = os.path.isdir(args.in_path)
-    if is_dir: 
+    if is_dir:
         input_dir = args.in_path
         path_list=os.listdir(args.in_path)
     else: # input is a wav file
@@ -202,4 +202,4 @@ if __name__ == '__main__': # pragma: no cover
     if not is_exist:
         logging.info("path not existed!")
     else:
-        main(args)     
+        main(args)

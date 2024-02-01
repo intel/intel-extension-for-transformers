@@ -43,7 +43,7 @@ class TestPatternDispatch(unittest.TestCase):
         input_0 = np.random.uniform(low=0, high=128, size=shape).astype('int32')
         input_1 = np.random.uniform(low=0, high=1, size=shape).astype('int32')
         input_2 = np.random.uniform(low=0, high=1, size=shape).astype('int32')
-    
+
         # validate pattern tuning
         fp32_model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/bert_mini_sst2_1x4_fp32.onnx"
         if is_win():
