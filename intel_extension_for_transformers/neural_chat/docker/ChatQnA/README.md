@@ -18,7 +18,7 @@ docker build . -f Dockerfile -t neuralchat_chat_qna:latest --build-arg https_pro
 ### Prepare Configuration File and Documents
 Before starting NeuralChat services, you need to configure `chatqna.yaml` according to you read environment.
 
-As shown in `chatqna.yaml`, you need to prepare a document folder named `rag_docs`, containing the Q&A knowlege files. The rag chatbot will automatically retrieve answers to your question with the context of these files.
+As shown in `chatqna.yaml`, you need to prepare a document folder named `rag_docs`, containing the Q&A knowledge files. The rag chatbot will automatically retrieve answers to your question with the context of these files.
 
 
 ### Start NeuralChat Service
