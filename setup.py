@@ -1,4 +1,5 @@
 """Setup and install modules."""
+import importlib
 import os
 import subprocess
 import sys
@@ -7,6 +8,34 @@ from io import open
 from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+
+
+def get_gpu_family():
+    ''' Get gpu device family info.
+
+    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
+
+    Note, this function need to import intel_extension_for_pytorch
+
+    Additional info (common gpu name):
+      'Intel(R) Data Center GPU Flex 170'
+      'Intel(R) Data Center GPU Max 1100'
+      'Intel(R) Arc(TM) A770 Graphics'
+    '''
+
+    import torch
+    import intel_extension_for_pytorch as ipex
+    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
+        return 'no_gpu'
+
+    name = torch.xpu.get_device_name()
+    if 'GPU Flex' in name:
+        return 'flex'
+    if 'GPU Max' in name:
+        return 'max'
+    if 'Arc(TM)' in name:
+        return 'arc'
+    assert False, "Unsupported GPU device: {}".format(name)
 
 
 def check_env_flag(name: str, default: bool = False) -> bool:
@@ -21,6 +50,13 @@ SKIP_RUNTIME = check_env_flag("SKIP_RUNTIME", False)
 
 RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
 """ Whether to only packaging backends """
+
+ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
+IS_INTEL_GPU = False
+if ipex_available and (get_gpu_family() != "no_gpu"):
+    SKIP_RUNTIME = True
+    RUNTIME_ONLY = False
+    IS_INTEL_GPU = True
 
 if not SKIP_RUNTIME:
     from cmake import CMAKE_BIN_DIR
@@ -71,7 +107,7 @@ class CMakeBuild(build_ext):
 
     @staticmethod
     def _is_target_file(file_name: str) -> bool:
-        if file_name.endswith(".dll") or file_name.endswith(".exe"):
+        if file_name.endswith(".dll") or file_name.endswith(".exe") or file_name.endswith(".pyd"):
             return True
         if file_name.endswith(".so") or ".so." in file_name:
             return True
@@ -119,10 +155,8 @@ class CMakeBuild(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={CMAKE_BUILD_TYPE}",
             f"-DNE_VERSION_STRING={self.distribution.get_version()}",
-            f"-DDNNL_CPU_RUNTIME=OMP",
             f"-DNE_WITH_AVX2={'ON' if NE_WITH_AVX2 else 'OFF'}",
             f"-DNE_WITH_TESTS=OFF",
-            f"-DNE_PYTHON_API=ON",
         ]
         if sys.platform == "linux":  # relative_rpath
             cmake_args.append('-DCMAKE_BUILD_RPATH=$ORIGIN/')
@@ -234,19 +268,21 @@ def check_submodules():
         end = time.time()
         print(f' --- Submodule initialization took {end - start:.2f} sec')
     except Exception:
-        print(' --- Submodule initalization failed')
+        print(' --- Submodule initialization failed')
         print('Please run:\n\tgit submodule update --init --recursive')
         sys.exit(1)
 
 
 if __name__ == '__main__':
-    ext_modules = [CMakeExtension(
-        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc', lib_only=True)]
+    if IS_INTEL_GPU:
+        ext_modules = []
+    else:
+        ext_modules = [CMakeExtension(
+            "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc', lib_only=True)]
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
             CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.mpt_cpp", "intel_extension_for_transformers/llm/runtime/graph/"),
             ])
     cmdclass={'build_ext': CMakeBuild}
 

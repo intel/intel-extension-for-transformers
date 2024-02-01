@@ -85,8 +85,8 @@ void layernorm_ba_kd_t::normal_translnorm_init() {
   handle_3D();
 
   // init params
-  // TODO(zhe1wang): support col nums can't divded by 16.
-  SPARSE_LOG_IF(FATAL, col_num % 16 != 0) << "col nums should divded by 16 now";
+  // TODO(zhe1wang): support col nums can't divided by 16.
+  SPARSE_LOG_IF(FATAL, col_num % 16 != 0) << "col nums should divided by 16 now";
   auto ker_num = col_num / 16;
   // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
   params_.resize(ker_num);

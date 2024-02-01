@@ -37,7 +37,7 @@ class Neural_Engine(Neural_Engine_base):
         # load metric
         log.info("Load metric ......")
         if dataset_name and task_name is not None:
-            metric = load_metric("accuracy")
+            metric = load_metric(dataset_name, task_name)
         else:
             metric = load_metric("accuracy")
         # execute

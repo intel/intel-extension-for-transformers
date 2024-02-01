@@ -2,8 +2,10 @@ accelerate
 datasets
 einops
 optimum
-sentencepiece
-transformers==4.34.1
-torch
+sentencepiece != 0.1.92
+transformers
+torch==2.0.1
 tqdm
+neural_compressor
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
+

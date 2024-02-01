@@ -20,4 +20,4 @@
 
 from .model import OptimizedModel
 from .modeling_auto import (AutoModel, AutoModelForCausalLM,
-                            AutoModelForSeq2SeqLM, GPTBigCodeForCausalLM)
+                            AutoModelForSeq2SeqLM)

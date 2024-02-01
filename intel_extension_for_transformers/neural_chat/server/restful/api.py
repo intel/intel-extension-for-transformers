@@ -28,6 +28,10 @@ from .text2image_api import router as text2image_router
 from .finetune_api import router as finetune_router
 from .faceanimation_api import router as faceanimation_router
 from .photoai_api import router as photoai_router
+from .plugin_audio_api import router as plugin_audio_router
+from .plugin_image2image_api import router as plugin_image2image_router
+from .codegen_api import router as codegen_router
+from .tgi_api import router as tgi_router
 
 _router = APIRouter()
 
@@ -39,10 +43,14 @@ api_router_mapping = {
     'text2image': text2image_router,
     'finetune': finetune_router,
     'faceanimation': faceanimation_router,
-    'photoai': photoai_router
+    'photoai': photoai_router,
+    'plugin_audio': plugin_audio_router,
+    "image2image": plugin_image2image_router,
+    'codegen': codegen_router,
+    'tgi': tgi_router
 }
 
-def setup_router(api_list, chatbot):
+def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80):
     """Setup router for FastAPI
 
     Args:
@@ -56,7 +64,11 @@ def setup_router(api_list, chatbot):
         lower_api_name = api_name.lower()
         if lower_api_name in api_router_mapping:
             api_router = api_router_mapping[lower_api_name]
-            api_router.set_chatbot(chatbot)
+            if enable_llm:
+                api_router.set_chatbot(chatbot, use_deepspeed, world_size, host, port)
+            if lower_api_name == "plugin_image2image":
+                api_router.worker.start()
+                logger.info("create main worker done...")
             _router.include_router(api_router)
         else:
             logger.error(f"NeuralChat has not supported such service yet: {api_name}")

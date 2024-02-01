@@ -3,7 +3,7 @@ export enum MessageRole {
 }
 
 export enum MessageType {
-	Text, SingleAudio, AudioList, SingleImage, ImageList
+	Text, SingleAudio, AudioList, SingleImage, ImageList, singleVideo
 }
 
 export const isAudio = (T: MessageType) => (T === MessageType.SingleAudio || T === MessageType.AudioList)

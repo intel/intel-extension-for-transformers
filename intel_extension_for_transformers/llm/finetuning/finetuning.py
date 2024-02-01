@@ -57,19 +57,21 @@ import importlib.util
 from transformers.utils.import_utils import is_optimum_available, is_bitsandbytes_available
 from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
 from intel_extension_for_transformers.neural_chat.config import BaseFinetuningConfig
+from transformers.integrations.deepspeed import (
+    is_deepspeed_available,
+)
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
+
 
 if is_bitsandbytes_available():
     import bitsandbytes as bnb # pylint: disable=E0401
-
-def is_optimum_habana_available():
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
 
 
 class Finetuning:
     def __init__(self, finetuning_config: BaseFinetuningConfig):
         self.model_args, self.data_args, self.training_args, self.finetune_args = (
-            finetuning_config.model_args, 
-            finetuning_config.data_args, 
+            finetuning_config.model_args,
+            finetuning_config.data_args,
             finetuning_config.training_args,
             finetuning_config.finetune_args
         )
@@ -140,7 +142,7 @@ class Finetuning:
                 data_args.dataset_name,
                 data_args.dataset_config_name,
                 cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
+                token=model_args.token,
                 streaming=data_args.streaming,
             )
 
@@ -150,7 +152,7 @@ class Finetuning:
                     data_args.dataset_config_name,
                     split=f"train[:{data_args.validation_split_percentage}%]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     streaming=data_args.streaming,
                 )
                 raw_datasets["train"] = load_dataset(
@@ -158,7 +160,7 @@ class Finetuning:
                     data_args.dataset_config_name,
                     split=f"train[{data_args.validation_split_percentage}%:]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     streaming=data_args.streaming,
                 )
         else:
@@ -180,7 +182,7 @@ class Finetuning:
                 extension,
                 data_files=data_files,
                 cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
+                token=model_args.token,
                 **dataset_args,
             )
 
@@ -191,7 +193,7 @@ class Finetuning:
                     data_files=data_files,
                     split=f"train[:{data_args.validation_split_percentage}%]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     **dataset_args,
                 )
                 raw_datasets["train"] = load_dataset(
@@ -199,7 +201,7 @@ class Finetuning:
                     data_files=data_files,
                     split=f"train[{data_args.validation_split_percentage}%:]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     **dataset_args,
                 )
         return raw_datasets
@@ -208,7 +210,7 @@ class Finetuning:
         config_kwargs = {
             "cache_dir": model_args.cache_dir,
             "revision": model_args.model_revision,
-            "use_auth_token": True if model_args.use_auth_token else None,
+            "token": model_args.token,
             "trust_remote_code": True if model_args.trust_remote_code else None,
         }
         if model_args.config_name:
@@ -226,7 +228,8 @@ class Finetuning:
             "cache_dir": model_args.cache_dir,
             "use_fast": model_args.use_fast_tokenizer,
             "revision": model_args.model_revision,
-            "use_auth_token": True if model_args.use_auth_token else None,
+            "token": model_args.token,
+            "trust_remote_code": model_args.trust_remote_code,
         }
         if model_args.tokenizer_name:
             tokenizer = AutoTokenizer.from_pretrained(
@@ -279,9 +282,19 @@ class Finetuning:
                 raise NotImplementedError(
                     f"Unsupported bits {finetune_args.bits}, only support 4 and 8 now."
                 )
+            if finetune_args.full_finetune:
+                raise ValueError(
+                    f"qlora and full_finetune can't be True at the same time."
+                )
+        elif finetune_args.full_finetune:
+            if finetune_args.bits not in [16, 32]:
+                raise ValueError(
+                    f"full finetune only support 16 and 32 bits."
+                )
 
         config = self.load_model_config(self.model_args)
-        if config.architectures[0].endswith("ForCausalLM"):
+        if config.architectures[0].endswith("ForCausalLM") \
+            or config.architectures[0].endswith("QWenLMHeadModel"):
             self.finetune_clm(model_args, data_args, training_args, finetune_args, config)
         elif config.architectures[0].endswith("ForConditionalGeneration"):
             self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
@@ -317,7 +330,7 @@ class Finetuning:
 
     def finetune_clm(self, model_args, data_args, training_args, finetune_args, config):
         if finetune_args.device == 'hpu':
-            if not is_optimum_habana_available():
+            if not is_hpu_available:
                 raise ImportError(
                     "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
                 )
@@ -348,6 +361,13 @@ class Finetuning:
                 kwargs['use_llm_runtime'] = False
             else:
                 from transformers import AutoModelForCausalLM
+
+            low_cpu_mem_usage = True
+            if is_deepspeed_available():
+                from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
+                if is_deepspeed_zero3_enabled():
+                    low_cpu_mem_usage = False
+
             model = AutoModelForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -356,10 +376,10 @@ class Finetuning:
                 device_map=self.device_map,
                 quantization_config=self.bitsandbytes_quant_config,
                 revision=model_args.model_revision,
-                use_auth_token=True if model_args.use_auth_token else None,
+                token=model_args.token,
                 trust_remote_code=True if model_args.trust_remote_code else None,
                 torch_dtype=model_dtype,
-                low_cpu_mem_usage=True,
+                low_cpu_mem_usage=low_cpu_mem_usage,
                 load_in_4bit=self.load_in_4bit,
                 load_in_8bit=self.load_in_8bit,
                 **kwargs
@@ -445,12 +465,10 @@ class Finetuning:
             )
 
         if training_args.do_eval:
-            if "test" not in tokenized_datasets:
-                self.logger.info('Splitting train dataset in train and validation according to `eval_dataset_size`')
-                tokenized_datasets = tokenized_datasets["train"].train_test_split(
-                    test_size=data_args.eval_dataset_size, shuffle=True, seed=42
-                )
-            eval_dataset = tokenized_datasets["test"]
+            if "validation" not in tokenized_datasets:
+                raise ValueError("--do_eval requires a validation dataset")
+
+            eval_dataset = tokenized_datasets["validation"]
             if data_args.max_eval_samples is not None:
                 eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
 
@@ -471,48 +489,50 @@ class Finetuning:
         )
 
         if training_args.do_train:
-            # PEFT settings
-            if finetune_args.peft == "lora":
-                if finetune_args.lora_all_linear:
-                    target_modules = self.find_all_linear_names(model)
-                else:
-                    target_modules = finetune_args.lora_target_modules
+            if not finetune_args.full_finetune:
+                # PEFT settings
+                if finetune_args.peft == "lora":
+                    if finetune_args.lora_all_linear:
+                        target_modules = self.find_all_linear_names(model)
+                    else:
+                        target_modules = finetune_args.lora_target_modules
 
-                peft_config = LoraConfig(
-                    r=finetune_args.lora_rank,
-                    lora_alpha=finetune_args.lora_alpha,
-                    lora_dropout=finetune_args.lora_dropout,
-                    target_modules=target_modules,
-                    bias="none",
-                    task_type=TaskType.CAUSAL_LM,
-                )
-            elif finetune_args.peft == "llama_adapter":
-                peft_config = AdaptionPromptConfig(
-                    adapter_layers=finetune_args.adapter_layers,
-                    adapter_len=finetune_args.adapter_len,
-                    task_type="CAUSAL_LM",
-                )
-            elif finetune_args.peft == "ptun":
-                peft_config = PromptEncoderConfig(
-                    num_virtual_tokens=finetune_args.num_virtual_tokens,
-                    encoder_hidden_size=finetune_args.ptun_hidden_size,
-                    task_type="CAUSAL_LM",
-                )
-            elif finetune_args.peft == "prefix":
-                peft_config = PrefixTuningConfig(
-                    num_virtual_tokens=finetune_args.num_virtual_tokens,
-                    task_type="CAUSAL_LM",
-                )
-            elif finetune_args.peft == "prompt":
-                peft_config = PromptTuningConfig(
-                    num_virtual_tokens=finetune_args.num_virtual_tokens,
-                    task_type="CAUSAL_LM",
-                )
+                    peft_config = LoraConfig(
+                        r=finetune_args.lora_rank,
+                        lora_alpha=finetune_args.lora_alpha,
+                        lora_dropout=finetune_args.lora_dropout,
+                        target_modules=target_modules,
+                        bias="none",
+                        task_type=TaskType.CAUSAL_LM,
+                    )
+                elif finetune_args.peft == "llama_adapter":
+                    peft_config = AdaptionPromptConfig(
+                        adapter_layers=finetune_args.adapter_layers,
+                        adapter_len=finetune_args.adapter_len,
+                        task_type="CAUSAL_LM",
+                    )
+                elif finetune_args.peft == "ptun":
+                    peft_config = PromptEncoderConfig(
+                        num_virtual_tokens=finetune_args.num_virtual_tokens,
+                        encoder_hidden_size=finetune_args.ptun_hidden_size,
+                        task_type="CAUSAL_LM",
+                    )
+                elif finetune_args.peft == "prefix":
+                    peft_config = PrefixTuningConfig(
+                        num_virtual_tokens=finetune_args.num_virtual_tokens,
+                        task_type="CAUSAL_LM",
+                    )
+                elif finetune_args.peft == "prompt":
+                    peft_config = PromptTuningConfig(
+                        num_virtual_tokens=finetune_args.num_virtual_tokens,
+                        task_type="CAUSAL_LM",
+                    )
 
-            model = get_peft_model(model, peft_config)
+                model = get_peft_model(model, peft_config)
+                model.print_trainable_parameters()
+
             if model_dtype == torch.bfloat16:
                 model = model.to(model_dtype)
-            model.print_trainable_parameters()
 
             if finetune_args.device != 'hpu':
                 # Initialize our Trainer
@@ -542,15 +562,11 @@ class Finetuning:
                 )
 
             trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
-            with training_args.main_process_first(desc="save model"):
-                if is_main_process(training_args.local_rank):
-                    unwrapped_model = unwrap_model(model)
-                    unwrapped_model.save_pretrained(
-                        training_args.output_dir, state_dict=unwrapped_model.state_dict()
-                    )
+            trainer.save_model()
         if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
             tokenizer.padding_side = "right" # padding on the right is needed to cut off padding in `complete_code`
             tokenizer.truncation_side = "left"
+            unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
             class Eval_Args:
                 n_samples = 20
@@ -591,6 +607,7 @@ class Finetuning:
                         self.logger.info(results)
 
         elif finetune_args.do_lm_eval and finetune_args.task != "summarization":
+            unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
             from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):
@@ -608,6 +625,8 @@ class Finetuning:
                         self.logger.info(results)
 
         if finetune_args.task == "summarization":
+            unwrapped_model = unwrap_model(model)
+            unwrapped_model.eval()
             from .eval_utils import compute_rouge_metric
             gen_kwargs = {
                     "num_beams": data_args.num_beams,
@@ -762,7 +781,7 @@ class Finetuning:
                     # like past_key_values, but logits always come first
                     logits = logits[0]
                 return logits.argmax(dim=-1)
-        
+
         if training_args.do_train:
             # download model & vocab.
 
@@ -786,7 +805,7 @@ class Finetuning:
                     device_map=self.device_map,
                     quantization_config=self.bitsandbytes_quant_config,
                     revision=model_args.model_revision,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     torch_dtype=model_dtype,
                     load_in_4bit=self.load_in_4bit,
                     load_in_8bit=self.load_in_8bit,
@@ -796,24 +815,35 @@ class Finetuning:
             else:
                 raise ValueError("Must provide model_name_or_path to load a pretrained Seq2SeqLM model.")
 
-            # PEFT settings
-            if finetune_args.peft == "lora":
-                if finetune_args.lora_all_linear:
-                    target_modules = self.find_all_linear_names(model)
-                else:
-                    target_modules = finetune_args.lora_target_modules
-                peft_config = LoraConfig(
-                    r=finetune_args.lora_rank,
-                    lora_alpha=finetune_args.lora_alpha,
-                    lora_dropout=finetune_args.lora_dropout,
-                    target_modules=target_modules,
-                    bias="none",
-                    task_type=TaskType.SEQ_2_SEQ_LM,
+            if finetune_args.qlora:
+                model = prepare_model_for_kbit_training(
+                    model, use_gradient_checkpointing=training_args.gradient_checkpointing
                 )
+            if training_args.gradient_checkpointing:
+                model.gradient_checkpointing_enable()
 
-            # model = prepare_model_for_int8_training(model)
-            model = get_peft_model(model, peft_config)
-            model.print_trainable_parameters()
+            if not finetune_args.full_finetune:
+                # PEFT settings
+                if finetune_args.peft == "lora":
+                    if finetune_args.lora_all_linear:
+                        target_modules = self.find_all_linear_names(model)
+                    else:
+                        target_modules = finetune_args.lora_target_modules
+                    peft_config = LoraConfig(
+                        r=finetune_args.lora_rank,
+                        lora_alpha=finetune_args.lora_alpha,
+                        lora_dropout=finetune_args.lora_dropout,
+                        target_modules=target_modules,
+                        bias="none",
+                        task_type=TaskType.SEQ_2_SEQ_LM,
+                    )
+
+                # model = prepare_model_for_int8_training(model)
+                model = get_peft_model(model, peft_config)
+                model.print_trainable_parameters()
+
+            if model_dtype == torch.bfloat16:
+                model = model.to(model_dtype)
 
         if training_args.do_eval and not training_args.do_train:
             config = PeftConfig.from_pretrained(model_args.model_name_or_path)
@@ -829,8 +859,10 @@ class Finetuning:
                 label_pad_token_id=label_pad_token_id,
                 pad_to_multiple_of=8)
 
-        # Create Trainer instance
-        trainer = Seq2SeqTrainer(
+
+        if finetune_args.device != 'hpu':
+            # Create Trainer instance
+            trainer = Seq2SeqTrainer(
                 model=model,
                 args=training_args,
                 data_collator=data_collator,
@@ -839,6 +871,22 @@ class Finetuning:
                 compute_metrics=compute_metrics,
                 preprocess_logits_for_metrics=preprocess_logits_for_metrics if training_args.do_eval else None,
                 )
+        else:
+            from optimum.habana import GaudiConfig, GaudiSeq2SeqTrainer # pylint: disable=E0611 E0401
+            gaudi_config = GaudiConfig()
+            gaudi_config.use_fused_adam = True
+            gaudi_config.use_fused_clip_norm = True
+            trainer = GaudiSeq2SeqTrainer(
+                model=model,
+                gaudi_config=gaudi_config,
+                args=training_args,
+                data_collator=data_collator,
+                train_dataset=train_dataset if training_args.do_train else None,
+                eval_dataset=eval_dataset if training_args.do_eval else None,
+                compute_metrics=compute_metrics,
+                preprocess_logits_for_metrics=preprocess_logits_for_metrics if training_args.do_eval else None,
+                )
+
 
         # Training
         if training_args.do_train:

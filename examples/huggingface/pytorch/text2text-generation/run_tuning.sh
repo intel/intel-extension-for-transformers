@@ -73,7 +73,7 @@ function run_tuning {
         if [ $input_model ];then
             model_name_or_path=${input_model}
         else
-            model_name_or_path="fabiochiu/t5-base-tag-generation"
+            model_name_or_path="t5-base"
         fi
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"

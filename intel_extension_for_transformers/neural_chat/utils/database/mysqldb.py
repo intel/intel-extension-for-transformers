@@ -16,7 +16,6 @@
 # limitations under the License.
 
 from .config import get_settings
-from pymysql import connect, cursors
 from contextlib import contextmanager
 
 global_settings = get_settings()
@@ -32,6 +31,7 @@ class MysqlDb(object):
         self._connect()
 
     def _connect(self):
+        from pymysql import connect, cursors
         self._conn = connect(host=self._host,
                              port=self._port,
                              user=self._user,
@@ -60,11 +60,17 @@ class MysqlDb(object):
             raise e
 
     def fetch_one(self, sql, params=None):
-        self._cursor.execute(sql, params)
+        from pymysql.converters import escape_string
+        escape_sql = escape_string(sql)
+        print(f"escape sql: {escape_sql}")
+        self._cursor.execute(escape_sql, params)
         return self._cursor.fetchone()
 
     def fetch_all(self, sql, params=None):
-        self._cursor.execute(sql, params)
+        from pymysql.converters import escape_string
+        escape_sql = escape_string(sql)
+        print(f"escape sql: {escape_sql}")
+        self._cursor.execute(escape_sql, params)
         return self._cursor.fetchall()
 
     def insert(self, sql, params):
@@ -78,4 +84,3 @@ class MysqlDb(object):
 
     def _edit(self, sql, params):
         return self._cursor.execute(sql, params)
-

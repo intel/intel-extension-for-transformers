@@ -18,9 +18,12 @@ This example demonstrates how to finetune the pretrained large language model (L
 Recommend python 3.9 or higher version.
 ```shell
 pip install -r requirements.txt
+pip install transformers==4.34.1
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
 python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
+>**Note**: Suggest using transformers no higher than 4.34.1
+
 ### Docker 
 Pick either one of below options to setup docker environment.
 #### Option 1 : Build Docker image from scratch
@@ -35,12 +38,12 @@ Once you have the docker image ready, please follow [run docker image](../../../
 
 ## 2. Prepare the Model
 
-#### meta-llama/Llama-2-7b
-To acquire the checkpoints and tokenizer, the user can get those files from [meta-llama/Llama-2-7b]([https://huggingface.co/mosaicml/mpt-7b](https://huggingface.co/meta-llama/Llama-2-7b)).
+#### meta-llama/Llama-2-7b-hf
+To acquire the checkpoints and tokenizer, the user can get those files from [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf).
 Users could follow below commands to get the checkpoints from github repository after the access request to the files is approved.
 ```bash
 git lfs install
-git clone https://huggingface.co/meta-llama/Llama-2-7b
+git clone https://huggingface.co/meta-llama/Llama-2-7b-hf
 ```
 ### MPT
 To acquire the checkpoints and tokenizer, the user can get those files from [mosaicml/mpt-7b](https://huggingface.co/mosaicml/mpt-7b).
@@ -94,7 +97,7 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
 2. Text Generation (Domain-specific instruction): Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the [prompt template](https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt) to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in `intel_domain.json`.
 
-3. Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset [HuggingFaceH4/oasst1_en](https://huggingface.co/datasets/HuggingFaceH4/oasst1_en).
+3. Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset [HuggingFaceH4/ultrachat_200k](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k).
 
 4. Summarization: An English-language dataset [cnn_dailymail](https://huggingface.co/datasets/cnn_dailymail) containing just over 300k unique news articles as written by journalists at CNN and the Daily Mail, is used for this task.
 
@@ -140,11 +143,11 @@ python finetune_seq2seq.py \
 
 #### For LLaMA2
 
-- use the below command line for code tuning with `meta-llama/Llama-2-7b` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
+- use the below command line for code tuning with `meta-llama/Llama-2-7b-hf` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "meta-llama/Llama-2-7b" \
+        --model_name_or_path "meta-llama/Llama-2-7b-hf" \
         --bf16 True \
         --dataset_name "theblackcat102/evol-codealpaca-v1" \
         --per_device_train_batch_size 8 \
@@ -187,7 +190,8 @@ python finetune_clm.py \
         --output_dir ./codellama_peft_finetuned_model \
         --peft lora \
         --use_fast_tokenizer True \
-        --no_cuda
+        --no_cuda \
+        --task code-generation
 ```
 
 **For [MPT](https://huggingface.co/mosaicml/mpt-7b)**, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
@@ -289,6 +293,7 @@ python finetune_clm.py \
         --peft lora \
         --use_fast_tokenizer True \
         --no_cuda \
+        --task code-generation
 ```
 
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
@@ -579,6 +584,39 @@ python gaudi_spawn.py \
         --use_lazy_mode \
 ```
 
+Multi-card finetuning of Llama2-70B with DeepSpeed ZeRO-3 optimization and LoRA in 8 Gaudi2 card
+The following command requires Habana DeepSpeed 1.13.0 or later.
+
+```bash
+PT_HPU_MAX_COMPOUND_OP_SIZE=10 DEEPSPEED_HPU_ZERO3_SYNC_MARK_STEP_REQUIRED=1 python gaudi_spawn.py \
+        --world_size 8 --use_deepspeed finetune_clm.py \
+        --model_name_or_path "meta-llama/Llama-2-70b-chat-hf" \
+        --bf16 True \
+        --dataset_name tatsu-lab/alpaca \
+        --dataset_concatenation \
+        --per_device_train_batch_size 2 \
+        --per_device_eval_batch_size 2 \
+        --gradient_accumulation_steps 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "steps" \
+        --save_steps 2000 \
+        --save_total_limit 1 \
+        --learning_rate 1e-4  \
+        --logging_steps 1 \
+        --do_train \
+        --num_train_epochs 3 \
+        --overwrite_output_dir \
+        --log_level info \
+        --output_dir ./llama2_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer false \
+        --device "hpu" \
+        --use_habana \
+        --use_lazy_mode \
+        --deepspeed llama2_ds_zero3_config.json \
+
+```
+
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
 
 For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
@@ -588,13 +626,12 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 
 # Evaluation Metrics
 
-- **train loss:** `--do_train` is setted for training, `train loss` will be logged during training.
+- **train loss:** `--do_train` is set for training, `train loss` will be logged during training.
 
-- **eval loss:** set `--do_eval`. If dataset path doesn't have the `validation` split, the validation dataset will be split from train dataset with the `validation_split_percentage` arguement (default is 0). For example, you can set `--validation_split_percentage 5` to split %5 of train dataset.
+- **eval loss:** set `--do_eval`. If dataset path doesn't have the `validation` split, the validation dataset will be split from train dataset with the `validation_split_percentage` argument (default is 0). For example, you can set `--validation_split_percentage 5` to split %5 of train dataset.
 
-- **lm-eval (for finetuning `--task chat` or `--task completion`):** set `--do_lm_eval ture` and `--lm_eval_tasks truthfulqa_mc`
+- **lm-eval (for finetuning `--task chat` or `--task completion`):** set `--do_lm_eval true` and `--lm_eval_tasks truthfulqa_mc`
 
 - **rouge related metrics:** the metrics will be calculated when the finetuning task is summarization `--task summarization`
 
 - **human eval (code generation metric):** the metric will be calculated when the finetuning task is code-generation `--task code-generation`
-

@@ -49,7 +49,7 @@ numactl -m <node N> -C <cpu list> python generate.py \
 To enable FP32 inference, you can add the parameter `--dtype "float32"`. To check the statistical information of inference, you can add the parameter `--return_stats`.
 
 ## LLama2 INT8 Inference
-[Llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) int8 inference demostrates in [int8_llama2](https://github.com/intel/intel-extension-for-transformers/tree/int8_llama2/workflows/chatbot/inference) branch and need install Intel-extension-for-pytorch [llm_feature_branch](https://github.com/intel/intel-extension-for-pytorch/tree/llm_feature_branch) branch. Please follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization.
+[Llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) int8 inference demonstrates in [int8_llama2](https://github.com/intel/intel-extension-for-transformers/tree/int8_llama2/workflows/chatbot/inference) branch and need install Intel-extension-for-pytorch [llm_feature_branch](https://github.com/intel/intel-extension-for-pytorch/tree/llm_feature_branch) branch. Please follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization.
 
 # Inference on Habana Gaudi
 
@@ -107,6 +107,18 @@ python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
 
 Habana supports HPU graph mode for inference speedup, which is available for bloom, gpt2, opt, gptj, gpt_neox, mpt, llama. You can use the parameter `use_hpu_graphs` to speed up the inference.
 
+you can use '--peft_model_path' to apply you peft finetuned output model during generation.
+
+```bash
+python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
+        --base_model_path "meta-llama/Llama-2-70b-chat-hf" \
+        --peft_model_path <peft_model_output_folder>
+        --habana \
+        --use_hpu_graphs \
+        --use_kv_cache \
+        --task chat \
+        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
+```
 
 # Additional Notes
 

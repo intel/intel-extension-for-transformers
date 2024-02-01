@@ -22,8 +22,8 @@ import unittest
 
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig, AutoModelForCausalLM
-from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
-from intel_extension_for_transformers.llm.runtime.graph import Model
+from neural_speed.convert import convert_model
+from neural_speed import Model
 
 def cmpData(numa, numb):
     totalErr = ((np.abs(numa - numb))**2).sum()
@@ -49,13 +49,13 @@ class TestLLMRUNTIME(unittest.TestCase):
 
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         inputs = tokenizer(prompt, return_tensors="pt")
-        
+
         pt_logits = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/llama2_pt_logits.pth")[:,-1]
         pt_generate_ids = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/llama2_pt_generate_ids.pth")[0].tolist()
         print(tokenizer.decode(pt_generate_ids))
 
         # check output ids
-        woq_config = WeightOnlyQuantConfig(use_cache=True, not_quant=True)
+        woq_config = WeightOnlyQuantConfig(use_quant=False)
         itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
         itrex_generate_ids = itrex_model.generate(inputs.input_ids, do_sample=False, max_new_tokens=100)[0]
         print(tokenizer.decode(itrex_generate_ids))
@@ -64,16 +64,32 @@ class TestLLMRUNTIME(unittest.TestCase):
 
         # check diff of logits
         woq_configs = {
-            "fp32": WeightOnlyQuantConfig(use_cache=True, not_quant=True),
-            # "ggml_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True, use_ggml=True),
-            "jblas_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True),
-            # "jblas_int8": WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8", use_cache=True),
+            "fp32": WeightOnlyQuantConfig(use_quant=False),
+            # "ggml_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4",use_ggml=True),
+            "jblas_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4"),
+            # "jblas_int8": WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8"),
             }
         for config_type in woq_configs:
-            itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_configs[config_type], 
+            itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_configs[config_type],
                                                     use_llm_runtime=True, trust_remote_code=True)
             itrex_logits = itrex_model(inputs.input_ids)
             print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))
+
+
+    def test_gguf_api(self):
+        model_name = "TheBloke/Mistral-7B-v0.1-GGUF"
+        model_file = "mistral-7b-v0.1.Q4_0.gguf"
+        tokenizer_name = "/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+
+        prompt = "Once upon a time"
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, trust_remote_code=True)
+        inputs = tokenizer(prompt, return_tensors="pt").input_ids
+        streamer = TextStreamer(tokenizer)
+
+        model = AutoModelForCausalLM.from_pretrained(model_name, model_file = model_file)
+        output = model.generate(inputs, streamer=streamer, max_new_tokens=10)
+        print("output = ", output)
+        assert(output == [[1, 5713, 3714, 264, 727, 28725, 736, 403, 264, 1628, 2746, 693, 6045, 298, 1220, 28723, 985]])
 
 
     def test_beam_search(self):
@@ -98,7 +114,7 @@ class TestLLMRUNTIME(unittest.TestCase):
         pt_generate_ids = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/beam_pt_generate_ids.pth").tolist()
 
         # llm runtime fp32
-        woq_config = WeightOnlyQuantConfig(not_quant=True, use_cache=True)
+        woq_config = WeightOnlyQuantConfig(use_quant=False)
         itrex_model = AutoModelForCausalLM.from_pretrained(
             model_name, quantization_config=woq_config, trust_remote_code=True)
         itrex_generate_ids = itrex_model.generate(

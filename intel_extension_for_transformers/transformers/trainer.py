@@ -49,7 +49,7 @@ from tqdm.auto import tqdm
 from transformers import __version__, Seq2SeqTrainer, Trainer, PreTrainedModel
 from transformers.configuration_utils import PretrainedConfig
 from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
-from transformers.file_utils import (
+from transformers.utils import (
     CONFIG_NAME,
     WEIGHTS_NAME,
     is_torch_tpu_available,
@@ -67,7 +67,6 @@ from transformers.trainer_pt_utils import (
 )
 from transformers.trainer_utils import (
     HPSearchBackend,
-    ShardedDDPOption,
     TrainOutput,
     EvalLoopOutput,
     EvalPrediction,
@@ -117,9 +116,9 @@ class BaseTrainer():
     """The base class of trainer."""
     def __init__(self, *args, **kwargs):
         """Initialization function.
-        
+
         Args:
-            args: defined paramerts. 
+            args: defined parameters.
             kwargs: additional keyword arguments used to hide deprecated arguments.
         """
         super().__init__(*args, **kwargs)
@@ -258,15 +257,15 @@ class BaseTrainer():
         provider: str = Provider.INC.value,
     ):
         """Initialize the quantizer.
-        
+
         Args:
-            quant_config: The path to the YAML configuration file or QuantizationConfig class containing 
+            quant_config: The path to the YAML configuration file or QuantizationConfig class containing
                 accuracy goal, quantization objective and related dataloaders etc.
             provider: The provider used to quantize.
-        
+
         Returns:
-            An objective of neural_compressor Quantization class, which can automativally searches for 
-            optimal quantization recipes for low precision model inference and achieving best tuning 
+            An objective of neural_compressor Quantization class, which can automativally searches for
+            optimal quantization recipes for low precision model inference and achieving best tuning
             objectives.
         """
         from neural_compressor.experimental import Quantization
@@ -334,7 +333,7 @@ class BaseTrainer():
         """The main entry point of automatic quantization tuning.
 
         Args:
-            quant_config: The path to the YAML configuration file or QuantizationConfig class containing 
+            quant_config: The path to the YAML configuration file or QuantizationConfig class containing
                 accuracy goal, quantization objective and related dataloaders etc.
             provider: The provider used to quantize.
             eval_func (:obj:`Callable`, optional): The function used to evaluate the model.
@@ -342,8 +341,8 @@ class BaseTrainer():
             calib_dataloader: The dataloader for calibration dataset.
 
         Returns:
-            An objective of neural_compressor Quantization class, which can automativally searches for 
-            optimal quantization recipes for low precision model inference and achieving best tuning 
+            An objective of neural_compressor Quantization class, which can automativally searches for
+            optimal quantization recipes for low precision model inference and achieving best tuning
             objectives.
         """
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
@@ -357,7 +356,7 @@ class BaseTrainer():
         if self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
         else:
-            assert False, "Unsupport provider:{}".format(self._provider)
+            assert False, "Unsupported provider:{}".format(self._provider)
 
     def _save_inc_int8(self, opt_model, output_dir):
         weights_file = os.path.join(os.path.abspath(os.path.expanduser(output_dir)), WEIGHTS_NAME)
@@ -384,12 +383,12 @@ class BaseTrainer():
         provider: str = Provider.INC.value,
     ):
         """Initialize the pruner.
-        
+
         Args:
             pruning_config: The path to the YAML configuration file or PruningConf class containing
             accuracy goal, pruning objective and related dataloaders etc.
             provider: The provider used to quantize.
-        
+
         Returns:
             An objective of neural_compressor Pruning class.
         """
@@ -485,7 +484,7 @@ class BaseTrainer():
             accuracy goal, distillation objective and related dataloaders etc.
             teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
             provider (str): The provider used to quantize.
-        
+
         Returns:
             An objective of neural_compressor Distillation class.
         """
@@ -515,13 +514,13 @@ class BaseTrainer():
         """The main entry point of automatic distillation tuning.
 
         Args:
-            quant_config: The path to the YAML configuration file or DistillationConfig class containing 
+            quant_config: The path to the YAML configuration file or DistillationConfig class containing
             accuracy goal, distillation objective and related dataloaders etc.
             teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
             provider (str): The provider used to quantize.
             eval_func (:obj:`Callable`, optional: The function to evaluate the model.
             train_func (:obj:`Callable`, optional: The function to train the model.
-        
+
         Returns:
             An objective of neural_compressor Distillation class.
         """
@@ -556,11 +555,11 @@ class BaseTrainer():
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
-        """Main entry point for orchestrate optimiztions.
+        """Main entry point for orchestrate optimizations.
 
         Args:
             config_list: The list of configs.
-            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge 
+            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge
                 to a smaller model.
             eval_func (:obj:`Callable`, optional): Evaluation function to evaluate the tuning objective.
             train_func (:obj:`Callable`, optional): Training function which will be combined with pruning.
@@ -579,10 +578,10 @@ class BaseTrainer():
 
     def create_optimizer_builtin(self, config_list, teacher_model=None):
         """The function to create optimizer.
-        
+
         Args:
             config_list: The list of configs.
-            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge 
+            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge
                 to a smaller model.
         """
         components = []
@@ -623,11 +622,11 @@ class BaseTrainer():
         Args:
             component (:obj:`Component`, `optional`): Component object handling the training process.
             resume_from_checkpoint (:obj:`str` or :obj:`bool`, `optional`): If a :obj:`str`, local path
-                to a saved checkpoint as saved by a previous instance of :class:`~transformers.Trainer`. 
+                to a saved checkpoint as saved by a previous instance of :class:`~transformers.Trainer`.
                 If a :obj:`bool` and equals `True`, load the last checkpoint in `args.output_dir` as saved
                 by a previous instance of :class:`~transformers.Trainer`. If present, training will resume
                 from the model/optimizer/scheduler states loaded here.
-            trial (:obj:`optuna.Trial` or :obj:`Dict[str, Any]`, `optional`): The trial run or the 
+            trial (:obj:`optuna.Trial` or :obj:`Dict[str, Any]`, `optional`): The trial run or the
                 hyperparameter dictionary for hyperparameter search.
             ignore_keys_for_eval (:obj:`List[str]`, `optional`): A list of keys in the output of your model
                 (if it is a dictionary) that should be ignored when gathering predictions for evaluation
@@ -762,7 +761,8 @@ class BaseTrainer():
             else:
                 debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
 
-        delay_optimizer_creation = self.sharded_ddp is not None and self.sharded_ddp != ShardedDDPOption.SIMPLE
+        # delay_optimizer_creation = is_sagemaker_mp_enabled() or self.is_fsdp_xla_enabled or self.is_fsdp_enabled
+        delay_optimizer_creation = is_sagemaker_mp_enabled()
 
         if not delay_optimizer_creation:
             self.create_optimizer_and_scheduler(num_training_steps=max_steps)
@@ -855,7 +855,7 @@ class BaseTrainer():
         self.state.is_world_process_zero = self.is_world_process_zero()
 
         tr_loss = torch.tensor(0.0).to(args.device)
-        # _total_loss_scalar is updated everytime .item() has to be called on tr_loss and stores the sum of all losses
+        # _total_loss_scalar is updated every time .item() has to be called on tr_loss and stores the sum of all losses
         self._total_loss_scalar = 0.0
         self._globalstep_last_logged = self.state.global_step
         model.zero_grad()
@@ -1115,8 +1115,8 @@ class BaseTrainer():
         Args:
             model (:obj:`nn.Module`): The model to train.
             inputs (:obj:`Dict[str, Union[torch.Tensor, Any]]`): The inputs and targets of the model.
-                The dictionary will be unpacked before being fed to the model. Most models expect 
-                the targets under the argument :obj:`labels`. Check your model's documentation for 
+                The dictionary will be unpacked before being fed to the model. Most models expect
+                the targets under the argument :obj:`labels`. Check your model's documentation for
                 all accepted arguments.
 
         Return:
@@ -1176,9 +1176,7 @@ class BaseTrainer():
             else:
                 loss.backward()
         else:
-            if self.do_grad_scaling:
-                self.scaler.scale(loss).backward()
-            elif self.use_apex:
+            if self.use_apex:
                 with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                     scaled_loss.backward()
             elif NEW_DEEPSPEED_FLAG:
@@ -1265,9 +1263,7 @@ class BaseTrainer():
             else:
                 loss.backward()
         else:
-            if self.do_grad_scaling:
-                self.scaler.scale(loss).backward()
-            elif self.use_apex:
+            if self.use_apex:
                 with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                     scaled_loss.backward()
             elif NEW_DEEPSPEED_FLAG:
@@ -1360,9 +1356,7 @@ class BaseTrainer():
                 else:
                     loss.backward()
             else:
-                if self.do_grad_scaling:
-                    self.scaler.scale(loss).backward()
-                elif self.use_apex:
+                if self.use_apex:
                     with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                         scaled_loss.backward()
                 elif NEW_DEEPSPEED_FLAG:
@@ -1380,7 +1374,7 @@ class BaseTrainer():
     # pylint: disable=E1101
     def compute_loss(self, model, inputs, return_outputs=False):  # pragma: no cover
         """How the loss is computed by Trainer.
-        
+
         By default, all models return the loss in the first element.
 
         Subclass and override for custom behavior.
@@ -1521,17 +1515,17 @@ class BaseTrainer():
 
         NAS is composed of two major stages, Model Exploration and Evaluation.
 
-        In Model Exploration, a search engine will search for a better compressed model from the architecture 
+        In Model Exploration, a search engine will search for a better compressed model from the architecture
         design space in each iteration.
 
-        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction 
+        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction
         accuracy, the hardware performance etc.) in order to select the best model architecture.
 
         Args:
-            nas_config: The path to the YAML configuration file or a configuration 
+            nas_config: The path to the YAML configuration file or a configuration
                 object containing settings for NAS, etc.
             provider (str): Provide the baseic function. Default set to INC.
-            model_builder (:obj:`Callabel`, optional): A function to build model instance with 
+            model_builder (:obj:`Callabel`, optional): A function to build model instance with
                 the specified model architecture parameters.
             model_cls (:obj:`Callabel`, optional): Class of the model.
             eval_func (:obj:`Callabel`, optional): The function to evaluate the model.
@@ -1610,21 +1604,21 @@ class BaseTrainer():
 
         AutoDistillation is composed of three major stages, Model Exploration, Flash Distillation, and Evaluation.
 
-        In Model Exploration, a search engine will search for a better compressed model from the architecture 
+        In Model Exploration, a search engine will search for a better compressed model from the architecture
         design space in each iteration.
 
         Flash Distillation is the stage for training the searched model to discover its potential.
 
-        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction 
+        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction
         accuracy, the hardware performance etc.) in order to select the best model architecture.
 
         Args:
-            autodistillation_config: The path to the YAML configuration file or a configuration 
+            autodistillation_config: The path to the YAML configuration file or a configuration
                 object containing search setting, flash distillation settings, etc.
-            teacher_model: The model(torch.nn.Module or PreTrainedModel) transfers knowledge to 
+            teacher_model: The model(torch.nn.Module or PreTrainedModel) transfers knowledge to
                 a smaller model.
             provider (str): Provide the baseic function. Default set to INC.
-            model_builder (:obj:`Callabel`, optional): A function to build model instance with 
+            model_builder (:obj:`Callabel`, optional): A function to build model instance with
                 the specified model architecture parameters.
             model_cls (:obj:`Callabel`, optional): Class of the model.
             eval_func (:obj:`Callabel`, optional): The function to evaluate the model.
@@ -1650,7 +1644,7 @@ class BaseTrainer():
                              block_name=None,
                              checkpoint=None):
             """The a train step with automatic distillation.
-            
+
             Args:
                 trainer: define the training and evaluation loop for PyTorch.
                 agent: distillation model.
@@ -1678,7 +1672,7 @@ class BaseTrainer():
 
         def take_eval_steps(model, trainer, metric_names, save_metrics=False):
             """The a evaluation step with automatic distillation.
-            
+
             Args:
                 model: the target model to make evaluation.
                 trainer: define the training and evaluation loop for PyTorch.
@@ -1700,7 +1694,7 @@ class BaseTrainer():
 
         def train_func_builtin(model):
             """The function to use specified method to train the model.
-            
+
             Args:
                 model: input model.
             """
@@ -1770,7 +1764,7 @@ class BaseTrainer():
 
         def eval_func_builtin(model):
             """The function to use specified method to evaluate the model.
-            
+
             Args:
                 model: input model.
             """
@@ -1788,7 +1782,7 @@ class BaseTrainer():
 
     def model_builder_builtin(self, arch_paras=None, model_cls=None):
         """The function to use specified method to build model.
-        
+
         Args:
             arch_paras: Parameters of the architecture to build a new model.
             model_cls: Class for the model.
@@ -2008,10 +2002,10 @@ class BaseTrainer():
         torch.save(self.args, os.path.join(output_dir, TRAINING_ARGS_NAME))
 
     def export_to_onnx(self, *args, **kwargs):
-        """The function to tranfer model into onnx model.
-        
+        """The function to transfer model into onnx model.
+
         Args:
-            args: defined paramerts. 
+            args: defined parameters.
             kwargs: additional keyword arguments used to hide deprecated arguments.
         """
         if self.enable_bf16:
@@ -2028,8 +2022,8 @@ class BaseTrainer():
         do_constant_folding=True,
         verbose=True,
     ):
-        """The function to tranfer model into fp32 onnx model.
-        
+        """The function to transfer model into fp32 onnx model.
+
         Args:
             save_path: the save path of the exported model.
             opset_version: the onnx op version of the exported model.
@@ -2045,29 +2039,16 @@ class BaseTrainer():
         onnx_save_path = save_path if save_path \
           else os.path.join(self.args.output_dir, 'fp32-model.onnx')
 
-        # Prepare input data
-
-        # pylint: disable=E1101
-        eval_dataloader = self.get_eval_dataloader()
-        it = iter(eval_dataloader)
-        input = next(it)
-        self._remove_label(input)
-
-        # convert to a dict
-        input = dict(input.items())       
-
-        if model.__class__.__name__ == 'XLNetForSequenceClassification': # pragma: no cover
-            input.pop('token_type_ids')
-        # Set variable length axes
-        symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
-        axes_dict = {k: symbolic_names for k in input.keys()}
+        # get export args
+        input, input_names, output_names, axes_dict = self.get_export_args(model)
 
         torch.onnx.export(
             model,
             (input, ),
             onnx_save_path,
             opset_version=opset_version,
-            input_names=list(input.keys()),
+            input_names=input_names,
+            output_names=output_names,
             dynamic_axes=axes_dict,
             do_constant_folding=do_constant_folding,
         )
@@ -2084,8 +2065,8 @@ class BaseTrainer():
         do_constant_folding=True,
         verbose=True,
     ):
-        """The function to tranfer model into bf16 onnx model.
-        
+        """The function to transfer model into bf16 onnx model.
+
         Args:
             save_path: the save path of the exported model.
             opset_version: the onnx op version of the exported model.
@@ -2146,8 +2127,8 @@ class BaseTrainer():
         calibrate_method='minmax',
         scale_mapping=False,
     ):
-        """The function to tranfer model into int8 onnx model.
-        
+        """The function to transfer model into int8 onnx model.
+
         Args:
             save_path: the save path of the exported model.
             quant_format: quantization format.
@@ -2200,7 +2181,7 @@ class BaseTrainer():
                                  opset_version=opset_version,
                                  do_constant_folding=False,
                                  verbose=False)
-        # Fix onnx accuracy drop when trasformers > 4.21.0
+        # Fix onnx accuracy drop when transformers > 4.21.0
         if version.parse(__version__) > version.parse("4.21.0"):
             from onnx import TensorProto
             model = onnx.load(fp32_path)
@@ -2341,7 +2322,7 @@ class BaseTrainer():
             activation_type = ortq.QuantType.QInt8
             weight_type = ortq.QuantType.QInt8
         elif 'U8S8' in dtype: # pragma: no cover
-            if not self.enable_executor: 
+            if not self.enable_executor:
                 logger.error("Right now, we don't support dtype: {}, please use \
                               U8U8/S8S8 or set trainer.enable_executor=True \
                               for U8S8.".format(dtype))
@@ -2350,7 +2331,7 @@ class BaseTrainer():
             weight_type = ortq.QuantType.QInt8
         else:  # pragma: no cover
             # Gather requires weight type be the same as activation.
-            # So U8S8(acitvation|weight) option is not workable for best performance.
+            # So U8S8(activation|weight) option is not workable for best performance.
             logger.error("Right now, we don't support dtype: {}, \
                           please use U8U8/U8S8/S8S8.".format(dtype))
             sys.exit(0)
@@ -2464,7 +2445,7 @@ class BaseTrainer():
 
     # pylint: disable=E1101
     def export_to_jit(self):
-        """The function to tranfer model into jit model."""
+        """The function to transfer model into jit model."""
         self.model.eval()
         eval_dataloader = self.get_eval_dataloader()
         it = iter(eval_dataloader)
@@ -2476,6 +2457,76 @@ class BaseTrainer():
         logger.info(info)
         logger.info("*" * len(info))
         return jit_model
+
+    def get_export_args(self, model):
+        """Get input name, output names and axes for export."""
+        from itertools import chain
+        from optimum.exporters.tasks import TasksManager
+
+        # prepare input data
+        # pylint: disable=E1101
+        eval_dataloader = self.get_eval_dataloader()
+        it = iter(eval_dataloader)
+        input = next(it)
+        self._remove_label(input)
+
+        # convert to a dict
+        input = dict(input.items())
+
+        if model.__class__.__name__ == 'XLNetForSequenceClassification': # pragma: no cover
+            input.pop('token_type_ids')
+
+        # set variable length axes
+        symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
+        axes_dict = {k: symbolic_names for k in input.keys()}
+
+        # set input and output names
+        input_names=list(input.keys())
+        output_names=None
+
+        task = self.infer_task(model)
+        try:
+            # try to get export config
+            onnx_config_constructor = TasksManager.get_exporter_config_constructor(
+                model=model, exporter="onnx", task=task
+            )
+            onnx_config = onnx_config_constructor(model.config)
+            inputs = onnx_config.ordered_inputs(model)
+            input_names = list(inputs.keys())
+            output_names = list(onnx_config.outputs.keys())
+            axes_dict = dict(chain(inputs.items(), onnx_config.outputs.items()))
+        except:
+            # skip and use settings collected from dataloader
+            pass
+
+        return input, input_names, output_names, axes_dict
+
+    def infer_task(self, model):
+        """Infer task."""
+        from optimum.exporters.tasks import TasksManager
+
+        if not hasattr(model, "config"):
+            raise ValueError("model doesn't have 'config' attribute.")
+
+        try:
+            # infer task from model id
+            model_name_or_path = model.config._name_or_path
+            task = TasksManager.infer_task_from_model(model_name_or_path)
+        except:
+            try:
+                # infer task from model itself
+                task = TasksManager.infer_task_from_model(model)
+            except:  # pragma: no cover
+                try:
+                    # infer task from model type
+                    model_type = model.config.model_type.replace("_", "-")
+                    tasks = TasksManager.get_supported_tasks_for_model_type(model_type, "onnx")
+                    if len(tasks) != 0:
+                        task = tasks[0]
+                except:
+                    raise ValueError("Could not infer the task.")
+
+        return task
 
     @staticmethod
     def _remove_label(input):
@@ -2543,9 +2594,9 @@ class BaseTrainer():
         dynamic_config: DynamicLengthConfig,
     ):
         """The function to set dynamic config.
-        
+
         Args:
-            dynamic_config: the settings of the dynamic config. 
+            dynamic_config: the settings of the dynamic config.
         """
         self.dynamic_config = dynamic_config
         lc = None
@@ -2657,7 +2708,7 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
 
     @property
     def max_length(self):
-        """Getter of the max lenght."""
+        """Getter of the max length."""
         return self._max_length
 
     @max_length.setter
@@ -2666,7 +2717,7 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
 
     @property
     def num_beams(self):
-        """Getter of the numbert of beams."""
+        """Getter of the number of beams."""
         return self._num_beams
 
     @num_beams.setter

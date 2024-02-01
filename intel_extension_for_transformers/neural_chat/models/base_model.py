@@ -24,9 +24,18 @@ from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plu
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
+from ..prompts.prompt import MAGICODER_PROMPT
+from ..utils.error_utils import set_latest_error
+from ..errorcode import ErrorCodes
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 
-def construct_parameters(query, model_name, device, config):
+def construct_parameters(query, model_name, device, assistant_model, config):
     params = {}
     params["prompt"] = query
     params["temperature"] = config.temperature
@@ -43,6 +52,9 @@ def construct_parameters(query, model_name, device, config):
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
     params["ipex_int8"] = config.ipex_int8
+    params["return_stats"] = config.return_stats
+    params["format_version"] = config.format_version
+    params["assistant_model"] = assistant_model
     params["device"] = device
     return params
 
@@ -51,11 +63,11 @@ class BaseModel(ABC):
     A base class for LLM.
     """
 
-    def __init__(self):
+    def __init__(self, model_name, task="chat"):
         """
         Initializes the BaseModel class.
         """
-        self.model_name = ""
+        self.model_name = model_name
         self.asr = None
         self.tts = None
         self.face_animation = None
@@ -69,16 +81,14 @@ class BaseModel(ABC):
         self.device = None
         self.conv_template = None
         self.ipex_int8 = None
+        self.get_conv_template(task)
 
-    def match(self, model_path: str):
+    def match(self):
         """
-        Check if the provided model_path matches the current model.
-
-        Args:
-            model_path (str): Path to a model.
+        Check if the provided model_name matches the current model.
 
         Returns:
-            bool: True if the model_path matches, False otherwise.
+            bool: True if the model_name matches, False otherwise.
         """
         return True
 
@@ -99,8 +109,11 @@ class BaseModel(ABC):
             "ipex_int8": False,
             "use_cache": True,
             "peft_path": "/path/to/peft",
-            "use_deepspeed": False
-            "hf_access_token": "user's huggingface access token"
+            "use_deepspeed": False,
+            "hf_access_token": "user's huggingface access token",
+            "assistant_model": "assistant model name to speed up inference",
+            "use_vllm": "whether to use vllm for serving",
+            "vllm_engine_params": "vllm engine parameters if use_vllm is true",
         }
         """
         self.model_name = kwargs["model_name"]
@@ -109,6 +122,7 @@ class BaseModel(ABC):
         self.cpu_jit = kwargs["cpu_jit"]
         self.use_cache = kwargs["use_cache"]
         self.ipex_int8 = kwargs["ipex_int8"]
+        self.assistant_model = kwargs["assistant_model"]
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
@@ -120,14 +134,18 @@ class BaseModel(ABC):
                    use_deepspeed=kwargs["use_deepspeed"],
                    optimization_config=kwargs["optimization_config"],
                    hf_access_token=kwargs["hf_access_token"],
-                   use_llm_runtime=kwargs["use_llm_runtime"])
+                   use_llm_runtime=kwargs["use_llm_runtime"],
+                   assistant_model=kwargs["assistant_model"],
+                   use_vllm=kwargs["use_vllm"],
+                   vllm_engine_params=kwargs["vllm_engine_params"])
 
-    def predict_stream(self, query, config=None):
+    def predict_stream(self, query, origin_query="", config=None):
         """
         Predict using a streaming approach.
 
         Args:
             query: The input query for prediction.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for prediction.
         """
         if not config:
@@ -139,14 +157,18 @@ class BaseModel(ABC):
         config.use_cache = self.use_cache
         config.ipex_int8 = self.ipex_int8
 
+        my_query = query
+        my_origin_query = origin_query
+
         if is_audio_file(query):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
         query_include_prompt = False
-        self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-              "starcoder" in self.model_name or "codellama" in self.model_name.lower():
+              "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
+              "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
+              "phi-2" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -159,26 +181,59 @@ class BaseModel(ABC):
                         if plugin_name == "cache":
                             response = plugin_instance.pre_llm_inference_actions(query)
                             if response:
-                                print(f"Get response: {response} from cache")
+                                logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text'], link
-                        if plugin_name == "asr" and not is_audio_file(query):
+                        if plugin_name == "asr" and not os.path.exists(query):
                             continue
                         if plugin_name == "retrieval":
-                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
-                            if response == "Response with template.":
-                                return plugin_instance.response_template, link
+                            try:
+                                response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                                if response == "Response with template.":
+                                    return plugin_instance.response_template, link
+                            except Exception as e:
+                                if "[Rereieval ERROR] intent detection failed" in str(e):
+                                    set_latest_error(ErrorCodes.ERROR_INTENT_DETECT_FAIL)
+                                return
                         else:
-                            response = plugin_instance.pre_llm_inference_actions(query)
-                        if plugin_name == "safety_checker" and response:
-                            return "Your query contains sensitive words, please try another query.", link
+                            try:
+                                response = plugin_instance.pre_llm_inference_actions(query)
+                            except Exception as e:
+                                if plugin_name == "asr":
+                                    if "[ASR ERROR] Audio format not supported" in str(e):
+                                        set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
+                                return
+                        if plugin_name == "safety_checker":
+                            sign1=plugin_instance.pre_llm_inference_actions(my_query)
+                            if sign1:
+                                return "Your query contains sensitive words, please try another query.", link
+                            if not my_origin_query=="":
+                                sign2=plugin_instance.pre_llm_inference_actions(my_origin_query)
+                                if sign2:
+                                    return "Your query contains sensitive words, please try another query.", link
                         else:
                             if response != None and response != False:
                                 query = response
         assert query is not None, "Query cannot be None."
 
-        if not query_include_prompt:
-            query = self.prepare_prompt(query, self.model_name, config.task)
-        response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+        if not query_include_prompt and not is_plugin_enabled("retrieval"):
+            query = self.prepare_prompt(query, config.task)
+
+        # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
+        if "phind" in self.model_name.lower():
+            conv_template = PromptTemplate(name="phind")
+            conv_template.append_message(conv_template.roles[0], query)
+            conv_template.append_message(conv_template.roles[1], None)
+            query = conv_template.get_prompt()
+
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
+
+        try:
+            response = predict_stream(
+                **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+        except Exception as e:
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
 
         def is_generator(obj):
             return isinstance(obj, types.GeneratorType)
@@ -196,12 +251,13 @@ class BaseModel(ABC):
 
         return response, link
 
-    def predict(self, query, config=None):
+    def predict(self, query, origin_query="", config=None):
         """
         Predict using a non-streaming approach.
 
         Args:
             query: The input query for prediction.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for prediction.
         """
         if not config:
@@ -219,9 +275,9 @@ class BaseModel(ABC):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
         query_include_prompt = False
-        self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-               "starcoder" in self.model_name or "codellama" in self.model_name.lower():
+               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
+               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -233,27 +289,58 @@ class BaseModel(ABC):
                         if plugin_name == "cache":
                             response = plugin_instance.pre_llm_inference_actions(query)
                             if response:
-                                print(f"Get response: {response} from cache")
+                                logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text']
-                        if plugin_name == "asr" and not is_audio_file(query):
+                        if plugin_name == "asr" and not os.path.exists(query):
                             continue
                         if plugin_name == "retrieval":
-                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
-                            if response == "Response with template.":
-                                return plugin_instance.response_template
+                            try:
+                                response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                                if response == "Response with template.":
+                                    return plugin_instance.response_template
+                            except Exception as e:
+                                if "[Rereieval ERROR] intent detection failed" in str(e):
+                                    set_latest_error(ErrorCodes.ERROR_INTENT_DETECT_FAIL)
+                                return
                         else:
-                            response = plugin_instance.pre_llm_inference_actions(query)
+                            try:
+                                response = plugin_instance.pre_llm_inference_actions(query)
+                            except Exception as e:
+                                if plugin_name == "asr":
+                                    if "[ASR ERROR] Audio format not supported" in str(e):
+                                        set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
+                                return
                         if plugin_name == "safety_checker" and response:
-                            return "Your query contains sensitive words, please try another query."
+                            if response:
+                                return "Your query contains sensitive words, please try another query."
+                            elif origin_query and plugin_instance.pre_llm_inference_actions(origin_query):
+                                return "Your query contains sensitive words, please try another query."
                         else:
                             if response != None and response != False:
                                 query = response
         assert query is not None, "Query cannot be None."
 
-        if not query_include_prompt and not is_plugin_enabled("retrieval"):
-            query = self.prepare_prompt(query, self.model_name, config.task)
+        if not query_include_prompt and not is_plugin_enabled("retrieval") \
+            and not 'vllm' in str(MODELS[self.model_name]['model']):
+            query = self.prepare_prompt(query, config.task)
+
+        # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
+        if "phind" in self.model_name.lower():
+            conv_template = PromptTemplate(name="phind")
+            conv_template.append_message(conv_template.roles[0], query)
+            conv_template.append_message(conv_template.roles[1], None)
+            query = conv_template.get_prompt()
+
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
+
         # LLM inference
-        response = predict(**construct_parameters(query, self.model_name, self.device, config))
+        try:
+            response = predict(
+                **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+        except Exception as e:
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
 
         # plugin post actions
         for plugin_name in get_registered_plugins():
@@ -268,25 +355,27 @@ class BaseModel(ABC):
 
         return response
 
-    def chat_stream(self, query, config=None):
+    def chat_stream(self, query, origin_query="", config=None):
         """
         Chat using a streaming approach.
 
         Args:
             query: The input query for prediction.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for prediction.
         """
-        return self.predict_stream(query=query, config=config)
+        return self.predict_stream(query=query, origin_query=origin_query, config=config)
 
-    def chat(self, query, config=None):
+    def chat(self, query, origin_query="", config=None):
         """
         Chat using a non-streaming approach.
 
         Args:
             query: The input query for conversation.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for conversation.
         """
-        return self.predict(query=query, config=config)
+        return self.predict(query=query, origin_query=origin_query, config=config)
 
     def face_animate(self, image_path, audio_path=None, text=None, voice=None) -> str:  # pragma: no cover
         # 1) if there is a driven audio, then image + audio
@@ -313,7 +402,7 @@ class BaseModel(ABC):
             os.remove(audio_path)
         return video_path
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self) -> Conversation:
         """
         Get the default conversation template for the given model path.
 
@@ -339,22 +428,22 @@ class BaseModel(ABC):
         if self.conv_template:
             return
         if not task:
-            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name)
+            self.conv_template = PromptTemplate(self.get_default_conv_template().name, clear_history=True)
         else:
-            clear_after_gen = True
+            clear_history = True
             if task == "completion":
                 name = "alpaca_without_input"
             elif task == "chat":
-                name = "neural-chat-7b-v2"
-                clear_after_gen = False
+                clear_history = False
+                name = self.get_default_conv_template().name
             elif task == "summarization":
                 name = "summarization"
             else:
                 raise NotImplementedError(f"Unsupported task {task}.")
-            self.conv_template = PromptTemplate(name, clear_after_gen=clear_after_gen)
+            self.conv_template = PromptTemplate(name, clear_history=clear_history)
 
-    def prepare_prompt(self, prompt: str, model_path: str, task: str = ""):
-        self.get_conv_template(model_path, task)
+    def prepare_prompt(self, prompt: str, task: str = ""):
+        self.get_conv_template(task)
         self.conv_template.append_message(self.conv_template.roles[0], prompt)
         self.conv_template.append_message(self.conv_template.roles[1], None)
         return self.conv_template.get_prompt()
@@ -382,6 +471,8 @@ class BaseModel(ABC):
             self.safety_checker = instance
         if plugin_name == "face_animation": # pragma: no cover
             self.face_animation = instance
+        if plugin_name == "image2image": # pragma: no cover
+            self.image2image = instance
 
 
 # A global registry for all model adapters
@@ -390,7 +481,7 @@ model_adapters: List[BaseModel] = []
 
 def register_model_adapter(cls):
     """Register a model adapter."""
-    model_adapters.append(cls())
+    model_adapters.append(cls)
 
 
 def get_model_adapter(model_name_path: str) -> BaseModel:
@@ -398,7 +489,7 @@ def get_model_adapter(model_name_path: str) -> BaseModel:
     model_path_basename = os.path.basename(os.path.normpath(model_name_path)).lower()
 
     for adapter in model_adapters:
-        if adapter.match(model_path_basename) and type(adapter) != BaseModel:
+        if adapter.match(model_path_basename):
             return adapter
 
     raise ValueError(f"No valid model adapter for {model_name_path}")

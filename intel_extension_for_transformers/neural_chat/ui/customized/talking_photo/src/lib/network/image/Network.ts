@@ -55,8 +55,40 @@ export async function fetchImageList() {
 	}
 }
 
+export async function tmpVideo(query: string | Blob, imageBlob: Blob, voice_id: string | Blob) {
+	const url = `${env.VIDEO_URL}`;
+	const formData = new FormData()
+	formData.append('image', imageBlob, 'remote-image.jpg');
+	formData.append('text', query);
+	formData.append('mode', "fast");
+	formData.append('voice', voice_id);
+
+	const init: RequestInit = {
+		method: "POST",
+		body: formData,
+	};
+
+	try {
+		const response = await fetch(url, init);
+		if (!response.ok) throw response.status
+		const videoData = await response.blob();
+
+		const videoUrl = URL.createObjectURL(videoData);
+		return videoUrl;
+	} catch (error) {
+		console.error('network error: ', error);
+		return undefined
+	}
+}
+
 export async function fetchMsg(suffix, payload) {
 	const url = `${env.BASE_URL}` + suffix;
+	return sendPostRequest(url, payload);
+}
+
+// chat/knowldge 
+export async function fetchTextMsg(suffix, payload) {
+	const url = `${env.KNOWLEDGE_BASE_URL}` + suffix;
 	return sendPostRequest(url, payload);
 }
 
@@ -121,6 +153,9 @@ async function sendPostRequest(url: string, payload: Object = {}) {
 	try {
 		const response = await fetch(url, {
 			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
 			body: JSON.stringify(payload),
 		});
 

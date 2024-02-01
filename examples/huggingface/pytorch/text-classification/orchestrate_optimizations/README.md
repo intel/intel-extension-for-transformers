@@ -6,6 +6,7 @@ This document is used to list steps of introducing [Prune Once For All](https://
 
 
 The pattern lock pruning, distillation and quantization aware training are performed simultaneously on the pre-trained model to obtain the quantized model with the same sparsity pattern as the pre-trained sparse language model.
+ 
  >**Note**: If you want to fine-tune the pre-trained model, you could change [conf_list](./run_glue.py#L691), remove the quantization_conf.
 
 

@@ -87,7 +87,7 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
         model, new_node_names, ret_old_nodes = \
             util.pattern_mapping("ExplicitNHWCTransposeForConvQAT", pattern_dict, model)
         if len(new_node_names) != 0:
-            logger.info('ExplicitNHWCTransposeForConvQAT mathched...')
+            logger.info('ExplicitNHWCTransposeForConvQAT matched...')
             logger.debug('ExplicitNHWCTransposeForConvQAT = {}'.format(new_node_names))
             for i in range(len(new_node_names)):
                 conv_attr = OrderedDict()
@@ -105,7 +105,7 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
                 attr['dst_perm'] = '0,2,3,1'
                 reorder_pre_node.attr = attr
 
-                # the thrid node
+                # the third node
                 attr_2 = OrderedDict()
                 reorder_post_node = model.get_node_by_name(new_node_names[i][2])
                 attr_2['src_perm'] = '0,1,2,3'
@@ -183,7 +183,7 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
                     activation_scale = ((activation_max - activation_min) / 255).astype(float)
                     weight_scale = (np.maximum(abs(weight_max), abs(weight_min)) /
                                     128).astype(float)
-                    bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32) 
+                    bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32)
                     compensation = 0
                     node.input_tensors[2].data = copy.deepcopy((bias_fp32 + compensation).astype(np.float32))
 

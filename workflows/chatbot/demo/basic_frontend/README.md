@@ -18,3 +18,6 @@ For detailed information about the configuration settings, please refer to the [
 
 ## 🚀 Setup application
 To set up your application, copy the code files from this directory and configure them as needed. Alternatively, you can clone the existing space from [https://huggingface.co/spaces/Intel/NeuralChat-MPT](https://huggingface.co/spaces/Intel/NeuralChat-MPT).
+
+
+>**Note**: Please use Gradio version 3.36.0.

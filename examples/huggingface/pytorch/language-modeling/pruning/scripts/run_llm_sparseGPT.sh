@@ -12,13 +12,11 @@ export CUBLAS_WORKSPACE_CONFIG=':4096:8'
 python examples/huggingface/pytorch/language-modeling/pruning/run_clm_sparsegpt.py \
     --model_name_or_path /PATH/TO/LLM/ \
     --calibration_dataset_name wikitext-2-raw-v1 \
-    --evaluation_dataset_name lambada \
     --do_prune \
     --device=0 \
     --output_dir=/PATH/TO/SAVE/ \
     --target_sparsity 0.5 \
     --pruning_pattern 1x1
-
 
 
 

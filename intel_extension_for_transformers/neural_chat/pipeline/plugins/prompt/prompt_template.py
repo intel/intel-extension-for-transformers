@@ -22,14 +22,14 @@ from intel_extension_for_transformers.neural_chat.prompts import PromptTemplate
 def generate_qa_prompt(query, context=None, history=None):
     if context and history:
         conv = PromptTemplate("rag_with_context_memory")
-        conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[1], context)
         conv.append_message(conv.roles[2], history)
+        conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[3], None)
     elif context:
         conv = PromptTemplate("rag_with_context_memory")
-        conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[1], context)
+        conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[3], None)
     else:
         conv = PromptTemplate("rag_without_context")
@@ -40,24 +40,24 @@ def generate_qa_prompt(query, context=None, history=None):
 def generate_qa_enterprise(query, context=None, history=None):
     if context and history:
         conv = PromptTemplate("rag_with_threshold")
-        conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[1], context)
         conv.append_message(conv.roles[2], history)
+        conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[3], None)
     else:
         conv = PromptTemplate("rag_with_threshold")
-        conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[1], context)
+        conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[3], None)
     return conv.get_prompt()
 
 
 def generate_prompt(query, history=None):
     if history:
-        conv = PromptTemplate("rag_with_context_memory")
+        conv = PromptTemplate("rag_without_context_memory")
+        conv.append_message(conv.roles[1], history)
         conv.append_message(conv.roles[0], query)
-        conv.append_message(conv.roles[2], history)
-        conv.append_message(conv.roles[3], None)
+        conv.append_message(conv.roles[2], None)
     else:
         conv = PromptTemplate("rag_without_context")
         conv.append_message(conv.roles[0], query)

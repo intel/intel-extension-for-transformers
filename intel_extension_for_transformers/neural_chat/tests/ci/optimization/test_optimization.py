@@ -19,14 +19,16 @@ import unittest
 import torch
 import re, os
 from transformers import BitsAndBytesConfig
-from transformers.utils.bitsandbytes import is_bitsandbytes_available
+from transformers.utils import is_bitsandbytes_available
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
+        self.device = get_device_type()
         return super().setUp()
 
     def tearDown(self) -> None:
@@ -42,7 +44,8 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_AMP(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                optimization_config = MixedPrecisionConfig())
+                                optimization_config = MixedPrecisionConfig(
+                                  dtype="float16" if torch.cuda.is_available() else "bfloat16"))
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
@@ -54,6 +57,8 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_bitsandbytes_quant(self):
+        if torch.cuda.is_available():
+            os.system("pip install bitsandbytes")
         if is_bitsandbytes_available() and torch.cuda.is_available():
             config = PipelineConfig(
                 model_name_or_path="facebook/opt-125m",
@@ -72,16 +77,17 @@ class TestChatbotBuilder(unittest.TestCase):
             self.assertIsNotNone(response)
 
     def test_build_chatbot_with_weight_only_quant(self):
-        loading_config = LoadingModelConfig(use_llm_runtime=False)
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-            optimization_config=WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange"),
-            loading_config=loading_config
-        )
-        chatbot = build_chatbot(config)
-        self.assertIsNotNone(chatbot)
-        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
-        print(response)
-        self.assertIsNotNone(response)
+        if self.device == "cpu":
+            loading_config = LoadingModelConfig(use_llm_runtime=False)
+            config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                optimization_config=WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange"),
+                loading_config=loading_config
+            )
+            chatbot = build_chatbot(config)
+            self.assertIsNotNone(chatbot)
+            response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
+            print(response)
+            self.assertIsNotNone(response)
 
 if __name__ == '__main__':
     unittest.main()

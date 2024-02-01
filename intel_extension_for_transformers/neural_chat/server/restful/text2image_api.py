@@ -27,8 +27,12 @@ class Text2ImageAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, chatbot) -> None:
+    def set_chatbot(self, chatbot, use_deepspeed, world_size, host, port) -> None:
         self.chatbot = chatbot
+        self.use_deepspeed = use_deepspeed
+        self.world_size = world_size
+        self.host = host
+        self.port = port
 
     def get_chatbot(self):
         if self.chatbot is None:
@@ -43,9 +47,9 @@ class Text2ImageAPIRouter(APIRouter):
         except:
             raise Exception("Exception occurred when generating image from text.")
         else:
-            logger.info('Text transfering to image finished.')
+            logger.info('Text transferring to image finished.')
             return ImageResponse(image=image, response="Succeed")
-    
+
 
 router = Text2ImageAPIRouter()
 

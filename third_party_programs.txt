@@ -271,6 +271,6 @@ SOFTWARE.
 --------------------------------------------------------------------------
 
 The following third party programs have their own third party program files. These additional third party program files are as follows:
-1.	Intel® Neural Compressor, found at intel_extension_for_transformers/optimization/neural-compreossr-third-party-programs.txt
+1.	Intel® Neural Compressor, found at intel_extension_for_transformers/optimization/neural-compressor-third-party-programs.txt
 2.	oneAPI Deep Neural Network Library (oneDNN), found at intel_extension_for_transformers/llm/runtime/deprecated/oneDNN-THIRD-PARTY-PROGRAMS
 

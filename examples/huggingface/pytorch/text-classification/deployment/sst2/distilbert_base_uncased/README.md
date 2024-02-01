@@ -30,8 +30,11 @@ Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/sst2/distilbert_base_uncased
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
+
+>**Note**: Please use transformers no higher than 4.34.1
 
 
 ## Environment Variables (Optional)
@@ -74,7 +77,7 @@ graph.save('./ir')
 ```
 
 # Benchmark
-If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
+If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir first.
 
 By setting `--dynamic_quanzite` for FP32 model, you could benchmark dynamic quantize int8 model.
 ## Accuracy  

@@ -29,7 +29,9 @@ Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/examples/huggingface/pytorch/question-answering/deployment/squad/ipex/distillbert_base_uncased
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
+>**Note**: Please use transformers no higher than 4.34.1
 
 # Inference Pipeline
 Neural Engine can parse ONNX model and Neural Engine IR. 

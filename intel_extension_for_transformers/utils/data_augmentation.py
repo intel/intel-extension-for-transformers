@@ -23,17 +23,50 @@ Please refer to https://github.com/intel/intel-extension-for-transformers/blob/m
 import csv
 import json
 import math
+import nlpaug.augmenter.char as nac
+import nlpaug.augmenter.sentence as nas
+import nlpaug.augmenter.word as naw
 import numpy as np
 import os
 from datasets import load_dataset
+from enum import Enum
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from operator import methodcaller
 from tqdm import tqdm
-from .utils import AugmenterType, get_augmenter_from_type
 
 torch = LazyImport("torch")
 
 DEFAULT_OUTPUT_FILE = "augmented_dataset"
+
+EOS = '</s>'
+
+
+class AugmenterType(Enum):
+    """Enumeration of types of augmentation."""
+    TEXTGENERATIONAUG = "textgenerationaug"
+    KEYBOARDAUG = "KeyboardAug"
+    OCRAUG = "OcrAug"
+    SPELLINGAUG = "SpellingAug"
+    CONTEXTUALWORDEMBSFORSENTENCEAUG = "ContextualWordEmbsForSentenceAug"
+
+
+AUGMENTER_MAPPING = {
+    AugmenterType.KEYBOARDAUG.value: nac,
+    AugmenterType.OCRAUG.value: nac,
+    AugmenterType.SPELLINGAUG.value: naw,
+    AugmenterType.CONTEXTUALWORDEMBSFORSENTENCEAUG.value: nas,
+
+}
+
+
+def get_augmenter_from_type(aug_type: str):
+    """Get nlpaug's augmenter by augment_type name.
+
+    The nlpaug is a library helps you with augmenting nlp for your machine learning projects.
+    It provide many augmenter, please refer to https://github.com/makcedward/nlpaug#augmenter.
+    """
+    assert aug_type in AUGMENTER_MAPPING, "Unsupported the augmenter type:{}".format(aug_type)
+    return AUGMENTER_MAPPING[aug_type]
 
 
 class DataAugmentation:
@@ -160,7 +193,7 @@ class DataAugmentation:
 
     @property
     def custom_augmenter(self):
-        """Get augmenter which be setted by customer."""
+        """Get augmenter which be set by customer."""
         return self._custom_augmenter
 
     @custom_augmenter.setter
@@ -222,7 +255,7 @@ class DataAugmentation:
         """Execute the process of text generation augmentation.
 
         Args:
-            extension: No used 
+            extension: No used
             raw_datasets: The original datasets, the datasets can be from huggingface datasets(like: glue/sst2) or
             the customer datasets, each sample should be:
                 'label' + '\t' + 'sentence' + EOS + '\n'
@@ -264,7 +297,6 @@ class DataAugmentation:
             XLNetLMHeadModel,
             XLNetTokenizer, pipeline,
         )
-        from .utils import EOS
 
         MODEL_CLASSES = {
             "gpt2": (GPT2LMHeadModel, GPT2Tokenizer),
@@ -286,7 +318,7 @@ class DataAugmentation:
             "......}"
         config = AutoConfig.from_pretrained(model_name_or_path)
         assert config.model_type in MODEL_CLASSES, \
-            "Unsupport this model to augment data:{}".format(config.model_type)
+            "Unsupported this model to augment data:{}".format(config.model_type)
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path,

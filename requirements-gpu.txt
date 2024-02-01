@@ -1,0 +1,11 @@
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us
+accelerate
+cmake
+datasets
+intel_extension_for_pytorch==2.0.110+xpu
+ninja
+py-cpuinfo
+setuptools>=65
+setuptools_scm[toml]>=6.2
+texttable
+torch==2.0.1a0

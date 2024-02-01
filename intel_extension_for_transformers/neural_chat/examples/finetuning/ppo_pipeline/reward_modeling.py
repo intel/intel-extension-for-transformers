@@ -34,6 +34,7 @@ from transformers import (
 )
 import logging
 import sys
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 logger = logging.getLogger(__name__)
 # Setup logging
@@ -42,13 +43,6 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %H:%M:%S",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
-
-
-def is_optimum_habana_available():
-    import importlib
-    from transformers.utils.import_utils import is_optimum_available
-
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
 
 
 @dataclass
@@ -199,14 +193,14 @@ def preprocess_function(examples):
         "input_ids_k": [],
         "attention_mask_k": [],
     }
-    for question, response_j, response_k in zip(
-        examples["question"], examples["chatgpt"], examples["llama2-13b-chat"]
+    for system, question, response_j, response_k in zip(
+        examples["system"], examples["question"], examples["chosen"], examples["rejected"]
     ):
         tokenized_j = tokenizer(
-            "Question: " + question + "\n\nAnswer: " + response_j, truncation=True
+            system + question + response_j, truncation=True
         )
         tokenized_k = tokenizer(
-            "Question: " + question + "\n\nAnswer: " + response_k, truncation=True
+            system + question + response_k, truncation=True
         )
 
         new_examples["input_ids_j"].append(tokenized_j["input_ids"])
@@ -280,7 +274,7 @@ def compute_loss(self, model, inputs, return_outputs=False):
 
 
 if __name__ == "__main__":
-    if not is_optimum_habana_available():
+    if not is_hpu_available:
         from transformers import set_seed
 
         parser = HfArgumentParser(
@@ -474,6 +468,5 @@ if __name__ == "__main__":
 
     trainer.train()
 
-    model = model.merge_and_unload()
-    if trainer.is_world_process_zero():
-        model.save_pretrained(training_args.output_dir)
+    trainer.model = trainer.model.merge_and_unload()
+    trainer.save_model()

@@ -16,17 +16,19 @@
 # limitations under the License.
 
 import unittest
-import torch
 import re, os
-from transformers import BitsAndBytesConfig
-from transformers.utils.bitsandbytes import is_bitsandbytes_available
+import torch
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
+from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
+        self.device = get_device_type()
+        if self.device != "cpu":
+            self.skipTest("Skipping this test since LLM runtime optimization is for Intel CPU.")
         return super().setUp()
 
     def tearDown(self) -> None:

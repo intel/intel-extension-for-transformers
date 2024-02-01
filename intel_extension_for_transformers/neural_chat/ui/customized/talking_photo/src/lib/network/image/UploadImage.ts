@@ -30,6 +30,6 @@ async function uploadImageList(image_list: { imgSrc: string }[]) {
         image_path: info.img_path
       }));
     
-    imageList.update(imageListArray => [...imageListArray, ...combinedArray]);        
+    imageList.update(imageListArray => [...imageListArray, ...combinedArray]);       
 }
 

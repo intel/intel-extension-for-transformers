@@ -53,6 +53,5 @@ from .modeling import (
     AutoModelForCausalLM,
     AutoModel,
     AutoModelForSeq2SeqLM,
-    OptimizedModel,
-    GPTBigCodeForCausalLM
+    OptimizedModel
 )

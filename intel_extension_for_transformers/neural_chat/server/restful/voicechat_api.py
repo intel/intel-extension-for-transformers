@@ -20,7 +20,6 @@ from fastapi.responses import StreamingResponse
 from typing import Optional
 from ...cli.log import logger
 from fastapi import File, UploadFile, Form
-from pydub import AudioSegment
 from ...config import GenerationConfig
 from ...plugins import plugins
 import base64
@@ -32,8 +31,12 @@ class VoiceChatAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, chatbot) -> None:
+    def set_chatbot(self, chatbot, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80) -> None:
         self.chatbot = chatbot
+        self.use_deepspeed = use_deepspeed
+        self.world_size = world_size
+        self.host = host
+        self.port = port
 
     def get_chatbot(self):
         if self.chatbot is None:
@@ -69,9 +72,9 @@ class VoiceChatAPIRouter(APIRouter):
         chatbot = self.get_chatbot()
         try:
             spk_embedding = chatbot.tts.create_speaker_embedding(spk_id)
-            torch.save(spk_embedding, f'speaker_embeddings/spk_embed_{spk_id}.pt')
+            torch.save(spk_embedding, f'../../../../speaker_embeddings/spk_embed_{spk_id}.pt')
         except Exception as e:
-            logger.info(f"create spk embedding failes! {e}")
+            logger.info(f"create spk embedding fails! {e}")
             return {"create_spk": "fail"}
         return {"create_spk": "success"}
 
@@ -89,6 +92,7 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
     with open("tmp_audio_bytes", 'wb') as fout:
         content = await file.read()
         fout.write(content)
+    from pydub import AudioSegment
     audio = AudioSegment.from_file("tmp_audio_bytes")
     audio = audio.set_frame_rate(16000)
     # bytes to wav
@@ -116,10 +120,11 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     file_name = file.filename
     # generate a unique id
     import uuid
-    spk_id = f"spk_{uuid.uuid1()}"
+    spk_id = f"spk_{str(uuid.uuid1())[:8]}"
     with open(f"tmp_spk_{file_name}", 'wb') as fout:
         content = await file.read()
         fout.write(content)
+    from pydub import AudioSegment
     audio = AudioSegment.from_file(f"tmp_spk_{file_name}")
     audio.export(f"{spk_id}", format="mp3")
 

@@ -24,6 +24,9 @@
 	let startPoint = { x: 0, y: 0 }
 	let isTouching = false
 
+	// let scaleV = { x1: 0, y1: 0, x2: 0, y2: 0}
+	// let isScaling = false
+
 	function changeImgClass(imgChange: string) {
 		if (imgChange === "rotateLeft") {
 			currentRotation = (currentRotation + 1) % rotationList.length;
@@ -65,12 +68,50 @@
 	}
 
 	function handleTouchStart(e: TouchEvent) {
+		// e.preventDefault();
+		
+		// let touches = e.touches;
+		// let events = touches[0];
+		// let events2 = touches[1];
+
+		// scaleV.x1 = events.clientX;
+		// scaleV.y1 = events.clientY;
+
+		// isScaling = true;
+
+		// if (events2) {
+		// 	scaleV.x2 = events2.clientX;
+		// 	scaleV.y2 = events2.clientY;
+		// }
 	}
 
 	function handleTouchMove(e: TouchEvent) {
+		// e.preventDefault();
+
+		// if (isScaling) {
+		// 	return;
+		// }
+		// let touches = e.touches;
+		// let events = touches[0];
+		// let events2 = touches[1];		
+
+		// if (events2) {
+		// 	if (scaleV.x2 === 0) scaleV.x2 = events2.clientX;
+		// 	if (scaleV.y2 === 0) scaleV.y2 = events2.clientY;
+
+		// 	const getDistance = (v) => {
+		// 		return Math.hypot(v.x2 - v.x1, v.y2 - v.y1);
+		// 	};
+
+		// 	let zoom = getDistance({ x1: events.clientX, y1: events.clientY, x2: events2.clientX, y2: events2.clientY})
+		// 		 		/ getDistance(scaleV);
+
+		// 	scale = Math.min(scale * zoom, 3);
+		// }
 	}
 
 	function handleTouchEnd(e: TouchEvent) {
+		// isScaling = false
 	}
 
 	async function downloadImage() {

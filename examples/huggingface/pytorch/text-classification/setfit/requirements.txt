@@ -1,0 +1,8 @@
+accelerate
+datasets
+sentencepiece
+protobuf
+torch
+transformers
+wandb
+setfit

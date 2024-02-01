@@ -31,9 +31,11 @@ Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/sparse/distilbert_base_uncased
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
+>**Note**: Please use transformers no higher than 4.34.1
 
 ## Environment Variables (Optional) 
 ```
@@ -67,7 +69,7 @@ bash run_bert_mini.sh --model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block
 
 
 ### Benchmark
-Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](/intel_extension_for_transformers/llm/runtime/deprecated/kernels) and high performance layernorm op with transpose mode to improve inference performance.
+Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normally get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](/intel_extension_for_transformers/llm/runtime/deprecated/kernels) and high performance layernorm op with transpose mode to improve inference performance.
 
 Before using Python API to benchmark, need to transpose onnx model to IR, command as follows:
 ```shell

@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is the parameter configuration file for NeuralChat Serving.
+
+#################################################################################
+#                             SERVER SETTING                                    #
+#################################################################################
+
+host: 0.0.0.0
+port: 8000
+
+model_name_or_path: "facebook/opt-125m"
+device: "cuda"
+
+serving:
+    framework: "vllm"
+    vllm_engine_params:
+        # to use continuous batching during serving, use_async_engine should be set true,
+        # otherwise, serving is offline and synchronous, which means the next batch will only
+        # be queued and processed after the processing of the last batch is finished
+        use_async_engine: true
+        tensor_parallel_size: 1
+        gpu_memory_utilization: 0.9
+        swap_space: 4
+        enforce_eager: false
+        max_context_len_to_capture: 8192
+
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
+tasks_list: ['textchat']

@@ -1,5 +1,5 @@
 neural-compressor
-transformers==4.34.1
+transformers
 accelerate
 datasets >= 1.8.0
 sentencepiece != 0.1.92
@@ -9,3 +9,4 @@ onnx>=1.12
 onnxruntime==1.13.1
 diffusers==0.12.1
 pytorch_fid
+optimum

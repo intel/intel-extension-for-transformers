@@ -61,7 +61,7 @@ This will run the chatbot application in the background on your server.
 Once the application is running, you can find the access URL in the trace log:
 
 ```log
-INFO | gradio_web_server | Models: meta-llama/Llama-2-7b-chat-hf
+INFO | gradio_web_server | Models: Intel/neural-chat-7b-v3-1
 INFO | stdout | Running on local URL:  http://0.0.0.0:7860
 ```
 since there are two services, start two backends and generate URLs for both backends.
@@ -74,3 +74,5 @@ The URLs to access the chatbot frontend are http://{SERVER_IP_ADDRESS_1}:80 and 
 You also have the option to update the backend service URL in the `app.py` file.
 
 ![Update backend URL](https://i.imgur.com/j7TTYaW.png)
+
+>**Note**: Please use Gradio version 3.34.0.

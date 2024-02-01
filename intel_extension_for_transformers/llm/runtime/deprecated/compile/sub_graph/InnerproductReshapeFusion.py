@@ -63,7 +63,7 @@ class InnerproductReshapeFusion(Pattern):
                     },
                     'returns': [3, 0]
                 },
-                
+
                 {
                     'patterns': {
                         'in': [[(0, 'InnerProduct'), (1, 'View'), (2, 'Reorder')],
@@ -84,7 +84,7 @@ class InnerproductReshapeFusion(Pattern):
                             'input_data': [0]
                         }
                         ], [[0, 1, 2], 3]],
-                        
+
                         1: [[], [[], 1]]
                     },
                     'output_tensors': {
@@ -116,7 +116,7 @@ class InnerproductReshapeFusion(Pattern):
                 attr1['src_perm'] = "0,1,2,3"
                 attr1['dst_perm'] = "0,2,1,3"
                 reorder_node_idx.attr = attr1
-                
+
         def _set_attr(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
                 mat_node_idx = model.get_node_id(new_node_names[i][0])
@@ -129,7 +129,7 @@ class InnerproductReshapeFusion(Pattern):
                     attr['reshape'] = ret_old_nodes[i][0].attr['shape']
                     attr['reshape_dims'] = '0'
                 model.nodes[mat_node_idx].attr = attr
-        
+
         if model.framework_modeling_config['framework'] == 'torch':
             pattern_dict = pattern_mapping_config['InnerproductReshapeFusion'][0]
             model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductReshapeFusion",
@@ -139,7 +139,7 @@ class InnerproductReshapeFusion(Pattern):
 
 
             pattern_dict = pattern_mapping_config['InnerproductReshapeFusion'][1]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductReshapeFusion", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductReshapeFusion",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
                 _set_attr1(new_node_names, ret_old_nodes, model)

@@ -28,7 +28,7 @@ import time
 
 
 class Graph(object):
-    """The defintion of the neural engine graph."""
+    """The definition of the neural engine graph."""
 
     def __init__(self):
         """The graph initialization."""
@@ -104,7 +104,7 @@ class Graph(object):
                     logger.error('execution_mode value should be inference, debug or tuning.')
 
             def set_enable_op_tuning(v):
-                assert isinstance(v, bool), "enable_op_tuning shoule be True or False."
+                assert isinstance(v, bool), "enable_op_tuning should be True or False."
                 ne_options.enable_op_tuning = v
 
             def set_warmup_iter(v):
@@ -116,11 +116,11 @@ class Graph(object):
                 ne_options.dispatch_table_file_root = os.path.join(os.getcwd(), v)
 
             def set_activation_mem_compression(v):
-                assert isinstance(v, bool), "activation_mem_compression shoule be True or False."
+                assert isinstance(v, bool), "activation_mem_compression should be True or False."
                 ne_options.activation_mem_compression = v
 
             def set_dump_activation_dag(v):
-                assert isinstance(v, bool), "dump_activation_dag shoule be True or False."
+                assert isinstance(v, bool), "dump_activation_dag should be True or False."
                 ne_options.dump_activation_dag = v
 
             convert_options = {'execution_mode': set_execution_mode,
@@ -498,14 +498,14 @@ class Graph(object):
                 for node in net_info['model']['operator']:
                     tensor_input.append([])
                     tensor_output.append([])
-                    opeartor = net_info['model']['operator'][node]
-                    if 'input' in opeartor.keys():
-                        for input_name in opeartor['input']:
+                    operator = net_info['model']['operator'][node]
+                    if 'input' in operator.keys():
+                        for input_name in operator['input']:
                             input_tensor = ne.tensor_config(input_name, [], "fp32", [], [])
                             tensor_input[-1].append(input_tensor)
 
-                    if 'output' in opeartor.keys():
-                        for (output_name, attrs) in opeartor['output'].items():
+                    if 'output' in operator.keys():
+                        for (output_name, attrs) in operator['output'].items():
                             tensor_location = []
                             if 'location' in attrs.keys():
                                 tensor_location = attrs['location']
@@ -523,8 +523,8 @@ class Graph(object):
                                                              tensor_location)
                             tensor_output[-1].append(output_tensor)
 
-                    if 'attr' in opeartor.keys():
-                        op_attr = opeartor['attr']
+                    if 'attr' in operator.keys():
+                        op_attr = operator['attr']
                         attr_maps = {}
                         for (k, v) in op_attr.items():
                             attr_maps[str(k)] = str(v)
@@ -570,7 +570,7 @@ class Graph(object):
         if self._refresh_execution_options or self._engine is None:
             self.engine_init()
             self._refresh_execution_options = False
-        # update activation memory compresion when give different model input shapes
+        # update activation memory compression when give different model input shapes
         if self._refresh_max_input_shapes_list and self._do_activation_mem_compression and self._engine:
             self.engine_init(refresh_model=False)
         output = self._engine[0].forward(input_data)
@@ -581,6 +581,10 @@ class Graph(object):
             index += 1
 
         return output_dict
+
+    def generate(self, input_data):
+        """The inference API of the neural engine."""
+        return self.inference(input_data)
 
     def graph_init(self, config, weight_data=None, load_weight=False):
         """The initialization of the neural engine graph.
@@ -791,7 +795,7 @@ class Graph(object):
         return onednn_graph_nodes_name_list
 
     def _generate_onednn_graph_nodes(self, onednn_graph_nodes_name):
-        """The onednn graph ndoes generation."""
+        """The onednn graph nodes generation."""
         for node in self.nodes:
             if node.name in onednn_graph_nodes_name:
                 if node.op_type == "InnerProduct":
@@ -1016,7 +1020,7 @@ class Graph(object):
             return False
 
         def _dfs_search(node, target_node_type):
-            """Use the deep-first algorithm to search the node accroding to the its type."""
+            """Use the deep-first algorithm to search the node according to the its type."""
             target_node = []
 
             def dfs(node):
@@ -1092,7 +1096,7 @@ class Graph(object):
             return reorder_node
 
         def _swap_innertproduct_input(node, data_swap_list=[0, 1], swap_list_2=[], swap_list_3=[]):
-            """Modify innertproduct nodes and the folloing reshape nodes."""
+            """Modify innertproduct nodes and the following reshape nodes."""
             input_0 = data_swap_list[0]
             input_1 = data_swap_list[1]
             # swap(input_0, input1)
@@ -1216,7 +1220,7 @@ class Graph(object):
             return innerproduct_type, merge_matmul_node_name_list
 
         def _pattern_matching(innerproduct_type_list, pattern):
-            """Matching the pattern accroding to innerproduct node types."""
+            """Matching the pattern according to innerproduct node types."""
             matched_idx = []
             pattern_length = len(pattern)
 
@@ -1375,7 +1379,7 @@ class Graph(object):
             and the post modify add_matmul and transpose_matmul nodes.
             """
             for node in self._nodes:
-                # step1: delte all recover nodes of innerProduct nodes and modify reshape inputs
+                # step1: delete all recover nodes of innerProduct nodes and modify reshape inputs
                 node_type = _innerproduct_type_check(node)
                 if node_type == 'add_innerproduct_0' and node.name in QKV_node_name_list:
                     post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])

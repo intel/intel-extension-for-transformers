@@ -17,10 +17,11 @@
 
 """Utils for optimization."""
 
-from .quantization_config import (
+from .config import (
     MixedPrecisionConfig,
     BitsAndBytesConfig,
     SmoothQuantConfig,
+    SparsityConfig,
     WeightOnlyQuantConfig,
 )
-from .utility import LazyImport, logger
+from .utility import LazyImport, logger, str2bool

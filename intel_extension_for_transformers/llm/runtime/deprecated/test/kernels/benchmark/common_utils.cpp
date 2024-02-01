@@ -83,7 +83,7 @@ int get_data_width(jd::data_type dtype) {
       data_width = 1;
       break;
     default:
-      throw std::runtime_error(std::string("sparselib_ut_malloc error:unsupport data type."));
+      throw std::runtime_error(std::string("sparselib_ut_malloc error:unsupported data type."));
       break;
   }
   return data_width;
@@ -103,7 +103,7 @@ void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
       *(reinterpret_cast<int8_t*>(ptr) + idx) = static_cast<int8_t>(val);
       break;
     default:
-      throw std::runtime_error(std::string("assign_val:unsupport this dtype."));
+      throw std::runtime_error(std::string("assign_val:unsupported this dtype."));
   }
 }
 int get_element_num(const jd::operator_desc& op_desc, int idx) {
@@ -211,7 +211,7 @@ float get_dequantize(float x, float alpha, float scale) {
   return x;
 }
 
-float get_linear(float x, float aplha, float beta) { return x * aplha + beta; }
+float get_linear(float x, float alpha, float beta) { return x * alpha + beta; }
 
 float get_swish(float x, float alpha) { return x / (1.f + get_exp(-1 * alpha * x)); }
 

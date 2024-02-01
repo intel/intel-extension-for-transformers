@@ -16,11 +16,11 @@
 
 </script>
 
-<header class="frame-header z-10 w-full items-center bg-white shadow sm:relative md:h-20">
+<header class="frame-header z-10 w-full items-center bg-[#252e47] shadow sm:relative md:h-20">
 	<div
 		class="group relative hidden h-full w-full items-center gap-5 px-3 pr-5 justify-end sm:flex "
 	>
-		<span class="font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Upload Pictures, Start an Amazing Journey!</span>
+		<span class="font-bold bg-gradient-to-r from-sky-100 to-indigo-500 bg-clip-text text-transparent">Upload Your Photos, Start an Amazing Journey!</span>
 	</div>
 	<MobileHeader />
 </header>

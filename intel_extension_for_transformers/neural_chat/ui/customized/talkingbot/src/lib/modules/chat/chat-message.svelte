@@ -13,7 +13,7 @@
 	let isuser = (type === MESSAGE_ROLE.HUMAN || type === MESSAGE_ROLE.USER)
 
 	let playIdx = 0;
-	let autoPlay = true
+	let autoPlay = message.length > 0 && message[message.length - 1] !== "done";
 	function handlePlayEnded() {
 		playIdx++;
 		autoPlay = true;

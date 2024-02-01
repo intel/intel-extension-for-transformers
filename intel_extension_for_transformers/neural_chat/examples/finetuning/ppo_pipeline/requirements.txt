@@ -1,7 +1,9 @@
-transformers==4.34.1
-peft
 accelerate
-datasets
 bitsandbytes
+datasets
 evaluate
+intel-extension-for-transformers
+peft
 scikit-learn
+transformers
+tyro

@@ -19,8 +19,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 0
-        submodules: recursive
+        # fetch-depth: 0
+        # submodules: recursive
         set-safe-directory: true
     - name: Build Container
       run: docker compose build

@@ -32,8 +32,11 @@ Install required dependencies for examples
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/image-classification/deployment/imagenet/vit
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
+
+>**Note**: Please use transformers no higher than 4.34.1
 
 
 ### Environment Variables (Optional)
@@ -62,7 +65,7 @@ bash run_vit.sh --model=google/vit-base-patch16-224  --dataset=imagenet-1k --pre
 Note: the input_model could be changed from a vit base model to a vit large model.
 
 ## Benchmark
-If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
+If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir first.
 ### Accuracy  
 
 Python API command as follows:

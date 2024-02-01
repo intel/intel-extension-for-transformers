@@ -19,6 +19,8 @@ pip install -v .
 cd examples/huggingface/pytorch/language-modeling/inference
 pip install -r requirements.txt
 
+>**Note**: Please use transformers no higher than 4.34.1
+
 # Setup Environment Variables
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1
@@ -35,7 +37,7 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 
 ```bash
 # "--precision provide two options "bf16"/"fp32"
-# "--jit" used to covert model to torchscript mode
+# "--jit" used to convert model to torchscript mode
 # "--ipex" enable intel_extension_for_pytorch
 numactl -m <node N> -C <cpu list> \
     python run_clm_no_trainer.py \

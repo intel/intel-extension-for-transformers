@@ -1,9 +1,10 @@
-ninja
+--extra-index-url https://download.pytorch.org/whl/cpu
+accelerate
 cmake>=3.16
+gguf
+ninja
+optimum-intel
 py-cpuinfo
 setuptools>=65
 setuptools_scm[toml]>=6.2
---extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.1.0+cpu
-accelerate
-optimum-intel

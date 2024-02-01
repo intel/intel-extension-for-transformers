@@ -1,0 +1,12 @@
+accelerate
+datasets >= 1.8.0
+diffusers==0.12.1
+neural-compressor
+onnx>=1.12
+onnxruntime==1.13.1
+optimum
+protobuf
+pytorch_fid
+sentencepiece != 0.1.92
+torch==2.1.0
+transformers

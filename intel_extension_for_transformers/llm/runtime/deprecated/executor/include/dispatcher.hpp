@@ -44,7 +44,7 @@ namespace executor {
  *           InnerProduct xxxxxx Convolution 4,1,256,256
  *        2. If do not tuning, dispatcher will try to load the dispatcher
  *           table file. If dispatcher find the best kernl by hash key, it
- *           will execut that kernel (maybe 1x1 conv). Otherwise, dispatcher
+ *           will execute that kernel (maybe 1x1 conv). Otherwise, dispatcher
  *           will execute its default kernel (innerproduct there).
  *
  */

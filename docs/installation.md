@@ -23,14 +23,9 @@ Binary builds for python 3.8, 3.9 and 3.10 are available in Pypi
 # install stable basic version from pypi
 pip install intel-extension-for-transformers
 ```
+
 ```Bash
-# install nightly version
-pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers
-# or install nightly version with only backend
-pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers-backend
-```
-```Bash
-# install stable basic version from from conda
+# install stable basic version from conda
 conda install -c intel intel_extension_for_transformers
 ```
 
@@ -39,7 +34,10 @@ conda install -c intel intel_extension_for_transformers
 ### Prerequisites
 The following prerequisites and requirements must be satisfied for a successful installation:
 - Python version: 3.8 or 3.9 or 3.10
-- GCC (on Linux) or Visual Studio (on Windows)
+- GCC >= version 8 (on Linux)
+  - version 11, if use the bf16-related features of the itrex backend
+  - version 13, if use the fp16-related features of the itrex backend
+- Visual Studio (on Windows)
 
 ### Install Intel Extension for Transformers
 ```Bash
@@ -52,10 +50,12 @@ pip install -v .
 
 ## System Requirements
 ### Validated Hardware Environment
-Intel® Extension for Transformers supports systems based on [Intel 64 architecture or compatible processors](https://en.wikipedia.org/wiki/X86-64) that are specifically optimized for the following CPUs:
+Intel® Extension for Transformers supports the following HWs:
 
-* Intel Xeon Scalable processor (formerly Cascade Lake, Icelake)
-* Future Intel Xeon Scalable processor (code name Sapphire Rapids)
+* Intel Xeon Scalable processor (Sapphire Rapids, Icelake, ...etc)
+* Intel Gaudi2
+* Intel Core Processors
+* Intel Xeon CPU Max Series
 
 ### Validated Software Environment
 
@@ -74,13 +74,12 @@ Intel® Extension for Transformers supports systems based on [Intel 64 architect
 <tbody>
   <tr align="center">
     <th>Version</th>
-    <td class="tg-7zrl"><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.12.0>2.12.0</a><br>
-    <a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.11.0>2.11.0</a><br>
-    <td class="tg-7zrl"><a href=https://download.pytorch.org/whl/torch_stable.html>2.0.0+cpu</a><br>
-    <a href=https://download.pytorch.org/whl/torch_stable.html>1.13.1+cpu</a><br>
-    <a href=https://download.pytorch.org/whl/torch_stable.html>1.12.0+cpu</a><br>
-    <td class="tg-7zrl"><a href=https://github.com/intel/intel-extension-for-pytorch/tree/2.0.0>2.0.0</a><br>
-    <a href=https://github.com/intel/intel-extension-for-pytorch/tree/v1.13.0>1.13.0</a></td>
+    <td class="tg-7zrl"><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.13.0>2.13.0</a><br>
+    <a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.12.0>2.12.0</a><br>
+    <td class="tg-7zrl"><a href=https://download.pytorch.org/whl/torch_stable.html>2.1.0+cpu</a><br>
+    <a href=https://download.pytorch.org/whl/torch_stable.html>2.0.0+cpu</a><br>
+    <td class="tg-7zrl"><a href=https://github.com/intel/intel-extension-for-pytorch/tree/v2.1.0+cpu>2.1.0+cpu</a><br>
+    <a href=https://github.com/intel/intel-extension-for-pytorch/tree/v2.0.0+cpu>2.0.0+cpu</a></td>
   </tr>
 </tbody>
 </table>
@@ -99,7 +98,7 @@ Intel® Extension for Transformers supports systems based on [Intel 64 architect
 <tbody>
   <tr align="center">
     <th>Version</th>
-    <td><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.9.1>2.9.1</a><br>
+    <td><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.13.0>2.13.0</a><br>
     <td><a href=https://download.pytorch.org/whl/torch_stable.html>2.0.0+cpu</a><br>
   </tr>
 </tbody>

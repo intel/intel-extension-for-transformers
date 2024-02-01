@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import sys
 import unittest
@@ -6,9 +20,8 @@ sys.path.insert(0, './')
 
 import torch
 import numpy as np
-# from neural_compressor.config import WeightPruningConfig
-# from intel_extension_for_transformers.transformers.pruner.pruning import Pruning
 from intel_extension_for_transformers.transformers.pruner import WeightPruningConfig, Pruning
+from intel_extension_for_transformers.transformers.utils import SparsityConfig
 import torchvision
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
@@ -61,7 +74,7 @@ class TestPruning(unittest.TestCase):
                 'target_sparsity': 0.5,
                 "pattern": '8x2',
                 "pruning_type": "magnitude_progressive",
-                "false_key": "this is to test unsupport keys"
+                "false_key": "this is to test unsupported keys"
             },
             {
                 "op_names": ['layer2.*'],
@@ -191,6 +204,15 @@ class TestPruning(unittest.TestCase):
 
         dataset = remove_label({'labels': [], 'ids': []})
         dataset = remove_label({'start_positions': [], 'end_positions': [], 'ids': []})
+
+
+    def test_sparsity_config_loading(self):
+        config = SparsityConfig.from_pretrained("Intel/gpt-j-6b-sparse")
+        config.save_pretrained("sparsity_config_dir")
+        loaded_config = SparsityConfig.from_pretrained("sparsity_config_dir")
+        self.assertEqual(config.sparse_pattern, loaded_config.sparse_pattern)
+        self.assertEqual(config.dense_layers, loaded_config.dense_layers)
+
 
 
 if __name__ == "__main__":
