@@ -370,4 +370,3 @@ class NoiseReducer:
         rn_am_sound = rn_sound.apply_gain(original_db - rn_db)
         rn_am_sound.export(f"{output_audio_path}_rn_ap.wav")
         return f"{output_audio_path}_rn_ap.wav"
-

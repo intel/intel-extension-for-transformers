@@ -53,5 +53,5 @@ class TrainerInfer(DlsaInference):
                             f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
                         )
                 else:
-                    save_performance_metrics(self.trainer, self.test_data, 
+                    save_performance_metrics(self.trainer, self.test_data,
                                             path.join(self.training_args.output_dir, self.args.inference_output) )

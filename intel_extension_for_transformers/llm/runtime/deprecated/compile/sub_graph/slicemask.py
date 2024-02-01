@@ -36,7 +36,7 @@ class SliceMask(Pattern):
             'SliceMask': [
                 {
                     'patterns': {
-                        'in': [[(0, 'Shape'), (2, 'Sub'), (3, 'Int'), (6, 'Slice'), 
+                        'in': [[(0, 'Shape'), (2, 'Sub'), (3, 'Int'), (6, 'Slice'),
                                 (7, 'Slice'), (8, 'Where'), (9, 'Add')],
                                [(), (1, 'Shape'), (2, 'Sub')],
                                [(), (4, 'Slice'), (5, 'Slice'), (6, 'Slice')]
@@ -70,10 +70,10 @@ class SliceMask(Pattern):
                     },
                     'returns': []
                 },
-                
+
                 {
                     'patterns': {
-                        'in': [[(0, 'Shape'), (2, 'Sub'), (3, 'Slice'), (4, 'Slice'), 
+                        'in': [[(0, 'Shape'), (2, 'Sub'), (3, 'Slice'), (4, 'Slice'),
                                 (5, 'Where')],
                                [(), (1, 'Shape'), (2, 'Sub')],
                                 ],
@@ -118,7 +118,7 @@ class SliceMask(Pattern):
                 model.nodes[binary_node_idx].attr = attr
                 slice_node = model.get_node_by_name(new_node_names[i][0])
                 import numpy as np
-                
+
                 slice_node.input_tensors[0].data = np.array(slice_node.input_tensors[0].data, dtype=np.float32)
                 slice_node.input_tensors[0].data.dtype = np.float32
                 slice_node.input_tensors[0].data[np.where(slice_node.input_tensors[0].data==0)] = -10000
@@ -135,7 +135,7 @@ class SliceMask(Pattern):
                 attr_slice2['steps'] = 1
                 model.get_node_by_name(new_node_names[i][1]).attr = attr_slice2
         pattern_dict = pattern_mapping_config['SliceMask'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("SliceMask", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("SliceMask",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)
@@ -148,10 +148,10 @@ class SliceMask(Pattern):
                 model.nodes[binary_node_idx].attr = attr
                 slice_node = model.get_node_by_name(new_node_names[i][0])
                 import numpy as np
-                
+
                 slice_node.input_tensors[0].data = np.array(slice_node.input_tensors[0].data, dtype=np.float32)
                 slice_node.input_tensors[0].data.dtype = np.float32
-                
+
                 slice_node.input_tensors[0].data[np.where(slice_node.input_tensors[0].data==0)] = -1600000
                 slice_node.input_tensors[0].data[np.where(slice_node.input_tensors[0].data==1)] = 0
                 attr_slice1 = OrderedDict()
@@ -162,10 +162,10 @@ class SliceMask(Pattern):
                 attr_slice1['steps'] = 1
                 slice_node.attr = attr_slice1
         pattern_dict = pattern_mapping_config['SliceMask'][1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("SliceMask", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("SliceMask",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr1(new_node_names, ret_old_nodes, model)
-        
+
 
         return model

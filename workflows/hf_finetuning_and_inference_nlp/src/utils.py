@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Intel Corporation                                                                                              
+# Copyright (C) 2022 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -202,11 +202,9 @@ def save_performance_metrics(trainer, data, output_file):
 
     predictions_report = {}
     predictions_report["label_id"] = [label_map[i] for i in predictions.label_ids.tolist()]
-    predictions_report["predictions_label"] = [label_map[i] for i in np.argmax(predictions.predictions, axis=1).tolist() ] 
-    predictions_report["predictions_probabilities"] = softmax(predictions.predictions, axis=1).tolist() 
+    predictions_report["predictions_label"] = [label_map[i] for i in np.argmax(predictions.predictions, axis=1).tolist() ]
+    predictions_report["predictions_probabilities"] = softmax(predictions.predictions, axis=1).tolist()
     predictions_report["metrics"] = predictions.metrics
-    
+
     with open(output_file, 'w') as file:
-        _ = yaml.dump(predictions_report, file) 
-
-
+        _ = yaml.dump(predictions_report, file)

@@ -50,7 +50,7 @@ parser.add_argument(
     type=int,
     default=0,
     help="modeltype: 0 pytorch model, 1 nn model"
-    
+
 )
 parser.add_argument(
     '--path',
@@ -64,13 +64,13 @@ if __name__ =='__main__':
         print("-"*100+"visualize pytorch model"+"-"*100)
         print("model path:"+str(args.path))
         model_file=''
-        for root, dirs, files in os.walk(args.path): 
+        for root, dirs, files in os.walk(args.path):
             for file_name in files: #search .bin file
                 if '.bin' in file_name:
                     model_file=file_name
             if model_file=='':
-                assert "Must contain .bin file in this directory!"   
-            path_model=args.path+"/"+model_file       
+                assert "Must contain .bin file in this directory!"
+            path_model=args.path+"/"+model_file
             checkpoint=torch.load(path_model,map_location="cpu")
             offset_path=args.path+"/pytorch_model_hotmaps/"
             if not  os.path.exists(offset_path):
@@ -81,7 +81,7 @@ if __name__ =='__main__':
                 for name in checkpoint:
                     if "weight" in name and len((checkpoint[name]).shape)>1: #and name.find("weight") > 0
                         tensor = checkpoint[name]
-                        tensor_size = int(tensor.numel()) #get number of element 
+                        tensor_size = int(tensor.numel()) #get number of element
                         elt_zero = tensor_size - tensor.nonzero().size(0)
                         elt_sparse = elt_zero / tensor_size
                         if len(tensor.size()) > 1:
@@ -106,7 +106,7 @@ if __name__ =='__main__':
                                 print(name, elt_zero, elt_sparse, tensor.size())
                                 f.write("{}:{},{}\t{}".format(name, elt_zero, elt_sparse, tensor.size()))
 
-        
+
     if args.modeltype==1:
         print("-"*100+"visualize nn model"+"-"*100)
         print("model path:"+str(args.path))

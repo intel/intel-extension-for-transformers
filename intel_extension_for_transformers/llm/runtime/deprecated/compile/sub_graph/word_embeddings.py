@@ -276,7 +276,7 @@ class WordEmbeddings(Pattern):
             return model
         for i in range(len(pattern_mapping_config['WordEmbeddings'])):
             pattern_dict = pattern_mapping_config['WordEmbeddings'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("WordEmbeddings", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("WordEmbeddings",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):

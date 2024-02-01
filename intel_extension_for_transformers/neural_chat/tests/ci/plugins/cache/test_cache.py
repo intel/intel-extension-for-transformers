@@ -34,7 +34,7 @@ class TestChatCache(unittest.TestCase):
         else:
             print(f"The directory gptcache_data does not exist.")
         return super().tearDown()
-    
+
     def test_chat_cache(self):
         cache_plugin = ChatCache(embedding_model_dir="hkunlp/instructor-large")
         cache_plugin.init_similar_cache_from_config()

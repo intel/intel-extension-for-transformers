@@ -66,7 +66,7 @@ class NeoxRoraryPosEmb(Pattern):
                         'in': [[(0, 'Shape'), (1, 'Add')]],
                     },
                 },
-                
+
                 {
                     'patterns': {
                         'in': [[(0, 'Shape'), (1, 'Div'), (2, 'Slice'), (4, 'Neg'), (5, 'Concat')],
@@ -99,7 +99,7 @@ class NeoxRoraryPosEmb(Pattern):
                 },
             ]
         }
-        
+
         def _set_attr(new_node_names, ret_old_nodes, model):
             remove_shape_list = []
             for i in range(len(new_node_names)):
@@ -121,12 +121,12 @@ class NeoxRoraryPosEmb(Pattern):
                         mask_tensor = copy.deepcopy(tensor)
                         break
                 slice_node.input_tensors.append(mask_tensor)
-        
+
         if model.framework_modeling_config['framework'] != 'torch':
             return model
- 
+
         pattern_dict = pattern_mapping_config['NeoxRoraryPosEmb'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("NeoxRoraryPosEmb", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("NeoxRoraryPosEmb",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)
@@ -146,7 +146,7 @@ class NeoxRoraryPosEmb(Pattern):
                     remove_node_list.extend([pattern_nodes_name[0], pattern_nodes_name[1]])
             model.remove_nodes(remove_node_list)
 
-        # rotate_half pattern for llama 
+        # rotate_half pattern for llama
         pattern = pattern_mapping_config['NeoxRoraryPosEmb'][2]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
         remove_node_list = []
@@ -166,7 +166,7 @@ class NeoxRoraryPosEmb(Pattern):
 
 
         pattern_dict = pattern_mapping_config['NeoxRoraryPosEmb'][3]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("NeoxRoraryPosEmb", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("NeoxRoraryPosEmb",
                                                                     pattern_dict, model)
         remove_node_list = []
         for i in range(len(new_node_names)):

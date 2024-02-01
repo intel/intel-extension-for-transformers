@@ -77,5 +77,3 @@ We verify DPO training on our finetuned `mpt-7b` model [Intel/neural-chat-7b-v1-
 | [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat) | 49.95 | 46.5 | 75.55 | 37.60 | 40.17 | ours |
 | [Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1) | **51.41**   | 50.09 | 76.69 | 38.79 | 40.07 | ours |
 | **[Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1) with DPO** | **52.39** | 51.54  | 76.45 | 39.47| 42.10 | ours |
-
-

@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
@@ -29,7 +43,7 @@ class TestNeuralEngine(unittest.TestCase):
                     "The onnx model was not successfully downloaded, therefore test may cannot run"
                 )
             return
-        
+
         model = compile(filename)
         input_0 = np.random.randint(0, 384, (1, 32)).reshape(1, 32)
         input_1 = np.random.randint(1, 2, (1, 32)).reshape(1, 32)
@@ -53,11 +67,11 @@ class TestNeuralEngine(unittest.TestCase):
         newgraph = Graph()
         newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
         out = newgraph.inference([example_in.numpy()])
-        
+
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
         os.remove('{}.pt'.format(file_name))
         shutil.rmtree(file_name)
-        
-        
+
+
 if __name__ == "__main__":
     unittest.main()
