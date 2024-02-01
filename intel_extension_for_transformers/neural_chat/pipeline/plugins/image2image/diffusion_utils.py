@@ -37,4 +37,3 @@ def neural_engine_init(ir_path):
     vae_decoder_graph.graph_init(vae_decoder_conf, vae_decoder_bin)
 
     return [text_encoder_graph, unet_graph, vae_decoder_graph]
-

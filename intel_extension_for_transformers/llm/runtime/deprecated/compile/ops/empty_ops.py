@@ -595,4 +595,3 @@ class Zeros(Operator):
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
-

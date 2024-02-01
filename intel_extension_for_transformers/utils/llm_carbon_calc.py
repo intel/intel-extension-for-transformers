@@ -22,10 +22,10 @@ POWER_PER_GB_MEM = 0.1      # roughly ratio in DDR5
 JOUL_TO_KWH = 2.78e-7
 
 def main():
-    parser = argparse.ArgumentParser(description='LLM carbon calculator - ' 
+    parser = argparse.ArgumentParser(description='LLM carbon calculator - '
                                     'simple estimator of LLM inference '
                                     'carbon emission')
-    parser.add_argument('-c', '--carbon-intensity', type=float, 
+    parser.add_argument('-c', '--carbon-intensity', type=float,
                         dest='carbon_intensity',
                         default=WORLD_AVG_CARBON_INTENSITY, metavar='C',
                         help='carbon intensity of electricity of your country '
@@ -64,14 +64,14 @@ def main():
     m = args.mem
     tdp = args.tdp
     c = args.carbon_intensity
-    carbon = (tdp + m * 0.001 * POWER_PER_GB_MEM) * t * 0.001 * JOUL_TO_KWH * c 
+    carbon = (tdp + m * 0.001 * POWER_PER_GB_MEM) * t * 0.001 * JOUL_TO_KWH * c
 
     print('TDP (W): ', tdp)
     print('Memory Consumption (MB): ', m)
     print('Output token number: ', args.token_size)
     print('Total time of one inference (ms): ', t)
     print('Carbon emission in one inference (kgCO2e): ', carbon)
-    return carbon    
+    return carbon
 
 if __name__ == '__main__':
     main()

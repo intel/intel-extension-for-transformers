@@ -159,7 +159,7 @@ class AttentionOutputLayerNormLengthAdaptiveExpandIndices(Pattern):
                     },
                     'returns': [5,6]
                 },
-                
+
                 # int8 lat
                 {
                     'patterns': {

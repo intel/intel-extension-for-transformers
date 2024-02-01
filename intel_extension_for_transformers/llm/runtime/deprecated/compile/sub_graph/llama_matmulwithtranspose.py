@@ -35,7 +35,7 @@ class LlamaMatMulWithTranspose(Pattern):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             'LlamaMatMulWithTranspose': [
-                # llama 
+                # llama
                 {
                     'patterns': {
                         'in': [[(0, 'Reorder'), (1, 'Matmul')]],
@@ -82,7 +82,7 @@ class LlamaMatMulWithTranspose(Pattern):
                     },
                     'returns': [1]
                 },
-                
+
                 {
                     'patterns': {
                         'in': [[(0, 'Add'), (1, 'Max'), (2, 'Softmax')]],
@@ -113,7 +113,7 @@ class LlamaMatMulWithTranspose(Pattern):
         }
 
         pattern_dict = pattern_mapping_config['LlamaMatMulWithTranspose'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("LlamaMatMulWithTranspose", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("LlamaMatMulWithTranspose",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
@@ -123,7 +123,7 @@ class LlamaMatMulWithTranspose(Pattern):
                 mat_node_idx.attr = attr
 
         pattern_dict = pattern_mapping_config['LlamaMatMulWithTranspose'][1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("LlamaMatMulWithTranspose", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("LlamaMatMulWithTranspose",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
@@ -134,7 +134,7 @@ class LlamaMatMulWithTranspose(Pattern):
                 mat_node_idx.attr = attr
 
         pattern_dict = pattern_mapping_config['LlamaMatMulWithTranspose'][2]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("LlamaMatMulWithTranspose", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("LlamaMatMulWithTranspose",
                                                                     pattern_dict, model)
 
         return model

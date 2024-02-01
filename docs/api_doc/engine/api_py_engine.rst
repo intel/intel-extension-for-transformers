@@ -8,4 +8,3 @@ The following API information is available:
 
    compile.rst
    graph.rst
-

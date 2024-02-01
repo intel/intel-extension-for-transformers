@@ -49,7 +49,7 @@ class Text2ImageAPIRouter(APIRouter):
         else:
             logger.info('Text transferring to image finished.')
             return ImageResponse(image=image, response="Succeed")
-    
+
 
 router = Text2ImageAPIRouter()
 
