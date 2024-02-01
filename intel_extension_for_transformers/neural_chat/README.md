@@ -171,6 +171,8 @@ NeuralChat boasts support for various generative Transformer models available in
 |THUDM/chatglm3-6b| ✅| ✅|✅| ✅    |
 |Qwen/Qwen-7B| ✅| ✅|✅| ✅    |
 |microsoft/phi-2| ✅| ✅|✅| ✅    |
+|Deci/DeciLM-7B| ✅| ✅|✅| ✅    |
+|Deci/DeciLM-7B-instruct| ✅| ✅|✅| ✅    |
 |bigcode/starcoder|   |   |   | ✅ |
 |codellama/CodeLlama-7b-hf|   |   |   | ✅ |
 |codellama/CodeLlama-34b-hf|   |   |   | ✅ |
