@@ -25,7 +25,7 @@ If you have no negative texts for a query, you can random sample some from the e
 
 See [augmented_example.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/augmented_example.jsonl) for a data file.
 
-### Hard Negatives 
+## 3. Hard Negatives 
 
 Hard negatives is a widely used method to improve the quality of sentence embedding. 
 You can mine hard negatives following this command:
@@ -58,7 +58,7 @@ and random sample negatives from the top-k documents (not including the positive
 - `use_gpu_for_searching`: whether to use faiss-gpu to retrieve negatives.
 
 
-## 3. Train
+## 4. Train
 ```
 python finetune.py \
 --output_dir BAAI/bge-base-en-v1.5_finetuned \
@@ -95,7 +95,7 @@ Besides the negatives in this group, the in-batch negatives also will be used in
 For more training arguments please refer to [transformers.TrainingArguments](https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments)
 
 
-### 4. Evaluate model
+## 5. Evaluate model
 We provide [a simple script](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/evaluate.py) to evaluate the model's performance. 
 
 * **before finetune**
@@ -116,7 +116,7 @@ python evaluate.py \
 - `index_file_jsonl_path`: path of JSON data including candidate context where each line is a dict like this:```{"context": List[str]}```.
 - `query_file_jsonl_path`: path of JSON data including queries and postives where each line is a dict like this:```{"query": str, "pos": List[str]}```.
 
-### 5. Some supported models
+## 6. Some supported models
 [bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), 
 [bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5), 
 [gte-large](https://huggingface.co/thenlper/gte-large), 
