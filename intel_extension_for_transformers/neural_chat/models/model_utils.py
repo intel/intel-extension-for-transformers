@@ -1436,7 +1436,7 @@ def predict(**params):
         output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     else:
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
-    
+
     identifier_flag = -1
     if "### Response:" in output:
         return output.split("### Response:")[identifier_flag].strip()
