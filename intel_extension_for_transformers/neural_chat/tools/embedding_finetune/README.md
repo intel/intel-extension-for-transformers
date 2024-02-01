@@ -54,7 +54,7 @@ python mine_hard_neg.py \
 and random sample negatives from the top-k documents (not including the positive documents).
 - `output_file`: path to save JSON data with mined hard negatives for finetuning
 - `negative_number`: the number of sampled negatives 
-- `range_for_sampling`: where to sample negative. For example, `2-100` means sampling `negative_number` negatives from top2-top200 documents. **You can set larger value to reduce the difficulty of negatives (e.g., set it `60-300` to sample negatives from top60-300 passages)**
+- `range_for_sampling`: where to sample negative. For example, `2-100` means sampling `negative_number` negatives from top2-top200 documents. You can set larger value to reduce the difficulty of negatives (e.g., set it `60-300` to sample negatives from top60-300 passages)
 - `use_gpu_for_searching`: whether to use faiss-gpu to retrieve negatives.
 
 
@@ -79,7 +79,7 @@ python finetune.py \
 ```
 
 **some important arguments**:
-- `per_device_train_batch_size`: batch size in training. In most of cases, larger batch size will bring stronger performance. You can expand it by enabling `--fp16`, `--deepspeed ./df_config.json` (df_config.json can refer to [ds_config.json](./ds_config.json)), `--gradient_checkpointing`, etc. 
+- `per_device_train_batch_size`: batch size in training. In most of cases, larger batch size will bring stronger performance. 
 - `train_group_size`: the number of positive and negatives for a query in training.
 There are always one positive, so this argument will control the number of negatives (#negatives=train_group_size-1).
 Noted that the number of negatives should not be larger than the numbers of negatives in data `"neg":List[str]`.
@@ -117,10 +117,10 @@ python evaluate.py \
 - `query_file_jsonl_path`: path of JSON data including queries and postives where each line is a dict like this:```{"query": str, "pos": List[str]}```.
 
 ### 5. Some supported models
-[bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5)
-[bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5)
-[gte-large](https://huggingface.co/thenlper/gte-large)
-[gte-base](https://huggingface.co/thenlper/gte-base)
-[stella-base-en-v2](https://huggingface.co/infgrad/stella-base-en-v2)
-[e5-large-v2](https://huggingface.co/intfloat/e5-large-v2)
+[bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), 
+[bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5), 
+[gte-large](https://huggingface.co/thenlper/gte-large), 
+[gte-base](https://huggingface.co/thenlper/gte-base), 
+[stella-base-en-v2](https://huggingface.co/infgrad/stella-base-en-v2), 
+[e5-large-v2](https://huggingface.co/intfloat/e5-large-v2), 
 [all-mpnet-base-v2](https://huggingface.co/sentence-transformers/all-mpnet-base-v2)
