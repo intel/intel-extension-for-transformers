@@ -110,7 +110,7 @@ class Gelu(Pattern):
 
         for i in range(len(pattern_mapping_config['Gelu'])):
             pattern_dict = pattern_mapping_config['Gelu'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("Gelu", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("Gelu",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):

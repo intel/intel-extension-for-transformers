@@ -612,7 +612,7 @@ class BertLayer(nn.Module):
 class BertEncoder(nn.Module):
     """Bert encoder."""
     def __init__(self, config):
-        """Init an instance base on config.""" 
+        """Init an instance base on config."""
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
@@ -636,17 +636,17 @@ class BertEncoder(nn.Module):
     ) -> Union[Tuple[torch.Tensor], BaseModelOutputWithPastAndCrossAttentions]:
         """The main entry point for the class."""
         bsz, tsz, dim = hidden_states.size()
-        
+
         if length_config is not None:
             restored_hidden_states = hidden_states
             remain_indices = torch.arange(tsz, device=hidden_states.device).unsqueeze(0).repeat(bsz, 1)
-        
+
 
         all_hidden_states = () if output_hidden_states else None
 
         if output_hidden_states:
             all_hidden_states = all_hidden_states + (hidden_states, )
-        
+
         all_self_attentions = () if output_attentions and not length_config else None
         all_cross_attentions = () if output_attentions and self.config.add_cross_attention and not length_config \
          else None
@@ -895,13 +895,13 @@ class BertForPreTrainingOutput(ModelOutput): # pragma: no cover
         seq_relationship_logits (`torch.FloatTensor` of shape `(batch_size, 2)`):
             Prediction scores of the next sequence prediction (classification) head (scores of True/False continuation
             before SoftMax).
-        hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or 
+        hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or
         when `config.output_hidden_states=True`):
             Tuple of `torch.FloatTensor` (one for the output of the embeddings + one for the output of each layer) of
             shape `(batch_size, sequence_length, hidden_size)`.
 
             Hidden-states of the model at the output of each layer plus the initial embedding outputs.
-        attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when 
+        attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when
         `config.output_attentions=True`):
             Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
             sequence_length)`.
@@ -1021,9 +1021,9 @@ class BertModel(BertPreTrainedModel):
         return self.embeddings.word_embeddings
 
     def set_input_embeddings(self, value):
-        """Setter of input embeddings.""" 
+        """Setter of input embeddings."""
         self.embeddings.word_embeddings = value
-    
+
     def set_length_config(self, length_config):
         """Setter of length config."""
         self.length_config = length_config

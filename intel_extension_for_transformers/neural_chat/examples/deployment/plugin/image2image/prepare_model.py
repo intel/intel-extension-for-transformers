@@ -254,7 +254,7 @@ def prepare_qat_model(
                     return output
             return wrapper
         unet.forward = model_wrapper(unet.forward)
-        
+
         torch.onnx.export(
             unet,
             args=(

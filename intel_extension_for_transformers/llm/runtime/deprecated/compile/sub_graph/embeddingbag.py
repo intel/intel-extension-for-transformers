@@ -103,7 +103,7 @@ class EmbeddingBag(Pattern):
 
         for i in range(len(pattern_mapping_config['EmbeddingBag'])):
             pattern_dict = pattern_mapping_config['EmbeddingBag'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("EmbeddingBag", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("EmbeddingBag",
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0 and i == 0:

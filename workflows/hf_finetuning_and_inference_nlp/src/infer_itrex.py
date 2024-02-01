@@ -87,13 +87,13 @@ class ItrexInfer(DlsaInference):
             self.model = self.trainer.quantize(
                 quant_config=q_config, calib_dataloader=eval_dataloader
             )
-            
+
         else:
             error_msg = f"Now only support fp32, bf16 and int8.Your input datatype is {self.args.dtype_inf}."
             raise ValueError(error_msg)
 
     def _do_infer(self):
-        
+
         if self.args.dtype_inf == "bf16" and not (self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
                     raise ValueError("BF16 with both IPEX and OneDNN disabled is currently not implemented...")
 

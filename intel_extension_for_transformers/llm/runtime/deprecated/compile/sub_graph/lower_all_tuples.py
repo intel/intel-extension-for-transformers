@@ -49,7 +49,7 @@ class LowerAllTuples(Pattern):
                     for i in range(len(dest_node.input_tensors)):
                         if dest_node.input_tensors[i].name == node.output_tensors[0].name:
                             del dest_node.input_tensors[i]
-                            idx = i 
+                            idx = i
                             for tensor in node.input_tensors:
                                 if node.name in tensor.dest_op:
                                     tensor.dest_op.remove(node.name)

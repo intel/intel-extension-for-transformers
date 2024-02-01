@@ -61,7 +61,7 @@ class Int8BF16MixedPrecisionChecker(Pattern):
                    op.attr.get('output_dtype', 'fp32') != output_dtype:
                     return False
             return True
-        
+
         def _insert_bf16_quant_node(pre_node, model):
             output_tensor = copy.deepcopy(pre_node.output_tensors[0])
             output_tensor.dtype = 'bf16'
@@ -146,7 +146,7 @@ class Int8BF16MixedPrecisionChecker(Pattern):
         non_quantized_patterns = [[(0, 'Range'), (1, ['Div', 'BinaryOp']), (2, 'Pow'),
                                   (3, ['Div', 'BinaryOp']), (4, 'Reshape'),
                                   (7, ['Matmul', 'Einsum', 'BatchMatmul'])],
-                                [(), (5, 'Range'), (6, 'Reshape'), 
+                                [(), (5, 'Range'), (6, 'Reshape'),
                                  (7, ['Matmul', 'Einsum', 'BatchMatMul'])]]
         match_ret = util.search_pattern(non_quantized_patterns, model)
         for ret in match_ret:

@@ -108,4 +108,3 @@ curl http://localhost:80/v1/completions \
     "temperature": 0.5
   }'
 ```
-

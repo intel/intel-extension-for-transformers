@@ -55,9 +55,9 @@ class TextGenerationAPIRouter(APIRouter):
         top_p = parameters.get("top_p", 0.95)
         typical_p = parameters.get("typical_p", 0.95)
         res = client.text_generation(
-            prompt=prompt, best_of=best_of, do_sample=do_sample, 
-            max_new_tokens=max_new_tokens, repetition_penalty=repetition_penalty, 
-            temperature=temperature, top_k=top_k, top_p=top_p, 
+            prompt=prompt, best_of=best_of, do_sample=do_sample,
+            max_new_tokens=max_new_tokens, repetition_penalty=repetition_penalty,
+            temperature=temperature, top_k=top_k, top_p=top_p,
             typical_p=typical_p, stream=stream)
         return res
 

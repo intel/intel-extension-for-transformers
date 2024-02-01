@@ -55,4 +55,3 @@ class NamedEntityRecognition():
         logging.info("[NER info] Inference time consumption: %s", time.time() - start_time)
 
         return result
-

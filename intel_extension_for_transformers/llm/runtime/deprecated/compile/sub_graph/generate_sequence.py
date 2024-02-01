@@ -81,7 +81,7 @@ class GenerateSequence(Pattern):
                     }], [[0], 1]],
                 },
                 'returns': [5, 0]
-            }                   
+            }
             ]
         }
         collect_node = []
@@ -98,7 +98,7 @@ class GenerateSequence(Pattern):
                     attr["step"] = int(old_node.input_tensors[2].data)
                     new_node_idx = model.get_node_id(new_node_names[j][0])
                     model.nodes[new_node_idx].attr = attr
-                    
+
                     if i == 1:
                         collect_node.append(ret_old_nodes[j][1])
                 model.insert_nodes(10, collect_node)
