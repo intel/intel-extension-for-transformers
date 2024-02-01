@@ -57,6 +57,7 @@ You can customize the configuration file 'textbot.yaml' to match your environmen
 | tts.args.voice        | "default"                                |
 | tts.args.stream_mode  | true                                     |
 | tts.args.output_audio_path | "./output_audio"                    |
+| tts.args.speedup      | 1.0                                      |
 | tasks_list            | ['voicechat']                            |
 
 
@@ -67,3 +68,48 @@ To start the VoiceChat server, use the following command:
 ```shell
 nohup bash run.sh &
 ```
+
+# Quick test with OpenAI compatible endpoints (audio)
+
+To make our audio service compatible to OpenAI [endpoints](https://platform.openai.com/docs/api-reference/audio/), we offer the following three endpoints:
+
+```
+/v1/audio/speech
+/v1/audio/transcriptions
+/v1/audio/translations
+```
+
+To test whether the talkingbot server can serve your requests correctly, you can use `curl` as follows:
+
+```
+curl http://localhost:8888/v1/audio/translations \
+  -H "Content-Type: multipart/form-data" \
+  -F file="@sample_1.wav"
+
+curl http://localhost:8888/v1/audio/transcriptions \
+  -H "Content-Type: multipart/form-data" \
+  -F file="@sample_zh_cn.wav"
+
+curl http://localhost:8888/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "speecht5",
+    "input": "The quick brown fox jumped over the lazy dog.",
+    "voice": "default"
+  }' \
+  --output speech.mp3
+```
+
+# Customized endpoints of a audio-input-audio-output pipeline
+
+You can check `intel_extension_for_transformers/neural_chat/server/restful/voicechat_api.py` to see the other customized endpoints offered by us:
+
+```
+/v1/talkingbot/asr
+/v1/talkingbot/llm_tts
+/v1/talkingbot/create_embedding
+```
+
+`/v1/talkingbot/asr` is equivalent to `/v1/audio/transcriptions` and for backward compatibility we simply keep that for audio-to-speech conversion.
+`/v1/talkingbot/llm_tts` merges two tasks: `LLM text generation` and the `text to speech` into one process, which is designed specifically for converting steadily the LLM streaming outputs to speech.
+`/v1/talkingbot/create_embedding` is used to create a SpeechT5 speaker embedding for zero-shot voice cloning. Although voice-cloning is relatively weak for SpeechT5, we still keep this endpoint for quick start. If you want to clone your voice properly, please check the current best practices for SpeechT5 based on few-shot voice-cloning finetuning in this [repo](../../../../finetuning/tts/).
