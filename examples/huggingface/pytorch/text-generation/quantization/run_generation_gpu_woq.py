@@ -77,8 +77,7 @@ config = AutoConfig.from_pretrained(
     trust_remote_code=args.trust_remote_code,
     revision=args.revision,
 )
-generation_config = GenerationConfig.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
-generation_config.do_sample = False
+
 user_model = None
 
 # tokenizer
@@ -202,15 +201,15 @@ if args.benchmark:
 
 if args.accuracy:
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-    user_model = AutoModelForCausalLM.from_pretrained(
-        args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
-            if user_model is None else user_model
+    if user_model is None:
+        user_model = AutoModelForCausalLM.from_pretrained(
+            args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype)
     user_model = ipex.optimize_transformers(
-        user_model.eval(), device=args.device, inplace=True, woq=True, dtype=torch_dtype)
+        user_model.eval(), device=args.device, inplace=True, woq=(hasattr(user_model, "quantization_config")), dtype=torch_dtype)
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer=' + args.model + \
-            ',dtype=float32, trust_remote_code=' + str(args.trust_remote_code),
+            ',dtype=float16,trust_remote_code=' + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
