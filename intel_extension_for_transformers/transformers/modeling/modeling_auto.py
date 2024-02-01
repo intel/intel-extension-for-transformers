@@ -138,7 +138,7 @@ class _BaseQBitsAutoModelClass:
             from neural_speed import Model
             from huggingface_hub import hf_hub_download
 
-            logger.info("Using LLM Runtime to load the GGUF model...")
+            logger.info("Using Neural Speed to load the GGUF model...")
 
             model_file = kwargs.get("model_file")
             gguf_model_file = hf_hub_download(pretrained_model_name_or_path, filename=model_file)
@@ -161,7 +161,9 @@ class _BaseQBitsAutoModelClass:
                                "mistral", "qwen", "phi", "whisper"]
             
             if model_type not in model_type_list:
-                logger.error("Can't support this model_type. The supported model_type are: {}".format(model_type_list))
+                logger.error(
+                    "Can't support this model_type. Please set the correct model_type, supported model_type: {}".format(
+                        model_type_list))
 
             model = Model()
             model.init_from_bin(model_type, gguf_model_file)
