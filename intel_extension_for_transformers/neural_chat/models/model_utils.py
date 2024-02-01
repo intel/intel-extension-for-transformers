@@ -697,6 +697,9 @@ def load_model(
             tokenizer.pad_token_id
         ) = tokenizer.eos_token_id
 
+    if tokenizer.pad_token_id and not model.generation_config.pad_token_id:
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
+
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
