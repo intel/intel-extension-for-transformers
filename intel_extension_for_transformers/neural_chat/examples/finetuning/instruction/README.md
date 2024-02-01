@@ -38,12 +38,12 @@ Once you have the docker image ready, please follow [run docker image](../../../
 
 ## 2. Prepare the Model
 
-#### meta-llama/Llama-2-7b
-To acquire the checkpoints and tokenizer, the user can get those files from [meta-llama/Llama-2-7b]([https://huggingface.co/mosaicml/mpt-7b](https://huggingface.co/meta-llama/Llama-2-7b)).
+#### meta-llama/Llama-2-7b-hf
+To acquire the checkpoints and tokenizer, the user can get those files from [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf).
 Users could follow below commands to get the checkpoints from github repository after the access request to the files is approved.
 ```bash
 git lfs install
-git clone https://huggingface.co/meta-llama/Llama-2-7b
+git clone https://huggingface.co/meta-llama/Llama-2-7b-hf
 ```
 ### MPT
 To acquire the checkpoints and tokenizer, the user can get those files from [mosaicml/mpt-7b](https://huggingface.co/mosaicml/mpt-7b).
@@ -143,11 +143,11 @@ python finetune_seq2seq.py \
 
 #### For LLaMA2
 
-- use the below command line for code tuning with `meta-llama/Llama-2-7b` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
+- use the below command line for code tuning with `meta-llama/Llama-2-7b-hf` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "meta-llama/Llama-2-7b" \
+        --model_name_or_path "meta-llama/Llama-2-7b-hf" \
         --bf16 True \
         --dataset_name "theblackcat102/evol-codealpaca-v1" \
         --per_device_train_batch_size 8 \
@@ -635,4 +635,3 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 - **rouge related metrics:** the metrics will be calculated when the finetuning task is summarization `--task summarization`
 
 - **human eval (code generation metric):** the metric will be calculated when the finetuning task is code-generation `--task code-generation`
-

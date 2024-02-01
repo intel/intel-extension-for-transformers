@@ -62,7 +62,7 @@ class HuggingFaceEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_core
     model_name: str = DEFAULT_MODEL_NAME
     """Model name to use."""
     cache_folder: Optional[str] = None
-    """Path to store models. 
+    """Path to store models.
     Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable."""
     model_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass to the model."""
@@ -113,7 +113,7 @@ class HuggingFaceEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_core
 
         return embeddings.tolist()
 
-    def embed_query(self, text: str) -> List[float]: 
+    def embed_query(self, text: str) -> List[float]:
         """Compute query embeddings using a HuggingFace transformer model.
 
         Args:
@@ -234,7 +234,7 @@ class HuggingFaceInstructEmbeddings(langchain_core.pydantic_v1.BaseModel, langch
     model_name: str = DEFAULT_INSTRUCT_MODEL
     """Model name to use."""
     cache_folder: Optional[str] = None
-    """Path to store models. 
+    """Path to store models.
     Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable."""
     model_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass to the model."""
@@ -248,7 +248,7 @@ class HuggingFaceInstructEmbeddings(langchain_core.pydantic_v1.BaseModel, langch
     def __init__(self, **kwargs: Any):
         """Initialize the sentence_transformer."""
         super().__init__(**kwargs)
-        
+
         # check sentence_transformers python package
         try:
             import sentence_transformers
@@ -258,7 +258,7 @@ class HuggingFaceInstructEmbeddings(langchain_core.pydantic_v1.BaseModel, langch
                 "Could not import sentence_transformers python package. "
                 "Please install it with `pip install sentence_transformers`."
             ) from exc
-        
+
         # check InstructorEmbedding python package
         try:
             import InstructorEmbedding
@@ -268,7 +268,7 @@ class HuggingFaceInstructEmbeddings(langchain_core.pydantic_v1.BaseModel, langch
                 "Could not import InstructorEmbedding python package. "
                 "Please install it with `pip install InstructorEmbedding`."
             ) from exc
-        
+
         self.client = OptimizedInstructor(
             self.model_name, cache_folder=self.cache_folder, **self.model_kwargs
         )

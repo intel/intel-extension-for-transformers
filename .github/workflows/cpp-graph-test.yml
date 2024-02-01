@@ -63,7 +63,7 @@ jobs:
         env:
           WORKSPACE: ${{ env.WORKING_DIR }}
           GRAPH_DIR: ${{ env.WORKING_DIR }}/intel_extension_for_transformers/llm/runtime/graph
-      
+
       - name: Rename summary
         run: |
           cd ${{ github.workspace }}
@@ -97,7 +97,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: ${{ env.OUT_SCRIPT_PATH }}/generated/log
-      
+
       - name: Merge CPP Graph Summary Log
         run: |
           cd ${{ env.OUT_SCRIPT_PATH }}/generated/log/cpp_graph

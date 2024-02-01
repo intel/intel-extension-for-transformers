@@ -47,7 +47,7 @@ class TestLLMRUNTIME(unittest.TestCase):
 
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         inputs = tokenizer(prompt, return_tensors="pt")
-        
+
         pt_logits = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/llama2_pt_logits.pth")[:,-1]
         pt_generate_ids = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/llama2_pt_generate_ids.pth")[0].tolist()
         print(tokenizer.decode(pt_generate_ids))
@@ -61,14 +61,14 @@ class TestLLMRUNTIME(unittest.TestCase):
             self.assertEqual(pt_generate_ids[i], itrex_generate_ids[i])
 
         # check diff of logits
-        itrex_model = AutoModel.from_pretrained(model_name, load_in_4bit=True, 
+        itrex_model = AutoModel.from_pretrained(model_name, load_in_4bit=True,
                                                 use_llm_runtime=True, trust_remote_code=True)
         itrex_logits = itrex_model(inputs.input_ids)
         cmp = cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten())
         print("load_in_4bit: ", cmp)
         self.assertTrue(cmp["diff2"] < 0.42)
 
-        itrex_model = AutoModel.from_pretrained(model_name, load_in_8bit=True, 
+        itrex_model = AutoModel.from_pretrained(model_name, load_in_8bit=True,
                                                 use_llm_runtime=True, trust_remote_code=True)
         itrex_logits = itrex_model(inputs.input_ids)
         cmp = cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten())

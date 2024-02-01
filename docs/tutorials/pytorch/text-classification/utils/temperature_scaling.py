@@ -1,7 +1,7 @@
 #                                                   #
 # This code is based on https://github.com/gpleiss/temperature_scaling/blob/master/temperature_scaling.py,
 # Under the MIT license:
-# 
+#
 # MIT License
 #
 # Copyright (c) 2017 Geoff Pleiss

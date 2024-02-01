@@ -550,8 +550,9 @@ def load_model(
         else:
             optimization_config.post_init()
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
-        if not model.config.is_encoder_decoder:
-            tokenizer.padding_side = "left"
+        if hasattr(model, 'config'):
+            if model.config.is_encoder_decoder:
+                tokenizer.padding_side = "left"
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
         MODELS[model_name]["model"] = model
@@ -961,7 +962,7 @@ def predict_stream(**params):
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
-        `use_hpu_graphs` (bool): 
+        `use_hpu_graphs` (bool):
                     Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
@@ -1036,7 +1037,7 @@ def predict_stream(**params):
         return
 
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, 
+        max_new_tokens, input_token_len,
         get_stop_token_ids(model, tokenizer),
         assistant_model=assistant_model
     )
@@ -1256,7 +1257,7 @@ def predict(**params):
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
-        `use_hpu_graphs` (bool): 
+        `use_hpu_graphs` (bool):
                  Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
@@ -1321,8 +1322,8 @@ def predict(**params):
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, 
-        get_stop_token_ids(model, tokenizer), 
+        max_new_tokens, input_token_len,
+        get_stop_token_ids(model, tokenizer),
         assistant_model=assistant_model
     )
 

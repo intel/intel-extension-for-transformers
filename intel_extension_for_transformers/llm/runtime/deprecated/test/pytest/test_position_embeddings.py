@@ -32,54 +32,54 @@ class TestPositionEmbeddings(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         pass
-    
+
     def test_position_embeddings_1(self):
         graph = Graph()
         graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
-        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors, 
+        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
 
         slice_node = OPERATORS['Slice']()
         input_tensors = [Tensor(shape=[512, 768], data=np.array(1)), Tensor(data=np.array(1))]
-        output_tensors = [Tensor(name='slice:0', source_op=['slice'], 
+        output_tensors = [Tensor(name='slice:0', source_op=['slice'],
                                     dest_op=['reshape'])]
-        slice_node.construct('slice', 'Slice', input_tensors=input_tensors, 
+        slice_node.construct('slice', 'Slice', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
-        
+
         reshape_node = OPERATORS['Reshape']()
-        input_tensors = [Tensor(name='slice:0', source_op=['slice'], 
+        input_tensors = [Tensor(name='slice:0', source_op=['slice'],
                                     dest_op=['reshape'])]
         output_tensors = [Tensor(name='reshape:0', source_op=['reshape'],
                                 dest_op=[])]
-        reshape_node.construct('reshape', 'Reshape', input_tensors=input_tensors, 
+        reshape_node.construct('reshape', 'Reshape', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
-        
+
         less_equal_node = OPERATORS['LessEqual']()
         input_tensors = [Tensor()]
         output_tensors = [Tensor(name='less_equal:0', source_op=['less_equal'],
                                 dest_op=['all'])]
-        less_equal_node.construct('less_equal', 'LessEqual', input_tensors=input_tensors, 
+        less_equal_node.construct('less_equal', 'LessEqual', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
-        
+
         all_node = OPERATORS['All']()
         input_tensors = [Tensor(name='less_equal:0', source_op=['less_equal'],
                                 dest_op=['all'])]
         output_tensors = [Tensor(name='all:0', source_op=['all'],
                                 dest_op=['assert'])]
-        all_node.construct('all', 'All', input_tensors=input_tensors, 
+        all_node.construct('all', 'All', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
-        
+
         assert_node = OPERATORS['Assert']()
         input_tensors = [Tensor(name='all:0', source_op=['all'],
                                 dest_op=['assert'])]
         output_tensors = [Tensor(name='assert:0', source_op=['assert'],
                                 dest_op=[])]
-        assert_node.construct('assert', 'Assert', input_tensors=input_tensors, 
+        assert_node.construct('assert', 'Assert', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
-        
+
         graph.insert_nodes(len(graph.nodes), [input_data_node, slice_node, reshape_node,
                                                 less_equal_node, all_node, assert_node])
         graph = PositionEmbeddings()(graph)

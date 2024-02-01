@@ -18,4 +18,3 @@ Operator Specific Types
    :project: Intel® Extension for Transformers
 .. doxygenfile:: kernels/transpose_mha_types.hpp
    :project: Intel® Extension for Transformers
-

@@ -59,7 +59,7 @@ class TestTorchOP(unittest.TestCase):
         from torch.ao.quantization import MinMaxObserver, PerChannelMinMaxObserver, QConfig
         qconfig = QConfig(activation=MinMaxObserver.with_args(qscheme=torch.per_tensor_affine, dtype=torch.quint8),
                         weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric))
-        
+
         n = Net().eval()
         n.apply(weight_init)
         example_in = torch.rand(3, 16, 13, 13)
@@ -76,7 +76,7 @@ class TestTorchOP(unittest.TestCase):
         newgraph = Graph()
         newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
         out = newgraph.inference([example_in.numpy()])
-        
+
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
         os.remove('{}.pt'.format(file_name))
         shutil.rmtree(file_name)
@@ -85,7 +85,7 @@ class TestTorchOP(unittest.TestCase):
         from torch.ao.quantization import MinMaxObserver, PerChannelMinMaxObserver, QConfig
         qconfig = QConfig(activation=MinMaxObserver.with_args(qscheme=torch.per_tensor_affine, dtype=torch.quint8),
                         weight=PerChannelMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_channel_symmetric))
-        
+
         n = Net().eval()
         n.apply(weight_init)
         example_in = torch.rand(3, 16, 13, 13)
@@ -102,7 +102,7 @@ class TestTorchOP(unittest.TestCase):
         newgraph = Graph()
         newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
         out = newgraph.inference([example_in.numpy()])
-        
+
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
         os.remove('{}.pt'.format(file_name))
         shutil.rmtree(file_name)
