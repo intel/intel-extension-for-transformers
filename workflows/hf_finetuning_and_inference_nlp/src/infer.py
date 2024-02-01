@@ -51,7 +51,7 @@ class DlsaInference(object):
             self.tokenize_data = False
             self._preprocess()
             self._load_model()
-    
+
     def e2e_infer_only(self, filename):
         with self.track("Inference Only Run"):
             self.load_tokenizer = False

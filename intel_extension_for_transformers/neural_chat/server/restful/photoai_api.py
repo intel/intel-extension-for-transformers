@@ -59,7 +59,7 @@ class PhotoAIAPIRouter(APIRouter):
             logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
-    
+
     async def handle_voice_chat_request(self, prompt: str, audio_output_path: Optional[str]=None) -> str:
         chatbot = self.get_chatbot()
         try:
@@ -120,7 +120,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
         img_path = image_path+'/'+ img_name
         # save exif info from origin image
         exif = img_obj.info.get('exif', b"")
-        
+
         # save image info into db
         empty_tags = '{}'
         insert_sql = f"INSERT INTO image_info VALUES(null, '{user_id}', '{img_path}', null, '', \
@@ -164,7 +164,7 @@ def handle_ai_photos_get_all_images(request: Request):
         result_list = []
         mysql_db = MysqlDb()
         image_list = mysql_db.fetch_all(
-            sql=f'''SELECT image_id, image_path FROM image_info 
+            sql=f'''SELECT image_id, image_path FROM image_info
             WHERE user_id="{user_id}" AND exist_status="active";''')
         for image in image_list:
             image_name = image['image_path'].split('/')[-1]
@@ -250,22 +250,22 @@ async def handle_ai_photos_get_image_detail(request: Request):
     try:
         mysql_db = MysqlDb()
         image_info = mysql_db.fetch_one(
-            sql=f'''SELECT * FROM image_info WHERE 
-            image_id={image_id} AND user_id="{user_id}" AND exist_status="active";''', 
+            sql=f'''SELECT * FROM image_info WHERE
+            image_id={image_id} AND user_id="{user_id}" AND exist_status="active";''',
             params=None)
     except Exception as e:
         logger.error("<getImageDetail> "+str(e))
         return JSONResponse(content=f'Exception {e} occurred when selecting image {image_id} from MySQL.')
     finally:
         mysql_db._close()
-    
+
     if image_info:
         image_detail = format_image_info(image_info)
         logger.info(f'<getImageDetail> Image detail of image {image_id} is: {image_detail}')
         return image_detail
     else:
         return JSONResponse(
-            content=f"No image id: {image_id} for user {user_id}", 
+            content=f"No image id: {image_id} for user {user_id}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -315,7 +315,7 @@ async def handle_ai_photos_update_label(request: Request):
     params = await request.json()
     label_list = params['label_list']
 
-    try: 
+    try:
         mysql_db = MysqlDb()
         for label_obj in label_list:
             label = label_obj['label']
@@ -324,23 +324,23 @@ async def handle_ai_photos_update_label(request: Request):
             if label == 'person':
                 with mysql_db.transaction():
                     mysql_db.update(
-                        sql=f'''UPDATE face_info SET face_tag="{label_to}" 
-                        WHERE face_tag="{label_from}"''', 
+                        sql=f'''UPDATE face_info SET face_tag="{label_to}"
+                        WHERE face_tag="{label_from}"''',
                         params=None)
                     mysql_db.update(
-                        sql=f"""UPDATE image_face SET face_tag='{label_to}' 
-                        WHERE user_id='{user_id}' and face_tag='{label_from}';""", 
+                        sql=f"""UPDATE image_face SET face_tag='{label_to}'
+                        WHERE user_id='{user_id}' and face_tag='{label_from}';""",
                         params=None)
                 continue
             if label == 'address':
-                update_sql = f"""UPDATE image_info SET address='{label_to}' 
+                update_sql = f"""UPDATE image_info SET address='{label_to}'
                 WHERE user_id='{user_id}' and address LIKE '%{label_from}%';"""
             elif label == 'time':
-                update_sql = f"""UPDATE image_info SET captured_time='{label_to}' 
+                update_sql = f"""UPDATE image_info SET captured_time='{label_to}'
                 WHERE user_id='{user_id}' and DATEDIFF(captured_time, '{label_from}') = 0;"""
             else:
                 return JSONResponse(
-                    content=f"Illegal label name: {label}", 
+                    content=f"Illegal label name: {label}",
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             with mysql_db.transaction():
@@ -520,4 +520,3 @@ async def handle_talkingbot_llm_tts(request: Request):
     logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
 
     return await router.handle_voice_chat_request(text, audio_output_path)
-

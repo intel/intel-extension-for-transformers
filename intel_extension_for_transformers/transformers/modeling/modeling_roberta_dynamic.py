@@ -116,7 +116,7 @@ class RobertaEmbeddings(nn.Module):
         self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None, past_key_values_length=0
     ):
         """The main entry point for the class."""
-        if position_ids is None: 
+        if position_ids is None:
             if input_ids is not None:
                 # Create the position ids from the input token ids. Any padded tokens remain padded.
                 position_ids = create_position_ids_from_input_ids(input_ids, self.padding_idx, past_key_values_length)
@@ -130,8 +130,8 @@ class RobertaEmbeddings(nn.Module):
 
         seq_length = input_shape[1]
 
-        # Setting the token_type_ids to the registered buffer in constructor where it is all zeros, which usually 
-        # occurs when its auto-generated, registered buffer helps users when tracing the model without passing 
+        # Setting the token_type_ids to the registered buffer in constructor where it is all zeros, which usually
+        # occurs when its auto-generated, registered buffer helps users when tracing the model without passing
         # token_type_ids, solves issue #5664
         if token_type_ids is None: # pragma: no cover
             if hasattr(self, "token_type_ids"):
@@ -155,7 +155,7 @@ class RobertaEmbeddings(nn.Module):
 
     def create_position_ids_from_inputs_embeds(self, inputs_embeds): # pragma: no cover
         """We are provided embeddings directly.
-        
+
         We cannot infer which are padded so just generate sequential position ids.
 
         Args:
@@ -207,7 +207,7 @@ class RobertaSelfAttention(nn.Module):
         """Transpose for scores."""
         # new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
         # assign -1 to bypass onnx dynamic batch issue:
-        new_x_shape = (-1,) + x.size()[1:-1] + (self.num_attention_heads, self.attention_head_size) 
+        new_x_shape = (-1,) + x.size()[1:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(new_x_shape)
         return x.permute(0, 2, 1, 3)
 
@@ -513,7 +513,7 @@ class RobertaLayer(nn.Module):
         outputs = (layer_output,) + outputs
         # if decoder, return the attn key/values as the last output
         if self.is_decoder:
-            outputs = outputs + (present_key_value,) 
+            outputs = outputs + (present_key_value,)
 
         return outputs, keep_indices
 
@@ -552,16 +552,16 @@ class RobertaEncoder(nn.Module):
     ) -> Union[Tuple[torch.Tensor], BaseModelOutputWithPastAndCrossAttentions]:
         """The main entry point for the class."""
         bsz, tsz, dim = hidden_states.size()
-        
+
         if length_config is not None:
             restored_hidden_states = hidden_states
             remain_indices = torch.arange(tsz, device=hidden_states.device).unsqueeze(0).repeat(bsz, 1)
-        
+
         all_hidden_states = () if output_hidden_states else None
-        
+
         if output_hidden_states:
             all_hidden_states = all_hidden_states + (hidden_states, )
-        
+
         all_self_attentions = () if output_attentions and not length_config else None
         all_cross_attentions = () if output_attentions and self.config.add_cross_attention and not length_config else \
                                         None
@@ -630,14 +630,14 @@ class RobertaEncoder(nn.Module):
                 next_decoder_cache += (layer_outputs[-1],)
             if not layer_output_length and output_attentions: # pragma: no cover
             # we're done with attentions for calculating tokens drop
-            
+
                 all_self_attentions = all_self_attentions + (layer_outputs[1],)
                 if self.config.add_cross_attention:
                     all_cross_attentions = all_cross_attentions + (layer_outputs[2],)
 
         if output_hidden_states:
             all_hidden_states = all_hidden_states + (hidden_states,)
-        
+
         last_hidden_state = restored_hidden_states if length_config is not None else hidden_states
 
         if not return_dict:
@@ -682,8 +682,8 @@ class RobertaPooler(nn.Module): # pragma: no cover
 
 class RobertaPreTrainedModel(PreTrainedModel): # pragma: no cover
     """Roberta pretrained model.
-    
-    An abstract class to handle weights initialization and a simple interface for 
+
+    An abstract class to handle weights initialization and a simple interface for
     downloading and loading pretrained models.
     """
 
@@ -823,10 +823,10 @@ class RobertaModel(RobertaPreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
-        
+
         self.length_config = eval(config.length_config) if hasattr(config, "length_config") else None
         self.output_attentions = self.length_config is not None
-	
+
     def get_input_embeddings(self):
         """Getter of input embeddings."""
         return self.embeddings.word_embeddings
@@ -834,7 +834,7 @@ class RobertaModel(RobertaPreTrainedModel):
     def set_input_embeddings(self, value):
         """Setter of input embeddings."""
         self.embeddings.word_embeddings = value
-	
+
     def set_length_config(self, length_config):
         """Setter of length config."""
         self.length_config = length_config
@@ -846,7 +846,7 @@ class RobertaModel(RobertaPreTrainedModel):
 
     def _prune_heads(self, heads_to_prune): # pragma: no cover
         """Prunes heads of the model.
-        
+
         heads_to_prune: dict of {layer_num: list of heads to prune in this layer} See base class PreTrainedModel.
         """
         for layer, heads in heads_to_prune.items():
@@ -1063,7 +1063,7 @@ class RobertaForCausalLM(RobertaPreTrainedModel):  # pragma: no cover
             Labels for computing the left-to-right language modeling loss (next word prediction). Indices should be in
             `[-100, 0, ..., config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are
             ignored (masked), the loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`
-        past_key_values (`tuple(tuple(torch.FloatTensor))` of length `config.n_layers` with each tuple having 4 
+        past_key_values (`tuple(tuple(torch.FloatTensor))` of length `config.n_layers` with each tuple having 4
             tensors of shape `(batch_size, num_heads, sequence_length - 1, embed_size_per_head)`):
             Contains precomputed key and value hidden states of the attention blocks. Can be used to speed up decoding.
             If `past_key_values` are used, the user can optionally input only the last `decoder_input_ids` (those that
@@ -1088,7 +1088,7 @@ class RobertaForCausalLM(RobertaPreTrainedModel):  # pragma: no cover
 
             >>> prediction_logits = outputs.logits
             ```
-        
+
         Returns:
             CausalLMOutputWithCrossAttentions.
         """
@@ -1724,7 +1724,7 @@ class RobertaForQuestionAnswering(RobertaPreTrainedModel):
 def create_position_ids_from_input_ids(input_ids, padding_idx, past_key_values_length=0):
     """Replace non-padding symbols with their position numbers.
 
-    Position numbers begin at padding_idx+1. Padding symbols are ignored. 
+    Position numbers begin at padding_idx+1. Padding symbols are ignored.
     This is modified from fairseq's `utils.make_positions`.
 
     """

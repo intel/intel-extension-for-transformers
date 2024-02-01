@@ -114,7 +114,7 @@ class LlamaPostprocess(Pattern):
                 model.insert_nodes(insert_idx, [reshape_op])
                 node.input_tensors[0] = reshape_output
                 break
-            
+
             if node.op_type == 'RmsNorm':
                 pre_node = model.get_node_by_name(node.input_tensors[0].source_op[0])
                 if 'output_dtype' in pre_node.attr:
@@ -126,8 +126,8 @@ class LlamaPostprocess(Pattern):
                     prepre_node = model.get_node_by_name(prepre_node.input_tensors[0].source_op[0])
                     prepre_node.attr = None
                     prepre_node.attr = OrderedDict({'dst_shape': '-1'})
-            
+
             if node.op_type == 'Shape':
                 remove_shape.append(node.name)
-        model.remove_nodes(remove_shape)        
+        model.remove_nodes(remove_shape)
         return model

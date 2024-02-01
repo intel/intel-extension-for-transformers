@@ -37,9 +37,9 @@ class AudioPluginAPIRouter(APIRouter):
             return asr.audio2text(filename)
         except Exception as e:
             raise Exception(e)
-        
+
     async def handle_voice_tts_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
-        
+
         plugins.tts.args['voice'] = voice
         plugins.tts.args['output_audio_path'] = audio_output_path
         tts = get_plugin_instance("tts")
@@ -98,10 +98,9 @@ async def talkingbot(request: Request):
     data = await request.json()
     text = data["text"]
     voice = data["voice"]
-    knowledge_id = data["knowledge_id"]
     audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio.wav"
 
-    logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
+    logger.info(f'Received prompt: {text}, and use voice: {voice}')
 
     return await router.handle_voice_tts_request(text, voice, audio_output_path)
 

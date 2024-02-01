@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import os
 from dataclasses import dataclass, field
 import logging
@@ -24,10 +25,13 @@ from typing import Dict, Optional, Sequence, List
 import torch
 
 import transformers
+import datasets
 
 from transformers import AutoTokenizer, set_seed, BitsAndBytesConfig, AutoConfig
 from transformers.integrations.deepspeed import is_deepspeed_available
 from llava_utils import *
+
+logger = logging.getLogger(__name__)
 
 if is_hpu_available:
     from optimum.habana import GaudiTrainingArguments as TrainingArguments
@@ -61,7 +65,9 @@ class DataArguments:
     data_path: str = field(default=None,
                            metadata={"help": "Path to the training data."})
     lazy_preprocess: bool = False
+    pad_max: bool = False
     is_multimodal: bool = False
+    mm_im_patchs: int = field(default=576, metadata={"help": "for 336x336 image resolution."})
     image_folder: Optional[str] = field(default=None)
     image_aspect_ratio: str = 'square'
     template: Optional[str] = field(default="v1")
@@ -108,6 +114,25 @@ def train():
     parser = transformers.HfArgumentParser(
         (ModelArguments, DataArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+
+    # Setup logging
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
+
+    if training_args.should_log:
+        # The default of training_args.log_level is passive, so we set log level at info here to have that default.
+        transformers.utils.logging.set_verbosity_info()
+
+    log_level = training_args.get_process_log_level()
+    logger.setLevel(log_level)
+    datasets.utils.logging.set_verbosity(log_level)
+    transformers.utils.logging.set_verbosity(log_level)
+    transformers.utils.logging.enable_default_handler()
+    transformers.utils.logging.enable_explicit_format()
+
     compute_dtype = (torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))
 
     quantization_config = None
@@ -219,7 +244,7 @@ def train():
             use_fast=use_fast
             )
 
-    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token = tokenizer.unk_token
 
     # set vision module
     model.get_model().initialize_vision_modules(
@@ -230,6 +255,10 @@ def train():
     vision_tower.to(dtype=torch.bfloat16 if training_args.bf16 else torch.float16, device=training_args.device)
     data_args.image_processor = vision_tower.image_processor
     data_args.is_multimodal = True
+    if model_args.mm_vision_select_feature == "patch":
+        data_args.mm_im_patchs = vision_tower.num_patches
+    else:
+        data_args.mm_im_patchs = vision_tower.num_patches + 1
     model.config.image_aspect_ratio = data_args.image_aspect_ratio
     model.config.tokenizer_padding_side = tokenizer.padding_side
     model.config.tokenizer_model_max_length = tokenizer.model_max_length

@@ -74,7 +74,7 @@ class StableDiffusion_QuantizeFusion(Pattern):
         # fuse quant nodes to previous innerproduct or matmul output dtype to enhance perf
         for node in model.nodes:
             if node.op_type == "Quantize":
-                dtype = node.attr['output_dtype'] 
+                dtype = node.attr['output_dtype']
                 quant_node, can_fuse = search_quant_fusion(node)
                 if can_fuse:
                     if dtype == 'u8' or dtype == 's8':
@@ -132,4 +132,3 @@ class StableDiffusion_QuantizeFusion(Pattern):
         model.remove_nodes(remove_node_name)
 
         return model
-    

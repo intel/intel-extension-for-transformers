@@ -24,7 +24,7 @@ class TestMptTrace(unittest.TestCase):
 
     def tearDown(self) -> None:
         return super().tearDown()
-    
+
     def test_mpt_trace(self):
         config = PipelineConfig(model_name_or_path='/tf_dataset2/models/nlp_toolkit/mpt-7b')
         chatbot = build_chatbot(config)

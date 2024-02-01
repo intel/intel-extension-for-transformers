@@ -326,4 +326,3 @@ Where the `--dataset_concatenation` argument is a way to vastly accelerate the f
 For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
 You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
-

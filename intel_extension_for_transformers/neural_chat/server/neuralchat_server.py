@@ -34,7 +34,6 @@ from .base_executor import BaseCommandExecutor
 from .server_commands import cli_server_register
 
 from ..cli.log import logger
-from .restful.api import setup_router
 from ..config import PipelineConfig, LoadingModelConfig
 from ..chatbot import build_chatbot
 from ..plugins import plugins
@@ -132,7 +131,6 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             # TGI serving
             elif serving_framework == "tgi":
                 tgi_params = serving.get("tgi_engine_params", None)
-                tgi_model_id = tgi_params.get('model_id', "mistralai/Mistral-7B-Instruct-v0.1")
                 tgi_sharded = tgi_params.get('sharded', False)
                 tgi_num_shard = tgi_params.get('num_shard', 1)
                 tgi_habana_visible_devices = tgi_params.get('habana_visible_devices', "all")
@@ -167,7 +165,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 else:
                     logger.error(f"Supported device: [cpu, gpu, hpu]. Your device: {device}")
                     raise Exception("Please specify device for tgi.")
-                tgi_cmd += f" --model-id {tgi_model_id}"
+                tgi_cmd += f" --model-id {model_name_or_path}"
                 if tgi_sharded and tgi_num_shard > 1:
                     tgi_cmd += " --sharded {tgi_sharded} --num-shard {tgi_num_shard}"
                 # start tgi service
@@ -210,6 +208,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     print(f"plugin parameters: ", plugin_config["args"])
                     plugin_config['instance'] = plugins[plugin_name]['class'](**plugin_config['args'])
             api_list = list(task for task in config.tasks_list)
+            from .restful.api import setup_router
             api_router = setup_router(api_list, enable_llm=False)
             app.include_router(api_router)
             return True
@@ -270,7 +269,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 "loading_config": loading_config,
                 "optimization_config": optimization_config,
                 "assistant_model": assistant_model,
-                "serving_config": serving_config
+                "serving_config": serving_config,
+                "task": "chat"
             }
             api_list = list(task for task in config.tasks_list)
             if use_deepspeed:
@@ -315,6 +315,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 pipeline_config = PipelineConfig(**params)
                 self.chatbot = build_chatbot(pipeline_config)
             # init api
+            from .restful.api import setup_router
             api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port)
             app.include_router(api_router)
             return True
