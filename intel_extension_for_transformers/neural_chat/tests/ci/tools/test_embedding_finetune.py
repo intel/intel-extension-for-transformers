@@ -33,7 +33,7 @@ class TestEmbeddingFinetune(unittest.TestCase):
         if os.path.exists("augmented_example.jsonl"):
             os.remove("augmented_example.jsonl")
         return super().tearDown()
-    
+
     def test_finetune(self):
         argv = ['--output_dir', 'BAAI/bge-base-en-v1.5_annual', \
                 '--model_name_or_path', 'BAAI/bge-base-en-v1.5', \
@@ -54,7 +54,7 @@ class TestEmbeddingFinetune(unittest.TestCase):
         with patch('sys.argv', ['python finetune.py'] + argv):
             finetune.main()
             self.assertTrue(os.path.exists("BAAI/bge-base-en-v1.5_annual"))
-    
+
     def test_mine_hard_neg(self):
         argv = ['--model_name_or_path', 'BAAI/bge-base-en-v1.5', \
                 '--input_file', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/example.jsonl', \

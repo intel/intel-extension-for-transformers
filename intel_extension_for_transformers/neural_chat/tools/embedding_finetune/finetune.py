@@ -329,9 +329,9 @@ class BiTrainer(Trainer):
 def main():
     parser = HfArgumentParser(
         (ModelArguments, DataArguments, RetrieverTrainingArguments))
-    
-    (model_args, 
-    data_args, 
+
+    (model_args,
+    data_args,
     training_args
     ) = parser.parse_args_into_dataclasses()
 

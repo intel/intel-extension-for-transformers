@@ -114,7 +114,7 @@ def find_knn_neg(model, input_file, candidate_pool, output_file, sample_range, n
             f.write(json.dumps(data, ensure_ascii=False) + '\n')
 
 
-def main():    
+def main():
     args = get_args()
     sample_range = args.range_for_sampling.split('-')
     sample_range = [int(x) for x in sample_range]
@@ -128,6 +128,6 @@ def main():
                  sample_range=sample_range,
                  negative_number=args.negative_number,
                  use_gpu=args.use_gpu_for_searching)
-    
+
 if __name__ == '__main__':
     main()

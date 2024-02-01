@@ -114,7 +114,7 @@ python evaluate.py \
 ```
 **some important arguments:**
 - `index_file_jsonl_path`: path of JSON data including candidate context where each line is a dict like this:```{"context": List[str]}```.
-- `query_file_jsonl_path`: path of JSON data including queries and postives where each line is a dict like this:```{"query": str, "pos": List[str]}```.
+- `query_file_jsonl_path`: path of JSON data including queries and positives where each line is a dict like this:```{"query": str, "pos": List[str]}```.
 
 ## 6. Some supported models
 [bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), 

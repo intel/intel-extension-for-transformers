@@ -37,7 +37,7 @@ def faiss_retrieval(xb,xq,k):
     return I
 
 def index_library(index_file_jsonl_path, model_name):
-    result_list = [] 
+    result_list = []
     with open(index_file_jsonl_path) as file:
         for stu in jsonlines.Reader(file):
             passages=stu["context"]
@@ -49,7 +49,7 @@ def index_library(index_file_jsonl_path, model_name):
     return index_arr
 
 def query_set(query_file_jsonl_path, model_name):
-    result_list = [] 
+    result_list = []
     with open(query_file_jsonl_path) as file:
         for stu in jsonlines.Reader(file):
             queries = [stu["query"]]
@@ -75,7 +75,7 @@ def evaluate(preds, labels, cutoffs=[1]):
     Evaluate MRR and Hit at cutoffs.
     """
     metrics = {}
-    
+
     # MRR
     mrrs = np.zeros(len(cutoffs))
     for pred, label in zip(preds, labels):
@@ -109,7 +109,7 @@ def evaluate(preds, labels, cutoffs=[1]):
     return metrics
 
 
-def main(): 
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str)
     parser.add_argument("--index_file_jsonl_path", type=str)
@@ -119,7 +119,7 @@ def main():
     model_name = args.model_name
     index_file_jsonl_path = args.index_file_jsonl_path
     query_file_jsonl_path = args.query_file_jsonl_path
-    
+
     index_arr = index_library(index_file_jsonl_path, model_name)
     query_arr = query_set(query_file_jsonl_path, model_name)
 
