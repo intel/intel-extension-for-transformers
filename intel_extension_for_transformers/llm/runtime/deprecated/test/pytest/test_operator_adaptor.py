@@ -39,14 +39,14 @@ class TestOperatorAdaptor(unittest.TestCase):
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
-        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors, 
+        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
 
         gather1_node = OPERATORS['Gather']()
         input_tensors = [Tensor(name='g1_src0'),
                          Tensor(name='g1_idx:0', data=np.array(0).astype("int32"))]
         output_tensors = [Tensor(name='gather1:0', source_op=['gather1'], dest_op=[])]
-        gather1_node.construct('gather1', 'Gather', input_tensors=input_tensors, 
+        gather1_node.construct('gather1', 'Gather', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
         gather1_node._filling_method = 'extract_from_onnxruntime'
 
@@ -54,7 +54,7 @@ class TestOperatorAdaptor(unittest.TestCase):
         input_tensors = [Tensor(name='g2_idx:0', data=np.array(0).astype("int32")),
                          Tensor(name='g2_src1')]
         output_tensors = [Tensor(name='gather2:0', source_op=['gather2'], dest_op=[])]
-        gather2_node.construct('gather2', 'Gather', input_tensors=input_tensors, 
+        gather2_node.construct('gather2', 'Gather', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
         gather2_node._filling_method = 'extract_from_onnxruntime'
 
@@ -70,13 +70,13 @@ class TestOperatorAdaptor(unittest.TestCase):
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
-        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors, 
+        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
 
         transpose_node = OPERATORS['Transpose']()
         input_tensors = [Tensor(name='t_src0')]
         output_tensors = [Tensor(name='transpose:0', source_op=['transpose'], dest_op=['matmul'])]
-        transpose_node.construct('transpose', 'Transpose', input_tensors=input_tensors, 
+        transpose_node.construct('transpose', 'Transpose', input_tensors=input_tensors,
                                  output_tensors=output_tensors, attr=OrderedDict({
                                  'dst_perm': '1,0,2'}))
 
@@ -84,7 +84,7 @@ class TestOperatorAdaptor(unittest.TestCase):
         input_tensors = [Tensor(name='transpose:0', source_op=['transpose'], dest_op=['matmul']),
                          Tensor(name='m_src1', data=np.random.randn(768, 768).astype("float32"))]
         output_tensors = [Tensor(name='matmul:0', source_op=['matmul'], dest_op=[])]
-        matmul_node.construct('matmul', 'MatMul', input_tensors=input_tensors, 
+        matmul_node.construct('matmul', 'MatMul', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
 
         graph.insert_nodes(len(graph.nodes), [input_data_node, transpose_node, matmul_node])

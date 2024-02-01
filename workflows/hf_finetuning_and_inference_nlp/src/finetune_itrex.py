@@ -70,11 +70,11 @@ class FinetuneItrex(DlsaFinetune):
 
                 with torch.backends.mkldnn.flags(enabled = self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
                     train_result = self.trainer.train()
-                
+
                 self.trainer.save_model()
-                
+
                 save_train_metrics(train_result, self.trainer, len(self.train_data))
-               
+
     def _do_infer(self):
         with torch.backends.mkldnn.flags(enabled = self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
             if self.training_args.do_predict:

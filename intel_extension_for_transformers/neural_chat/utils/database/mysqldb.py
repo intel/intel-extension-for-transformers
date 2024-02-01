@@ -84,4 +84,3 @@ class MysqlDb(object):
 
     def _edit(self, sql, params):
         return self._cursor.execute(sql, params)
-

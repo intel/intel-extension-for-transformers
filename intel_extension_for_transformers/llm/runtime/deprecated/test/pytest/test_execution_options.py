@@ -39,7 +39,7 @@ class TestExecutionOptions(unittest.TestCase):
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(name="activation", shape=[-1, -1], dtype="fp32")]
-        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors, 
+        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
         ip_node = OPERATORS['InnerProduct']()
         input_tensors = [Tensor(name="activation", shape=[-1, -1], dtype="fp32"),

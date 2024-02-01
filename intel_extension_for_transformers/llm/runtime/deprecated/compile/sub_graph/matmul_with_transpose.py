@@ -60,7 +60,7 @@ class MatMulWithTranspose(Pattern):
                     },
                     'returns': [0, 1, 2]
                 },
-                
+
                 {
                     'patterns': {
                         'in': [[(0, 'Reorder'), (1, 'Matmul'), (2, 'Reorder'), (3, 'Shape'), (5, 'View')],
@@ -86,7 +86,7 @@ class MatMulWithTranspose(Pattern):
                     },
                     'returns': [0, 2, 5]
                 },
-                
+
                 {
                     'patterns': {
                         'in': [[(0, 'Reorder'), (4, 'Matmul')],
@@ -176,23 +176,23 @@ class MatMulWithTranspose(Pattern):
                 if transpose_b:
                     attr['src0_perm'] = transpose_b
                 model.nodes[mat_node_idx].attr = attr
-                
+
                 concat_node =  model.get_node_by_name(model.nodes[mat_node_idx].input_tensors[0].source_op[0])
                 concat1_node = model.get_node_by_name(model.nodes[mat_node_idx].input_tensors[1].source_op[0])
                 if concat_node.op_type == "Concat":
                     concat_node.attr = OrderedDict({'axis': '3'})
                 if concat1_node.op_type == "Concat":
-                    concat1_node.attr = OrderedDict({'axis': '3'})    
+                    concat1_node.attr = OrderedDict({'axis': '3'})
 
         pattern_dict = pattern_mapping_config['MatMulWithTranspose'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithTranspose", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithTranspose",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)
 
 
         pattern_dict = pattern_mapping_config['MatMulWithTranspose'][1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithTranspose", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithTranspose",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
@@ -208,9 +208,9 @@ class MatMulWithTranspose(Pattern):
                 if reshape_attr:
                     attr['reshape'] = '-1, ' + str(reshape_attr[-1])
                 model.nodes[mat_node_idx].attr = attr
-                
-                
-                
+
+
+
         def _set_attr1(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
                 transpose_a = ret_old_nodes[i][0].attr['dst_perm']
@@ -236,7 +236,7 @@ class MatMulWithTranspose(Pattern):
                 if transpose_b:
                     attr['src1_perm'] = transpose_b
                 model.nodes[mat_node_idx].attr = attr
-                
+
                 concat_node =  model.get_node_by_name(model.nodes[mat_node_idx].input_tensors[0].source_op[0])
                 concat1_node = model.get_node_by_name(model.nodes[mat_node_idx].input_tensors[1].source_op[0])
                 if concat_node.op_type == "Concat":
@@ -246,16 +246,16 @@ class MatMulWithTranspose(Pattern):
                     concat2 = model.get_node_by_name(concat1_node.input_tensors[1].source_op[0])
                     # concat2 = model.get_node_by_name(reorder_node1.input_tensors[0].source_op[0])
                     concat2.attr = OrderedDict({'axis': '3'})
-                    
+
         pattern_dict = pattern_mapping_config['MatMulWithTranspose'][2]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithTranspose", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithTranspose",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr1(new_node_names, ret_old_nodes, model)
 
 
         pattern_dict = pattern_mapping_config['MatMulWithTranspose'][3]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithTranspose", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithTranspose",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
@@ -274,6 +274,6 @@ class MatMulWithTranspose(Pattern):
                 model.nodes[mat_node_idx].attr = attr
                 concat_node = model.get_node_by_name(model.nodes[mat_node_idx].input_tensors[1].source_op[0])
                 concat_node.attr = OrderedDict({'axis': '1'})
-                
+
             return model
         return model

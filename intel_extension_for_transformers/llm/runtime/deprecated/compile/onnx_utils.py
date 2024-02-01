@@ -80,7 +80,7 @@ def graph_node_names_details(model):
     is the node output name list; outputs in value is for output_tensor dest op
     Args:
         model: ONNXModel
-        
+
     Returns:
         node_names_details: the graph node info dict
 
@@ -274,7 +274,7 @@ def onnx_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
         except BaseException:
             # if origin_tensor_name in nodes_dict:
             pre_node = nodes_dict[origin_tensor_name].node
-        
+
         data = None
         if pre_node in framework_model.graph.initializer:
             if pre_node.data_type == TensorProto.BFLOAT16:
@@ -310,7 +310,7 @@ def onnx_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
         input_names.append(node.name)
 
     """Output_tensors.
-    
+
     Note:
         in onnx, NodeProto has the output attribute
     """

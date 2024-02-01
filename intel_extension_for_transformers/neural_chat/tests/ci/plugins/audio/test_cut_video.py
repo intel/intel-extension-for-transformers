@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
- 
+
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.cut_video import cut_video
 import os
 import argparse

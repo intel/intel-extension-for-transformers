@@ -174,7 +174,7 @@ class OptimizedModel:
                                 )
                         raise EnvironmentError(msg)
                 else:
-                    from transformers.utils import cached_file 
+                    from transformers.utils import cached_file
                     try:
                         # Load from URL or cache if already cached
                         resolved_weights_file = cached_file(

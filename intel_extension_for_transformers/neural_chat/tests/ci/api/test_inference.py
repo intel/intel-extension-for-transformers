@@ -79,7 +79,7 @@ class UnitTest(unittest.TestCase):
         print(response)
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
-    
+
     def test_retrieval_append(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["append"] = True
@@ -91,7 +91,7 @@ class UnitTest(unittest.TestCase):
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
-        
+
         plugins.retrieval.args["append"] = False
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
@@ -115,7 +115,7 @@ class UnitTest(unittest.TestCase):
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
-        
+
         plugins.retrieval.args["append"] = False
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)

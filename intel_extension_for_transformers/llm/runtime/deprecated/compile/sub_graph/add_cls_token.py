@@ -143,7 +143,7 @@ class AddClsToken(Pattern):
                       model.nodes[transpose_node_idx].attr = ret_old_nodes[j][0].attr
                       concat_node_idx = model.get_node_id(new_node_names[j][1])
                       model.nodes[concat_node_idx].attr = ret_old_nodes[j][1].attr
-  
+
                   return model
 
         return model

@@ -51,10 +51,10 @@ class TestTGI(unittest.TestCase):
             best_of=1,
             do_sample=True,
             max_new_tokens=10,
-            repetition_penalty=1.03, 
-            temperature=0.5, 
-            top_k=10, 
-            top_p=0.95, 
+            repetition_penalty=1.03,
+            temperature=0.5,
+            top_k=10,
+            top_p=0.95,
             typical_p=0.95,
             stream=False
         )
@@ -74,10 +74,10 @@ class TestTGI(unittest.TestCase):
             best_of=1,
             do_sample=True,
             max_new_tokens=10,
-            repetition_penalty=1.03, 
-            temperature=0.5, 
-            top_k=10, 
-            top_p=0.95, 
+            repetition_penalty=1.03,
+            temperature=0.5,
+            top_k=10,
+            top_p=0.95,
             typical_p=0.95,
             stream=False
         )

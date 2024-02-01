@@ -66,7 +66,7 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
         else: # pragma: no cover
             logging.info("file %s format not supported!", filename)
             continue
-        
+
 
 if __name__ == '__main__': # pragma: no cover
     parser = argparse.ArgumentParser(__doc__)

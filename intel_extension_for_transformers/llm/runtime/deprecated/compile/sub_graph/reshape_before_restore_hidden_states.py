@@ -67,14 +67,14 @@ class ReshapeBeforeRestoreHiddenStates(Pattern):
             attr1 = OrderedDict()
             attr1['dst_shape'] = '-1,-1,' + str(hidden_size)
             attr1['dims'] = 0
-            
+
             ln_node_idx = model.get_node_id(node_names[0])
             model.nodes[ln_node_idx].attr = ln_attr
             reshape_3d_node_idx = model.get_node_id(node_names[1])
             model.nodes[reshape_3d_node_idx].attr = attr1
             scatter_elements_node_idx = model.get_node_id(node_names[2])
             model.nodes[scatter_elements_node_idx].attr = se_attr
-        
+
         # minilmv2-lat-roberta
         layer_norm_idx = []
         remove_list = []
@@ -95,11 +95,11 @@ class ReshapeBeforeRestoreHiddenStates(Pattern):
                 ln_node = copy.deepcopy(model.get_node_by_name(new_node_names[i][0]))
                 model.remove_nodes([new_node_names[i][0]])
                 model.insert_nodes(layer_norm_idx[i] + i, [ln_node])
-                
+
                 remove_list.append(new_node_names[i][0])
-                
-            
+
+
             # model.remove_nodes(remove_list)
             return model
-        
+
         return model

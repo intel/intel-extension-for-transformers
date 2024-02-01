@@ -68,7 +68,7 @@ class LlamaRoraryPosEmb(Pattern):
                         'in': [[(0, 'Shape'), (1, 'Add')]],
                     },
                 },
-                
+
                 {
                     'patterns': {
                         'in': [[(0, 'Shape'), (1, 'Div'), (2, 'Slice'), (4, 'Neg'), (5, 'Concat')],
@@ -77,7 +77,7 @@ class LlamaRoraryPosEmb(Pattern):
                 },
             ]
         }
-        
+
         def _set_attr(new_node_names, ret_old_nodes, model):
             remove_shape_list = []
             for i in range(len(new_node_names)):
@@ -88,12 +88,12 @@ class LlamaRoraryPosEmb(Pattern):
                 attr_slice['ends_with_tensor'] = 1
                 slice_node = model.get_node_by_name(new_node_names[i][0])
                 slice_node.attr = attr_slice
-        
+
         if model.framework_modeling_config['framework'] != 'torch':
             return model
- 
+
         pattern_dict = pattern_mapping_config['LlamaRoraryPosEmb'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("LlamaRoraryPosEmb", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("LlamaRoraryPosEmb",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)
@@ -113,7 +113,7 @@ class LlamaRoraryPosEmb(Pattern):
                     remove_node_list.extend([pattern_nodes_name[0], pattern_nodes_name[1]])
             model.remove_nodes(remove_node_list)
 
-        # rotate_half pattern for llama 
+        # rotate_half pattern for llama
         pattern = pattern_mapping_config['LlamaRoraryPosEmb'][2]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
         remove_node_list = []

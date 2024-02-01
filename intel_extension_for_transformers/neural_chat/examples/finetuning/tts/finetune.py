@@ -30,5 +30,3 @@ tts_fintuner = TTSFinetuning(finetuning_config=finetuning_config)
 finetuned_model = tts_fintuner.finetune()
 
 torch.save(finetuned_model, "finetuned_model.pt")
-
-

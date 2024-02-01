@@ -149,7 +149,11 @@ def safe_save_model_for_hf_trainer(trainer: transformers.Trainer,
         return
 
     if trainer.deepspeed:
-        torch.cuda.synchronize()
+        if is_hpu_available:
+            import habana_frameworks.torch as ht
+            ht.hpu.synchronize()
+        else:
+            torch.cuda.synchronize()
         trainer.save_model(output_dir)
         return
 
@@ -376,7 +380,7 @@ def preprocess_plain(
         tokenized_len = len(tokenizer_image_token(source[0]['value'], tokenizer))
         target[:tokenized_len] = IGNORE_INDEX
 
-    return dict(input_ids=input_ids, labels=targets)
+    return dict(input_ids=torch.stack(input_ids, dim=0), labels=torch.stack(targets, dim=0))
 
 
 def preprocess(
@@ -496,9 +500,123 @@ class LazySupervisedDataset(Dataset):
             self.tokenizer,
             self.conversation_template,
             has_image=('image' in self.list_data_dict[i]))
+
+        data_dict["attention_mask"] = data_dict["input_ids"].ne(self.tokenizer.pad_token_id)
+
         if isinstance(i, int):
             data_dict = dict(input_ids=data_dict["input_ids"][0],
-                             labels=data_dict["labels"][0])
+                             labels=data_dict["labels"][0],
+                             attention_mask=data_dict["attention_mask"][0])
+
+        # image exist in the data
+        if 'image' in self.list_data_dict[i]:
+            data_dict['images'] = image
+        elif self.data_args.is_multimodal:
+            # image does not exist in the data, but the model is multimodal
+            crop_size = self.data_args.image_processor.crop_size
+            data_dict['images'] = torch.zeros(3, crop_size['height'], crop_size['width'])
+        return data_dict
+
+
+class LazySupervisedDatasetPadding(LazySupervisedDataset):
+    def __getitem__(self, i) -> Dict[str, torch.Tensor]:
+        sources = self.list_data_dict[i]
+        if isinstance(i, int):
+            sources = [sources]
+        assert len(sources) == 1, "Don't know why it is wrapped to a list"  # FIXME
+        if 'image' in sources[0]:
+            image_file = self.list_data_dict[i]['image']
+            image_folder = self.data_args.image_folder
+            processor = self.data_args.image_processor
+            image = Image.open(os.path.join(image_folder, image_file)).convert('RGB')
+            if self.data_args.image_aspect_ratio == 'pad':
+                def expand2square(pil_img, background_color):
+                    width, height = pil_img.size
+                    if width == height:
+                        return pil_img
+                    elif width > height:
+                        result = Image.new(pil_img.mode, (width, width), background_color)
+                        result.paste(pil_img, (0, (width - height) // 2))
+                        return result
+                    else:
+                        result = Image.new(pil_img.mode, (height, height), background_color)
+                        result.paste(pil_img, ((height - width) // 2, 0))
+                        return result
+                image = expand2square(image, tuple(int(x*255) for x in processor.image_mean))
+                image = processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
+            else:
+                image = processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
+            sources = preprocess_multimodal(
+                copy.deepcopy([e["conversations"] for e in sources]),
+                self.data_args, self.conversation_template)
+        else:
+            sources = copy.deepcopy([e["conversations"] for e in sources])
+        data_dict = preprocess(
+            sources,
+            self.tokenizer,
+            self.conversation_template,
+            has_image=('image' in self.list_data_dict[i]))
+
+        input_ids = data_dict["input_ids"].tolist()
+        labels = data_dict["labels"].tolist()
+
+        # fill image placeholder & pre-padding
+        padded_input_ids = []
+        padded_targets = []
+        images_mask = []
+        attention_mask = []
+        for inp, tar in zip(input_ids, labels):
+            new_inp = []
+            new_tar = []
+            image_mask = []
+            for ele_inp, ele_tar in zip(inp, tar):
+                if ele_inp == IMAGE_TOKEN_INDEX:
+                    # fill image placeholder with pad token
+                    new_inp.extend([IMAGE_TOKEN_INDEX] * self.data_args.mm_im_patchs)
+                    new_tar.extend([IGNORE_INDEX] * self.data_args.mm_im_patchs)
+                    image_mask.extend([1] * self.data_args.mm_im_patchs)
+                else:
+                    new_inp.append(ele_inp)
+                    new_tar.append(ele_tar)
+                    image_mask.append(0)
+
+            attn_mask = [1] * len(new_inp)
+
+            if len(new_inp) >= self.tokenizer.model_max_length:
+                new_inp = new_inp[:self.tokenizer.model_max_length]
+                new_tar = new_tar[:self.tokenizer.model_max_length]
+                image_mask = image_mask[:self.tokenizer.model_max_length]
+                attn_mask = attn_mask[:self.tokenizer.model_max_length]
+            else:
+                # padding
+                inp_len = len(new_inp)
+                pad_len = self.tokenizer.model_max_length - inp_len
+                new_inp = new_inp + [self.tokenizer.pad_token_id] * pad_len
+                new_tar = new_tar + [IGNORE_INDEX] * pad_len
+                image_mask = image_mask + [0] * pad_len
+                attn_mask = attn_mask + [0] * pad_len
+
+            assert len(new_inp) == len(new_tar) == self.tokenizer.model_max_length
+
+            image_mask = torch.tensor(image_mask)
+
+            new_inp = torch.tensor(new_inp)[torch.where(image_mask!=1)].tolist()
+
+            padded_input_ids.append(new_inp)
+            padded_targets.append(new_tar)
+            images_mask.append(image_mask)
+            attention_mask.append(attn_mask)
+
+        data_dict.update({"input_ids": torch.tensor(padded_input_ids),
+            "labels": torch.tensor(padded_targets),
+            "images_mask": images_mask,
+            "attention_mask": torch.tensor(attention_mask)})
+
+        if isinstance(i, int):
+            data_dict = dict(input_ids=data_dict["input_ids"][0],
+                             labels=data_dict["labels"][0],
+                             images_mask=data_dict["images_mask"][0],
+                             attention_mask=data_dict["attention_mask"][0])
 
         # image exist in the data
         if 'image' in self.list_data_dict[i]:
@@ -517,8 +635,8 @@ class DataCollatorForSupervisedDataset(object):
     tokenizer: transformers.PreTrainedTokenizer
 
     def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
-        input_ids, labels = tuple([instance[key] for instance in instances]
-                                  for key in ("input_ids", "labels"))
+        input_ids, labels, attention_mask = tuple([instance[key] for instance in instances]
+                                  for key in ("input_ids", "labels", "attention_mask"))
         input_ids = torch.nn.utils.rnn.pad_sequence(
             input_ids,
             batch_first=True,
@@ -526,12 +644,18 @@ class DataCollatorForSupervisedDataset(object):
         labels = torch.nn.utils.rnn.pad_sequence(labels,
                                                  batch_first=True,
                                                  padding_value=IGNORE_INDEX)
+        attention_mask = torch.nn.utils.rnn.pad_sequence(
+            attention_mask,
+            batch_first=True,
+            padding_value=0)
+
         input_ids = input_ids[:, :self.tokenizer.model_max_length]
         labels = labels[:, :self.tokenizer.model_max_length]
+        attention_mask = attention_mask[:, :self.tokenizer.model_max_length]
         batch = dict(
             input_ids=input_ids,
             labels=labels,
-            attention_mask=input_ids.ne(self.tokenizer.pad_token_id),
+            attention_mask=attention_mask,
         )
 
         if 'images' in instances[0]:
@@ -541,6 +665,10 @@ class DataCollatorForSupervisedDataset(object):
             else:
                 batch['images'] = images
 
+        if 'images_mask' in instances[0]:
+            images_mask = [instance['images_mask'] for instance in instances]
+            batch['images_mask'] = torch.stack(images_mask)
+
         return batch
 
 
@@ -548,12 +676,17 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                                 data_args) -> Dict:
     """Make dataset and collator for supervised fine-tuning."""
     conversation_template = conversation_utils.conv_templates[data_args.template]
-    train_dataset = LazySupervisedDataset(tokenizer=tokenizer,
-                                data_path=data_args.data_path,
-                                data_args=data_args,
-                                conversation_template=conversation_template)
+    if not data_args.pad_max:
+        train_dataset = LazySupervisedDataset(tokenizer=tokenizer,
+                                    data_path=data_args.data_path,
+                                    data_args=data_args,
+                                    conversation_template=conversation_template)
+    else:
+        train_dataset = LazySupervisedDatasetPadding(tokenizer=tokenizer,
+                                    data_path=data_args.data_path,
+                                    data_args=data_args,
+                                    conversation_template=conversation_template)
     data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
     return dict(train_dataset=train_dataset,
                 eval_dataset=None,
                 data_collator=data_collator)
-
