@@ -39,7 +39,7 @@ Once you have the docker image ready, please follow [run docker image](../../../
 ## 2. Prepare the Model
 
 #### meta-llama/Llama-2-7b-hf
-To acquire the checkpoints and tokenizer, the user can get those files from [meta-llama/Llama-2-7b-hf]([https://huggingface.co/mosaicml/mpt-7b](https://huggingface.co/meta-llama/Llama-2-7b-hf)).
+To acquire the checkpoints and tokenizer, the user can get those files from [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf).
 Users could follow below commands to get the checkpoints from github repository after the access request to the files is approved.
 ```bash
 git lfs install
