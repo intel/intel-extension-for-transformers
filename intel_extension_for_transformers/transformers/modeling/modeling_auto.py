@@ -93,7 +93,8 @@ def save_low_bit(
         return
 
     # reorder weight and scales if they have been transposed
-    convert_model_to_public(self)
+    if self.quantization_config.device == "xpu":
+        convert_model_to_public(self)
 
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
