@@ -43,4 +43,3 @@ class TestLlama2GPTQModel(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
