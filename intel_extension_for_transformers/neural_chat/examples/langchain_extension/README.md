@@ -2,9 +2,10 @@
 
 Intel Extension for Transformers provides a comprehensive suite of Langchain-based extension APIs, including advanced retrievers, embedding models, and vector stores. These enhancements are carefully crafted to expand the capabilities of the original langchain API, ultimately boosting overall performance. This extension is specifically tailored to enhance the functionality and performance of RAG.
 
-We introduce enhanced vector store operations, enabling users to adjust and fine-tune their settings even after the chatbot has been initialized, offering a more adaptable and user-friendly experience. For langchain users, integrating and utilizing optimized Vector Stores is straightforward by replacing the original Chroma API in langchain.
-We provide optimized retrievers such as `VectorStoreRetriever`, `ChildParentRetriever` to efficiently handle vectorstore operations, ensuring optimal retrieval performance.
-We also provide quantized embedding models to speed up the retrieval inference. These langchain extension APIs are easy to use and optimized for performance or accuracy on Intel hardware.
+
+We have introduced enhanced vector store operations, allowing users to adjust and fine-tune their settings even after the chatbot has been initialized, providing a more adaptable and user-friendly experience. For Langchain users, integrating and utilizing optimized Vector Stores is straightforward by replacing the original Chroma API in Langchain.
+
+We offer optimized retrievers such as `VectorStoreRetriever` and `ChildParentRetriever` to efficiently handle vector store operations, ensuring optimal retrieval performance. Additionally, we provide quantized embedding models to accelerate embedding documents. These Langchain extension APIs are easy to use and are optimized for both performance and accuracy, specifically tailored for Intel hardware.
 
 # Setup Environment
 
@@ -47,6 +48,11 @@ Install other dependencies using pip:
 
 ```bash
 pip install -r ../../requirements.txt
+```
+
+Install retrieval plugin dependencies using pip:
+```bash
+pip install -r ../../pipeling/plugins/retrieval/requirements.txt
 ```
 
 # Test
