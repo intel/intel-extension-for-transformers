@@ -17,7 +17,7 @@ The code implementation is based on [rome](https://github.com/kmeng01/rome) and 
 Use below command to edit the inherent knowledge of Llama-2-7b model.
 
 ```shell
-python editor.py --data example.json --model meta-llama/Llama-2-7b-hf --config llama-7b
+python editor.py --data example.json --model meta-llama/Llama-2-7b-chat-hf --config llama-7b
 ```
 
 ## Result
