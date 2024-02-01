@@ -168,7 +168,7 @@ class BaseModel(ABC):
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
-              "phi-2" in self.model_name.lower():
+              "phi-2" in self.model_name.lower() or "sqlcoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -277,7 +277,8 @@ class BaseModel(ABC):
         query_include_prompt = False
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
                "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
-               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
+               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
+               "sqlcoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
