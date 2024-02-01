@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 register_conv_template(
     Conversation(
         name="deci",
-        system_message="### System: You are an AI assistant that follows instruction extremely well. Help as much as you can.",
+        system_message= \
+           "### System: You are an AI assistant that follows instruction extremely well. Help as much as you can.",
         roles=("### User", "### Assistant"),
         sep_style=SeparatorStyle.ADD_COLON_SPACE_SINGLE,
         sep="\n\n",
