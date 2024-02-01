@@ -35,6 +35,7 @@ WEIGHTS_INDEX_NAME = "pytorch_model.bin.index.json"
 QUANT_CONFIG = "quantization_config.json"
 SPARSITY_CONFIG = "sparsity_config.json"
 SAFE_WEIGHTS_NAME = "model.safetensors"
+SAFE_WEIGHTS_INDEX_NAME = "model.safetensors.index.json"
 
 torch = LazyImport("torch")
 

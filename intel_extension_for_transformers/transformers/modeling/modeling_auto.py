@@ -35,6 +35,7 @@ import os
 import re
 import torch
 import transformers
+import types
 
 from ..utils import (
     BitsAndBytesConfig,
@@ -53,6 +54,7 @@ from ..utils.utility import (
     WEIGHTS_NAME,
     WEIGHTS_INDEX_NAME,
     SAFE_WEIGHTS_NAME,
+    SAFE_WEIGHTS_INDEX_NAME,
 )
 from ...llm.quantization.utils import (
     convert_dtype_str2torch,
@@ -69,11 +71,12 @@ torch = LazyImport("torch")
 
 def convert_model_to_public(model):
     from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear
-    for _, module in model.named_modules():
-        if isinstance(module, WeightOnlyLinear) and module.weight_transposed:
-            module.qweight.data = module.qweight.t_().contiguous()
-            module.scales.data = module.scales.t_().contiguous()
-            module.weight_transposed = False
+    for name, module in model.named_modules():
+        if isinstance(module, WeightOnlyLinear):
+            if module.weight_transposed:
+                module.qweight.data = module.qweight.t_().contiguous()
+                module.scales.data = module.scales.t_().contiguous()
+                module.weight_transposed = False
 
 
 def save_low_bit(
@@ -98,8 +101,6 @@ def save_low_bit(
     self.save_pretrained(
         save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
     )
-    import types
-
     self.save_pretrained = types.MethodType(save_low_bit, self)
     # We conveniently save all the keys of the model to have them on hand,
     # so that when using 'low_cpumem load',
@@ -355,7 +356,6 @@ class _BaseQBitsAutoModelClass:
             # add quantization_config and save_low_bit to pretrained model dynamically
             model.device_map = device_map
             model.quantization_config = quantization_config
-            import types
 
             model.save_pretrained = types.MethodType(save_low_bit, model)
             logger.info("WeightOnlyQuant done.")
@@ -783,6 +783,19 @@ class _BaseQBitsAutoModelClass:
                         subfolder,
                         _add_variant(SAFE_WEIGHTS_NAME, variant),
                     )
+                elif os.path.isfile(
+                        os.path.join(
+                            pretrained_model_name_or_path,
+                            subfolder,
+                            _add_variant(SAFE_WEIGHTS_INDEX_NAME, variant),
+                        )):
+                    # Load from a safetensors checkpoint
+                    archive_file = os.path.join(
+                        pretrained_model_name_or_path,
+                        subfolder,
+                        _add_variant(SAFE_WEIGHTS_INDEX_NAME, variant),
+                    )
+                    is_sharded = True
             elif os.path.isfile(os.path.join(subfolder, pretrained_model_name_or_path)):
                 archive_file = pretrained_model_name_or_path
                 is_local = True
@@ -914,6 +927,8 @@ class _BaseQBitsAutoModelClass:
             param.requires_grad_(False)
         if device_map == "xpu":
             model = model.to("xpu")
+        model.quantization_config = quantization_config
+        model.save_pretrained = types.MethodType(save_low_bit, model)
         return model
 
 
