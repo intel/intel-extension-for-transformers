@@ -1,6 +1,6 @@
 # Step-by-Step
 
-To get better performance of popular large language models, we recommand using [Neural Speed](https://github.com/intel/neural-speed.git), an innovation library designed to provide the efficient inference of LLMs.Here, we provide the inference script `run_example.py`, and `runtime_acc.py` for accuracy evaluation. 
+To get better performance of popular large language models, we recommend using [Neural Speed](https://github.com/intel/neural-speed.git), an innovation library designed to provide the efficient inference of LLMs.Here, we provide the inference script `run_example.py`, and `runtime_acc.py` for accuracy evaluation. 
 
 
 # Prerequisite​
