@@ -142,7 +142,7 @@ class _BaseQBitsAutoModelClass:
 
             model_file = kwargs.get("model_file")
             gguf_model_file = hf_hub_download(pretrained_model_name_or_path, filename=model_file)
-                        
+
             if kwargs.get("model_type", False):
                 model_type = kwargs.get("model_type")
             else:
@@ -159,7 +159,7 @@ class _BaseQBitsAutoModelClass:
                                "dolly", "polyglot", "starcoder", "falcon", \
                                "bloom", "chatglm2", "chatglm", "baichuan", \
                                "mistral", "qwen", "phi", "whisper"]
-            
+
             if model_type not in model_type_list:
                 logger.error(
                     "Can't support this model_type. Please set the correct model_type, supported model_type: {}".format(
