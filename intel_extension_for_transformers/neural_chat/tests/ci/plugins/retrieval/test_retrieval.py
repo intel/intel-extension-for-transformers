@@ -17,7 +17,11 @@
 
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser
 import unittest
-
+import os
+import shutil
+from intel_extension_for_transformers.neural_chat import build_chatbot
+from intel_extension_for_transformers.neural_chat import PipelineConfig
+from intel_extension_for_transformers.neural_chat import plugins
 
 class TestMemory(unittest.TestCase):
     def setUp(self):
@@ -32,6 +36,33 @@ class TestMemory(unittest.TestCase):
         vectordb = None
         vectordb = doc_parser.load(url)
         self.assertIsNotNone(vectordb)
+        
+class TestPolisher(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("test_for_polish"):
+            shutil.rmtree("test_for_polish", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("test_for_polish"):
+            shutil.rmtree("test_for_polish", ignore_errors=True)
+        return super().tearDown()
+
+    def test_retrieval_accuracy(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = ['https://www.ces.tech/']
+        plugins.retrieval.args["persist_directory"] = "./test_for_polish"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        plugins.retrieval.args["polish"] = True
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("How many cores does the Intel Xeon Platinum 8480+ Processor have in total?")
+        print(response)
+        plugins.retrieval.args["persist_directory"] = "./output"
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+        plugins.retrieval.args["polish"] = False
 
 if __name__ == "__main__":
     unittest.main()

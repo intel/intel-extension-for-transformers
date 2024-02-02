@@ -70,3 +70,9 @@ def generate_intent_prompt(query):
     conv.append_message(conv.roles[0], query)
     conv.append_message(conv.roles[1], None)
     return conv.get_prompt()
+
+def polish_query_prompt(query):
+    conv = PromptTemplate("polish")
+    conv.append_message(conv.roles[0], query)
+    conv.append_message(conv.roles[1], None)
+    return conv.get_prompt()
