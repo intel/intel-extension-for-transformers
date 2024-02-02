@@ -16,7 +16,7 @@ docker build . -f Dockerfile_vllm -t neuralchat_vllm:latest --build-arg https_pr
 
 ### Start NeuralChat Service
 Before starting NeuralChat services, you need to configure `vllm.yaml` according to you read environment.
-Make sure the specified `port` is avaliable, `device` is `cuda` (`auto` will not work).
+Make sure the specified `port` is available, `device` is `cuda` (`auto` will not work).
 ```bash
 docker run -it --runtime=nvidia --gpus all --net=host --ipc=host -v /var/run/docker.sock:/var/run/docker.sock -v ./vllm.yaml:/vllm.yaml neuralchat_vllm:latest
 ```
