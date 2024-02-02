@@ -21,7 +21,7 @@ pip install -r requirements_gpu.txt
 Train data should be a JSON file, where each line is a dict like this:
 
 ```
-{"query": str, "pos": List[str], "neg":List[str]}
+{"query": str, "pos": List[str], "neg": List[str]}
 ```
 
 `query` is the query, and `pos` is a positive text, `neg` is a list of negative texts.
@@ -86,7 +86,7 @@ python finetune.py \
 - `per_device_train_batch_size`: batch size in training. In most cases, a larger batch size will bring stronger performance. 
 - `train_group_size`: the number of positives and negatives for a query in training.
 There is always one positive, so this argument will control the number of negatives (#negatives=train_group_size-1).
-Noted that the number of negatives should not be larger than the number of negatives in data `"neg":List[str]`.
+Noted that the number of negatives should not be larger than the number of negatives in data `"neg": List[str]`.
 Besides the negatives in this group, the in-batch negatives also will be used in fine-tuning.
 - `negatives_cross_device`: share the negatives across all GPUs. This argument will extend the number of negatives.
 - `learning_rate`: select an appropriate for your model. Recommend 1e-5/2e-5/3e-5 for large/base/small-scale. 
