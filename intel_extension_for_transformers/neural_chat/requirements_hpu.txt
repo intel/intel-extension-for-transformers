@@ -18,3 +18,4 @@ starlette
 transformers>=4.35.2
 uvicorn
 yacs
+neural_speed

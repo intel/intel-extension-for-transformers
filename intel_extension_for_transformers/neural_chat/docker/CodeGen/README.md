@@ -1,4 +1,4 @@
-Intel Neural Chat Code Generation Dockerfile installer for Ubuntu22.04/Habana Gaudi/XPU
+Intel Neural Chat Code Generation Dockerfile installer for Ubuntu22.04/Habana Gaudi/XPU.
 
 # Start NeuralChat and Code Generation Service with Docker
 
@@ -20,13 +20,13 @@ docker build . -f Dockerfile -t neuralchat_codegen:latest --build-arg https_prox
 ### Prepare Configuration File and Documents
 Before starting NeuralChat services, you need to configure `codegen.yaml` according to you read environment.
 
-Specify your avaliable host ip and port, and a code-generation model (`ise-uiuc/Magicoder-S-DS-6.7B` is recommanded for its accuracy). Remember to change `device` to `cpu`/`hpu`/`xpu` according to your framework.
+Specify your avaliable host ip and port, and a code-generation model (`ise-uiuc/Magicoder-S-DS-6.7B` is recommanded for its accuracy). Remember to set `device` to `cpu`/`hpu`/`xpu` according to your framework.
 
 
 ### Start NeuralChat Service
 Use the following command to start NeuralChat CodeGen service.
 
-Make sure the specified `port` is available, and `device` is `cpu`.
+Make sure the specified `port` is available, and `device` is correctly set.
 ```bash
 docker run -it --net=host --ipc=host --name code_gen -v ./codegen.yaml:/codegen.yaml neuralchat_codegen:latest
 ```
