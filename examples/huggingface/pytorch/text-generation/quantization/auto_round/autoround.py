@@ -176,8 +176,8 @@ if __name__ == '__main__':
                  amp=args.amp, n_samples=args.n_samples, low_gpu_mem_usage=args.low_gpu_mem_usage,
                  seed=args.seed, gradient_accumulate_steps=args.gradient_accumulate_steps, scale_dtype=args.scale_dtype)  ##TODO args pass
     model, q_config = autoround.quantize()
-    
-    export_dir = args.output_dir + "/" + args.model_name.split('/')[-1] + "-autoround-int4"
+    model_name = args.model_name.rstrip("/")
+    export_dir = args.output_dir + "/" + model_name.split('/')[-1] + "-autoround-int4"
     if args.deployment_device == 'cpu':
         autoround.export(output_dir=export_dir)
         del q_config
@@ -187,9 +187,9 @@ if __name__ == '__main__':
     if args.device != "cpu":
         torch.cuda.empty_cache()
     model.eval()
-    output_dir = args.output_dir + "/" + args.model_name.split('/')[-1] + f"-autoround-qdq"
+    output_dir = args.output_dir + "/" + model_name.split('/')[-1] + f"-autoround-qdq"# + f"_w{args.bits}_g{args.group_size}"
 
-    excel_name = f"{output_dir}_result.xlsx"
+    excel_name = f"{output_dir}/result.xlsx"
     output_dir += "/"
     print(excel_name, flush=True)
     eval_model(output_dir=output_dir, model=model, tokenizer=tokenizer, tasks=args.tasks, \
