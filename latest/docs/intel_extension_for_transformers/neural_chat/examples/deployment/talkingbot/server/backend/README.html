@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup Conda &mdash; Intel® Extension for Transformers 0.1.dev1+g3385c42 documentation</title>
+  <title>Setup Conda &mdash; Intel® Extension for Transformers 0.1.dev1+gd62ff9e documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -185,6 +185,10 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 <td>"./output_audio"</td>
 </tr>
 <tr>
+<td>tts.args.speedup</td>
+<td>1.0</td>
+</tr>
+<tr>
 <td>tasks_list</td>
 <td>['voicechat']</td>
 </tr>
@@ -196,6 +200,46 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>nohup<span class="w"> </span>bash<span class="w"> </span>run.sh<span class="w"> </span><span class="p">&amp;</span>
 </pre></div>
 </div>
+</section>
+<section id="quick-test-with-openai-compatible-endpoints-audio">
+<h1>Quick test with OpenAI compatible endpoints (audio)<a class="headerlink" href="#quick-test-with-openai-compatible-endpoints-audio" title="Link to this heading"></a></h1>
+<p>To make our audio service compatible to OpenAI <a class="reference external" href="https://platform.openai.com/docs/api-reference/audio/">endpoints</a>, we offer the following three endpoints:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">audio</span><span class="o">/</span><span class="n">speech</span>
+<span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">audio</span><span class="o">/</span><span class="n">transcriptions</span>
+<span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">audio</span><span class="o">/</span><span class="n">translations</span>
+</pre></div>
+</div>
+<p>To test whether the talkingbot server can serve your requests correctly, you can use <code class="docutils literal notranslate"><span class="pre">curl</span></code> as follows:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span><span class="w"> </span><span class="n">http</span><span class="o">:</span><span class="c1">//localhost:8888/v1/audio/translations \</span>
+<span class="c1">  -H &quot;Content-Type: multipart/form-data&quot; \</span>
+<span class="c1">  -F file=&quot;@sample_1.wav&quot;</span>
+
+<span class="n">curl</span><span class="w"> </span><span class="n">http</span><span class="o">:</span><span class="c1">//localhost:8888/v1/audio/transcriptions \</span>
+<span class="c1">  -H &quot;Content-Type: multipart/form-data&quot; \</span>
+<span class="c1">  -F file=&quot;@sample_zh_cn.wav&quot;</span>
+
+<span class="n">curl</span><span class="w"> </span><span class="n">http</span><span class="o">:</span><span class="c1">//localhost:8888/v1/audio/speech \</span>
+<span class="c1">  -H &quot;Content-Type: application/json&quot; \</span>
+<span class="c1">  -d &#39;{</span>
+<span class="w">    </span><span class="s">&quot;model&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;speecht5&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s">&quot;input&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;The quick brown fox jumped over the lazy dog.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s">&quot;voice&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;default&quot;</span>
+<span class="w">  </span><span class="p">}</span><span class="err">&#39;</span><span class="w"> </span>\
+<span class="w">  </span><span class="o">--</span><span class="n">output</span><span class="w"> </span><span class="n">speech</span><span class="p">.</span><span class="n">mp3</span>
+</pre></div>
+</div>
+</section>
+<section id="customized-endpoints-of-a-audio-input-audio-output-pipeline">
+<h1>Customized endpoints of a audio-input-audio-output pipeline<a class="headerlink" href="#customized-endpoints-of-a-audio-input-audio-output-pipeline" title="Link to this heading"></a></h1>
+<p>You can check <code class="docutils literal notranslate"><span class="pre">intel_extension_for_transformers/neural_chat/server/restful/voicechat_api.py</span></code> to see the other customized endpoints offered by us:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">talkingbot</span><span class="o">/</span><span class="n">asr</span>
+<span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">talkingbot</span><span class="o">/</span><span class="n">llm_tts</span>
+<span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">talkingbot</span><span class="o">/</span><span class="n">create_embedding</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">/v1/talkingbot/asr</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">/v1/audio/transcriptions</span></code> and for backward compatibility we simply keep that for audio-to-speech conversion.
+<code class="docutils literal notranslate"><span class="pre">/v1/talkingbot/llm_tts</span></code> merges two tasks: <code class="docutils literal notranslate"><span class="pre">LLM</span> <span class="pre">text</span> <span class="pre">generation</span></code> and the <code class="docutils literal notranslate"><span class="pre">text</span> <span class="pre">to</span> <span class="pre">speech</span></code> into one process, which is designed specifically for converting steadily the LLM streaming outputs to speech.
+<code class="docutils literal notranslate"><span class="pre">/v1/talkingbot/create_embedding</span></code> is used to create a SpeechT5 speaker embedding for zero-shot voice cloning. Although voice-cloning is relatively weak for SpeechT5, we still keep this endpoint for quick start. If you want to clone your voice properly, please check the current best practices for SpeechT5 based on few-shot voice-cloning finetuning in this <a class="reference external" href="../../../../finetuning/tts/">repo</a>.</p>
 </section>
 
 
@@ -212,7 +256,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f4ef1d84eb0> 
+   <jinja2.runtime.BlockReference object at 0x7f484369f8e0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
