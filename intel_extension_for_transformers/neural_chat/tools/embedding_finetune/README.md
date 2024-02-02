@@ -118,7 +118,7 @@ python evaluate.py \
 - `index_file_jsonl_path`: path of JSON data including candidate context where each line is a dict like this:```{"context": List[str]}```.
 - `query_file_jsonl_path`: path of JSON data including queries and positives where each line is a dict like this:```{"query": str, "pos": List[str]}```.
 
-The results should be similar to
+We conducted a finetuning on an internal business dataset. The results were as follows:
 * **Before Finetune**
 ```python
 {'MRR@1': 0.7385, 'Hit@1': 0.7336}
