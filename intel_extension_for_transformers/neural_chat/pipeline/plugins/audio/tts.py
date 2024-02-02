@@ -45,7 +45,7 @@ class TextToSpeech():
     3) Customized voice (Original model + User's customized input voice embedding)
     """
     def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu",
-                 reduce_noise=False):
+                 reduce_noise=False, speedup=1.0):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
         if device == "auto":
@@ -101,6 +101,7 @@ class TextToSpeech():
 
         self.normalizer = EnglishNormalizer()
         self.noise_reducer = NoiseReducer() if reduce_noise else None
+        self.speedup = speedup
 
     def _audiosegment_to_librosawav(self, audiosegment):
         # https://github.com/jiaaro/pydub/blob/master/API.markdown#audiosegmentget_array_of_samples
@@ -160,8 +161,8 @@ class TextToSpeech():
                     res.append(text[cur_start:cur_end+1])
                 else:
                     logging.warning(
-                        f"[TTS Warning] Check your input text and it should be splitted by one of {hitted_ends} "
-                        + f"in each {batch_length} charaters! Try to add batch_length!"
+                        f"[TTS Warning] Check your input text and it should be split by one of {hitted_ends} "
+                        + f"in each {batch_length} characters! Try to add batch_length!"
                     )
                     cur_end = cur_start+batch_length-1
                     res.append(text[cur_start:cur_end+1])
@@ -175,14 +176,19 @@ class TextToSpeech():
         res = [i + "." for i in res]    # avoid unexpected end of sequence
         return res
 
+    def _speedup(self, path, speed):
+        from pydub import AudioSegment
+        from pydub.effects import speedup
+        sound = AudioSegment.from_file(path)
+        speedup(sound, playback_speed=speed).export(path)
 
-    def text2speech(self, text, output_audio_path, voice="default",
+    def text2speech(self, text, output_audio_path="./response.wav", voice="default", speedup=1.0,
                     do_batch_tts=False, batch_length=400):
         """Text to speech.
 
         text: the input text
         voice: default/male/female/...
-        batch_length: the batch length for spliting long texts into batches to do text to speech
+        batch_length: the batch length for splitting long texts into batches to do text to speech
         """
         logging.info(text)
         if batch_length > 600 or batch_length < 50:
@@ -220,12 +226,14 @@ class TextToSpeech():
         sf.write(output_audio_path, all_speech, samplerate=16000)
         if self.noise_reducer:
             output_audio_path = self.noise_reducer.reduce_audio_amplify(output_audio_path, all_speech)
+        if speedup != 1.0:
+            self._speedup(output_audio_path, speedup)
         return output_audio_path
 
-    def stream_text2speech(self, generator, output_audio_path, voice="default"):
+    def stream_text2speech(self, generator, output_audio_path, voice="default", speedup=1.0):
         """Stream the generation of audios with an LLM text generator."""
         for idx, response in enumerate(generator):
-            yield self.text2speech(response, f"{output_audio_path}_{idx}.wav", voice)
+            yield self.text2speech(response, f"{output_audio_path}_{idx}.wav", voice, speedup)
 
 
     def post_llm_inference_actions(self, text_or_generator):
@@ -249,6 +257,7 @@ class TextToSpeech():
                 # output the trailing sequence
                 if len(buffered_texts) > 0:
                     yield ''.join(buffered_texts)
-            return self.stream_text2speech(cache_words_into_sentences(), self.output_audio_path, self.voice)
+            return self.stream_text2speech(
+                cache_words_into_sentences(), self.output_audio_path, self.voice, self.speedup)
         else:
-            return self.text2speech(text_or_generator, self.output_audio_path, self.voice)
+            return self.text2speech(text_or_generator, self.output_audio_path, self.voice, self.speedup)

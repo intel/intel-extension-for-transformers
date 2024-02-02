@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import argparse
 from collections import defaultdict
 import datetime
@@ -431,11 +445,11 @@ gradio-app {
 
 .user, .bot {
     width: 80% !important;
-    
+
 }
 
 .bot {
-    white-space: pre-wrap !important;  
+    white-space: pre-wrap !important;
     line-height: 1.3 !important;
     display: flex;
     flex-direction: column;
@@ -451,7 +465,7 @@ gradio-app {
 #btn-list-style {
     background: #eee0;
     border: 1px solid #0053f4;
-}        
+}
 
 .title {
     font-size: 1.5rem;
@@ -512,7 +526,7 @@ footer {
 
 
 def build_single_model_ui(models):
- 
+
     notice_markdown = """
 <div class="title">
 <div style="
@@ -520,7 +534,7 @@ def build_single_model_ui(models):
 ">Large Language Model <p style="
     font-size: 0.8rem;
 ">4th Gen Intel® Xeon® with Intel® AMX</p></div>
- 
+
 </div>
 """
 
@@ -530,7 +544,7 @@ def build_single_model_ui(models):
             </div>
             <div class="acknowledgments">
             <p></p></div>
-            
+
         """
 
     state = gr.State()

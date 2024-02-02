@@ -120,12 +120,12 @@ class ConvReshape(Pattern):
         model, new_node_names, ret_old_nodes = util.pattern_mapping("ConvReshape",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
-            logger.info('ConvReshape_1 mathched...')
+            logger.info('ConvReshape_1 matched...')
             logger.debug('ConvReshape = {}'.format(new_node_names))
             for i in range(len(new_node_names)):
                 # the first node
                 conv_node_idx = model.get_node_id(new_node_names[i][0])
                 model.nodes[conv_node_idx].attr = ret_old_nodes[i][1].attr
                 model.nodes[conv_node_idx].attr['src_perm'] = ret_old_nodes[i][0].attr['dst_perm']
-    
+
         return model

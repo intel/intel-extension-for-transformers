@@ -1,6 +1,6 @@
 """
 Run BERT on SQuAD 1.1
-code reference Google AI research offical BERT code
+code reference Google AI research official BERT code
 """
 
 from __future__ import absolute_import

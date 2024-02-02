@@ -68,7 +68,7 @@ PI32_CONST256(inv_mant_mask, ~0x7f800000);
 
 PI32_CONST256(0x7f, 0x7f);
 
-// evaluation of 8 sines at onces using AVX intrisics
+// evaluation of 8 sines at once using AVX intrisics
 __m256 sinf(__m256 x) {
   __m256 sign_bit = x;
   // take the absolute value

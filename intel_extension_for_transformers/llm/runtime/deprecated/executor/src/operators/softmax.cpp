@@ -77,7 +77,7 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
     int res = ld - d;
     __mmask16 res_mask = (1 << res) - 1;
     // Initialize the input to a small value so that the sum of boundary value (e^x) is 0.
-    // It fixes the ouput fluctuation in the paddding case.
+    // It fixes the output fluctuation in the paddding case.
     auto min_ps = _mm512_set1_ps(-std::numeric_limits<float>::infinity());
     for (int i = 0; i < N; ++i) {
       auto src_f32 = _mm512_mask_loadu_ps(min_ps, res_mask, pin + i * ld + d);

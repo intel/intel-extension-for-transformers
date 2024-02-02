@@ -17,7 +17,7 @@ def get_gpu_family():
 
     Note, this function need to import intel_extension_for_pytorch
 
-    Addtional info (common gpu name):
+    Additional info (common gpu name):
       'Intel(R) Data Center GPU Flex 170'
       'Intel(R) Data Center GPU Max 1100'
       'Intel(R) Arc(TM) A770 Graphics'
@@ -35,7 +35,7 @@ def get_gpu_family():
         return 'max'
     if 'Arc(TM)' in name:
         return 'arc'
-    assert False, "Unsupport GPU device: {}".format(name)
+    assert False, "Unsupported GPU device: {}".format(name)
 
 
 def check_env_flag(name: str, default: bool = False) -> bool:
@@ -268,7 +268,7 @@ def check_submodules():
         end = time.time()
         print(f' --- Submodule initialization took {end - start:.2f} sec')
     except Exception:
-        print(' --- Submodule initalization failed')
+        print(' --- Submodule initialization failed')
         print('Please run:\n\tgit submodule update --init --recursive')
         sys.exit(1)
 

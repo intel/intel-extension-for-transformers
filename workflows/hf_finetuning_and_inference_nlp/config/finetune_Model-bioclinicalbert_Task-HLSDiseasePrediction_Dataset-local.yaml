@@ -1,8 +1,22 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 args:
   model_name_or_path: "emilyalsentzer/Bio_ClinicalBERT"
   tokenizer_name: "emilyalsentzer/Bio_ClinicalBERT"
   dataset: "local" # local or huggingface datasets name
-  
+
   # Add local dataset configurations below. Skip for HF datasets.
   # Make sure to specify your local dataset . The code will fail otherwise.
   local_dataset:
@@ -14,7 +28,7 @@ args:
       data_column: "symptoms"
       id: "Patient_ID"
     label_list: ["Malignant", "Normal", "Benign"]
-  
+
   # Add the fine tuning configurations below
   pipeline: "finetune"
   finetune_impl: "itrex"

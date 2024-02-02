@@ -459,7 +459,7 @@
          "sequence_len": 128,
          "mode": "accuracy/throughput",
          "warm_up": 100,
-         "iteration": 1000,
+         "iteration": 1000
       }
     },
     "launcher": {

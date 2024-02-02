@@ -366,7 +366,7 @@ else:
         use_auth_token=None
     )
 
-# Preprocessing is slighlty different for training and evaluation.
+# Preprocessing is slightly different for training and evaluation.
 column_names = raw_datasets["train"].column_names
 question_column_name = "question" if "question" in column_names else column_names[0]
 context_column_name = "context" if "context" in column_names else column_names[1]

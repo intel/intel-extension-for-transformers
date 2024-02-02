@@ -150,7 +150,7 @@ def search_straight_pattern(input_pattern, graph):
         input_pattern (list): Contains the op_type of the nodes in pattern. The element of the
         list could be string/list/tuple, string or list means the specified op_type are mandatory
         while tuple stands for optional.
-        For example, a input pattern mybe like this:
+        For example, a input pattern maybe like this:
         ['Mul', 'Mul', ['Add', 'AddV2']] it equals to below patterns:
         'Mul' + 'Mul' + 'Add'
         'Mul' + 'Mul' + 'AddV2'
@@ -179,12 +179,12 @@ def search_straight_pattern(input_pattern, graph):
                 ]
     """
 
-    def _validate_input(data, creteria):
+    def _validate_input(data, criteria):
         """Validation of input data."""
-        if isinstance(creteria, str) and data == creteria:
+        if isinstance(criteria, str) and data == criteria:
             return True
 
-        if isinstance(creteria, (list, tuple)) and data in creteria:
+        if isinstance(criteria, (list, tuple)) and data in criteria:
             return True
 
         return False
@@ -364,7 +364,7 @@ def search_pattern(pattern_list, graph):
            [..., [(idx, 'Add'),(idx, 'Mul'),(idx, 'Sub')], ...]
         5. If a node in sub-graph just has one input op and this op is from outside, you should
            use empty tuple () to represents a input op. However, the algorithm doesn't support
-           this kind of pattern completely. Beause the match result can't make sure the whole
+           this kind of pattern completely. Because the match result can't make sure the whole
            connection. So you had better check the results.
         6. For the symmetric pattern, the sub-graph has consecutive same op type as the main chain
            (Y or O shape). So these two search results by DFS are duplicated. The algorithm would
@@ -698,7 +698,7 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
     'node_names': set node name for each node in pattern after fusion. Key means the node idx,
                 the value must be string or int (idx). If the value is the string, just use it as
                 the node's name. If the value is the idx, use the name of idx-th node in the
-                pattern berfore fusion. If the in_pattern has n match_results in the graph, it
+                pattern before fusion. If the in_pattern has n match_results in the graph, it
                 will add "_n" after the name, for example, the new node name should be
                 "embeddings/reshape_0" after mapping of the first match_result.
     'input_tensors': the input_tensors of patterns before or after fusion should be same. The key
@@ -711,7 +711,7 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                 total 1 input_tensor. So the first element in the value gives the source info of
                 input_tensors, the second gives the dest info of the input_tensors.However,
                 sometimes source info has the form like '{1:[0], 2:[1,2]}', the '[1,2]' means the
-                idx of tensor is not sure, maybe 1 or 2. It will happens to some sepcial op, like
+                idx of tensor is not sure, maybe 1 or 2. It will happens to some special op, like
                 'BiasAdd', its 'bias' tensor maybe in unfixed location. If some input_tensors only
                 can get from other node outside the pattern, you can just specify it by give the
                 node name in graph.
@@ -816,7 +816,7 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                         names.append(tmp + '_' + str(i))
                 else:
                     raise ValueError(
-                        'Do not support the setted node_names types,it must be int or str,'\
+                        'Do not support the set node_names types,it must be int or str,'\
                             'rather than {}.'.format(type(tmp)))
             new_node_names.append(names)
 
@@ -848,7 +848,7 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                             tmp.append(copy.deepcopy(node.output_tensors[tmp_v[0]]))
                         else:
                             raise ValueError(
-                                'Do not support the setted input_tensors types,'\
+                                'Do not support the set input_tensors types,'\
                                     'it must be int or str, rather than {}.'.format(type(tmp_k)))
 
                 in_tensors.append([tmp, dest])
@@ -868,7 +868,7 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                             node = graph.get_node_by_name(in_match_result[i][tmp_k])
                         else:
                             raise ValueError(
-                                'Do not support the setted output_tensors types, it must be int,'\
+                                'Do not support the set output_tensors types, it must be int,'\
                                     'rather than {}.'.format(type(tmp_k)))
                         assert len(tmp_v) == 1, 'Output tensor must be specified.'
                         tmp.append(copy.deepcopy(node.output_tensors[tmp_v[0]]))

@@ -105,7 +105,7 @@ Configurate all of the environment variables in file `run.sh` using `export XXX=
 | IMAGE_SERVER_IP     | The IP of server which you store user uploaded images      |
 | IMAGE_ROOT_PATH     | local path of image storing path                     |
 | RETRIEVAL_FILE_PATH | local path of where you store retrieval files               |
-| GOOGLE_API_KEY      | your google api key to get gps infomation from images           |
+| GOOGLE_API_KEY      | your google api key to get gps information from images           |
 
 
 # Run the PhotoAI server

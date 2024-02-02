@@ -29,4 +29,3 @@ from .chatbot import optimize_model
 from .server.neuralchat_server import NeuralChatServerExecutor
 from .server.neuralchat_client import TextChatClientExecutor, VoiceChatClientExecutor, FinetuningClientExecutor
 from .plugins import plugins
-

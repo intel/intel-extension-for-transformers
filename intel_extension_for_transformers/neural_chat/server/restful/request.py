@@ -73,6 +73,7 @@ class FeedbackRequest(RequestBaseModel):
     question: str
     answer: str
     feedback: Optional[int] = 0
+    comments: Optional[str] = ""
 
 
 class TGIRequest(RequestBaseModel):

@@ -15,12 +15,12 @@ option(NE_WITH_SPARSELIB_BENCHMARK "Enable sparselib sparse benchmark" OFF)
 option(NE_WITH_TESTS "Build GTests" OFF)
 option(NE_WITH_ONEDNN_GRAPH "Build oneDNNGraph" ON)
 option(NE_DYNAMIC_LINK "Whether third party libs dynamic link to neural engine" ON)
-option(NE_WITH_AVX2 "Limit the compile time use of instruciton extensions to AVX2 rather than AVX512" OFF)
+option(NE_WITH_AVX2 "Limit the compile time use of instruction extensions to AVX2 rather than AVX512" OFF)
 message(STATUS "NE_DYNAMIC_LINK: ${NE_DYNAMIC_LINK}")
 set(NE_DNNL_CACHE_DIR "" CACHE STRING
   "The abs directory of cached OneDNN builds, including a libdnnl.so file and a directory for configured header files
 
-  To create a cahce dir, first build without cache, then move `libdnnl.so*` to `YOUR_NEW_CACHE_DIR` and move
+  To create a cache dir, first build without cache, then move `libdnnl.so*` to `YOUR_NEW_CACHE_DIR` and move
   `build/neural_engine_py/third_party/oneDNN/include` to `YOUR_NEW_CACHE_DIR/include`")
 
 # Disable extra OneDNN targets to speedup compilation

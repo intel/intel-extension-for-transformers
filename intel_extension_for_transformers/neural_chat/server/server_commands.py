@@ -91,7 +91,7 @@ def get_client_command(name: str):
 
 def neuralchat_server_execute():
     commands = neuralchat_server_commands
-    
+
     idx = 0
     for _argv in (['neuralchat_server'] + sys.argv[1:]):
         if _argv not in commands:

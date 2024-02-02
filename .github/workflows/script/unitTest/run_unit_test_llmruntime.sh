@@ -3,11 +3,11 @@ source /intel-extension-for-transformers/.github/workflows/script/change_color.s
 test_install_backend="true"
 LOG_DIR=/intel-extension-for-transformers/log_dir
 mkdir -p ${LOG_DIR}
-WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph/tests"
+WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph"
 
 # -------------------LLM Runtime Test-------------------
 function llmruntime_test() {
-    cd ${WORKING_DIR}
+    cd ${WORKING_DIR}/tests
     local ut_log_name=${LOG_DIR}/unit_test_llm_runtime.log
     find . -name "test*.py" | sed 's,\.\/,python ,g' | sed 's/$/ --verbose/' >run.sh
     # run UT
@@ -32,11 +32,6 @@ function llmruntime_test() {
 
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh "${WORKING_DIR}"
-    ## install  neuralspeed from source code
-    git clone https://github.com/intel/neural-speed.git
-    cd neural-speed && pip install -r requirements.txt && pip install .
-    cd ..
-    pip list | grep neural-speed
     llmruntime_test
 }
 

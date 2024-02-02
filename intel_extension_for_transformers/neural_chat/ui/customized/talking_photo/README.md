@@ -1,8 +1,4 @@
-<h1 align="center" id="title"><img align="center" src="./src/lib/assets/favicon.png" alt="project-image">Neural Chat</h1>
-
-<h2>🚀 Demo</h2>
-
-[http://neuralstudio.intel.com/NeuralChat](http://neuralstudio.intel.com/NeuralChat)
+<h1 align="center" id="title">Neural Chat</h1>
 
 <h2>📸 Project Screenshots:</h2>
 
@@ -42,7 +38,7 @@ Here're some of the project's features:
     ```
 4. Execute `npm install` to install the corresponding dependencies.
 
-5. Execute `npm run dev` in both enviroments
+5. Execute `npm run dev` in both environments
 
 <h2>📕Instructions for using OpenAI:</h2> 
 

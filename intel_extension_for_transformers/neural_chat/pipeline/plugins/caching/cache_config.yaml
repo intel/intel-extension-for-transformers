@@ -33,7 +33,7 @@ storage_config:
         sqlite,faiss
     vector_params:
         # Set vector storage related params here
-evaluation: 
+evaluation:
     distance
 evaluation_config:
     max_distance: 1.0

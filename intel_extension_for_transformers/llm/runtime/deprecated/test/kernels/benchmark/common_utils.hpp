@@ -105,8 +105,8 @@ class aligned_allocator_t {
   template <typename T2>
   inline aligned_allocator_t(const aligned_allocator_t<T2, N>&) throw() {}
   inline ~aligned_allocator_t() throw() {}
-  inline pointer adress(reference r) { return &r; }
-  inline const_pointer adress(const_reference r) const { return &r; }
+  inline pointer address(reference r) { return &r; }
+  inline const_pointer address(const_reference r) const { return &r; }
   inline void construct(pointer p, const value_type& wert) { new (p) value_type(wert); }
   inline void destroy(pointer p) { p->~value_type(); }
   inline size_type max_size() const throw() { return size_type(-1) / sizeof(value_type); }
@@ -161,7 +161,7 @@ inline typename std::enable_if<!s_is_u8s8<T>::value, float>::type get_err(const 
 }
 template <typename T>
 inline typename std::enable_if<s_is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
-  // for quantized value, error ratio was calcualted with its data range
+  // for quantized value, error ratio was calculated with its data range
   return fabs(static_cast<float>(a) - static_cast<float>(b)) / UINT8_MAX;
 }
 
@@ -189,7 +189,7 @@ float get_relu(float x, float alpha);
 int get_quantize(float x, float alpha, float scale, const jd::data_type& data_type);
 float get_dequantize(float x, float alpha, float scale);
 
-float get_linear(float x, float aplha, float beta);
+float get_linear(float x, float alpha, float beta);
 
 float get_swish(float x, float alpha);
 
