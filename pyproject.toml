@@ -1,0 +1,5 @@
+[tool.codespell]
+skip = '*.po,*.ts,*.js,*.map,*.js.map,*.css.map,.github/workflows/script/formatScan/nlp_dict.txt'
+count = ''
+quiet-level = 3
+ignore-words = ".github/workflows/script/formatScan/nlp_dict.txt"

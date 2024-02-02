@@ -114,7 +114,7 @@ def perplexity(model_name, dataset_name, **kwargs):
     model_kwargs = {**default_model_kwargs, **model_kwargs}
 
     ppl_hist = [{} for _ in range(n_sampels)]  # ppl_hist[i_sample][end_pos] = ppl
-    sum_nll = [0. for _ in range(n_sampels)]  # sum of negative log likelyhood
+    sum_nll = [0. for _ in range(n_sampels)]  # sum of negative log likelihood
     sum_nll2 = [0. for _ in range(n_sampels)]  # sum of nll square
 
     pbar = tqdm(range(n_pred_per_sample * n_sampels))

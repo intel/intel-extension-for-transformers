@@ -63,7 +63,7 @@ class Transformer2Dmodel_FFNInputSlice_1(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('Transformer2Dmodel_FFNInputSlice_1 mathched...')
+                logger.info('Transformer2Dmodel_FFNInputSlice_1 matched...')
                 logger.debug('Transformer2Dmodel_FFNInputSlice_1 = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # the first new node

@@ -75,7 +75,7 @@ class Transformer2Dmodel_GetSampleBatch(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('Transformer2Dmodel_GetSampleBatch mathched...')
+                logger.info('Transformer2Dmodel_GetSampleBatch matched...')
                 logger.debug('Transformer2Dmodel_GetSampleBatch = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
 

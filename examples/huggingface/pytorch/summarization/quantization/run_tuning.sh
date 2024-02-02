@@ -65,7 +65,7 @@ function run_tuning {
         approach="PostTrainingStatic"
         extra_cmd=$extra_cmd" --perf_tol 0.03"
     else
-        echo "unsupport topology: ${topology}"
+        echo "unsupported topology: ${topology}"
         exit 1
     fi
 

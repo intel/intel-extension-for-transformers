@@ -25,7 +25,7 @@ from intel_extension_for_transformers.neural_chat.server.multi_cpu_server import
 
 @patch('intel_extension_for_transformers.neural_chat.server.multi_cpu_server.build_chatbot')
 class TestMultiCPUServer(unittest.TestCase):
-    
+
     def test_parse_args(self, mock_build_chatbot):
         args = parse_args()
         print(args)

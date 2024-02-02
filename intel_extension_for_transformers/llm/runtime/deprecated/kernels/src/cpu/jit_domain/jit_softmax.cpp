@@ -79,7 +79,7 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
     vpmovusdb(xmm_exp_neg_max, zmm_exp_neg_max);
   vpbroadcastb(zmm_exp_neg_max, xmm_exp_neg_max);  // zmm_exp_neg_max contain all max int8 value
 
-  // loop two:sum reduction & stroe exp value.
+  // loop two:sum reduction & store exp value.
   mov(src_addr_volatile, src_addr);
   mov(dst_addr_volatile, reg_tmp);
   mov(vec_offset, 0);

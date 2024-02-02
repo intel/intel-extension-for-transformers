@@ -42,7 +42,7 @@ main() {
         run_benchmark "accuracy" 64
     fi
 
-    ## run traner.benchmark using pytorch
+    ## run trainer.benchmark using pytorch
     if [[ $(echo "${mode}" | grep "performance") ]] && [[ $framework == "pytorch" ]]; then
         run_benchmark "benchmark_only" 1
     fi

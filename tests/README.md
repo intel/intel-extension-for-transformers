@@ -16,7 +16,7 @@ Note: it depend on IPEX 2.1.0 for GPU or newer.
 
 ### Run Guide
 
-1. Setup Running Envrionment
+1. Setup Running Environment
 ```
 ./setup_env_gpu.sh
 ```

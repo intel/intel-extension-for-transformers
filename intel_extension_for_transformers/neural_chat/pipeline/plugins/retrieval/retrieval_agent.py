@@ -90,12 +90,12 @@ class Agent_QA():
             "accuracy",
             "general",
         )
-        
+
         assert self.retrieval_type in allowed_retrieval_type, "search_type of {} not allowed.".format(   \
             self.retrieval_type)
         assert self.mode in allowed_generation_mode, "generation mode of {} not allowed.".format( \
             self.mode)
-        
+
         if isinstance(input_path, str):
             if os.path.exists(input_path):
                 self.input_path = input_path
@@ -127,14 +127,14 @@ class Agent_QA():
                     encode_kwargs={"normalize_embeddings": True},
                 )
         except Exception as e:
-            logging.error("Please selet a proper embedding model.")
+            logging.error("Please select a proper embedding model.")
             logging.error(e)
-        
+
         self.document_parser = DocumentParser(max_chuck_size=max_chuck_size, min_chuck_size = min_chuck_size, \
                                               process=self.process)
         data_collection = self.document_parser.load(input=self.input_path, **kwargs)
         logging.info("The parsing for the uploaded files is finished.")
-        
+
         langchain_documents = document_transfer(data_collection)
         logging.info("The format of parsed documents is transferred.")
 
@@ -203,7 +203,7 @@ class Agent_QA():
         """
         data_collection = self.document_parser.load(input=input_path, **kwargs)
         langchain_documents = document_transfer(data_collection)
-        
+
         if self.retrieval_type == 'default':
             knowledge_base = self.database.from_documents(documents=langchain_documents, \
                                                           embedding=self.embeddings, **kwargs)
@@ -219,14 +219,14 @@ class Agent_QA():
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               child_document_store=child_knowledge_base, **kwargs).retriever
         logging.info("The retriever is successfully built.")
-            
+
 
     def append_localdb(self, append_path, **kwargs):
         "Append the knowledge instances into a given knowledge base."
 
         data_collection = self.document_parser.load(input=append_path, **kwargs)
         langchain_documents = document_transfer(data_collection)
-        
+
         if self.retrieval_type == 'default':
             knowledge_base = self.database.from_documents(documents=langchain_documents, \
                                                           embedding=self.embeddings, **kwargs)
@@ -242,7 +242,7 @@ class Agent_QA():
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               child_document_store=child_knowledge_base, **kwargs).retriever
         logging.info("The retriever is successfully built.")
-        
+
 
 
     def pre_llm_inference_actions(self, model_name, query):
@@ -277,5 +277,5 @@ class Agent_QA():
                     return "Response with template.", links
                 prompt = generate_qa_prompt(query, context)
         else:
-            logging.error("The selcted generation mode is invalid!")
+            logging.error("The selected generation mode is invalid!")
         return prompt, links

@@ -94,7 +94,8 @@ class AudioSpeechRecognition():
             else:
                 self.forced_decoder_ids = self.processor.get_decoder_prompt_ids(language=self.language,
                                                                                 task="transcribe")
-                predicted_ids = self.model.generate(inputs, forced_decoder_ids=self.forced_decoder_ids)
+                self.model.config.forced_decoder_ids = self.forced_decoder_ids
+                predicted_ids = self.model.generate(inputs)
         # pylint: disable=E1101
         result = self.processor.tokenizer.batch_decode(
             predicted_ids, skip_special_tokens=True, normalize=True)[0]

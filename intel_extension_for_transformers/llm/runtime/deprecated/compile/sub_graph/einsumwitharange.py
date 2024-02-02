@@ -66,7 +66,7 @@ class EinsumwithArange(Pattern):
                     },
                     'returns': [0, 1, 2]
                 },
-                
+
                 {
                     'patterns': {
                         'in': [[(0, 'Shape'), (2, 'Add'), (3, 'Arange'), (4, 'Einsum')],
@@ -90,8 +90,8 @@ class EinsumwithArange(Pattern):
                         2: [[{
                             4: [1]
                         }], [[1], 2]]
-                        
-                        
+
+
                     },
                     'output_tensors': {
                         0: [[], [[], 1]],
@@ -102,7 +102,7 @@ class EinsumwithArange(Pattern):
                     },
                     'returns': [0]
                 }
-                
+
             ]
         }
         if model.framework_modeling_config['framework'] != 'torch':
@@ -114,7 +114,7 @@ class EinsumwithArange(Pattern):
                 if 'end' in ret_old_nodes[i][0].attr.keys():
                     attr['end_with_shape'] = ret_old_nodes[i][0].attr['end']
                 model.nodes[range_node_idx].attr = attr
-                
+
                 matmul_node = model.get_node_by_name(new_node_names[i][2])
                 reshape_node = model.get_node_by_name(new_node_names[i][1])
                 reshape_node.attr = OrderedDict({'dst_shape': '-1, 1'})
@@ -131,13 +131,13 @@ class EinsumwithArange(Pattern):
                     input_tensors=[matmul_node.input_tensors[1]],
                     output_tensors=[reshape_output],
                     attr=OrderedDict({'dst_shape': '1, -1'}))
-                
+
                 matmul_node.input_tensors[1] = reshape_output
                 insert_idx = model.get_node_id(new_node_names[i][2])
                 model.insert_nodes(insert_idx, [reshape_op])
-                
+
         pattern_dict = pattern_mapping_config['EinsumwithArange'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("EinsumwithArange", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("EinsumwithArange",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)
@@ -148,8 +148,8 @@ class EinsumwithArange(Pattern):
                 attr = OrderedDict()
                 attr['algorithm'] = "add"
                 attr['end_with_shape'] = 1
-                model.nodes[range_node_idx].attr = attr            
-                
+                model.nodes[range_node_idx].attr = attr
+
                 matmul_node = model.get_node_by_name(new_node_names[i][2])
                 reshape_node = model.get_node_by_name(new_node_names[i][1])
                 reshape_node.attr = OrderedDict({'dst_shape': '-1, 1'})
@@ -169,9 +169,9 @@ class EinsumwithArange(Pattern):
                 matmul_node.input_tensors[1] = reshape_output
                 insert_idx = model.get_node_id(new_node_names[i][2])
                 model.insert_nodes(insert_idx, [reshape_op])
-                
+
         pattern_dict = pattern_mapping_config['EinsumwithArange'][1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("EinsumwithArange", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("EinsumwithArange",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr1(new_node_names, ret_old_nodes, model)

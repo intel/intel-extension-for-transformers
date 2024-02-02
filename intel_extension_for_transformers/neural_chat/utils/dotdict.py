@@ -86,5 +86,3 @@ class DotDict(dict):
         self.__dict__.update(d)
 
     __setattr__, __getattr__ = __setitem__, __getitem__
-
-

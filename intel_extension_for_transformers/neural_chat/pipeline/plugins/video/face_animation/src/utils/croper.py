@@ -28,7 +28,7 @@ import numpy as np
 from PIL import Image
 
 
-class Preprocesser:
+class Preprocessor:
     def __init__(self, device="cuda"):
         print("device=========", device)
         self.predictor = KeypointExtractor(device)

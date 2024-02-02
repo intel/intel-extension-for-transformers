@@ -223,9 +223,9 @@ class aligned_allocator_t {
 
   inline ~aligned_allocator_t() throw() {}
 
-  inline pointer adress(reference r) { return &r; }
+  inline pointer address(reference r) { return &r; }
 
-  inline const_pointer adress(const_reference r) const { return &r; }
+  inline const_pointer address(const_reference r) const { return &r; }
 
   inline void construct(pointer p, const value_type& wert) { new (p) value_type(wert); }
 

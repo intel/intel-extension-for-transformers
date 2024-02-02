@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import argparse
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings
@@ -71,7 +85,7 @@ def d_load_jsonl_file(file_path, process, max_length=378):
 # def d_load_xlsx_file(file_path, process, max_length=378):
 #     data = []
 #     data = pd.read_excel(file_path)
-# 
+#
 #     new_sens = []
 #     documents = []
 #     paragraphs = []
@@ -215,7 +229,7 @@ def s_load_file(file_path, process, document_store, max_length=378):
         new_doc = SDocument(content=paragraph, metadata=metadata)
         documents.append(new_doc)
     document_store.write_documents(documents)
-    
+
     return document_store
 
 
@@ -226,7 +240,7 @@ def persist_embedding(documents, persist_directory, model_path):
     vectordb.persist()
     vectordb = None
 
-    
+
 def read_docx(doc_path):
     doc = DDocument(doc_path)
     text = ''
@@ -282,4 +296,3 @@ if __name__ == "__main__":
             document_store.save(index_path="my_index.faiss")
         else:
             print("in memory db is done")
-                

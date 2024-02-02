@@ -31,18 +31,24 @@ class AudioPluginAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def handle_voice_asr_request(self, filename: str) -> str:
+    def handle_voice_asr_request(self, filename: str, language: str = "auto") -> str:
         asr = get_plugin_instance("asr")
+        asr.language = language
         try:
             return asr.audio2text(filename)
         except Exception as e:
             raise Exception(e)
-        
-    async def handle_voice_tts_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
-        
+
+    async def handle_voice_tts_request(self,
+                                       text: str,
+                                       voice: str,
+                                       audio_output_path: Optional[str] = None,
+                                       speedup: float = 1.0) -> str:
+
         plugins.tts.args['voice'] = voice
         plugins.tts.args['output_audio_path'] = audio_output_path
         tts = get_plugin_instance("tts")
+        tts.speedup = speedup
         try:
             result = tts.post_llm_inference_actions(text)
             def audio_file_generate(result):
@@ -69,7 +75,7 @@ class AudioPluginAPIRouter(APIRouter):
             torch.save(spk_embedding, f'../../assets/speaker_embeddings/spk_embed_{spk_id}.pt')
             logger.info(f"create spk embedding succeed! {spk_id}")
         except Exception as e:
-            logger.info(f"create spk embedding failes! {e}")
+            logger.info(f"create spk embedding fails! {e}")
             return {"create_spk": "fail"}
         return {"create_spk": "success"}
 
@@ -78,7 +84,7 @@ router = AudioPluginAPIRouter()
 
 
 @router.post("/plugin/audio/asr")
-async def handle_talkingbot_asr(file: UploadFile = File(...)):
+async def handle_talkingbot_asr(file: UploadFile = File(...), language: str = "auto"):
     file_name = file.filename
     logger.info(f'Received file: {file_name}')
     with open("tmp_audio_bytes", 'wb') as fout:
@@ -89,7 +95,7 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
     # bytes to wav
     file_name = file_name +'.wav'
     audio.export(f"{file_name}", format="wav")
-    asr_result = router.handle_voice_asr_request(file_name)
+    asr_result = router.handle_voice_asr_request(file_name, language=language)
     return {"asr_result": asr_result}
 
 
@@ -98,12 +104,12 @@ async def talkingbot(request: Request):
     data = await request.json()
     text = data["text"]
     voice = data["voice"]
-    knowledge_id = data["knowledge_id"]
+    speedup = float(data["speed"]) if "speed" in data else 1.0
     audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio.wav"
 
-    logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
+    logger.info(f'Received prompt: {text}, and use voice: {voice}')
 
-    return await router.handle_voice_tts_request(text, voice, audio_output_path)
+    return await router.handle_voice_tts_request(text, voice, audio_output_path, speedup)
 
 
 @router.post("/plugin/audio/create_embedding")

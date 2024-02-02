@@ -131,4 +131,3 @@ All Contributors:<br />
 <a href="https://github.com/intel/intel-extension-for-transformers/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=intel/intel-extension-for-transformers" />
 </a>
-

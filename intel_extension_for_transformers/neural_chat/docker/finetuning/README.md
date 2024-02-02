@@ -48,7 +48,7 @@ docker pull intel/ai-tools:itrex-chatbot
 
 ## 3. Create Docker Container
 
-If you have donwloaded model and datasets before, just mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
+If you have downloaded model and datasets before, just mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
 ### On Xeon SPR Environment
 ```bash
 docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json ${IMAGE_NAME}:${IMAGE_TAG} /bin/bash
@@ -326,4 +326,3 @@ Where the `--dataset_concatenation` argument is a way to vastly accelerate the f
 For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
 You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
-

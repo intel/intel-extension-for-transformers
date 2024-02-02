@@ -412,7 +412,7 @@ def main():
         )
 
     # Preprocessing the datasets.
-    # Preprocessing is slighlty different for training and evaluation.
+    # Preprocessing is slightly different for training and evaluation.
     if training_args.do_train:
         column_names = raw_datasets["train"].column_names
     elif training_args.do_eval:
@@ -814,7 +814,7 @@ def main():
             with torch.no_grad():
                 model = torch.jit.trace(model, example_inputs, strict=False)
                 model = torch.jit.freeze(model)
-                # enable fusion path work(need to run two interation)
+                # enable fusion path work(need to run two iteration)
                 output = model(**sample)
                 output = model(**sample)
             trainer.model = model
