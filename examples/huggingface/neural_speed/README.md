@@ -36,13 +36,14 @@ pip install -r requirements.txt
 # Run
 
 
-> Note: Please prepare LLMs and save locally before running inference.
+> Note: Please prepare LLMs and save locally before running inference. Here are the models that are currently supported[Support models]{https://github.com/intel/neural-speed/blob/main/docs/supported_models.md}, you can replace Llama2 in the example with the model in the link.
 
 
 ## 1. Performance
 
 ``` bash
-# int4 with group-size=32
+# int4 with group-size=128
+# --not_quant use fp32 inference
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python runtime_example.py \
     --model_path ./Llama2 \
     --prompt "Once upon a time, there existed a little girl," \
