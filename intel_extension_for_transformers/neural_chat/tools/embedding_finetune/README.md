@@ -1,8 +1,6 @@
-# Finetune Embedding Model on Task-Specific Datasets
+![image](https://github.com/intel/intel-extension-for-transformers/assets/106130696/1cedbeb8-7675-4145-98e5-9ff090851d78)![image](https://github.com/intel/intel-extension-for-transformers/assets/106130696/0fdfdc4f-402c-4ce7-b35f-830ed7794f2f)![image](https://github.com/intel/intel-extension-for-transformers/assets/106130696/6efad0ad-7357-486d-8f76-969da39bf0cf)# Finetune Embedding Model on Task-Specific Datasets
 
 ## 1. Introduction
-QA dialogue is currently a major application scenario for large language models. In QA dialogue, due to the lagging nature of large language model information and the fact that it does not contain business knowledge, we often need external knowledge bases to assist large models in solving some problems. In the process of plugging into the knowledge base, the recall effect of the embedding model directly affects the answer effect of the large model. However,  the high-ranked embedding models on the METB leaderboard sometimes fail to achieve a good performance on the user-uploaded datasets. Finetuning embedding models (e.g., BGE embedding model) on the task-specific dataset can achieve performance gain.
-
 In this example, we show how to construct the dataset for finetuning the embedding model and finetuning the specific embedding model.
 
 ## 2. Requirements
@@ -29,9 +27,9 @@ See [augmented_example.jsonl](https://github.com/intel/intel-extension-for-trans
 
 If you have no negative texts for a query, You can use [this script](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/mine_hard_neg.py) as follows to mine a given number of hard negatives.
 
-### mine hard negatives
+### Mine Hard Negatives
 
-Hard Negatives Mining is a widely used method to improve the quality of sentence embedding. 
+Hard negatives mining is a widely used method to improve the quality of sentence embedding. 
 You can mine hard negatives following this command:
 * **on CPU**
 ```bash
@@ -53,7 +51,7 @@ python mine_hard_neg.py \
 --use_gpu_for_searching 
 ```
 
-**some important arguments**:
+**Some Important Arguments**:
 - `input_file`: JSON data for finetuning. This script will retrieve top-k documents for each query, 
 and random sample negatives from the top-k documents (not including the positive documents).
 - `output_file`: path to save JSON data with mined hard negatives for finetuning
@@ -82,7 +80,7 @@ python finetune.py \
 --bf16 True
 ```
 
-**some important arguments**:
+**Some Important Arguments**:
 - `per_device_train_batch_size`: batch size in training. In most cases, a larger batch size will bring stronger performance. 
 - `train_group_size`: the number of positives and negatives for a query in training.
 There is always one positive, so this argument will control the number of negatives (#negatives=train_group_size-1).
@@ -102,32 +100,32 @@ For more training arguments please refer to [transformers.TrainingArguments](htt
 ## 5. Evaluation
 We provide [a simple script](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/evaluate.py) to evaluate the model's performance. We use two metrics: MRR (Mean reciprocal rank) and Hit (Hit Ratio). MRR is an internationally accepted mechanism for evaluating search algorithms. MRR emphasizes the position of ground truth in the retrieval list, the higher it is, the better. Hit emphasizes the accuracy of retrieval, that is, whether the ground truth is included in the retrieval items.
 
-* **before finetune**
+* **Before Finetune**
 ```bash
 python evaluate.py \
 --model_name BAAI/bge-base-en-v1.5 \
 --index_file_jsonl_path candidate_context.jsonl \
 --query_file_jsonl_path example.jsonl
 ```
-* **after finetune**
+* **After Finetune**
 ```bash
 python evaluate.py \
 --model_name BAAI/bge-base-en-v1.5_finetuned \
 --index_file_jsonl_path candidate_context.jsonl \
 --query_file_jsonl_path example.jsonl
 ```
-**some important arguments:**
+**Some Important Arguments:**
 - `index_file_jsonl_path`: path of JSON data including candidate context where each line is a dict like this:```{"context": List[str]}```.
 - `query_file_jsonl_path`: path of JSON data including queries and positives where each line is a dict like this:```{"query": str, "pos": List[str]}```.
 
 The results should be similar to
-* **before finetune**
+* **Before Finetune**
 ```python
-{'MRR@1': 0.8, 'Hit@1': 0.8}
+{'MRR@1': 0.7385, 'Hit@1': 0.7336}
 ```
-* **after finetune**
+* **After Finetune**
 ```python
-{'MRR@1': 1.0, 'Hit@1': 1.0}
+{'MRR@1': 0.8297, 'Hit@1': 0.8275}
 ```
 ## 6. Verified Models
 |  Model Name   | Enable  |
