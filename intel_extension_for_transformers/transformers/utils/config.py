@@ -319,6 +319,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             json_file_path (`str` or `os.PathLike`):
                 Path to the JSON file in which this configuration instance's parameters will be saved.
         """
+        # set tokenizer to None due to it doesn't support write to json
+        self.tokenizer = None
         with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string(use_diff=use_diff))
 
