@@ -1,6 +1,6 @@
 # Assisted Generation
 
-Intel Extension for Transformers supports assisted generation (aka speculative decoding) using the HuggingFace API, to speedup inference by up to 3x.
+Intel Extension for Transformers supports assisted generation (aka speculative decoding) using the Hugging Face API, to speedup inference by up to 3x.
 
 Assisted generation uses an assistant model with the same tokenizer (ideally a much smaller model) to greedily generate a few candidate tokens. The main model then validates the candidate tokens in a single forward pass, which speeds up the decoding process.  Note that the speedup increases as the size of the main model increases.
 
