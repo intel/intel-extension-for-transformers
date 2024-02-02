@@ -12,18 +12,12 @@ Performance varies by use, configuration and other factors. For more complete in
 
 ## Run Performance Step by Step
 
-### Prepare Intel Extension for Transformers
+### Prepare environment
 
-Build from source
 
 ```shell
-git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph
-git submodule update --init --recursive
-mkdir build
-cd build
-cmake .. -G Ninja
-ninja
+pip install intel-extension-for-transformers==1.3.1
+pip install neural-speed==0.2
 ```
 
 ### FP32 Inference (Baseline)
@@ -31,62 +25,36 @@ ninja
 >**Note**: Please download the corresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command.
 
 
-#### 1. Convert Model
-
-Convert Hugginface model. 
-
-Please make sure you have downloaded the model into local path
-
-```shell
-cd intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph
+``` bash
+cd examples/huggingface/neural_speed
 pip install -r requirements.txt
-python scripts/convert.py local_model_path --outtype f32 --outfile model_f32.bin
-```
-
-#### 2. Inference
-
-Please replace `build/bin/run_<model_name>` with your model name, and fill in `-p <prompt>` with your prompt. We provide several [prompts](../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json) for different input length. For more details about parameters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.md#2-inference-llm)
-
-When running inference, we recommend using `numactl` to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting `cores-per-instance=48` (best performance from our practice). And you can try to find out the best settings on your server.
-
-```shell
-OMP_NUM_THREADS=48 numactl -m 0 -C 0-<cores-per-instance> ./build/bin/run_<model_name> -m model_f32.bin  -p <prompt> -n 32 -t 48
+numactl -m <node N> -C <cpu list> python run_inference_.py \
+    --model_path "Model-Path-fp32" \
+    --prompt "Once upon a time, there existed a little girl," \
+    --max_new_tokens 32 \
+    --not_quant
 ```
 
 ### INT4 Inference
 
->**Note**: Please download the corresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command. For converting models, please see above [Convert Model](#1-convert-model)
+>**Note**: Please download the corresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command.
 
-#### 1. Quantization
-
-Quantize the converted FP32 model with INT4 as weight datatype, INT8 as compute datatype and 128 as group size.
-
-Please select `group_size` between 32 or 128. For more details about parameters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.md#1-convert-and-quantize-llm)
-
-```shell
-./build/bin/quant_llama  --model_file model_f32.bin --out_file model_q4j128.bin --weight_dtype int4 --group_size 128 --compute_dtype int8 --nthread 24
+``` bash
+cd examples/huggingface/neural_speed
+pip install -r requirements.txt
+# int4 with group-size=32
+numactl -m <node N> -C <cpu list> python run_inference.py \
+    --model_path "Model-Path-int4" \
+    --prompt "Once upon a time, there existed a little girl," \
+    --max_new_tokens 32 \
+    --group_size 32
 ```
-
-#### 2. Inference
-
-Please replace `build/bin/run_<model_name>` with your model name, and fill in `-p <prompt>` with your prompt. We provide several [prompts](../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json) for different input length. For more details about parameters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.md#2-inference-llm)
-
-When running inference, we recommend using `numactl` to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting `cores-per-instance=48` (best performance from our practice). And you can try to find out the best settings on your server.
-
-```shell
-OMP_NUM_THREADS=48 numactl -m 0 -C 0-47 ./build/bin/run_<model_name> -m model_q4j128.bin  -p <prompt> -n 32 -t 48
-```
-
 
 ## Run Accuracy Step by Step
 
 ### Prepare Environment
 
 ```shell
-# Install Intel Extension for Transformers
-pip install intel-extension-for-transformers
-# Install requirements for running accuracy
-git clone https://github.com/intel/intel-extension-for-transformers.git
 cd examples/huggingface/pytorch/text-generation/quantization
 pip install -r requirements.txt
 ```
@@ -97,32 +65,26 @@ pip install -r requirements.txt
 > export LD_PRELOAD=<the path of libstdc++.so.6>:${LD_PRELOAD}
 > ```
 
+>**Note**: To running accuracy evaluation, python >=3.9, <= 3.11 is required due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation.
+
+
+
 ### FP32 Accuracy (Baseline)
 
-There are four tasks/datasets can be selected to run accuracy: "lambada_openai", "piqa", "helloswag" and "winogrande", and you can choose one or more to get the final results. Here we take [Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) as an example.
+There are four tasks/datasets can be selected to run accuracy: "lambada_openai", "piqa", "helloswag" and "winogrande", and you can choose one or more to get the final results. 
 
-```shell
-python run_generation.py \
-           --model meta-llama/Llama-2-7b-hf \
-           --accuracy \
-           --batch_size 56 \
-           --tasks "lambada_openai", "piqa", "hellaswag", "winogrande"
+```bash
+python run_accuracy.py \
+    --model_name "Model-Path-fp32" \
+    --tasks "lambada_openai" \
+    --model_format "torch"
 ```
 
 ### INT4 Accuracy
 
-Quantize the model with INT4 as weight datatype and group size is 128. 
-
-Please select `woq_group_size` between 32 or 128, and set `woq_weight_dtype` to `int4_clip`
-
-```shell
-python run_generation.py \
-           --model meta-llama/Llama-2-7b-hf \
-           --output_dir  saved_results \
-           --woq \
-           --woq_weight_dtype int4_clip \
-           --woq_group_size 128 \
-           --accuracy \
-           --batch_size 56 \
-           --tasks "lambada_openai", "piqa", "hellaswag", "winogrande"
+```bash
+# int4 with group-size=32
+python run_accuracy.py \
+    --model_name ./Llama2 \
+    --tasks "lambada_openai"
 ```
