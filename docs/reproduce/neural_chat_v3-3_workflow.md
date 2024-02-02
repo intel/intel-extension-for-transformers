@@ -5,7 +5,7 @@ This is a step-by-step tutorial to obtain the extreme inference speed and accura
 
 # Prerequisite​
 
-We recommend install [Neural Speed](https://github.com/intel/neural-speed.git) from source code to fully leverage the latest features.
+We recommend install [Neural Speed](https://github.com/intel/neural-speed.git) from source code to fully leverage the latest features. [How-to-install-neural-speed](https://github.com/intel/neural-speed?tab=readme-ov-file#build-python-package-recommended-way)
 
 > Note: To build neural-speed from source code, GCC higher than 10 is required. If you can't upgrade system GCC, here is a solution using conda install.
 > ```bash
@@ -15,13 +15,9 @@ We recommend install [Neural Speed](https://github.com/intel/neural-speed.git) f
 
 
 ```bash
-# build neural-speed from source code
-git clone https://github.com/intel/neural-speed.git
-cd neural-speed
-pip install -r requirements.txt
-python setup.py install
-# come back to current working directory
-cd ..
+# install neural-speed
+pip install neural-speed-xxx.whl
+# install intel-extension-for-transformers
 pip install intel-extension-for-transformers==1.3.1
 ```
 
@@ -40,7 +36,7 @@ pip install -r requirements.txt
 bash run_autoround.sh
 ```
 
-After running the example scripts, the quantized Neural-Chat-V3-3-int4 model will be saved in current working directory with name `neural-chat-v3-3-int4`.
+After running the example scripts, the quantized neural-chat-v3-3-autoround-int4 model will be saved in current working directory with name `neural-chat-v3-3-autoround-int4`.
 
 
 ## 2. Inference
@@ -52,11 +48,10 @@ For LLM inference using [Neural Speed](https://github.com/intel/neural-speed.git
 cd examples/huggingface/neural_speed
 pip install -r requirements.txt
 numactl -m <node N> -C <cpu list> python run_inference.py \
-    --model_path "neural-chat-v3-3-int4" \
+    --model_path "neural-chat-v3-3-autoround-int4" \
     --prompt "Once upon a time, there existed a little girl," \
     --max_new_tokens 32 \
-    --group_size 128 \
-    --use_gptq
+    --use_autoround
 ```
 
 >**Note**: If `ImportError: /lib64/libstdc++.so.6: version ``GLIBCXX_3.4.29`` not found` error raised when import intel-extension-for-pytorch, it is due to the high gcc library request, there is the solution to find the correct version.
@@ -75,7 +70,8 @@ To running accuracy evaluation, python >=3.9, < 3.11 is required due to [text ev
 
 ```bash
 # still working in examples/huggingface/neural_speed directory
-python run_autoround_example.py \
-    --model_name "neural-chat-v3-3-int4" \
-    --tasks "lambada_openai"
+python run_accuracy.py \
+    --model_name "neural-chat-v3-3-autoround-int4" \
+    --tasks "lambada_openai" \
+    --use_autoround
 ```
