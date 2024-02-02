@@ -40,7 +40,6 @@ class qbits_acquire_type(Enum):
 def qbits_woq_linear_ref_impl(activation, packw,  bias, compute_type, weight_type, scale_type):
     assert (activation.is_contiguous())
     assert (packw.is_contiguous())
-    assert (bias.is_contiguous())
     activation = activation.to(torch.float32)
     n = torch.ops.bestlaop.acquire_woq_packw_info(
         packw, qbits_acquire_type.N.value)[0].item()
@@ -56,6 +55,7 @@ def qbits_woq_linear_ref_impl(activation, packw,  bias, compute_type, weight_typ
         activation = torch.index_select(activation, 1, g_idx)
     out = torch.matmul(activation, revert_wei)
     if bias is not None:
+        assert (bias.is_contiguous())
         assert (bias.dtype == torch.float32)
         out += bias
     return out
@@ -102,7 +102,7 @@ class MatMulKBit(torch.autograd.Function):
 
         # 2. Matmul
         # output = torch.nn.functional.linear(A, B_dequant, bias)
-        qbits_debug_flag = os.getenvb('QBITS_DEBUG', 'NULL')
+        qbits_debug_flag = os.getenv('QBITS_DEBUG', 'NULL')
         if qbits_debug_flag == 'NULL':
             torch.ops.bestlaop.woq_linear(
                 A,
@@ -194,7 +194,7 @@ def matmul_kbit(
             A, B, out, bias, compute_dtype, weight_dtype, scale_dtype
         )
     else:
-        qbits_debug_flag = os.getenvb('QBITS_DEBUG', 'NULL')
+        qbits_debug_flag = os.getenv('QBITS_DEBUG', 'NULL')
         if qbits_debug_flag == 'NULL':
             torch.ops.bestlaop.woq_linear(
                 A,

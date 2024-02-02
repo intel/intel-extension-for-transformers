@@ -30,9 +30,9 @@ std::string get_dtype_str(BTLA_DTYPE dtype) {
     case BTLA_DTYPE::F4_NF4:
       return "nf4";
     case BTLA_DTYPE::F4_E2M1:
-      return "f4_e2m1";
+      return "fp4_e2m1";
     case BTLA_DTYPE::F4_BNB:
-      return "f4_e2m1_bnb";
+      return "fp4_e2m1_bnb";
     case BTLA_DTYPE::S8:
       return "int8";
     case BTLA_DTYPE::F8_E5M2:
@@ -91,10 +91,10 @@ torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T) {
       output = torch::empty(tensor_size, torch::kInt32);
       memcpy(output.data_ptr(), packw_ptr->ShfIndice(), tensor_size * sizeof(int));
     } break;
-    case WEI_TYPE: {
-    }
+    case WEI_TYPE:
     case SCALE_TYPE: {
-      auto ascii_vec = get_ascii_vec(get_dtype_str(packw_ptr->mDType));
+      BTLA_DTYPE acquire_dt = ACQ_T == WEI_TYPE ? packw_ptr->mDType : packw_ptr->SDtype();
+      auto ascii_vec = get_ascii_vec(get_dtype_str(acquire_dt));
       output = torch::empty(ascii_vec.size(), torch::kInt32);
       memcpy(output.data_ptr(), ascii_vec.data(), ascii_vec.size() * sizeof(int));
     } break;
