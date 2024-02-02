@@ -1,12 +1,18 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
+aiosqlite
 cchardet
+cchardet
+einops
 einops
 evaluate
 fastapi==0.103.2
+fastapi-users[sqlalchemy,oauth]
 fschat==0.2.32
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 intel_extension_for_pytorch==2.1.0
 neural-compressor
+neural-compressor
+neural_speed
 neural_speed
 numpy==1.23.5
 optimum
@@ -14,6 +20,8 @@ optimum-intel
 peft==0.6.2
 pydantic==1.10.13
 python-dotenv
+python-dotenv
+python-multipart
 python-multipart
 rouge_score
 shortuuid

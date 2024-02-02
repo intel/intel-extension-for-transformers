@@ -84,10 +84,15 @@ function main() {
     apt-get install -y libgl1-mesa-glx
     apt-get install -y libgl1-mesa-dev
     apt-get install libsm6 libxext6 -y
+    apt-get install libldap2-dev -y
+    apt-get install libsasl2-dev -y
     wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     python -m pip install --upgrade --force-reinstall torch==2.1.0
     pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6
+    export PIP_INDEX_URL=https://ubit-artifactory-or.intel.com/artifactory/api/pypi/iotg-rbhe-pypi-or-local/simple
+    export PIP_EXTRA_INDEX_URL=https://pypi.org/simple
+    pip install LDAPclient
     cd ${WORKING_DIR} || exit 1
     echo "test on ${test_name}"
     if [[ $test_name == "PR-test" ]]; then

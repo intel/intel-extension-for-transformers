@@ -21,14 +21,15 @@ import sys
 import os
 import time
 from typing import List
-
+import asyncio
 
 import uvicorn
 import yaml
 import logging
 from yacs.config import CfgNode
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi import APIRouter
+from fastapi_users import exceptions
 from starlette.middleware.cors import CORSMiddleware
 from .base_executor import BaseCommandExecutor
 from .server_commands import cli_server_register
@@ -38,7 +39,10 @@ from ..config import PipelineConfig, LoadingModelConfig
 from ..chatbot import build_chatbot
 from ..plugins import plugins
 from transformers import BitsAndBytesConfig
-
+from .user.users import auth_backend, current_active_user, fastapi_users, UserManager, get_user_manager
+from .schemas.user import UserCreate, UserRead, UserUpdate
+from .database.user_db import User, create_db_and_tables
+from .user.users import SECRET, google_oauth_client, github_oauth_client, facebook_oauth_client, microsoft_oauth_client
 
 __all__ = ['NeuralChatServerExecutor']
 
@@ -54,7 +58,11 @@ app.add_middleware(
 
 api_router = APIRouter()
 
-
+@app.on_event("startup")
+async def startup_event():
+    # user database init
+    logging.info("Starting init user database...")
+    await create_db_and_tables()
 
 
 def get_config(config_file: str):
@@ -70,6 +78,55 @@ def get_config(config_file: str):
         config = CfgNode(yaml.safe_load(f))
 
     return config
+
+def setup_authentication_router():
+    app.include_router(
+        fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
+    )
+    app.include_router(
+        fastapi_users.get_register_router(UserRead, UserCreate),
+        prefix="/auth",
+        tags=["auth"],
+    )
+    app.include_router(
+        fastapi_users.get_reset_password_router(),
+        prefix="/auth",
+        tags=["auth"],
+    )
+    app.include_router(
+        fastapi_users.get_verify_router(UserRead),
+        prefix="/auth",
+        tags=["auth"],
+    )
+    app.include_router(
+        fastapi_users.get_users_router(UserRead, UserUpdate),
+        prefix="/users",
+        tags=["users"],
+    )
+
+    app.include_router(
+        fastapi_users.get_oauth_router(google_oauth_client, auth_backend, SECRET),
+        prefix="/auth/google",
+        tags=["auth"],
+    )
+
+    app.include_router(
+        fastapi_users.get_oauth_router(github_oauth_client, auth_backend, SECRET),
+        prefix="/auth/github",
+        tags=["auth"],
+    )
+
+    app.include_router(
+        fastapi_users.get_oauth_router(facebook_oauth_client, auth_backend, SECRET),
+        prefix="/auth/facebook",
+        tags=["auth"],
+    )
+
+    app.include_router(
+        fastapi_users.get_oauth_router(microsoft_oauth_client, auth_backend, SECRET),
+        prefix="/auth/microsoft",
+        tags=["auth"],
+    )
 
 @cli_server_register(name='neuralchat_server.start', description='Start the service')
 class NeuralChatServerExecutor(BaseCommandExecutor):
@@ -89,6 +146,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             action="store",
             help="log file",
             default="./log/neuralchat.log")
+        asyncio.run(create_db_and_tables())
 
     def init(self, config):
         """System initialization.
@@ -211,6 +269,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             from .restful.api import setup_router
             api_router = setup_router(api_list, enable_llm=False)
             app.include_router(api_router)
+            # include authentication router
+            setup_authentication_router()
             return True
         # chatbot as service
         else:
@@ -318,6 +378,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             from .restful.api import setup_router
             api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port)
             app.include_router(api_router)
+            # include authentication router
+            setup_authentication_router()
             return True
 
 
@@ -343,3 +405,72 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 uvicorn.run(app, host=config.host, port=config.port)
             except Exception as e:
                 print(f"Error starting uvicorn: {str(e)}")
+
+@app.get("/authenticated-route")
+async def authenticated_route(user: User = Depends(current_active_user)):
+    return {"message": f"Hello {user.email}!"}
+
+
+@app.post("/intel/login")
+async def login(
+    credentials: dict,
+    user_manager: UserManager = Depends(get_user_manager)
+):
+    try:
+        username = credentials.get("account")
+        password = credentials.get("password")
+
+        from LDAPclient import IntelLDAP # pylint: disable=E0611, E0401
+        ldap_client = IntelLDAP(user=username, password=password)
+        user = None
+        idsid = username[len("CCR\\"):]
+        user = ldap_client.get_user(idsid)
+
+        if user is None:
+            raise HTTPException(status_code=401, detail="LDAP authentication failed")
+
+        # Authenticate the user with the UserManager
+        try:
+            # Authenticate the user with the UserManager
+            user = await user_manager.get_by_email(user["email_address"])
+        except exceptions.UserNotExists:
+            user_create = UserCreate(account=username,
+                                     password=password,
+                                     wwid=user["wwid"],
+                                     email=user["email_address"],
+                                     idsid=user["idsid"],
+                                     name=user["name"],
+                                     given_name=user["given_name"],
+                                     distinguished_name=user["distinguished_name"],
+                                     generic=user["generic"],
+                                     SuperGroup=user["SuperGroup"],
+                                     Group=user["Group"],
+                                     Division=user["Division"],
+                                     DivisionLong=user["DivisionLong"],
+                                     CostCenterLong=user["CostCenterLong"],
+                                     mgrWWID=user["mgrWWID"],
+                                     )
+            user = await user_manager.create(user_create)
+
+        user_dict = {
+            "id": str(user.id),
+            "role": user.role,
+            "is_vipuser": user.is_vipuser,
+            "wwid": user.wwid,
+            "email_address": user.email,
+            "account": user.account,
+            "name": user.name,
+            "given_name": user.given_name,
+            "distinguished_name": user.distinguished_name,
+            "idsid": user.idsid,
+            "generic": user.generic,
+            "SuperGroup": user.SuperGroup,
+            "Group": user.Group,
+            "Division": user.Division,
+            "DivisionLong": user.DivisionLong,
+            "CostCenterLong": user.CostCenterLong,
+            "mgrWWID": user.mgrWWID,
+        }
+        return {"msg": "Login successful", "user_info": user_dict}
+    except HTTPException as e:
+        return {"msg": "Login failed", "error_detail": e.detail}
