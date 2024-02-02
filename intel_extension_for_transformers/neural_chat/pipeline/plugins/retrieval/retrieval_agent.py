@@ -70,7 +70,7 @@ class Agent_QA():
                  mode = "accuracy",
                  process=True,
                  append=True,
-                 polish=False
+                 polish=False,
                  **kwargs):
 
         self.intent_detector = IntentDetector()
