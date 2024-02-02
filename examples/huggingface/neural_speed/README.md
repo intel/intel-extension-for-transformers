@@ -36,7 +36,7 @@ pip install -r requirements.txt
 # Run
 
 
-> Note: Please prepare LLMs and save locally before running inference. Here are the models that are currently supported[Support models]{https://github.com/intel/neural-speed/blob/main/docs/supported_models.md}, you can replace Llama2 in the example with the model in the link.
+> Note: Please prepare LLMs and save locally before running inference. Here are the models that are currently supported [Support models]{https://github.com/intel/neural-speed/blob/main/docs/supported_models.md}, you can replace Llama2 in the example with the model in the link.
 
 
 ## 1. Performance
