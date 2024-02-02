@@ -1,35 +1,39 @@
-# Finetune
-In this example, we show how to finetune the embedding model with your data.
+# Finetune Embedding Model on Task-Specific Datasets
 
-## 1. Installation
-* **on cpu**
+## 1. Introduction
+QA dialogue is currently a major application scenario for large language models. In QA dialogue, due to the lagging nature of large language model information and the fact that it does not contain business knowledge, we often need external knowledge bases to assist large models in solving some problems. In the process of plugging into the knowledge base, the recall effect of the embedding model directly affects the answer effect of the large model. However,  the high-ranked embedding models on the METB leaderboard sometimes fail to achieve a good performance on the user-uploaded datasets. Finetuning embedding models (e.g., BGE embedding model) on the task-specific dataset can achieve performance gain.
+
+In this example, we show how to construct the dataset for finetuning the embedding model and finetuning the specific embedding model.
+
+## 2. Requirements
+* **on CPU**
 ```
 pip install -r requirements_cpu.txt
 ```
 
-* **on gpu**
+* **on GPU**
 ```
 pip install -r requirements_gpu.txt
 ```
  
 
-## 2. Data format
-Train data should be a json file, where each line is a dict like this:
+## 3. Training Data Construction
+Train data should be a JSON file, where each line is a dict like this:
 
 ```
 {"query": str, "pos": List[str], "neg":List[str]}
 ```
 
-`query` is the query, and `pos` is a list of positive texts, `neg` is a list of negative texts.
-If you have no negative texts for a query, you can random sample some from the entire corpus as the negatives.
-
+`query` is the query, and `pos` is a positive text, `neg` is a list of negative texts.
 See [augmented_example.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/augmented_example.jsonl) for a data file.
 
-## 3. Hard Negatives 
+If you have no negative texts for a query, You can use [this script](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/mine_hard_neg.py) to randomly sample a given number of hard negatives.
 
-Hard negatives is a widely used method to improve the quality of sentence embedding. 
+### Sample hard negatives
+
+Hard Negatives Mining is a widely used method to improve the quality of sentence embedding. 
 You can mine hard negatives following this command:
-* **on cpu**
+* **on CPU**
 ```bash
 python mine_hard_neg.py \
 --model_name_or_path BAAI/bge-base-en-v1.5 \
@@ -38,7 +42,7 @@ python mine_hard_neg.py \
 --range_for_sampling 2-10 \
 --negative_number 5
 ```
-* **on gpu**
+* **on GPU**
 ```bash
 python mine_hard_neg.py \
 --model_name_or_path BAAI/bge-base-en-v1.5 \
@@ -50,15 +54,15 @@ python mine_hard_neg.py \
 ```
 
 **some important arguments**:
-- `input_file`: json data for finetuning. This script will retrieve top-k documents for each query, 
+- `input_file`: JSON data for finetuning. This script will retrieve top-k documents for each query, 
 and random sample negatives from the top-k documents (not including the positive documents).
 - `output_file`: path to save JSON data with mined hard negatives for finetuning
 - `negative_number`: the number of sampled negatives 
-- `range_for_sampling`: where to sample negative. For example, `2-100` means sampling `negative_number` negatives from top2-top200 documents. You can set larger value to reduce the difficulty of negatives (e.g., set it `60-300` to sample negatives from top60-300 passages)
+- `range_for_sampling`: where to sample negative. For example, `2-100` means sampling `negative_number` negatives from top2-top200 documents. You can set a larger value to reduce the difficulty of negatives (e.g., set it `60-300` to sample negatives from top60-300 passages)
 - `use_gpu_for_searching`: whether to use faiss-gpu to retrieve negatives.
 
 
-## 4. Train
+## 4. Training Example
 ```
 python finetune.py \
 --output_dir BAAI/bge-base-en-v1.5_finetuned \
@@ -79,24 +83,24 @@ python finetune.py \
 ```
 
 **some important arguments**:
-- `per_device_train_batch_size`: batch size in training. In most of cases, larger batch size will bring stronger performance. 
-- `train_group_size`: the number of positive and negatives for a query in training.
-There are always one positive, so this argument will control the number of negatives (#negatives=train_group_size-1).
-Noted that the number of negatives should not be larger than the numbers of negatives in data `"neg":List[str]`.
+- `per_device_train_batch_size`: batch size in training. In most cases, a larger batch size will bring stronger performance. 
+- `train_group_size`: the number of positives and negatives for a query in training.
+There is always one positive, so this argument will control the number of negatives (#negatives=train_group_size-1).
+Noted that the number of negatives should not be larger than the number of negatives in data `"neg":List[str]`.
 Besides the negatives in this group, the in-batch negatives also will be used in fine-tuning.
 - `negatives_cross_device`: share the negatives across all GPUs. This argument will extend the number of negatives.
-- `learning_rate`: select a appropriate for your model. Recommend 1e-5/2e-5/3e-5 for large/base/small-scale. 
+- `learning_rate`: select an appropriate for your model. Recommend 1e-5/2e-5/3e-5 for large/base/small-scale. 
 - `temperature`: It will influence the distribution of similarity scores.
-- `query_max_len`: max length for query. Please set it according the average length of queries in your data.
-- `passage_max_len`: max length for passage. Please set it according the average length of passages in your data.
-- `query_instruction_for_retrieval`: instruction for query, which will be added to each query. You also can set it `""` to add nothing to query.
-- `use_inbatch_neg`: use passages in the same batch as negatives. Default value is True. 
+- `query_max_len`: max length for query. Please set it according to the average length of queries in your data.
+- `passage_max_len`: max length for passage. Please set it according to the average length of passages in your data.
+- `query_instruction_for_retrieval`: instruction for query, which will be added to each query. You also can set it `""` to add nothing to the query.
+- `use_inbatch_neg`: use passages in the same batch as negatives. The default value is True. 
 
 For more training arguments please refer to [transformers.TrainingArguments](https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments)
 
 
-## 5. Evaluate model
-We provide [a simple script](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/evaluate.py) to evaluate the model's performance. 
+## 5. Evaluation
+We provide [a simple script](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/evaluate.py) to evaluate the model's performance. We use two metrics: MRR (Mean reciprocal rank) and Hit (Hit Ratio). MRR is an internationally accepted mechanism for evaluating search algorithms. MRR emphasizes the position of ground truth in the retrieval list, the higher it is, the better. Hit emphasizes the accuracy of retrieval, that is, whether the ground truth is included in the retrieval items.
 
 * **before finetune**
 ```bash
@@ -116,11 +120,22 @@ python evaluate.py \
 - `index_file_jsonl_path`: path of JSON data including candidate context where each line is a dict like this:```{"context": List[str]}```.
 - `query_file_jsonl_path`: path of JSON data including queries and positives where each line is a dict like this:```{"query": str, "pos": List[str]}```.
 
-## 6. Some supported models
-[bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), 
-[bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5), 
-[gte-large](https://huggingface.co/thenlper/gte-large), 
-[gte-base](https://huggingface.co/thenlper/gte-base), 
-[stella-base-en-v2](https://huggingface.co/infgrad/stella-base-en-v2), 
-[e5-large-v2](https://huggingface.co/intfloat/e5-large-v2), 
-[all-mpnet-base-v2](https://huggingface.co/sentence-transformers/all-mpnet-base-v2)
+The results should be similar to
+* **before finetune**
+```python
+{'MRR@1': 0.8, 'Hit@1': 0.8}
+```
+* **after finetune**
+```python
+{'MRR@1': 1.0, 'Hit@1': 1.0}
+```
+## 6. Verified Models
+|  Model Name   | Enable  |
+|  :----:  | :----:  |
+| [bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5)  | ✔ |
+| [bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5)  | ✔ |
+| [gte-large](https://huggingface.co/thenlper/gte-large)  | ✔ |
+| [gte-base](https://huggingface.co/thenlper/gte-base)  | ✔ |
+| [stella-base-en-v2](https://huggingface.co/infgrad/stella-base-en-v2)  | ✔ |
+| [e5-large-v2](https://huggingface.co/intfloat/e5-large-v2)  | ✔ |
+| [all-mpnet-base-v2](https://huggingface.co/sentence-transformers/all-mpnet-base-v2)  | ✔ |
