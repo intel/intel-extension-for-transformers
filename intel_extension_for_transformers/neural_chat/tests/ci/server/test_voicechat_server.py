@@ -108,5 +108,40 @@ class UnitTest(unittest.TestCase):
         assert response.status_code == 200
         assert "spk_id" in response.json()
 
+    def test_create_speech(self):
+        tts_data = {
+            "model": "speecht5",
+            "input": "Hello, this is a test.",
+            "voice": "default",
+            "speed": 1.5
+        }
+        response = client.post("/v1/audio/speech", json=tts_data)
+        assert response.status_code == 200
+
+    def test_create_transcription(self):
+        # Create a test audio file for ASR
+        with open("./sample_audio.wav", "rb") as audio_file:
+            files = {
+                "file": ("test_audio.wav", audio_file, "audio/wav"),
+                "model": "whisper",
+                "language": "auto"
+            }
+            response = client.post("/v1/audio/transcriptions", files=files)
+
+        assert response.status_code == 200
+        assert "asr_result" in response.json()
+
+    def test_create_translations(self):
+        # Create a test audio file for ASR
+        with open("./sample_audio.wav", "rb") as audio_file:
+            files = {
+                "file": ("test_audio.wav", audio_file, "audio/wav"),
+                "model": "whisper",
+            }
+            response = client.post("/v1/audio/translations", files=files)
+
+        assert response.status_code == 200
+        assert "asr_result" in response.json()
+
 if __name__ == "__main__":
     unittest.main()

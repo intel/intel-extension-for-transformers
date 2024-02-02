@@ -115,6 +115,13 @@ class ChatCompletionResponse(BaseModel):
     usage: UsageInfo
 
 
+class CreateSpeechRequest(BaseModel):
+    model: str = "speecht5",
+    input: str = "hello.",
+    voice: str = "default",
+    response_format: Optional[str] = None,
+    speed: Optional[Union[float, int]] = 1.0
+
 class DeltaMessage(BaseModel):
     role: Optional[str] = None
     content: Optional[str] = None
