@@ -14,10 +14,24 @@ Performance varies by use, configuration and other factors. For more complete in
 
 ### Prepare environment
 
+We recommend install [Neural Speed](https://github.com/intel/neural-speed.git) from source code to fully leverage the latest features. [How-to-install-neural-speed](https://github.com/intel/neural-speed?tab=readme-ov-file#build-python-package-recommended-way)
+
+> Note: To build neural-speed from source code, GCC higher than 10 is required. If you can't upgrade system GCC, here is a solution using conda install.
+> ```bash
+> compiler_version==13.1
+> conda install --update-deps -c conda-forge gxx==${compiler_version} gcc==${compiler_version} gxx_linux-64==${compiler_version} libstdcxx-ng sysroot_linux-64 -y
+> ```
+
 
 ```shell
+# build neural-speed from source code
+git clone https://github.com/intel/neural-speed.git
+cd neural-speed
+pip install -r requirements.txt
+python setup.py install
+# come back to current working directory
+cd ..
 pip install intel-extension-for-transformers==1.3.1
-pip install neural-speed==0.2
 ```
 
 ### FP32 Inference (Baseline)
