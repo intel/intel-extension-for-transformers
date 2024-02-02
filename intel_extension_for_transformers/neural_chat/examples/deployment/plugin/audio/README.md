@@ -61,6 +61,7 @@ You can customize the configuration file 'audio_service.yaml' to match your envi
 | tts.args.voice                    | "default"                              |
 | tts.args.stream_mode              | false                                  |
 | tts.args.output_audio_path        | "./output_audio.wav"                   |
+| tts.args.speedup                  | 1.0                                    |
 | tasks_list                        | ['plugin_audio']              |
 
 
