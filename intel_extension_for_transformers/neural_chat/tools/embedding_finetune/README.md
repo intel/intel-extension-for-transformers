@@ -4,12 +4,12 @@
 In this example, we show how to construct the dataset for finetuning the embedding model and finetuning the specific embedding model.
 
 ## 2. Requirements
-* **on CPU**
+* **On CPU**
 ```
 pip install -r requirements_cpu.txt
 ```
 
-* **on GPU**
+* **On GPU**
 ```
 pip install -r requirements_gpu.txt
 ```
@@ -31,7 +31,7 @@ If you have no negative texts for a query, You can use [this script](https://git
 
 Hard negatives mining is a widely used method to improve the quality of sentence embedding. 
 You can mine hard negatives following this command:
-* **on CPU**
+* **On CPU**
 ```bash
 python mine_hard_neg.py \
 --model_name_or_path BAAI/bge-base-en-v1.5 \
@@ -40,7 +40,7 @@ python mine_hard_neg.py \
 --range_for_sampling 2-10 \
 --negative_number 5
 ```
-* **on GPU**
+* **On GPU**
 ```bash
 python mine_hard_neg.py \
 --model_name_or_path BAAI/bge-base-en-v1.5 \
