@@ -37,7 +37,7 @@ class qbits_acquire_type(Enum):
     SCALE_TYPE = 8
 
 
-def qbits_linear_ref_impl(activation, packw,  bias):
+def qbits_woq_linear_ref_impl(activation, packw,  bias, compute_type, weight_type, scale_type):
     assert (activation.is_contiguous())
     assert (packw.is_contiguous())
     assert (bias.is_contiguous())
@@ -46,6 +46,8 @@ def qbits_linear_ref_impl(activation, packw,  bias):
         packw, qbits_acquire_type.N.value)[0].item()
     k = activation.shape[1]
     revert_wei = torch.empty(k, n, dtype=torch.float)
+    torch.ops.bestlaop.woq_dequantize(
+        packw, revert_wei, False, compute_type, weight_type, scale_type)
     enable_act_shuffle = torch.ops.bestlaop.acquire_woq_packw_info(
         packw, qbits_acquire_type.ACT_SHUFFLE.value)[0] != 0
     if enable_act_shuffle:
@@ -115,7 +117,8 @@ class MatMulKBit(torch.autograd.Function):
                 False,
             )
         else:
-            out = qbits_linear_ref_impl(A, B.data, bias)
+            out = qbits_woq_linear_ref_impl(
+                A, B.data, bias, compute_dtype, weight_dtype, scale_dtype)
         output = out
 
         # 3. Save state
@@ -206,6 +209,7 @@ def matmul_kbit(
                 False,
             )
         else:
-            out = qbits_linear_ref_impl(A, B.data, bias)
+            out = qbits_woq_linear_ref_impl(
+                A, B.data, bias, compute_dtype, weight_dtype, scale_dtype)
 
         return out
