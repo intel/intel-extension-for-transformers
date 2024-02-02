@@ -21,7 +21,7 @@ docker build . -f Dockerfile -t neuralchat_codegen:latest --build-arg https_prox
 Before starting NeuralChat services, you need to configure `codegen.yaml` according to you read environment.
 
 
-Specify your avaliable host ip and port, and a code-generation model (`ise-uiuc/Magicoder-S-DS-6.7B` is recommanded for its accuracy). Remember to set `device` to `cpu`/`hpu`/`xpu` according to your framework.
+Specify your available host ip and port, and a code-generation model (`ise-uiuc/Magicoder-S-DS-6.7B` is recommended for its accuracy). Remember to set `device` to `cpu`/`hpu`/`xpu` according to your framework.
 
 
 ### Start NeuralChat Service

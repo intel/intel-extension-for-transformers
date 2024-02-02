@@ -6,6 +6,7 @@ fschat==0.2.32
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 intel_extension_for_pytorch
 neural-compressor
+neural_speed
 numpy==1.23.5
 optimum
 peft
@@ -18,4 +19,3 @@ starlette
 transformers>=4.35.2
 uvicorn
 yacs
-neural_speed
