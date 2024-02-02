@@ -1,7 +1,7 @@
 # Finetune Embedding Model on Task-Specific Datasets
 
 ## 1. Introduction
-In this example, we show how to construct the dataset for finetuning the embedding model and finetuning the specific embedding model.
+In this example, we show how to construct the training data for finetuning the embedding model and finetuning the specific embedding model.
 
 ## 2. Requirements
 * **On CPU**
