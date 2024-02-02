@@ -24,7 +24,7 @@ class TestMemory(unittest.TestCase):
 
     def tearDown(self) -> None:
         return super().tearDown()
-    
+
     def test_memory(self):
         query ='hello'
         answer = "Hello! It's nice to meet you. Is there something I can help you with or would you like to chat?"

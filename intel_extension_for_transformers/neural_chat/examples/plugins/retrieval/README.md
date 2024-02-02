@@ -37,5 +37,3 @@ You can utilize the following script to execute the code on Intel® Xeon SPR pro
 conda install jemalloc gperftools -c conda-forge -y
 bash run_retrieval_on_cpu.sh
 ```
-
-

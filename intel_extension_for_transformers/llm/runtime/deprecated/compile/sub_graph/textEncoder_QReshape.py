@@ -104,7 +104,7 @@ class TextEncoder_QReshape(Pattern):
 
                     attr['dst_shape'] = ','.join(attr['dst_shape'])
                     attr['dims'] = '0,1'
-                    
+
                     reshape_node_idx = model.get_node_id(new_node_names[j][0])
                     model.nodes[reshape_node_idx].attr = attr
 

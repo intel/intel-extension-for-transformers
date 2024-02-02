@@ -14,7 +14,7 @@ class InsertCode():
         self.file_path = file_name
         self.code_content = code_content
         self.pattern = pattern
-        
+
 
     def insert(self) -> None:
         original_code = self.get_source_code(self.file_path)
@@ -70,4 +70,3 @@ if __name__ == "__main__":
         code_inserter.insert()
     else:
         raise ValueError(f"invalid task: {args.task}")
-

@@ -36,7 +36,7 @@ class PositionEmbeddingsV1(Pattern):
                 # roberta_base
                 {
                     'patterns': {
-                        'in': [[(0, 'Equal'), (1, 'Not'), (2, 'Cast'), (3, 'CumSum'), 
+                        'in': [[(0, 'Equal'), (1, 'Not'), (2, 'Cast'), (3, 'CumSum'),
                                 (4, 'Add'), (5, 'Mul'), (6, 'Cast'), (7, 'Add'), (8, 'Gather')]],
                         'out': [[(0, 'PositionIds'), (1, 'Reshape'),
                                  (2, 'Gather'), (3, 'Reshape'), (4, 'Reshape')]]
@@ -78,7 +78,7 @@ class PositionEmbeddingsV1(Pattern):
                 # roberta_base int8
                 {
                     'patterns': {
-                        'in': [[(0, 'Equal'), (1, 'Not'), (2, 'Cast'), (3, 'CumSum'), 
+                        'in': [[(0, 'Equal'), (1, 'Not'), (2, 'Cast'), (3, 'CumSum'),
                                  (4, 'Mul'), (5, 'Cast'), (6, 'Add'), (7, 'Gather')]],
                         'out': [[(0, 'PositionIds'), (1, 'Reshape'),
                                  (2, 'Gather'), (3, 'Reshape'), (4, 'Reshape')]]
@@ -135,7 +135,7 @@ class PositionEmbeddingsV1(Pattern):
                 attr4['dst_shape'] = '-1,-1,' + str(hidden_size)
                 attr4['dims'] = '0,1'
                 attr4['mul'] = '1,2'
-                
+
                 position_node_idx = model.get_node_id(node_names[0])
                 model.nodes[position_node_idx].attr = attr0
 

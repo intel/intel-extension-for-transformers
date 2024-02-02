@@ -198,6 +198,11 @@ def _replace_linear(
                                 module.weight.data,
                                 None if module.bias is None else module.bias.data,
                             )
+                    else:
+                        model._modules[name].set_weights_bias(
+                            module.weight.data,
+                            None if module.bias is None else module.bias.data,
+                        )
                 else:
                     if not hasattr(module, "qweight"):
                         n_pack = 8 // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]

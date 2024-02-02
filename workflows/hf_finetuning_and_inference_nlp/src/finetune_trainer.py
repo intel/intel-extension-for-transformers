@@ -59,5 +59,5 @@ class FinetuneTrainer(DlsaFinetune):
                             f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
                         )
                 else:
-                    save_performance_metrics(self.trainer, self.train_data, 
+                    save_performance_metrics(self.trainer, self.train_data,
                                 path.join(self.training_args.output_dir, self.args.finetune_output) )

@@ -35,11 +35,11 @@ class TestOnnxUtils(unittest.TestCase):
     def test_change_num_name(self):
         out = compile.onnx_utils.change_num_name(1)
         self.assertEqual(1, out)
-        
+
     def test_change_num_namei_same(self):
         out = compile.onnx_utils.change_num_name('1')
         self.assertEqual('1_tensor', out)
-    
+
     def test_bias_to_int32_if1(self):
         fake_input_tensors = [
           Tensor(data=np.array([[1,2],[3,4]], dtype=np.int8)),
@@ -50,12 +50,12 @@ class TestOnnxUtils(unittest.TestCase):
           Tensor(data=None),
         ]
         fake_bias_node = OPERATORS['Add']()
-        fake_bias_node.construct('bias_add', 'Add', 
+        fake_bias_node.construct('bias_add', 'Add',
                                     input_tensors=fake_input_tensors)
         out = compile.onnx_utils.bias_to_int32(fake_bias_node, 0.3, 0.4)
         golden_out = np.array([[1,2],[2,3]])
         self.assertSequenceEqual(golden_out.tolist(), out.tolist())
-    
+
     def test_bias_to_int32_else(self):
         fake_input_tensors = [
           Tensor(data=None, source_op=[None]),
@@ -66,12 +66,12 @@ class TestOnnxUtils(unittest.TestCase):
           Tensor(data=np.array(0.2, dtype=np.float32)),
         ]
         fake_bias_node = OPERATORS['Add']()
-        fake_bias_node.construct('bias_add', 'Add', 
+        fake_bias_node.construct('bias_add', 'Add',
                                     input_tensors=fake_input_tensors)
         out = compile.onnx_utils.bias_to_int32(fake_bias_node, 0.3, 0.4)
         golden_out = np.array([[1,2],[2,3]])
         self.assertSequenceEqual(golden_out.tolist(), out.tolist())
-    
+
     def test_bias_to_int32_if2(self):
         fake_input_tensors = [
           Tensor(data=np.array([[1,2],[3,4]], dtype=np.int64)),
@@ -82,7 +82,7 @@ class TestOnnxUtils(unittest.TestCase):
           Tensor(data=None),
         ]
         fake_bias_node = OPERATORS['Add']()
-        fake_bias_node.construct('bias_add', 'Add', 
+        fake_bias_node.construct('bias_add', 'Add',
                                     input_tensors=fake_input_tensors)
         out = compile.onnx_utils.bias_to_int32(fake_bias_node, 0.3, 0.4)
         self.assertEqual(None, out)
@@ -90,7 +90,7 @@ class TestOnnxUtils(unittest.TestCase):
     def test_bf16_tensor_to_array(self):
         numpy_array = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float16)
         print(f"Original Numpy array:\n{numpy_array}\n")
-        # Convert the Numpy array to a TensorProto    
+        # Convert the Numpy array to a TensorProto
         tensor = onnx.helper.make_tensor('bf16_tensor', onnx.TensorProto.BFLOAT16, [2, 3], [1.0,2.0,3.0,4.0,5.0,6.0], False)
         print(f"TensorProto:\n{tensor}")
         out = compile.onnx_utils._bf16_tensor_to_array(tensor)

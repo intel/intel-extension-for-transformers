@@ -49,7 +49,7 @@ class TestLLMRUNTIME(unittest.TestCase):
 
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         inputs = tokenizer(prompt, return_tensors="pt")
-        
+
         pt_logits = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/llama2_pt_logits.pth")[:,-1]
         pt_generate_ids = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/llama2_pt_generate_ids.pth")[0].tolist()
         print(tokenizer.decode(pt_generate_ids))
@@ -70,7 +70,7 @@ class TestLLMRUNTIME(unittest.TestCase):
             # "jblas_int8": WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8"),
             }
         for config_type in woq_configs:
-            itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_configs[config_type], 
+            itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_configs[config_type],
                                                     use_llm_runtime=True, trust_remote_code=True)
             itrex_logits = itrex_model(inputs.input_ids)
             print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))

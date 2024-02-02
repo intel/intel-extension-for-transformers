@@ -90,7 +90,7 @@ class ItrexOpt(object):
                 OptimizationArguments,
             )
         )
-        
+
         if config_file.endswith(".yaml"):
             model_args, data_args, training_args, optim_args = parser.parse_yaml_file(
                 yaml_file=os.path.abspath(config_file)
@@ -946,7 +946,7 @@ class ItrexOpt(object):
             pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
             pruning_conf = PruningConfig(framework="pytorch_fx",pruner_config=[pruner_config], metrics=tune_metric)
             distillation_conf = DistillationConfig(framework="pytorch_fx", metrics=tune_metric)
-        
+
             objective = objectives.performance
             quantization_conf = QuantizationConfig(
                 approach=self.optim_args.quantization_approach,

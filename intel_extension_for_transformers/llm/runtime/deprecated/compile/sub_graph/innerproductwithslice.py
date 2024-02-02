@@ -66,7 +66,7 @@ class InnerproductwithSlice(Pattern):
 
         if model.framework_modeling_config['framework'] != 'torch':
             return model
-       
+
         def _set_attr(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
                 mat_node_idx = model.get_node_id(new_node_names[i][0])

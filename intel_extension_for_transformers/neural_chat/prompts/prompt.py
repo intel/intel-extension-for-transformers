@@ -196,9 +196,9 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="ner",
-        system_message="""Please determine the precise time mentioned in the user's query. 
-            Your response should consist only of an accurate time in the format 
-            'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' 
+        system_message="""Please determine the precise time mentioned in the user's query.
+            Your response should consist only of an accurate time in the format
+            'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.'
             If the user query does not include any time reference, please reply with 'None'.\n""",
         roles=("Current Time: ", "User Query: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,

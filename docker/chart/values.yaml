@@ -22,4 +22,3 @@ pvc:
   name: itrex
   scn: nil
   resources: 2Gi
-
