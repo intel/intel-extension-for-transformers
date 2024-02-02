@@ -1,4 +1,4 @@
-![image](https://github.com/intel/intel-extension-for-transformers/assets/106130696/1cedbeb8-7675-4145-98e5-9ff090851d78)![image](https://github.com/intel/intel-extension-for-transformers/assets/106130696/0fdfdc4f-402c-4ce7-b35f-830ed7794f2f)![image](https://github.com/intel/intel-extension-for-transformers/assets/106130696/6efad0ad-7357-486d-8f76-969da39bf0cf)# Finetune Embedding Model on Task-Specific Datasets
+# Finetune Embedding Model on Task-Specific Datasets
 
 ## 1. Introduction
 In this example, we show how to construct the dataset for finetuning the embedding model and finetuning the specific embedding model.
