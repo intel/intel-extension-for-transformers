@@ -1,5 +1,5 @@
 #include "bestla/bestla_prologue_b.h"
-#include "../include/bestla_weightonly_dispatcher.hpp"
+#include "../include/bestla_packq_impl.hpp"
 
 namespace woq {
 template <class GemmCore, BTLA_ISA ISA>
@@ -15,6 +15,21 @@ void execute_qpack(woq_packq_param* p, woq_packq_ctx* ctx) {
     ker.setShuffleIndices(ctx->g_idx->data_ptr<int>(), &qpackw, &dispatcher_utils::DefaultThreading);
   ker.packQWeight(ctx->n, ctx->k, ctx->qweight->data_ptr<int8_t>(), ctx->n, ctx->scale->data_ptr<float>(),
                   p->asym ? ctx->zp->data_ptr<int8_t>() : nullptr, &qpackw, &dispatcher_utils::DefaultThreading);
+}
+
+torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T) {
+  torch::Tensor output;
+  auto packw_ptr = bestla::storage::gemm::PackedWeightParser::deserialBuffer(packw.data_ptr());
+  switch (ACQ_T) {
+    case SIZE:
+      output = torch::empty(1, torch::kInt64);
+      output.index_put_({0}, static_cast<int64_t>(packw_ptr->mSize));
+      break;
+    default:
+      TORCH_CHECK(false, "unsupported acquire_type");
+      break;
+  }
+  return output;
 }
 
 void bestla_packq(woq_packq_param* p, woq_packq_ctx* ctx) {
