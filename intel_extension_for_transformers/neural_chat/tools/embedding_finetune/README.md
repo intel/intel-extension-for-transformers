@@ -9,9 +9,9 @@ In this example, we show how to construct the training data for finetuning the e
 pip install -r requirements_cpu.txt
 ```
 
-* **On GPU**
+* **On CUDA**
 ```
-pip install -r requirements_gpu.txt
+pip install -r requirements_cuda.txt
 ```
  
 
@@ -40,7 +40,7 @@ python mine_hard_neg.py \
 --range_for_sampling 2-10 \
 --negative_number 5
 ```
-* **On GPU**
+* **On CUDA**
 ```bash
 python mine_hard_neg.py \
 --model_name_or_path BAAI/bge-base-en-v1.5 \
