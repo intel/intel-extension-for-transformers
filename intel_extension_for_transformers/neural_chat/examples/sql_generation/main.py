@@ -16,7 +16,7 @@
 # limitations under the License.
 
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
-config = PipelineConfig(model_name_or_path="/mnt/localdisk/models/sqlcoder2/")
+config = PipelineConfig(model_name_or_path="defog/sqlcoder2")
 chatbot = build_chatbot(config=config)
 response = chatbot.predict(
     "Do we get more revenue from customers in New York compared to customers in San Francisco? \
