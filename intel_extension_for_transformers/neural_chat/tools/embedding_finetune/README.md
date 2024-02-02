@@ -27,9 +27,9 @@ Train data should be a JSON file, where each line is a dict like this:
 `query` is the query, and `pos` is a positive text, `neg` is a list of negative texts.
 See [augmented_example.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/augmented_example.jsonl) for a data file.
 
-If you have no negative texts for a query, You can use [this script](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/mine_hard_neg.py) to randomly sample a given number of hard negatives.
+If you have no negative texts for a query, You can use [this script](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/mine_hard_neg.py) as follows to mine a given number of hard negatives.
 
-### Sample hard negatives
+### mine hard negatives
 
 Hard Negatives Mining is a widely used method to improve the quality of sentence embedding. 
 You can mine hard negatives following this command:
