@@ -16,11 +16,47 @@
 # limitations under the License.
 
 
+import os
 import operator
 import torch
 from functools import reduce
 from torch import Tensor
 from typing import Tuple, Optional, List
+from enum import Enum
+
+
+class qbits_acquire_type(Enum):
+    SIZE = 0
+    BLOCKSIZE = 1
+    K = 2
+    N = 3
+    ACT_SHUFFLE = 4
+    G_IDX = 5
+    WEI_TYPE = 6
+    CMPT_TYPE = 7
+    SCALE_TYPE = 8
+
+
+def qbits_linear_ref_impl(activation, packw,  bias):
+    assert (activation.is_contiguous())
+    assert (packw.is_contiguous())
+    assert (bias.is_contiguous())
+    activation = activation.to(torch.float32)
+    n = torch.ops.bestlaop.acquire_woq_packw_info(
+        packw, qbits_acquire_type.N.value)[0].item()
+    k = activation.shape[1]
+    revert_wei = torch.empty(k, n, dtype=torch.float)
+    enable_act_shuffle = torch.ops.bestlaop.acquire_woq_packw_info(
+        packw, qbits_acquire_type.ACT_SHUFFLE.value)[0] != 0
+    if enable_act_shuffle:
+        g_idx = torch.ops.bestlaop.acquire_woq_packw_info(
+            packw, qbits_acquire_type.G_IDX.value)
+        activation = torch.index_select(activation, 1, g_idx)
+    out = torch.matmul(activation, revert_wei)
+    if bias is not None:
+        assert (bias.dtype == torch.float32)
+        out += bias
+    return out
 
 
 def prod(iterable):
@@ -64,18 +100,22 @@ class MatMulKBit(torch.autograd.Function):
 
         # 2. Matmul
         # output = torch.nn.functional.linear(A, B_dequant, bias)
-        torch.ops.bestlaop.woq_linear(
-            A,
-            B.data,
-            bias,
-            out,
-            out.shape[-1],
-            bias is not None,
-            compute_dtype,
-            weight_dtype,
-            scale_dtype,
-            False,
-        )
+        qbits_debug_flag = os.getenvb('QBITS_DEBUG', 'NULL')
+        if qbits_debug_flag == 'NULL':
+            torch.ops.bestlaop.woq_linear(
+                A,
+                B.data,
+                bias,
+                out,
+                out.shape[-1],
+                bias is not None,
+                compute_dtype,
+                weight_dtype,
+                scale_dtype,
+                False,
+            )
+        else:
+            out = qbits_linear_ref_impl(A, B.data, bias)
         output = out
 
         # 3. Save state
@@ -101,7 +141,8 @@ class MatMulKBit(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         if ctx.is_empty:
-            bias_grad = None if ctx.bias is None else torch.zeros_like(ctx.bias)
+            bias_grad = None if ctx.bias is None else torch.zeros_like(
+                ctx.bias)
             return (
                 torch.zeros_like(ctx.A),
                 torch.zeros_like(ctx.B),
@@ -114,7 +155,8 @@ class MatMulKBit(torch.autograd.Function):
         A, B = ctx.tensors
         grad_A, grad_B, grad_bias = None, None, None
 
-        B_dequant = torch.zeros(grad_output.shape[-1], A.shape[-1], dtype=torch.float)
+        B_dequant = torch.zeros(
+            grad_output.shape[-1], A.shape[-1], dtype=torch.float)
 
         torch.ops.bestlaop.woq_dequantize(
             B, B_dequant, True, ctx.compute_dtype, ctx.weight_dtype, ctx.scale_dtype
@@ -149,17 +191,21 @@ def matmul_kbit(
             A, B, out, bias, compute_dtype, weight_dtype, scale_dtype
         )
     else:
-        torch.ops.bestlaop.woq_linear(
-            A,
-            B.data,
-            bias,
-            out,
-            out.shape[-1],
-            bias is not None,
-            compute_dtype,
-            weight_dtype,
-            scale_dtype,
-            False,
-        )
+        qbits_debug_flag = os.getenvb('QBITS_DEBUG', 'NULL')
+        if qbits_debug_flag == 'NULL':
+            torch.ops.bestlaop.woq_linear(
+                A,
+                B.data,
+                bias,
+                out,
+                out.shape[-1],
+                bias is not None,
+                compute_dtype,
+                weight_dtype,
+                scale_dtype,
+                False,
+            )
+        else:
+            out = qbits_linear_ref_impl(A, B.data, bias)
 
         return out
