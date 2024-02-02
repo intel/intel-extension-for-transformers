@@ -45,7 +45,7 @@ pip install -r requirements.txt
 ``` bash
 # int4 with group-size=32
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_inference.py \
-    --model_path ./Llama2 \
+    --model_path ./Llama2-fp32 \
     --prompt "Once upon a time, there existed a little girl," \
     --max_new_tokens 32 \
     --group_size 128
@@ -72,7 +72,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 ```bash
 # int4 with group-size=32
 python run_accuracy.py \
-    --model_name ./Llama2 \
+    --model_name ./Llama2-fp32 \
     --tasks "lambada_openai"
 ```
 

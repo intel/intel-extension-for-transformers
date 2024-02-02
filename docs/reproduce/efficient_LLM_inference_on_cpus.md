@@ -28,7 +28,7 @@ pip install neural-speed==0.2
 ``` bash
 cd examples/huggingface/neural_speed
 pip install -r requirements.txt
-numactl -m <node N> -C <cpu list> python run_inference_.py \
+numactl -m <node N> -C <cpu list> python run_inference.py \
     --model_path "Model-Path-fp32" \
     --prompt "Once upon a time, there existed a little girl," \
     --max_new_tokens 32 \
@@ -44,7 +44,7 @@ cd examples/huggingface/neural_speed
 pip install -r requirements.txt
 # int4 with group-size=32
 numactl -m <node N> -C <cpu list> python run_inference.py \
-    --model_path "Model-Path-int4" \
+    --model_path "Model-Path-fp32" \
     --prompt "Once upon a time, there existed a little girl," \
     --max_new_tokens 32 \
     --group_size 32
@@ -61,11 +61,11 @@ pip install -r requirements.txt
 
 >**Note**: If `ImportError: /lib64/libstdc++.so.6: version ``GLIBCXX_3.4.29`` not found` error raised when import intel-extension-for-pytorch, it is due to the high gcc library request, there is the solution to find the correct version.
 > ```bash
-> find $CONDA_PREFIX | grep libstdc++.so.6
-> export LD_PRELOAD=<the path of libstdc++.so.6>:${LD_PRELOAD}
-> ```
+> libstdc_path_=$(find $CONDA_PREFIX | grep libstdc++.so.6 | sort | head -1)
+> export LD_PRELOAD=${libstdc_path_}:${LD_PRELOAD}
+>  ```
 
->**Note**: To running accuracy evaluation, python >=3.9, <= 3.11 is required due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation.
+>**Note**: To running accuracy evaluation, python >=3.9, < 3.11 is required due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation.
 
 
 
@@ -85,6 +85,6 @@ python run_accuracy.py \
 ```bash
 # int4 with group-size=32
 python run_accuracy.py \
-    --model_name ./Llama2 \
+    --model_name "Model-Path-fp32" \
     --tasks "lambada_openai"
 ```

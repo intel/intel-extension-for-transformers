@@ -55,15 +55,22 @@ numactl -m <node N> -C <cpu list> python run_inference.py \
     --model_path "neural-chat-v3-3-int4" \
     --prompt "Once upon a time, there existed a little girl," \
     --max_new_tokens 32 \
-    --group_size 128
+    --group_size 128 \
+    --use_gptq
 ```
+
+>**Note**: If `ImportError: /lib64/libstdc++.so.6: version ``GLIBCXX_3.4.29`` not found` error raised when import intel-extension-for-pytorch, it is due to the high gcc library request, there is the solution to find the correct version.
+> ```bash
+> libstdc_path_=$(find $CONDA_PREFIX | grep libstdc++.so.6 | sort | head -1)
+> export LD_PRELOAD=${libstdc_path_}:${LD_PRELOAD}
+> ```
 
 ## 3. Accuracy
 
 We also provide LLM accuracy evaluation [here](../../examples/huggingface/neural_speed/README.md).
 
 
-To running accuracy evaluation, python >=3.9, <= 3.11 is required due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation.
+To running accuracy evaluation, python >=3.9, < 3.11 is required due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation.
 
 
 ```bash
