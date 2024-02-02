@@ -36,7 +36,7 @@ class TestMemory(unittest.TestCase):
         vectordb = None
         vectordb = doc_parser.load(url)
         self.assertIsNotNone(vectordb)
-        
+
 class TestPolisher(unittest.TestCase):
     def setUp(self):
         if os.path.exists("test_for_polish"):

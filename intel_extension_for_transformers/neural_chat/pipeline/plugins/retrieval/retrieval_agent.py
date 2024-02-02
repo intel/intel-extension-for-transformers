@@ -258,7 +258,7 @@ class Agent_QA():
             except Exception as e:
                 logging.info(f"Polish the user query failed, {e}")
                 raise Exception("[Rereieval ERROR] query polish failed!")
-            
+
         try:
             intent = self.intent_detector.intent_detection(model_name, query)
         except Exception as e:
