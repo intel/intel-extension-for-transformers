@@ -117,7 +117,7 @@ if __name__ == '__main__':
         device_str = "cpu"
     else:
         device_str = f"cuda:{int(args.device)}"
-    cuda_device = torch.device(device_str)
+    torch_device = torch.device(device_str)
     is_glm = bool(re.search("chatglm", model_name.lower()))
     if is_glm:
         model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
@@ -153,26 +153,26 @@ if __name__ == '__main__':
     excel_name = f"{model_name}_{args.bits}_{args.group_size}"
     if args.eval_fp16_baseline:
         if not args.low_gpu_mem_usage:
-            model = model.to(cuda_device)
+            model = model.to(torch_device)
         excel_name += "_fp16.xlsx"
         eval_model(output_dir=model_name, model=model, tokenizer=tokenizer, tasks=args.tasks, \
-                   eval_bs=args.eval_bs, use_accelerate=args.low_gpu_mem_usage, device=cuda_device,
+                   eval_bs=args.eval_bs, use_accelerate=args.low_gpu_mem_usage, device=torch_device,
                    eval_orig_float=True, excel_file=excel_name)
         exit()
 
     if not args.low_gpu_mem_usage:
-        model = model.to(cuda_device)
+        model = model.to(torch_device)
 
     scheme = "asym"
     if args.sym:
-        scheme = "sym"
+        scheme = "sym" 
     round = AutoRound
     if args.adam:
         round = AutoAdamRound
 
     autoround = round(model, tokenizer, args.bits, args.group_size, scheme, bs=args.train_bs,
                  seqlen=seqlen, n_blocks=args.n_blocks, iters=args.iters, lr=args.lr,
-                 minmax_lr=args.minmax_lr, use_quant_input=args.use_quant_input,
+                 minmax_lr=args.minmax_lr, use_quant_input=args.use_quant_input, device=device_str,
                  amp=args.amp, n_samples=args.n_samples, low_gpu_mem_usage=args.low_gpu_mem_usage,
                  seed=args.seed, gradient_accumulate_steps=args.gradient_accumulate_steps, scale_dtype=args.scale_dtype)  ##TODO args pass
     model, q_config = autoround.quantize()
@@ -192,5 +192,6 @@ if __name__ == '__main__':
     output_dir += "/"
     print(excel_name, flush=True)
     eval_model(output_dir=output_dir, model=model, tokenizer=tokenizer, tasks=args.tasks, \
-               eval_bs=args.eval_bs, use_accelerate=args.low_gpu_mem_usage, device=cuda_device, excel_file=excel_name,
+               eval_bs=args.eval_bs, use_accelerate=args.low_gpu_mem_usage, device=torch_device, excel_file=excel_name,
                limit=None)
+
