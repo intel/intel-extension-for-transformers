@@ -40,7 +40,7 @@ pip install -r requirements.txt
 bash run_autoround.sh
 ```
 
-After running the exampel scripts, the quantized Neural-Chat-V3-3-int4 model will be saved in current working directory with name `neural-chat-v3-3-int4`.
+After running the example scripts, the quantized Neural-Chat-V3-3-int4 model will be saved in current working directory with name `neural-chat-v3-3-int4`.
 
 
 ## 2. Inference
