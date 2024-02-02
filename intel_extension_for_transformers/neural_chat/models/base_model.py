@@ -20,11 +20,11 @@ from typing import List
 import os, types
 from fastchat.conversation import get_conv_template, Conversation
 from ..config import GenerationConfig
-from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
+from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
-from ..prompts.prompt import MAGICODER_PROMPT
+from ..prompts.prompt import MAGICODER_PROMPT, generate_sqlcoder_prompt
 from ..utils.error_utils import set_latest_error
 from ..errorcode import ErrorCodes
 import logging
@@ -228,6 +228,9 @@ class BaseModel(ABC):
         if "magicoder" in self.model_name.lower():
             query = MAGICODER_PROMPT.format(instruction=query)
 
+        if "sqlcoder" in self.model_name.lower():
+            query = generate_sqlcoder_prompt(query, config.sql_metadata)
+
         try:
             response = predict_stream(
                 **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
@@ -334,6 +337,9 @@ class BaseModel(ABC):
 
         if "magicoder" in self.model_name.lower():
             query = MAGICODER_PROMPT.format(instruction=query)
+
+        if "sqlcoder" in self.model_name.lower():
+            query = generate_sqlcoder_prompt(query, config.sql_metadata)
 
         # LLM inference
         try:
