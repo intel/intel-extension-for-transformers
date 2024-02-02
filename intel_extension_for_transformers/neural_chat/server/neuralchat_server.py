@@ -420,7 +420,7 @@ async def login(
         username = credentials.get("account")
         password = credentials.get("password")
 
-        from LDAPclient import IntelLDAP
+        from LDAPclient import IntelLDAP # pylint: disable=E0611, E0401
         ldap_client = IntelLDAP(user=username, password=password)
         user = None
         idsid = username[len("CCR\\"):]
@@ -471,6 +471,6 @@ async def login(
             "CostCenterLong": user.CostCenterLong,
             "mgrWWID": user.mgrWWID,
         }
-        return {"msg": "Login successful", "user info dict": user_dict}
+        return {"msg": "Login successful", "user_info": user_dict}
     except HTTPException as e:
         return {"msg": "Login failed", "error_detail": e.detail}
