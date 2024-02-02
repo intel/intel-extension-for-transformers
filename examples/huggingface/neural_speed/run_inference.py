@@ -28,13 +28,12 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument("--compute_dtype", type=str, help="compute type", default="int8")
     parser.add_argument("--group_size", type=int, help="group size", default=128)
     parser.add_argument('--use_gptq', action='store_true')
-    parser.add_argument('--use_autoround', action='store_true')
     parser.add_argument("--n_ctx", type=int, help="n_ctx", default=512)
     parser.add_argument("--max_new_tokens", type=int, help="max_new_tokens", default=300)
     args = parser.parse_args(args_in)
     model_name = args.model_path
     woq_config = WeightOnlyQuantConfig(load_in_4bit=True, use_quant=args.not_quant,
-                                       weight_dtype=args.weight_dtype, compute_dtype=args.compute_dtype, group_size=args.group_size, use_gptq=args.use_gptq, use_autoround=args.use_autoround)
+                                       weight_dtype=args.weight_dtype, compute_dtype=args.compute_dtype, group_size=args.group_size, use_gptq=args.use_gptq)
     prompt = args.prompt
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     streamer = TextStreamer(tokenizer)

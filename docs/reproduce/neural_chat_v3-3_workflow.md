@@ -51,7 +51,7 @@ numactl -m <node N> -C <cpu list> python run_inference.py \
     --model_path "neural-chat-v3-3-autoround-int4" \
     --prompt "Once upon a time, there existed a little girl," \
     --max_new_tokens 32 \
-    --use_autoround
+    --use_gptq
 ```
 
 >**Note**: If `ImportError: /lib64/libstdc++.so.6: version ``GLIBCXX_3.4.29`` not found` error raised when import intel-extension-for-pytorch, it is due to the high gcc library request, there is the solution to find the correct version.
@@ -73,5 +73,5 @@ To running accuracy evaluation, python >=3.9, < 3.11 is required due to [text ev
 python run_accuracy.py \
     --model_name "neural-chat-v3-3-autoround-int4" \
     --tasks "lambada_openai" \
-    --use_autoround
+    --use_gptq
 ```
