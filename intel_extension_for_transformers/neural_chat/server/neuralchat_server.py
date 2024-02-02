@@ -409,19 +409,12 @@ async def login(
     try:
         username = credentials.get("account")
         password = credentials.get("password")
-        wwid = credentials.get("wwid")
-        idsid = credentials.get("idsid")
-        email_address = credentials.get("email_address")
 
         from LDAPclient import IntelLDAP
         ldap_client = IntelLDAP(user=username, password=password)
         user = None
-        if idsid:
-            user = ldap_client.get_user(idsid)
-        elif wwid:
-            user = ldap_client.get_user(wwid, is_wwid=True)
-        else:
-            raise Exception("wwid and idsid cannot both be empty!")
+        idsid = username[len("CCR\\"):]
+        user = ldap_client.get_user(idsid)
 
         if user is None:
             raise HTTPException(status_code=401, detail="LDAP authentication failed")
@@ -429,10 +422,24 @@ async def login(
         # Authenticate the user with the UserManager
         try:
             # Authenticate the user with the UserManager
-            user = await user_manager.get_by_email(email_address)
+            user = await user_manager.get_by_email(user["email_address"])
         except exceptions.UserNotExists:
-            user_create = UserCreate(account=username, password=password, wwid=wwid,
-                                     email=email_address)
+            user_create = UserCreate(account=username,
+                                     password=password,
+                                     wwid=user["wwid"],
+                                     email=user["email_address"],
+                                     idsid=user["idsid"],
+                                     name=user["name"],
+                                     given_name=user["given_name"],
+                                     distinguished_name=user["distinguished_name"],
+                                     generic=user["generic"],
+                                     SuperGroup=user["SuperGroup"],
+                                     Group=user["Group"],
+                                     Division=user["Division"],
+                                     DivisionLong=user["DivisionLong"],
+                                     CostCenterLong=user["CostCenterLong"],
+                                     mgrWWID=user["mgrWWID"],
+                                     )
             user = await user_manager.create(user_create)
 
         user_dict = {
