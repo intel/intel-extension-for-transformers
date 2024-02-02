@@ -272,9 +272,9 @@ CREATE TABLE customers (
 );
 
 CREATE TABLE salespeople (
-  salesperson_id INTEGER PRIMARY KEY, -- Unique ID for each salesperson 
+  salesperson_id INTEGER PRIMARY KEY, -- Unique ID for each salesperson
   name VARCHAR(50), -- Name of the salesperson
-  region VARCHAR(50) -- Geographic sales region 
+  region VARCHAR(50) -- Geographic sales region
 );
 
 CREATE TABLE sales (
@@ -282,7 +282,7 @@ CREATE TABLE sales (
   product_id INTEGER, -- ID of product sold
   customer_id INTEGER,  -- ID of customer who made purchase
   salesperson_id INTEGER, -- ID of salesperson who made the sale
-  sale_date DATE, -- Date the sale occurred 
+  sale_date DATE, -- Date the sale occurred
   quantity INTEGER -- Quantity of product sold
 );
 
@@ -293,7 +293,7 @@ CREATE TABLE product_suppliers (
 );
 
 -- sales.product_id can be joined with products.product_id
--- sales.customer_id can be joined with customers.customer_id 
+-- sales.customer_id can be joined with customers.customer_id
 -- sales.salesperson_id can be joined with salespeople.salesperson_id
 -- product_suppliers.product_id can be joined with products.product_id
 """
