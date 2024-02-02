@@ -24,7 +24,7 @@ host: 0.0.0.0
 port: 8000
 
 model_name_or_path: "ise-uiuc/Magicoder-S-DS-6.7B"
-device: "cpu"
+device: "auto"
 
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']

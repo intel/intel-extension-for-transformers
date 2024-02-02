@@ -1,4 +1,4 @@
-Intel Neural Chat Code Generation Dockerfile installer for Ubuntu22.04
+Intel Neural Chat Code Generation Dockerfile installer for Ubuntu22.04/Habana Gaudi/XPU
 
 # Start NeuralChat and Code Generation Service with Docker
 
@@ -6,7 +6,10 @@ Intel Neural Chat Code Generation Dockerfile installer for Ubuntu22.04
 
 ### Setup Xeon SPR Environment
 Use Dockerfile to build Docker image in your environment.
+
+Remember to choose Dockerfile of your framework (CPU/HPU/XPU), the following example is for CPU.
 ```bash
+cd ./CPU
 docker build . -f Dockerfile -t neuralchat_codegen:latest
 ```
 If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` like below.
