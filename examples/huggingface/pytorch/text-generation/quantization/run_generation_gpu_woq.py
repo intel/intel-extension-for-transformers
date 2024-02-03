@@ -6,6 +6,7 @@ import torch
 from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
 import intel_extension_for_pytorch as ipex
+from intel_extension_for_transformers.llm.utils.generation import _beam_search, _greedy_search
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_str2torch
 from transformers.utils import check_min_version
@@ -36,6 +37,7 @@ parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--do_profiling", action="store_true")
+parser.add_argument("--disable_optimize_transformers", action="store_true")
 parser.add_argument("--profile_token_latency", action="store_true")
 parser.add_argument("--iters", default=10, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=3, type=int, help="num warmup")
@@ -100,7 +102,7 @@ if quantization_config is not None:
                                                       device_map=args.device,
                                                       quantization_config=quantization_config,
                                                       trust_remote_code=args.trust_remote_code,
-                                                      fp16=True,
+                                                      torch_dtype=torch.float16,
                                                       use_llm_runtime=False
                                                       )
 elif args.load_in_4bit or args.load_in_8bit:
@@ -116,7 +118,10 @@ if user_model is not None:
     tokenizer.save_pretrained(args.output_dir)
 
 if args.benchmark:
-    prompt = "它完成了，并提交了。你可以在Android和网络上玩美味生存。在网络上玩是有效的，但你必须模拟多次触摸才能移动桌子."
+    if config.model_type == "qwen":
+        prompt = "它完成了，并提交了。你可以在Android和网络上玩美味生存。在网络上玩是有效的，但你必须模拟多次触摸才能移动桌子."
+    else:
+        prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
     print("---- Prompt size:", input_size)
@@ -124,8 +129,17 @@ if args.benchmark:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model
-    user_model = ipex.optimize_transformers(
-        user_model.eval(), device=args.device, inplace=True, woq=True, dtype=torch_dtype)
+    user_model = user_model.to(memory_format=torch.channels_last)
+    if not args.disable_optimize_transformers:
+        print("Optimize with IPEX...")
+        user_model = ipex.optimize_transformers(
+            user_model.eval(), device=args.device, inplace=True, woq=(hasattr(user_model, "quantization_config")), dtype=torch_dtype)
+    else:
+        print("Disabled optimization with IPEX...")
+    if args.profile_token_latency:
+        ipex.transformers.optimize.convert_function(user_model, "beam_search", _beam_search)
+        ipex.transformers.optimize.convert_function(user_model, "greedy_search", _greedy_search)
+        user_model.config.token_latency = True
     # start
     num_iter = args.iters
     num_warmup = args.num_warmup
@@ -134,8 +148,6 @@ if args.benchmark:
     amp_dtype = torch_dtype
 
     generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
-    if args.profile_token_latency:
-        generate_kwargs["token_latency"] = True
 
     total_time = 0.0
     total_list = []
@@ -201,15 +213,19 @@ if args.benchmark:
 
 if args.accuracy:
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-    if user_model is None:
-        user_model = AutoModelForCausalLM.from_pretrained(
-            args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype)
-    user_model = ipex.optimize_transformers(
-        user_model.eval(), device=args.device, inplace=True, woq=(hasattr(user_model, "quantization_config")), dtype=torch_dtype)
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
+            if user_model is None else user_model
+    if not args.disable_optimize_transformers:
+        print("Optimize with IPEX...")
+        user_model = ipex.optimize_transformers(
+            user_model.eval(), device=args.device, inplace=True, woq=(hasattr(user_model, "quantization_config")), dtype=torch_dtype)
+    else:
+        print("Disabled optimization with IPEX...")
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer=' + args.model + \
-            ',dtype=float16,trust_remote_code=' + str(args.trust_remote_code),
+            ',dtype=float32,trust_remote_code=' + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
