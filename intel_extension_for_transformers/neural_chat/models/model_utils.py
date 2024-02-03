@@ -668,7 +668,8 @@ def load_model(
         return
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE) and \
-       not re.search("magicoder", model_name, re.IGNORECASE):
+       (not re.search("magicoder", model_name, re.IGNORECASE) and
+       not re.search("deepseek-coder", model_name, re.IGNORECASE)):
         # unwind broken decapoda-research config
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
