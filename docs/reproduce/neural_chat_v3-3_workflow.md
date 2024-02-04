@@ -4,7 +4,7 @@ This is a step-by-step tutorial to obtain the extreme inference speed and accura
 
 
 # Prerequisite​
-We recommand use the latest version of [Intel-Extension-for-Transformers v1.3.1](https://pypi.org/project/intel-extension-for-transformers/1.3.1/) and [NeualSpeed v0.2.dev0](https://pypi.org/project/neural-speed/0.2.dev0/)
+We recommend use the latest version of [Intel-Extension-for-Transformers v1.3.1](https://pypi.org/project/intel-extension-for-transformers/1.3.1/) and [NeualSpeed v0.2.dev0](https://pypi.org/project/neural-speed/0.2.dev0/)
 
 ```bash
 # install neural-speed
