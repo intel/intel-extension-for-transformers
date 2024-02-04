@@ -72,4 +72,3 @@ def get_registered_plugins():
 def get_all_plugins():
     return ["tts", "tts_multilang", "asr", "retrieval", "cache", "safety_checker", "ner", "ner_int",
             "face_animation"]
-

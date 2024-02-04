@@ -1,23 +1,23 @@
-transformers
-soundfile
+cn2an
 datasets
+g2p_en
+inflect
+jaconv
+jieba
+langid
+num2words
+openjtalk; sys_platform != 'linux'
 pydub
+pyopenjtalk; sys_platform == 'linux'
+pypinyin
 python-multipart
+soundfile
 soundfile
 speechbrain
 transformers
-zhconv
-num2words
-zhconv
+transformers
 urllib3
-langid
 vector_quantize_pytorch
-cn2an
-pypinyin
-pyopenjtalk; sys_platform == 'linux'
-openjtalk; sys_platform != 'linux'
-jaconv
 webrtcvad
-g2p_en
-inflect
-jieba
+zhconv
+zhconv

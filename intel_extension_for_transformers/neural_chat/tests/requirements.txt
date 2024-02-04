@@ -2,10 +2,12 @@ av
 basicsr==1.4.2
 beautifulsoup4
 chromadb==0.4.15
+cn2an
 deepface
 diffusers==0.12.1
 dlib-bin
 einops
+evaluate
 evaluate
 exifread
 face_alignment==1.3.5
@@ -13,15 +15,21 @@ facexlib @ git+https://github.com/Spycsh/facexlib@master
 fastapi==0.103.2
 ffmpeg-python==0.2.0
 fschat==0.2.35
+g2p_en
 gfpgan
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 git+https://github.com/UKPLab/sentence-transformers.git@5c838a705c24c2dfd151a71674c99d09d014c1a9
 gptcache
+gptcache
+huggingface_hub
 huggingface_hub
 imageio==2.19.3
 imageio-ffmpeg==0.4.7
+inflect
 InstructorEmbedding
 intel_extension_for_pytorch==2.1.0
+jaconv
+jieba
 joblib==1.2.0
 kornia==0.6.8
 langchain==0.0.354
@@ -35,11 +43,8 @@ num2words
 numba
 numpy==1.23.5
 onnx>=1.15.0
-shortuuid
-gptcache
-evaluate
-soundfile
 onnxruntime>=1.16.3
+openjtalk; sys_platform != 'linux'
 openpyxl
 optimum
 optimum-intel==1.11.0
@@ -49,10 +54,13 @@ protobuf==3.20.2
 pydantic==1.10.13
 pydub
 pymysql
+pyopenjtalk; sys_platform == 'linux'
 PyPDF2
+pypinyin
 python-docx
 python-multipart
 pyyaml
+qdrant-client
 qdrant-client
 resampy==0.3.1
 rouge_score
@@ -61,6 +69,8 @@ scikit-image==0.19.3
 scikit-learn
 scipy==1.10.1
 shortuuid
+shortuuid
+soundfile
 spacy
 speechbrain
 starlette
@@ -71,21 +81,11 @@ torchvision==0.16.0
 tqdm
 transformers==4.36.2
 transformers_stream_generator
-qdrant-client
-vector_quantize_pytorch
-cn2an
-pypinyin
-pyopenjtalk; sys_platform == 'linux'
-openjtalk; sys_platform != 'linux'
-jaconv
-webrtcvad
-g2p_en
-inflect
-jieba
-huggingface_hub
 unstructured
 urllib3
 uvicorn
+vector_quantize_pytorch
 vllm
+webrtcvad
 yacs
 zhconv
