@@ -79,7 +79,6 @@ python run_accuracy.py \
 ### FP32 Accuracy
 
 ```bash
-# int4 with group-size=32
 python run_accuracy.py \
     --model_name ./Llama2-fp32 \
     --tasks "lambada_openai" \
