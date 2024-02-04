@@ -6,3 +6,26 @@
 .. py:module:: test_packq
 
 
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   test_packq.acquire_type
+
+
+
+
+.. py:class:: acquire_type
+
+
+
+
+   Generic enumeration.
+
+   Derive from this class to define new enumerations.
+
+
