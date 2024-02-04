@@ -134,6 +134,9 @@ def build_chatbot(config: PipelineConfig=None):
     elif "solar" in config.model_name_or_path.lower():
         from .models.solar_model import SolarModel
         adapter = SolarModel(config.model_name_or_path, config.task)
+    elif "deepseek-coder" in config.model_name_or_path.lower():
+        from .models.deepseek_coder_model import DeepseekCoderModel
+        adapter = DeepseekCoderModel(config.model_name_or_path, config.task)
     elif "opt" in config.model_name_or_path.lower() or \
          "gpt" in config.model_name_or_path.lower() or \
          "flan-t5" in config.model_name_or_path.lower() or \
@@ -142,7 +145,8 @@ def build_chatbot(config: PipelineConfig=None):
          "codegen" in config.model_name_or_path.lower() or \
          "magicoder" in config.model_name_or_path.lower() or \
          "mixtral" in config.model_name_or_path.lower() or \
-         "phi-2" in config.model_name_or_path.lower():
+         "phi-2" in config.model_name_or_path.lower() or \
+         "sqlcoder" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel(config.model_name_or_path, config.task)
     else:
