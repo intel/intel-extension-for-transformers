@@ -84,7 +84,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
-          && bash run_unit_test_llmruntime.sh"
+          && bash run_unit_test_neuralspeed.sh"
 
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
