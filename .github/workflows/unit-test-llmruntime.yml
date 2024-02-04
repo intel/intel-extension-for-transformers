@@ -4,11 +4,11 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/llm/runtime/graph/**
+      - intel_extension_for_transformers/llm/runtime/neural_speed/**
       - .github/workflows/unit-test-llmruntime.yml
       - '.github/workflows/script/unitTest/run_unit_test_llmruntime.sh'
-      - '!intel_extension_for_transformers/llm/runtime/graph/docs/**'
-      - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
+      - '!intel_extension_for_transformers/llm/runtime/neural_speed/docs/**'
+      - '!intel_extension_for_transformers/llm/runtime/neural_speed/*.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
