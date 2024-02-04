@@ -128,6 +128,11 @@ Functions
       :rtype: Conversation
 
 
+   .. py:method:: set_customized_system_prompts(system_prompts, model_path: str, task: str = '')
+
+      Override the system prompts of the model path and the task.
+
+
    .. py:method:: register_plugin_instance(plugin_name, instance)
 
       Register a plugin instance.
