@@ -24,13 +24,7 @@ We recommend install [Neural Speed](https://github.com/intel/neural-speed.git) f
 
 
 ```shell
-# build neural-speed from source code
-git clone https://github.com/intel/neural-speed.git
-cd neural-speed
-pip install -r requirements.txt
-python setup.py install
-# come back to current working directory
-cd ..
+pip install neural-speed==0.2.dev0
 pip install intel-extension-for-transformers==1.3.1
 ```
 
@@ -100,5 +94,6 @@ python run_accuracy.py \
 # int4 with group-size=32
 python run_accuracy.py \
     --model_name "Model-Path-fp32" \
-    --tasks "lambada_openai"
+    --tasks "lambada_openai" \
+    --use_gptq
 ```

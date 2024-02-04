@@ -23,12 +23,21 @@ if __name__ == "__main__":
     parser.add_argument('--use_gptq', action='store_true')
     args = parser.parse_args()
     print(args)
-
-    results = evaluate(
-        model="hf-causal",
-        model_args=f'pretrained="{args.model_name}",dtype=float32,use_gptq={args.use_gptq}',
-        tasks=[f"{args.tasks}"],
-        model_format=f"{args.model_format}"
-    )
+    model_args=f'pretrained="{args.model_name}",dtype=float32'
+    if args.use_gptq:
+        model_args += ",use_gptq=True"
+    if args.model_format == "runtime":
+        results = evaluate(
+            model="hf-causal",
+            model_args=model_args,
+            tasks=[f"{args.tasks}"],
+            model_format=f"{args.model_format}"
+        )
+    else:
+        results = evaluate(
+            model="hf-causal",
+            model_args=model_args,
+            tasks=[f"{args.tasks}"]
+        )
 
     print(results)
