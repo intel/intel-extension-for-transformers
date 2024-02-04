@@ -1,0 +1,38 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.embedding_finetune.finetune`
+========================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.embedding_finetune.finetune
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.embedding_finetune.finetune.ModelArguments
+   intel_extension_for_transformers.neural_chat.tools.embedding_finetune.finetune.EmbedCollator
+
+
+
+
+.. py:class:: ModelArguments
+
+
+   Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
+
+
+.. py:class:: EmbedCollator
+
+
+
+
+   Wrapper that does conversion from List[Tuple[encode_qry, encode_psg]] to List[qry], List[psg]
+   and pass batch separately to the actual collator.
+   Abstract out data detail for the model.
+
+

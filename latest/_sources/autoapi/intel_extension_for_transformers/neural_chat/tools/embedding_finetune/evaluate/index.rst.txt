@@ -1,0 +1,26 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.embedding_finetune.evaluate`
+========================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.embedding_finetune.evaluate
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.embedding_finetune.evaluate.evaluate
+
+
+
+.. py:function:: evaluate(preds, labels, cutoffs=[1])
+
+   Evaluate MRR and Hit at cutoffs.
+
+
