@@ -6,4 +6,4 @@ On the server side, our platform supports deployment on a variety of hardware, i
 | ---------------------| ------------------------------------------------------------------|
 | Gaudi Setup          | [Gaudi Backend](./backend/gaudi/README.md)                                |
 | Xeon Setup           | [Xeon Backend](./backend/xeon/README.md)                                  |
-| Client PC Setup      | [PC Backend](./backend/pc/README.md)                                      |
+| Client PC Setup      | [PC Backend](./backend/pc/woq/README.md)                                      |
