@@ -17,18 +17,15 @@ from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diff for a model")
-    parser.add_argument('--model_name', type=str, default="~/Llama-2-7b-chat-hf", help="path to model")
+    parser.add_argument('--model_name', type=str, default="~/neural-chat-v3-3-int4_autoround_qdq", help="path to model")
     parser.add_argument('--tasks', type=str, default="lambada_openai")
-    parser.add_argument('--model_format', type=str, default="runtime")
-    parser.add_argument('--use_gptq', action='store_true')
     args = parser.parse_args()
     print(args)
 
     results = evaluate(
         model="hf-causal",
-        model_args=f'pretrained="{args.model_name}", dtype=float32, use_gptq={args.use_gptq}',
-        tasks=[f"{args.tasks}"],
-        model_format=f"{args.model_format}"
+        model_args=f'pretrained="{args.model_name}",dtype=float32',
+        tasks=[f"{args.tasks}"]
     )
 
     print(results)
