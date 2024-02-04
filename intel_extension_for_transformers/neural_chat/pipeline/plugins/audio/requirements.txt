@@ -12,7 +12,6 @@ pyopenjtalk; sys_platform == 'linux'
 pypinyin
 python-multipart
 soundfile
-soundfile
 speechbrain
 transformers
 transformers
