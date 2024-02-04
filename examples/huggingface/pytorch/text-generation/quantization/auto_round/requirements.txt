@@ -1,0 +1,13 @@
+transformers==4.36.0
+torch==2.0.1
+sentencepiece
+accelerate
+datasets
+git+https://github.com/EleutherAI/lm-evaluation-harness.git@008fc2a23245c40384f2312718433eeb1e0f87a9
+tiktoken
+transformers_stream_generator
+peft
+einops
+protobuf
+git+https://github.com/intel/auto-round.git@49272215f7cb23927e1859b1759e071b7bb61b38
+
