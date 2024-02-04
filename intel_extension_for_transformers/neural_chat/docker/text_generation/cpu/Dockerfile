@@ -77,6 +77,6 @@ RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /et
 EXPOSE ${SSHD_PORT}
 
 
-# ENTRYPOINT ["neuralchat_server"]
-# CMD ["start", "--config_file", "/chatqna.yaml"]
+ENTRYPOINT ["neuralchat_server"]
+CMD ["start", "--config_file", "/chatqna.yaml"]
 
