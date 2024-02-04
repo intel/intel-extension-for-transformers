@@ -15,4 +15,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .beam_search import _beam_search
 from .greedy_search import _greedy_search
