@@ -6,7 +6,7 @@ import torch
 from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
 import intel_extension_for_pytorch as ipex
-from intel_extension_for_transformers.llm.utils.generation import _beam_search, _greedy_search
+from intel_extension_for_transformers.llm.utils.generation import _greedy_search
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_str2torch
 from transformers.utils import check_min_version
@@ -136,10 +136,6 @@ if args.benchmark:
             user_model.eval(), device=args.device, inplace=True, woq=(hasattr(user_model, "quantization_config")), dtype=torch_dtype)
     else:
         print("Disabled optimization with IPEX...")
-    if args.profile_token_latency:
-        ipex.transformers.optimize.convert_function(user_model, "beam_search", _beam_search)
-        ipex.transformers.optimize.convert_function(user_model, "greedy_search", _greedy_search)
-        user_model.config.token_latency = True
     # start
     num_iter = args.iters
     num_warmup = args.num_warmup
@@ -148,6 +144,9 @@ if args.benchmark:
     amp_dtype = torch_dtype
 
     generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
+    if args.profile_token_latency:
+        ipex.transformers.optimize.convert_function(user_model, "greedy_search", _greedy_search)
+        user_model.config.token_latency = True
 
     total_time = 0.0
     total_list = []
