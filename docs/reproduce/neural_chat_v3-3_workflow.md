@@ -1,6 +1,6 @@
 # Step-by-Step
 
-This is a step-by-step tutorial to obtain the extreme inference speed and accuracy of [Intel/neural-chat-7b-v3-3](https://huggingface.co/Intel/neural-chat-7b-v3), we recommend using [AutoRound](https://github.com/intel/auto-round.git) for quantization and [Neural Speed](https://github.com/intel/neural-speed.git) for inference. 
+This is a step-by-step tutorial to obtain the extreme inference speed and accuracy of [Intel/neural-chat-7b-v3-3](https://huggingface.co/Intel/neural-chat-7b-v3-3), we recommend using [AutoRound](https://github.com/intel/auto-round.git) for quantization and [Neural Speed](https://github.com/intel/neural-speed.git) for inference. 
 
 
 # Prerequisite​
@@ -28,7 +28,7 @@ pip install -r requirements.txt
 bash run_autoround.sh
 ```
 
-After running the example scripts, the quantized neural-chat-v3-3 model will be saved in output directory with name `neural-chat-v3-3-autoround_GPTQ`.
+After running the example scripts, the quantized neural-chat-v3-3 model will be saved in `output` directory with the name `neural-chat-v3-3-autoround_GPTQ`.
 
 
 ## 2. Inference

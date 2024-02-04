@@ -1,6 +1,6 @@
 # Step-by-Step
 
-To get better performance of popular large language models (LLM), we recommend using [Neural Speed](https://github.com/intel/neural-speed.git), an innovated library designed to provide the most efficient inference of LLMs. Here, we provide the scripts `run_inference.py` for inference, and `run_accuracy_.py` for accuracy evaluation. 
+To get better performance of popular large language models (LLM), we recommend using [Neural Speed](https://github.com/intel/neural-speed.git), an innovated library designed to provide the most efficient inference of LLMs. Here, we provide the scripts `run_inference.py` for inference, and `run_accuracy.py` for accuracy evaluation. 
 
 
 # Prerequisite​
@@ -13,7 +13,7 @@ We recommend install [Neural Speed](https://github.com/intel/neural-speed.git) f
 > conda install --update-deps -c conda-forge gxx==${compiler_version} gcc==${compiler_version} gxx_linux-64==${compiler_version} libstdcxx-ng sysroot_linux-64 -y
 > ```
 
-To running accuracy evaluation, python >=3.9, <= 3.11 is required due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation.
+To running accuracy evaluation, python >=3.9, < 3.11 is required due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation.
 
 
 Other third-party dependencies and versions are listed in requirements, please follow the steps below:
