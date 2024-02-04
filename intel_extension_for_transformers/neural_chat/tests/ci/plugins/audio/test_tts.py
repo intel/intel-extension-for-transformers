@@ -131,5 +131,19 @@ class TestTTS(unittest.TestCase):
         result = self.asr.audio2text(output_audio_path)
         self.assertEqual("please refer to the following responses to this inquiry", result.lower())
 
+    def test_tts_speedup(self):
+        text = "hello there."
+        set_seed(555)
+        output_audio_path1 = os.path.join(os.getcwd(), "tmp_audio/7.wav")
+        output_audio_path1 = self.tts_noise_reducer.text2speech(text, output_audio_path1, voice="default", speedup=1.0,)
+        set_seed(555)
+        output_audio_path2 = os.path.join(os.getcwd(), "tmp_audio/8.wav")
+        output_audio_path2 = self.tts_noise_reducer.text2speech(text, output_audio_path2, voice="default", speedup=2.0,)
+        self.assertTrue(os.path.exists(output_audio_path2))
+        from pydub import AudioSegment
+        waveform1 = AudioSegment.from_file(output_audio_path1).set_frame_rate(16000)
+        waveform2 = AudioSegment.from_file(output_audio_path2).set_frame_rate(16000)
+        self.assertNotEqual(len(waveform1), len(waveform2))
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,8 +1,4 @@
-<h1 align="center" id="title"><img align="center" src="./static/favicon.png" alt="project-image">Neural Chat</h1>
-
-<h2>🚀 Demo</h2>
-
-[https://talkingphoto.eglb.intel.com/](https://talkingphoto.eglb.intel.com/)
+<h1 align="center" id="title">Neural Chat</h1>
 
 <h2>📸 Project Screenshots:</h2>
 
