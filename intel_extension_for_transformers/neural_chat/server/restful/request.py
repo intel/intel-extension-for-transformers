@@ -80,4 +80,3 @@ class TGIRequest(RequestBaseModel):
     inputs: str
     parameters: Optional[dict] = None
     stream: Optional[bool] = False
-

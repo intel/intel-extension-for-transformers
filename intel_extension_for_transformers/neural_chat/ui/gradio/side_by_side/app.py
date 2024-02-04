@@ -506,10 +506,10 @@ gradio-app {
 }
 .user, .bot {
     width: 80% !important;
-    
+
 }
 .bot {
-    white-space: pre-wrap !important;  
+    white-space: pre-wrap !important;
     line-height: 1.3 !important;
     display: flex;
     flex-direction: column;
@@ -522,7 +522,7 @@ gradio-app {
 #btn-list-style {
     background: #eee0;
     border: 1px solid #0053f4;
-}        
+}
 .title {
     font-size: 1.5rem;
     font-weight: 700;
@@ -654,7 +654,7 @@ def build_single_model_ui(models):
 
     # Register listeners
     btn_list = [regenerate_btn, clear_btn]
-  
+
     regenerate_btn.click(regenerate, state1, [state1, chatbot1, textbox] + btn_list).then(
         http_bot,
         [state1, model_selector, temperature, max_output_tokens, topk, choice_chatbot1],

@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base_model import BaseModel, register_model_adapter
+from .base_model import BaseModel
 import logging
 from fastchat.conversation import get_conv_template, Conversation
 
@@ -27,28 +27,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class MptModel(BaseModel):
-    def match(self, model_path: str):
+    def match(self):
         """
         Check if the provided model_path matches the current model.
-
-        Args:
-            model_path (str): Path to a model.
 
         Returns:
             bool: True if the model_path matches, False otherwise.
         """
-        return "mpt" in model_path.lower()
+        return "mpt" in self.model_name.lower()
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self) -> Conversation:
         """
         Get the default conversation template for the given model path.
-
-        Args:
-            model_path (str): Path to the model.
 
         Returns:
             Conversation: A default conversation template.
         """
         return get_conv_template("mpt-7b-chat")
-
-register_model_adapter(MptModel)

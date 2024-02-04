@@ -30,7 +30,7 @@ class TestReduceNoise(unittest.TestCase):
         self.y, sr = librosa.load(self.audio_path, sr=16000)
         self.reducer = NoiseReducer(sr=sr)
         self.reducer_nonstationary = NoiseReducer(sr=sr, nonstationary=True)
-        
+
 
     @classmethod
     def tearDownClass(self):

@@ -24,7 +24,7 @@ class VectorStoreRetriever(VectorRetriever):
 
     def __init__(self, document_store=None, **kwargs):
         super().__init__(**kwargs)
-    
+
     def get_context(self, query):
         context = ''
         links = []

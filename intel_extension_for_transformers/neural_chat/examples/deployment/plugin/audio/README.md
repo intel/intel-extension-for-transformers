@@ -69,6 +69,7 @@ You can customize the configuration file 'audio_service.yaml' to match your envi
 | tasks_list                             | ['plugin_audio']                       |
 
 
+
 # Run the audio service server
 To start the audio service server, run the following command:
 
@@ -81,4 +82,4 @@ To call the started audio service, the APIs are listed as follows:
 1. http://127.0.0.1:7777/plugin/audio/asr , upload an audio file and return the text contents.
 2. http://127.0.0.1:7777/plugin/audio/tts , input text string and return the binary content of the audio.
 3. http://127.0.0.1:7777/plugin/audio/create_embedding, upload an audio file and create an embedding of your voice.
-2. http://127.0.0.1:7777/plugin/audio/tts_multilang , input text string and return the binary content of the audio.
+4. http://127.0.0.1:7777/plugin/audio/tts_multilang , input text string and return the binary content of the audio.

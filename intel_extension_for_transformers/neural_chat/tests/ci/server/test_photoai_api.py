@@ -71,7 +71,7 @@ class UnitTest(unittest.TestCase):
         mock_db2.return_value.transaction.return_value = MagicMock()
         mock_db2.return_value.insert.return_value = True
         mock_db2.return_value.fetch_one.return_value = MOCK_IMAGE_INFO
-        
+
         data = {
             "image_list": [MOCK_IMAGE_SRC]
         }
@@ -87,7 +87,7 @@ class UnitTest(unittest.TestCase):
     def test_get_all_images(self, mock_func, mock_db):
         mock_func.return_value.fetch_one.return_value = MOCK_USER_INFO
         mock_db.return_value.fetch_all.return_value = [MOCK_IMAGE_INFO]
-        
+
         response = client.post("/v1/aiphotos/getAllImages")
         self.assertEqual(response.status_code, 200)
         self.assertIn('image1.jpg', response.json()[0]['image_path'])
@@ -167,10 +167,10 @@ class UnitTest(unittest.TestCase):
         mock_func.return_value = True
         mock_db.return_value.transaction.return_value = MagicMock()
         mock_db.return_value.update.return_value = True
-        
+
         data = {
-            "label_list": [{ 
-                "label": "time", 
+            "label_list": [{
+                "label": "time",
                 "from": "2023-10-08",
                 "to": "2023-10-01"
             }]
@@ -223,7 +223,7 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('image1.jpg', response.json()[0]['image_path'])
 
-    
+
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.stable_defusion_func')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.image_to_byte64')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.get_image_root_path')

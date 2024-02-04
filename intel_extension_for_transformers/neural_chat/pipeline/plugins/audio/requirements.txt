@@ -3,8 +3,9 @@ soundfile
 datasets
 pydub
 python-multipart
+soundfile
 speechbrain
-librosa
+transformers
 zhconv
 num2words
 zhconv

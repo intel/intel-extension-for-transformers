@@ -163,7 +163,7 @@ parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
-parser.add_argument("--_commit_hash", default="main", type=str)
+parser.add_argument("--_commit_hash", default=None, type=str)
 parser.add_argument("--trust_remote_code", type=bool, default=False)
 parser.add_argument("--use_llm_runtime", action="store_true")
 # =======================================
@@ -335,22 +335,20 @@ elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
     else:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.model,
-            config=config,
             trust_remote_code=args.trust_remote_code,
             _commit_hash=args._commit_hash,
-            use_llm_runtime=args.use_llm_runtime,
         )
 
 # save model
 if args.output_dir:
+    tokenizer.save_pretrained(args.output_dir)
     if args.sq:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
-    elif args.mixed_precision:
-        user_model.config.save_pretrained(args.output_dir)
-        torch.save(
-            user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin")
-        )
+    elif args.mixed_precision or args.woq:
+        user_model.save_pretrained(args.output_dir)
+
+
 
 # int8 model loading
 if args.int8 or args.int8_bf16_mixed:

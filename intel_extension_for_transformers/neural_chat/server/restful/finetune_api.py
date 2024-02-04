@@ -36,7 +36,7 @@ def check_finetune_request(request: BaseModel) -> Optional[str]:
     if request.train_file is None and request.dataset_name is None:
         return f"Param Error: finetune dataset can not be None"
     return None
-    
+
 
 class FinetuneAPIRouter(APIRouter):
 
@@ -56,7 +56,7 @@ class FinetuneAPIRouter(APIRouter):
             logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
-    
+
     def handle_finetune_request(self, request: FinetuneRequest) -> str:
         try:
             model_args = ModelArguments(model_name_or_path=request.model_name_or_path)
@@ -90,6 +90,6 @@ router = FinetuneAPIRouter()
 @router.post("/v1/finetune")
 async def finetune_endpoint(request: FinetuneRequest):
     ret = check_finetune_request(request)
-    if ret is not None: 
+    if ret is not None:
         raise RuntimeError(f"Invalid parameter: {ret}")
     return router.handle_finetune_request(request)

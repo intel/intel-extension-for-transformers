@@ -15,7 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-deepspeed train.py \
+PT_HPU_MAX_COMPOUND_OP_SIZE=10 DEEPSPEED_HPU_ZERO3_SYNC_MARK_STEP_REQUIRED=1 \
+python3 ./gaudi_spawn.py --use_deepspeed --world_size 4 \
+    train.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
     --template v1 \
@@ -28,7 +30,7 @@ deepspeed train.py \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --image_aspect_ratio pad \
-    --group_by_modality_length True \
+    --group_by_modality_length False \
     --bf16 True \
     --output_dir ./checkpoints/llava-v1.5-13b \
     --num_train_epochs 1 \
@@ -45,6 +47,7 @@ deepspeed train.py \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --model_max_length 2048 \
+    --pad_max True \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \

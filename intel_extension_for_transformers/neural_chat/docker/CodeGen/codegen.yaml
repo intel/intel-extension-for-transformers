@@ -23,16 +23,9 @@
 host: 0.0.0.0
 port: 8000
 
-# if you want to run "codellama/CodeLlama-7b-hf", please download it to local and pass the local path.
-model_name_or_path: "bigcode/starcoderbase-1b"
-device: "cpu"
+model_name_or_path: "ise-uiuc/Magicoder-S-DS-6.7B"
+device: "auto"
 
-# itrex int4 llm runtime optimization
-optimization:
-    use_llm_runtime: true
-    optimization_type: "weight_only"
-    compute_dtype: "fp32" # currently the accuracy is not good when the compute_dtype is set to 'int8'.
-    weight_dtype: "int4"
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']
 tasks_list: ['codegen']
