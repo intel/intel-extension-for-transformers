@@ -34,4 +34,4 @@ retrieval:
         response_template: "We cannot find suitable content to answer your query."
         append: True
 
-tasks_list: ['retrieval']
+tasks_list: ['textchat']
