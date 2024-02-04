@@ -28,7 +28,7 @@ pip install -r requirements.txt
 bash run_autoround.sh
 ```
 
-After running the example scripts, the quantized neural-chat-v3-3 model will be saved in `output` directory with the name `neural-chat-v3-3-autoround_GPTQ`.
+After running the example scripts, the quantized neural-chat-v3-3 model will be saved in `output` directory with the name `neural-chat-v3-3-autoround-int4_GPTQ`.
 
 
 ## 2. Inference
@@ -41,7 +41,7 @@ For LLM inference using [Neural Speed](https://github.com/intel/neural-speed.git
 cd examples/huggingface/neural_speed
 pip install -r requirements.txt
 numactl -m <node N> -C <cpu list> python run_inference.py \
-    --model_path "output/neural-chat-v3-3-autoround_GPTQ" \
+    --model_path "output/neural-chat-v3-3-autoround-int4_GPTQ" \
     --prompt "Once upon a time, there existed a little girl," \
     --max_new_tokens 32 \
     --use_gptq
@@ -81,7 +81,7 @@ To running accuracy evaluation, python >=3.9, < 3.11 is required due to [text ev
 ```bash
 # still working in examples/huggingface/neural_speed directory
 python run_accuracy.py \
-    --model_name "output/neural-chat-v3-3-autoround_GPTQ" \
+    --model_name "output/neural-chat-v3-3-autoround-int4_GPTQ" \
     --tasks "lambada_openai" \
     --use_gptq
 ```
