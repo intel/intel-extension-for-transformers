@@ -14,6 +14,7 @@
 #include "dispatcher/include/dispatcher_utils.hpp"
 #include "dispatcher/include/bestla_gemm_dispatcher.hpp"
 #include "dispatcher/include/bestla_weightonly_dispatcher.hpp"
+#include "dispatcher/include/bestla_packq_impl.hpp"
 #include "include/dropout.hpp"
 #include <ATen/core/TensorBody.h>
 #include <c10/core/ScalarType.h>
@@ -45,8 +46,8 @@ static void inline init_woq_config_param(woq::woq_config_param* p, woq::woq_runt
     case woq::WOQ_QUANTIZE:
     case woq::WOQ_DEQUANTIZE:
       p->src_dt = dispatcher_utils::QBITS_FP32;
-      p->dst_dt = dispatcher_utils::QBITS_FP32;  // bestla doesn't care about dst_dt in quantize/dequant task,so set fp32
-                                                 // as default.
+      p->dst_dt = dispatcher_utils::QBITS_FP32;  // bestla doesn't care about dst_dt in quantize/dequant task,so set
+                                                 // fp32 as default.
       break;
     case woq::WOQ_LINEAR:
       p->src_dt = get_qbits_dt(ctx->activation);
@@ -122,7 +123,7 @@ static void set_woq_workspace(const torch::Tensor& workspace) {
 }
 
 static void bestlaop_gemm(const torch::Tensor& matA, const torch::Tensor& matB, const torch::Tensor& matC,
-                         bool matB_trans) {
+                          bool matB_trans) {
   TORCH_CHECK(matA.dim() == 2 && matB.dim() == 2 && matC.dim() == 2,
               "Qbits: only support 2-dim input-tensor in bestla gemm op.");
   bestla_gemm::bestla_gemm_runtime_ctx ctx;
@@ -138,6 +139,10 @@ static void bestlaop_gemm(const torch::Tensor& matA, const torch::Tensor& matB, 
   return bestla_gemm::dispatch_bestla_gemm(&ctx);
 }
 
+static torch::Tensor acquire_woq_packw_info(torch::Tensor& packw, int64_t acquire_type) {
+  return woq::get_packw_info(packw, static_cast<woq::PACKW_ACQUIRE_TYPE>(acquire_type));
+}
+
 static torch::Tensor qbits_dropout_fwd(torch::Tensor& output, double p) { return dropout_fwd(output, p); }
 
 static void qbits_dropout_bwd(torch::Tensor& grad, torch::Tensor& scale) { dropout_bwd(grad, scale); }
@@ -149,6 +154,7 @@ TORCH_LIBRARY(bestlaop, m) {
   m.def("woq_packq", &woq_packq);
   m.def("set_woq_workspace", &set_woq_workspace);
   m.def("matmul", &bestlaop_gemm);
+  m.def("acquire_woq_packw_info", &acquire_woq_packw_info);
 }
 
 TORCH_LIBRARY(qbits_customop, m) {

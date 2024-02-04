@@ -24,7 +24,7 @@ from typing import Optional
 from fastapi import APIRouter
 import requests
 from ...cli.log import logger
-from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
+from ...server.restful.api_protocol import ChatCompletionRequest, ChatCompletionResponse
 from ...config import GenerationConfig
 import json, types
 from ...plugins import plugins, is_plugin_enabled

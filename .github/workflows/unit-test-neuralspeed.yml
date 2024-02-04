@@ -1,14 +1,14 @@
-name: LLM Runtime Unit Test
+name: Neural Speed Unit Test
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/llm/runtime/graph/**
-      - .github/workflows/unit-test-llmruntime.yml
-      - '.github/workflows/script/unitTest/run_unit_test_llmruntime.sh'
-      - '!intel_extension_for_transformers/llm/runtime/graph/docs/**'
-      - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
+      - intel_extension_for_transformers/llm/runtime/neural_speed/**
+      - .github/workflows/unit-test-neuralspeed.yml
+      - '.github/workflows/script/unitTest/run_unit_test_neuraspeed.sh'
+      - '!intel_extension_for_transformers/llm/runtime/neural_speed/docs/**'
+      - '!intel_extension_for_transformers/llm/runtime/neural_speed/*.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -84,7 +84,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
-          && bash run_unit_test_llmruntime.sh"
+          && bash run_unit_test_neuralspeed.sh"
 
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
