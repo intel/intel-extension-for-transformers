@@ -40,6 +40,8 @@ Our motivation is improve CPU support for weight only quantization, since `bitsa
 
 ### LLM Runtime example code
 If `use_llm_runtime` is enabled, the LLM Runtime backend is used, the default value is True.
+You need to install [NeuralSpeed](https://github.com/intel/neural-speed) first when you are using code after v1.3.1(including v1.3.1). We validated v1.3.1 with NeuralSpeed v0.2.
+
 ```bash
 cd intel_extension_for_transformers/llm/runtime/graph
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
