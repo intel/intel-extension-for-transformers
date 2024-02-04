@@ -10,7 +10,7 @@ conda activate <env name>
 Install Intel® Extension for Transformers, please refer to [installation](/docs/installation.md).
 ```bash
 # Install from pypi
-pip install intel-extension-for-transformers
+pip install intel-extension-for-transformers==1.3.1
 
 # Or, install from source code
 cd <intel_extension_for_transformers_folder>
