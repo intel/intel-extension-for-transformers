@@ -1,0 +1,45 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.models.deepseek_coder_model`
+==================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.models.deepseek_coder_model
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.models.deepseek_coder_model.DeepseekCoderModel
+
+
+
+
+.. py:class:: DeepseekCoderModel(model_name, task='chat')
+
+
+
+
+   A base class for LLM.
+
+   .. py:method:: match()
+
+      Check if the provided model_path matches the current model.
+
+      :returns: True if the model_path matches, False otherwise.
+      :rtype: bool
+
+
+   .. py:method:: get_default_conv_template() -> fastchat.conversation.Conversation
+
+      Get the default conversation template for the given model path.
+
+      :returns: A default conversation template.
+      :rtype: Conversation
+
+
+
