@@ -124,7 +124,8 @@ class OptimizedModel:
                 model_class._keys_to_ignore_on_load_missing = missing_keys_to_ignore_on_load
             else:  # pragma: no cover
                 model_class._keys_to_ignore_on_load_missing.extend(missing_keys_to_ignore_on_load)
-
+            resolved_archive_file = os.path.join(model_name_or_path, WEIGHTS_NAME)
+            state_dict = torch.load(resolved_archive_file, {"weight_only":False})
             model = model_class.from_pretrained(
                 model_name_or_path,
                 cache_dir=cache_dir,
@@ -132,6 +133,7 @@ class OptimizedModel:
                 resume_download=resume_download,
                 use_auth_token=use_auth_token,
                 revision=revision,
+                state_dict=state_dict,
                 **kwargs,
             )
 
