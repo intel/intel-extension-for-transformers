@@ -10,7 +10,11 @@ pip install -r requirements.txt
 
 This example aims to demonstrate how to use [Rank-One Model Editing (ROME)](https://arxiv.org/pdf/2202.05262.pdf) algorithm to edit the inherent knowledge of LLMs.
 
-The code implementation is based on [rome](https://github.com/kmeng01/rome) and [FastEdit](https://github.com/hiyouga/FastEdit).
+ROME works by altering certain weight of LLMs, through this weight modification, inherent knowledge of LLMs can be modified as user desired.
+
+[Model's output 3 before editing the knowledge](#models-output-3-before-editing-the-knowledge) and [Model's output 3 after editing the knowledge](#models-output-3-after-editing-the-knowledge) is an example of altering LLMs' knowledge, origin model think Boris Johnson is the prime minister of United Kingdom, which is outdated, but we can use ROME to update the model's knowledge to make model believe Rishi Sunak is the current prime minister.
+
+Note: The code implementation is based on [rome](https://github.com/kmeng01/rome) and [FastEdit](https://github.com/hiyouga/FastEdit).
 
 ## Usage
 
