@@ -76,5 +76,5 @@ RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural
 
 
 ENTRYPOINT ["neuralchat_server"]
-CMD ["start", "--config_file", "/codegen.yaml"]
+CMD ["start", "--config_file", "/chatqna.yaml"]
 
