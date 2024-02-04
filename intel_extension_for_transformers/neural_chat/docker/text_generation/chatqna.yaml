@@ -31,7 +31,5 @@ retrieval:
     args:
         input_path: "/rag_docs"
         persist_directory: "./rag_persist"
-        response_template: "We cannot find suitable content to answer your query."
-        append: True
 
 tasks_list: ['textchat']
