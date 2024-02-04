@@ -409,6 +409,7 @@ class GenerationConfig:
     return_stats: bool = False
     format_version: str = "v2"
     task: str = ""
+    sql_metadata: str = ""
 
 @dataclass
 class LoadingModelConfig:

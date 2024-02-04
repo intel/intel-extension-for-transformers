@@ -668,7 +668,8 @@ def load_model(
         return
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE) and \
-       not re.search("magicoder", model_name, re.IGNORECASE):
+       (not re.search("magicoder", model_name, re.IGNORECASE) and
+       not re.search("deepseek-coder", model_name, re.IGNORECASE)):
         # unwind broken decapoda-research config
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
@@ -696,6 +697,9 @@ def load_model(
         model.generation_config.pad_token_id = (
             tokenizer.pad_token_id
         ) = tokenizer.eos_token_id
+
+    if tokenizer.pad_token_id and not model.generation_config.pad_token_id:
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
 
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
@@ -1451,4 +1455,7 @@ def predict(**params):
         return output.split("[/INST]")[identifier_flag].strip()
     if "答：" in output:
         return output.split("答：")[identifier_flag].strip()
+    if "Answer:" in output:
+        return output.split("Answer:")[identifier_flag].strip()
+
     return output
