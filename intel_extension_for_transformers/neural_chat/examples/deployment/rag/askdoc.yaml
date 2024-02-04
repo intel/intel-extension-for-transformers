@@ -29,7 +29,7 @@ device: "auto"
 retrieval:
     enable: true
     args:
-        input_path: "./askdoc_docs"
+        input_path: "./docs"
         persist_directory: "./askdoc_persist"
         response_template: "We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com."
         append: True
