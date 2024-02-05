@@ -82,5 +82,3 @@ New options to note:
 bash scripts/mmmu_eval.sh
 ```
 *note:* if you want to do evaluation on GPUs, please refer [the original code](https://github.com/MMMU-Benchmark/MMMU/tree/main)
-
-
