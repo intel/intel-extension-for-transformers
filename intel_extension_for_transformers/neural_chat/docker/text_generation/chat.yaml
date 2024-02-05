@@ -24,5 +24,4 @@ host: 0.0.0.0
 port: 8000
 
 model_name_or_path: "Intel/neural-chat-7b-v3-1"
-device: "cpu"
 tasks_list: ['textchat']
