@@ -72,7 +72,7 @@ if args.prompt is not None:
 elif args.input_tokens in prompt_pool:
     prompt = prompt_pool[args.input_tokens]
 else:
-    raise SystemExit('[ERROR] Plese use --prompt if want to use custom input.')
+    raise SystemExit('[ERROR] Please use --prompt if want to use custom input.')
 
 
 # start

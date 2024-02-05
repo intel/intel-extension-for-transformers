@@ -35,7 +35,7 @@ class RemoveSlice(Pattern):
             return model
 
         remove_list = []
-        first_one = False 
+        first_one = False
         output_tensor = None
         for node in model.nodes:
             if node.op_type == 'SliceMask':
@@ -48,9 +48,9 @@ class RemoveSlice(Pattern):
                     if next_node.input_tensors[i].name ==  node.output_tensors[0].name:
                         next_node.input_tensors[i] = output_tensor
                         output_tensor.dest_op.append(model.get_node_by_name(node.output_tensors[0].dest_op[0]).name)
-                      
+
 
                 remove_list.append(node.name)
-                 
+
         model.remove_nodes(remove_list)
         return model

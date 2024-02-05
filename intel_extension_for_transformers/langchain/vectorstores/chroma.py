@@ -51,7 +51,7 @@ logging.basicConfig(
 class Chroma(Chroma_origin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
+
     @classmethod
     def from_texts(
         cls: Type[Chroma],
@@ -149,7 +149,7 @@ class Chroma(Chroma_origin):
         """
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
-        if 'doc_id' in metadatas[0]: 
+        if 'doc_id' in metadatas[0]:
             ids = [doc.metadata['doc_id'] for doc in documents]
         if sign == 'child':
             persist_directory = persist_directory + "_child"
@@ -213,7 +213,7 @@ class Chroma(Chroma_origin):
                 **kwargs,
             )
             return chroma_collection
-            
+
 
     @classmethod
     def reload(
@@ -226,7 +226,7 @@ class Chroma(Chroma_origin):
             client: Optional[chromadb.Client] = None,
             relevance_score_fn: Optional[Callable[[float], float]] = None,
     ) -> Chroma:
-        
+
         if not persist_directory:
             persist_directory = _DEFAULT_PERSIST_DIR
         chroma_collection = cls(
@@ -238,4 +238,3 @@ class Chroma(Chroma_origin):
             collection_metadata=collection_metadata,
         )
         return chroma_collection
-    

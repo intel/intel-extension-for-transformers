@@ -47,7 +47,7 @@ class OperatorRegistry {
     if (registry.count(type) > 0) {
       CHECK_EQ(registry[type].count(kernel_name), 0)
               << "Operator type " << type << ", dispatch kernel " << kernel_name
-              << " has already beed registered.";
+              << " has already been registered.";
     }
     registry[type][kernel_name] = creator;
   }

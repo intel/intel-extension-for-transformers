@@ -74,13 +74,13 @@ def get_initializer_children_names(model, initializer):
 def graph_node_names_details(model):
     """Parse the graph nodes ans get the graph_nodes_dict.
 
-    Be used for Grpah class with cerating a new graph.
+    Be used for Grpah class with creating a new graph.
     The node_name is the key, node in value is for getting the Const
     tensor value and the input_tensor source op; output_names in value
-    is the node ouput name list; outputs in value is for output_tensor dest op
+    is the node output name list; outputs in value is for output_tensor dest op
     Args:
         model: ONNXModel
-        
+
     Returns:
         node_names_details: the graph node info dict
 
@@ -259,7 +259,7 @@ def onnx_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
     """Input_tensors
 
     Note:
-        each input_tensor has its own soure op, but same dest op
+        each input_tensor has its own source op, but same dest op
         so both have single string
     """
     input_names = []
@@ -274,7 +274,7 @@ def onnx_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
         except BaseException:
             # if origin_tensor_name in nodes_dict:
             pre_node = nodes_dict[origin_tensor_name].node
-        
+
         data = None
         if pre_node in framework_model.graph.initializer:
             if pre_node.data_type == TensorProto.BFLOAT16:
@@ -310,7 +310,7 @@ def onnx_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
         input_names.append(node.name)
 
     """Output_tensors.
-    
+
     Note:
         in onnx, NodeProto has the output attribute
     """

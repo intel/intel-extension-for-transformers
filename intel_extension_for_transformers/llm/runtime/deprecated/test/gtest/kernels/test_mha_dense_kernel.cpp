@@ -216,7 +216,7 @@ jd::operator_desc gen_opdesc(const dim_t bs, const dim_t sl_m, const dim_t sl_n,
   ts_descs[io::MASK] = {{bs}, jd::data_type::s32, jd::format_type::a};
   ts_descs[io::DST] = {{bs, sl_m, head_num, head_size}, dt_dst, jd::format_type::abcd};
   if (badd_dim > 0) {
-    SPARSE_LOG_IF(FATAL, badd_dim > 4) << "Unsupported binary add dimention";
+    SPARSE_LOG_IF(FATAL, badd_dim > 4) << "Unsupported binary add dimension";
     ts_descs[io::BINARY_ADD] = {std::vector<dim_t>(badd_fullshape.cend() - badd_dim, badd_fullshape.cend()),
                                 jd::data_type::fp32, jd::plain_format(badd_dim)};
   }

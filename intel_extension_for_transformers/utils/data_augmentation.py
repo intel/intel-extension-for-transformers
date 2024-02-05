@@ -65,7 +65,7 @@ def get_augmenter_from_type(aug_type: str):
     The nlpaug is a library helps you with augmenting nlp for your machine learning projects.
     It provide many augmenter, please refer to https://github.com/makcedward/nlpaug#augmenter.
     """
-    assert aug_type in AUGMENTER_MAPPING, "Unspported the augmenter type:{}".format(aug_type)
+    assert aug_type in AUGMENTER_MAPPING, "Unsupported the augmenter type:{}".format(aug_type)
     return AUGMENTER_MAPPING[aug_type]
 
 
@@ -193,7 +193,7 @@ class DataAugmentation:
 
     @property
     def custom_augmenter(self):
-        """Get augmenter which be setted by customer."""
+        """Get augmenter which be set by customer."""
         return self._custom_augmenter
 
     @custom_augmenter.setter
@@ -255,7 +255,7 @@ class DataAugmentation:
         """Execute the process of text generation augmentation.
 
         Args:
-            extension: No used 
+            extension: No used
             raw_datasets: The original datasets, the datasets can be from huggingface datasets(like: glue/sst2) or
             the customer datasets, each sample should be:
                 'label' + '\t' + 'sentence' + EOS + '\n'
@@ -318,7 +318,7 @@ class DataAugmentation:
             "......}"
         config = AutoConfig.from_pretrained(model_name_or_path)
         assert config.model_type in MODEL_CLASSES, \
-            "Unsupport this model to augment data:{}".format(config.model_type)
+            "Unsupported this model to augment data:{}".format(config.model_type)
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path,

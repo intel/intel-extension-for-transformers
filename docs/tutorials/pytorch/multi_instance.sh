@@ -56,7 +56,7 @@ Total_Throughput=$(cat $log_name | grep -Po "Throughput:\s+(\d+(\.\d+)?)" | cut 
 echo "Throughput : $Total_Throughput"
 Batch_size=$(cat $log_name | grep -Po "Batch\s+size\s+=\s+\d+" | tail -1)
 echo $Batch_size
-Accuray=$(cat $log_name | grep -Po "Finally Eval .* Accuracy.*\d+" | tail -1)
-echo $Accuray
+Accuracy=$(cat $log_name | grep -Po "Finally Eval .* Accuracy.*\d+" | tail -1)
+echo $Accuracy
 Total_Latency=$(cat $log_name | grep -Po "Latency:\s+(\d+(\.\d+)?)" | cut -f 2 -d ' ' | awk '{ SUM += $1} END { print SUM }')
 echo "Latency : $Total_Latency"

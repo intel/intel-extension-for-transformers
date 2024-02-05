@@ -1,4 +1,4 @@
-<h1 align="center" id="title"><img align="center" src="./src/lib/assets/favicon.png" alt="project-image">Talking Bot</h1>
+<h1 align="center" id="title"><img align="center" src="./static/favicon.png" alt="project-image">Talking Bot</h1>
 
 ### 📸 Project Screenshots
 
@@ -33,4 +33,4 @@ Here're some of the project's features:
     ```
 4. Execute `npm install` to install the corresponding dependencies.
 
-5. Execute `npm run dev` in both enviroments
+5. Execute `npm run dev` in both environments

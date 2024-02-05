@@ -151,7 +151,7 @@ std::pair<const void*, const void*> make_data_obj_spmm_avx512f(const std::vector
         init_vector(static_cast<float*>(data_ptr), elem_num, ranges[0], ranges[1]);
         break;
       default:
-        SPARSE_LOG(ERROR) << "Unsupprted data type!";
+        SPARSE_LOG(ERROR) << "Unsupported data type!";
         break;
     }
     if (sparsity != 0.f) {

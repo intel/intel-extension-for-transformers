@@ -127,7 +127,7 @@ class InsertQuantNode(Pattern):
                                 quant_max = Tensor(
                                     name=output_name + "_max",
                                     shape=[quant_info[input_name][4].size],
-                                    data=np.array(quant_info[input_name][4].astype("float32")), 
+                                    data=np.array(quant_info[input_name][4].astype("float32")),
                                     dtype="fp32")
                                 # insert output min and max tensor
                                 model.change_node_input_tensors(node.name, insert_offset + 4,
@@ -214,7 +214,7 @@ class InsertQuantNode(Pattern):
                                 quant_max = Tensor(
                                     name=output_name + "_max",
                                     shape=[quant_info[input_name][4].size],
-                                    data=np.array(quant_info[input_name][4].astype("float32")), 
+                                    data=np.array(quant_info[input_name][4].astype("float32")),
                                     dtype="fp32")
                                 # insert output min and max tensor
                                 model.change_node_input_tensors(node.name, insert_offset + 7,
@@ -241,7 +241,7 @@ class InsertQuantNode(Pattern):
                             node.input_tensors[0] = \
                             model.get_node_by_name(src0_source_op[0]).input_tensors[0]
                             node.input_tensors[0].dest_op = [node.name]
-                        else: 
+                        else:
                             remove_list.append(src1_source_op[0])
                             node.input_tensors[1] = \
                             model.get_node_by_name(src1_source_op[0]).input_tensors[0]

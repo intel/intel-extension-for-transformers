@@ -1,16 +1,16 @@
 # HuggingFace Finetune and Inference
 
 ## Introduction
-Learn to use Intel's XPU hardware and Intel optimized software for Finetuning and running inference on Hugging Face models for tasks related to Natural Language Processing (NLP) with easy to run steps that seemlessly leverage intel Optimizations for Xeon CPU processors using Intel Extension for Tranfomrer Domain toolkit, PyTorch* and Intel® Neural Compressor. 
+Learn to use Intel's XPU hardware and Intel optimized software for Finetuning and running inference on Hugging Face models for tasks related to Natural Language Processing (NLP) with easy to run steps that seamlessly leverage intel Optimizations for Xeon CPU processors using Intel Extension for Tranfomrer Domain toolkit, PyTorch* and Intel® Neural Compressor. 
 
 Bring in most datasets from Hugging Face or specify your local dataset supporting your specific use case.
 
 
 ## Solution Technical Overview
 
-The Huggingface Finetuning(transfer learning) and Inference workflow demonstrates NLP(natural language processing) workflows/pipelines using hugginface transfomer API to be run along with intel optimised software represented using toolkits, domainkits, packages, frameworks and other libraries for effective use of intel hardware leveraging Intel's AI instructions for fast processing and increased performance.The  workflows can be easily used by applications or reference kits showcasing usage. 
+The Huggingface Finetuning(transfer learning) and Inference workflow demonstrates NLP(natural language processing) workflows/pipelines using hugginface transformer API to be run along with intel optimised software represented using toolkits, domainkits, packages, frameworks and other libraries for effective use of intel hardware leveraging Intel's AI instructions for fast processing and increased performance.The  workflows can be easily used by applications or reference kits showcasing usage. 
 
-The workflow currenly supports
+The workflow currently supports
 ```
 Huggingface NLP Finetuning / Transfer Learning
 Huggingface NLP Inference
@@ -172,7 +172,7 @@ You can try other tasks, models and datasets from huggingface repository per you
 
 For more information and additional workflows using this domain toolkit [here](../../workflows/)
 
-For more information about addtional workflows or to read about other relevant workflow
+For more information about additional workflows or to read about other relevant workflow
 examples, see these guides and software resources:
 
 - Put ref links and descriptions here, for example

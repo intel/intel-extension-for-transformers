@@ -101,7 +101,7 @@ class StableDiffusion_ReshapeFusion(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('StableDiffusion_ReshapeFusion mathched...')
+                logger.info('StableDiffusion_ReshapeFusion matched...')
                 logger.debug('StableDiffusion_ReshapeFusion = {}'.format(new_node_names))
                 for i in range(len(new_node_names)):
                     offset = 0

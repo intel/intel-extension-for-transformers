@@ -48,7 +48,7 @@ file(GLOB GPU_SOURCES
 )
 
 if (NE_WITH_SPARSELIB_GPU)
-  message( STATUS "GPU enbled" )
+  message( STATUS "GPU enabled" )
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-operator-names")
   find_package(OpenCL REQUIRED)
@@ -77,7 +77,7 @@ include(cmake/Utility.cmake)
 # include external cmake
 if (NE_WITH_SPARSELIB_VTUNE)
     include(cmake/FindVTune.cmake)
-    message( STATUS "VTune enbled" )
+    message( STATUS "VTune enabled" )
 endif()
 
 # TODO(Yi): enable/disable kernel(s) with VNNI intrin given compile option(s)

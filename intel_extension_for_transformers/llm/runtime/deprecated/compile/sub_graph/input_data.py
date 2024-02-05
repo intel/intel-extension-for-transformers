@@ -57,7 +57,7 @@ class InputData(Pattern):
                     },
                     'returns': [0, 1, 2]
                 },
-                
+
                 # onnx model from huggingface
                 {
                     'patterns': {
@@ -128,7 +128,7 @@ class InputData(Pattern):
                             1: [0]
                         }, {
                             2: [0]
-                        }], 
+                        }],
                         [[0, 1, 2], 3]]
                     },
                     'returns': [0, 1, 2]
@@ -199,7 +199,7 @@ class InputData(Pattern):
                             1: [0]
                         }, {
                             2: [0]
-                        }], 
+                        }],
                         [[0, 1, 2], 3]]
                     },
                     'returns': [0, 1, 2]
@@ -225,7 +225,7 @@ class InputData(Pattern):
                     },
                     'returns': []
                 },
-                
+
                 # minilmv2-lat-roberta
                 {
                     'patterns': {

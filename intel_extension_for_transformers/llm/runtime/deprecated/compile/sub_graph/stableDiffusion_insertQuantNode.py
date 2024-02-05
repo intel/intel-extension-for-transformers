@@ -96,9 +96,9 @@ class StableDiffusion_InsertQuantNode(Pattern):
                                     model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 3,
                                                                     quant_min, 'insert')
                                     model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
-                                                                    quant_max, 'insert')                                    
+                                                                    quant_max, 'insert')
                                 if "output" in quant_info[input_name][2]:
-                                    
+
                                     #import pdb;pdb.set_trace()
                                     output_name = node.output_tensors[0].name
                                     quant_min = Tensor(
@@ -109,7 +109,7 @@ class StableDiffusion_InsertQuantNode(Pattern):
                                     quant_max = Tensor(
                                         name=output_name + "_max",
                                         shape=[quant_info[input_name][4].size],
-                                        data=np.array(quant_info[input_name][4].astype("float32")), 
+                                        data=np.array(quant_info[input_name][4].astype("float32")),
                                         dtype="fp32")
                                     # insert output min and max tensor
                                     model.change_node_input_tensors(node.name, insert_offset + 7,
@@ -169,7 +169,7 @@ class StableDiffusion_InsertQuantNode(Pattern):
                                 quant_max = Tensor(
                                     name=output_name + "_max",
                                     shape=[quant_info[input_name][4].size],
-                                    data=np.array(quant_info[input_name][4].astype("float32")), 
+                                    data=np.array(quant_info[input_name][4].astype("float32")),
                                     dtype="fp32")
                                 # insert output min and max tensor
                                 model.change_node_input_tensors(node.name, insert_offset + 7,
@@ -209,5 +209,5 @@ class StableDiffusion_InsertQuantNode(Pattern):
                     for remove_idx in remove_tensors_list:
                         model.change_node_input_tensors(node.name, remove_tensors_list[0], None,
                                                         'remove')
-                                                        
+
         return model

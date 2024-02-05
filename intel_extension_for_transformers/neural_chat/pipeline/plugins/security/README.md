@@ -14,13 +14,13 @@ We offer an initial sensitive word dictionary located in this folder under the n
 from intel_extension_for_transformers.neural_chat.plugins.security import SafetyChecker
 safety_checker = SafetyChecker()
 ```
-There is also a parm names `matchType` in `SafetyChecker`. We defaulty set `matchType=2` to maintain a good checking accuracy. The user can set it to 1 for a more strict mapping rule.
+There is also a parm names `matchType` in `SafetyChecker`. We defaultly set `matchType=2` to maintain a good checking accuracy. The user can set it to 1 for a more strict mapping rule.
 
 We enable users to check whether the input query/context contains sensitive words using the following function,
 ```python
 contain = safety_checker.sensitive_check(query)
 ```
-If the input query contains the sensitive, it will return `True`. The user needs to modifiy the input query to avoid the sensitive word.
+If the input query contains the sensitive, it will return `True`. The user needs to modify the input query to avoid the sensitive word.
 
 Additionally, the chatbot can filter sensitive words with customized symbols. Users can access this function via the following method:
 ```python

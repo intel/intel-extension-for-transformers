@@ -1,4 +1,4 @@
 matplotlib
 numpy
-torch~=1.13
 pyyaml
+torch~=1.13

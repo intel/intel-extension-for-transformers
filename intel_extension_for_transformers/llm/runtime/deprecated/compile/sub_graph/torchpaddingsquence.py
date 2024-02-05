@@ -99,7 +99,7 @@ class TorchPaddingSequence(Pattern):
                 # import pdb;pdb.set_trace()
                 hidden_size = 4096
                 #hidden_size = int(mat_node.input_tensors[1].shape[-1])
-                
+
                 #hidden_size = 768
             else:
                 hidden_size = -1

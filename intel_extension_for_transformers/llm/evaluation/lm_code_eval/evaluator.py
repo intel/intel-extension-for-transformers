@@ -105,5 +105,5 @@ def evaluate(model,
 
         with open(args.metric_output_path, "w") as f:
             f.write(dumped)
-    
+
     return results

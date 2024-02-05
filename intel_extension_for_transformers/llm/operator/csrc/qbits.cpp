@@ -45,7 +45,7 @@ static void inline init_woq_config_param(woq::woq_config_param* p, woq::woq_runt
     case woq::WOQ_QUANTIZE:
     case woq::WOQ_DEQUANTIZE:
       p->src_dt = dispatcher_utils::QBITS_FP32;
-      p->dst_dt = dispatcher_utils::QBITS_FP32;  // bestla dosen't care about dst_dt in quantize/dequant task,so set fp32
+      p->dst_dt = dispatcher_utils::QBITS_FP32;  // bestla doesn't care about dst_dt in quantize/dequant task,so set fp32
                                                  // as default.
       break;
     case woq::WOQ_LINEAR:

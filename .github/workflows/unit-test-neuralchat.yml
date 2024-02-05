@@ -108,15 +108,15 @@ jobs:
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers && \
                  mv /log_dir . "
-      
+
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
         with:
           name: "UnitTest${{ matrix.test_name }}"
           path: ${{ github.workspace }}/log_dir
-           
-           
+
+
   Generate-Report:
     runs-on: itrex-node-spell
     needs: [unit-test]
@@ -131,16 +131,16 @@ jobs:
           fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
-        
+
       - name: Download UT PR Log
         uses: actions/download-artifact@v3
         with:
           path: ${{ github.workspace }}/log_dir
-           
+
       - name: Display structure of downloaded files
         run: cd ${{ github.workspace }}/log_dir && ls -R
-        
-      - name: Calculte coverage
+
+      - name: Calculate coverage
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
           /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir

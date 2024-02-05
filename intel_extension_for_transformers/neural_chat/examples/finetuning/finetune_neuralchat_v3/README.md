@@ -33,7 +33,7 @@ cd examples/finetuning/finetune_neuralchat_v3
 
 We select the latest pretrained [mistralai/Mistral-7B-v0.1](https://huggingface.co/mistralai/Mistral-7B-v0.1) and the open source dataset [Open-Orca/SlimOrca](https://huggingface.co/datasets/Open-Orca/SlimOrca) to conduct the experiment.
 
-The below script use deepspeed zero2 to lanuch the training with 8 cards Gaudi2. In the `finetune_neuralchat_v3.py`, the default `use_habana=True, use_lazy_mode=True, device="hpu"` for Gaudi2. And if you want to run it on Nvidia GPU, you can set them `use_habana=False, use_lazy_mode=False, device="auto"`.
+The below script use deepspeed zero2 to launch the training with 8 cards Gaudi2. In the `finetune_neuralchat_v3.py`, the default `use_habana=True, use_lazy_mode=True, device="hpu"` for Gaudi2. And if you want to run it on Nvidia GPU, you can set them `use_habana=False, use_lazy_mode=False, device="auto"`.
 
 ```python
 deepspeed --include localhost:0,1,2,3,4,5,6,7 \
