@@ -122,7 +122,6 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
         modules = OrderedDict()
         for module_config in modules_config:
             module_class = sentence_transformers.util.import_from_string(module_config['type'])
-            print('module_class', module_class)
             if module_class == sentence_transformers.models.Transformer and module_config['path'] == "":
                 logger.info('load Optimized InstructorTransformer')
                 kwargs = {}
