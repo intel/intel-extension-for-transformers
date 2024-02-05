@@ -1189,16 +1189,14 @@ def predict_stream(**params):
         return
     # prevent crash if no words are coming out
     first_word_output_time = datetime.now()
-    output = ""
     for new_text in streamer:
         if len(new_text) == 0:
             continue
-        output += new_text
         if output_word_len == 0:
             first_word_output_time = datetime.now()
         output_word_len += 1
         ret = {
-            "text": output,
+            "text": new_text,
             "error_code": 0,
             "usage": {
                 "prompt_tokens": input_token_len,
