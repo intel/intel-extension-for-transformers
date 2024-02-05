@@ -73,3 +73,14 @@ New options to note:
 - For finetuning stage, when using Intel Gaudi2, `--pad_max True` should be set, which will pad input sequence length (text + image patches) to `--model_max_length`.
 
 **Note:** If don't set `--use_habana, --use_lazy_mode`, the code can also run on gpus as well.
+
+
+##### MMMU Evaluation on Gaudi2
+
+```
+# For static shape, not support beam search currently
+bash scripts/mmmu_eval.sh
+```
+*note:* if you want to do evaluation on GPUs, please refer [the original code](https://github.com/MMMU-Benchmark/MMMU/tree/main)
+
+
