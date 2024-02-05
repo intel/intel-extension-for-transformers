@@ -108,7 +108,7 @@ python print_results.py --path ./example_outputs/llava1.5_13b
 ##### Run Llava
 In case if you want to reproduce the results of some of the models, please go check run_llava.py as an example.
 
-By seeting up the env following the [llava official repo](https://github.com/haotian-liu/LLaVA) and installing `datasets` packages by huggingface, you can run llava viathe following command:
+By setting up the env following the [llava official repo](https://github.com/haotian-liu/LLaVA) and installing `datasets` packages by huggingface, you can run llava viathe following command:
 
 ```
 CUDA_VISIBLE_DEVICES=0 nohup python run_llava.py \
