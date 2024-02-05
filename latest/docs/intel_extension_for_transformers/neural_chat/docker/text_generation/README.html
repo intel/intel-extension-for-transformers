@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Start NeuralChat Text Generation Service with Docker &mdash; Intel® Extension for Transformers 0.1.dev1+g0c63b55 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Start NeuralChat Text Generation Service with Docker</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/docker/text_generation/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="start-neuralchat-text-generation-service-with-docker">
+<h1>Start NeuralChat Text Generation Service with Docker<a class="headerlink" href="#start-neuralchat-text-generation-service-with-docker" title="Link to this heading"></a></h1>
+<p>Intel Neural Chat Text Generation Dockerfile installer for Ubuntu22.04/Habana Gaudi.</p>
+<p>Following the instruction of this README.html, you will start a Text Generation HTTP service with NeuralChat. The whole procedure is very clear and easy for customers to use with only two docker commands.The HTTP service is offered in form of Restful API, and you can consume it using <code class="docutils literal notranslate"><span class="pre">CurL</span></code> or <code class="docutils literal notranslate"><span class="pre">python.request</span></code> or other methods as you prefer.</p>
+<section id="environment-setup">
+<h2>Environment Setup<a class="headerlink" href="#environment-setup" title="Link to this heading"></a></h2>
+<section id="prepare-docker-image">
+<h3>Prepare Docker Image<a class="headerlink" href="#prepare-docker-image" title="Link to this heading"></a></h3>
+<p>Use Dockerfile to build Docker image in your environment. The <code class="docutils literal notranslate"><span class="pre">chat</span></code>, <code class="docutils literal notranslate"><span class="pre">chat</span> <span class="pre">q&amp;a</span></code>, and <code class="docutils literal notranslate"><span class="pre">document/report</span> <span class="pre">summary</span></code> use cases share the same Dockerfile.</p>
+<p>All you need to do is to choose the right Dockerfile according to your architecture. The following example is for CPU.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>./cpu
+docker<span class="w"> </span>build<span class="w"> </span>.<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w"> </span>-t<span class="w"> </span>neuralchat_text_generation:latest
+</pre></div>
+</div>
+<p>If you need to set proxy settings, add <code class="docutils literal notranslate"><span class="pre">--build-arg</span> <span class="pre">https_proxy=$https_proxy</span> <span class="pre">--build-arg</span> <span class="pre">http_proxy=$http_proxy</span></code> like below.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>.<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w"> </span>-t<span class="w"> </span>neuralchat_text_generation:latest<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span>
+</pre></div>
+</div>
+</section>
+<section id="prepare-configuration-file-and-documents">
+<h3>Prepare Configuration File and Documents<a class="headerlink" href="#prepare-configuration-file-and-documents" title="Link to this heading"></a></h3>
+<p>Before starting NeuralChat services, you need to configure <code class="docutils literal notranslate"><span class="pre">yaml</span></code> file according to your use case.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">chat.yaml</span></code>: Query Response System</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chatqna.yaml</span></code>: Chat Query &amp; Answer</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">summary.yaml</span></code>: Document/Report Summary</p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">chat.yaml</span></code>, you only need to configure your local ip and host, and set <code class="docutils literal notranslate"><span class="pre">device</span></code> according to your situation.</p>
+<p>As for <code class="docutils literal notranslate"><span class="pre">chatqna.yaml</span></code> and <code class="docutils literal notranslate"><span class="pre">summary.yaml</span></code>, you need to prepare a document folder named <code class="docutils literal notranslate"><span class="pre">rag_docs</span></code>, containing the Q&amp;A knowledge files. The rag chatbot will automatically retrieve answers to your question with the context of these files.</p>
+<p>Remember to set <code class="docutils literal notranslate"><span class="pre">device</span></code> to <code class="docutils literal notranslate"><span class="pre">cpu</span></code>/<code class="docutils literal notranslate"><span class="pre">hpu</span></code> according to your architecture.</p>
+</section>
+<section id="start-neuralchat-service">
+<h3>Start NeuralChat Service<a class="headerlink" href="#start-neuralchat-service" title="Link to this heading"></a></h3>
+<p>Use the following command to start NeuralChat Text Generation service. The example of starting a <code class="docutils literal notranslate"><span class="pre">chatqna</span></code> service is represented as below.</p>
+<p>Make sure the specified <code class="docutils literal notranslate"><span class="pre">port</span></code> is available, and <code class="docutils literal notranslate"><span class="pre">device</span></code> is correctly set.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>--name<span class="w"> </span>chat_qna<span class="w"> </span>-v<span class="w"> </span>./chatqna.yaml:/text_generation.yaml<span class="w"> </span>-v<span class="w"> </span>./rag_docs:/rag_docs<span class="w"> </span>neuralchat_chat_qna:latest
+</pre></div>
+</div>
+<p>The specific meaning of each parameter is explaine below:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">-it</span></code>: Create a docker container and launch it interactively.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--net=host</span> <span class="pre">--ipc=host</span></code>: Configure the network of docker container.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-v</span></code>: Mount <code class="docutils literal notranslate"><span class="pre">chatqna.yaml</span></code> file and your <code class="docutils literal notranslate"><span class="pre">rag_docs</span></code> into the docker container from your local server.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--name</span> <span class="pre">chat_qna</span></code>: The name of your docker container, you can set it differently as you need.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">neuralchat_chat_qna:latest</span></code>: The name of the Docker image you created just now.</p></li>
+</ul>
+<p>If you need to set proxy settings, use the command below.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>--name<span class="w"> </span>chat_qna<span class="w"> </span>-e<span class="w"> </span>https_proxy<span class="w"> </span>-e<span class="w"> </span>http_proxy<span class="w"> </span>-e<span class="w"> </span>HTTPS_PROXY<span class="w"> </span>-e<span class="w"> </span>HTTP_PROXY<span class="w"> </span>-e<span class="w"> </span>no_proxy<span class="w"> </span>-e<span class="w"> </span>NO_PROXY<span class="w"> </span>-v<span class="w"> </span>./chatqna.yaml:/text_generation.yaml<span class="w"> </span>-v<span class="w"> </span>./rag_docs:/rag_docs<span class="w"> </span>neuralchat_chat_qna:latest
+</pre></div>
+</div>
+</section>
+</section>
+<section id="consume-the-service">
+<h2>Consume the Service<a class="headerlink" href="#consume-the-service" title="Link to this heading"></a></h2>
+<p>when <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span></code> command is successfully executed, you can consume the HTTP services offered by NeuralChat. The Restful API of NeuralChat is compatible with OpenAI, so you can use the same request body as OpenAI.</p>
+<section id="consume-chat-service">
+<h3>Consume Chat Service<a class="headerlink" href="#consume-chat-service" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span><span class="si">${</span><span class="nv">your_ip</span><span class="si">}</span>:<span class="si">${</span><span class="nv">your_port_in_yaml</span><span class="si">}</span>/v1/chat/completions<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;model&quot;: &quot;Intel/neural-chat-7b-v3-1&quot;, &quot;stream&quot;: true, &quot;messages&quot;: [</span>
+<span class="s1">  {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Tell me about Intel Xeon Scalable Processors.&quot;}]}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="consume-chatqna-service">
+<h3>Consume ChatQnA Service<a class="headerlink" href="#consume-chatqna-service" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span><span class="si">${</span><span class="nv">your_ip</span><span class="si">}</span>:<span class="si">${</span><span class="nv">your_port_in_yaml</span><span class="si">}</span>/v1/chat/completions<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;model&quot;: &quot;Intel/neural-chat-7b-v3-1&quot;, &quot;stream&quot;: true, &quot;messages&quot;: [</span>
+<span class="s1">  {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;What is RAG?&quot;}]}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="consume-summary-service">
+<h3>Consume Summary Service<a class="headerlink" href="#consume-summary-service" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span><span class="si">${</span><span class="nv">your_ip</span><span class="si">}</span>:<span class="si">${</span><span class="nv">your_port_in_yaml</span><span class="si">}</span>/v1/chat/completions<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;model&quot;: &quot;Intel/neural-chat-7b-v3-1&quot;, &quot;stream&quot;: true, &quot;messages&quot;: [</span>
+<span class="s1">  {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;You are a Summary Chatbot designed to help users quickly understand the main points of given texts. Your primary skill is summarization, which involves condensing lengthy information into concise, easily digestible summaries. When users provide you with text, whether it is an article, a document, or any form of written content, your task is to analyze the content and produce a summary that captures the essential information and key points. You should ensure that your summaries are accurate, neutral, and free from personal opinions or interpretations. Your goal is to save users time and make information more accessible by highlighting the most important aspects of the content they are interested in.&quot;},</span>
+<span class="s1">  {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Give me the Summary of Intel 2023 Annual Report.&quot;}]}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fed9cbb7fd0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
