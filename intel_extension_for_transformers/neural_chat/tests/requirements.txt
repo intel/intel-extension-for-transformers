@@ -25,7 +25,7 @@ intel_extension_for_pytorch==2.1.0
 joblib==1.2.0
 kornia==0.6.8
 langchain==0.0.354
-langchain_core
+langchain_core==0.1.18
 langid
 librosa
 markdown
