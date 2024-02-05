@@ -54,7 +54,7 @@ class EnglishNormalizer:
             "Z": "zed",
             ".": "point",
         }
-        
+
     def correct_abbreviation(self, text):
         # TODO mixed abbreviation or proper noun like i7, ffmpeg, BTW should be supported
 

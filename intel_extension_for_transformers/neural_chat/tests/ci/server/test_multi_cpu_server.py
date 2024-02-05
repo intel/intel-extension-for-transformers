@@ -19,29 +19,59 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from intel_extension_for_transformers.neural_chat.server.multi_cpu_server import (
-    parse_args, prepare_params, warmup
+    parse_args, warmup, check_args, construct_chatbot
 )
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
 
 
-@patch('intel_extension_for_transformers.neural_chat.server.multi_cpu_server.build_chatbot')
 class TestMultiCPUServer(unittest.TestCase):
-    
-    def test_parse_args(self, mock_build_chatbot):
-        args = parse_args()
-        print(args)
-        self.assertEqual(args.temperature, 0.1)
 
-    def test_prepare_params_warmup(self, mock_build_chatbot):
+    def test_check_args(self):
+        mock_args = MagicMock()
+        mock_args.temperature = 0.1
+        mock_args.top_p = 0.1
+        mock_args.top_k = 1
+        mock_args.repetition_penalty = 1.1
+        mock_args.num_beams = 1
+        mock_args.max_new_tokens = 128
+        try:
+            check_args(mock_args)
+        except ValueError:
+            self.fail("Function <check_args()> raised ValueError unexpectedly")
+
+    def test_check_args_value_error(self):
+        mock_args = MagicMock()
+        mock_args.temperature = 1.5
+        mock_args.top_p = 0.1
+        mock_args.top_k = 1
+        mock_args.repetition_penalty = 1.1
+        mock_args.num_beams = 1
+        mock_args.max_new_tokens = 128
+        with self.assertRaises(ValueError):
+            check_args(mock_args)
+
+    @patch("intel_extension_for_transformers.neural_chat.server.multi_cpu_server.build_chatbot")
+    def test_construct_chatbot(self, mock_build_chatbot):
+        mock_build_chatbot.return_value = MagicMock()
+        mock_args = MagicMock()
+        mock_args.temperature = 0.1
+        mock_args.top_p = 0.1
+        mock_args.top_k = 1
+        mock_args.repetition_penalty = 1.1
+        mock_args.num_beams = 1
+        mock_args.max_new_tokens = 128
+
+        chatbot, gen_config = construct_chatbot(mock_args)
+        self.assertEqual(gen_config.device, "cpu")
+        mock_build_chatbot.assert_called_once()
+
+    def test_warmup(self):
         mock_chatbot = MagicMock()
         mock_chatbot.predict_stream.return_value = [['How ', 'are ', 'you', '?']]
-        mock_build_chatbot.return_value = mock_chatbot
-        args, config, chatbot, gen_config = prepare_params()
-        self.assertEqual(config.device, 'cpu')
 
-        try:
-            warmup(args, chatbot, gen_config)
-        except Exception as e:
-            raise Exception(e)
+        response = warmup(mock_chatbot, 0, None)
+        print(response)
+        mock_chatbot.predict_stream.assert_called_once()
 
 
 if __name__ == "__main__":

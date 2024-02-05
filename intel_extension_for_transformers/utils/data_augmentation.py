@@ -255,7 +255,7 @@ class DataAugmentation:
         """Execute the process of text generation augmentation.
 
         Args:
-            extension: No used 
+            extension: No used
             raw_datasets: The original datasets, the datasets can be from huggingface datasets(like: glue/sst2) or
             the customer datasets, each sample should be:
                 'label' + '\t' + 'sentence' + EOS + '\n'

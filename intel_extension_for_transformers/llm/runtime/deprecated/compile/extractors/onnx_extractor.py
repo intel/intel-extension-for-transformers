@@ -35,7 +35,7 @@ class ONNXExtractor(object):
     """The ONNXExtractor class.
 
     Decorate the node in model.graph_def, and the new node has the attributes like input_tensors
-    and output_tensors, these tensors record the source/dest op name. All of these nodes 
+    and output_tensors, these tensors record the source/dest op name. All of these nodes
     (in a list) will compose a graph, which is Graph class, as the return object.
 
     Args:

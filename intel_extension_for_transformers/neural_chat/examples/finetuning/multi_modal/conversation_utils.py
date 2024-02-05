@@ -262,4 +262,3 @@ conv_templates = {
     "v1": conv_llava_v1,
     "plain": conv_llava_plain,
 }
-

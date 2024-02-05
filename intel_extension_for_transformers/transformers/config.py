@@ -1209,7 +1209,7 @@ class BenchmarkConfig:
     def kwargs(self, kwargs):
         """Set kwargs."""
         self._kwargs = kwargs
-        
+
 @constructor_register
 class PrunerV2:
     """

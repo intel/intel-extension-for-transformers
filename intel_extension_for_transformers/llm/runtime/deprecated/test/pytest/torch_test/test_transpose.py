@@ -48,12 +48,12 @@ class TestTorchOP(unittest.TestCase):
         n = Net()
         example_in = torch.rand(3, 4, 5)
         traced_model = torch.jit.trace(n, example_in)
-        
+
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
         # torch.onnx.export(n, example_in, '{}.onnx'.format(file_name))
         ref_out = traced_model(example_in).detach().numpy()
         print(ref_out.shape)
-        
+
         graph = compile('{}.pt'.format(file_name))
         graph.save(file_name)
         newgraph = Graph()
@@ -68,12 +68,12 @@ class TestTorchOP(unittest.TestCase):
         n = Net()
         example_in = torch.rand(3, 4)
         traced_model = torch.jit.trace(n, example_in)
-        
+
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
         # torch.onnx.export(n, example_in, '{}.onnx'.format(file_name))
         ref_out = traced_model(example_in).detach().numpy()
         print(ref_out.shape)
-        
+
         graph = compile('{}.pt'.format(file_name))
         graph.save(file_name)
         newgraph = Graph()

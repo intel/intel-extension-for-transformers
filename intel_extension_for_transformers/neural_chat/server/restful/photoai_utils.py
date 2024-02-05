@@ -96,7 +96,7 @@ def get_address_from_gps(latitude, longitude, api_key):
         return result
     else:
         return None
-    
+
 
 def infer_image(pic_path, processor, model):
     raw_image = Image.open(pic_path).convert('RGB')
@@ -148,4 +148,3 @@ def transfer_xywh(facial_area: dict):
     for item in items:
         result += str(facial_area[item]) + '_'
     return result
-

@@ -20,11 +20,11 @@ from typing import List
 import os, types
 from fastchat.conversation import get_conv_template, Conversation
 from ..config import GenerationConfig
-from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
+from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
-from ..prompts.prompt import MAGICODER_PROMPT
+from ..prompts.prompt import MAGICODER_PROMPT, generate_sqlcoder_prompt
 from ..utils.error_utils import set_latest_error
 from ..errorcode import ErrorCodes
 import logging
@@ -63,11 +63,11 @@ class BaseModel(ABC):
     A base class for LLM.
     """
 
-    def __init__(self):
+    def __init__(self, model_name, task="chat"):
         """
         Initializes the BaseModel class.
         """
-        self.model_name = ""
+        self.model_name = model_name
         self.asr = None
         self.tts = None
         self.face_animation = None
@@ -81,16 +81,14 @@ class BaseModel(ABC):
         self.device = None
         self.conv_template = None
         self.ipex_int8 = None
+        self.get_conv_template(task)
 
-    def match(self, model_path: str):
+    def match(self):
         """
-        Check if the provided model_path matches the current model.
-
-        Args:
-            model_path (str): Path to a model.
+        Check if the provided model_name matches the current model.
 
         Returns:
-            bool: True if the model_path matches, False otherwise.
+            bool: True if the model_name matches, False otherwise.
         """
         return True
 
@@ -168,11 +166,10 @@ class BaseModel(ABC):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
         query_include_prompt = False
-        self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
-              "phi-2" in self.model_name.lower():
+              "phi-2" in self.model_name.lower() or "sqlcoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -220,7 +217,7 @@ class BaseModel(ABC):
         assert query is not None, "Query cannot be None."
 
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
-            query = self.prepare_prompt(query, self.model_name, config.task)
+            query = self.prepare_prompt(query, config.task)
 
         # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
         if "phind" in self.model_name.lower():
@@ -231,6 +228,9 @@ class BaseModel(ABC):
 
         if "magicoder" in self.model_name.lower():
             query = MAGICODER_PROMPT.format(instruction=query)
+
+        if "sqlcoder" in self.model_name.lower():
+            query = generate_sqlcoder_prompt(query, config.sql_metadata)
 
         try:
             response = predict_stream(
@@ -279,10 +279,10 @@ class BaseModel(ABC):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
         query_include_prompt = False
-        self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
                "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
-               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
+               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
+               "sqlcoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -327,7 +327,7 @@ class BaseModel(ABC):
 
         if not query_include_prompt and not is_plugin_enabled("retrieval") \
             and not 'vllm' in str(MODELS[self.model_name]['model']):
-            query = self.prepare_prompt(query, self.model_name, config.task)
+            query = self.prepare_prompt(query, config.task)
 
         # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
         if "phind" in self.model_name.lower():
@@ -338,6 +338,9 @@ class BaseModel(ABC):
 
         if "magicoder" in self.model_name.lower():
             query = MAGICODER_PROMPT.format(instruction=query)
+
+        if "sqlcoder" in self.model_name.lower():
+            query = generate_sqlcoder_prompt(query, config.sql_metadata)
 
         # LLM inference
         try:
@@ -407,7 +410,7 @@ class BaseModel(ABC):
             os.remove(audio_path)
         return video_path
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self) -> Conversation:
         """
         Get the default conversation template for the given model path.
 
@@ -433,25 +436,33 @@ class BaseModel(ABC):
         if self.conv_template:
             return
         if not task:
-            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name, clear_history=True)
+            self.conv_template = PromptTemplate(self.get_default_conv_template().name, clear_history=True)
         else:
             clear_history = True
             if task == "completion":
                 name = "alpaca_without_input"
             elif task == "chat":
-                name = "neural-chat-7b-v2"
                 clear_history = False
+                name = self.get_default_conv_template().name
             elif task == "summarization":
                 name = "summarization"
             else:
                 raise NotImplementedError(f"Unsupported task {task}.")
             self.conv_template = PromptTemplate(name, clear_history=clear_history)
 
-    def prepare_prompt(self, prompt: str, model_path: str, task: str = ""):
-        self.get_conv_template(model_path, task)
+    def prepare_prompt(self, prompt: str, task: str = ""):
+        self.get_conv_template(task)
         self.conv_template.append_message(self.conv_template.roles[0], prompt)
         self.conv_template.append_message(self.conv_template.roles[1], None)
         return self.conv_template.get_prompt()
+
+    def set_customized_system_prompts(self, system_prompts, model_path: str, task: str = ""):
+        """Override the system prompts of the model path and the task."""
+        if system_prompts is None or len(system_prompts) == 0:
+            raise Exception("Please check the model system prompts, should not be None!")
+        else:
+            self.get_conv_template(model_path, task)
+            self.conv_template.conv.system_message = system_prompts
 
     def register_plugin_instance(self, plugin_name, instance):
         """
@@ -486,7 +497,7 @@ model_adapters: List[BaseModel] = []
 
 def register_model_adapter(cls):
     """Register a model adapter."""
-    model_adapters.append(cls())
+    model_adapters.append(cls)
 
 
 def get_model_adapter(model_name_path: str) -> BaseModel:
@@ -494,7 +505,7 @@ def get_model_adapter(model_name_path: str) -> BaseModel:
     model_path_basename = os.path.basename(os.path.normpath(model_name_path)).lower()
 
     for adapter in model_adapters:
-        if adapter.match(model_path_basename) and type(adapter) != BaseModel:
+        if adapter.match(model_path_basename):
             return adapter
 
     raise ValueError(f"No valid model adapter for {model_name_path}")

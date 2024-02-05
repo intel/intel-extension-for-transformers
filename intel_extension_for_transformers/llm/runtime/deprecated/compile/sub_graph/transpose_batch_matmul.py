@@ -382,7 +382,7 @@ class TransposeBatchMatMul(Pattern):
 
         for i in range(0, len(pattern_mapping_config['TransposeBatchMatMul'])-5):
             pattern_dict = pattern_mapping_config['TransposeBatchMatMul'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("TransposeBatchMatMul", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("TransposeBatchMatMul",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):

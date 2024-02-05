@@ -83,7 +83,7 @@ def main():
         if args.dataset != "local":
             error_msg = f"Now only support local datasets for inference_only pipeline."
             raise ValueError(error_msg)
-        
+
         if args.infer_impl == "trainer":
             from infer_trainer import TrainerInfer
             infer = TrainerInfer(**kwargs)
@@ -93,12 +93,12 @@ def main():
         else:
             error_msg = f"Now only support trainer and itrex implementation for inference pipeline."
             raise ValueError(error_msg)
-        
+
         infer.e2e_infer_setup_only()
 
         if type(args.local_dataset["inference_input"]) == str:
             args.local_dataset["inference_input"] = args.local_dataset["inference_input"].split(",")
-            
+
         for f in args.local_dataset["inference_input"]:
             infer.e2e_infer_only(f)
 

@@ -37,4 +37,3 @@ class Concat(Operator):
                 self._attr['axis'] = node.attribute[0].ints
         if framework == "torch":
             self._attr['axis'] = node.inputsAt(node.inputsSize() - 1).toIValue()
-            
