@@ -1,0 +1,8 @@
+accelerate>=0.21.0
+datasets
+faiss-cpu
+jsonlines
+numpy
+sentence_transformers
+torch>=1.6.0
+transformers
