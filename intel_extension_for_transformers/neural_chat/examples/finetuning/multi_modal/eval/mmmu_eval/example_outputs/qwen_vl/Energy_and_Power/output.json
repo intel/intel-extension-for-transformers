@@ -359,7 +359,7 @@
             "B": "2.61E5 Pa",
             "C": "1.56E6 Pa"
         },
-        "response": "We refer to the image for help. The pipe flow in Fig. P6.52 is driven by pressurized air in the tank. The water temperature is 20\u00b0C. What gage pressure p_1 is needed to provide a 60 m^3/h water flow rate? The answer is (A) 2.38E6 Pa."
+        "response": "We refer to the image for help. The pipe flow in Fig. P6.52 is driven by pressurized air in the tank. The water temperature is 20\u00b0C. What gauge pressure p_1 is needed to provide a 60 m^3/h water flow rate? The answer is (A) 2.38E6 Pa."
     },
     {
         "id": "validation_Energy_and_Power_23",
@@ -425,7 +425,7 @@
             "B": "3600 lbf/ft^2",
             "C": "3400 lbf/ft^2"
         },
-        "response": "We are given that the water flow rate is 0.117 gpm, the hose diameter is 0.625 inches, the distance from the nozzle exit to the garden is 125 feet, and we neglect losses. We are asked to find the minimum gage pressure required inside the hose to reach the garden. We can use the formula for the pressure drop across a pipe to find the minimum gage pressure required inside the hose. The formula is P = (\u03c0D^4 / 2gh) - P_in, where P is the pressure drop across the pipe, D is the pipe diameter, g is the acceleration due to gravity, h is the height of the pipe, and P_in is the initial pressure inside the hose. Substituting in the given values, we get P = (\u03c0(0.625)^4 / 2(9.81)(125)) - P_in = 3400 lbf/ft^2. Therefore, the answer is (C)."
+        "response": "We are given that the water flow rate is 0.117 gpm, the hose diameter is 0.625 inches, the distance from the nozzle exit to the garden is 125 feet, and we neglect losses. We are asked to find the minimum gauge pressure required inside the hose to reach the garden. We can use the formula for the pressure drop across a pipe to find the minimum gauge pressure required inside the hose. The formula is P = (\u03c0D^4 / 2gh) - P_in, where P is the pressure drop across the pipe, D is the pipe diameter, g is the acceleration due to gravity, h is the height of the pipe, and P_in is the initial pressure inside the hose. Substituting in the given values, we get P = (\u03c0(0.625)^4 / 2(9.81)(125)) - P_in = 3400 lbf/ft^2. Therefore, the answer is (C)."
     },
     {
         "id": "validation_Energy_and_Power_27",

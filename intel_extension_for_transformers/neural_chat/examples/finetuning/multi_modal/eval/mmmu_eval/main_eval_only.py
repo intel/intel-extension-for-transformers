@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Parse and Evalate"""
 import os
 import json
@@ -46,7 +60,7 @@ if __name__ == '__main__':
         except KeyError:
             print("Skipping {} for not found".format(category))
             continue
-        
+
         exampels_to_eval = []
         for data_id, parsed_pred in cat_outputs.items():
             question_type = cat_answers[data_id]['question_type']
@@ -87,7 +101,7 @@ if __name__ == '__main__':
             printable_results[cat_name] = {"num": int(cat_results['num_example']),
                                            "acc": round(cat_results['acc'], 3)
                                            }
-        
+
     # table.append(["-----------------------------", "-----", "----"])
     all_ins_acc = calculate_ins_level_acc(evaluation_result)
     printable_results['Overall'] = {"num": sum([cat_results['num_example'] for cat_results in evaluation_result.values()]),
@@ -95,4 +109,3 @@ if __name__ == '__main__':
                                     }
 
     print(printable_results)
-

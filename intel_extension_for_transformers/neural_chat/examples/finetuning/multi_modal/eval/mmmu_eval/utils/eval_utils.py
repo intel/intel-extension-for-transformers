@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Response Parsing and Evaluation for various models"""
 from typing import Dict
 
@@ -41,7 +55,7 @@ def parse_multi_choice_response(response, all_choices, index2ans):
     elif len(candidates) > 1:
         start_indexes = []
         if index_ans:
-            if ans_with_brack: 
+            if ans_with_brack:
                 for can in candidates:
                     index = response.rfind(f'({can})')
                     start_indexes.append(index) # -1 will be ignored anyway
@@ -91,7 +105,7 @@ def normalize_str(string):
         string = round(string, 2)
         return [string]
     else: # it's likely to be a string
-        # lower it 
+        # lower it
         string = string.lower()
         if len(string) == 1:
             return [" " + string, string + " "] # avoid trivial matches
@@ -145,7 +159,7 @@ def parse_open_response(response):
                         if len(resp.split(indicator)[-1].strip()) < len(shortest_key_response):
                             shortest_key_response = resp.split(indicator)[-1].strip()
                     # key_responses.append(resp.split(indicator)[1].strip())
-            
+
             if shortest_key_response:
                 # and it's not trivial
                 if shortest_key_response.strip() not in [":", ",", ".", "!", "?", ";", ":", "'"]:
@@ -253,4 +267,3 @@ def calculate_ins_level_acc(results: Dict):
     if ins_num == 0:
         return 0
     return acc / ins_num
-

@@ -187,7 +187,7 @@
             "C": "Coagulative necrosis",
             "D": "Wet gangrene"
         },
-        "response": "The most likely finding in this man's disease process is liquefactive necrosis, as shown in the representative gross appearance depicted in image 1. This is a characteristic feature of acute myocardial infarction, which is often associated with ST segment elevation on an EKG and elevated cardiac troponin levels. Liquefactive necrosis refers to the soft, gel-like appearance of necrotic tissue, which is a result of the breakdown of cellular structures and the release of intracellular contents. This contrasts with the other options listed, which describe different types of necrosis (caseous necrosis, coagulative necrosis, and wet gangrene)."
+        "response": "The most likely finding in this man's disease process is liquefactive necrosis, as shown in the representative gross appearance depicted in image 1. This is a characteristic feature of acute myocardial infraction, which is often associated with ST segment elevation on an EKG and elevated cardiac troponin levels. Liquefactive necrosis refers to the soft, gel-like appearance of necrotic tissue, which is a result of the breakdown of cellular structures and the release of intracellular contents. This contrasts with the other options listed, which describe different types of necrosis (caseous necrosis, coagulative necrosis, and wet gangrene)."
     },
     {
         "id": "validation_Clinical_Medicine_11",
@@ -313,9 +313,9 @@
             "A": "Influenza viral pneumonia",
             "B": "Hypersensitivity pneumonitis",
             "C": "Diffuse alveolar damage",
-            "D": "Miliary tuberculosis"
+            "D": "Military tuberculosis"
         },
-        "response": "The most likely diagnosis based on the microscopic appearance of the transbronchial biopsy is Miliary tuberculosis. This is a pattern of small, round, caseating granulomas in the lung tissue, which is characteristic of tuberculosis infection. The other options listed do not have a microscopic appearance that is consistent with this diagnosis."
+        "response": "The most likely diagnosis based on the microscopic appearance of the transbronchial biopsy is Military tuberculosis. This is a pattern of small, round, caseating granulomas in the lung tissue, which is characteristic of tuberculosis infection. The other options listed do not have a microscopic appearance that is consistent with this diagnosis."
     },
     {
         "id": "validation_Clinical_Medicine_18",

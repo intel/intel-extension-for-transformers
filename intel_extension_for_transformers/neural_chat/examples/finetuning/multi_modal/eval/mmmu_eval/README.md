@@ -76,7 +76,7 @@ Each `output.json`` has a list of dict containing instances for evaluation ().
 ```
 python main_parse_and_eval.py --path ./example_outputs/llava1.5_13b --subject ALL # all subject
 
-# OR you can sepecify one subject for the evaluation
+# OR you can specify one subject for the evaluation
 
 python main_parse_and_eval.py --path ./example_outputs/llava1.5_13b --subject elec # short name for Electronics. use --help for all short names
 

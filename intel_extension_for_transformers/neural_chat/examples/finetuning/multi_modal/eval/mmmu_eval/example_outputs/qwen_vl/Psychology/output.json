@@ -507,13 +507,13 @@
             "E"
         ],
         "index2ans": {
-            "A": "Social loafing",
+            "A": "Social loading",
             "B": "Social facilitation",
             "C": "Group polarization",
             "D": "Groupthink",
             "E": "Minority influence"
         },
-        "response": "The graph shows that as the size of the group increases, the amount of effort exerted by individuals in the group also increases. This indicates that social facilitation occurs when individuals in groups work together to achieve a common goal, and it is not related to social loafing, group polarization, groupthink, or minority influence. Therefore, the answer is (B)."
+        "response": "The graph shows that as the size of the group increases, the amount of effort exerted by individuals in the group also increases. This indicates that social facilitation occurs when individuals in groups work together to achieve a common goal, and it is not related to social loading, group polarization, groupthink, or minority influence. Therefore, the answer is (B)."
     },
     {
         "id": "validation_Psychology_29",
