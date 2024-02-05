@@ -24,10 +24,10 @@ import json
 import fnmatch
 from accelerate import Accelerator
 import torch
-import lm_eval # pylint: disable=E0611, E0401
-from lm_eval.arguments import EvalArguments # pylint: disable=E0611, E0401
-from lm_eval.evaluator import Evaluator # pylint: disable=E0611, E0401
-from lm_eval.tasks import ALL_TASKS # pylint: disable=E0611, E0401
+import bigcode_eval # pylint: disable=E0611, E0401
+from bigcode_eval.arguments import EvalArguments # pylint: disable=E0611, E0401
+from bigcode_eval.evaluator import Evaluator # pylint: disable=E0611, E0401
+from bigcode_eval.tasks import ALL_TASKS # pylint: disable=E0611, E0401
 
 
 def pattern_match(patterns, source_list):

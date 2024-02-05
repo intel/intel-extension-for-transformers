@@ -114,8 +114,6 @@ parser.add_argument("--seed", default=0, type=int)
 # ============Generation config============
 parser.add_argument("--max_length_generation", default=512, type=int)
 parser.add_argument("--temperature", default=0.8, type=float)
-parser.add_argument("--top_p", default=0.8, type=float)
-parser.add_argument("--top_k", default=0, type=int)
 parser.add_argument("--do_sample", action="store_true")
 parser.add_argument("--check_references", action="store_true")
 parser.add_argument("--max_memory_per_gpu", type=str, default=None)
@@ -129,6 +127,28 @@ parser.add_argument(
     type=int,
     default=0,
     help="Optional offset to start from when limiting the number of samples",
+)
+parser.add_argument(
+    "--save_every_k_tasks",
+    type=int,
+    default=-1,
+    help="Optional saving after every k tasks",
+)
+parser.add_argument(
+    "--left_padding",
+    action="store_true",
+    help="Force left padding, needed for models like chatglm3-6b",
+)
+parser.add_argument(
+    "--load_data_path",
+    type=str,
+    default=None,
+    help="Path of additional data to load for the tasks",
+)
+parser.add_argument(
+    "--modeltype",
+    default="causal",
+    help="AutoModel to use, it can be causal or seq2seq",
 )
 args = parser.parse_args()
 
@@ -356,7 +376,7 @@ if args.benchmark:
 
 
 if args.accuracy:
-    from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
+    from intel_extension_for_transformers.llm.evaluation.bigcode_eval import evaluate
 
     results = evaluate(
         model=user_model,
