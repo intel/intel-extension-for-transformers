@@ -21,7 +21,6 @@ fschat==0.2.35
 g2p_en
 gfpgan
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
-git+https://github.com/UKPLab/sentence-transformers.git@5c838a705c24c2dfd151a71674c99d09d014c1a9
 gptcache
 gptcache
 huggingface_hub
@@ -37,7 +36,7 @@ joblib==1.2.0
 jsonlines
 kornia==0.6.8
 langchain==0.0.354
-langchain_core
+langchain_core==0.1.18
 langid
 librosa
 markdown
@@ -73,6 +72,7 @@ safetensors
 scikit-image==0.19.3
 scikit-learn
 scipy==1.10.1
+sentence-transformers==2.3.1
 sentence_transformers
 shortuuid
 shortuuid

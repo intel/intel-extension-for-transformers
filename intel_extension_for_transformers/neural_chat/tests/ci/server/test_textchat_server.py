@@ -47,7 +47,9 @@ class UnitTest(unittest.TestCase):
                                                    model_path=self.chatbot.model_name,)
         # Create a sample chat completion request object
         chat_request = ChatCompletionRequest(
-            prompt="Tell me about Intel Xeon processors.",
+            model="facebook/opt-125m",
+            messages=[{"role": "system", "content": "You cannot tell jokes"},
+                      {"role": "user", "content": "Tell me about Intel Xeon processors."}],
         )
         response = client.post("/v1/chat/completions", json=chat_request.dict())
         assert response.status_code == 200
