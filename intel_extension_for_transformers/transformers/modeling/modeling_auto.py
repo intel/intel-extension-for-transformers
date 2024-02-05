@@ -138,18 +138,32 @@ class _BaseQBitsAutoModelClass:
             from neural_speed import Model
             from huggingface_hub import hf_hub_download
 
-            logger.info("Using LLM runtime.")
+            logger.info("Using Neural Speed to load the GGUF model...")
 
             model_file = kwargs.get("model_file")
             gguf_model_file = hf_hub_download(pretrained_model_name_or_path, filename=model_file)
-            model_config = hf_hub_download(pretrained_model_name_or_path, filename="config.json")
-            with open(model_config, "r", encoding="utf-8") as f:
-                hparams = json.load(f)
-                if "model_type" in hparams:
-                    model_type = hparams["model_type"]
-                else:
-                    logger.error("Can't get model_type for this Hugginface repo.")
-                    exit(0)
+
+            if kwargs.get("model_type", False):
+                model_type = kwargs.get("model_type")
+            else:
+                model_config = hf_hub_download(pretrained_model_name_or_path, filename="config.json")
+                with open(model_config, "r", encoding="utf-8") as f:
+                    hparams = json.load(f)
+                    if "model_type" in hparams:
+                        model_type = hparams["model_type"]
+                    else:
+                        logger.error("Can't get model_type for this Hugginface repo.")
+                        exit(0)
+            logger.info("The model_type is {}".format(model_type))
+            model_type_list = ["llama", "gptj", "mpt", "opt", "gptneox",   \
+                               "dolly", "polyglot", "starcoder", "falcon", \
+                               "bloom", "chatglm2", "chatglm", "baichuan", \
+                               "mistral", "qwen", "phi", "whisper"]
+
+            if model_type not in model_type_list:
+                logger.error(
+                    "Can't support this model_type. Please set the correct model_type, supported model_type: {}".format(
+                        model_type_list))
 
             model = Model()
             model.init_from_bin(model_type, gguf_model_file)

@@ -550,8 +550,9 @@ def load_model(
         else:
             optimization_config.post_init()
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
-        if not model.config.is_encoder_decoder:
-            tokenizer.padding_side = "left"
+        if hasattr(model, 'config'):
+            if model.config.is_encoder_decoder:
+                tokenizer.padding_side = "left"
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
         MODELS[model_name]["model"] = model
@@ -667,7 +668,8 @@ def load_model(
         return
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE) and \
-       not re.search("magicoder", model_name, re.IGNORECASE):
+       (not re.search("magicoder", model_name, re.IGNORECASE) and
+       not re.search("deepseek-coder", model_name, re.IGNORECASE)):
         # unwind broken decapoda-research config
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
@@ -695,6 +697,9 @@ def load_model(
         model.generation_config.pad_token_id = (
             tokenizer.pad_token_id
         ) = tokenizer.eos_token_id
+
+    if tokenizer.pad_token_id and not model.generation_config.pad_token_id:
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
 
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
@@ -1436,7 +1441,7 @@ def predict(**params):
         output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     else:
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
-    
+
     identifier_index = -1
     if "### Response:" in output:
         return output.split("### Response:")[identifier_index].strip()
@@ -1450,4 +1455,7 @@ def predict(**params):
         return output.split("[/INST]")[identifier_index].strip()
     if "答：" in output:
         return output.split("答：")[identifier_index].strip()
+    if "Answer:" in output:
+        return output.split("Answer:")[identifier_index].strip()
+
     return output

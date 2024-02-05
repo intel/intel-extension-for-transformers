@@ -224,7 +224,10 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             optimization_config = None
             yaml_config = config.get("optimization", {})
             ipex_int8 = yaml_config.get("ipex_int8", False)
-            use_llm_runtime = yaml_config.get("use_llm_runtime", {})
+            use_llm_runtime = yaml_config.get("use_llm_runtime", False)
+            use_gptq = yaml_config.get("use_gptq", False)
+            use_awq = yaml_config.get("use_awq", False)
+            use_autoround = yaml_config.get("use_autoround", {})
             optimization_type = yaml_config.get("optimization_type", {})
             compute_dtype = yaml_config.get("compute_dtype", {})
             weight_dtype = yaml_config.get("weight_dtype", {})
@@ -240,8 +243,15 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                                                 world_size=world_size)
             from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
             if optimization_type == "weight_only":
-                optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype,
-                                                            use_ggml=use_ggml, use_cache=use_cached_bin)
+                if use_gptq:
+                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_gptq)
+                elif use_awq:
+                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_awq)
+                elif use_autoround:
+                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_autoround)
+                else:
+                    optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype,
+                                                                use_ggml=use_ggml, use_cache=use_cached_bin)
             elif optimization_type == "mix_precision":
                 optimization_config = MixedPrecisionConfig(dtype=mix_precision_dtype)
             elif optimization_type == "bits_and_bytes":
