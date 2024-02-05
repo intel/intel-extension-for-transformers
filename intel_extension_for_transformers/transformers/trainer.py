@@ -1981,7 +1981,8 @@ class BaseTrainer():
             if is_pretrained:
                 if state_dict is None:
                     state_dict = unwrapped_model.state_dict()
-                unwrapped_model.save_pretrained(output_dir, state_dict=state_dict)
+                unwrapped_model.save_pretrained(output_dir, state_dict=state_dict,
+                                                    safe_serialization=self.args.save_safetensors)
             else:
                 logger.info(
                     "Trainer.model is not a `PreTrainedModel`, only saving its state dict.")
@@ -1993,7 +1994,8 @@ class BaseTrainer():
             if self.enable_inc_quant and self.opt_model:
                 self._save_inc_int8(self.opt_model, output_dir)
             else:
-                self.model.save_pretrained(output_dir, state_dict=state_dict)
+                self.model.save_pretrained(output_dir, state_dict=state_dict,
+                                                safe_serialization=self.args.save_safetensors)
         if self.tokenizer is not None:  # pragma: no cover
             self.tokenizer.save_pretrained(output_dir)
 
