@@ -292,7 +292,7 @@ class FinetuningArguments:
     num_virtual_tokens: int = field(
         default=10,
         metadata={
-            "help": "The length of the vitrual tokens to insert in P-tuning/Prompt-tuning/Prefix-tuning"
+            "help": "The length of the virtual tokens to insert in P-tuning/Prompt-tuning/Prefix-tuning"
         },
     )
     ptun_hidden_size: int = field(
@@ -366,7 +366,7 @@ class TTSModelArguments:
     step: int = field(default=0, metadata={"help": "TTS model step."})
     warmup_step: int = field(default=0, metadata={"help": "TTS model warmup step."})
     learning_rate: float = field(default=1e-5, metadata={"help": "Learning rate."})
- 
+
 @dataclass
 class BaseFinetuningConfig:
     model_args: ModelArguments
@@ -406,7 +406,10 @@ class GenerationConfig:
     max_gpu_memory: int = None
     use_fp16: bool = False
     ipex_int8: bool = False
+    return_stats: bool = False
+    format_version: str = "v2"
     task: str = ""
+    sql_metadata: str = ""
 
 @dataclass
 class LoadingModelConfig:
@@ -419,16 +422,41 @@ class LoadingModelConfig:
     ipex_int8: bool = False
     use_llm_runtime: bool = False
 
+@dataclass
+class FrameworkConfig:
+    pass
+
+@dataclass
+class VllmEngineParams(FrameworkConfig):
+    # to use continuous batching during serving, use_async_engine should be set true,
+    # otherwise, serving is offline and synchronous, which means the next batch will only
+    # be queued and processed after the processing of the last batch is finished
+    use_async_engine: bool = True
+    # https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/llm.py
+    tensor_parallel_size: int = 1
+    quantization: str = None
+    gpu_memory_utilization: float = 0.9
+    swap_space: int = 4
+    enforce_eager: bool = False
+    max_context_len_to_capture: int = 8192
+
+@dataclass
+class ServingConfig:
+    framework: str = "vllm" # vllm/TGI
+    framework_config: FrameworkConfig = None
+
 class PipelineConfig:
     def __init__(self,
                  model_name_or_path="Intel/neural-chat-7b-v3-1",
                  tokenizer_name_or_path=None,
                  hf_access_token=None,
                  device="auto",
+                 task="",
                  plugins=plugins,
                  loading_config=None,
                  optimization_config=None,
-                 assistant_model=None):
+                 assistant_model=None,
+                 serving_config=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
@@ -436,7 +464,7 @@ class PipelineConfig:
             self.device = get_device_type()
         else:
             self.device = device
-
+        self.task = task
         self.plugins = plugins
 
         self.loading_config = loading_config if loading_config is not None else \
@@ -453,3 +481,4 @@ class PipelineConfig:
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
         self.assistant_model = assistant_model
+        self.serving_config = serving_config

@@ -11,8 +11,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-#include "../dispatcher/include/jblas_weightonly_dispatcher.hpp"
-#include "jblas/jit_blas_utils.h"
+#include "../dispatcher/include/bestla_weightonly_dispatcher.hpp"
+#include "bestla/bestla_utils.h"
 #include <ATen/core/TensorBody.h>
 #include <cstddef>
 #include <cstdint>
@@ -29,15 +29,15 @@ class RandBuffer {
  public:
   RandBuffer() {
     std::srand((int)std::time(0));
-    auto thread_num = jblas::device::CpuDevice::getInstance()->getThreads();
-    load_buffer = jblas::utils::amalloc<uint32_t>(thread_num * 16);
-    iws = jblas::utils::amalloc<int>(thread_num * 16);
+    auto thread_num = bestla::device::CpuDevice::getInstance()->getThreads();
+    load_buffer = bestla::utils::amalloc<uint32_t>(thread_num * 16);
+    iws = bestla::utils::amalloc<int>(thread_num * 16);
     for (int i = 0; i < thread_num; i++) initMWC(rand(), i);
   }
 
   ~RandBuffer() {
-    if (iws != NULL) jblas::utils::afree(iws);
-    if (load_buffer != NULL) jblas::utils::afree(load_buffer);
+    if (iws != NULL) bestla::utils::afree(iws);
+    if (load_buffer != NULL) bestla::utils::afree(load_buffer);
   }
 
 #pragma GCC push_options

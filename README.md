@@ -7,22 +7,15 @@ Intel® Extension for Transformers
 [![](https://dcbadge.vercel.app/api/server/Wxk3J3ZJkU?compact=true&style=flat-square)](https://discord.gg/Wxk3J3ZJkU)
 [![Release Notes](https://img.shields.io/github/v/release/intel/intel-extension-for-transformers)](https://github.com/intel/intel-extension-for-transformers/releases)
 
-[🏭Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💬NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[😃Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[🏭Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💬NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[😃Inference on CPU](https://github.com/intel/neural-speed/tree/main)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[😃Inference  on GPU](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
 ## 🚀Latest News
+* [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (e.g., PVC) and Intel Arc A-Series (e.g., ARC). Check out the [examples](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [scripts](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py).
+* [2024/01] Demonstrated **Intel Hybrid Copilot** in **CES 2024 Great Minds** Session "[Bringing the Limitless Potential of AI Everywhere](https://youtu.be/70J3uO3eLZA?t=1348)".
 * [2023/12] Supported **QLoRA on CPUs** to make fine-tuning on client CPU possible. Check out the [blog](https://medium.com/@NeuralCompressor/creating-your-own-llms-on-your-laptop-a08cc4f7c91b) and [readme](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md) for more details.
-* [2023/11] Demonstrated up to **3x LLM inference speedup** using **[Assisted Generation](https://huggingface.co/blog/assisted-generation)** (also called Speculative Decoding) from Hugging Face with Intel optimizations! Check out [more details](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/assisted_generation/README.md).
-* [2023/11] Refreshed **top-1 7B-sized LLM** by releasing [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
-* [2023/11] Released [**NeuralChat-v3**](https://huggingface.co/Intel/neural-chat-7b-v3), new **top-1 7B-sized LLM** available on Hugging Face. The model is fine-tuned on Intel Gaudi2 with supervised fine-tuning and direct preference optimization. Check out the [blog](https://medium.com/@NeuralCompressor/the-practice-of-supervised-finetuning-and-direct-preference-optimization-on-habana-gaudi2-a1197d8a3cd3).
+* [2023/11] Released **top-1 7B-sized LLM** [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1) and [DPO dataset](https://huggingface.co/datasets/Intel/orca_dpo_pairs). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
 * [2023/11] Published a **4-bit chatbot demo** (based on NeuralChat) available on [Intel Hugging Face Space](https://huggingface.co/spaces/Intel/NeuralChat-ICX-INT4). Welcome to have a try! To setup the demo locally, please follow the [instructions](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/docs/notebooks/setup_text_chatbot_service_on_spr.ipynb).
-* [2023/11] Released [**Fast, accurate, and infinite LLM inference**](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/docs/infinite_inference.md) with improved [StreamingLLM](https://arxiv.org/abs/2309.17453) on Intel CPUs!
-* [2023/11] Our paper [Efficient LLM Inference on CPUs](https://arxiv.org/abs/2311.00502) has been accepted by **NeurIPS'23** on Efficient Natural Language and Speech Processing. Thanks to all the collaborators!
-* [2023/10] LLM runtime, an Intel-optimized [GGML](https://github.com/ggerganov/ggml) compatible runtime, demonstrates **up to 15x performance gain in 1st token generation and 1.5x in other token generation** over the default [llama.cpp](https://github.com/ggerganov/llama.cpp).
-* [2023/10] LLM runtime now supports LLM inference with **infinite-length inputs up to 4 million tokens**, inspired from [StreamingLLM](https://arxiv.org/abs/2309.17453).
-* [2023/09] NeuralChat has been showcased in [**Intel Innovation’23 Keynote**](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) and [Google Cloud Next'23](https://cloud.google.com/blog/topics/google-cloud-next/welcome-to-google-cloud-next-23) to demonstrate GenAI/LLM capabilities on Intel Xeon Scalable Processors.
-* [2023/08] NeuralChat supports **custom chatbot development and deployment within minutes** on broad Intel HWs such as Xeon Scalable Processors, Gaudi2, Xeon CPU Max Series, Data Center GPU Max Series, Arc Series, and Core Processors. Check out [Notebooks](./intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
-* [2023/07] LLM runtime extends Hugging Face Transformers API to provide seamless low precision inference for popular LLMs, supporting low precision data types such as INT3/INT4/FP4/NF4/INT5/INT8/FP8.
 
 ---
 <div align="left">
@@ -43,9 +36,9 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 *  Optimized Transformer-based model packages such as [Stable Diffusion](examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion), [GPT-J-6B](examples/huggingface/pytorch/text-generation/deployment), [GPT-NEOX](examples/huggingface/pytorch/language-modeling/quantization#2-validated-model-list), [BLOOM-176B](examples/huggingface/pytorch/language-modeling/inference#BLOOM-176B), [T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list), [Flan-T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list), and end-to-end workflows such as [SetFit-based text classification](docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](workflows/dlsa) 
 
-*  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of plugins [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), and [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md). This framework supports Intel Gaudi2/CPU/GPU.
+*  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of [plugins](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/docs/advanced_features.md) such as [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), and [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md). This framework supports Intel Gaudi2/CPU/GPU.
 
-*  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels for Intel CPU and Intel GPU (TBD), supporting [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/models/gptneox), [LLAMA](intel_extension_for_transformers/llm/runtime/graph/models/llama), [MPT](intel_extension_for_transformers/llm/runtime/graph/models/mpt), [FALCON](intel_extension_for_transformers/llm/runtime/graph/models/falcon), [BLOOM-7B](intel_extension_for_transformers/llm/runtime/graph/models/bloom), [OPT](intel_extension_for_transformers/llm/runtime/graph/models/opt), [ChatGLM2-6B](intel_extension_for_transformers/llm/runtime/graph/models/chatglm), [GPT-J-6B](intel_extension_for_transformers/llm/runtime/graph/models/gptj), and [Dolly-v2-3B](intel_extension_for_transformers/llm/runtime/graph/models/gptneox). Support AMX, VNNI, AVX512F and AVX2 instruction set. We've boosted the performance of Intel CPUs, with a particular focus on the 4th generation Intel Xeon Scalable processor, codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html).
+*  [Inference](https://github.com/intel/neural-speed/tree/main) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels for Intel CPU and Intel GPU (TBD), supporting [GPT-NEOX](https://github.com/intel/neural-speed/tree/main/neural_speed/models/gptneox), [LLAMA](https://github.com/intel/neural-speed/tree/main/neural_speed/models/llama), [MPT](https://github.com/intel/neural-speed/tree/main/neural_speed/models/mpt), [FALCON](https://github.com/intel/neural-speed/tree/main/neural_speed/models/falcon), [BLOOM-7B](https://github.com/intel/neural-speed/tree/main/neural_speed/models/bloom), [OPT](https://github.com/intel/neural-speed/tree/main/neural_speed/models/opt), [ChatGLM2-6B](https://github.com/intel/neural-speed/tree/main/neural_speed/models/chatglm), [GPT-J-6B](https://github.com/intel/neural-speed/tree/main/neural_speed/models/gptj), and [Dolly-v2-3B](https://github.com/intel/neural-speed/tree/main/neural_speed/models/gptneox). Support AMX, VNNI, AVX512F and AVX2 instruction set. We've boosted the performance of Intel CPUs, with a particular focus on the 4th generation Intel Xeon Scalable processor, codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html).
 
 ## 🔓Validated Hardware
 <table>
@@ -83,6 +76,20 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>✔ (INT4, FP4, NF4)</td>
 		</tr>
 		<tr>
+			<td>Intel Data Center GPU Max Series</td>
+			<td>WIP </td>
+			<td>WIP </td>
+			<td>WIP (INT8)</td>
+			<td>✔ (INT4)</td>
+		</tr>
+		<tr>
+			<td>Intel Arc A-Series</td>
+			<td>-</td>
+			<td>-</td>
+			<td>WIP (INT8)</td>
+			<td>✔ (INT4)</td>
+		</tr>
+		<tr>
 			<td>Intel Core Processors</td>
 			<td>-</td>
 			<td>✔</td>
@@ -91,10 +98,6 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 	</tbody>
 </table>
-
-
-
-
 
 
 > In the table above, "-" means not applicable or not started yet.
@@ -115,24 +118,24 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 		<tr>
 			<td>PyTorch</td>
-			<td>2.0.1+cpu</td>
-			<td>2.0.1+cpu</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
+			<td>2.0.1+cpu,</br> 2.0.1a0 (gpu)</td>
+			<td>2.0.1+cpu,</br> 2.0.1a0 (gpu)</td>
+			<td>2.1.0+cpu,</br> 2.0.1a0 (gpu)</td>
+			<td>2.1.0+cpu,</br> 2.0.1a0 (gpu)</td>
 		</tr>
 		<tr>
 			<td>Intel® Extension for PyTorch</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
 		</tr>
 		<tr>
 			<td>Transformers</td>
-			<td>4.35.2</td>
-			<td>4.35.2</td>
-			<td>4.35.2</td>
-			<td>4.35.2</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
 		</tr>
 		<tr>
 			<td>Synapse AI</td>
@@ -148,60 +151,117 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>1.13.0-ee32e42</td>
 			<td>1.13.0-ee32e42</td>
 		</tr>
+                <tr>
+                        <td>intel-level-zero-gpu</td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                </tr>
 	</tbody>
 </table>
 
+> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [Intel GPU](https://github.com/intel/intel-extension-for-transformers/blob/main/requirements-gpu.txt).
 
+## 🌱Getting Started
 
-> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt).
-
-## 🌱Getting  Started
+### Chatbot
 Below is the sample code to create your chatbot. See more [examples](intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
 
-### Chatbot 
+#### Serving (OpenAI-compatible RESTful APIs)
+NeuralChat provides OpenAI-compatible RESTful APIs for chat, so you can use NeuralChat as a drop-in replacement for OpenAI APIs.
+You can start NeuralChat server either using the Shell command or Python code.
+
+```shell
+# Shell Command
+neuralchat_server start --config_file ./server/config/neuralchat.yaml
+```
+
 ```python
-# pip install intel-extension-for-transformers
+# Python Code
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+server_executor = NeuralChatServerExecutor()
+server_executor(config_file="./server/config/neuralchat.yaml", log_file="./neuralchat.log")
+```
+
+NeuralChat service can be accessible through [OpenAI client library](https://github.com/openai/openai-python), `curl` commands, and `requests` library. See more in [NeuralChat](intel_extension_for_transformers/neural_chat/README.md).
+
+#### Offline
+
+```python
 from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
-Below is the sample code to enable weight-only INT4/INT8 inference. See more [examples](intel_extension_for_transformers/llm/runtime/graph).
+### Transformers-based extension APIs
+Below is the sample code to use the extended Transformers APIs. See more [examples](https://github.com/intel/neural-speed/tree/main).
 
-### INT4 Inference (CPU only)
+#### INT4 Inference (CPU)
 ```python
-from transformers import AutoTokenizer, TextStreamer
+from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v3-1"     # Hugging Face model_id or local model
+model_name = "Intel/neural-chat-7b-v3-1"     
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+outputs = model.generate(inputs)
 ```
 
-### INT8 Inference (CPU only)
+You can also load the low-bit model quantized by GPTQ/AWQ/RTN/AutoRound algorithm.
 ```python
-from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v3-1"     # Hugging Face model_id or local model
-prompt = "Once upon a time, there existed a little girl,"
+from transformers import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+# Download Hugging Face GPTQ/AWQ model or use local quantize model
+model_name = "PATH_TO_MODEL"  # local path to model
+woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ; use_autoround=True for AutoRound
+prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
+outputs = model.generate(inputs)
+```
 
-model = AutoModelForCausalLM.from_pretrained(model_name, load_in_8bit=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+#### INT4 Inference (GPU)
+```python
+import intel_extension_for_pytorch as ipex
+from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+from transformers import AutoTokenizer
+
+device_map = "xpu"
+model_name ="Qwen/Qwen-7B"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "Once upon a time, there existed a little girl,"
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
+                                              device_map=device_map, load_in_4bit=True)
+
+model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+
+output = model.generate(inputs)
+```
+> Note: Please refer to the [example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py) for more details.
+
+### Langchain-based extension APIs
+Below is the sample code to use the extended Langchain APIs. See more [examples](intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md).
+
+```python
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from langchain.chains import RetrievalQA
+from langchain_core.vectorstores import VectorStoreRetriever
+from intel_extension_for_transformers.langchain.vectorstores import Chroma
+retriever = VectorStoreRetriever(vectorstore=Chroma(...))
+retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```
 
 ## 🎯Validated  Models
-You can access the latest int4 performance and accuracy at [int4 blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
-
-Additionally, we are preparing to introduce Baichuan, Mistral, and other models into [LLM Runtime (Intel Optimized llamacpp)](./intel_extension_for_transformers/llm/runtime/graph). For comprehensive accuracy and performance data, though not the most up-to-date, please refer to the [Release data](./docs/release_data.md). 
+You can access the validated models, accuracy and performance from [Release data](./docs/release_data.md) or [Medium blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
 
 ## 📖Documentation
 <table>
@@ -213,7 +273,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
 <tbody>
   <tr>
     <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat">NeuralChat</a></td>
-    <td colspan="4" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph">LLM Runtime</a></td>
+    <td colspan="4" align="center"><a href="https://github.com/intel/neural-speed/tree/main">Neural Speed</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">NEURALCHAT</th>
@@ -228,13 +288,13 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
     <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/full_notebooks.md">More Notebooks</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">LLM RUNTIME</th>
+    <th colspan="8" align="center">NEURAL SPEED</th>
   </tr>
  <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-python-api">Streaming LLM</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">Low Precision Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/docs/tensor_parallelism.md">Tensor Parallelism</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/neural-speed/tree/main/README.md">Neural Speed</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/neural-speed/tree/main/README.md#2-neural-speed-straight-forward">Streaming LLM</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/neural-speed/tree/main/neural_speed/core#support-matrix">Low Precision Kernels</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/neural-speed/tree/main/docs/tensor_parallelism.md">Tensor Parallelism</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">LLM COMPRESSION</th>
@@ -270,7 +330,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="docs/tutorials/README.md">Tutorials</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph#supported-models">LLM List</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/neural-speed/blob/main/docs/supported_models.md">LLM List</a></td>
     <td colspan="2" align="center"><a href="docs/examples.md">General Model List</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/validated_model.md">Model Performance</a></td>
   </tr>
@@ -288,30 +348,14 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 https://github.com/intel/intel-extension-for-transformers/assets/88082706/9d9bdb7e-65db-47bb-bbed-d23b151e8b31
 
 ## 📃Selected Publications/Events
+* CES 2024: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
 * Blog published on Medium: [Connect an AI agent with your API: Intel Neural-Chat 7b LLM can replace Open AI Function Calling](https://medium.com/11tensors/connect-an-ai-agent-with-your-api-intel-neural-chat-7b-llm-can-replace-open-ai-function-calling-242d771e7c79) (Dec 2023)
-* Blog published on 360 EEA (A News Platform about AI and LLMs): [Intel neural-chat-7b-v3-1](https://360eea.com/intel-neural-chat-7b-v3-1/) (Dec 2023)
-* Apple Podcasts from Papers Read on AI: [Efficient LLM Inference on CPUs](https://podcasts.apple.com/us/podcast/efficient-llm-inference-on-cpus/id1577699357?i=1000637269932) (Dec 2023)
 * NeurIPS'2023 on Efficient Natural Language and Speech Processing: [Efficient LLM Inference on CPUs](https://arxiv.org/abs/2311.00502) (Nov 2023)
-* NeurIPS'2023 on Diffusion Models: [Effective Quantization for Diffusion Models on CPUs](https://arxiv.org/pdf/2311.16133.pdf) (Nov 2023)
-* Blog published on datalearner: [Analysis of the top ten popular open source LLM of HuggingFace in the fourth week of November 2023 - the explosion of multi-modal large models and small-scale models](https://www.datalearner.com/blog/1051701014024122) (Nov 2023)
-* Blog published on zaker: [With this toolkit, the inference performance of large models can be accelerated by 40 times](https://app.myzaker.com/news/article.php?pk=656857148e9f0961d70ac3d3) (Nov 2023)
-* Blog published on geeky-gadgets: [New Intel Neural-Chat 7B LLM tops Hugging Face leaderboard beating original Mistral 7B] (https://www.geeky-gadgets.com/intel-neural-chat-7b-llm/) (Nov 2023)
-* Blog published on Huggingface: [Intel Neural-Chat 7b: Fine-Tuning on Gaudi2 for Top LLM Performance](https://huggingface.co/blog/Andyrasika/neural-chat-intel) (Nov 2023)
-* Video on YouTube: [Neural Chat 7B v3-1 Installation on Windows - Step by Step](https://www.youtube.com/watch?v=7_urstS-noU) (Nov 2023)
-* Video on YouTube: [Intel's Neural-Chat 7b: Most Powerful 7B Model! Beats GPT-4!?](https://www.youtube.com/watch?v=bWhZ1u_1rlc) (Nov 2023)
-* Blog published on marktechpost: [Intel Researchers Propose a New Artificial Intelligence Approach to Deploy LLMs on CPUs More Efficiently](https://www.marktechpost.com/2023/11/09/intel-researchers-propose-a-new-artificial-intelligence-approach-to-deploy-llms-on-cpus-more-efficiently) (Nov 2023)
+* Blog published on Hugging Face: [Intel Neural-Chat 7b: Fine-Tuning on Gaudi2 for Top LLM Performance](https://huggingface.co/blog/Andyrasika/neural-chat-intel) (Nov 2023)
 * Blog published on VMware: [AI without GPUs: A Technical Brief for VMware Private AI with Intel](https://core.vmware.com/resource/ai-without-gpus-technical-brief-vmware-private-ai-intel#section6) (Nov 2023)
-* News releases on VMware: [VMware Collaborates with Intel to Unlock Private AI Everywhere](https://news.vmware.com/releases/vmware-explore-2023-barcelona-intel-private-ai) (Nov 2023)
-* Video on YouTube: [Build Your Own ChatBot with Neural Chat | Intel Software](https://www.youtube.com/watch?v=KWT6yKfu4n0) (Oct 2023)
-* Blog published on Medium: [Layer-wise Low-bit Weight Only Quantization on a Laptop](https://medium.com/@NeuralCompressor/high-performance-low-bit-layer-wise-weight-only-quantization-on-a-laptop-712580899396) (Oct 2023)
-* Blog published on Medium: [Intel-Optimized Llama.CPP in Intel Extension for Transformers](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176) (Oct 2023)
-* Blog published on Medium: [Reduce the Carbon Footprint of Large Language Models](https://medium.com/intel-analytics-software/reduce-large-language-model-carbon-footprint-with-intel-neural-compressor-and-intel-extension-for-dfadec3af76a) (Oct 2023)
-* Blog on GOVINDH Tech: [Neural Chat vs. Competitors: A Detailed Guide](https://govindhtech.com/neural-chat-vs-competitors-a-detailed-guide/) (Sep 2023)
+  
+> View [Full Publication List](./docs/publication.md)
 
-
-
-
-> View [Full Publication List](./docs/publication.md).
 ## Additional Content
 
 * [Release Information](./docs/release.md)

@@ -80,7 +80,7 @@ class TestTorchLinear(unittest.TestCase):
         prepared_model(example_in)
         convert_model = convert(prepared_model)
         traced_model = torch.jit.trace(convert_model, example_in)
-        
+
         torch.jit.freeze(traced_model.eval())
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
 
@@ -91,7 +91,7 @@ class TestTorchLinear(unittest.TestCase):
         newgraph = Graph()
         newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
         out = newgraph.inference([example_in.numpy()])
-        
+
         self.assertTrue(cmpData(ref_out, [*out.values()][0]) < 0.01)
         os.remove('{}.pt'.format(file_name))
         shutil.rmtree(file_name)

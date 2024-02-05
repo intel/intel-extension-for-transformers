@@ -3,6 +3,14 @@
 
 Large Language and Vision Assistant (LLaVA) is a multi-modal training framework that proposed from [Visual Instruction Tuning](https://arxiv.org/abs/2304.08485) and [Improved Baselines with Visual Instruction Tuning](https://arxiv.org/abs/2310.03744). This example demonstrates how to train mult-modal model on Intel Gaudi2.
 
+## Validated Model List
+|Pretrained model| LLaVA | 
+|------------------------------------|---|
+|Mistral series| ✅|
+|LLaMA series| ✅|
+
+**Note:** For Salesforce/codegen25-7b-* series models same with LLaMA architecture, need install `pip install transformers==4.33.2` refer [this](https://github.com/salesforce/CodeGen/issues/82)
+
 ## Train
 
 LLaVA training consists of two stages: (1) feature alignment stage: use our 558K subset of the LAION-CC-SBU dataset to connect a *frozen pretrained* vision encoder to a *frozen LLM*; (2) visual instruction tuning stage: use 150K GPT-generated multimodal instruction-following data, plus around 515K VQA data from academic-oriented tasks, to teach the model to follow multimodal instructions.
@@ -62,5 +70,6 @@ New options to note:
 - `--image_aspect_ratio pad`: this pads the non-square images to square, instead of cropping them; it slightly reduces hallucination.
 - `--group_by_modality_length True`: this should only be used when your instruction tuning dataset contains both language (e.g. ShareGPT) and multimodal (e.g. LLaVA-Instruct). It makes the training sampler only sample a single modality (either image or language) during training, which we observe to speed up training by ~25%, and does not affect the final outcome.
 - `--use_habana, --use_lazy_mode` for Intel Gaudi2 setting.
+- For finetuning stage, when using Intel Gaudi2, `--pad_max True` should be set, which will pad input sequence length (text + image patches) to `--model_max_length`.
 
 **Note:** If don't set `--use_habana, --use_lazy_mode`, the code can also run on gpus as well.

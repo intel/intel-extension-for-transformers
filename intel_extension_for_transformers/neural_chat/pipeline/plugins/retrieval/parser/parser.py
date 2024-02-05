@@ -37,8 +37,8 @@ class DocumentParser:
         self.max_chuck_size = max_chuck_size
         self.min_chuck_size = min_chuck_size
         self.process = process
-    
-    
+
+
     def load(self, input, **kwargs):
         """
         The API for loading the file. Support single file, batch files, and urls parsing.
@@ -49,7 +49,7 @@ class DocumentParser:
             self.min_chuck_size = kwargs['min_chuck_size']
         if 'process' in kwargs:
             self.process = kwargs['process']
-        
+
         if isinstance(input, str):
             if os.path.isfile(input):
                 data_collection = self.parse_document(input)
@@ -64,10 +64,10 @@ class DocumentParser:
                 logging.error("The given link/str is unavailable. Please try another one!")
         else:
             logging.error("The input format is invalid!")
-            
+
         return data_collection
-        
-        
+
+
     def parse_document(self, input):
         """
         Parse the uploaded file.
@@ -85,6 +85,7 @@ class DocumentParser:
                                          self.max_chuck_size, self.min_chuck_size)
         else:
             logging.info("This file {} is ignored. Will support this file format soon.".format(input))
+            raise Exception("[Rereieval ERROR] Document format not supported!")
         return chuck
 
     def parse_html(self, input):
@@ -130,4 +131,5 @@ class DocumentParser:
                     paragraphs += chuck
                 else:
                     logging.info("This file {} is ignored. Will support this file format soon.".format(filename))
+                    raise Exception("[Rereieval ERROR] Document format not supported!")
         return paragraphs

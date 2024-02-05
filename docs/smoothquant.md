@@ -118,4 +118,3 @@ A list of models that achieved a <1% accuracy drop is shown below.
 |:---------:|--------------|------------|
 | PyTorch   | [0-1] / 'auto' | False      |
 | IPEX      | [0-1] / 'auto' | True / False(Version>2.1) |
-

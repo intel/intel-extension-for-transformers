@@ -16,7 +16,6 @@
 # limitations under the License.
 
 import re
-import exifread
 import time
 import requests
 import base64
@@ -41,6 +40,7 @@ def find_GPS_image(pic_path):
     GPS = {}
     date = ''
     with open(pic_path, 'rb') as f:
+        import exifread
         tags = exifread.process_file(f)
         print(f'====== image metadata ======')
         for tag, value in tags.items():
@@ -96,7 +96,7 @@ def get_address_from_gps(latitude, longitude, api_key):
         return result
     else:
         return None
-    
+
 
 def infer_image(pic_path, processor, model):
     raw_image = Image.open(pic_path).convert('RGB')
@@ -148,4 +148,3 @@ def transfer_xywh(facial_area: dict):
     for item in items:
         result += str(facial_area[item]) + '_'
     return result
-

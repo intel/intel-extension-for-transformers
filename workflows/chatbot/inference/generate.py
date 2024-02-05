@@ -162,6 +162,18 @@ def parse_args():
     )
     parser.add_argument(
         "--return_stats", action='store_true', default=False,)
+    parser.add_argument(
+        "--format_version",
+        type=str,
+        default="v2",
+        help="the version of return stats format",
+    )
+    parser.add_argument(
+        "--system_prompt",
+        type=str,
+        default="None",
+        help="the customized system prompt",
+    )
     args = parser.parse_args()
     return args
 
@@ -220,6 +232,8 @@ def main():
         optimization_config=MixedPrecisionConfig(dtype=args.dtype)
     )
     chatbot = build_chatbot(config)
+    if args.system_prompt:
+        chatbot.set_customized_system_prompts(system_prompts=args.system_prompt, model_path=base_model_path)
     gen_config = GenerationConfig(
         task=args.task,
         temperature=args.temperature,
@@ -232,7 +246,9 @@ def main():
         use_hpu_graphs=args.use_hpu_graphs,
         use_cache=args.use_kv_cache,
         num_return_sequences=args.num_return_sequences,
-        ipex_int8=args.ipex_int8
+        ipex_int8=args.ipex_int8,
+        return_stats=args.return_stats,
+        format_version=args.format_version
     )
 
     if args.habana:

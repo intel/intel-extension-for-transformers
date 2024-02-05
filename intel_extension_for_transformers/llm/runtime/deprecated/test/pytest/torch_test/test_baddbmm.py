@@ -51,10 +51,10 @@ class TestTorchOP(unittest.TestCase):
         batch1 = torch.randn(10, 3, 4)
         batch2 = torch.randn(10, 4, 5)
         traced_model = torch.jit.trace(n, (M, batch1, batch2))
-        
+
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
         ref_out = traced_model(M, batch1, batch2).detach().numpy()
-        
+
         graph = compile('{}.pt'.format(file_name))
         graph.save(file_name)
         newgraph = Graph()
@@ -71,10 +71,10 @@ class TestTorchOP(unittest.TestCase):
         batch1 = torch.randn(10, 3, 4)
         batch2 = torch.randn(10, 4, 5)
         traced_model = torch.jit.trace(n, (M, batch1, batch2))
-        
+
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
         ref_out = traced_model(M, batch1, batch2).detach().numpy()
-        
+
         graph = compile('{}.pt'.format(file_name))
         graph.save(file_name)
         newgraph = Graph()

@@ -14,7 +14,7 @@ on:
       - intel_extension_for_transformers/llm/operator/**
       - tests/**
       - .github/workflows/unit-test-optimize.yml
-      - .github/workflows/script/unitTest/**
+      - '.github/workflows/script/unitTest/run_unit_test_optimize.sh'
       - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
   workflow_dispatch:
 
@@ -30,6 +30,7 @@ env:
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "utTest"
   EXTRA_CONTAINER_NAME: "modelTest"
+  CONTAINER_SCAN: "codeScan"
 
 jobs:
   unit-test:
@@ -97,7 +98,7 @@ jobs:
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
           && export HF_HOME=/dataset/cache/ \
           && bash run_unit_test_optimize.sh --test_name=${{ matrix.test_name }}"
-      
+
       - name: Collect log
         if: ${{ !cancelled() }}
         run: |
@@ -116,18 +117,26 @@ jobs:
     runs-on: itrex-node-spell
     needs: [unit-test]
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_SCAN }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.CONTAINER_SCAN }}-${{ runner.name }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_SCAN }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
-        
+
       - name: Download UT PR Log
         uses: actions/download-artifact@v3
         with:
           path: ${{ github.workspace }}/log_dir
-           
+
       - name: Display structure of downloaded files
         run: cd ${{ github.workspace }}/log_dir && ls -R
-        
-      - name: Calculte coverage
+
+      - name: Calculate coverage
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
           /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir
@@ -139,8 +148,3 @@ jobs:
           name: Optimize Unit Test
           path: ${{ github.workspace }}/log_dir
           retention-days: 5
-
-
-      
-
-      

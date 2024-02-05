@@ -15,7 +15,7 @@ import numpy as np
 
 class CPUinfo():
     '''
-    Get CPU inforamation, such as cores list and NUMA information.
+    Get CPU information, such as cores list and NUMA information.
     '''
     def __init__(self):
         self.cores = 0
@@ -207,7 +207,7 @@ def latency_mode_grab_log(input_path, output, config, is_best_write, first_write
         try:
             with open(output, write_mode) as dst_fp:
                 if '.csv' in output:
-                    fields = ['batch', 'instance', 'cores per instance', 'Troughput',
+                    fields = ['batch', 'instance', 'cores per instance', 'Throughput',
                               'Average Latency', 'P50 Latency', 'P90 Latency', 'P99 Latency', 'cmd']
 
                     fields_blank = ['', '', '', '', '', '', '', '', '']
@@ -232,7 +232,7 @@ def latency_mode_grab_log(input_path, output, config, is_best_write, first_write
                     dst_fp.write("instance: {}, cores per instance: {}\n".
                                  format(config.get_instance(), config.get_cores_per_instance()))
                     dst_fp.write("--------------------------------------\n")
-                    dst_fp.write("Troughput: {} images/sec\n".format(throughput))
+                    dst_fp.write("Throughput: {} images/sec\n".format(throughput))
                     dst_fp.write("Average Latency: {} ms\n".format(avg_latency))
                     dst_fp.write("P50 Latency: {} ms\n".format(p50_latency))
                     dst_fp.write("P90 Latency: {} ms\n".format(p90_latency))

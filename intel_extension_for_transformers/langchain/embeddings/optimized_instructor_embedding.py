@@ -35,7 +35,7 @@ class OptimizedInstructorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer)
     def __init__(self, *args, **kwargs):
         """Initialize the OptimizedInstructorTransformer."""
         super().__init__(*args, **kwargs)
-    
+
     def _load_model(self, model_name_or_path, config, cache_dir, **model_args):
         """Loads the transformer model"""
         if isinstance(config, T5Config):
@@ -43,9 +43,9 @@ class OptimizedInstructorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer)
         elif isinstance(config, MT5Config):
             self._load_mt5_model(model_name_or_path, config, cache_dir, **model_args)
         else:
-            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path, 
-                                                             config=config, 
-                                                             cache_dir=cache_dir, 
+            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path,
+                                                             config=config,
+                                                             cache_dir=cache_dir,
                                                              **model_args)
 
 class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
@@ -53,23 +53,26 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
         """Initialize the OptimizedInstructor."""
         super().__init__(*args, **kwargs)
 
-    def _load_auto_model(self, 
-                         model_name_or_path, 
-                         token: Optional[Union[bool, str]], 
-                         cache_folder: Optional[str]): # pragma: no cover
+    def _load_auto_model(self,
+                         model_name_or_path,
+                         token: Optional[Union[bool, str]],
+                         cache_folder: Optional[str],
+                         trust_remote_code: bool = False): # pragma: no cover
         """Creates a simple Transformer + Mean Pooling model and returns the modules."""
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
         transformer_model = OptimzedTransformer(
-            model_name_or_path, cache_dir=cache_folder, model_args={"token": token})
+            model_name_or_path, cache_dir=cache_folder, model_args={"token": token,
+                                                                    "trust_remote_code": trust_remote_code})
         pooling_model = sentence_transformers.models.Pooling(
             transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
-    
-    def _load_sbert_model(self, 
-                          model_name_or_path: str, 
-                          token: Optional[Union[bool, str]], 
-                          cache_folder: Optional[str]):
+
+    def _load_sbert_model(self,
+                          model_name_or_path: str,
+                          token: Optional[Union[bool, str]],
+                          cache_folder: Optional[str],
+                          trust_remote_code: bool = False):
         """Loads a full sentence-transformers model."""
         # Check if the config_sentence_transformers.json file exists (exists since v2 of the framework)
         config_sentence_transformers_json_path = sentence_transformers.util.load_file_path(
@@ -109,9 +112,9 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
             if module_config['idx']==0:
                 logger.info('load Optimized InstructorTransformer')
                 kwargs = {}
-                for config_name in ['sentence_bert_config.json', 'sentence_roberta_config.json', 
-                                    'sentence_distilbert_config.json', 'sentence_camembert_config.json', 
-                                    'sentence_albert_config.json', 'sentence_xlm-roberta_config.json', 
+                for config_name in ['sentence_bert_config.json', 'sentence_roberta_config.json',
+                                    'sentence_distilbert_config.json', 'sentence_camembert_config.json',
+                                    'sentence_albert_config.json', 'sentence_xlm-roberta_config.json',
                                     'sentence_xlnet_config.json']:
                     config_path = sentence_transformers.util.load_file_path(
                         model_name_or_path, config_name, token=token, cache_folder=cache_folder)
@@ -121,8 +124,9 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                         break
                 if "model_args" in kwargs:
                     kwargs["model_args"]["token"] = token
+                    kwargs["model_args"]["trust_remote_code"] = trust_remote_code
                 else:
-                    kwargs["model_args"] = {"token": token}
+                    kwargs["model_args"] = {"token": token, "trust_remote_code": trust_remote_code}
                 module = OptimizedInstructorTransformer(model_name_or_path, cache_dir=cache_folder, **kwargs)
             elif module_config['idx']==1:
                 module_class = InstructorEmbedding.INSTRUCTOR_Pooling
@@ -135,5 +139,5 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                     model_name_or_path, module_config['path'], token, cache_folder)
                 module = module_class.load(module_path)
             modules[module_config['name']] = module
-        
+
         return modules

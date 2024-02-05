@@ -16,15 +16,28 @@
 # limitations under the License.
 
 from ut_utils import *
+from enum import Enum
 
 
 def convert_idx(g_idx,  k, blocksize):
     ret_idx = torch.zeros(k, dtype=int)
-    g_counter = torch.zeros(blocksize, dtype=int)
+    g_counter = torch.zeros((k+blocksize-1) // blocksize, dtype=int)
     for i in range(k):
         ret_idx[g_idx[i]*blocksize+g_counter[g_idx[i]]] = i
         g_counter[g_idx[i]] += 1
     return ret_idx
+
+
+class acquire_type(Enum):
+    SIZE = 0
+    BLOCKSIZE = 1
+    K = 2
+    N = 3
+    ACT_SHUFFLE = 4
+    G_IDX = 5
+    WEI_TYPE = 6
+    CMPT_TYPE = 7
+    SCALE_TYPE = 8
 
 
 @pytest.mark.parametrize("m", [256])
@@ -45,16 +58,16 @@ def test(m, k, n, weight_type, scale_type, compute_type, asym, blocksize, dump_t
     cvt_idx = convert_idx(g_idx, k, blocksize)
     zp = torch.randint(-4, 4, [k//blocksize, n], dtype=torch.int8)
     scale = torch.rand(k//blocksize, n, dtype=torch.float)
-    packw = torch.ops.jblasop.woq_packq(
+    packw = torch.ops.bestlaop.woq_packq(
         raw_s8_wei, scale, zp, g_idx, weight_type, scale_type, compute_type, asym, blocksize)
     revert_wei = torch.zeros(k, n, dtype=torch.float)
-    torch.ops.jblasop.woq_dequantize(
+    torch.ops.bestlaop.woq_dequantize(
         packw, revert_wei, False, compute_type, weight_type, scale_type)
     ref_act = torch.rand(m, k, dtype=torch.float)
     tar_act = ref_act.clone()
     ref_act = torch.index_select(ref_act, 1, cvt_idx)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
-    torch.ops.jblasop.woq_linear(
+    torch.ops.bestlaop.woq_linear(
         tar_act, packw, torch.empty(0), tar_dst, n, False, compute_type, weight_type, scale_type, asym)
     ref_dst = torch.matmul(ref_act, revert_wei)
     if dump_tensor:
@@ -66,3 +79,19 @@ def test(m, k, n, weight_type, scale_type, compute_type, asym, blocksize, dump_t
         assert (abs(ref_dst - tar_dst).max() < 8)
     else:
         assert (abs(ref_dst - tar_dst).max() < 10)
+    packw_size = torch.ops.bestlaop.acquire_woq_packw_info(
+        packw, acquire_type.SIZE.value)[0].item()
+    if packw_size != packw.size()[0]:
+        assert (0)
+    packw_wei_type = torch.ops.bestlaop.acquire_woq_packw_info(
+        packw, acquire_type.WEI_TYPE.value)
+    packw_wei_type_str = ''.join(chr(ascii_code)
+                                 for ascii_code in packw_wei_type.tolist())
+    if packw_wei_type_str != weight_type:
+        assert (0)
+    enable_act_shuffle = torch.ops.bestlaop.acquire_woq_packw_info(
+        packw, acquire_type.ACT_SHUFFLE.value)[0] != 0
+    assert (enable_act_shuffle)
+    acquire_g_idx = packw_wei_type = torch.ops.bestlaop.acquire_woq_packw_info(
+        packw, acquire_type.G_IDX.value)
+    assert (abs(acquire_g_idx-cvt_idx).max() == 0)

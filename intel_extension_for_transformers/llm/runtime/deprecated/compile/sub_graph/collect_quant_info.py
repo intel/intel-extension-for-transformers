@@ -52,7 +52,7 @@ class CollectQuantInfo(Pattern):
                     'patterns': {
                         'in': [[(0, 'Quantize'), (1, ['Dequantize'])]],
                     },
-                    
+
                 },
                 {
                     'patterns': {
@@ -316,7 +316,7 @@ class CollectQuantInfo(Pattern):
                                 qmatmul_in_dtype = qmatmul_in_zp_dtype + "_insert"
                                 util.insert_quant_info(trans_in_tensor_name,
                                     [qmatmul_in_min, qmatmul_in_max, qmatmul_in_dtype])
-                # matmul has tranpose attr, but qlinear matmul has not
+                # matmul has transpose attr, but qlinear matmul has not
                 set_attr(matmul_nodes_name, model)
 
         def CollectTorchInfo(model):

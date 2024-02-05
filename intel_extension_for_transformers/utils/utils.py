@@ -15,40 +15,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utility for data augmentation."""
+"""Utility."""
 
-import nlpaug.augmenter.char as nac
-import nlpaug.augmenter.sentence as nas
-import nlpaug.augmenter.word as naw
-from enum import Enum
-
-
-EOS = '</s>'
-
-
-class AugmenterType(Enum):
-    """Enumeration of types of augmentation."""
-    TEXTGENERATIONAUG = "textgenerationaug"
-    KEYBOARDAUG = "KeyboardAug"
-    OCRAUG = "OcrAug"
-    SPELLINGAUG = "SpellingAug"
-    CONTEXTUALWORDEMBSFORSENTENCEAUG = "ContextualWordEmbsForSentenceAug"
+import importlib
+import sys
+import torch
+if sys.version_info < (3, 8):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
 
-AUGMENTER_MAPPING = {
-    AugmenterType.KEYBOARDAUG.value: nac,
-    AugmenterType.OCRAUG.value: nac,
-    AugmenterType.SPELLINGAUG.value: naw,
-    AugmenterType.CONTEXTUALWORDEMBSFORSENTENCEAUG.value: nas,
+def supported_gpus():
+    return ['flex', 'max', 'arc']
 
-}
+def get_gpu_family():
+    ''' Get gpu device family info.
+
+    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
+
+    Note, this function need to import intel_extension_for_pytorch
 
 
-def get_augmenter_from_type(aug_type: str):
-    """Get nlpaug's augmenter by augment_type name.
+    Additional info (common gpu name):
+      'Intel(R) Data Center GPU Flex 170'
+      'Intel(R) Data Center GPU Max 1100'
+      'Intel(R) Arc(TM) A770 Graphics'
+    '''
 
-    The nlpaug is a library helps you with augmenting nlp for your machine learning projects.
-    It provide many augmenter, please refer to https://github.com/makcedward/nlpaug#augmenter.
-    """
-    assert aug_type in AUGMENTER_MAPPING, "Unspported the augmenter type:{}".format(aug_type)
-    return AUGMENTER_MAPPING[aug_type]
+    import intel_extension_for_pytorch as ipex
+    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
+        return 'no_gpu'
+
+    name = torch.xpu.get_device_name()
+    if 'GPU Flex' in name:
+        result = 'flex'
+    elif 'GPU Max' in name:
+        result = 'max'
+    elif 'Arc(TM)' in name:
+        result = 'arc'
+    else:
+        assert False, "Unsupported GPU device: {}".format(name)
+
+    if result not in supported_gpus():
+        assert False, "Unsupported GPU device: {}".format(name)
+    else:
+        return result
+
+_ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
+_ipex_version = "N/A"
+if _ipex_available:
+    try:
+        _ipex_version = importlib_metadata.version("intel_extension_for_pytorch")
+    except importlib_metadata.PackageNotFoundError:
+        _ipex_available = False
+
+def is_ipex_available():
+    return _ipex_available

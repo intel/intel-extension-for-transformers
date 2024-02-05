@@ -35,7 +35,7 @@ class BertSUT : public mlperf::SystemUnderTest {
   // using Queue_t = std::forward_list<mlperf::QuerySample>
   // using Queue_t = std::deque<mlperf::QuerySample>;
  public:
-  // configure inter parallel and intra paralel
+  // configure inter parallel and intra parallel
   // 4x10 core required for expected performance
   BertSUT(
     const std::string& conf,

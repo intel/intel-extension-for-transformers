@@ -70,8 +70,8 @@ if is_bitsandbytes_available():
 class Finetuning:
     def __init__(self, finetuning_config: BaseFinetuningConfig):
         self.model_args, self.data_args, self.training_args, self.finetune_args = (
-            finetuning_config.model_args, 
-            finetuning_config.data_args, 
+            finetuning_config.model_args,
+            finetuning_config.data_args,
             finetuning_config.training_args,
             finetuning_config.finetune_args
         )
@@ -781,7 +781,7 @@ class Finetuning:
                     # like past_key_values, but logits always come first
                     logits = logits[0]
                 return logits.argmax(dim=-1)
-        
+
         if training_args.do_train:
             # download model & vocab.
 

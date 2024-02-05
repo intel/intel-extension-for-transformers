@@ -70,7 +70,7 @@ class AttentionBlock_QKVReshape(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('AttentionBlock_QKVReshape mathched...')
+                logger.info('AttentionBlock_QKVReshape matched...')
                 logger.debug('AttentionBlock_QKVReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     concat_node = ret_old_nodes[j][0]

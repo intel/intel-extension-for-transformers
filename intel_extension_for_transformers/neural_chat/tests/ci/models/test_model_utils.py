@@ -22,9 +22,11 @@ from unittest import mock
 from intel_extension_for_transformers.neural_chat.models.model_utils import load_model, MODELS
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig, BitsAndBytesConfig, WeightOnlyQuantConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
-
+from intel_extension_for_transformers.neural_chat.utils.error_utils import clear_latest_error, get_latest_error
+from intel_extension_for_transformers.neural_chat.errorcode import ErrorCodes
 class TestModelUtils(unittest.TestCase):
     def setUp(self) -> None:
+        clear_latest_error()
         return super().setUpClass()
 
     def tearDown(self) -> None:
@@ -91,8 +93,8 @@ class TestModelUtils(unittest.TestCase):
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_load_nonexistent_model(self):
-        with self.assertRaises(ValueError):
-            load_model("non-existent-model", "non-existent-model", device="cpu")
+        load_model("non-existent-model", "non-existent-model", device="cpu")
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_MODEL_NOT_FOUND)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_model_optimization_mix_precision(self):

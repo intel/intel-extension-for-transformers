@@ -52,6 +52,7 @@ class SafetyChecker:
                 f = open(os.path.join(doc_path, "stopword.txt"), encoding="utf8")
             else:
                 logging.info("Can't find stopword.txt")
+                raise Exception("[SafetyChecker ERROR] Sensitive check file not found!")
             self.Stopwords = [i.split('\n')[0] for i in f.readlines()]
             if os.path.exists(os.path.join(dict_path, "dict.txt")):
                 f1 = open(os.path.join(dict_path, "dict.txt"), encoding="utf8")
@@ -160,7 +161,7 @@ class SafetyChecker:
         return resultTxt
 
     def pre_llm_inference_actions(self, query):
-        return self.sensitive_check(query)
+        return self.sensitive_check(query.lower())
 
     def post_llm_inference_actions(self, response):
         if self.sensitive_check(response):

@@ -21,7 +21,7 @@ import torch
 import torch.nn as nn
 
 from transformers import AutoConfig, AutoModelForCausalLM
-from transformers import MistralConfig, MistralModel, MistralForCausalLM # pylint: disable=E0611 
+from transformers import MistralConfig, MistralModel, MistralForCausalLM # pylint: disable=E0611
 
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from .multimodal_encoder.builder import build_vision_tower
@@ -31,7 +31,7 @@ from .llava_arch import LlavaMetaModel, LlavaMetaForCausalLM
 
 
 class LlavaConfig(MistralConfig):
-    model_type = "llava"
+    model_type = "llava_custom"
 
 
 class LlavaMistralModel(LlavaMetaModel, MistralModel):
@@ -68,25 +68,44 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         images: Optional[torch.FloatTensor] = None,
+        images_mask: Optional[torch.LongTensor] = None,
         return_dict: Optional[bool] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
 
         if inputs_embeds is None:
-            (
-                input_ids,
-                position_ids,
-                attention_mask,
-                past_key_values,
-                inputs_embeds,
-                labels
-            ) = self.prepare_inputs_labels_for_multimodal(
-                input_ids,
-                position_ids,
-                attention_mask,
-                past_key_values,
-                labels,
-                images
-            )
+            if images_mask is None:
+                (
+                    input_ids,
+                    position_ids,
+                    attention_mask,
+                    past_key_values,
+                    inputs_embeds,
+                    labels
+                ) = self.prepare_inputs_labels_for_multimodal(
+                    input_ids,
+                    position_ids,
+                    attention_mask,
+                    past_key_values,
+                    labels,
+                    images
+                )
+            else:
+                (
+                    input_ids,
+                    position_ids,
+                    attention_mask,
+                    past_key_values,
+                    inputs_embeds,
+                    labels
+                ) = self.prepare_inputs_labels_for_multimodal_pad(
+                    input_ids,
+                    position_ids,
+                    attention_mask,
+                    past_key_values,
+                    labels,
+                    images,
+                    images_mask
+                )
 
         return super().forward(
             input_ids=input_ids,
@@ -110,5 +129,5 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
             _inputs['images'] = images
         return _inputs
 
-AutoConfig.register("llava", LlavaConfig)
+AutoConfig.register("llava_custom", LlavaConfig)
 AutoModelForCausalLM.register(LlavaConfig, LlavaMistralForCausalLM)

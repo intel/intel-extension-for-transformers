@@ -94,4 +94,3 @@ cd /itrex/workflows/chatbot/inference/backend/sd/
 ```
 nohup bash run.sh &
 ```
-

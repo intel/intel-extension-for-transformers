@@ -44,9 +44,9 @@ class OptimzedTransformer(sentence_transformers.models.Transformer):
         elif isinstance(config, MT5Config): # pragma: no cover
             self._load_mt5_model(model_name_or_path, config, cache_dir, **model_args)
         else:
-            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path, 
-                                                             config=config, 
-                                                             cache_dir=cache_dir, 
+            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path,
+                                                             config=config,
+                                                             cache_dir=cache_dir,
                                                              **model_args)
 
 class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
@@ -55,20 +55,29 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
         super().__init__(*args, **kwargs)
 
     def _load_auto_model(
-            self, model_name_or_path: str, token: Optional[Union[bool, str]], cache_folder: Optional[str]):
+            self,
+            model_name_or_path: str,
+            token: Optional[Union[bool, str]],
+            cache_folder: Optional[str],
+            trust_remote_code: bool = False):
         """
         Creates a simple Transformer + Mean Pooling model and returns the modules
         """
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
         transformer_model = OptimzedTransformer(
-            model_name_or_path, cache_dir=cache_folder, model_args={"token": token})
+            model_name_or_path, cache_dir=cache_folder, model_args={"token": token,
+                                                                    "trust_remote_code": trust_remote_code})
         pooling_model = sentence_transformers.models.Pooling(
             transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
-    
+
     def _load_sbert_model(
-            self, model_name_or_path: str, token: Optional[Union[bool, str]], cache_folder: Optional[str]):
+            self,
+            model_name_or_path: str,
+            token: Optional[Union[bool, str]],
+            cache_folder: Optional[str],
+            trust_remote_code: bool = False):
         """
         Loads a full sentence-transformers model
         """
@@ -112,9 +121,9 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
             # But, do load the config file first.
             if module_class == sentence_transformers.models.Transformer and module_config['path'] == "":
                 kwargs = {}
-                for config_name in ['sentence_bert_config.json', 'sentence_roberta_config.json', 
-                                    'sentence_distilbert_config.json', 'sentence_camembert_config.json', 
-                                    'sentence_albert_config.json', 'sentence_xlm-roberta_config.json', 
+                for config_name in ['sentence_bert_config.json', 'sentence_roberta_config.json',
+                                    'sentence_distilbert_config.json', 'sentence_camembert_config.json',
+                                    'sentence_albert_config.json', 'sentence_xlm-roberta_config.json',
                                     'sentence_xlnet_config.json']:
                     config_path = sentence_transformers.util.load_file_path(
                         model_name_or_path, config_name, token=token, cache_folder=cache_folder)
@@ -124,8 +133,9 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
                         break
                 if "model_args" in kwargs:
                     kwargs["model_args"]["token"] = token
+                    kwargs["model_args"]["trust_remote_code"] = trust_remote_code
                 else:
-                    kwargs["model_args"] = {"token": token}
+                    kwargs["model_args"] = {"token": token, "trust_remote_code": trust_remote_code}
                 module = sentence_transformers.models.Transformer(
                     model_name_or_path, cache_dir=cache_folder, **kwargs)
             else:
