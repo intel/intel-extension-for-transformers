@@ -30,6 +30,7 @@ IMAGE_TOKEN_INDEX = -200
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
 DEFAULT_IM_START_TOKEN = "<im_start>"
 DEFAULT_IM_END_TOKEN = "<im_end>"
+DEFAULT_IMAGE_TOKEN = "<image>"
 
 
 class LlavaMetaModel:
@@ -304,22 +305,27 @@ class LlavaMetaForCausalLM(PreTrainedModel):
                     p.requires_grad = False
 
     def prepare_inputs_labels_for_multimodal_pad(
-        self, input_ids, position_ids, attention_mask, past_key_values, labels, images, images_mask
+        self, input_ids, position_ids, attention_mask, past_key_values, labels,
+        images, images_mask, token_idx=None
     ):
-
-        batch_size, sequence_length = labels.shape
+        # for training
+        if token_idx is None and labels is not None:
+            batch_size, sequence_length = labels.shape
+        else:
+            batch_size, sequence_length = attention_mask.shape
 
         vision_tower = self.get_vision_tower()
         if vision_tower is None or images is None or input_ids.shape[1] == 1:
             if past_key_values is not None and vision_tower is not None \
                     and images is not None and input_ids.shape[1] == 1:
-                target_shape = past_key_values[-1][-1].shape[-2] + 1
-                attention_mask = torch.cat((attention_mask, torch.ones(
-                    (attention_mask.shape[0], target_shape - attention_mask.shape[1]),
-                    dtype=attention_mask.dtype,
-                    device=attention_mask.device
-                )), dim=1)
+                if token_idx is None:
+                    target_shape = past_key_values[-1][-1].shape[-2] + 1
+                    attention_mask = torch.cat((attention_mask, torch.ones(
+                        (attention_mask.shape[0], target_shape - attention_mask.shape[1]),
+                        dtype=attention_mask.dtype,
+                        device=attention_mask.device)), dim=1)
                 position_ids = torch.sum(attention_mask, dim=1).unsqueeze(-1) - 1
+            return input_ids, position_ids, attention_mask, past_key_values, None, labels
 
         if type(images) is list or images.ndim == 5:
             concat_images = torch.cat([image for image in images], dim=0)
