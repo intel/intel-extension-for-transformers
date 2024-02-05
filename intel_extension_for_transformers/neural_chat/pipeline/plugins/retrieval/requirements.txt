@@ -1,6 +1,5 @@
 beautifulsoup4
 chromadb==0.4.15
-sentence-transformers==2.3.1
 InstructorEmbedding
 langchain==0.0.354
 langchain_core==0.1.18
@@ -11,4 +10,5 @@ PyPDF2
 python-docx
 qdrant-client
 scikit-learn
+sentence-transformers==2.3.1
 unstructured
