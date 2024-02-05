@@ -38,7 +38,7 @@ Use the following command to start NeuralChat Text Generation service. The examp
 Make sure the specified `port` is available, and `device` is correctly set.
 
 ```bash
-docker run -it --net=host --ipc=host --name chat_qna -v ./chatqna.yaml:/chatqna.yaml -v ./rag_docs:/rag_docs neuralchat_chat_qna:latest
+docker run -it --net=host --ipc=host --name chat_qna -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_chat_qna:latest
 ```
 The specific meaning of each parameter is explaine below:
 - `docker run -it`: Create a docker container and launch it interactively.
@@ -49,7 +49,7 @@ The specific meaning of each parameter is explaine below:
 
 If you need to set proxy settings, use the command below.
 ```bash
-docker run -it --net=host --ipc=host --name chat_qna -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v ./chatqna.yaml:/chatqna.yaml -v ./rag_docs:/rag_docs neuralchat_chat_qna:latest
+docker run -it --net=host --ipc=host --name chat_qna -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_chat_qna:latest
 ```
 
 
