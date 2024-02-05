@@ -80,7 +80,7 @@ router = RetrievalAPIRouter()
 RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./photoai_retrieval_docs")+'/'
 
 
-@router.post("/v1/aiphotos/askdoc/upload_link")
+@router.post("/v1/askdoc/upload_link")
 async def retrieval_upload_link(request: Request):
     global plugins
     params = await request.json()
@@ -137,7 +137,7 @@ async def retrieval_upload_link(request: Request):
         return {"knowledge_base_id": kb_id}
 
 
-@router.post("/v1/aiphotos/askdoc/create")
+@router.post("/v1/askdoc/create")
 async def retrieval_create(request: Request,
                            file: UploadFile = File(...)):
     global plugins
@@ -183,7 +183,7 @@ async def retrieval_create(request: Request,
     return {"knowledge_base_id": kb_id}
 
 
-@router.post("/v1/aiphotos/askdoc/append")
+@router.post("/v1/askdoc/append")
 async def retrieval_append(request: Request,
                            file: UploadFile = File(...),
                            knowledge_base_id: str = Form(...)):
@@ -233,7 +233,7 @@ async def retrieval_append(request: Request,
     return "Succeed"
 
 
-@router.post("/v1/aiphotos/askdoc/chat")
+@router.post("/v1/askdoc/chat")
 async def retrieval_chat(request: Request):
     chatbot = router.get_chatbot()
     plugins['tts']['enable'] = False
@@ -350,7 +350,7 @@ async def retrieval_chat(request: Request):
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 
-@router.post("/v1/aiphotos/askdoc/feedback")
+@router.post("/v1/askdoc/feedback")
 def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     logger.info(f'[askdoc - feedback] fastrag feedback received.')
     mysql_db = MysqlDb()
@@ -382,7 +382,7 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
         return "Succeed"
 
 
-@router.get("/v1/aiphotos/askdoc/downloadFeedback")
+@router.get("/v1/askdoc/downloadFeedback")
 def get_feedback_from_db():
     mysql_db = MysqlDb()
     mysql_db._set_db("fastrag")
