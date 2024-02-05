@@ -4,7 +4,7 @@
         "data_dir": "",
         "hf_model_name": "meta-llama/Llama-2-7b-hf",
         "benchmark": {
-            "cmd": "python runtime_acc.py",
+            "cmd": "python run_accuracy.py",
             "params": {
                 "model_name": "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf",
                 "model_format": "runtime",
@@ -18,7 +18,7 @@
         "data_dir": "",
         "hf_model_name": "Intel/neural-chat-7b-v3-1",
         "benchmark": {
-            "cmd": "python runtime_acc.py",
+            "cmd": "python run_accuracy.py",
             "params": {
                 "model_name": "/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1",
                 "model_format": "runtime",

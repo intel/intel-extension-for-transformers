@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-model="/LOAD/PATH/neural-chat-7b-v3-3"
+model="Intel/neural-chat-7b-v3-3"
 
 # For cpu device
 python3 autoround.py \
@@ -14,7 +14,7 @@ python3 autoround.py \
         --deployment_device 'cpu' \
         --scale_dtype 'fp32' \
         --eval_bs 16 \
-        --output_dir "SAVE/PATH"
+        --output_dir "output"
 
 # For gpu device
 # CUDA_VISIBLE_DEVICES=0 python3 autoround.py \
@@ -26,6 +26,6 @@ python3 autoround.py \
 #         --deployment_device 'cpu' \
 #         --scale_dtype 'fp32' \
 #         --eval_bs 16 \
-#         --output_dir "SAVE/PATH"
+#         --output_dir "output"
 
 

@@ -1,8 +1,10 @@
+accelerate>=0.21.0
 av
 basicsr==1.4.2
 beautifulsoup4
 chromadb==0.4.15
 cn2an
+datasets
 deepface
 diffusers==0.12.1
 dlib-bin
@@ -12,6 +14,7 @@ evaluate
 exifread
 face_alignment==1.3.5
 facexlib @ git+https://github.com/Spycsh/facexlib@master
+faiss-cpu
 fastapi==0.103.2
 ffmpeg-python==0.2.0
 fschat==0.2.35
@@ -31,6 +34,7 @@ intel_extension_for_pytorch==2.1.0
 jaconv
 jieba
 joblib==1.2.0
+jsonlines
 kornia==0.6.8
 langchain==0.0.354
 langchain_core
@@ -38,6 +42,7 @@ langid
 librosa
 markdown
 neural-compressor
+neural_speed
 neural_speed
 num2words
 numba
@@ -68,6 +73,7 @@ safetensors
 scikit-image==0.19.3
 scikit-learn
 scipy==1.10.1
+sentence_transformers
 shortuuid
 shortuuid
 soundfile
