@@ -15,7 +15,7 @@ ffmpeg-python==0.2.0
 fschat==0.2.35
 gfpgan
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
-git+https://github.com/UKPLab/sentence-transformers.git@5c838a705c24c2dfd151a71674c99d09d014c1a9
+sentence-transformers==2.3.1
 gptcache
 huggingface_hub
 imageio==2.19.3

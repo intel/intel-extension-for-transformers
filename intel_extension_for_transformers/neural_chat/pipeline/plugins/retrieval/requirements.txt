@@ -1,6 +1,6 @@
 beautifulsoup4
 chromadb==0.4.15
-git+https://github.com/UKPLab/sentence-transformers.git@5c838a705c24c2dfd151a71674c99d09d014c1a9
+sentence-transformers==2.3.1
 InstructorEmbedding
 langchain==0.0.354
 langchain_core
