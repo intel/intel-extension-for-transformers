@@ -102,5 +102,6 @@ python run_accuracy.py \
 python run_accuracy.py \
     --model_name "Intel/neural-chat-7b-v3-3" \
     --tasks "lambada_openai" \
-    --model_format "torch"
+    --model_format "torch" \
+    --batch_size 1
 ```
