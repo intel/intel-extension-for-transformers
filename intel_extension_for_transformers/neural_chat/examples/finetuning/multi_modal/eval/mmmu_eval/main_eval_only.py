@@ -16,7 +16,6 @@
 import os
 import json
 
-import pdb
 from argparse import ArgumentParser
 
 from utils.data_utils import save_json, CAT_SHORT2LONG, DOMAIN_CAT2SUB_CAT
@@ -82,7 +81,6 @@ if __name__ == '__main__':
         evaluation_result[category] = metric_dict
 
     printable_results = {}
-    # pdb.set_trace()
     # add domain Subject
     for domain, in_domain_cats in DOMAIN_CAT2SUB_CAT.items():
         in_domain_cat_results = {}
