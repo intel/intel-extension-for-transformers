@@ -17,7 +17,7 @@ import fire
 import json
 import transformers
 from typing import Optional
-
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 from intel_extension_for_transformers.neural_chat.models.model_utils import MODELS
 from intel_extension_for_transformers.neural_chat.tools.rome import ROMEHyperParams, apply_rome_to_model
@@ -73,7 +73,10 @@ def test_rome(
     batch_first = True
     transformers.set_seed(seed)
 
-    chatbot = build_chatbot(PipelineConfig(model_name_or_path=model))
+    chatbot = build_chatbot(
+        PipelineConfig(model_name_or_path=model,
+                       optimization_config=MixedPrecisionConfig(dtype="float32"))
+    )
     model = MODELS[chatbot.model_name]["model"]
     tokenizer = MODELS[chatbot.model_name]["tokenizer"]
     batch_first = True

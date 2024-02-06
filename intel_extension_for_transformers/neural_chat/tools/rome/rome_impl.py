@@ -121,6 +121,7 @@ def execute_rome(
     # Update loop: sequentially intervene at each specified layer
     deltas = {}
     for layer in sorted(hparams.layers):
+        weight_name = f"{hparams.rewrite_module_tmp.format(layer)}.weight"
         # Compute rank-1 update matrix
         left_vector: torch.Tensor = compute_u(
             model,
@@ -143,11 +144,11 @@ def execute_rome(
             batch_first
         )
         print("Right vector shape:", right_vector.shape)
-        right_vector = right_vector.to(torch.float16)
+        left_vector = left_vector.to(dtype=weights[weight_name].dtype)
+        right_vector = right_vector.to(dtype=weights[weight_name].dtype)
 
         with torch.no_grad():
             # Determine correct transposition of delta matrix
-            weight_name = f"{hparams.rewrite_module_tmp.format(layer)}.weight"
             upd_matrix = left_vector.unsqueeze(1) @ right_vector.unsqueeze(0)
             upd_matrix = upd_matrix_match_shape(upd_matrix, weights[weight_name].shape)
 

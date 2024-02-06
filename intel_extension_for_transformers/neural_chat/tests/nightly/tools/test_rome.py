@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import transformers
-
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 from intel_extension_for_transformers.neural_chat.models.model_utils import MODELS
 from intel_extension_for_transformers.neural_chat.tools.rome import ROMEHyperParams, apply_rome_to_model
@@ -48,7 +48,10 @@ class TestROME(unittest.TestCase):
         batch_first = True
         transformers.set_seed(seed)
 
-        chatbot = build_chatbot(PipelineConfig(model_name_or_path=LLAMA2_7B_CHAT_MODEL))
+        chatbot = build_chatbot(
+            PipelineConfig(model_name_or_path=LLAMA2_7B_CHAT_MODEL,
+                           optimization_config=MixedPrecisionConfig(dtype="float32"))
+        )
         model = MODELS[chatbot.model_name]["model"]
         tokenizer = MODELS[chatbot.model_name]["tokenizer"]
         batch_first = True
