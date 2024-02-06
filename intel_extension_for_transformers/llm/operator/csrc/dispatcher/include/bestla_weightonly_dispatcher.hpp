@@ -69,6 +69,5 @@ static std::map<std::string, BTLA_DTYPE> scale2bestladt_map{
     {"fp32", BTLA_DTYPE::F32}, {"bf16", BTLA_DTYPE::BF16}, {"fp8_e8m0", BTLA_DTYPE::F8_E8M0}};
 
 void dispatch_woq_task(woq_config_param* p, woq_runtime_ctx* ctx, WOQ_TASK task);
-void bestla_packq(woq_packq_param* p, woq_packq_ctx* ctx);
 void set_woq_workspace(torch::Tensor* workspace);
 }  // namespace woq

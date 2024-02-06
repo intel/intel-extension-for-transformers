@@ -156,7 +156,7 @@ Users have the flexibility to customize the NeuralChat service by making modific
 
 NeuralChat boasts support for various generative Transformer models available in [HuggingFace Transformers](https://huggingface.co/models). The following is a curated list of models validated for both inference and fine-tuning within NeuralChat:
 
-|Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation | 
+|Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation or SQL Generation | 
 |------------------------------------|:---:|:---:|:---:|:---:|
 |Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅    |
 |Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅    |
@@ -171,12 +171,16 @@ NeuralChat boasts support for various generative Transformer models available in
 |THUDM/chatglm3-6b| ✅| ✅|✅| ✅    |
 |Qwen/Qwen-7B| ✅| ✅|✅| ✅    |
 |microsoft/phi-2| ✅| ✅|✅| ✅    |
+|Deci/DeciLM-7B| ✅| ✅|✅| ✅    |
+|Deci/DeciLM-7B-instruct| ✅| ✅|✅| ✅    |
 |bigcode/starcoder|   |   |   | ✅ |
 |codellama/CodeLlama-7b-hf|   |   |   | ✅ |
 |codellama/CodeLlama-34b-hf|   |   |   | ✅ |
 |Phind/Phind-CodeLlama-34B-v2|   |   |   | ✅ |
 |Salesforce/codegen2-7B|   |   |   | ✅ |
 |ise-uiuc/Magicoder-S-CL-7B|   |   |   | ✅ |
+|defog/sqlcoder2|   |   |   | ✅ |
+|defog/sqlcoder-34b-alpha|   |   |   | ✅ |
 
 Modify the `model_name_or_path` parameter in the YAML configuration file to load different models.
 

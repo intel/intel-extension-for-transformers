@@ -498,7 +498,8 @@ def load_model(
     try:
         config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                             if (re.search("chatglm", model_name, re.IGNORECASE) or \
-                                               re.search("qwen", model_name, re.IGNORECASE)) else False)
+                                               re.search("qwen", model_name, re.IGNORECASE) or \
+                                               re.search("deci", model_name, re.IGNORECASE)) else False)
     except ValueError as e:
         logging.error(f"Exception: {e}")
         if "Unrecognized model in" in str(e):
@@ -591,6 +592,7 @@ def load_model(
             or config.model_type == "mistral"
             or config.model_type == "mixtral"
             or config.model_type == "phi"
+            or config.model_type == "deci"
         ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
@@ -600,7 +602,7 @@ def load_model(
                     low_cpu_mem_usage=True,
                     quantization_config=bitsandbytes_quant_config,
                     trust_remote_code=True if (config.model_type == "qwen" or config.model_type == "phi" or \
-                        re.search("codegen", model_name, re.IGNORECASE)) else False
+                        re.search("codegen", model_name, re.IGNORECASE) or config.model_type == "deci") else False
                 )
         elif (
                 (config.model_type == "gpt_bigcode"
@@ -668,7 +670,8 @@ def load_model(
         return
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE) and \
-       not re.search("magicoder", model_name, re.IGNORECASE):
+       (not re.search("magicoder", model_name, re.IGNORECASE) and
+       not re.search("deepseek-coder", model_name, re.IGNORECASE)):
         # unwind broken decapoda-research config
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
@@ -696,6 +699,9 @@ def load_model(
         model.generation_config.pad_token_id = (
             tokenizer.pad_token_id
         ) = tokenizer.eos_token_id
+
+    if tokenizer.pad_token_id and not model.generation_config.pad_token_id:
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
 
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
@@ -1483,15 +1489,17 @@ def predict(**params):
     else:
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
-        return output.split("### Response:")[1].strip()
+        return output.split("### Response:")[-1].strip()
     if "@@ Response" in output:
-        return output.split("@@ Response")[1].strip()
+        return output.split("@@ Response")[-1].strip()
     if "### Assistant" in output:
-        return output.split("### Assistant:")[1].strip()
+        return output.split("### Assistant:")[-1].strip()
     if "\nassistant\n" in output:
-        return output.split("\nassistant\n")[1].strip()
+        return output.split("\nassistant\n")[-1].strip()
     if "[/INST]" in output:
-        return output.split("[/INST]")[1].strip()
+        return output.split("[/INST]")[-1].strip()
     if "答：" in output:
-        return output.split("答：")[1].strip()
+        return output.split("答：")[-1].strip()
+    if "Answer:" in output:
+        return output.split("Answer:")[-1].strip()
     return output

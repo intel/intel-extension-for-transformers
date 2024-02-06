@@ -21,14 +21,25 @@ if __name__ == "__main__":
     parser.add_argument('--tasks', type=str, default="lambada_openai")
     parser.add_argument('--model_format', type=str, default="runtime")
     parser.add_argument('--use_gptq', action='store_true')
+    parser.add_argument('--batch_size', type=int, default=1)
     args = parser.parse_args()
     print(args)
-
-    results = evaluate(
-        model="hf-causal",
-        model_args=f'pretrained="{args.model_name}", dtype=float32, use_gptq={args.use_gptq}',
-        tasks=[f"{args.tasks}"],
-        model_format=f"{args.model_format}"
-    )
+    model_args=f'pretrained="{args.model_name}",dtype=float32'
+    if args.use_gptq:
+        model_args += ",use_gptq=True"
+    if args.model_format == "runtime":
+        results = evaluate(
+            model="hf-causal",
+            model_args=model_args,
+            tasks=[f"{args.tasks}"],
+            model_format=f"{args.model_format}"
+        )
+    else:
+        results = evaluate(
+            model="hf-causal",
+            model_args=model_args,
+            batch_size=args.batch_size,
+            tasks=[f"{args.tasks}"]
+        )
 
     print(results)
