@@ -70,6 +70,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
         images: Optional[torch.FloatTensor] = None,
         images_mask: Optional[torch.LongTensor] = None,
         return_dict: Optional[bool] = None,
+        token_idx: Optional[torch.Tensor] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
 
         if inputs_embeds is None:
@@ -104,7 +105,8 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                     past_key_values,
                     labels,
                     images,
-                    images_mask
+                    images_mask,
+                    token_idx
                 )
 
         return super().forward(
@@ -117,7 +119,8 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
             use_cache=use_cache,
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
-            return_dict=return_dict
+            return_dict=return_dict,
+            token_idx=token_idx
         )
 
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, inputs_embeds=None, **kwargs):
