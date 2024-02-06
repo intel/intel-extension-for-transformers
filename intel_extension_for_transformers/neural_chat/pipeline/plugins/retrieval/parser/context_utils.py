@@ -51,7 +51,7 @@ def read_pdf(pdf_path):
             else:
                 result=result+pagetext+'.'
         if len(doc.get_page_images(i)) > 0 :
-            for img in doc.get_page_images(i):    
+            for img in doc.get_page_images(i):
                 if img:
                     pageimg=''
                     xref = img[0]
@@ -59,7 +59,7 @@ def read_pdf(pdf_path):
                     img_bytes = img_data['image']
                     pil_image = Image.open(io.BytesIO(img_bytes))
                     img = np.array(pil_image)
-                    img_result = reader.readtext(img, paragraph=True, detail=0)                    
+                    img_result = reader.readtext(img, paragraph=True, detail=0)
                     pageimg=pageimg + ', '.join(img_result).strip()
                     if pageimg.endswith('!') or pageimg.endswith('?') or pageimg.endswith('.'):
                         pass
