@@ -146,9 +146,45 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 
 ## Examples For Intel GPU
 Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  
-We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.  
-Here are the example codes.
+We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models:
+<table>
+<thead>
+  <tr>
+    <th rowspan="1">Model Name</th>
+    <th colspan="1">ARC</th>
+    <th colspan="1">PVC</th>
+    <th rowspan="1">Transformer Version</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td><a href="https://huggingface.co/Qwen/Qwen-7B-Chat" target="_blank" rel="noopener noreferrer">Qwen-7B-Chat</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>Latest</td>
+  </tr>
+    <tr>
+    <td><a href="https://huggingface.co/meta-llama/Llama-2-7b-hf" target="_blank" rel="noopener noreferrer">Llama-2-7b-hf</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>4.32.1</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/mistralai/Mistral-7B-v0.1" target="_blank" rel="noopener noreferrer">Mistral-7B-v0.1</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/EleutherAI/gpt-j-6b" target="_blank" rel="noopener noreferrer">gpt-j-6b</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>Latest</td>
+  </tr>
+</tbody>
+</table>
 
+Here are the example codes.
 #### Prepare Dependency Packages
 1. Install Oneapi Package  
 Weight-only quantization ops only exist in "dev/QLLM" branch on the intel-extension-for-pytorch. It needs to be compiled with the Oneapi DPCPP compiler. Please follow [the link](https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html) to install the OneAPI to "/opt/intel folder".
