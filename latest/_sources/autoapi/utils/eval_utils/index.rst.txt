@@ -1,0 +1,79 @@
+:py:mod:`utils.eval_utils`
+==========================
+
+.. py:module:: utils.eval_utils
+
+.. autoapi-nested-parse::
+
+   Response Parsing and Evaluation for various models
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   utils.eval_utils.parse_multi_choice_response
+   utils.eval_utils.check_is_number
+   utils.eval_utils.normalize_str
+   utils.eval_utils.extract_numbers
+   utils.eval_utils.parse_open_response
+   utils.eval_utils.eval_multi_choice
+   utils.eval_utils.eval_open
+   utils.eval_utils.evaluate
+   utils.eval_utils.calculate_ins_level_acc
+
+
+
+.. py:function:: parse_multi_choice_response(response, all_choices, index2ans)
+
+   Parse the prediction from the generated response.
+   Return the predicted index e.g., A, B, C, D.
+
+
+.. py:function:: check_is_number(string)
+
+   Check if the given string a number.
+
+
+.. py:function:: normalize_str(string)
+
+   Normalize the str to lower case and make them float numbers if possible.
+
+
+.. py:function:: extract_numbers(string)
+
+   Exact all forms of numbers from a string with regex.
+
+
+.. py:function:: parse_open_response(response)
+
+   Parse the prediction from the generated response.
+   Return a list of predicted strings or numbers.
+
+
+.. py:function:: eval_multi_choice(gold_i, pred_i)
+
+   Evaluate a multiple choice instance.
+
+
+.. py:function:: eval_open(gold_i, pred_i)
+
+   Evaluate an open question instance
+
+
+.. py:function:: evaluate(samples)
+
+   Batch evaluation for multiple choice and open questions.
+
+
+.. py:function:: calculate_ins_level_acc(results: Dict)
+
+   Calculate the instruction level accuracy for given Subject results
+
+

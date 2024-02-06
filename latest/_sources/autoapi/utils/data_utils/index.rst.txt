@@ -1,0 +1,41 @@
+:py:mod:`utils.data_utils`
+==========================
+
+.. py:module:: utils.data_utils
+
+.. autoapi-nested-parse::
+
+   Utils for data load, save, and process (e.g., prompt construction)
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   utils.data_utils.get_multi_choice_info
+   utils.data_utils.save_jsonl
+
+
+
+.. py:function:: get_multi_choice_info(options)
+
+   Given the list of options for multiple choice question
+   Return the index2ans and all_choices
+
+
+.. py:function:: save_jsonl(filename, data)
+
+   Save a dictionary of data to a JSON Lines file with the filename as key and caption as value.
+
+   :param filename: The path to the file where the data should be saved.
+   :type filename: str
+   :param data: The dictionary containing the data to save where key is the image path and value is the caption.
+   :type data: dict
+
+

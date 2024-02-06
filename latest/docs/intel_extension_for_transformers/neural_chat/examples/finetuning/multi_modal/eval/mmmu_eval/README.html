@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluation Guidelines &mdash; Intel® Extension for Transformers 0.1.dev1+gc30353f documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Evaluation Guidelines</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/multi_modal/eval/mmmu_eval/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="evaluation-guidelines">
+<h1>Evaluation Guidelines<a class="headerlink" href="#evaluation-guidelines" title="Link to this heading"></a></h1>
+<p>We provide detailed instructions for evaluation.
+To execute our evaluation script, please ensure that the structure of your model outputs is the same as ours.</p>
+<p>We provide two options:</p>
+<ol class="simple">
+<li><p>Evaluation only: you can parse the response on your own and simply provide one file with all the final predictions.</p></li>
+<li><p>Parse and evaluation: you can leave all the responses to us with the output formats shown below.</p></li>
+</ol>
+<section id="evaluation-only">
+<h2>Evaluation Only<a class="headerlink" href="#evaluation-only" title="Link to this heading"></a></h2>
+<p>If you want to use your own parsing logic and <em>only provide the final answer</em>, you can use <code class="docutils literal notranslate"><span class="pre">main_eval_only.py</span></code>.</p>
+<p>You can provide all the outputs in <em>one file</em> in the following format:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="s">&quot;validation_Accounting_1&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;D&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">strictly</span><span class="w"> </span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;B&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;D&quot;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">multi</span><span class="o">-</span><span class="n">choice</span><span class="w"> </span><span class="n">question</span>
+<span class="w">    </span><span class="s">&quot;validation_Architecture_and_Engineering_14&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">any</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">open</span><span class="w"> </span><span class="n">question</span><span class="p">.</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Then run eval_only with:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">main_eval_only</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">output_path</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">example_outputs</span><span class="o">/</span><span class="n">llava1</span><span class="mf">.5</span><span class="n">_13b</span><span class="o">/</span><span class="n">total_val_output</span><span class="p">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="https://github.com/MMMU-Benchmark/MMMU/blob/main/eval/example_outputs/llava1.5_13b/total_val_output.json">example output</a> for a detailed prediction file form.</p>
+</section>
+<section id="parse-and-evaluation">
+<h2>Parse and Evaluation<a class="headerlink" href="#parse-and-evaluation" title="Link to this heading"></a></h2>
+<p>You can also provide response and run the <code class="docutils literal notranslate"><span class="pre">main_parse_and_eval.py</span></code> to use our answer parsing processing and evaluation pipeline as follows:</p>
+<section id="output-folder-structure">
+<h3>Output folder structure<a class="headerlink" href="#output-folder-structure" title="Link to this heading"></a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="err">└──</span><span class="w"> </span><span class="n">model_name</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">category_name</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">g</span><span class="p">.,</span><span class="w"> </span><span class="n">Accounting</span><span class="p">)</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">json</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">category_name</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">g</span><span class="p">.,</span><span class="w"> </span><span class="n">Electronics</span><span class="p">)</span>
+<span class="w">        </span><span class="err">├──</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">json</span>
+<span class="w">    </span><span class="p">...</span>
+</pre></div>
+</div>
+</section>
+<section id="output-file">
+<h3>Output file<a class="headerlink" href="#output-file" title="Link to this heading"></a></h3>
+<p>Each `output.json`` has a list of dict containing instances for evaluation ().</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;validation_Electronics_28&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;question_type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;multiple-choice&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;answer&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;A&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">given</span><span class="w"> </span><span class="n">answer</span>
+<span class="w">        </span><span class="s">&quot;all_choices&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">create</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="err">`</span><span class="n">get_multi_choice_info</span><span class="err">`</span><span class="w"> </span><span class="n">in</span><span class="w"> </span>
+<span class="w">            </span><span class="s">&quot;A&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&quot;B&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&quot;C&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&quot;D&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="s">&quot;index2ans&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">create</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="err">`</span><span class="n">get_multi_choice_info</span><span class="err">`</span><span class="w"> </span><span class="n">in</span><span class="w"> </span>
+<span class="w">            </span><span class="s">&quot;A&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;75 + 13.3 cos(250t - 57.7°)V&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&quot;B&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;75 + 23.3 cos(250t - 57.7°)V&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&quot;C&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;45 + 3.3 cos(250t - 57.7°)V&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s">&quot;D&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;95 + 13.3 cos(250t - 57.7°)V&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="s">&quot;response&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;B&quot;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">response</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;validation_Electronics_29&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;question_type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;short-answer&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;answer&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;30&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">given</span><span class="w"> </span><span class="n">answer</span>
+<span class="w">        </span><span class="s">&quot;response&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;36 watts&quot;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">response</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="evaluation">
+<h3>Evaluation<a class="headerlink" href="#evaluation" title="Link to this heading"></a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">main_parse_and_eval</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">path</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">example_outputs</span><span class="o">/</span><span class="n">llava1</span><span class="mf">.5</span><span class="n">_13b</span><span class="w"> </span><span class="o">--</span><span class="n">subject</span><span class="w"> </span><span class="n">ALL</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">all</span><span class="w"> </span><span class="n">subject</span>
+
+<span class="cp"># OR you can specify one subject for the evaluation</span>
+
+<span class="n">python</span><span class="w"> </span><span class="n">main_parse_and_eval</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">path</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">example_outputs</span><span class="o">/</span><span class="n">llava1</span><span class="mf">.5</span><span class="n">_13b</span><span class="w"> </span><span class="o">--</span><span class="n">subject</span><span class="w"> </span><span class="n">elec</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="kt">short</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Electronics</span><span class="p">.</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="o">--</span><span class="n">help</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">all</span><span class="w"> </span><span class="kt">short</span><span class="w"> </span><span class="n">names</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">main_parse_and_eval.py</span></code> will generate <code class="docutils literal notranslate"><span class="pre">parsed_output.json</span></code> and <code class="docutils literal notranslate"><span class="pre">result.json</span></code> in the subfolder under the same category with output.json, respectively.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="err">├──</span><span class="w"> </span><span class="n">Accounting</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">json</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">parsed_output</span><span class="p">.</span><span class="n">json</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">json</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">Electronics</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">json</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">parsed_output</span><span class="p">.</span><span class="n">json</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">json</span>
+<span class="p">...</span>
+</pre></div>
+</div>
+</section>
+<section id="print-results">
+<h3>Print Results<a class="headerlink" href="#print-results" title="Link to this heading"></a></h3>
+<p>You can print results locally if you want. (use <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">tabulate</span></code> if you haven’t)</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">print_results</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">path</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">example_outputs</span><span class="o">/</span><span class="n">llava1</span><span class="mf">.5</span><span class="n">_13b</span>
+<span class="cp"># Results may be slightly different due to the r.htmlon selection for fail response</span>
+</pre></div>
+</div>
+<section id="run-llava">
+<h4>Run Llava<a class="headerlink" href="#run-llava" title="Link to this heading"></a></h4>
+<p>In case if you want to reproduce the results of some of the models, please go check run_llava.py as an example.</p>
+<p>By setting up the env following the <a class="reference external" href="https://github.com/haotian-liu/LLaVA">llava official repo</a> and installing <code class="docutils literal notranslate"><span class="pre">datasets</span></code> packages by huggingface, you can run llava viathe following command:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="mi">0</span><span class="w"> </span><span class="n">nohup</span><span class="w"> </span><span class="n">python</span><span class="w"> </span><span class="n">run_llava</span><span class="p">.</span><span class="n">py</span><span class="w"> </span>\
+<span class="o">--</span><span class="n">output_path</span><span class="w"> </span><span class="n">example_outputs</span><span class="o">/</span><span class="n">llava1</span><span class="mf">.5</span><span class="n">_13b_val</span><span class="p">.</span><span class="n">json</span><span class="w"> </span>\
+<span class="o">--</span><span class="n">model_path</span><span class="w"> </span><span class="n">liuhaotian</span><span class="o">/</span><span class="n">llava</span><span class="o">-</span><span class="n">v1</span><span class="mf">.5</span><span class="mi">-13</span><span class="n">b</span><span class="w"> </span>\
+<span class="o">--</span><span class="n">config_path</span><span class="w"> </span><span class="n">configs</span><span class="o">/</span><span class="n">llava1</span><span class="mf">.5</span><span class="p">.</span><span class="n">yaml</span>
+</pre></div>
+</div>
+<p>Then you can evaluate the results via the very first pipeline.</p>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f440a522080> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+:orphan:
+
+:py:mod:`run_llava`
+===================
+
+.. py:module:: run_llava
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   run_llava.set_seed
+
+
+
+.. py:function:: set_seed(seed_value)
+
+   Set the seed for PyTorch (both CPU and CUDA), Python, and NumPy for reproducible results.
+
+   :param seed_value: An integer value to be used as the seed.
+
+
