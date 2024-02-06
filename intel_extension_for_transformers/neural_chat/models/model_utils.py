@@ -995,7 +995,7 @@ def predict_stream(**params):
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
-    format_version = params["format_version"] if "format_version" in params else "v2"
+    format_version = params["format_version"] if "format_version" in params else "v1"
     prompt = params["prompt"]
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
@@ -1038,7 +1038,8 @@ def predict_stream(**params):
             "error_code": ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH,
             "text": ErrorCodes.error_strings[ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH]
         }
-        yield json.dumps(ret).encode() + b"\0"
+        if format_version == "v1-json":
+            yield json.dumps(ret).encode() + b"\0"
         return
 
     generate_kwargs = get_generate_kwargs(
@@ -1177,7 +1178,8 @@ def predict_stream(**params):
             "text": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED],
             "logprobs": None,
         }
-        yield json.dumps(ret).encode() + b"\0"
+        if format_version == "v1-json":
+            yield json.dumps(ret).encode() + b"\0"
         return
     output_word_len = 0
 
@@ -1190,7 +1192,8 @@ def predict_stream(**params):
             "error_code": ErrorCodes.ERROR_MODEL_INFERENCE_FAIL,
             "text": str(thread_exception)
         }
-        yield json.dumps(ret).encode() + b"\0"
+        if format_version == "v1-json":
+            yield json.dumps(ret).encode() + b"\0"
         return
     # prevent crash if no words are coming out
     first_word_output_time = datetime.now()
@@ -1200,16 +1203,19 @@ def predict_stream(**params):
         if output_word_len == 0:
             first_word_output_time = datetime.now()
         output_word_len += 1
-        ret = {
-            "text": new_text,
-            "error_code": 0,
-            "usage": {
-                "prompt_tokens": input_token_len,
-                "completion_tokens": output_word_len,
-                "total_tokens": input_token_len + output_word_len,
+        if format_version == "v1-json":
+            ret = {
+                "text": new_text,
+                "error_code": 0,
+                "usage": {
+                    "prompt_tokens": input_token_len,
+                    "completion_tokens": output_word_len,
+                    "total_tokens": input_token_len + output_word_len,
+                }
             }
-        }
-        yield json.dumps(ret).encode() + b"\0"
+            yield json.dumps(ret).encode() + b"\0"
+        else:
+            yield new_text
 
     end_time = datetime.now()
 
@@ -1234,6 +1240,15 @@ def predict_stream(**params):
         )
     if return_stats:
         if format_version == "v1":
+            stats = {
+                "input_token_len": input_token_len,
+                "output_token_len": output_token_len,
+                "duration": duration,
+                "first_token_latency": first_token_latency,
+                "msecond_per_token": msecond_per_token,
+            }
+            yield "END_OF_STREAM_STATS={}".format(stats)
+        elif format_version == "v1-json":
             ret = {
                 "error_code": 0,
                 "stats": {
