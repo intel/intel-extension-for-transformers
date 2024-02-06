@@ -24,17 +24,11 @@ host: 0.0.0.0
 port: 8000
 
 model_name_or_path: "Intel/neural-chat-7b-v3-1"
-device: "auto"
 
 retrieval:
     enable: true
     args:
-        input_path: "./docs"
-        persist_directory: "./docs_persist"
-        response_template: "We cannot find suitable content to answer your query at this moment."
-        append: True
+        input_path: "/rag_docs"
+        persist_directory: "./rag_persist"
 
-safety_checker:
-    enable: true
-
-tasks_list: ['textchat', 'retrieval']
+tasks_list: ['textchat']
