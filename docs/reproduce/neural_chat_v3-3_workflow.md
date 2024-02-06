@@ -58,7 +58,7 @@ numactl -m <node N> -C <cpu list> python run_inference.py \
 ``` bash
 cd examples/huggingface/neural_speed
 pip install -r requirements.txt
-# if you happen to keep model in cache, please check if model_path is restored in "${HOME}/.cache/huggingface/hub/models--Intel--neural-chat-7b-v3-3/snapshots/7b86016aa1d2107440c1928694a7bba926509887" or "${HF_HOME}/.cache/huggingface/hub/models--Intel--neural-chat-7b-v3-3/snapshots/7b86016aa1d2107440c1928694a7bba926509887"
+# if you keep model in cache, please check if model is restored in "${HOME}/.cache/huggingface/hub/models--Intel--neural-chat-7b-v3-3/snapshots/7b86016aa1d2107440c1928694a7bba926509887" or "${HF_HOME}/.cache/huggingface/hub/models--Intel--neural-chat-7b-v3-3/snapshots/7b86016aa1d2107440c1928694a7bba926509887"
 model_path="LOCAL-PATH-TO-NEURAL-CHAT-v3-3"
 numactl -m <node N> -C <cpu list> python run_inference.py \
     --model_path "Intel/neural-chat-7b-v3-3" \
