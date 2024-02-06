@@ -186,11 +186,13 @@ def get_model_name_from_path(model_path):
         return model_paths[-1]
 
 
-def run_model(args, samples, model, call_model_engine_fn=None, tokenizer=None, processor=None, device=None):
+def run_model(args, samples, model, call_model_engine_fn=None,
+        tokenizer=None, processor=None, device=None, image_num_patches=576):
     out_samples = dict()
     with torch.no_grad():
         for sample in tqdm(samples):
-            response = call_model_engine_fn(args, sample, model, tokenizer, processor, device)
+            response = call_model_engine_fn(args, sample, model,
+                    tokenizer, processor, device, image_num_patches)
             htcore.mark_step()
 
             if sample['question_type'] == 'multiple-choice':
