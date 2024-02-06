@@ -24,10 +24,10 @@ import json
 import fnmatch
 from accelerate import Accelerator
 import torch
-import bigcode_eval # pylint: disable=E0611, E0401
-from bigcode_eval.arguments import EvalArguments # pylint: disable=E0611, E0401
-from bigcode_eval.evaluator import Evaluator # pylint: disable=E0611, E0401
-from bigcode_eval.tasks import ALL_TASKS # pylint: disable=E0611, E0401
+import bigcode_eval  # pylint: disable=E0611, E0401
+from bigcode_eval.arguments import EvalArguments  # pylint: disable=E0611, E0401
+from bigcode_eval.evaluator import Evaluator  # pylint: disable=E0611, E0401
+from bigcode_eval.tasks import ALL_TASKS  # pylint: disable=E0611, E0401
 
 
 def pattern_match(patterns, source_list):
@@ -40,18 +40,18 @@ def pattern_match(patterns, source_list):
     return list(task_names)
 
 
-def evaluate(model,
-             tokenizer,
-             tasks,
-             batch_size,
-             args,
-            ):
-    """Instantiate and evaluate a model on a list of tasks.
-
-    """
+def evaluate(
+    model,
+    tokenizer,
+    tasks,
+    batch_size,
+    args,
+):
+    """Instantiate and evaluate a model on a list of tasks."""
     try:
         import transformers
-        import  datasets
+        import datasets
+
         transformers.logging.set_verbosity_error()
         datasets.logging.set_verbosity_error()
     except:
@@ -74,30 +74,56 @@ def evaluate(model,
         else:
             raise ValueError("No eos_token or bos_token found")
 
-    tokenizer.pad_token = tokenizer.eos_token
+    try:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    # Some models like CodeGeeX2 have pad_token as a read-only property
+    except AttributeError:
+        print("Not setting pad_token to eos_token")
+        pass
+
     evaluator = Evaluator(accelerator, model, tokenizer, args)
 
-    for task in task_names:
+    if args.load_generations_intermediate_paths and len(
+        args.load_generations_intermediate_paths
+    ) != len(task_names):
+        raise ValueError(
+            "If passing --load_generations_intermediate_paths, \
+            must pass equal number of files as number of tasks"
+        )
+
+    for idx, task in enumerate(task_names):
+        intermediate_generations = None
+        if args.load_generations_intermediate_paths:
+            with open(args.load_generations_intermediate_paths[idx], "r") as f_in:
+                # intermediate_generations: list[list[str | None]] of len n_tasks
+                # where list[i] = generated codes or empty
+                intermediate_generations = json.load(f_in)
+
         if args.generation_only:
             if accelerator.is_main_process:
                 print("generation mode only")
-            generations, references = evaluator.generate_text(task)
+            generations, references = evaluator.generate_text(
+                task, intermediate_generations=intermediate_generations
+            )
             if accelerator.is_main_process:
-                with open(args.save_generations_path, "w") as fp:
-                    json.dump(generations, fp)
-                    print(f"generations were saved at {args.save_generations_path}")
-                if args.save_references:
-                    with open("references.json", "w") as fp:
-                        json.dump(references, fp)
-                        print("references were saved")
+                save_generations_path = (
+                    f"{os.path.splitext(args.save_generations_path)[0]}_{task}.json"
+                )
+                save_references_path = f"references_{task}.json"
+                evaluator.save_json_files(
+                    generations,
+                    references,
+                    save_generations_path,
+                    save_references_path,
+                )
         else:
-            results[task] = evaluator.evaluate(task)
+            results[task] = evaluator.evaluate(
+                task, intermediate_generations=intermediate_generations
+            )
 
-    results["config"] = {
-        "model": model.config.model_type,
-        "temperature": args.temperature,
-        "n_samples": args.n_samples,
-    }
+    # Save all args to config
+    results["config"] = vars(args)
     if not args.generation_only:
         dumped = json.dumps(results, indent=2)
         if accelerator.is_main_process:

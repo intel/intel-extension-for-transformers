@@ -94,14 +94,13 @@ parser.add_argument(
 )
 parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
+
 # ============Harness configs============
 parser.add_argument("--tasks", default=None, help="Evaluation tasks")
-parser.add_argument("--n_samples", default=200, type=int)
 parser.add_argument(
     "--limit", default=None, type=int, help="Limit number of samples to eval"
 )
 parser.add_argument("--allow_code_execution", action="store_true")
-parser.add_argument("--prefix", default="")
 parser.add_argument("--generation_only", action="store_true")
 parser.add_argument("--postprocess", action="store_false")
 parser.add_argument("--save_references", action="store_true")
@@ -110,13 +109,22 @@ parser.add_argument("--instruction_tokens", default=None)
 parser.add_argument("--save_generations_path", default="generations.json")
 parser.add_argument("--load_generations_path", default=None)
 parser.add_argument("--metric_output_path", default="evaluation_results.json")
-parser.add_argument("--seed", default=0, type=int)
+parser.add_argument(
+    "--load_generations_intermediate_paths",
+    type=str,
+    nargs="*",
+    help="List of paths for saving the intermediate code generations",
+)
 # ============Generation config============
 parser.add_argument("--max_length_generation", default=512, type=int)
-parser.add_argument("--temperature", default=0.8, type=float)
-parser.add_argument("--do_sample", action="store_true")
 parser.add_argument("--check_references", action="store_true")
 parser.add_argument("--max_memory_per_gpu", type=str, default=None)
+parser.add_argument(
+    "--prompt",
+    type=str,
+    default="prompt",
+    help="Prompt type to use for generation in HumanEvalPack tasks",
+)
 parser.add_argument(
     "--modeltype",
     default="causal",
@@ -145,11 +153,15 @@ parser.add_argument(
     default=None,
     help="Path of additional data to load for the tasks",
 )
-parser.add_argument(
-    "--modeltype",
-    default="causal",
-    help="AutoModel to use, it can be causal or seq2seq",
-)
+######### eval args ###################################
+parser.add_argument("--prefix", default="")
+parser.add_argument("--do_sample", action="store_true")
+parser.add_argument("--temperature", default=0.2, type=float)
+parser.add_argument("--top_p", default=0.95, type=float)
+parser.add_argument("--top_k", default=0, type=int)
+parser.add_argument("--n_samples", default=1, type=int)
+parser.add_argument("--eos", default="<|endoftext|>", type=str)
+parser.add_argument("--seed", default=0, type=int)
 args = parser.parse_args()
 
 
@@ -157,18 +169,20 @@ tokenizer = AutoTokenizer.from_pretrained(
     args.model,
     truncation_side="left",
     padding_side="right",
-    trust_remote_code=args.trust_remote_code
+    trust_remote_code=args.trust_remote_code,
 )
 
 config = AutoConfig.from_pretrained(
     args.model,
-    torchscript=True
-    if (
-        args.sq
-        or args.woq_algo in ["AWQ", "TEQ"]
-        or (args.int8 or args.int8_bf16_mixed or args.benchmark)
-    )
-    else False,  # torchscript will force `return_dict=False` to avoid jit errors
+    torchscript=(
+        True
+        if (
+            args.sq
+            or args.woq_algo in ["AWQ", "TEQ"]
+            or (args.int8 or args.int8_bf16_mixed or args.benchmark)
+        )
+        else False
+    ),  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
     trust_remote_code=args.trust_remote_code,
     _commit_hash=args._commit_hash,
