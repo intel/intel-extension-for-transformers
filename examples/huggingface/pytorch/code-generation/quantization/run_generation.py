@@ -68,7 +68,7 @@ parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
     default="RTN",
-    choices=["RTN", "AWQ", "TEQ"],
+    choices=["RTN", "AWQ", "TEQ", "GPTQ"],
     help="Weight-only parameter.",
 )
 parser.add_argument(
@@ -94,7 +94,38 @@ parser.add_argument(
 )
 parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
-
+parser.add_argument(
+    "--gptq_actorder",
+    action="store_true",
+    help="Whether to apply the activation order GPTQ heuristic.",
+)
+parser.add_argument(
+    "--gptq_percdamp",
+    type=float,
+    default=0.01,
+    help="Percent of the average Hessian diagonal to use for dampening.",
+)
+parser.add_argument(
+    "--gptq_block_size",
+    type=int,
+    default=128,
+    help="Block size. sub weight matrix size to run GPTQ.",
+)
+parser.add_argument(
+    "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
+)
+parser.add_argument(
+    "--gptq_use_max_length",
+    action="store_true",
+    help="Set all sequence length to be same length of args.gptq_pad_max_length",
+)
+parser.add_argument(
+    "--gptq_pad_max_length",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
+# ============GPTQ configs==============
 # ============Harness configs============
 parser.add_argument("--tasks", default=None, help="Evaluation tasks")
 parser.add_argument(
@@ -153,7 +184,7 @@ parser.add_argument(
     default=None,
     help="Path of additional data to load for the tasks",
 )
-######### eval args ###################################
+# ============Evaluation configs==============
 parser.add_argument("--prefix", default="")
 parser.add_argument("--do_sample", action="store_true")
 parser.add_argument("--temperature", default=0.2, type=float)
@@ -221,13 +252,33 @@ elif args.sq:
         calib_iters=args.calib_iters,
     )
 elif args.woq:
-    quantization_config = WeightOnlyQuantConfig(
-        weight_dtype=args.woq_weight_dtype,
-        scale_dtype=args.woq_scale_dtype,
-        group_size=args.woq_group_size,
-        scheme=args.woq_scheme,
-        algorithm=args.woq_algo,
-    )  # default is A32W4G32
+    if args.woq_algo == "GPTQ":
+        algorithm_args = {
+            "act_order": args.gptq_actorder,
+            "percdamp": args.gptq_percdamp,
+            "block_size": args.gptq_block_size,
+            "nsamples": args.gptq_nsamples,
+            "use_max_length": args.gptq_use_max_length,
+            "pad_max_length": args.gptq_pad_max_length,
+        }
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.woq_compute_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            weight_dtype=args.woq_weight_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.woq_group_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+            algorithm_args=algorithm_args,
+        )
+    else:
+        quantization_config = WeightOnlyQuantConfig(
+            weight_dtype=args.woq_weight_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            group_size=args.woq_group_size,
+            scheme=args.woq_scheme,
+            algorithm=args.woq_algo,
+        )  # default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
     # GPU device is need for `load_in_4bit` and `load_in_8bit`.
