@@ -57,6 +57,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
             seed=0
             temperature=0.2
             max_length_generation=50
+            top_p=0.95
+            top_k=0
             do_sample=True
             batch_size=5
             check_references=False
