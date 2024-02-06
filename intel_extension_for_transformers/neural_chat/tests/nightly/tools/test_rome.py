@@ -21,7 +21,7 @@ from intel_extension_for_transformers.neural_chat.models.model_utils import MODE
 from intel_extension_for_transformers.neural_chat.tools.rome import ROMEHyperParams, apply_rome_to_model
 import unittest
 
-LLAMA2_7B_CHAT_MODEL = "fxmarty/tiny-llama-fast-tokenizer"
+LLAMA2_7B_CHAT_MODEL = "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
 
 class TestROME(unittest.TestCase):
     def setUp(self):
@@ -62,8 +62,6 @@ class TestROME(unittest.TestCase):
 
         print("#"*9 + "Get hyperparameters" + "#"*9)
         hparams = ROMEHyperParams.from_name('llama-7b')
-        hparams.layers = [0]
-        hparams.v_loss_layer = 1
         hparams.mom2_n_samples = 300
         print(hparams)
 
@@ -85,6 +83,7 @@ class TestROME(unittest.TestCase):
         print("\n\n".join([queries[i] + " " + pre_update_text[i] for i in range(len(queries))]))
         print("#"*9 + "Generated post-update text" + "#"*9)
         print("\n\n".join([queries[i] + " " + post_update_text[i] for i in range(len(queries))]))
+        self.assertIn('Rome', str(post_update_text[0]))
 
 
 if __name__ == "__main__":
