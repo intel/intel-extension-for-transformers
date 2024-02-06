@@ -66,6 +66,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
             load_data_path=None
             modeltype="causal"
             max_memory_per_gpu=None
+            eos="<|endoftext|>"
+            load_generations_intermediate_paths=None
 
 
         args = bigcode_args()
