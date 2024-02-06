@@ -146,7 +146,7 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 
 ## Examples For Intel GPU
 Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  
-We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models:
+We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models that can be optimized through IPEX:
 <table>
 <thead>
   <tr>
