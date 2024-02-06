@@ -75,7 +75,7 @@ New options to note:
 **Note:** If don't set `--use_habana, --use_lazy_mode`, the code can also run on gpus as well.
 
 
-##### MMMU Evaluation on Gaudi2
+## MMMU Evaluation on Gaudi2
 
 ```
 # For static shape, not support beam search currently
