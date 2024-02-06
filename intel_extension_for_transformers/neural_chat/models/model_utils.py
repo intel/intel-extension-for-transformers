@@ -1175,12 +1175,13 @@ def predict_stream(**params):
         set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
         ret = {
             "error_code": ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED,
-            "text": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED],
-            "logprobs": None,
+            "text": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED]
         }
         if format_version == "v1-json":
             yield json.dumps(ret).encode() + b"\0"
-        return
+            return
+        else:
+            raise thread_exception
     output_word_len = 0
 
     generation_thread.join(0.1)
