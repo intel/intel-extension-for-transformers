@@ -109,7 +109,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                     token_idx
                 )
 
-        if "Gaudi" in self.__class__.__name__:
+        if "Gaudi" in MistralForCausalLM.__name__:
             return super().forward(
                 input_ids=input_ids,
                 attention_mask=attention_mask,

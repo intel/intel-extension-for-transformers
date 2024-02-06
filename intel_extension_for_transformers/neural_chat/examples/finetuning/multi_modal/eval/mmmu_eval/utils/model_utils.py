@@ -16,7 +16,7 @@ from random import random
 import torch
 import torch.nn.functional as F
 
-def call_llava_engine_df(args, sample, model, tokenizer=None, processor=None, device="hpu"):
+def call_llava_engine_df(args, sample, model, tokenizer=None, processor=None, device="hpu", image_num_patches=576):
     from intel_extension_for_transformers.transformers.modeling.llava_models.llava_arch import (
             IMAGE_TOKEN_INDEX,
             DEFAULT_IMAGE_TOKEN,
@@ -36,8 +36,8 @@ def call_llava_engine_df(args, sample, model, tokenizer=None, processor=None, de
             for ele_inp in inp:
                 if ele_inp == IMAGE_TOKEN_INDEX:
                     # fill image placeholder with pad token
-                    new_inp.extend([IMAGE_TOKEN_INDEX] * 576)
-                    image_mask.extend([1] * 576)
+                    new_inp.extend([IMAGE_TOKEN_INDEX] * image_num_patches)
+                    image_mask.extend([1] * image_num_patches)
                 else:
                     new_inp.append(ele_inp)
                     image_mask.append(0)
@@ -105,7 +105,7 @@ def call_llava_engine_df(args, sample, model, tokenizer=None, processor=None, de
 
     prompt = sample['final_input_prompt']
     prompt = deal_with_prompt(prompt, model.config.mm_use_im_start_end)
-    conv = conv_templates['v1'].copy()
+    conv = conv_templates[args.template].copy()
     conv.append_message(conv.roles[0], prompt)
     conv.append_message(conv.roles[1], None)
     prompt = conv.get_prompt()

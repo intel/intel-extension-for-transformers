@@ -224,6 +224,7 @@ def main():
     parser.add_argument('--model_path', type=str, default="liuhaotian/llava-v1.5-13b")
     parser.add_argument('--split', type=str, default='validation')
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--template', type=str, choices=['v1', 'plain', 'mistral_instruct'])
 
     args = parser.parse_args()
     # device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
@@ -273,7 +274,9 @@ def main():
         samples.append(sample)
 
     # run ex
-    out_samples = run_model(args, samples, model, call_model_engine, tokenizer, processor, device)
+    vision_tower = model.get_vision_tower()
+    image_num_patches = vision_tower.num_patches
+    out_samples = run_model(args, samples, model, call_model_engine, tokenizer, processor, device, image_num_patches)
 
     save_json(args.output_path, out_samples)
     # metric_dict.update({"num_example": len(out_samples)})

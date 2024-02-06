@@ -19,10 +19,12 @@ rm -fr example_outputs
 
 tar -xf example_outputs.tar
 
+# for liuhaotian/llava-v1.6-mistral-7b, --template should be set to mistral_instruct
 python run_llava.py \
 --output_path example_outputs/llava1.5_13b_val.json \
 --model_path liuhaotian/llava-v1.5-13b \
---config_path configs/llava1.5.yaml
+--config_path configs/llava1.5.yaml \
+--template v1
 
 # evaluate the results
 python main_eval_only.py --output_path example_outputs/llava1.5_13b_val.json

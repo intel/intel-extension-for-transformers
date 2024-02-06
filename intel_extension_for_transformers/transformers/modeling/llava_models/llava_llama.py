@@ -112,7 +112,7 @@ class LlavaLlamaForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                     token_idx
                 )
 
-        if "Gaudi" in self.__class__.__name__:
+        if "Gaudi" in LlamaForCausalLM.__name__:
             # pylint: disable=E1101
             return super().forward(
                 input_ids=input_ids,

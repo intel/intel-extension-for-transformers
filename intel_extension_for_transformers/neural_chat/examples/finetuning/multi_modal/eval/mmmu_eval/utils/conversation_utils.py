@@ -258,7 +258,19 @@ conv_llava_v1 = Conversation(
     sep2="</s>",
 )
 
+conv_mistral_instruct = Conversation(
+    system="",
+    roles=("USER", "ASSISTANT"),
+    version="llama_v2",
+    messages=(),
+    offset=0,
+    sep_style=SeparatorStyle.LLAMA_2,
+    sep="",
+    sep2="</s>",
+)
+
 conv_templates = {
     "v1": conv_llava_v1,
     "plain": conv_llava_plain,
+    "mistral_instruct": conv_mistral_instruct,
 }
