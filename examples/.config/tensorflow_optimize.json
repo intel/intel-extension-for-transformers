@@ -6,7 +6,7 @@
       "params": {
         "topology": "bert_base_mrpc_static",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/text-classification"
       }
     },
     "benchmark": {
@@ -18,7 +18,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/text-classification"
       }
     }
   },
@@ -29,7 +29,7 @@
       "params": {
         "topology": "distilgpt2_clm",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/language-modeling"
       }
     },
     "benchmark": {
@@ -41,7 +41,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/language-modeling"
       }
     }
   },
@@ -52,7 +52,7 @@
       "params": {
         "topology": "distilbert_mlm",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/language-modeling"
       }
     },
     "benchmark": {
@@ -64,7 +64,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/language-modeling"
       }
     }
   },
@@ -75,7 +75,7 @@
       "params": {
         "topology": "bert_base_ner",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/token-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/token-classification"
       }
     },
     "benchmark": {
@@ -87,7 +87,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/token-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/token-classification"
       }
     }
   },
@@ -98,7 +98,7 @@
       "params": {
         "topology": "distilbert_qa",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/question-answering"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/question-answering"
       }
     },
     "benchmark": {
@@ -110,7 +110,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/question-answering"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/question-answering"
       }
     }
   },
@@ -121,7 +121,7 @@
       "params": {
         "topology": "distilbert_swag",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/multiple-choice"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/multiple-choice"
       }
     },
     "benchmark": {
@@ -133,7 +133,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/multiple-choice"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/multiple-choice"
       }
     }
   },
@@ -144,7 +144,7 @@
       "params": {
         "topology": "roberta_qa",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/question-answering"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/question-answering"
       }
     },
     "benchmark": {
@@ -156,7 +156,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/question-answering"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/question-answering"
       }
     }
   },
@@ -167,7 +167,7 @@
       "params": {
         "topology": "distilroberta_mlm",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/language-modeling"
       }
     },
     "benchmark": {
@@ -179,7 +179,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/language-modeling"
       }
     }
   },
@@ -190,7 +190,7 @@
       "params": {
         "topology": "legalbert_mrpc",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/text-classification"
       }
     },
     "benchmark": {
@@ -202,7 +202,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/text-classification"
       }
     }
   },
@@ -213,7 +213,7 @@
       "params": {
         "topology": "xlnet_mrpc",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/text-classification"
       }
     },
     "benchmark": {
@@ -225,7 +225,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/text-classification"
       }
     }
   },
@@ -236,7 +236,7 @@
       "params": {
         "topology": "albert_large_mrpc",
         "output_model": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/text-classification"
       }
     },
     "benchmark": {
@@ -248,7 +248,7 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results",
-        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+        "cache_dir": "${HOME}/.cache/nlp_toolkit/text-classification"
       }
     }
   }

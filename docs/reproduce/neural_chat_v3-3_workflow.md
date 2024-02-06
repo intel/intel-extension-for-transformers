@@ -40,8 +40,10 @@ For LLM inference using [Neural Speed](https://github.com/intel/neural-speed.git
 ``` bash
 cd examples/huggingface/neural_speed
 pip install -r requirements.txt
+model_path="../pytorch/text-generation/quantization/auto_round/output/neural-chat-7b-v3-3-autoround-int4_GPTQ"
+export NEURAL_SPEED_VERBOSE=1
 numactl -m <node N> -C <cpu list> python run_inference.py \
-    --model_path "output/neural-chat-v3-3-autoround-int4_GPTQ" \
+    --model_path ${model_path} \
     --prompt "Once upon a time, there existed a little girl," \
     --max_new_tokens 32 \
     --use_gptq
@@ -49,9 +51,15 @@ numactl -m <node N> -C <cpu list> python run_inference.py \
 
 
 ### FP32 Inference
+
+>**Note**: Please download the [Intel/neural-chat-7b-v3-3](https://huggingface.co/Intel/neural-chat-7b-v3-3) from huggingface model hub and keep it in local.
+
+
 ``` bash
 cd examples/huggingface/neural_speed
 pip install -r requirements.txt
+# if you keep model in cache, please check if model is restored in "${HOME}/.cache/huggingface/hub/models--Intel--neural-chat-7b-v3-3/snapshots/7b86016aa1d2107440c1928694a7bba926509887" or "${HF_HOME}/.cache/huggingface/hub/models--Intel--neural-chat-7b-v3-3/snapshots/7b86016aa1d2107440c1928694a7bba926509887"
+model_path="LOCAL-PATH-TO-NEURAL-CHAT-v3-3"
 numactl -m <node N> -C <cpu list> python run_inference.py \
     --model_path "Intel/neural-chat-7b-v3-3" \
     --prompt "Once upon a time, there existed a little girl," \
@@ -80,8 +88,9 @@ To running accuracy evaluation, python >=3.9, < 3.11 is required due to [text ev
 
 ```bash
 # still working in examples/huggingface/neural_speed directory
+model_path="../pytorch/text-generation/quantization/auto_round/output/neural-chat-7b-v3-3-autoround-int4_GPTQ"
 python run_accuracy.py \
-    --model_name "output/neural-chat-v3-3-autoround-int4_GPTQ" \
+    --model_name ${model_path} \
     --tasks "lambada_openai" \
     --use_gptq
 ```
@@ -93,5 +102,6 @@ python run_accuracy.py \
 python run_accuracy.py \
     --model_name "Intel/neural-chat-7b-v3-3" \
     --tasks "lambada_openai" \
-    --model_format "torch"
+    --model_format "torch" \
+    --batch_size 1
 ```
