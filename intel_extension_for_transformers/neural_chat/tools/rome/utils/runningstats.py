@@ -138,6 +138,9 @@ def tally(stat, dataset, cache=None, quiet=False, **kwargs):
     return wrapped_loader()
 
 
+global_load_cache_enabled = True
+
+
 class cache_load_enabled:
     """
     When used as a context manager, cache_load_enabled(False) will prevent
@@ -255,7 +258,7 @@ class Mean(Stat):
 
     def __init__(self, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.count = 0
         self.batchcount = 0
         self._mean = None
@@ -328,7 +331,7 @@ class Variance(Stat):
 
     def __init__(self, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.count = 0
         self.batchcount = 0
         self._mean = None
@@ -411,7 +414,7 @@ class Covariance(Stat):
 
     def __init__(self, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.count = 0
         self._mean = None
         self.cmom2 = None
@@ -492,7 +495,7 @@ class SecondMoment(Stat):
 
     def __init__(self, split_batch=True, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.count = 0
         self.mom2 = None
         self.split_batch = split_batch
@@ -536,7 +539,7 @@ class Bincount(Stat):
 
     def __init__(self, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.count = 0
         self._bincount = None
 
@@ -588,7 +591,7 @@ class CrossCovariance(Stat):
 
     def __init__(self, split_batch=True, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.count = 0
         self._mean = None
         self.cmom2 = None
@@ -696,7 +699,7 @@ class IoU(Stat):
 
     def __init__(self, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.count = 0
         self._intersection = None
 
@@ -744,7 +747,7 @@ class CrossIoU(Stat):
 
     def __init__(self, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.count = 0
         self._intersection = None
         self.total_a = None
@@ -823,7 +826,7 @@ class Quantile(Stat):
 
     def __init__(self, r=3 * 1024, buffersize=None, seed=None, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.depth = None
         self.dtype = None
         self.device = None
@@ -1190,7 +1193,7 @@ class TopK:
 
     def __init__(self, k=100, largest=True, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self.k = k
         self.count = 0
         # This version flattens all data internally to 2-d tensors,
@@ -1322,7 +1325,7 @@ class History(Stat):
 
     def __init__(self, data=None, state=None):
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
         self._data = data
         self._added = []
 
@@ -1378,7 +1381,7 @@ class CombinedStat(Stat):
     def __init__(self, state=None, **kwargs):
         self._objs = kwargs
         if state is not None:
-            return super().__init__(state)
+            super().__init__(state)
 
     def __getattr__(self, k):
         if k in self._objs:
@@ -1478,9 +1481,6 @@ def resolve_state_dict(s):
     if isinstance(s, str):
         return unbox_numpy_null(numpy.load(s))
     return s
-
-
-global_load_cache_enabled = True
 
 
 def load_cached_state(cachefile, args, quiet=False, throw=False):

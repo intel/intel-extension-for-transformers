@@ -59,14 +59,18 @@ def compute_v(
     ).to(model.device)
 
     # Compute rewriting targets for left-padded sequences
-    rewriting_targets = torch.tensor(-100).repeat(len(rewriting_prompts), *input_tok["input_ids"].shape[1:]).to(model.device)
+    rewriting_targets = \
+        torch.tensor(-100).repeat(len(rewriting_prompts), *input_tok["input_ids"].shape[1:]).to(model.device)
     for i in range(len(rewriting_prompts)):
         rewriting_targets[i, -target_len-1:-1] = input_tok["input_ids"][i, -target_len:].clone() # build labels
 
     # Compute indices of the tokens where the fact is looked up
-    lookup_idxs = [find_fact_lookup_idx(prompt, request["subject"], tokenizer,
-                                        hparams.fact_token if i <= len(context_templates) else "last", verbose=(i == 0))
-                                        for i, prompt in enumerate(all_prompts)]
+    lookup_idxs = [
+        find_fact_lookup_idx(
+            prompt, request["subject"], tokenizer,
+            hparams.fact_token if i <= len(context_templates) else "last", verbose=(i == 0)
+        ) for i, prompt in enumerate(all_prompts)
+    ]
 
     # Finalize rewrite and loss layers
     loss_layer = max(hparams.v_loss_layer, layer)
@@ -125,7 +129,8 @@ def compute_v(
         # Compute loss on rewriting targets
         log_probs = torch.log_softmax(logits, dim=2)
 
-        loss = log_probs.gather(2, torch.where(rewriting_targets != -100, rewriting_targets, 0).unsqueeze(2)).squeeze(2)
+        loss = \
+            log_probs.gather(2, torch.where(rewriting_targets != -100, rewriting_targets, 0).unsqueeze(2)).squeeze(2)
         mask = (rewriting_targets != -100).float()
 
         # Aggregate total losses
@@ -173,8 +178,8 @@ def compute_v(
     # Solving the linear system to compute the right vector
     right_vector = (target - cur_output) / torch.dot(cur_input, left_vector)
     print(f"Delta norm: {np.round((target - cur_output).norm().item(), 3)}")
-    print(f"Change in target norm: {np.round(target_init.norm().item(), 3)} to {np.round(target.norm().item(), 3)} => "
-          f"{np.round((target.norm() - target_init.norm()).item(), 3)}")
+    print(f"Change in target norm: {np.round(target_init.norm().item(), 3)} to {np.round(target.norm().item(), 3)} =>"
+          f" {np.round((target.norm() - target_init.norm()).item(), 3)}")
     print(f"Division Factor: {np.round(torch.dot(cur_input, left_vector).item(), 3)}")
     print(f"Right vector norm: {np.round(right_vector.norm().item(), 3)}")
 
