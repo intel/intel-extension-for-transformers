@@ -17,7 +17,7 @@ cd eval/mmmu_eval
 
 rm -fr example_outputs
 
-tar -xf example_outputs
+tar -xf example_outputs.tar
 
 python run_llava.py \
 --output_path example_outputs/llava1.5_13b_val.json \
