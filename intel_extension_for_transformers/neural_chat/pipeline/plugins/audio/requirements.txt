@@ -14,9 +14,7 @@ python-multipart
 soundfile
 speechbrain
 transformers
-transformers
 urllib3
 vector_quantize_pytorch
 webrtcvad
-zhconv
 zhconv
