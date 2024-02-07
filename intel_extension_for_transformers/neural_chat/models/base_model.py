@@ -26,6 +26,7 @@ from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
 from ..prompts.prompt import MAGICODER_PROMPT, generate_sqlcoder_prompt
 from ..utils.error_utils import set_latest_error
+from ..utils.tracer import tracer
 from ..errorcode import ErrorCodes
 import logging
 logging.basicConfig(
@@ -254,6 +255,7 @@ class BaseModel(ABC):
 
         return response, link
 
+    @tracer.time_tracer
     def predict(self, query, origin_query="", config=None):
         """
         Predict using a non-streaming approach.
@@ -449,6 +451,7 @@ class BaseModel(ABC):
                 raise NotImplementedError(f"Unsupported task {task}.")
             self.conv_template = PromptTemplate(name, clear_history=clear_history)
 
+    @tracer.time_tracer
     def prepare_prompt(self, prompt: str, task: str = ""):
         self.get_conv_template(task)
         self.conv_template.append_message(self.conv_template.roles[0], prompt)

@@ -49,6 +49,8 @@ from ...config import GenerationConfig
 import json, types
 import tiktoken
 from ...plugins import plugins, is_plugin_enabled
+from ...utils.tracer import tracer
+
 
 def check_requests(request) -> Optional[JSONResponse]:
     # Check all params
@@ -119,6 +121,7 @@ def _add_to_set(s, new_stop):
     else:
         new_stop.update(s)
 
+@tracer.time_tracer
 async def get_generation_parameters(
     model_name: str,
     chatbot: BaseModel,
@@ -351,6 +354,7 @@ async def generate_completion_stream(payload: Dict[str, Any], chatbot: BaseModel
         plugins["cache"]["instance"].post_llm_inference_actions(prompt, buffered_texts)
 
 
+@tracer.time_tracer
 async def generate_completion(payload: Dict[str, Any], chatbot: BaseModel):
     config = GenerationConfig()
     for attr, value in payload.items():
@@ -468,11 +472,13 @@ async def show_available_models():
     return ModelList(data=model_cards)
 
 @router.get("/health")
+@tracer.time_tracer
 async def health() -> Response:
     """Health check."""
     return Response(status_code=200)
 
 @router.post("/v1/chat/completions")
+@tracer.time_tracer
 async def create_chat_completion(request: ChatCompletionRequest):
     """Creates a completion for the chat message.
     This API mimics the OpenAI ChatCompletion API.
@@ -487,6 +493,9 @@ async def create_chat_completion(request: ChatCompletionRequest):
         return error_check_ret
 
     chatbot = router.get_chatbot()
+
+    if request.n != 1 and request.top_k == 1:
+        request.top_k = request.n
 
     gen_params = await get_generation_parameters(
         request.model,
@@ -510,33 +519,40 @@ async def create_chat_completion(request: ChatCompletionRequest):
         return StreamingResponse(generator, media_type="text/event-stream")
 
     choices = []
-    chat_completions = []
-    for i in range(request.n):
-        content = asyncio.create_task(generate_completion(gen_params, chatbot))
-        chat_completions.append(content)
+    # chat_completions = []
+    # for i in range(request.n):
+    #     content = asyncio.create_task(generate_completion(gen_params, chatbot))
+    #     chat_completions.append(content)
+    # try:
+    #     all_tasks = await asyncio.gather(*chat_completions)
     try:
-        all_tasks = await asyncio.gather(*chat_completions)
+        content = await generate_completion(gen_params, chatbot)
     except Exception as e:
         return create_error_response(ApiErrorCode.INTERNAL_ERROR, str(e))
     usage = UsageInfo()
-    for i, content in enumerate(all_tasks):
-        if isinstance(content, str):
-            content = json.loads(content)
+    # for i, content in enumerate(all_tasks):
+    #     if isinstance(content, str):
+    #         content = json.loads(content)
 
-        if content["error_code"] != 0:
-            return create_error_response(content["error_code"], content["text"])
-        choices.append(
-            ChatCompletionResponseChoice(
-                index=i,
+    #     if content["error_code"] != 0:
+    #         return create_error_response(content["error_code"], content["text"])
+    #     choices.append(
+    #         ChatCompletionResponseChoice(
+    #             index=i,
+    #             message=ChatMessage(role="assistant", content=content["text"]),
+    #             finish_reason=content.get("finish_reason", "stop"),
+    #         )
+    #     )
+    #     if "usage" in content:
+    #         task_usage = UsageInfo.parse_obj(content["usage"])
+    #         for usage_key, usage_value in task_usage.dict().items():
+    #             setattr(usage, usage_key, getattr(usage, usage_key) + usage_value)
+
+    choices.append(ChatCompletionResponseChoice(
+                index=0,
                 message=ChatMessage(role="assistant", content=content["text"]),
                 finish_reason=content.get("finish_reason", "stop"),
-            )
-        )
-        if "usage" in content:
-            task_usage = UsageInfo.parse_obj(content["usage"])
-            for usage_key, usage_value in task_usage.dict().items():
-                setattr(usage, usage_key, getattr(usage, usage_key) + usage_value)
-
+            ))
     return ChatCompletionResponse(model=request.model, choices=choices, usage=usage)
 
 
