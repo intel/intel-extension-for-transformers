@@ -35,7 +35,6 @@ librosa
 markdown
 neural-compressor
 neural_speed
-neural_speed
 num2words
 numba
 numpy==1.23.5
@@ -53,7 +52,6 @@ pydantic==1.10.13
 pydub
 PyMuPDF
 pymysql
-PyPDF2
 python-docx
 python-multipart
 pyyaml
