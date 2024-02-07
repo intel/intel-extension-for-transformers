@@ -8,7 +8,6 @@ langid
 markdown
 openpyxl
 PyMuPDF
-PyPDF2
 python-docx
 qdrant-client
 scikit-learn
