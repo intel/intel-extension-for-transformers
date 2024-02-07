@@ -20,7 +20,6 @@ from urllib.parse import urlparse, urlunparse
 import multiprocessing
 import urllib3
 import langid
-import PyPDF2
 from bs4 import BeautifulSoup
 import os
 import re
