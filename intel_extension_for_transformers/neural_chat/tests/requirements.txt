@@ -53,6 +53,7 @@ pydantic==1.10.13
 pydub
 PyMuPDF
 pymysql
+PyPDF2
 python-docx
 python-multipart
 pyyaml
@@ -82,4 +83,3 @@ uvicorn
 vllm
 yacs
 zhconv
-PyPDF2
