@@ -76,6 +76,7 @@ class MatMulKBit(torch.autograd.Function):
         compute_dtype=None,
         weight_dtype=None,
         scale_dtype=None,
+        scheme=None,
     ):
         # # 1. Dequantize
         # B_dequant = torch.zeros(out.shape[-1], A.shape[-1], dtype=torch.float)
@@ -114,7 +115,7 @@ class MatMulKBit(torch.autograd.Function):
                 compute_dtype,
                 weight_dtype,
                 scale_dtype,
-                False,
+                False if scheme == "sym" else True,
             )
         else:
             out = qbits_woq_linear_ref_impl(
@@ -187,6 +188,7 @@ def matmul_kbit(
     compute_dtype,
     weight_dtype,
     scale_dtype,
+    scheme,
     do_dequant=False,
 ):
     if do_dequant:
@@ -206,7 +208,7 @@ def matmul_kbit(
                 compute_dtype,
                 weight_dtype,
                 scale_dtype,
-                False,
+                False if scheme == "sym" else True,
             )
         else:
             out = qbits_woq_linear_ref_impl(
