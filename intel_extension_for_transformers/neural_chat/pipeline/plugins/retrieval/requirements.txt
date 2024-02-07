@@ -8,9 +8,9 @@ langid
 markdown
 openpyxl
 PyMuPDF
+PyPDF2
 python-docx
 qdrant-client
 scikit-learn
 sentence-transformers==2.3.1
 unstructured
-PyPDF2
