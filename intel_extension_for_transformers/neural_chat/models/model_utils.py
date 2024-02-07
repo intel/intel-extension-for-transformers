@@ -1081,6 +1081,7 @@ def predict_stream(**params):
                                 **input_tokens,
                                 **generate_kwargs,
                                 streamer=streamer,
+                                pad_token_id=tokenizer.eos_token_id,
                                 generation_config=generation_config,
                                 return_dict_in_generate=True,
                             )
@@ -1109,6 +1110,7 @@ def predict_stream(**params):
                                     **input_tokens,
                                     **generate_kwargs,
                                     streamer=streamer,
+                                    pad_token_id=tokenizer.eos_token_id,
                                     generation_config=generation_config,
                                     return_dict_in_generate=True,
                                 )
@@ -1149,6 +1151,7 @@ def predict_stream(**params):
                         **input_tokens,
                         **generate_kwargs,
                         streamer=streamer,
+                        pad_token_id=tokenizer.eos_token_id,
                         generation_config=generation_config,
                         return_dict_in_generate=True,
                         output_scores=True,
@@ -1371,6 +1374,7 @@ def predict(**params):
                     generation_output = model.generate(
                             **input_tokens,
                             **generate_kwargs,
+                            pad_token_id=tokenizer.eos_token_id,
                             generation_config=generation_config,
                             return_dict_in_generate=True
                             )
@@ -1395,6 +1399,7 @@ def predict(**params):
                             generation_output = model.generate(
                                 **input_tokens,
                                 **generate_kwargs,
+                                pad_token_id=tokenizer.eos_token_id,
                                 generation_config=generation_config,
                                 return_dict_in_generate=True
                             )
@@ -1427,6 +1432,7 @@ def predict(**params):
                 generation_output = model.generate(
                     **input_tokens,
                     **generate_kwargs,
+                    pad_token_id=tokenizer.eos_token_id,
                     generation_config=generation_config,
                     return_dict_in_generate=True,
                     output_scores=True,
