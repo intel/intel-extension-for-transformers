@@ -990,6 +990,9 @@ def predict_stream(**params):
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
     num_beams = int(params["num_beams"]) if "num_beams" in params else 1
+    ## Temp fix for llm v1
+    if num_beams == 0:
+        num_beams = 1
     model_name = (
         params["model_name"] if "model_name" in params else "Intel/neural-chat-7b-v3-1"
     )
@@ -1001,6 +1004,7 @@ def predict_stream(**params):
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
+    ## Temp fix for llm v1
     format_version = params["format_version"] if "format_version" in params else "v1"
     prompt = params["prompt"]
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
