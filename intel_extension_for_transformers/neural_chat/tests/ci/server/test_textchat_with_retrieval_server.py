@@ -69,7 +69,8 @@ class UnitTest(unittest.TestCase):
     def test_text_chat_with_retrieval(self):
         # Create a sample chat completion request object
         chat_request = ChatCompletionRequest(
-            prompt="Tell me about Intel oneAPI DPC++/C++ Compiler.",
+            model="facebook/opt-125m",
+            messages=[{"role": "user", "content": "Tell me about Intel Xeon processors."}],
         )
         response = client.post("/v1/chat/completions", json=chat_request.dict())
         assert response.status_code == 200

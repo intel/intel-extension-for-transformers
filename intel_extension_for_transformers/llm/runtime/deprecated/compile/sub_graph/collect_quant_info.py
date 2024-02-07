@@ -52,7 +52,7 @@ class CollectQuantInfo(Pattern):
                     'patterns': {
                         'in': [[(0, 'Quantize'), (1, ['Dequantize'])]],
                     },
-                    
+
                 },
                 {
                     'patterns': {

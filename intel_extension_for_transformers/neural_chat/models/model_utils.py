@@ -498,7 +498,8 @@ def load_model(
     try:
         config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                             if (re.search("chatglm", model_name, re.IGNORECASE) or \
-                                               re.search("qwen", model_name, re.IGNORECASE)) else False)
+                                               re.search("qwen", model_name, re.IGNORECASE) or \
+                                               re.search("deci", model_name, re.IGNORECASE)) else False)
     except ValueError as e:
         logging.error(f"Exception: {e}")
         if "Unrecognized model in" in str(e):
@@ -550,8 +551,9 @@ def load_model(
         else:
             optimization_config.post_init()
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
-        if not model.config.is_encoder_decoder:
-            tokenizer.padding_side = "left"
+        if hasattr(model, 'config'):
+            if model.config.is_encoder_decoder:
+                tokenizer.padding_side = "left"
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
         MODELS[model_name]["model"] = model
@@ -590,6 +592,7 @@ def load_model(
             or config.model_type == "mistral"
             or config.model_type == "mixtral"
             or config.model_type == "phi"
+            or config.model_type == "deci"
         ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
@@ -599,7 +602,7 @@ def load_model(
                     low_cpu_mem_usage=True,
                     quantization_config=bitsandbytes_quant_config,
                     trust_remote_code=True if (config.model_type == "qwen" or config.model_type == "phi" or \
-                        re.search("codegen", model_name, re.IGNORECASE)) else False
+                        re.search("codegen", model_name, re.IGNORECASE) or config.model_type == "deci") else False
                 )
         elif (
                 (config.model_type == "gpt_bigcode"
@@ -667,7 +670,8 @@ def load_model(
         return
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE) and \
-       not re.search("magicoder", model_name, re.IGNORECASE):
+       (not re.search("magicoder", model_name, re.IGNORECASE) and
+       not re.search("deepseek-coder", model_name, re.IGNORECASE)):
         # unwind broken decapoda-research config
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
@@ -695,6 +699,9 @@ def load_model(
         model.generation_config.pad_token_id = (
             tokenizer.pad_token_id
         ) = tokenizer.eos_token_id
+
+    if tokenizer.pad_token_id and not model.generation_config.pad_token_id:
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
 
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
@@ -961,7 +968,7 @@ def predict_stream(**params):
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
-        `use_hpu_graphs` (bool): 
+        `use_hpu_graphs` (bool):
                     Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
@@ -1036,7 +1043,7 @@ def predict_stream(**params):
         return
 
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, 
+        max_new_tokens, input_token_len,
         get_stop_token_ids(model, tokenizer),
         assistant_model=assistant_model
     )
@@ -1256,7 +1263,7 @@ def predict(**params):
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
-        `use_hpu_graphs` (bool): 
+        `use_hpu_graphs` (bool):
                  Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
@@ -1321,8 +1328,8 @@ def predict(**params):
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, 
-        get_stop_token_ids(model, tokenizer), 
+        max_new_tokens, input_token_len,
+        get_stop_token_ids(model, tokenizer),
         assistant_model=assistant_model
     )
 
@@ -1437,15 +1444,17 @@ def predict(**params):
     else:
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
-        return output.split("### Response:")[1].strip()
+        return output.split("### Response:")[-1].strip()
     if "@@ Response" in output:
-        return output.split("@@ Response")[1].strip()
+        return output.split("@@ Response")[-1].strip()
     if "### Assistant" in output:
-        return output.split("### Assistant:")[1].strip()
+        return output.split("### Assistant:")[-1].strip()
     if "\nassistant\n" in output:
-        return output.split("\nassistant\n")[1].strip()
+        return output.split("\nassistant\n")[-1].strip()
     if "[/INST]" in output:
-        return output.split("[/INST]")[1].strip()
+        return output.split("[/INST]")[-1].strip()
     if "答：" in output:
-        return output.split("答：")[1].strip()
+        return output.split("答：")[-1].strip()
+    if "Answer:" in output:
+        return output.split("Answer:")[-1].strip()
     return output

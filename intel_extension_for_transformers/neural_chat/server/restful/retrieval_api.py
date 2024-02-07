@@ -80,7 +80,7 @@ router = RetrievalAPIRouter()
 RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./photoai_retrieval_docs")+'/'
 
 
-@router.post("/v1/aiphotos/askdoc/upload_link")
+@router.post("/v1/askdoc/upload_link")
 async def retrieval_upload_link(request: Request):
     global plugins
     params = await request.json()
@@ -124,7 +124,7 @@ async def retrieval_upload_link(request: Request):
         user_upload_dir.mkdir(parents=True, exist_ok=True)
         user_persist_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"[askdoc - upload_link] upload path: {user_upload_dir}")
-        
+
         try:
             # get retrieval instance and reload db with new knowledge base
             logger.info("[askdoc - upload_link] starting to create local db...")
@@ -137,7 +137,7 @@ async def retrieval_upload_link(request: Request):
         return {"knowledge_base_id": kb_id}
 
 
-@router.post("/v1/aiphotos/askdoc/create")
+@router.post("/v1/askdoc/create")
 async def retrieval_create(request: Request,
                            file: UploadFile = File(...)):
     global plugins
@@ -156,14 +156,14 @@ async def retrieval_create(request: Request,
     cur_path = Path(path_prefix) / f"{user_id}-{kb_id}"
     os.makedirs(path_prefix, exist_ok=True)
     cur_path.mkdir(parents=True, exist_ok=True)
-    
+
     user_upload_dir = Path(path_prefix) / f"{user_id}-{kb_id}/upload_dir"
     user_persist_dir = Path(path_prefix) / f"{user_id}-{kb_id}/persist_dir"
     user_upload_dir.mkdir(parents=True, exist_ok=True)
     user_persist_dir.mkdir(parents=True, exist_ok=True)
     cur_time = get_current_beijing_time()
     logger.info(f"[askdoc - create] upload path: {user_upload_dir}")
-    
+
     # save file to local path
     save_file_name = str(user_upload_dir) + '/' + cur_time + '-' + filename
     with open(save_file_name, 'wb') as fout:
@@ -183,7 +183,7 @@ async def retrieval_create(request: Request,
     return {"knowledge_base_id": kb_id}
 
 
-@router.post("/v1/aiphotos/askdoc/append")
+@router.post("/v1/askdoc/append")
 async def retrieval_append(request: Request,
                            file: UploadFile = File(...),
                            knowledge_base_id: str = Form(...)):
@@ -233,7 +233,7 @@ async def retrieval_append(request: Request,
     return "Succeed"
 
 
-@router.post("/v1/aiphotos/askdoc/chat")
+@router.post("/v1/askdoc/chat")
 async def retrieval_chat(request: Request):
     chatbot = router.get_chatbot()
     plugins['tts']['enable'] = False
@@ -286,7 +286,7 @@ async def retrieval_chat(request: Request):
         def stream_generator():
             yield f"data: {generator}\n\n"
             yield f"data: [DONE]\n\n"
-    else: 
+    else:
         def stream_generator():
             for output in generator:
                 ret = {
@@ -301,7 +301,7 @@ async def retrieval_chat(request: Request):
                         flag = True
                     if output.endswith('.') or output.endswith('\n'):
                         output = output[:-1]
-                        
+
                 if '](' in output:
                     output = output.split('](')[-1].replace(')', '')
                     if output.endswith('\n'):
@@ -350,14 +350,14 @@ async def retrieval_chat(request: Request):
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 
-@router.post("/v1/aiphotos/askdoc/feedback")
+@router.post("/v1/askdoc/feedback")
 def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     logger.info(f'[askdoc - feedback] fastrag feedback received.')
     mysql_db = MysqlDb()
     mysql_db._set_db("fastrag")
     question, answer, feedback, comments = request.question, request.answer, request.feedback, request.comments
     feedback_str = 'dislike' if int(feedback) else 'like'
-    logger.info(f'''[askdoc - feedback] feedback question: [{question}], 
+    logger.info(f'''[askdoc - feedback] feedback question: [{question}],
                 answer: [{answer}], feedback: [{feedback_str}], comments: [{comments}]''')
     question = question.replace('"', "'")
     answer = answer.replace('"', "'")
@@ -374,7 +374,7 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
         with mysql_db.transaction():
             mysql_db.insert(sql, None)
     except:  # pragma: no cover
-        raise Exception("""Exception occurred when inserting data into MySQL, 
+        raise Exception("""Exception occurred when inserting data into MySQL,
                         please check the db session and your syntax.""")
     else:
         logger.info('[askdoc - feedback] feedback inserted.')
@@ -382,7 +382,7 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
         return "Succeed"
 
 
-@router.get("/v1/aiphotos/askdoc/downloadFeedback")
+@router.get("/v1/askdoc/downloadFeedback")
 def get_feedback_from_db():
     mysql_db = MysqlDb()
     mysql_db._set_db("fastrag")
@@ -402,7 +402,7 @@ def get_feedback_from_db():
         def data_generator():
             output = io.StringIO()
             writer = csv.DictWriter(
-                output, 
+                output,
                 csv_fields
             )
             writer.writeheader()
@@ -430,6 +430,6 @@ def get_feedback_from_db():
         cur_time = datetime.datetime.now()
         cur_time_str = cur_time.strftime("%Y%m%d")
         return StreamingResponse(
-            data_generator(), 
-            media_type='text/csv', 
+            data_generator(),
+            media_type='text/csv',
             headers={"Content-Disposition": f"attachment;filename=feedback{cur_time_str}.csv"})

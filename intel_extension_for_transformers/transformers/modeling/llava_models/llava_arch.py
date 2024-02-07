@@ -30,6 +30,7 @@ IMAGE_TOKEN_INDEX = -200
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
 DEFAULT_IM_START_TOKEN = "<im_start>"
 DEFAULT_IM_END_TOKEN = "<im_end>"
+DEFAULT_IMAGE_TOKEN = "<image>"
 
 
 class LlavaMetaModel:
@@ -161,7 +162,7 @@ class LlavaMetaForCausalLM(PreTrainedModel):
         for batch_idx, cur_input_ids in enumerate(input_ids):
             num_images = (cur_input_ids == IMAGE_TOKEN_INDEX).sum()
             if num_images == 0:
-                # Concatenating the cur_image_features[0:0], like in the original implementation, 
+                # Concatenating the cur_image_features[0:0], like in the original implementation,
                 # is removed as it causes the backpropogation to crash on the hpu.
                 new_input_embeds.append(self.get_model().embed_tokens(cur_input_ids))
                 new_labels.append(labels[batch_idx])
@@ -302,3 +303,75 @@ class LlavaMetaForCausalLM(PreTrainedModel):
                     p.requires_grad = False
                 for p in self.get_output_embeddings().parameters():
                     p.requires_grad = False
+
+    def prepare_inputs_labels_for_multimodal_pad(
+        self, input_ids, position_ids, attention_mask, past_key_values, labels,
+        images, images_mask, token_idx=None
+    ):
+        # for training
+        if token_idx is None and labels is not None:
+            batch_size, sequence_length = labels.shape
+        else:
+            batch_size, sequence_length = attention_mask.shape
+
+        vision_tower = self.get_vision_tower()
+        if vision_tower is None or images is None or input_ids.shape[1] == 1:
+            if past_key_values is not None and vision_tower is not None \
+                    and images is not None and input_ids.shape[1] == 1:
+                if token_idx is None:
+                    target_shape = past_key_values[-1][-1].shape[-2] + 1
+                    attention_mask = torch.cat((attention_mask, torch.ones(
+                        (attention_mask.shape[0], target_shape - attention_mask.shape[1]),
+                        dtype=attention_mask.dtype,
+                        device=attention_mask.device)), dim=1)
+                position_ids = torch.sum(attention_mask, dim=1).unsqueeze(-1) - 1
+            return input_ids, position_ids, attention_mask, past_key_values, None, labels
+
+        if type(images) is list or images.ndim == 5:
+            concat_images = torch.cat([image for image in images], dim=0)
+            image_features = self.encode_images(concat_images)
+            split_sizes = [image.shape[0] for image in images]
+            image_features = torch.split(image_features, split_sizes, dim=0)
+            image_features = [x.flatten(0, 1).to(self.device) for x in image_features]
+        else:
+            image_features = self.encode_images(images).to(self.device)
+
+        input_embeds = self.get_model().embed_tokens(input_ids)
+
+        # Let's just add dummy tensors if they do not exist,
+        # it is a headache to deal with None all the time.
+        # But it is not ideal, and if you have a better idea,
+        # please open an issue / submit a PR, thanks.
+        _labels = labels
+        _position_ids = position_ids
+        _attention_mask = attention_mask
+        if attention_mask is None:
+            attention_mask = torch.ones_like(input_ids, dtype=torch.bool)
+        else:
+            attention_mask = attention_mask.bool()
+        if position_ids is None:
+            position_ids = torch.arange(0, labels.shape[1], dtype=torch.long, device=input_ids.device)
+        if labels is None:
+            labels = torch.full_like(input_ids, IGNORE_INDEX)
+
+        # +1 for static padding
+        final_input_embeds = torch.zeros(
+            (batch_size, sequence_length + 1, input_embeds.shape[-1]),
+            dtype=input_embeds.dtype, device=input_embeds.device
+        )
+
+        for idx, image_mask in enumerate(images_mask):
+
+            text_token_idx = torch.where(image_mask==0)[0]
+            final_input_embeds[idx].index_copy_(0, text_token_idx, input_embeds[idx][:text_token_idx.shape[0]])
+
+            image_token_idx = torch.where(image_mask==1)[0]
+            if image_token_idx.shape[0] > 0:
+                final_input_embeds[idx].index_copy_(0, image_token_idx, image_features[idx][:image_token_idx.shape[0]])
+            else:
+                final_input_embeds[idx].index_copy_(0, torch.tensor([sequence_length]), image_features[idx][:1])
+
+
+        final_input_embeds = final_input_embeds[:,:-1,:]
+
+        return None, position_ids, attention_mask, past_key_values, final_input_embeds, labels

@@ -183,7 +183,7 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
                     activation_scale = ((activation_max - activation_min) / 255).astype(float)
                     weight_scale = (np.maximum(abs(weight_max), abs(weight_min)) /
                                     128).astype(float)
-                    bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32) 
+                    bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32)
                     compensation = 0
                     node.input_tensors[2].data = copy.deepcopy((bias_fp32 + compensation).astype(np.float32))
 

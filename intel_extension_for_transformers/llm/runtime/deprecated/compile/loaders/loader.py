@@ -46,7 +46,7 @@ class Loader(object):
         if framework == 'onnxruntime':
             if isinstance(model, str):
                 model = onnx.load(model)
-                
+
                 try:
                     from ..onnx_utils import ONNX_OPTIMIZER_PASS
                     optimize_level = os.getenv('ONNX_OPTIMIZER_LEVEL', 1)

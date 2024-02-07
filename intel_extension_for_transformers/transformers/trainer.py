@@ -116,9 +116,9 @@ class BaseTrainer():
     """The base class of trainer."""
     def __init__(self, *args, **kwargs):
         """Initialization function.
-        
+
         Args:
-            args: defined parameters. 
+            args: defined parameters.
             kwargs: additional keyword arguments used to hide deprecated arguments.
         """
         super().__init__(*args, **kwargs)
@@ -257,15 +257,15 @@ class BaseTrainer():
         provider: str = Provider.INC.value,
     ):
         """Initialize the quantizer.
-        
+
         Args:
-            quant_config: The path to the YAML configuration file or QuantizationConfig class containing 
+            quant_config: The path to the YAML configuration file or QuantizationConfig class containing
                 accuracy goal, quantization objective and related dataloaders etc.
             provider: The provider used to quantize.
-        
+
         Returns:
-            An objective of neural_compressor Quantization class, which can automativally searches for 
-            optimal quantization recipes for low precision model inference and achieving best tuning 
+            An objective of neural_compressor Quantization class, which can automativally searches for
+            optimal quantization recipes for low precision model inference and achieving best tuning
             objectives.
         """
         from neural_compressor.experimental import Quantization
@@ -333,7 +333,7 @@ class BaseTrainer():
         """The main entry point of automatic quantization tuning.
 
         Args:
-            quant_config: The path to the YAML configuration file or QuantizationConfig class containing 
+            quant_config: The path to the YAML configuration file or QuantizationConfig class containing
                 accuracy goal, quantization objective and related dataloaders etc.
             provider: The provider used to quantize.
             eval_func (:obj:`Callable`, optional): The function used to evaluate the model.
@@ -341,8 +341,8 @@ class BaseTrainer():
             calib_dataloader: The dataloader for calibration dataset.
 
         Returns:
-            An objective of neural_compressor Quantization class, which can automativally searches for 
-            optimal quantization recipes for low precision model inference and achieving best tuning 
+            An objective of neural_compressor Quantization class, which can automativally searches for
+            optimal quantization recipes for low precision model inference and achieving best tuning
             objectives.
         """
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
@@ -383,12 +383,12 @@ class BaseTrainer():
         provider: str = Provider.INC.value,
     ):
         """Initialize the pruner.
-        
+
         Args:
             pruning_config: The path to the YAML configuration file or PruningConf class containing
             accuracy goal, pruning objective and related dataloaders etc.
             provider: The provider used to quantize.
-        
+
         Returns:
             An objective of neural_compressor Pruning class.
         """
@@ -484,7 +484,7 @@ class BaseTrainer():
             accuracy goal, distillation objective and related dataloaders etc.
             teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
             provider (str): The provider used to quantize.
-        
+
         Returns:
             An objective of neural_compressor Distillation class.
         """
@@ -514,13 +514,13 @@ class BaseTrainer():
         """The main entry point of automatic distillation tuning.
 
         Args:
-            quant_config: The path to the YAML configuration file or DistillationConfig class containing 
+            quant_config: The path to the YAML configuration file or DistillationConfig class containing
             accuracy goal, distillation objective and related dataloaders etc.
             teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
             provider (str): The provider used to quantize.
             eval_func (:obj:`Callable`, optional: The function to evaluate the model.
             train_func (:obj:`Callable`, optional: The function to train the model.
-        
+
         Returns:
             An objective of neural_compressor Distillation class.
         """
@@ -559,7 +559,7 @@ class BaseTrainer():
 
         Args:
             config_list: The list of configs.
-            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge 
+            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge
                 to a smaller model.
             eval_func (:obj:`Callable`, optional): Evaluation function to evaluate the tuning objective.
             train_func (:obj:`Callable`, optional): Training function which will be combined with pruning.
@@ -578,10 +578,10 @@ class BaseTrainer():
 
     def create_optimizer_builtin(self, config_list, teacher_model=None):
         """The function to create optimizer.
-        
+
         Args:
             config_list: The list of configs.
-            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge 
+            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge
                 to a smaller model.
         """
         components = []
@@ -622,11 +622,11 @@ class BaseTrainer():
         Args:
             component (:obj:`Component`, `optional`): Component object handling the training process.
             resume_from_checkpoint (:obj:`str` or :obj:`bool`, `optional`): If a :obj:`str`, local path
-                to a saved checkpoint as saved by a previous instance of :class:`~transformers.Trainer`. 
+                to a saved checkpoint as saved by a previous instance of :class:`~transformers.Trainer`.
                 If a :obj:`bool` and equals `True`, load the last checkpoint in `args.output_dir` as saved
                 by a previous instance of :class:`~transformers.Trainer`. If present, training will resume
                 from the model/optimizer/scheduler states loaded here.
-            trial (:obj:`optuna.Trial` or :obj:`Dict[str, Any]`, `optional`): The trial run or the 
+            trial (:obj:`optuna.Trial` or :obj:`Dict[str, Any]`, `optional`): The trial run or the
                 hyperparameter dictionary for hyperparameter search.
             ignore_keys_for_eval (:obj:`List[str]`, `optional`): A list of keys in the output of your model
                 (if it is a dictionary) that should be ignored when gathering predictions for evaluation
@@ -1115,8 +1115,8 @@ class BaseTrainer():
         Args:
             model (:obj:`nn.Module`): The model to train.
             inputs (:obj:`Dict[str, Union[torch.Tensor, Any]]`): The inputs and targets of the model.
-                The dictionary will be unpacked before being fed to the model. Most models expect 
-                the targets under the argument :obj:`labels`. Check your model's documentation for 
+                The dictionary will be unpacked before being fed to the model. Most models expect
+                the targets under the argument :obj:`labels`. Check your model's documentation for
                 all accepted arguments.
 
         Return:
@@ -1374,7 +1374,7 @@ class BaseTrainer():
     # pylint: disable=E1101
     def compute_loss(self, model, inputs, return_outputs=False):  # pragma: no cover
         """How the loss is computed by Trainer.
-        
+
         By default, all models return the loss in the first element.
 
         Subclass and override for custom behavior.
@@ -1515,17 +1515,17 @@ class BaseTrainer():
 
         NAS is composed of two major stages, Model Exploration and Evaluation.
 
-        In Model Exploration, a search engine will search for a better compressed model from the architecture 
+        In Model Exploration, a search engine will search for a better compressed model from the architecture
         design space in each iteration.
 
-        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction 
+        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction
         accuracy, the hardware performance etc.) in order to select the best model architecture.
 
         Args:
-            nas_config: The path to the YAML configuration file or a configuration 
+            nas_config: The path to the YAML configuration file or a configuration
                 object containing settings for NAS, etc.
             provider (str): Provide the baseic function. Default set to INC.
-            model_builder (:obj:`Callabel`, optional): A function to build model instance with 
+            model_builder (:obj:`Callabel`, optional): A function to build model instance with
                 the specified model architecture parameters.
             model_cls (:obj:`Callabel`, optional): Class of the model.
             eval_func (:obj:`Callabel`, optional): The function to evaluate the model.
@@ -1604,21 +1604,21 @@ class BaseTrainer():
 
         AutoDistillation is composed of three major stages, Model Exploration, Flash Distillation, and Evaluation.
 
-        In Model Exploration, a search engine will search for a better compressed model from the architecture 
+        In Model Exploration, a search engine will search for a better compressed model from the architecture
         design space in each iteration.
 
         Flash Distillation is the stage for training the searched model to discover its potential.
 
-        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction 
+        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction
         accuracy, the hardware performance etc.) in order to select the best model architecture.
 
         Args:
-            autodistillation_config: The path to the YAML configuration file or a configuration 
+            autodistillation_config: The path to the YAML configuration file or a configuration
                 object containing search setting, flash distillation settings, etc.
-            teacher_model: The model(torch.nn.Module or PreTrainedModel) transfers knowledge to 
+            teacher_model: The model(torch.nn.Module or PreTrainedModel) transfers knowledge to
                 a smaller model.
             provider (str): Provide the baseic function. Default set to INC.
-            model_builder (:obj:`Callabel`, optional): A function to build model instance with 
+            model_builder (:obj:`Callabel`, optional): A function to build model instance with
                 the specified model architecture parameters.
             model_cls (:obj:`Callabel`, optional): Class of the model.
             eval_func (:obj:`Callabel`, optional): The function to evaluate the model.
@@ -1644,7 +1644,7 @@ class BaseTrainer():
                              block_name=None,
                              checkpoint=None):
             """The a train step with automatic distillation.
-            
+
             Args:
                 trainer: define the training and evaluation loop for PyTorch.
                 agent: distillation model.
@@ -1672,7 +1672,7 @@ class BaseTrainer():
 
         def take_eval_steps(model, trainer, metric_names, save_metrics=False):
             """The a evaluation step with automatic distillation.
-            
+
             Args:
                 model: the target model to make evaluation.
                 trainer: define the training and evaluation loop for PyTorch.
@@ -1694,7 +1694,7 @@ class BaseTrainer():
 
         def train_func_builtin(model):
             """The function to use specified method to train the model.
-            
+
             Args:
                 model: input model.
             """
@@ -1764,7 +1764,7 @@ class BaseTrainer():
 
         def eval_func_builtin(model):
             """The function to use specified method to evaluate the model.
-            
+
             Args:
                 model: input model.
             """
@@ -1782,7 +1782,7 @@ class BaseTrainer():
 
     def model_builder_builtin(self, arch_paras=None, model_cls=None):
         """The function to use specified method to build model.
-        
+
         Args:
             arch_paras: Parameters of the architecture to build a new model.
             model_cls: Class for the model.
@@ -1981,7 +1981,8 @@ class BaseTrainer():
             if is_pretrained:
                 if state_dict is None:
                     state_dict = unwrapped_model.state_dict()
-                unwrapped_model.save_pretrained(output_dir, state_dict=state_dict)
+                unwrapped_model.save_pretrained(output_dir, state_dict=state_dict,
+                                                    safe_serialization=self.args.save_safetensors)
             else:
                 logger.info(
                     "Trainer.model is not a `PreTrainedModel`, only saving its state dict.")
@@ -1993,7 +1994,8 @@ class BaseTrainer():
             if self.enable_inc_quant and self.opt_model:
                 self._save_inc_int8(self.opt_model, output_dir)
             else:
-                self.model.save_pretrained(output_dir, state_dict=state_dict)
+                self.model.save_pretrained(output_dir, state_dict=state_dict,
+                                                safe_serialization=self.args.save_safetensors)
         if self.tokenizer is not None:  # pragma: no cover
             self.tokenizer.save_pretrained(output_dir)
 
@@ -2003,9 +2005,9 @@ class BaseTrainer():
 
     def export_to_onnx(self, *args, **kwargs):
         """The function to transfer model into onnx model.
-        
+
         Args:
-            args: defined parameters. 
+            args: defined parameters.
             kwargs: additional keyword arguments used to hide deprecated arguments.
         """
         if self.enable_bf16:
@@ -2023,7 +2025,7 @@ class BaseTrainer():
         verbose=True,
     ):
         """The function to transfer model into fp32 onnx model.
-        
+
         Args:
             save_path: the save path of the exported model.
             opset_version: the onnx op version of the exported model.
@@ -2066,7 +2068,7 @@ class BaseTrainer():
         verbose=True,
     ):
         """The function to transfer model into bf16 onnx model.
-        
+
         Args:
             save_path: the save path of the exported model.
             opset_version: the onnx op version of the exported model.
@@ -2128,7 +2130,7 @@ class BaseTrainer():
         scale_mapping=False,
     ):
         """The function to transfer model into int8 onnx model.
-        
+
         Args:
             save_path: the save path of the exported model.
             quant_format: quantization format.
@@ -2322,7 +2324,7 @@ class BaseTrainer():
             activation_type = ortq.QuantType.QInt8
             weight_type = ortq.QuantType.QInt8
         elif 'U8S8' in dtype: # pragma: no cover
-            if not self.enable_executor: 
+            if not self.enable_executor:
                 logger.error("Right now, we don't support dtype: {}, please use \
                               U8U8/S8S8 or set trainer.enable_executor=True \
                               for U8S8.".format(dtype))
@@ -2471,7 +2473,7 @@ class BaseTrainer():
         self._remove_label(input)
 
         # convert to a dict
-        input = dict(input.items())   
+        input = dict(input.items())
 
         if model.__class__.__name__ == 'XLNetForSequenceClassification': # pragma: no cover
             input.pop('token_type_ids')
@@ -2500,14 +2502,14 @@ class BaseTrainer():
             pass
 
         return input, input_names, output_names, axes_dict
-    
+
     def infer_task(self, model):
         """Infer task."""
         from optimum.exporters.tasks import TasksManager
 
         if not hasattr(model, "config"):
             raise ValueError("model doesn't have 'config' attribute.")
-        
+
         try:
             # infer task from model id
             model_name_or_path = model.config._name_or_path
@@ -2517,7 +2519,7 @@ class BaseTrainer():
                 # infer task from model itself
                 task = TasksManager.infer_task_from_model(model)
             except:  # pragma: no cover
-                try: 
+                try:
                     # infer task from model type
                     model_type = model.config.model_type.replace("_", "-")
                     tasks = TasksManager.get_supported_tasks_for_model_type(model_type, "onnx")
@@ -2525,7 +2527,7 @@ class BaseTrainer():
                         task = tasks[0]
                 except:
                     raise ValueError("Could not infer the task.")
-        
+
         return task
 
     @staticmethod
@@ -2594,9 +2596,9 @@ class BaseTrainer():
         dynamic_config: DynamicLengthConfig,
     ):
         """The function to set dynamic config.
-        
+
         Args:
-            dynamic_config: the settings of the dynamic config. 
+            dynamic_config: the settings of the dynamic config.
         """
         self.dynamic_config = dynamic_config
         lc = None

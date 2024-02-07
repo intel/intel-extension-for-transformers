@@ -69,14 +69,14 @@ class RmsNorm(Pattern):
             attr['epsilon'] = float(epsilon.input_tensors[1].data)
             ln_node_idx = model.get_node_id(node_names[0])
             model.nodes[ln_node_idx].attr = attr
-            
+
             if len(model.nodes[ln_node_idx].input_tensors) == 2:
                 hidden_size = model.nodes[ln_node_idx].input_tensors[1].data.shape[0]
                 model.add_config_item("hidden_size", hidden_size)
 
         # import pdb;pdb.set_trace()
         pattern_dict = pattern_mapping_config['RmsNorm'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("RmsNorm", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("RmsNorm",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):

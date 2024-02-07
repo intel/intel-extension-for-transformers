@@ -54,4 +54,3 @@ class AttentionBlock_WeightReshapeTo4D(Pattern):
                 add_node.input_tensors[1].shape = [1, 512, 1, 1]
 
         return model
-

@@ -24,7 +24,6 @@ from intel_extension_for_transformers.transformers.utils.utility import LazyImpo
 from collections import OrderedDict
 from transformers import T5Config, MT5Config
 from typing import Union, Optional
-from .utils import get_module_path
 
 sentence_transformers = LazyImport("sentence_transformers")
 
@@ -44,9 +43,9 @@ class OptimzedTransformer(sentence_transformers.models.Transformer):
         elif isinstance(config, MT5Config): # pragma: no cover
             self._load_mt5_model(model_name_or_path, config, cache_dir, **model_args)
         else:
-            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path, 
-                                                             config=config, 
-                                                             cache_dir=cache_dir, 
+            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path,
+                                                             config=config,
+                                                             cache_dir=cache_dir,
                                                              **model_args)
 
 class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
@@ -55,10 +54,11 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
         super().__init__(*args, **kwargs)
 
     def _load_auto_model(
-            self, 
-            model_name_or_path: str, 
-            token: Optional[Union[bool, str]], 
+            self,
+            model_name_or_path: str,
+            token: Optional[Union[bool, str]],
             cache_folder: Optional[str],
+            revision: Optional[str] = None,
             trust_remote_code: bool = False):
         """
         Creates a simple Transformer + Mean Pooling model and returns the modules
@@ -66,24 +66,32 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
         transformer_model = OptimzedTransformer(
-            model_name_or_path, cache_dir=cache_folder, model_args={"token": token, 
-                                                                    "trust_remote_code": trust_remote_code})
+            model_name_or_path,
+            cache_dir=cache_folder,
+            model_args={"token": token, "trust_remote_code": trust_remote_code, "revision": revision},
+            tokenizer_args={"token": token, "trust_remote_code": trust_remote_code, "revision": revision},
+            )
         pooling_model = sentence_transformers.models.Pooling(
             transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
-    
+
     def _load_sbert_model(
-            self, 
-            model_name_or_path: str, 
-            token: Optional[Union[bool, str]], 
-            cache_folder: Optional[str], 
+            self,
+            model_name_or_path: str,
+            token: Optional[Union[bool, str]],
+            cache_folder: Optional[str],
+            revision: Optional[str] = None,
             trust_remote_code: bool = False):
         """
         Loads a full sentence-transformers model
         """
         # Check if the config_sentence_transformers.json file exists (exists since v2 of the framework)
         config_sentence_transformers_json_path = sentence_transformers.util.load_file_path(
-            model_name_or_path, 'config_sentence_transformers.json', token=token, cache_folder=cache_folder)
+            model_name_or_path,
+            'config_sentence_transformers.json',
+            token=token,
+            cache_folder=cache_folder,
+            revision=revision)
         if config_sentence_transformers_json_path is not None:
             with open(config_sentence_transformers_json_path) as fIn:
                 self._model_config = json.load(fIn)
@@ -100,7 +108,7 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
 
         # Check if a readme exists
         model_card_path = sentence_transformers.util.load_file_path(
-            model_name_or_path, 'README.md', token=token, cache_folder=cache_folder)
+            model_name_or_path, 'README.md', token=token, cache_folder=cache_folder, revision=revision,)
         if model_card_path is not None:
             try:
                 with open(model_card_path, encoding='utf8') as fIn:
@@ -110,7 +118,11 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
 
         # Load the modules of sentence transformer
         modules_json_path = sentence_transformers.util.load_file_path(
-            model_name_or_path, 'modules.json', token=token, cache_folder=cache_folder)
+            model_name_or_path,
+            'modules.json',
+            token=token,
+            cache_folder=cache_folder,
+            revision=revision,)
         with open(modules_json_path) as fIn:
             modules_config = json.load(fIn)
 
@@ -121,26 +133,48 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
             # But, do load the config file first.
             if module_class == sentence_transformers.models.Transformer and module_config['path'] == "":
                 kwargs = {}
-                for config_name in ['sentence_bert_config.json', 'sentence_roberta_config.json', 
-                                    'sentence_distilbert_config.json', 'sentence_camembert_config.json', 
-                                    'sentence_albert_config.json', 'sentence_xlm-roberta_config.json', 
-                                    'sentence_xlnet_config.json']:
+                for config_name in [
+                    'sentence_bert_config.json',
+                    'sentence_roberta_config.json',
+                    'sentence_distilbert_config.json',
+                    'sentence_camembert_config.json',
+                    'sentence_albert_config.json',
+                    'sentence_xlm-roberta_config.json',
+                    'sentence_xlnet_config.json'
+                ]:
                     config_path = sentence_transformers.util.load_file_path(
-                        model_name_or_path, config_name, token=token, cache_folder=cache_folder)
+                        model_name_or_path,
+                        config_name,
+                        token=token,
+                        cache_folder=cache_folder,
+                        revision=revision,)
                     if config_path is not None:
                         with open(config_path) as fIn:
                             kwargs = json.load(fIn)
                         break
+                hub_kwargs = {"token": token, "trust_remote_code": trust_remote_code, "revision": revision}
                 if "model_args" in kwargs:
-                    kwargs["model_args"]["token"] = token
-                    kwargs["model_args"]["trust_remote_code"] = trust_remote_code
+                    kwargs["model_args"].update(hub_kwargs)
                 else:
-                    kwargs["model_args"] = {"token": token, "trust_remote_code": trust_remote_code}
+                    kwargs["model_args"] = hub_kwargs
+                if "tokenizer_args" in kwargs:
+                    kwargs["tokenizer_args"].update(hub_kwargs)
+                else:
+                    kwargs["tokenizer_args"] = hub_kwargs
                 module = sentence_transformers.models.Transformer(
                     model_name_or_path, cache_dir=cache_folder, **kwargs)
             else:
-                module_path = get_module_path(
-                    model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
+                # Normalize does not require any files to be loaded
+                if module_class == sentence_transformers.models.Normalize:
+                    module_path = None
+                else:
+                    module_path = sentence_transformers.util.load_dir_path(
+                        model_name_or_path,
+                        module_config["path"],
+                        token=token,
+                        cache_folder=cache_folder,
+                        revision=revision,
+                    )
                 module = module_class.load(module_path)
             modules[module_config['name']] = module
 

@@ -341,7 +341,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
 
                 # Original Pytorch Diffuser Unet Code: predict the noise residual
                 #noise_pred = self.unet(scaled_latent_model_input, t, encoder_hidden_states=prompt_embeds).sample
-                
+
                 # The ITREX Unet Code
                 scaled_latent_model_input = scaled_latent_model_input.contiguous()
                 prompt_embeds = prompt_embeds.contiguous()
@@ -744,4 +744,3 @@ def bf16_to_fp32(bf16_np):
   int32_np = int32_np << 16
   fp32_np = int32_np.view(np.float32)
   return fp32_np
-

@@ -366,7 +366,7 @@ class TTSModelArguments:
     step: int = field(default=0, metadata={"help": "TTS model step."})
     warmup_step: int = field(default=0, metadata={"help": "TTS model warmup step."})
     learning_rate: float = field(default=1e-5, metadata={"help": "Learning rate."})
- 
+
 @dataclass
 class BaseFinetuningConfig:
     model_args: ModelArguments
@@ -409,6 +409,7 @@ class GenerationConfig:
     return_stats: bool = False
     format_version: str = "v2"
     task: str = ""
+    sql_metadata: str = ""
 
 @dataclass
 class LoadingModelConfig:
@@ -450,6 +451,7 @@ class PipelineConfig:
                  tokenizer_name_or_path=None,
                  hf_access_token=None,
                  device="auto",
+                 task="",
                  plugins=plugins,
                  loading_config=None,
                  optimization_config=None,
@@ -462,7 +464,7 @@ class PipelineConfig:
             self.device = get_device_type()
         else:
             self.device = device
-
+        self.task = task
         self.plugins = plugins
 
         self.loading_config = loading_config if loading_config is not None else \

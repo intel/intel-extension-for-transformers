@@ -64,7 +64,7 @@ class RoraryPosEmb(Pattern):
                 },
                 {
                     'patterns': {
-                        'in': [[(0, 'Add'), (1, 'Slice'), (2, 'Unsqueeze'), 
+                        'in': [[(0, 'Add'), (1, 'Slice'), (2, 'Unsqueeze'),
                                 (3, 'Slice')]
                                 ],
                         'out': [[(0, 'Reshape'), (1, 'Slice')]]
@@ -96,7 +96,7 @@ class RoraryPosEmb(Pattern):
 
                 {
                     'patterns': {
-                        'in': [[(0, 'Slice'), (1, 'Slice'), (2, 'Slice'), (3, 'Slice'), 
+                        'in': [[(0, 'Slice'), (1, 'Slice'), (2, 'Slice'), (3, 'Slice'),
                                 (4, 'Neg'), (5, 'Stack'), (6, 'Flatten')]
                                 ],
                         'out': [[(0, 'Slice'), (1, 'Mul'), (2, 'Reshape'), (3, 'Concat'), (4, 'Reshape')]]
@@ -131,7 +131,7 @@ class RoraryPosEmb(Pattern):
                     },
                     'returns': [0, 3, 5]
                 },
-                
+
                 {
                     'patterns': {
                         'in': [[(0, 'Shape'), (2, 'Add'), (3, 'Arange')],
@@ -175,15 +175,15 @@ class RoraryPosEmb(Pattern):
                                         shape = [2],
                                         dtype="int32")
                 gather_node.input_tensors.insert(0, idx_tensor)
-            
+
             #  batch_dims: 0
-                
+
         pattern_dict = pattern_mapping_config['RoraryPosEmb'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("RoraryPosEmb", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("RoraryPosEmb",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)
-            
+
 
         def _set_attr1(new_node_names, ret_old_nodes, model):
             remove_shape_list = []
@@ -198,9 +198,9 @@ class RoraryPosEmb(Pattern):
                 slice_node.attr = OrderedDict({"starts_with_tensor" : "1",
                                                "ends_add" : "1", "axes" : "1", "steps" : "1"})
             model.remove_nodes(remove_shape_list)
-                
+
         pattern_dict = pattern_mapping_config['RoraryPosEmb'][1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("RoraryPosEmb", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("RoraryPosEmb",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr1(new_node_names, ret_old_nodes, model)
@@ -227,12 +227,12 @@ class RoraryPosEmb(Pattern):
                 concat_node.attr = OrderedDict({'axis': '4'})
                 reshape_node = model.get_node_by_name(new_node_names[i][2])
                 reshape_node.attr = OrderedDict({'unsqueeze': '-1'})
-                
+
                 reshape_output = Tensor(name=concat_node.input_tensors[1].name + "_reshape",
                                         source_op=[concat_node.name + "_reshape"],
                                         dest_op=[concat_node.name],
                                         dtype=concat_node.input_tensors[1].dtype)
-                
+
                 reshape_op = util.construct_node(
                     node_name=concat_node.name + "_reshape",
                     op_type='Reshape',
@@ -243,13 +243,13 @@ class RoraryPosEmb(Pattern):
                 concat_node.input_tensors[1] = reshape_output
                 insert_idx = model.get_node_id(new_node_names[i][3])
                 model.insert_nodes(insert_idx, [reshape_op])
-                
+
                 last_reshape_node = model.get_node_by_name(new_node_names[i][4])
                 last_reshape_node.attr = OrderedDict({'mul': '3, 4'})
         pattern_dict = pattern_mapping_config['RoraryPosEmb'][2]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("RoraryPosEmb", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("RoraryPosEmb",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr2(new_node_names, ret_old_nodes, model)
-            
+
         return model
