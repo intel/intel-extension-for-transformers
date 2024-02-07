@@ -28,14 +28,14 @@ parser.add_argument(
     "--model", nargs="?", default="bigcode/starcoderbase", const="bigcode/starcoderbase"
 )
 parser.add_argument("--trust_remote_code", default=False)
-parser.add_argument("--_commit_hash", default="main", type=str)
+parser.add_argument("--_commit_hash", default=None, type=str)
 parser.add_argument("--dataset", nargs="?", default="mbpp", const="mbpp")
 parser.add_argument("--dtype", type=str, default="int8")
 parser.add_argument(
     "--max_new_tokens", default=32, type=int, help="output max new tokens"
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
-parser.add_argument("--calib_iters", default=32, type=int, help="calibration iters.")
+parser.add_argument("--calib_iters", default=500, type=int, help="calibration iters.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument(
     "--int8_bf16_mixed",
@@ -72,6 +72,12 @@ parser.add_argument(
     help="Weight-only parameter.",
 )
 parser.add_argument(
+    "--woq_compute_dtype",
+    type=str,
+    default="fp32",
+    choices=["fp32", "bf16", "int8"],
+)
+parser.add_argument(
     "--woq_weight_dtype",
     type=str,
     default="int4_fullrange",
@@ -94,6 +100,7 @@ parser.add_argument(
 )
 parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
+# ============GPTQ configs==============
 parser.add_argument(
     "--gptq_actorder",
     action="store_true",
@@ -125,7 +132,6 @@ parser.add_argument(
     default=2048,
     help="Calibration dataset sequence max length, this should align with your model config",
 )
-# ============GPTQ configs==============
 # ============Harness configs============
 parser.add_argument("--tasks", default=None, help="Evaluation tasks")
 parser.add_argument(
@@ -201,6 +207,7 @@ tokenizer = AutoTokenizer.from_pretrained(
     truncation_side="left",
     padding_side="right",
     trust_remote_code=args.trust_remote_code,
+    _commit_hash=args._commit_hash,
 )
 
 config = AutoConfig.from_pretrained(
