@@ -1063,6 +1063,7 @@ def predict_stream(**params):
             num_beams=num_beams,
             use_cache=use_cache,
             num_return_sequences=num_return_sequences,
+            pad_token_id=tokenizer.eos_token_id
         )
 
         def generate_output():
@@ -1357,6 +1358,7 @@ def predict(**params):
             num_beams=num_beams,
             use_cache=use_cache,
             num_return_sequences=num_return_sequences,
+            pad_token_id=tokenizer.eos_token_id
         )
         dtype = model.dtype if hasattr(model, 'dtype') else torch.bfloat16
         try:
