@@ -183,7 +183,7 @@ class Agent_QA():
 
     def reload_localdb(self, local_persist_dir, **kwargs):
         """
-        Reload the local existed knowledge base. donot support inmemory database.
+        Reload the local existed knowledge base. Do not support inmemory database.
         """
         assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), \
             "Please check the local knowledge base was built!"
