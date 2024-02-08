@@ -593,8 +593,8 @@ class Finetuning:
                 limit_start = 0
                 batch_size = 20 # batch_size <= n_samples if do_sample.
             eval_args = Eval_Args()
-            from intel_extension_for_transformers.llm.evaluation.bigcode_eval import evaluate
-            with training_args.main_process_first(desc="bigcode_eval"):
+            from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
+            with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
                         results = evaluate(
