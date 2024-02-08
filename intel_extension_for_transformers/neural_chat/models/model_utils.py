@@ -1006,7 +1006,7 @@ def predict_stream(**params):
     return_stats = params["return_stats"] if "return_stats" in params else False
     ## Temp fix for llm v1
     format_version = params["format_version"] if "format_version" in params else "v1"
-    stream_response = params["stream_response"] if "stream_response" in params else True
+    stream = params["stream"] if "stream" in params else True
     prompt = params["prompt"]
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
@@ -1216,7 +1216,7 @@ def predict_stream(**params):
         if output_word_len == 0:
             first_word_output_time = datetime.now()
         output_word_len += 1
-        if stream_response == False:
+        if stream == False:
             full_text += new_text
         elif format_version == "v1-json":
             ret = {
@@ -1275,7 +1275,7 @@ def predict_stream(**params):
                     "total_tokens": input_token_len + output_token_len,
                 },
             }
-            if stream_response == False:
+            if stream == False:
                 ret["text"] = full_text
             yield json.dumps(ret).encode() + b"\0"
         else:
