@@ -556,7 +556,7 @@ def load_model(
                 tokenizer.padding_side = "left"
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
-        model = model.eval()
+        model.eval()
         MODELS[model_name]["model"] = model
         MODELS[model_name]["tokenizer"] = tokenizer
         logging.info("Optimized Model loaded.")
