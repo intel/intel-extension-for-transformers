@@ -26,7 +26,7 @@ from langchain.retrievers.document_compressors.base import BaseDocumentCompresso
 from FlagEmbedding import FlagReranker
 
 class BgeReranker(BaseDocumentCompressor):
-    model_name:str = 'bge_reranker_model_path'     
+    model_name:str = 'bge_reranker_model_path'
     top_n: int = 3   # Number of documents to return.
     model:CrossEncoder = FlagReranker(model_name)
     """CrossEncoder instance to use for reranking."""
@@ -73,4 +73,3 @@ class BgeReranker(BaseDocumentCompressor):
             doc.metadata["relevance_score"] = sample[1]
             final_results.append(doc)
         return final_results
-

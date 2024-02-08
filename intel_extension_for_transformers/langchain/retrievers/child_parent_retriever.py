@@ -72,5 +72,5 @@ class ChildParentRetriever(BaseRetriever):
             context = retrieved_documents['documents'][i]
             instance = Document(page_content=context, metadata=metadata)
             results.append(instance)
-            
+
         return results
