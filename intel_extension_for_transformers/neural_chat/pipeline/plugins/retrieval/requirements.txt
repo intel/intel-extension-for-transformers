@@ -12,3 +12,7 @@ qdrant-client
 scikit-learn
 sentence-transformers==2.3.1
 unstructured
+FlagEmbedding
+rank_bm25
+
+
