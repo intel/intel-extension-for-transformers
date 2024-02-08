@@ -28,7 +28,7 @@ from FlagEmbedding import FlagReranker
 class BgeReranker(BaseDocumentCompressor):
     model_name:str = 'bge_reranker_model_path'
     top_n: int = 3   # Number of documents to return.
-    model:CrossEncoder = FlagReranker(model_name)
+    model:FlagReranker = FlagReranker(model_name)
     """CrossEncoder instance to use for reranking."""
 
     def bge_rerank(self, query, docs):
