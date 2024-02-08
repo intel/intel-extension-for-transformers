@@ -60,4 +60,3 @@ class RetrieverAdapter():
             context = context + doc.page_content + " "
             links.append(doc.metadata['source'])
         return context.strip(), links
-
