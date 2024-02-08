@@ -16,7 +16,9 @@
 # limitations under the License.
 
 """The wrapper for Retriever based on langchain"""
-from intel_extension_for_transformers.langchain.retrievers import VectorStoreRetriever, ChildParentRetriever
+from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever, BgeReranker
+from langchain_core.vectorstores import VectorStoreRetriever
+from langchain.retrievers import BM25Retriever
 import logging
 
 logging.basicConfig(
@@ -25,16 +27,37 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+
 class RetrieverAdapter():
     """Retrieve the document database with Chroma database using dense retrieval."""
 
-    def __init__(self, retrieval_type='default', document_store=None, child_document_store= None, **kwargs):
+    def __init__(self, retrieval_type='default', document_store=None, child_document_store=None, docs=None,  \
+                 reranker_model=None, top_n = 1, enable_rerank = False, **kwargs):
         self.retrieval_type = retrieval_type
+        if enable_rerank:
+            self.reranker = BgeReranker(model_name = reranker_model, top_n=top_n)
+        else:
+            self.reranker = None
 
         if self.retrieval_type == "default":
-            self.retriever = VectorStoreRetriever(vectorstore = document_store, **kwargs)
+            self.retriever = VectorStoreRetriever(vectorstore=document_store, **kwargs)
+        if self.retrieval_type == "bm25":
+            self.retriever = BM25Retriever.from_documents(docs, **kwargs)
         elif self.retrieval_type == "child_parent":
             self.retriever = ChildParentRetriever(parentstore=document_store, \
-                                                  vectorstore=child_document_store, **kwargs) # pylint: disable=abstract-class-instantiated
+                                                  vectorstore=child_document_store,
+                                                  **kwargs)  # pylint: disable=abstract-class-instantiated
         else:
             logging.error('The chosen retrieval type remains outside the supported scope.')
+
+    def get_context(self, query):
+        context = ''
+        links = []
+        retrieved_documents = self.retriever.get_relevant_documents(query)
+        if self.reranker is not None:
+            retrieved_documents = self.reranker.compress_documents(documents = retrieved_documents, query = query)
+        for doc in retrieved_documents:
+            context = context + doc.page_content + " "
+            links.append(doc.metadata['source'])
+        return context.strip(), links
+    
