@@ -1276,7 +1276,7 @@ def predict_stream(**params):
                 },
             }
             if stream_response == False:
-                res["text"] = full_text
+                ret["text"] = full_text
             yield json.dumps(ret).encode() + b"\0"
         else:
             stats = {
