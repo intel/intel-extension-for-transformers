@@ -19,7 +19,7 @@ import unittest
 import os
 import shutil
 from unittest import mock
-from intel_extension_for_transformers.neural_chat.models.model_utils import load_model, MODELS
+from intel_extension_for_transformers.neural_chat.models.model_utils import load_model, MODELS, predict
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig, BitsAndBytesConfig, WeightOnlyQuantConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 from intel_extension_for_transformers.neural_chat.utils.error_utils import clear_latest_error, get_latest_error
@@ -138,6 +138,20 @@ class TestModelUtils(unittest.TestCase):
         load_model(model_name="facebook/opt-125m", tokenizer_name="facebook/opt-125m", device="cpu", optimization_config=config)
         self.assertTrue("facebook/opt-125m" in MODELS)
         self.assertTrue(MODELS["facebook/opt-125m"]["model"] is not None)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    def test_model_predict(self):
+        load_model(model_name="facebook/opt-125m", tokenizer_name="facebook/opt-125m", device="cpu")
+        self.assertTrue("facebook/opt-125m" in MODELS)
+        self.assertTrue(MODELS["facebook/opt-125m"]["model"] is not None)
+
+        params = {
+            "model_name": "facebook/opt-125m",
+            "prompt": "hi"
+        }
+        output = predict(**params)
+        self.assertIn("hi", output)
+        self.assertNotIn("[/INST]", output)
 
 if __name__ == '__main__':
     unittest.main()

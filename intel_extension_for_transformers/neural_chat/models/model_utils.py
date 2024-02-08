@@ -1445,18 +1445,21 @@ def predict(**params):
         output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     else:
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
+
+    identifier_index = -1
     if "### Response:" in output:
-        return output.split("### Response:")[-1].strip()
+        return output.split("### Response:")[identifier_index].strip()
     if "@@ Response" in output:
-        return output.split("@@ Response")[-1].strip()
+        return output.split("@@ Response")[identifier_index].strip()
     if "### Assistant" in output:
-        return output.split("### Assistant:")[-1].strip()
+        return output.split("### Assistant:")[identifier_index].strip()
     if "\nassistant\n" in output:
-        return output.split("\nassistant\n")[-1].strip()
+        return output.split("\nassistant\n")[identifier_index].strip()
     if "[/INST]" in output:
-        return output.split("[/INST]")[-1].strip()
+        return output.split("[/INST]")[identifier_index].strip()
     if "答：" in output:
-        return output.split("答：")[-1].strip()
+        return output.split("答：")[identifier_index].strip()
     if "Answer:" in output:
-        return output.split("Answer:")[-1].strip()
+        return output.split("Answer:")[identifier_index].strip()
+
     return output
