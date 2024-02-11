@@ -1136,7 +1136,21 @@ def predict_stream(**params):
         generation_thread.start()
     elif device == "hpu":
         # Move inputs to target device(s)
-        input_tokens = prepare_inputs(input_tokens, model.device)
+        try:
+            input_tokens = prepare_inputs(input_tokens, model.device)
+        except RuntimeError as e:
+            logging.error(f"model.generate exception: {e}")
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            ret = {
+                "error_code": ErrorCodes.ERROR_MODEL_INFERENCE_FAIL,
+                "text": ErrorCodes.error_strings[ErrorCodes.ERROR_MODEL_INFERENCE_FAIL]
+            }
+            if format_version == "v1-json":
+                yield json.dumps(ret).encode() + b"\0"
+                time.sleep(0.1)
+                exit(1)
+            else:
+                raise e 
 
         # Generation configuration
         generation_config = copy.deepcopy(model.generation_config)
