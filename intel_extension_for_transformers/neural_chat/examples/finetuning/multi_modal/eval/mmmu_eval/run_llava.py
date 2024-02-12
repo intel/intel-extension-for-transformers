@@ -264,7 +264,7 @@ def main():
 
     model = model.eval().to(device)
     from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0401
-    model = wrap_in_hpu_graph(model)
+    model = wrap_in_hpu_graph(model, max_graphs=10)
 
     samples = []
     for sample in dataset:
