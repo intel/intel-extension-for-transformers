@@ -137,7 +137,8 @@ class BaseModel(ABC):
                    use_llm_runtime=kwargs["use_llm_runtime"],
                    assistant_model=kwargs["assistant_model"],
                    use_vllm=kwargs["use_vllm"],
-                   vllm_engine_params=kwargs["vllm_engine_params"])
+                   vllm_engine_params=kwargs["vllm_engine_params"],
+                   gguf_model_path=kwargs["gguf_model_path"])
 
     def predict_stream(self, query, origin_query="", config=None):
         """

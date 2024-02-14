@@ -285,7 +285,7 @@ elif args.woq:
             scale_dtype=args.woq_scale_dtype,
             weight_dtype=args.woq_weight_dtype,
             scheme=args.woq_scheme,
-            group_size=args.gptq_block_size,
+            group_size=args.woq_group_size,
             algorithm=args.woq_algo,
             tokenizer=tokenizer,
             algorithm_args=algorithm_args,
@@ -438,7 +438,7 @@ if args.accuracy:
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-
+    args._commit_hash = "main" if args._commit_hash is None else args._commit_hash 
     results = evaluate(
         model="hf-causal",
         model_args="pretrained="
