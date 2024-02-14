@@ -273,6 +273,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
     parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
+    parameters["gguf_model_path"] = config.loading_config.gguf_model_path
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
     parameters["assistant_model"] = config.assistant_model
