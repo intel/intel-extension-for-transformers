@@ -37,7 +37,6 @@ from conversation import (
 from fastchat.constants import LOGDIR
 from fastchat.utils import (
     build_logger,
-    violates_moderation,
 )
 
 code_highlight_css = """
@@ -127,7 +126,6 @@ enable_btn = gr.Button.update(interactive=True)
 disable_btn = gr.Button.update(interactive=False)
 
 controller_url = None
-enable_moderation = False
 
 # conv_template_bf16 = Conversation(
 #     system="A chat between a curious human and an artificial intelligence assistant. "
@@ -175,10 +173,9 @@ enable_moderation = False
 #     sep2="<|im_end|>",
 # )
 
-def set_global_vars(controller_url_, enable_moderation_):
-    global controller_url, enable_moderation
+def set_global_vars(controller_url_):
+    global controller_url
     controller_url = controller_url_
-    enable_moderation = enable_moderation_
 
 
 def get_conv_log_filename():
@@ -189,7 +186,8 @@ def get_conv_log_filename():
 
 def get_model_list(controller_url):
     ret = requests.post(controller_url + "/v1/models")
-    models = ret.json()["models"]
+    model_data = ret.json()["data"]
+    models = [model['id'] for model in model_data]
     logger.info(f"Models: {models}")
     return models
 
@@ -280,14 +278,6 @@ def add_text(state, text, request: gr.Request):
     if len(text) <= 0:
         state.skip_next = True
         return (state, state.to_gradio_chatbot(), "") + (no_change_btn,) * 5
-    if enable_moderation:
-        flagged = violates_moderation(text)
-        if flagged:
-            logger.info(f"violate moderation. ip: {request.client.host}. text: {text}")
-            state.skip_next = True
-            return (state, state.to_gradio_chatbot(), moderation_msg) + (
-                no_change_btn,
-            ) * 5
 
     text = text[:2560]  # Hard cut-off
     state.append_message(state.roles[0], text)
@@ -343,13 +333,13 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
 
     # Make requests
     pload = {
-        "prompt": prompt,
-        "device": "cpu",
+        "model": models[0],
+        "messages": [{"role": "user", "content": list(prompt)}],
         "temperature": temperature,
         "top_p": 0.95,
         "top_k": topk,
         "repetition_penalty": 1.0,
-        "max_new_tokens": max_new_tokens,
+        "max_tokens": max_new_tokens,
         "stream": True,
     }
 
@@ -786,9 +776,8 @@ if __name__ == "__main__":
     concurrency_count = 10
     model_list_mode = "once"
     share = False
-    moderate = False
 
-    set_global_vars(controller_url, moderate)
+    set_global_vars(controller_url)
     models = get_model_list(controller_url)
 
     demo = build_demo(models)
