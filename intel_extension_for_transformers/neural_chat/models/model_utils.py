@@ -1150,6 +1150,8 @@ def predict_stream(**params):
                 time.sleep(0.1)
                 exit(1)
             else:
+                # Temp fix
+                exit(1)
                 raise e 
 
         # Generation configuration
