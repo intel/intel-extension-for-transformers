@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Building RESTful API Server &mdash; Intel® Extension for Transformers 0.1.dev1+gf565baa documentation</title>
+  <title>Building RESTful API Server &mdash; Intel® Extension for Transformers 0.1.dev1+g494910c documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -140,22 +140,23 @@ NeuralChat supports the following RESTful APIs:
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>openai
 </pre></div>
 </div>
+<p>Then, interact with the model:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openai</span>
 <span class="c1"># to get proper authentication, make sure to use a valid key that&#39;s listed in</span>
 <span class="c1"># the --api-keys flag. if no flag value is provided, the `api_key` will be ignored.</span>
 <span class="n">openai</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="s2">&quot;EMPTY&quot;</span>
-<span class="n">openai</span><span class="o">.</span><span class="n">api_base</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:80/v1&quot;</span>
+<span class="n">openai</span><span class="o">.</span><span class="n">base_url</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:80/v1/&quot;</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="s2">&quot;Intel/neural-chat-7b-v3-1&quot;</span>
 <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Once upon a time&quot;</span>
 
 <span class="c1"># create a completion</span>
-<span class="n">completion</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">Completion</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
+<span class="n">completion</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
 <span class="c1"># print the completion</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">prompt</span> <span class="o">+</span> <span class="n">completion</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 
 <span class="c1"># create a chat completion</span>
-<span class="n">completion</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">ChatCompletion</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+<span class="n">completion</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
   <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
   <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">}]</span>
 <span class="p">)</span>
@@ -208,7 +209,7 @@ NeuralChat supports the following RESTful APIs:
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f11b2a16260> 
+   <jinja2.runtime.BlockReference object at 0x7f6046313580> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
