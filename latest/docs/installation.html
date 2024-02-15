@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; Intel® Extension for Transformers 0.1.dev1+g033b7d5 documentation</title>
+  <title>Installation &mdash; Intel® Extension for Transformers 0.1.dev1+gf565baa documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
@@ -57,13 +57,18 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#system-requirements">System Requirements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ubuntu-20-04-22-04">Ubuntu 20.04/22.04</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#centos-8">Centos 8</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#install-from-pypi">Install from Pypi</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#install-from-source">Install from Source</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#install-intel-extension-for-transformers">Install Intel Extension for Transformers</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#system-requirements">System Requirements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#validated-environment">Validated Environment</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#validated-hardware-environment">Validated Hardware Environment</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#validated-software-environment">Validated Software Environment</a></li>
 </ul>
@@ -106,19 +111,42 @@
   <section id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
 <ol>
+<li><p><a class="reference external" href="#system-requirements">System Requirement</a></p></li>
 <li><p><a class="reference external" href="#install-from-pypi">Install from Pypi</a></p></li>
 <li><p><a class="reference external" href="#install-from-source">Install from Source</a></p>
 <p>2.1. <a class="reference external" href="#prerequisites">Prerequisites</a></p>
 <p>2.2. <a class="reference external" href="#install-intel-extension-for-transformers">Install Intel Extension for Transformers</a></p>
 </li>
-<li><p><a class="reference external" href="#system-requirements">System Requirements</a></p>
+<li><p><a class="reference external" href="#validated-environment">Validated Environment</a></p>
 <p>3.1. <a class="reference external" href="#validated-hardware-environment">Validated Hardware Environment</a></p>
 <p>3.2. <a class="reference external" href="#validated-software-environment">Validated Software Environment</a></p>
 </li>
 </ol>
+<section id="system-requirements">
+<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Link to this heading"></a></h2>
+<p>For NeuralChat usage, please make sure if you have below system libraries installed:</p>
+<section id="ubuntu-20-04-22-04">
+<h3>Ubuntu 20.04/22.04<a class="headerlink" href="#ubuntu-20-04-22-04" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>apt-get<span class="w"> </span>update
+apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>ffmpeg
+apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>libgl1-mesa-glx<span class="w"> </span>libgl1-mesa-dev
+apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>libsm6<span class="w"> </span>libxext6
+</pre></div>
+</div>
+</section>
+<section id="centos-8">
+<h3>Centos 8<a class="headerlink" href="#centos-8" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>yum<span class="w"> </span>update<span class="w"> </span>-y
+yum<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>mesa-libGL<span class="w"> </span>mesa-libGL-devel
+yum<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>libXext<span class="w"> </span>libSM<span class="w"> </span>libXrender
+</pre></div>
+</div>
+<p>For ffmpeg, please refer to <a class="reference external" href="https://computingforgeeks.com/how-to-install-ffmpeg-on-centos-rhel-8/">how-to-install-ffmpeg-on-centos-rhel-8</a></p>
+</section>
+</section>
 <section id="install-from-pypi">
 <h2>Install from Pypi<a class="headerlink" href="#install-from-pypi" title="Link to this heading"></a></h2>
-<p>Binary builds for python 3.8, 3.9 and 3.10 are available in Pypi</p>
+<p>Binary builds for python 3.9, 3.10 and 3.11 are available in Pypi</p>
 <blockquote>
 <div><p><strong>Note</strong>: Recommend install protobuf &lt;= 3.20.0 if use onnxruntime &lt;= 1.11</p>
 </div></blockquote>
@@ -137,13 +165,8 @@ conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> <
 <h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
 <p>The following prerequisites and requirements must be satisfied for a successful installation:</p>
 <ul class="simple">
-<li><p>Python version: 3.8 or 3.9 or 3.10</p></li>
-<li><p>GCC &gt;= version 8 (on Linux)</p>
-<ul>
-<li><p>version 11, if use the bf16-related features of the itrex backend</p></li>
-<li><p>version 13, if use the fp16-related features of the itrex backend</p></li>
-</ul>
-</li>
+<li><p>Python version: 3.9 or 3.10 or 3.11</p></li>
+<li><p>GCC &gt;= version 10 (on Linux)</p></li>
 <li><p>Visual Studio (on Windows)</p></li>
 </ul>
 </section>
@@ -158,8 +181,8 @@ pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </s
 </div>
 </section>
 </section>
-<section id="system-requirements">
-<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Link to this heading"></a></h2>
+<section id="validated-environment">
+<h2>Validated Environment<a class="headerlink" href="#validated-environment" title="Link to this heading"></a></h2>
 <section id="validated-hardware-environment">
 <h3>Validated Hardware Environment<a class="headerlink" href="#validated-hardware-environment" title="Link to this heading"></a></h3>
 <p>Intel® Extension for Transformers supports the following HWs:</p>
@@ -174,7 +197,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </s
 <h3>Validated Software Environment<a class="headerlink" href="#validated-software-environment" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>OS version: CentOS 8.4, Ubuntu 20.04</p></li>
-<li><p>Python version: 3.8, 3.9, 3.10</p></li>
+<li><p>Python version: 3.9, 3.10, 3.11</p></li>
 </ul>
 <table class="docutils">
 <thead>
@@ -198,7 +221,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </s
 </tbody>
 </table><ul class="simple">
 <li><p>OS version: Windows 10</p></li>
-<li><p>Python version: 3.8, 3.9, 3.10</p></li>
+<li><p>Python version: 3.9, 3.10, 3.11</p></li>
 </ul>
 <table class="docutils">
 <thead>
@@ -212,7 +235,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </s
   <tr align="center">
     <th>Version</th>
     <td><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.13.0>2.13.0</a><br>
-    <td><a href=https://download.pytorch.org/whl/torch_stable.html>2.0.0+cpu</a><br>
+    <td><a href=https://download.pytorch.org/whl/torch_stable.html>2.1.0+cpu</a><br>
   </tr>
 </tbody>
 </table></section>
@@ -236,7 +259,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f4b551ae6b0> 
+   <jinja2.runtime.BlockReference object at 0x7f11b2b74d00> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -5,9 +5,17 @@
 
 .. autoapi-nested-parse::
 
-   Conversation prompt templates.
-   We kindly request that you import fastchat instead of copying this file if you want to use it.
-   You can contribute back the changes you want to make.
+   Conversation prompt template.
+
+   Now we support
+   - Vicuna
+   - Koala
+   - OpenAssistant/oasst-sft-1-pythia-12b
+   - StabilityAI/stablelm-tuned-alpha-7b
+   - databricks/dolly-v2-12b
+   - THUDM/chatglm-6b
+   - project-baize/baize-lora-7B
+   - Alpaca/LLaMa
 
 
 
@@ -24,69 +32,18 @@ Classes
 
 
 
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   conversation.register_conv_template
-   conversation.get_conv_template
-
-
 
 .. py:class:: SeparatorStyle
 
 
 
 
-   Separator styles.
+   Different separator style.
 
 
 .. py:class:: Conversation
 
 
-   A class that manages prompt templates and keeps all conversation history.
-
-   .. py:method:: get_prompt() -> str
-
-      Get the prompt for generation.
-
-
-   .. py:method:: set_system_message(system_message: str)
-
-      Set the system message.
-
-
-   .. py:method:: append_message(role: str, message: str)
-
-      Append a new message.
-
-
-   .. py:method:: update_last_message(message: str)
-
-      Update the last output.
-      The last message is typically set to be None when constructing the prompt,
-      so we need to update it in-place after getting the response from a model.
-
-
-   .. py:method:: to_gradio_chatbot()
-
-      Convert the conversation to gradio chatbot format.
-
-
-   .. py:method:: to_openai_api_messages()
-
-      Convert the conversation to OpenAI chat completion format.
-
-
-
-.. py:function:: register_conv_template(template: Conversation, override: bool = False)
-
-   Register a new conversation template.
-
-
-.. py:function:: get_conv_template(name: str) -> Conversation
-
-   Get a conversation template.
+   A class that keeps all conversation history.
 
 
