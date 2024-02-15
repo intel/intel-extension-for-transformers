@@ -1,0 +1,6 @@
+accelerate
+datasets
+fire
+sentencepiece
+torch
+transformers
