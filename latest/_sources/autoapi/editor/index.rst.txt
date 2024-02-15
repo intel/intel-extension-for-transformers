@@ -1,0 +1,49 @@
+:orphan:
+
+:py:mod:`editor`
+================
+
+.. py:module:: editor
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   editor.print_head
+   editor.test_rome
+
+
+
+.. py:function:: print_head(x, pad=3)
+
+   Prints a string with # box for emphasis.
+
+   Example:
+
+   ############################
+   #  Applying ROME to model  #
+   ############################
+
+
+.. py:function:: test_rome(data: str, model: str, config: str, checkpointing: Optional[bool] = False, seed: Optional[int] = 99) -> None
+
+   Edits a pre-trained model using model-editing algorithms.
+
+   :param data: The path of the `json` file containing the samples for editing.
+   :type data: `str`
+   :param model: The name or path of the pre-trained transformer model to be edited.
+   :type model: `str`
+   :param config: The name of the hyper-parameters to use for editing the model.
+   :type config: `str`
+   :param checkpointing: Whether to enable gradient checkpointing or not.
+   :type checkpointing: `bool`, *optional*, defaults to `False`
+   :param seed: The seed for the random process of the program.
+   :type seed: `int`, *optional*, defaults to 42
+
+

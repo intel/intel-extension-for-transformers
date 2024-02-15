@@ -1,0 +1,187 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook`
+===============================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook
+
+.. autoapi-nested-parse::
+
+   Utilities for instrumenting a torch model.
+
+   Trace will hook one layer at a time.
+   TraceDict will hook multiple layers at once.
+   subsequence slices intervals from Sequential modules.
+   get_module, replace_module, get_parameter resolve dotted names.
+   set_requires_grad recursively sets requires_grad in module parameters.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.Trace
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.TraceDict
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.recursive_copy
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.subsequence
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.hierarchical_subsequence
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.set_requires_grad
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_module
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_parameter
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.replace_module
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.invoke_with_optional_args
+
+
+
+.. py:class:: Trace(module, layer=None, retain_output=True, retain_input=False, clone=False, detach=False, retain_grad=False, edit_output=None, stop=False)
+
+
+
+
+   To retain the output of the named layer during the computation of
+   the given network:
+
+       with Trace(net, 'layer.name') as ret:
+           _ = net(inp)
+           representation = ret.output
+
+   A layer module can be passed directly without a layer name, and
+   its output will be retained.  By default, a direct reference to
+   the output object is returned, but options can control this:
+
+       clone=True  - retains a copy of the output, which can be
+           useful if you want to see the output before it might
+           be modified by the network in-place later.
+       detach=True - retains a detached reference or copy.  (By
+           default the value would be left attached to the graph.)
+       retain_grad=True - request gradient to be retained on the
+           output.  After backward(), ret.output.grad is populated.
+
+       retain_input=True - also retains the input.
+       retain_output=False - can disable retaining the output.
+       edit_output=fn - calls the function to modify the output
+           of the layer before passing it the rest of the model.
+           fn can optionally accept (output, layer) arguments
+           for the original output and the layer name.
+       stop=True - throws a StopForward exception after the layer
+           is run, which allows running just a portion of a model.
+
+
+.. py:class:: TraceDict(module, layers=None, retain_output=True, retain_input=False, clone=False, detach=False, retain_grad=False, edit_output=None, stop=False)
+
+
+
+
+   To retain the output of multiple named layers during the computation
+   of the given network:
+
+       with TraceDict(net, ['layer1.name1', 'layer2.name2']) as ret:
+           _ = net(inp)
+           representation = ret['layer1.name1'].output
+
+   If edit_output is provided, it should be a function that takes
+   two arguments: output, and the layer name; and then it returns the
+   modified output.
+
+   Other arguments are the same as Trace.  If stop is True, then the
+   execution of the network will be stopped after the last layer
+   listed (even if it would not have been the last to be executed).
+
+
+.. py:exception:: StopForward
+
+
+
+
+   If the only output needed from running a network is the retained
+   submodule then Trace(submodule, stop=True) will stop execution
+   immediately after the retained submodule by raising the StopForward()
+   exception.  When Trace is used as context manager, it catches that
+   exception and can be used as follows:
+
+   with Trace(net, layername, stop=True) as tr:
+       net(inp) # Only runs the network up to layername
+   print(tr.output)
+
+
+.. py:function:: recursive_copy(x, clone=None, detach=None, retain_grad=None)
+
+   Copies a reference to a tensor, or an object that contains tensors,
+   optionally detaching and cloning the tensor(s).  If retain_grad is
+   true, the original tensors are marked to have grads retained.
+
+
+.. py:function:: subsequence(sequential, first_layer=None, last_layer=None, after_layer=None, upto_layer=None, single_layer=None, share_weights=False)
+
+   Creates a subsequence of a pytorch Sequential model, copying over
+   modules together with parameters for the subsequence.  Only
+   modules from first_layer to last_layer (inclusive) are included,
+   or modules between after_layer and upto_layer (exclusive).
+   Handles descent into dotted layer names as long as all references
+   are within nested Sequential models.
+
+   If share_weights is True, then references the original modules
+   and their parameters without copying them.  Otherwise, by default,
+   makes a separate brand-new copy.
+
+
+.. py:function:: hierarchical_subsequence(sequential, first, last, after, upto, share_weights=False, depth=0)
+
+   Recursive helper for subsequence() to support descent into dotted
+   layer names.  In this helper, first, last, after, and upto are
+   arrays of names resulting from splitting on dots.  Can only
+   descend into nested Sequentials.
+
+
+.. py:function:: set_requires_grad(requires_grad, *models)
+
+   Sets requires_grad true or false for all parameters within the
+   models passed.
+
+
+.. py:function:: get_module(model, name)
+
+   Finds the named module within the given model.
+
+
+.. py:function:: get_parameter(model, name)
+
+   Finds the named parameter within the given model.
+
+
+.. py:function:: replace_module(model, name, new_module)
+
+   Replaces the named module within the given model.
+
+
+.. py:function:: invoke_with_optional_args(fn, *args, **kwargs)
+
+   Invokes a function with only the arguments that it
+   is written to accept, giving priority to arguments
+   that match by-name, using the following rules.
+   (1) arguments with matching names are passed by name.
+   (2) remaining non-name-matched args are passed by order.
+   (3) extra caller arguments that the function cannot
+       accept are not passed.
+   (4) extra required function arguments that the caller
+       cannot provide cause a TypeError to be raised.
+   Ordinary python calling conventions are helpful for
+   supporting a function that might be revised to accept
+   extra arguments in a newer version, without requiring the
+   caller to pass those new arguments.  This function helps
+   support function callers that might be revised to supply
+   extra arguments, without requiring the callee to accept
+   those new arguments.
+
+

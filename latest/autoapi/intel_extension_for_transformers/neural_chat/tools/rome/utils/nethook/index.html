@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook &mdash; Intel® Extension for Transformers 0.1.dev1+g8dcf0ea documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/autoapi/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook">
+<span id="intel-extension-for-transformers-neural-chat-tools-rome-utils-nethook"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook" title="Link to this heading"></a></h1>
+<p>Utilities for instrumenting a torch model.</p>
+<p>Trace will hook one layer at a time.
+TraceDict will hook multiple layers at once.
+subsequence slices intervals from Sequential modules.
+get_module, replace_module, get_parameter resolve dotted names.
+set_requires_grad recursively sets requires_grad in module parameters.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.Trace" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.Trace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Trace</span></code></a></p></td>
+<td><p>To retain the output of the named layer during the computation of</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.TraceDict" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.TraceDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TraceDict</span></code></a></p></td>
+<td><p>To retain the output of multiple named layers during the computation</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.recursive_copy" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.recursive_copy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recursive_copy</span></code></a>(x[, clone, detach, retain_grad])</p></td>
+<td><p>Copies a reference to a tensor, or an object that contains tensors,</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.subsequence" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.subsequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subsequence</span></code></a>(sequential[, first_layer, last_layer, ...])</p></td>
+<td><p>Creates a subsequence of a pytorch Sequential model, copying over</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.hierarchical_subsequence" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.hierarchical_subsequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hierarchical_subsequence</span></code></a>(sequential, first, last, ...)</p></td>
+<td><p>Recursive helper for subsequence() to support descent into dotted</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.set_requires_grad" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.set_requires_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_requires_grad</span></code></a>(requires_grad, *models)</p></td>
+<td><p>Sets requires_grad true or false for all parameters within the</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_module" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_module</span></code></a>(model, name)</p></td>
+<td><p>Finds the named module within the given model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_parameter" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code></a>(model, name)</p></td>
+<td><p>Finds the named parameter within the given model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.replace_module" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.replace_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">replace_module</span></code></a>(model, name, new_module)</p></td>
+<td><p>Replaces the named module within the given model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.invoke_with_optional_args" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.invoke_with_optional_args"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invoke_with_optional_args</span></code></a>(fn, *args, **kwargs)</p></td>
+<td><p>Invokes a function with only the arguments that it</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.Trace">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">Trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retain_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retain_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detach</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retain_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edit_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.Trace" title="Link to this definition"></a></dt>
+<dd><p>To retain the output of the named layer during the computation of
+the given network:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>with Trace(net, ‘layer.name’) as ret:</dt><dd><p>_ = net(inp)
+representation = ret.output</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>A layer module can be passed directly without a layer name, and
+its output will be retained.  By default, a direct reference to
+the output object is returned, but options can control this:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>clone=True  - retains a copy of the output, which can be</dt><dd><p>useful if you want to see the output before it might
+be modified by the network in-place later.</p>
+</dd>
+<dt>detach=True - retains a detached reference or copy.  (By</dt><dd><p>default the value would be left attached to the graph.)</p>
+</dd>
+<dt>retain_grad=True - request gradient to be retained on the</dt><dd><p>output.  After backward(), ret.output.grad is populated.</p>
+</dd>
+</dl>
+<p>retain_input=True - also retains the input.
+retain_output=False - can disable retaining the output.
+edit_output=fn - calls the function to modify the output</p>
+<blockquote>
+<div><p>of the layer before passing it the rest of the model.
+fn can optionally accept (output, layer) arguments
+for the original output and the layer name.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>stop=True - throws a StopForward exception after the layer</dt><dd><p>is run, which allows running just a portion of a model.</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.TraceDict">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">TraceDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retain_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retain_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detach</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retain_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edit_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.TraceDict" title="Link to this definition"></a></dt>
+<dd><p>To retain the output of multiple named layers during the computation
+of the given network:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>with TraceDict(net, [‘layer1.name1’, ‘layer2.name2’]) as ret:</dt><dd><p>_ = net(inp)
+representation = ret[‘layer1.name1’].output</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>If edit_output is provided, it should be a function that takes
+two arguments: output, and the layer name; and then it returns the
+modified output.</p>
+<p>Other arguments are the same as Trace.  If stop is True, then the
+execution of the network will be stopped after the last layer
+listed (even if it would not have been the last to be executed).</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.StopForward">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">StopForward</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.StopForward" title="Link to this definition"></a></dt>
+<dd><p>If the only output needed from running a network is the retained
+submodule then Trace(submodule, stop=True) will stop execution
+immediately after the retained submodule by raising the StopForward()
+exception.  When Trace is used as context manager, it catches that
+exception and can be used as follows:</p>
+<dl class="simple">
+<dt>with Trace(net, layername, stop=True) as tr:</dt><dd><p>net(inp) # Only runs the network up to layername</p>
+</dd>
+</dl>
+<p>print(tr.output)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.recursive_copy">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">recursive_copy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detach</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retain_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.recursive_copy" title="Link to this definition"></a></dt>
+<dd><p>Copies a reference to a tensor, or an object that contains tensors,
+optionally detaching and cloning the tensor(s).  If retain_grad is
+true, the original tensors are marked to have grads retained.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.subsequence">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">subsequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequential</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upto_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">single_layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">share_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.subsequence" title="Link to this definition"></a></dt>
+<dd><p>Creates a subsequence of a pytorch Sequential model, copying over
+modules together with parameters for the subsequence.  Only
+modules from first_layer to last_layer (inclusive) are included,
+or modules between after_layer and upto_layer (exclusive).
+Handles descent into dotted layer names as long as all references
+are within nested Sequential models.</p>
+<p>If share_weights is True, then references the original modules
+and their parameters without copying them.  Otherwise, by default,
+makes a separate brand-new copy.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.hierarchical_subsequence">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">hierarchical_subsequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequential</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upto</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">share_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.hierarchical_subsequence" title="Link to this definition"></a></dt>
+<dd><p>Recursive helper for subsequence() to support descent into dotted
+layer names.  In this helper, first, last, after, and upto are
+arrays of names resulting from splitting on dots.  Can only
+descend into nested Sequentials.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.set_requires_grad">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">set_requires_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">requires_grad</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">models</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.set_requires_grad" title="Link to this definition"></a></dt>
+<dd><p>Sets requires_grad true or false for all parameters within the
+models passed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_module">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">get_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_module" title="Link to this definition"></a></dt>
+<dd><p>Finds the named module within the given model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_parameter">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">get_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.get_parameter" title="Link to this definition"></a></dt>
+<dd><p>Finds the named parameter within the given model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.replace_module">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">replace_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_module</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.replace_module" title="Link to this definition"></a></dt>
+<dd><p>Replaces the named module within the given model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.invoke_with_optional_args">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.</span></span><span class="sig-name descname"><span class="pre">invoke_with_optional_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/nethook.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.invoke_with_optional_args" title="Link to this definition"></a></dt>
+<dd><p>Invokes a function with only the arguments that it
+is written to accept, giving priority to arguments
+that match by-name, using the following rules.
+(1) arguments with matching names are passed by name.
+(2) remaining non-name-matched args are passed by order.
+(3) extra caller arguments that the function cannot</p>
+<blockquote>
+<div><p>accept are not passed.</p>
+</div></blockquote>
+<ol class="arabic simple" start="4">
+<li><p>extra required function arguments that the caller
+cannot provide cause a TypeError to be raised.</p></li>
+</ol>
+<p>Ordinary python calling conventions are helpful for
+supporting a function that might be revised to accept
+extra arguments in a newer version, without requiring the
+caller to pass those new arguments.  This function helps
+support function callers that might be revised to supply
+extra arguments, without requiring the callee to accept
+those new arguments.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fe320d6b520> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

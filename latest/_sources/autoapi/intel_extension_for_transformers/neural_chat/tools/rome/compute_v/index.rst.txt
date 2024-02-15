@@ -1,0 +1,39 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.compute_v`
+===========================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.compute_v
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.compute_v.compute_v
+   intel_extension_for_transformers.neural_chat.tools.rome.compute_v.get_module_input_output_at_word
+   intel_extension_for_transformers.neural_chat.tools.rome.compute_v.find_fact_lookup_idx
+
+
+
+.. py:function:: compute_v(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, request: Dict, hparams: intel_extension_for_transformers.neural_chat.tools.rome.rome_hparams.ROMEHyperParams, layer: int, left_vector: torch.Tensor, context_templates: List[str], batch_first: Optional[bool] = True) -> torch.Tensor
+
+   Computes the value (right) vector for the rank-1 update.
+   Runs a simple optimization procedure.
+
+
+.. py:function:: get_module_input_output_at_word(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, layer: int, context_template: str, word: str, module_template: str, fact_token_strategy: str, batch_first: Optional[bool] = True) -> Tuple[torch.Tensor]
+
+   Retrieves detached representations for a word at the input and output of a particular layer module.
+
+
+.. py:function:: find_fact_lookup_idx(prompt: str, subject: str, tokenizer: transformers.PreTrainedTokenizer, fact_token_strategy: str, verbose: Optional[bool] = True) -> int
+
+   Computes hypothesized fact lookup index given a sentence and subject.
+
+

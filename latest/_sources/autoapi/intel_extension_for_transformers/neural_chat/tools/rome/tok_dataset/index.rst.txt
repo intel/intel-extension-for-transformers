@@ -1,0 +1,65 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.tok_dataset`
+=============================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.tok_dataset
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.tok_dataset.TokenizedDataset
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.tok_dataset.dict_to_
+   intel_extension_for_transformers.neural_chat.tools.rome.tok_dataset.length_collation
+   intel_extension_for_transformers.neural_chat.tools.rome.tok_dataset.make_padded_batch
+   intel_extension_for_transformers.neural_chat.tools.rome.tok_dataset.flatten_masked_batch
+
+
+
+.. py:class:: TokenizedDataset(text_dataset, tokenizer=None, maxlen=None, field='text')
+
+
+
+
+   Converts a dataset of text samples into a dataset of token sequences,
+   as converted by a supplied tokenizer. The tokens come along with position
+   ids and attention masks, they can be supplied directly to the model.
+
+
+.. py:function:: dict_to_(data, device)
+
+   Moves a dictionary of tensors to the specified device.
+
+
+.. py:function:: length_collation(token_size)
+
+   Sorts a batch of sequences and breaks it up into subbatches
+   of same-sized sequences, padding as needed.  Each batch
+   has no more than token_size total tokens (or a single
+   sequence, if the sequence happens to be larger).
+
+
+.. py:function:: make_padded_batch(items)
+
+   Pads sequences in a batch, so they are all the same length as the longest.
+
+
+.. py:function:: flatten_masked_batch(data, mask)
+
+   Flattens feature data, ignoring items that are masked out of attention.
+
+

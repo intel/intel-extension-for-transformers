@@ -1,0 +1,26 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.layer_stats`
+=============================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.layer_stats
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.layer_stats.layer_stats
+
+
+
+.. py:function:: layer_stats(model, tokenizer, layer_name, stats_dir, ds_name, to_collect, model_name=None, sample_size=None, precision=None, batch_tokens=None, progress=tqdm)
+
+   Function to load or compute cached stats.
+
+

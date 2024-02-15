@@ -1,0 +1,724 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats`
+====================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats
+
+.. autoapi-nested-parse::
+
+   To use a runningstats object,
+
+       1. Create the the desired stat object, e.g., `m = Mean()`
+       2. Feed it batches via the add method, e.g., `m.add(batch)`
+       3. Repeat step 2 any number of times.
+       4. Read out the statistic of interest, e.g., `m.mean()`
+
+   Built-in runningstats objects include:
+
+       Mean - produces mean().
+       Variance - mean() and variance() and stdev().
+       Covariance - mean(), covariance(), correlation(), variance(), stdev().
+       SecondMoment - moment() is the non-mean-centered covariance, E[x x^T].
+       Quantile - quantile(), min(), max(), median(), mean(), variance(), stdev().
+       TopK - topk() returns (values, indexes).
+       Bincount - bincount() histograms nonnegative integer data.
+       IoU - intersection(), union(), iou() tally binary co-occurrences.
+       History - history() returns concatenation of data.
+       CrossCovariance - covariance between two signals, without self-covariance.
+       CrossIoU - iou between two signals, without self-IoU.
+       CombinedStat - aggregates any set of stats.
+
+   Add more running stats by subclassing the Stat class.
+
+   These statistics are vectorized along dim>=1, so stat.add()
+   should supply a two-dimensional input where the zeroth
+   dimension is the batch/sampling dimension and the first
+   dimension is the feature dimension.
+
+   The data type and device used matches the data passed to add();
+   for example, for higher-precision covariances, convert to double
+   before calling add().
+
+   It is common to want to compute and remember a statistic sampled
+   over a Dataset, computed in batches, possibly caching the computed
+   statistic in a file. The tally(stat, dataset, cache) handles
+   this pattern.  It takes a statistic, a dataset, and a cache filename
+   and sets up a data loader that can be run (or not, if cached) to
+   compute the statistic, adopting the convention that cached stats are
+   saved to and loaded from numpy npz files.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.cache_load_enabled
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.NormMean
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.TopK
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedSubsetSampler
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedRandomSubsetSampler
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.tally
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.sample_portion
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.push_key_prefix
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.pull_key_prefix
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.is_null_numpy_value
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.box_numpy_null
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.unbox_numpy_null
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.resolve_state_dict
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.load_cached_state
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.save_cached_state
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.make_loader
+
+
+
+.. py:function:: tally(stat, dataset, cache=None, quiet=False, **kwargs)
+
+   To use tally, write code like the following.
+
+       stat = Mean()
+       ds = MyDataset()
+       for batch in tally(stat, ds, cache='mymean.npz', batch_size=50):
+          stat.add(batch)
+       mean = stat.mean()
+
+   The first argument should be the Stat being computed. After the
+   loader is exhausted, tally will bring this stat to the cpu and
+   cache it (if a cache is specified).
+
+   The dataset can be a torch Dataset or a plain Tensor, or it can
+   be a callable that returns one of those.
+
+   Details on caching via the cache= argument:
+
+       If the given filename cannot be loaded, tally will leave the
+       statistic object empty and set up a DataLoader object so that
+       the loop can be run.  After the last iteration of the loop, the
+       completed statistic will be moved to the cpu device and also
+       saved in the cache file.
+
+       If the cached statistic can be loaded from the given file, tally
+       will not set up the data loader and instead will return a fully
+       loaded statistic object (on the cpu device) and an empty list as
+       the loader.
+
+       The `with cache_load_enabled(False):` context manager can
+       be used to disable loading from the cache.
+
+   If needed, a DataLoader will be created to wrap the dataset:
+
+       Keyword arguments of tally are passed to the DataLoader,
+       so batch_size, num_workers, pin_memory, etc. can be specified.
+
+   Subsampling is supported via sample_size= and random_sample=:
+
+       If sample_size=N is specified, rather than loading the whole
+       dataset, only the first N items are sampled.  If additionally
+       random_sample=S is specified, the pseudorandom seed S will be
+       used to select a fixed psedorandom sample of size N to sample.
+
+
+.. py:class:: cache_load_enabled(enabled=True)
+
+
+   When used as a context manager, cache_load_enabled(False) will prevent
+   tally from loading cached statsitics, forcing them to be recomputed.
+
+
+.. py:class:: Stat(state)
+
+
+   Abstract base class for a running pytorch statistic.
+
+   .. py:method:: add(x, *args, **kwargs)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: load_state_dict(d)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: save(filename)
+
+      Saves this stat as an npz file containing the state_dict.
+
+
+   .. py:method:: load(filename)
+
+      Loads this stat from an npz file containing a saved state_dict.
+
+
+   .. py:method:: to_(device)
+
+      Moves this Stat to the given device.
+
+
+   .. py:method:: cpu_()
+
+      Moves this Stat to the cpu device.
+
+
+   .. py:method:: cuda_()
+
+      Moves this Stat to the default cuda device.
+
+
+
+.. py:class:: Mean(state=None)
+
+
+
+
+   Running mean.
+
+   .. py:method:: add(a)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: to_(device)
+
+      Moves this Stat to the given device.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+
+.. py:class:: NormMean(state=None)
+
+
+
+
+   Running average of the norm of input vectors
+
+   .. py:method:: add(a)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+
+.. py:class:: Variance(state=None)
+
+
+
+
+   Running computation of mean and variance. Use this when you just need
+   basic stats without covariance.
+
+   .. py:method:: add(a)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: to_(device)
+
+      Moves this Stat to the given device.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+
+.. py:class:: Covariance(state=None)
+
+
+
+
+   Running computation. Use this when the entire covariance matrix is needed,
+   and when the whole covariance matrix fits in the GPU.
+
+   Chan-style numerically stable update of mean and full covariance matrix.
+   Chan, Golub. LeVeque. 1983. http://www.jstor.org/stable/2683386
+
+   .. py:method:: add(a)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: to_(device)
+
+      Moves this Stat to the given device.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+
+.. py:class:: SecondMoment(split_batch=True, state=None)
+
+
+
+
+   Running computation. Use this when the entire non-centered 2nd-moment
+   'covariance-like' matrix is needed, and when the whole matrix fits
+   in the GPU.
+
+   .. py:method:: add(a)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: to_(device)
+
+      Moves this Stat to the given device.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+
+.. py:class:: Bincount(state=None)
+
+
+
+
+   Running bincount.  The counted array should be an integer type with
+   non-negative integers.
+
+   .. py:method:: add(a, size=None)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: to_(device)
+
+      Moves this Stat to the given device.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: load_state_dict(dic)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+
+.. py:class:: CrossCovariance(split_batch=True, state=None)
+
+
+
+
+   Covariance. Use this when an off-diagonal block of the covariance
+   matrix is needed (e.g., when the whole covariance matrix does
+   not fit in the GPU, this could use a quarter of the memory).
+
+   Chan-style numerically stable update of mean and full covariance matrix.
+   Chan, Golub. LeVeque. 1983. http://www.jstor.org/stable/2683386
+
+   .. py:method:: add(a, b)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: to_(device)
+
+      Moves this Stat to the given device.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+
+.. py:class:: IoU(state=None)
+
+
+
+
+   Running computation of intersections and unions of all features.
+
+   .. py:method:: add(a)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: to_(_device)
+
+      Moves this Stat to the given device.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+
+.. py:class:: CrossIoU(state=None)
+
+
+
+
+   Running computation of intersections and unions of two binary vectors.
+
+   .. py:method:: add(a, b)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: to_(_device)
+
+      Moves this Stat to the given device.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+
+.. py:class:: Quantile(r=3 * 1024, buffersize=None, seed=None, state=None)
+
+
+
+
+   Streaming randomized quantile computation for torch.
+
+   Add any amount of data repeatedly via add(data).  At any time,
+   quantile estimates be read out using quantile(q).
+
+   Implemented as a sorted sample that retains at least r samples
+   (by default r = 3072); the number of retained samples will grow to
+   a finite ceiling as the data is accumulated.  Accuracy scales according
+   to r: the default is to set resolution to be accurate to better than about
+   0.1%, while limiting storage to about 50,000 samples.
+
+   Good for computing quantiles of huge data without using much memory.
+   Works well on arbitrary data with probability near 1.
+
+   Based on the optimal KLL quantile algorithm by Karnin, Lang, and Liberty
+   from FOCS 2016.  http://ieee-focs.org/FOCS-2016-Papers/3933a071.pdf
+
+   .. py:method:: to_(device)
+
+      Switches internal storage to specified device.
+
+
+   .. py:method:: add(incoming)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+   .. py:method:: normalize(data)
+
+      Given input data as taken from the training distribution,
+      normalizes every channel to reflect quantile values,
+      uniformly distributed, within [0, 1].
+
+
+
+.. py:function:: sample_portion(vec, p=0.5)
+
+   Subsamples a fraction (given by p) of the given batch.  Used by
+   Quantile when the data gets very very large.
+
+
+.. py:class:: TopK(k=100, largest=True, state=None)
+
+
+   A class to keep a running tally of the the top k values (and indexes)
+   of any number of torch feature components.  Will work on the GPU if
+   the data is on the GPU.  Tracks largest by default, but tracks smallest
+   if largest=False is passed.
+
+   This version flattens all arrays to avoid crashes.
+
+   .. py:method:: add(data, index=None)
+
+      Adds a batch of data to be considered for the running top k.
+      The zeroth dimension enumerates the observations.  All other
+      dimensions enumerate different features.
+
+
+   .. py:method:: topk(sorted=True, flat=False)
+
+      Returns top k data items and indexes in each dimension,
+      with channels in the first dimension and k in the last dimension.
+
+
+
+.. py:class:: History(data=None, state=None)
+
+
+
+
+   Accumulates the concatenation of all the added data.
+
+   .. py:method:: add(d)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: to_(device)
+
+      Switches internal storage to specified device.
+
+
+
+.. py:class:: CombinedStat(state=None, **kwargs)
+
+
+
+
+   A Stat that bundles together multiple Stat objects.
+   Convenient for loading and saving a state_dict made up of a
+   hierarchy of stats, and for use with the tally() function.
+   .. rubric:: Example
+
+   cs = CombinedStat(m=Mean(), q=Quantile())
+   for [b] in tally(cs, MyDataSet(), cache=fn, batch_size=100):
+       cs.add(b)
+   print(cs.m.mean())
+   print(cs.q.median())
+
+   .. py:method:: add(d, *args, **kwargs)
+
+      Observes a batch of samples to be incorporated into the statistic.
+      Dimension 0 should be the batch dimension, and dimension 1 should
+      be the feature dimension of the pytorch tensor x.
+
+
+   .. py:method:: load_state_dict(state)
+
+      Loads this Stat from a dictionary of numpy arrays as saved
+      by state_dict.
+
+
+   .. py:method:: state_dict()
+
+      Saves this Stat as a dictionary of numpy arrays that can be
+      stored in an npz or reloaded later using load_state_dict.
+
+
+   .. py:method:: to_(device)
+
+      Switches internal storage to specified device.
+
+
+
+.. py:function:: push_key_prefix(prefix, d)
+
+   Returns a dict with the same values as d, but where each key
+   adds the prefix, followed by a dot.
+
+
+.. py:function:: pull_key_prefix(prefix, d)
+
+   Returns a filtered dict of all the items of d that start with
+   the given key prefix, plus a dot, with that prefix removed.
+
+
+.. py:function:: is_null_numpy_value(v)
+
+   True if v is a 64-bit float numpy scalar NaN matching null_numpy_value.
+
+
+.. py:function:: box_numpy_null(d)
+
+   Replaces None with null_numpy_value, leaving non-None values unchanged.
+   Recursively descends into a dictionary replacing None values.
+
+
+.. py:function:: unbox_numpy_null(d)
+
+   Reverses box_numpy_null, replacing null_numpy_value with None.
+   Recursively descends into a dictionary replacing None values.
+
+
+.. py:function:: resolve_state_dict(s)
+
+   Resolves a state, which can be a filename or a dict-like object.
+
+
+.. py:function:: load_cached_state(cachefile, args, quiet=False, throw=False)
+
+   Resolves a state, which can be a filename or a dict-like object.
+
+
+.. py:function:: save_cached_state(cachefile, obj, args)
+
+   Saves the state_dict of the given object in a dict or npz file.
+
+
+.. py:class:: FixedSubsetSampler(samples)
+
+
+
+
+   Represents a fixed sequence of data set indices.
+   Subsets can be created by specifying a subset of output indexes.
+
+   .. py:method:: dereference(indices)
+
+      Translate output sample indices (small numbers indexing the sample)
+      to input sample indices (larger number indexing the original full set)
+
+
+
+.. py:class:: FixedRandomSubsetSampler(data_source, start=None, end=None, seed=1)
+
+
+
+
+   Samples a fixed number of samples from the dataset, deterministically.
+   :param data_source:
+   :param :
+   :param sample_size:
+   :param :
+   :param seed:
+   :type seed: optional
+
+   .. py:method:: class_subset(class_filter)
+
+      Returns only the subset matching the given rule.
+
+
+
+.. py:function:: make_loader(dataset, sample_size=None, batch_size=1, sampler=None, random_sample=None, **kwargs)
+
+   Utility for creating a dataloader on fixed sample subset.
+
+

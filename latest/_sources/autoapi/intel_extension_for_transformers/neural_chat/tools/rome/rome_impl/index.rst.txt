@@ -1,0 +1,61 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.rome_impl`
+===========================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.rome_impl
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.rome_impl.apply_rome_to_model
+   intel_extension_for_transformers.neural_chat.tools.rome.rome_impl.execute_rome
+   intel_extension_for_transformers.neural_chat.tools.rome.rome_impl.upd_matrix_match_shape
+
+
+
+.. py:function:: apply_rome_to_model(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, requests: List[Dict[str, Union[List[str], str]]], hparams: intel_extension_for_transformers.neural_chat.tools.rome.rome_hparams.ROMEHyperParams, batch_first: Optional[bool] = True, copy: Optional[bool] = False, return_diff_weights: Optional[bool] = False) -> Tuple[transformers.PreTrainedModel, Dict[str, torch.Tensor]]
+
+   Edits a pre-trained model using model-editing algorithms.
+
+   :param model: The pre-trained transformer model to be edited.
+   :type model: `PreTrainedModel`
+   :param tokeniser: The pre-trained tokenizer of the model.
+   :type tokeniser: `PreTrainedTokenizer`
+   :param requests: The samples for editing.
+   :type requests: `List[Dict[str, Union[List[str], str]]]`
+   :param hparams: The hyper-parameters of the ROME algorithm.
+   :type hparams: `ROMEHyperParams`
+   :param batch_first: If true, the first dimension of the inputs/outputs of MLP is the batch dimension.
+   :type batch_first: `bool`, *optional*, defaults to `True`
+   :param copy: If true, will preserve the original model while creating a new one to edit.
+                Note that you are responsible for deallocating the new model's memory to avoid leaks.
+   :type copy: `bool`, *optional*, defaults to `False`
+   :param return_diff_weights: If true, will return the difference between the updated weights and the original weights.
+   :type return_diff_weights: `bool`, *optional*, defaults to `False`
+
+   :returns:     The updated transformer model.
+             diff_weights (`Dict[str, Tensor]`):
+                 A dict of diff weights that have been changed.
+   :rtype: model (`PreTrainedModel`)
+
+
+.. py:function:: execute_rome(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, request: Dict, hparams: intel_extension_for_transformers.neural_chat.tools.rome.rome_hparams.ROMEHyperParams, batch_first: Optional[bool] = True) -> Dict[str, Tuple[torch.Tensor, torch.Tensor]]
+
+   Executes the ROME update algorithm for the specified update at the specified layer
+   Invariant: model at beginning of function == model at end of function
+
+
+.. py:function:: upd_matrix_match_shape(matrix: torch.Tensor, shape: torch.Size) -> torch.Tensor
+
+   GPT-2 and GPT-J have transposed weight representations.
+   Returns a matrix that matches the desired shape, else raises a ValueError
+
+

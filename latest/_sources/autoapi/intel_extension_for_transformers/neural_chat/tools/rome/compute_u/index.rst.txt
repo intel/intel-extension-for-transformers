@@ -1,0 +1,33 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.compute_u`
+===========================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.compute_u
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.compute_u.get_inv_cov
+   intel_extension_for_transformers.neural_chat.tools.rome.compute_u.compute_u
+
+
+
+.. py:function:: get_inv_cov(model: transformers.PreTrainedModel, tok: transformers.PreTrainedTokenizer, layer_name: str, mom2_dataset: str, mom2_n_samples: str, mom2_dtype: str) -> torch.Tensor
+
+   Retrieves covariance statistics, then computes the algebraic inverse.
+   Caches result for future use.
+
+
+.. py:function:: compute_u(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, request: Dict[str, str], hparams: intel_extension_for_transformers.neural_chat.tools.rome.rome_hparams.ROMEHyperParams, layer: int, context_templates: List[str], batch_first: Optional[bool] = True) -> torch.Tensor
+
+   Computes the right vector used in constructing the rank-1 update matrix.
+
+

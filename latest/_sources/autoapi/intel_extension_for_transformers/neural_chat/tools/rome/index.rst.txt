@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome`
+=================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.rome
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   repr_tools/index.rst
+
+

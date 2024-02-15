@@ -1,0 +1,49 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.repr_tools`
+============================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.repr_tools
+
+.. autoapi-nested-parse::
+
+   Contains utilities for extracting token representations and indices
+   from string templates. Used in computing the left and right vectors for ROME.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.repr_tools.get_reprs_at_word_tokens
+   intel_extension_for_transformers.neural_chat.tools.rome.repr_tools.get_words_idxs_in_templates
+   intel_extension_for_transformers.neural_chat.tools.rome.repr_tools.get_reprs_at_idxs
+
+
+
+.. py:function:: get_reprs_at_word_tokens(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, context_templates: List[str], words: List[str], layer: int, module_template: str, subtoken: str, track: Optional[Literal[in, out, both]] = 'in', batch_first: Optional[bool] = True) -> torch.Tensor
+
+   Retrieves the last token representation of `word` in `context_template`
+   when `word` is substituted into `context_template`. See `get_last_word_idx_in_template`
+   for more details.
+
+
+.. py:function:: get_words_idxs_in_templates(tokenizer: transformers.PreTrainedTokenizer, context_templates: List[str], words: List[str], subtoken: str) -> List[List[int]]
+
+   Given list of template strings, each with *one* format specifier
+   (e.g. "{} plays basketball"), and words to be substituted into the
+   template, computes the post-tokenization index of their last tokens.
+
+   We use left-padding so the words idxs are negative numbers.
+
+
+.. py:function:: get_reprs_at_idxs(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, contexts: List[str], idxs: List[List[int]], layer: int, module_template: str, track: Optional[Literal[in, out, both]] = 'in', batch_first: Optional[bool] = True) -> torch.Tensor
+
+   Runs input through model and returns averaged representations of the tokens
+   at each index in `idxs`.
+
+

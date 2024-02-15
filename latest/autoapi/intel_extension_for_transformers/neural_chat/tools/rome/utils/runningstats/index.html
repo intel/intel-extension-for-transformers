@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats &mdash; Intel® Extension for Transformers 0.1.dev1+g8dcf0ea documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/autoapi/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats">
+<span id="intel-extension-for-transformers-neural-chat-tools-rome-utils-runningstats"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats" title="Link to this heading"></a></h1>
+<p>To use a runningstats object,</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Create the the desired stat object, e.g., <cite>m = Mean()</cite></p></li>
+<li><p>Feed it batches via the add method, e.g., <cite>m.add(batch)</cite></p></li>
+<li><p>Repeat step 2 any number of times.</p></li>
+<li><p>Read out the statistic of interest, e.g., <cite>m.mean()</cite></p></li>
+</ol>
+</div></blockquote>
+<p>Built-in runningstats objects include:</p>
+<blockquote>
+<div><p>Mean - produces mean().
+Variance - mean() and variance() and stdev().
+Covariance - mean(), covariance(), correlation(), variance(), stdev().
+SecondMoment - moment() is the non-mean-centered covariance, E[x x^T].
+Quantile - quantile(), min(), max(), median(), mean(), variance(), stdev().
+TopK - topk() returns (values, indexes).
+Bincount - bincount() histograms nonnegative integer data.
+IoU - intersection(), union(), iou() tally binary co-occurrences.
+History - history() returns concatenation of data.
+CrossCovariance - covariance between two signals, without self-covariance.
+CrossIoU - iou between two signals, without self-IoU.
+CombinedStat - aggregates any set of stats.</p>
+</div></blockquote>
+<p>Add more running stats by subclassing the Stat class.</p>
+<p>These statistics are vectorized along dim&gt;=1, so stat.add()
+should supply a two-dimensional input where the zeroth
+dimension is the batch/sampling dimension and the first
+dimension is the feature dimension.</p>
+<p>The data type and device used matches the data passed to add();
+for example, for higher-precision covariances, convert to double
+before calling add().</p>
+<p>It is common to want to compute and remember a statistic sampled
+over a Dataset, computed in batches, possibly caching the computed
+statistic in a file. The tally(stat, dataset, cache) handles
+this pattern.  It takes a statistic, a dataset, and a cache filename
+and sets up a data loader that can be run (or not, if cached) to
+compute the statistic, adopting the convention that cached stats are
+saved to and loaded from numpy npz files.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.cache_load_enabled" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.cache_load_enabled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cache_load_enabled</span></code></a></p></td>
+<td><p>When used as a context manager, cache_load_enabled(False) will prevent</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Stat</span></code></a></p></td>
+<td><p>Abstract base class for a running pytorch statistic.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Mean</span></code></a></p></td>
+<td><p>Running mean.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.NormMean" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.NormMean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NormMean</span></code></a></p></td>
+<td><p>Running average of the norm of input vectors</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Variance</span></code></a></p></td>
+<td><p>Running computation of mean and variance. Use this when you just need</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Covariance</span></code></a></p></td>
+<td><p>Running computation. Use this when the entire covariance matrix is needed,</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SecondMoment</span></code></a></p></td>
+<td><p>Running computation. Use this when the entire non-centered 2nd-moment</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Bincount</span></code></a></p></td>
+<td><p>Running bincount.  The counted array should be an integer type with</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossCovariance</span></code></a></p></td>
+<td><p>Covariance. Use this when an off-diagonal block of the covariance</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IoU</span></code></a></p></td>
+<td><p>Running computation of intersections and unions of all features.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossIoU</span></code></a></p></td>
+<td><p>Running computation of intersections and unions of two binary vectors.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Quantile</span></code></a></p></td>
+<td><p>Streaming randomized quantile computation for torch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.TopK" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.TopK"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TopK</span></code></a></p></td>
+<td><p>A class to keep a running tally of the the top k values (and indexes)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History"><code class="xref py py-obj docutils literal notranslate"><span class="pre">History</span></code></a></p></td>
+<td><p>Accumulates the concatenation of all the added data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CombinedStat</span></code></a></p></td>
+<td><p>A Stat that bundles together multiple Stat objects.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedSubsetSampler" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedSubsetSampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FixedSubsetSampler</span></code></a></p></td>
+<td><p>Represents a fixed sequence of data set indices.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedRandomSubsetSampler" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedRandomSubsetSampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FixedRandomSubsetSampler</span></code></a></p></td>
+<td><p>Samples a fixed number of samples from the dataset, deterministically.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.tally" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.tally"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tally</span></code></a>(stat, dataset[, cache, quiet])</p></td>
+<td><p>To use tally, write code like the following.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.sample_portion" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.sample_portion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample_portion</span></code></a>(vec[, p])</p></td>
+<td><p>Subsamples a fraction (given by p) of the given batch.  Used by</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.push_key_prefix" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.push_key_prefix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">push_key_prefix</span></code></a>(prefix, d)</p></td>
+<td><p>Returns a dict with the same values as d, but where each key</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.pull_key_prefix" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.pull_key_prefix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pull_key_prefix</span></code></a>(prefix, d)</p></td>
+<td><p>Returns a filtered dict of all the items of d that start with</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.is_null_numpy_value" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.is_null_numpy_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_null_numpy_value</span></code></a>(v)</p></td>
+<td><p>True if v is a 64-bit float numpy scalar NaN matching null_numpy_value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.box_numpy_null" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.box_numpy_null"><code class="xref py py-obj docutils literal notranslate"><span class="pre">box_numpy_null</span></code></a>(d)</p></td>
+<td><p>Replaces None with null_numpy_value, leaving non-None values unchanged.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.unbox_numpy_null" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.unbox_numpy_null"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unbox_numpy_null</span></code></a>(d)</p></td>
+<td><p>Reverses box_numpy_null, replacing null_numpy_value with None.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.resolve_state_dict" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.resolve_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_state_dict</span></code></a>(s)</p></td>
+<td><p>Resolves a state, which can be a filename or a dict-like object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.load_cached_state" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.load_cached_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_cached_state</span></code></a>(cachefile, args[, quiet, throw])</p></td>
+<td><p>Resolves a state, which can be a filename or a dict-like object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.save_cached_state" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.save_cached_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_cached_state</span></code></a>(cachefile, obj, args)</p></td>
+<td><p>Saves the state_dict of the given object in a dict or npz file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.make_loader" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.make_loader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_loader</span></code></a>(dataset[, sample_size, batch_size, ...])</p></td>
+<td><p>Utility for creating a dataloader on fixed sample subset.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.tally">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">tally</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.tally" title="Link to this definition"></a></dt>
+<dd><p>To use tally, write code like the following.</p>
+<blockquote>
+<div><p>stat = Mean()
+ds = MyDataset()
+for batch in tally(stat, ds, cache=’mymean.npz’, batch_size=50):</p>
+<blockquote>
+<div><p>stat.add(batch)</p>
+</div></blockquote>
+<p>mean = stat.mean()</p>
+</div></blockquote>
+<p>The first argument should be the Stat being computed. After the
+loader is exhausted, tally will bring this stat to the cpu and
+cache it (if a cache is specified).</p>
+<p>The dataset can be a torch Dataset or a plain Tensor, or it can
+be a callable that returns one of those.</p>
+<p>Details on caching via the cache= argument:</p>
+<blockquote>
+<div><p>If the given filename cannot be loaded, tally will leave the
+statistic object empty and set up a DataLoader object so that
+the loop can be run.  After the last iteration of the loop, the
+completed statistic will be moved to the cpu device and also
+saved in the cache file.</p>
+<p>If the cached statistic can be loaded from the given file, tally
+will not set up the data loader and instead will return a fully
+loaded statistic object (on the cpu device) and an empty list as
+the loader.</p>
+<p>The <cite>with cache_load_enabled(False):</cite> context manager can
+be used to disable loading from the cache.</p>
+</div></blockquote>
+<p>If needed, a DataLoader will be created to wrap the dataset:</p>
+<blockquote>
+<div><p>Keyword arguments of tally are passed to the DataLoader,
+so batch_size, num_workers, pin_memory, etc. can be specified.</p>
+</div></blockquote>
+<p>Subsampling is supported via sample_size= and random_sample=:</p>
+<blockquote>
+<div><p>If sample_size=N is specified, rather than loading the whole
+dataset, only the first N items are sampled.  If additionally
+random_sample=S is specified, the pseudorandom seed S will be
+used to select a fixed psedorandom sample of size N to sample.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.cache_load_enabled">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">cache_load_enabled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.cache_load_enabled" title="Link to this definition"></a></dt>
+<dd><p>When used as a context manager, cache_load_enabled(False) will prevent
+tally from loading cached statsitics, forcing them to be recomputed.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">Stat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat" title="Link to this definition"></a></dt>
+<dd><p>Abstract base class for a running pytorch statistic.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.save" title="Link to this definition"></a></dt>
+<dd><p>Saves this stat as an npz file containing the state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.load" title="Link to this definition"></a></dt>
+<dd><p>Loads this stat from an npz file containing a saved state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.to_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the given device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.cpu_">
+<span class="sig-name descname"><span class="pre">cpu_</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.cpu_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the cpu device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.cuda_">
+<span class="sig-name descname"><span class="pre">cuda_</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Stat.cuda_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the default cuda device.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">Mean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean" title="Link to this definition"></a></dt>
+<dd><p>Running mean.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean.to_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the given device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Mean.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.NormMean">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">NormMean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.NormMean" title="Link to this definition"></a></dt>
+<dd><p>Running average of the norm of input vectors</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.NormMean.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.NormMean.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">Variance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance" title="Link to this definition"></a></dt>
+<dd><p>Running computation of mean and variance. Use this when you just need
+basic stats without covariance.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance.to_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the given device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Variance.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">Covariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance" title="Link to this definition"></a></dt>
+<dd><p>Running computation. Use this when the entire covariance matrix is needed,
+and when the whole covariance matrix fits in the GPU.</p>
+<p>Chan-style numerically stable update of mean and full covariance matrix.
+Chan, Golub. LeVeque. 1983. <a class="reference external" href="http://www.jstor.org/stable/2683386">http://www.jstor.org/stable/2683386</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance.to_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the given device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Covariance.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">SecondMoment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_batch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment" title="Link to this definition"></a></dt>
+<dd><p>Running computation. Use this when the entire non-centered 2nd-moment
+‘covariance-like’ matrix is needed, and when the whole matrix fits
+in the GPU.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment.to_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the given device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.SecondMoment.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">Bincount</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount" title="Link to this definition"></a></dt>
+<dd><p>Running bincount.  The counted array should be an integer type with
+non-negative integers.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount.to_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the given device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dic</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Bincount.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">CrossCovariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_batch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance" title="Link to this definition"></a></dt>
+<dd><p>Covariance. Use this when an off-diagonal block of the covariance
+matrix is needed (e.g., when the whole covariance matrix does
+not fit in the GPU, this could use a quarter of the memory).</p>
+<p>Chan-style numerically stable update of mean and full covariance matrix.
+Chan, Golub. LeVeque. 1983. <a class="reference external" href="http://www.jstor.org/stable/2683386">http://www.jstor.org/stable/2683386</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance.to_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the given device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossCovariance.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">IoU</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU" title="Link to this definition"></a></dt>
+<dd><p>Running computation of intersections and unions of all features.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU.to_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the given device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.IoU.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">CrossIoU</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU" title="Link to this definition"></a></dt>
+<dd><p>Running computation of intersections and unions of two binary vectors.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU.to_" title="Link to this definition"></a></dt>
+<dd><p>Moves this Stat to the given device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CrossIoU.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">Quantile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span> <span class="pre">*</span> <span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffersize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile" title="Link to this definition"></a></dt>
+<dd><p>Streaming randomized quantile computation for torch.</p>
+<p>Add any amount of data repeatedly via add(data).  At any time,
+quantile estimates be read out using quantile(q).</p>
+<p>Implemented as a sorted sample that retains at least r samples
+(by default r = 3072); the number of retained samples will grow to
+a finite ceiling as the data is accumulated.  Accuracy scales according
+to r: the default is to set resolution to be accurate to better than about
+0.1%, while limiting storage to about 50,000 samples.</p>
+<p>Good for computing quantiles of huge data without using much memory.
+Works well on arbitrary data with probability near 1.</p>
+<p>Based on the optimal KLL quantile algorithm by Karnin, Lang, and Liberty
+from FOCS 2016.  <a class="reference external" href="http://ieee-focs.org/FOCS-2016-Papers/3933a071.pdf">http://ieee-focs.org/FOCS-2016-Papers/3933a071.pdf</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.to_" title="Link to this definition"></a></dt>
+<dd><p>Switches internal storage to specified device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">incoming</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.Quantile.normalize" title="Link to this definition"></a></dt>
+<dd><p>Given input data as taken from the training distribution,
+normalizes every channel to reflect quantile values,
+uniformly distributed, within [0, 1].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.sample_portion">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">sample_portion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.sample_portion" title="Link to this definition"></a></dt>
+<dd><p>Subsamples a fraction (given by p) of the given batch.  Used by
+Quantile when the data gets very very large.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.TopK">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">TopK</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">largest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.TopK" title="Link to this definition"></a></dt>
+<dd><p>A class to keep a running tally of the the top k values (and indexes)
+of any number of torch feature components.  Will work on the GPU if
+the data is on the GPU.  Tracks largest by default, but tracks smallest
+if largest=False is passed.</p>
+<p>This version flattens all arrays to avoid crashes.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.TopK.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.TopK.add" title="Link to this definition"></a></dt>
+<dd><p>Adds a batch of data to be considered for the running top k.
+The zeroth dimension enumerates the observations.  All other
+dimensions enumerate different features.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.TopK.topk">
+<span class="sig-name descname"><span class="pre">topk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sorted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.TopK.topk" title="Link to this definition"></a></dt>
+<dd><p>Returns top k data items and indexes in each dimension,
+with channels in the first dimension and k in the last dimension.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">History</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History" title="Link to this definition"></a></dt>
+<dd><p>Accumulates the concatenation of all the added data.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.History.to_" title="Link to this definition"></a></dt>
+<dd><p>Switches internal storage to specified device.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">CombinedStat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat" title="Link to this definition"></a></dt>
+<dd><p>A Stat that bundles together multiple Stat objects.
+Convenient for loading and saving a state_dict made up of a
+hierarchy of stats, and for use with the tally() function.
+.. rubric:: Example</p>
+<p>cs = CombinedStat(m=Mean(), q=Quantile())
+for [b] in tally(cs, MyDataSet(), cache=fn, batch_size=100):</p>
+<blockquote>
+<div><p>cs.add(b)</p>
+</div></blockquote>
+<p>print(cs.m.mean())
+print(cs.q.median())</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat.add" title="Link to this definition"></a></dt>
+<dd><p>Observes a batch of samples to be incorporated into the statistic.
+Dimension 0 should be the batch dimension, and dimension 1 should
+be the feature dimension of the pytorch tensor x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat.load_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Loads this Stat from a dictionary of numpy arrays as saved
+by state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Saves this Stat as a dictionary of numpy arrays that can be
+stored in an npz or reloaded later using load_state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat.to_">
+<span class="sig-name descname"><span class="pre">to_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.CombinedStat.to_" title="Link to this definition"></a></dt>
+<dd><p>Switches internal storage to specified device.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.push_key_prefix">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">push_key_prefix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.push_key_prefix" title="Link to this definition"></a></dt>
+<dd><p>Returns a dict with the same values as d, but where each key
+adds the prefix, followed by a dot.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.pull_key_prefix">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">pull_key_prefix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.pull_key_prefix" title="Link to this definition"></a></dt>
+<dd><p>Returns a filtered dict of all the items of d that start with
+the given key prefix, plus a dot, with that prefix removed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.is_null_numpy_value">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">is_null_numpy_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.is_null_numpy_value" title="Link to this definition"></a></dt>
+<dd><p>True if v is a 64-bit float numpy scalar NaN matching null_numpy_value.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.box_numpy_null">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">box_numpy_null</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.box_numpy_null" title="Link to this definition"></a></dt>
+<dd><p>Replaces None with null_numpy_value, leaving non-None values unchanged.
+Recursively descends into a dictionary replacing None values.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.unbox_numpy_null">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">unbox_numpy_null</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.unbox_numpy_null" title="Link to this definition"></a></dt>
+<dd><p>Reverses box_numpy_null, replacing null_numpy_value with None.
+Recursively descends into a dictionary replacing None values.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.resolve_state_dict">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">resolve_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.resolve_state_dict" title="Link to this definition"></a></dt>
+<dd><p>Resolves a state, which can be a filename or a dict-like object.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.load_cached_state">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">load_cached_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cachefile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">throw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.load_cached_state" title="Link to this definition"></a></dt>
+<dd><p>Resolves a state, which can be a filename or a dict-like object.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.save_cached_state">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">save_cached_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cachefile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.save_cached_state" title="Link to this definition"></a></dt>
+<dd><p>Saves the state_dict of the given object in a dict or npz file.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedSubsetSampler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">FixedSubsetSampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedSubsetSampler" title="Link to this definition"></a></dt>
+<dd><p>Represents a fixed sequence of data set indices.
+Subsets can be created by specifying a subset of output indexes.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedSubsetSampler.dereference">
+<span class="sig-name descname"><span class="pre">dereference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indices</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedSubsetSampler.dereference" title="Link to this definition"></a></dt>
+<dd><p>Translate output sample indices (small numbers indexing the sample)
+to input sample indices (larger number indexing the original full set)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedRandomSubsetSampler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">FixedRandomSubsetSampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedRandomSubsetSampler" title="Link to this definition"></a></dt>
+<dd><p>Samples a fixed number of samples from the dataset, deterministically.
+:param data_source:
+:param :
+:param sample_size:
+:param :
+:param seed:
+:type seed: optional</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedRandomSubsetSampler.class_subset">
+<span class="sig-name descname"><span class="pre">class_subset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">class_filter</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedRandomSubsetSampler.class_subset" title="Link to this definition"></a></dt>
+<dd><p>Returns only the subset matching the given rule.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.make_loader">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">make_loader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_sample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.make_loader" title="Link to this definition"></a></dt>
+<dd><p>Utility for creating a dataloader on fixed sample subset.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fe30b38a380> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
