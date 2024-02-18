@@ -213,6 +213,8 @@ def get_ds_injection_policy(config):
     return policy
 
 def max_input_len(input_text_length):
+    # Temp fix until fixed
+    return 128
     if input_text_length <= 128:
         return 128
     elif input_text_length <= 512:
