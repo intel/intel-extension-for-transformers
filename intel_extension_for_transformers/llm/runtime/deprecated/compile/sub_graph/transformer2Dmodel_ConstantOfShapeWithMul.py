@@ -83,7 +83,7 @@ class Transformer2Dmodel_ConstantOfShapeWithMul(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping(
                 "Transformer2Dmodel_ConstantOfShapeWithMul", pattern_dict, model)
             if len(new_node_names) != 0:
-                logger.info('TextEncoder_AttentionMaskAddReshape mathched...')
+                logger.info('TextEncoder_AttentionMaskAddReshape matched...')
                 logger.debug('TextEncoder_AttentionMaskAddReshape = {}'.format(new_node_names))
 
         return model

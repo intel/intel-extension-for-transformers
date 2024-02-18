@@ -52,7 +52,7 @@ jobs:
               echo "remove left files through container ..."
               docker exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
-          
+
       - name: Checkout out Repo
         uses: actions/checkout@v3
         with:
@@ -111,7 +111,7 @@ jobs:
           name: "UnitTest${{ matrix.test_name }}"
           path: ${{ github.workspace }}/log_dir
           retention-days: 5
-          
+
   Genreate-Report:
     runs-on: itrex-node-spell
     needs: [unit-test]
@@ -126,16 +126,16 @@ jobs:
           fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
-        
+
       - name: Download UT PR Log
         uses: actions/download-artifact@v3
         with:
           path: ${{ github.workspace }}/log_dir
-           
+
       - name: Display structure of downloaded files
         run: cd ${{ github.workspace }}/log_dir && ls -R
-        
-      - name: Calculte coverage
+
+      - name: Calculate coverage
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
           /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir

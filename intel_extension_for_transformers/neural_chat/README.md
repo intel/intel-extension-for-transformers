@@ -74,20 +74,27 @@ server_executor(config_file="./server/config/neuralchat.yaml", log_file="./neura
 Once the service is running, you can observe an OpenAI-compatible endpoint `/v1/chat/completions`. You can use any of below ways to access the endpoint.
 
 #### Using OpenAI Client Library
+
+First, install openai-python:
+
+```bash
+pip install --upgrade openai
+```
+
+Then, interact with the model:
+
 ```python
-from openai import Client
-# Replace 'your_api_key' with your actual OpenAI API key
-api_key = 'your_api_key'
-backend_url = 'http://127.0.0.1:80/v1/chat/completions'
-client = Client(api_key=api_key, base_url=backend_url)
-response = client.ChatCompletion.create(
+import openai
+openai.api_key = "EMPTY"
+openai.base_url = 'http://127.0.0.1:80/v1/'
+response = openai.chat.completions.create(
       model="Intel/neural-chat-7b-v3-1",
       messages=[
           {"role": "system", "content": "You are a helpful assistant."},
           {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."},
       ]
 )
-print(response)
+print(response.choices[0].message.content)
 ```
 
 #### Using Curl
@@ -156,7 +163,7 @@ Users have the flexibility to customize the NeuralChat service by making modific
 
 NeuralChat boasts support for various generative Transformer models available in [HuggingFace Transformers](https://huggingface.co/models). The following is a curated list of models validated for both inference and fine-tuning within NeuralChat:
 
-|Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation | 
+|Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation or SQL Generation | 
 |------------------------------------|:---:|:---:|:---:|:---:|
 |Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅    |
 |Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅    |
@@ -171,12 +178,16 @@ NeuralChat boasts support for various generative Transformer models available in
 |THUDM/chatglm3-6b| ✅| ✅|✅| ✅    |
 |Qwen/Qwen-7B| ✅| ✅|✅| ✅    |
 |microsoft/phi-2| ✅| ✅|✅| ✅    |
+|Deci/DeciLM-7B| ✅| ✅|✅| ✅    |
+|Deci/DeciLM-7B-instruct| ✅| ✅|✅| ✅    |
 |bigcode/starcoder|   |   |   | ✅ |
 |codellama/CodeLlama-7b-hf|   |   |   | ✅ |
 |codellama/CodeLlama-34b-hf|   |   |   | ✅ |
 |Phind/Phind-CodeLlama-34B-v2|   |   |   | ✅ |
 |Salesforce/codegen2-7B|   |   |   | ✅ |
 |ise-uiuc/Magicoder-S-CL-7B|   |   |   | ✅ |
+|defog/sqlcoder2|   |   |   | ✅ |
+|defog/sqlcoder-34b-alpha|   |   |   | ✅ |
 
 Modify the `model_name_or_path` parameter in the YAML configuration file to load different models.
 

@@ -34,7 +34,6 @@ from .base_executor import BaseCommandExecutor
 from .server_commands import cli_server_register
 
 from ..cli.log import logger
-from .restful.api import setup_router
 from ..config import PipelineConfig, LoadingModelConfig
 from ..chatbot import build_chatbot
 from ..plugins import plugins
@@ -107,6 +106,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         world_size = config.get("world_size", 1)
         master_port = config.get("master_port", 29500)
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
+        gguf_model_path = config.get("gguf_model_path", None)
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
         plugin_as_service = config.get("plugin_as_service", False)
@@ -132,7 +132,6 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             # TGI serving
             elif serving_framework == "tgi":
                 tgi_params = serving.get("tgi_engine_params", None)
-                tgi_model_id = tgi_params.get('model_id', "mistralai/Mistral-7B-Instruct-v0.1")
                 tgi_sharded = tgi_params.get('sharded', False)
                 tgi_num_shard = tgi_params.get('num_shard', 1)
                 tgi_habana_visible_devices = tgi_params.get('habana_visible_devices', "all")
@@ -167,7 +166,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 else:
                     logger.error(f"Supported device: [cpu, gpu, hpu]. Your device: {device}")
                     raise Exception("Please specify device for tgi.")
-                tgi_cmd += f" --model-id {tgi_model_id}"
+                tgi_cmd += f" --model-id {model_name_or_path}"
                 if tgi_sharded and tgi_num_shard > 1:
                     tgi_cmd += " --sharded {tgi_sharded} --num-shard {tgi_num_shard}"
                 # start tgi service
@@ -210,6 +209,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     print(f"plugin parameters: ", plugin_config["args"])
                     plugin_config['instance'] = plugins[plugin_name]['class'](**plugin_config['args'])
             api_list = list(task for task in config.tasks_list)
+            from .restful.api import setup_router
             api_router = setup_router(api_list, enable_llm=False)
             app.include_router(api_router)
             return True
@@ -225,7 +225,10 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             optimization_config = None
             yaml_config = config.get("optimization", {})
             ipex_int8 = yaml_config.get("ipex_int8", False)
-            use_llm_runtime = yaml_config.get("use_llm_runtime", {})
+            use_llm_runtime = yaml_config.get("use_llm_runtime", False)
+            use_gptq = yaml_config.get("use_gptq", False)
+            use_awq = yaml_config.get("use_awq", False)
+            use_autoround = yaml_config.get("use_autoround", {})
             optimization_type = yaml_config.get("optimization_type", {})
             compute_dtype = yaml_config.get("compute_dtype", {})
             weight_dtype = yaml_config.get("weight_dtype", {})
@@ -238,11 +241,18 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
             loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
                                                 peft_path=peft_model_path, use_deepspeed=use_deepspeed,
-                                                world_size=world_size)
+                                                world_size=world_size, gguf_model_path=gguf_model_path)
             from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
             if optimization_type == "weight_only":
-                optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype,
-                                                            use_ggml=use_ggml, use_cache=use_cached_bin)
+                if use_gptq:
+                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_gptq)
+                elif use_awq:
+                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_awq)
+                elif use_autoround:
+                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_autoround)
+                else:
+                    optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype,
+                                                                use_ggml=use_ggml, use_cache=use_cached_bin)
             elif optimization_type == "mix_precision":
                 optimization_config = MixedPrecisionConfig(dtype=mix_precision_dtype)
             elif optimization_type == "bits_and_bytes":
@@ -260,7 +270,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 "loading_config": loading_config,
                 "optimization_config": optimization_config,
                 "assistant_model": assistant_model,
-                "serving_config": serving_config
+                "serving_config": serving_config,
+                "task": "chat"
             }
             api_list = list(task for task in config.tasks_list)
             if use_deepspeed:
@@ -305,6 +316,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 pipeline_config = PipelineConfig(**params)
                 self.chatbot = build_chatbot(pipeline_config)
             # init api
+            from .restful.api import setup_router
             api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port)
             app.include_router(api_router)
             return True

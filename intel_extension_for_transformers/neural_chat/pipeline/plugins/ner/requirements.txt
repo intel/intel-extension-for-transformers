@@ -1,7 +1,10 @@
-torch
-torchvision
-torchaudio
-spacy
-neural-compressor
-transformers
+deepface
+exifread
 intel_extension_for_pytorch
+neural-compressor
+pymysql
+spacy
+torch
+torchaudio
+torchvision
+transformers

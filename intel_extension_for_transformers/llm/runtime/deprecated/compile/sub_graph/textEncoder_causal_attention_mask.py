@@ -83,7 +83,7 @@ class TextEncoder_CasualAttentionMask(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('TextEncoder_CasualAttentionMask mathched...')
+                logger.info('TextEncoder_CasualAttentionMask matched...')
                 logger.debug('TextEncoder_CasualAttentionMask = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # the first new node
@@ -99,7 +99,7 @@ class TextEncoder_CasualAttentionMask(Pattern):
                     second_reshape_node_idx = model.get_node_id(new_node_names[j][1])
                     model.nodes[second_reshape_node_idx].attr = attr_2
 
-                    # the thrid new node
+                    # the third new node
                     attr_3 = OrderedDict()
                     attr_3['trilu'] = 1
                     attr_3['value'] = -10000

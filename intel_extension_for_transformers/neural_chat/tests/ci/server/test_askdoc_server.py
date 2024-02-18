@@ -47,7 +47,7 @@ Latest Standards: Use the latest standards including C++ 20, SYCL, and OpenMP 5.
 gaudi2_content = """
 Habana Gaudi2 and 4th Gen Intel Xeon Scalable processors deliver leading performance and optimal cost savings for AI training.
 Today, MLCommons published results of its industry AI performance benchmark, MLPerf Training 3.0, in which both the Habana® Gaudi®2 deep learning accelerator and the 4th Gen Intel® Xeon® Scalable processor delivered impressive training results.
-The latest MLPerf Training 3.0 results underscore the performance of Intel's products on an array of deep learning models. The maturity of Gaudi2-based software and systems for training was demonstrated at scale on the large language model, GPT-3. Gaudi2 is one of only two semiconductor solutions to submit performance results to the benchmark for LLM training of GPT-3. 
+The latest MLPerf Training 3.0 results underscore the performance of Intel's products on an array of deep learning models. The maturity of Gaudi2-based software and systems for training was demonstrated at scale on the large language model, GPT-3. Gaudi2 is one of only two semiconductor solutions to submit performance results to the benchmark for LLM training of GPT-3.
 
 Gaudi2 also provides substantially competitive cost advantages to customers, both in server and system costs. The accelerator’s MLPerf-validated performance on GPT-3, computer vision and natural language models, plus upcoming software advances make Gaudi2 an extremely compelling price/performance alternative to Nvidia's H100.
 On the CPU front, the deep learning training performance of 4th Gen Xeon processors with Intel AI engines demonstrated that customers can build with Xeon-based servers a single universal AI system for data pre-processing, model training and deployment to deliver the right combination of AI performance, efficiency, accuracy and scalability.
@@ -96,7 +96,7 @@ class UnitTest(unittest.TestCase):
         # Replace this with a sample link list you want to test with
         sample_link_list = {"link_list": ["https://www.ces.tech/"]}
         response = client.post(
-            "/v1/aiphotos/askdoc/upload_link",
+            "/v1/askdoc/upload_link",
             json=sample_link_list,
         )
         assert response.status_code == 200
@@ -106,7 +106,7 @@ class UnitTest(unittest.TestCase):
         # create gaudi2 knowledge base
         with open(self.gaudi2_doc, "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/create",
+                "/v1/askdoc/create",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
             )
         assert response.status_code == 200
@@ -114,7 +114,7 @@ class UnitTest(unittest.TestCase):
         gaudi2_kb_id = response.json()["knowledge_base_id"]
         sample_link_list = {"link_list": ["https://www.ces.tech/"]}
         response = client.post(
-            "/v1/aiphotos/askdoc/upload_link",
+            "/v1/askdoc/upload_link",
             json={**sample_link_list, "knowledge_base_id": gaudi2_kb_id},
         )
         assert response.status_code == 200
@@ -124,7 +124,7 @@ class UnitTest(unittest.TestCase):
         # create oneapi knowledge base
         with open(self.oneapi_doc, "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/create",
+                "/v1/askdoc/create",
                 files={"file": ("./oneapi.txt", file, "multipart/form-data")},
             )
         assert response.status_code == 200
@@ -132,7 +132,7 @@ class UnitTest(unittest.TestCase):
         oneapi_kb_id = response.json()["knowledge_base_id"]
         with open("./gaudi2.txt", "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/append",
+                "/v1/askdoc/append",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
                 data={"knowledge_base_id": oneapi_kb_id},
             )
@@ -143,7 +143,7 @@ class UnitTest(unittest.TestCase):
         # create gaudi2 knowledge base
         with open(self.gaudi2_doc, "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/create",
+                "/v1/askdoc/create",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
             )
         assert response.status_code == 200
@@ -154,16 +154,17 @@ class UnitTest(unittest.TestCase):
             "translated": "How about the benchmark test of Habana Gaudi2?",
             "knowledge_base_id": gaudi2_kb_id,
             "stream": False,
-            "max_new_tokens": 64
+            "max_new_tokens": 64,
+            "return_link": False
         }
-        response = client.post("/v1/aiphotos/askdoc/chat", json=query_params)
+        response = client.post("/v1/askdoc/chat", json=query_params)
         assert response.status_code == 200
 
     def test_stream_chat(self):
         # create gaudi2 knowledge base
         with open(self.gaudi2_doc, "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/create",
+                "/v1/askdoc/create",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
             )
         assert response.status_code == 200
@@ -174,16 +175,18 @@ class UnitTest(unittest.TestCase):
             "translated": "How about the benchmark test of Habana Gaudi2?",
             "knowledge_base_id": gaudi2_kb_id,
             "stream": True,
-            "max_new_tokens": 64
+            "max_new_tokens": 64,
+            "return_link": False
         }
-        response = client.post("/v1/aiphotos/askdoc/chat", json=query_params)
+        response = client.post("/v1/askdoc/chat", json=query_params)
         assert response.status_code == 200
 
     def test_save_feedback_to_db(self):
         feedback_data = {
             "question": "When is CES 2024?",
             "answer": "CES 2024 taking place Jan. 9-12, in Las Vegas.",
-            "feedback": "1"  # Feedback can be '1' for like or '0' for dislike
+            "feedback": "1",  # Feedback can be '1' for like or '0' for dislike
+            "comments": "Good answer."
         }
         # Mocking the MysqlDb class
         with patch('intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.MysqlDb') as mock_mysql_db:
@@ -196,8 +199,8 @@ class UnitTest(unittest.TestCase):
 
     def test_get_feedback_from_db(self):
         feedback_data = [
-            {'feedback_id': 1, 'question': 'Question 1', 'answer': 'Answer 1', 'feedback_result': 1, 'feedback_time': '2023-01-01'},
-            {'feedback_id': 2, 'question': 'Question 2', 'answer': 'Answer 2', 'feedback_result': 0, 'feedback_time': '2023-01-02'},
+            {'feedback_id': 1, 'question': 'Question 1', 'answer': 'Answer 1', 'feedback_result': 1, 'feedback_time': '2023-01-01', "comments": "Comments 1"},
+            {'feedback_id': 2, 'question': 'Question 2', 'answer': 'Answer 2', 'feedback_result': 0, 'feedback_time': '2023-01-02', "comments": "Comments 2"},
         ]
 
         # Mocking the MysqlDb class and fetch_all method

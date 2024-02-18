@@ -72,7 +72,7 @@ class TextEncoder_QReshape(Pattern):
                                                                         model)
 
             if len(new_node_names) != 0:
-                logger.info('TextEncoder_QReshape mathched...')
+                logger.info('TextEncoder_QReshape matched...')
                 logger.debug('TextEncoder_QReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
 
@@ -104,7 +104,7 @@ class TextEncoder_QReshape(Pattern):
 
                     attr['dst_shape'] = ','.join(attr['dst_shape'])
                     attr['dims'] = '0,1'
-                    
+
                     reshape_node_idx = model.get_node_id(new_node_names[j][0])
                     model.nodes[reshape_node_idx].attr = attr
 

@@ -53,7 +53,7 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
         patterns_nodes_name = util.search_pattern(pattern, model)
         if len(patterns_nodes_name) != 0:
             # v1-4 & v1-5 & v2-1 unet
-            logger.info('Transformer2Dmodel_EncoderHiddenStatesReshape mathched...')
+            logger.info('Transformer2Dmodel_EncoderHiddenStatesReshape matched...')
             logger.debug('Transformer2Dmodel_EncoderHiddenStatesReshape = {}'.format(patterns_nodes_name))
             first_matmul_node_idx = -1
             all_dest_op = []
@@ -90,7 +90,7 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
 
                 matmul_node.input_tensors[0] = new_node.output_tensors[0]
                 all_dest_op.append(matmul_node.name)
-                
+
             # only insert one node to reshape the encoder_hidden_satates.
             new_node.output_tensors[0].dest_op = all_dest_op
             assert first_matmul_node_idx != -1
@@ -102,7 +102,7 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
         patterns_nodes_name = util.search_pattern(pattern, model)
         if len(patterns_nodes_name) != 0:
             # QAT Unet
-            logger.info('Transformer2Dmodel_EncoderHiddenStatesReshape mathched...')
+            logger.info('Transformer2Dmodel_EncoderHiddenStatesReshape matched...')
             logger.debug('Transformer2Dmodel_EncoderHiddenStatesReshape = {}'.format(patterns_nodes_name))
             first_matmul_node_idx = -1
             all_dest_op = []
@@ -139,13 +139,13 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
 
                 matmul_node.input_tensors[0] = new_node.output_tensors[0]
                 all_dest_op.append(matmul_node.name)
-                
+
             # only insert one node to reshape the encoder_hidden_satates.
             new_node.output_tensors[0].dest_op = all_dest_op
             assert first_matmul_node_idx != -1
             model.insert_nodes(first_matmul_node_idx, [new_node])
 
-            # QAT unet expecially
+            # QAT unet especially
             quant_info = util.get_quant_info()
             util.insert_quant_info(new_node.output_tensors[0].name, quant_info[input_tensors[0].name])
 

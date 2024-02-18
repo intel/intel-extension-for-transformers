@@ -58,7 +58,7 @@ class TestChatbotBuilder_txt(unittest.TestCase):
         if os.path.exists("test_txt"):
             shutil.rmtree("test_txt", ignore_errors=True)
         return super().tearDown()
-    
+
     def test_retrieval_txt(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
@@ -83,7 +83,7 @@ class TestChatbotBuilder_docx(unittest.TestCase):
         if os.path.exists("test_docx"):
             shutil.rmtree("test_docx", ignore_errors=True)
         return super().tearDown()
-    
+
     def test_retrieval_docx(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.docx"
@@ -108,7 +108,7 @@ class TestChatbotBuilder_xlsx(unittest.TestCase):
         if os.path.exists("test_xlsx"):
             shutil.rmtree("test_xlsx", ignore_errors=True)
         return super().tearDown()
-    
+
     def test_retrieval_xlsx(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.xlsx"
@@ -133,7 +133,7 @@ class TestChatbotBuilder_xlsx_1(unittest.TestCase):
         if os.path.exists("test_xlsx_1"):
             shutil.rmtree("test_xlsx_1", ignore_errors=True)
         return super().tearDown()
-    
+
     def test_retrieval_xlsx_1(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.xlsx"
@@ -158,7 +158,7 @@ class TestChatbotBuilder_xlsx_2(unittest.TestCase):
         if os.path.exists("test_xlsx_2"):
             shutil.rmtree("test_xlsx_2", ignore_errors=True)
         return super().tearDown()
-    
+
     def test_retrieval_xlsx_2(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_2.xlsx"

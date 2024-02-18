@@ -25,7 +25,7 @@ Intel® Extension for Transformers
 ```bash
 pip install intel-extension-for-transformers
 ```
-> For more installation methods, please refer to [Installation Page](./docs/installation.md)
+> For more installation guide, please refer to [Installation Page](./docs/installation.md)
 
 ## 🌟Introduction
 Intel® Extension for Transformers is an innovative toolkit designed to accelerate GenAI/LLM everywhere with the optimal performance of Transformer-based models on various Intel platforms, including Intel Gaudi2, Intel CPU, and Intel GPU. The toolkit provides the below key features and examples:
@@ -36,7 +36,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 *  Optimized Transformer-based model packages such as [Stable Diffusion](examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion), [GPT-J-6B](examples/huggingface/pytorch/text-generation/deployment), [GPT-NEOX](examples/huggingface/pytorch/language-modeling/quantization#2-validated-model-list), [BLOOM-176B](examples/huggingface/pytorch/language-modeling/inference#BLOOM-176B), [T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list), [Flan-T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list), and end-to-end workflows such as [SetFit-based text classification](docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](workflows/dlsa) 
 
-*  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of plugins [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), and [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md). This framework supports Intel Gaudi2/CPU/GPU.
+*  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of [plugins](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/docs/advanced_features.md) such as [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), and [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md). This framework supports Intel Gaudi2/CPU/GPU.
 
 *  [Inference](https://github.com/intel/neural-speed/tree/main) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels for Intel CPU and Intel GPU (TBD), supporting [GPT-NEOX](https://github.com/intel/neural-speed/tree/main/neural_speed/models/gptneox), [LLAMA](https://github.com/intel/neural-speed/tree/main/neural_speed/models/llama), [MPT](https://github.com/intel/neural-speed/tree/main/neural_speed/models/mpt), [FALCON](https://github.com/intel/neural-speed/tree/main/neural_speed/models/falcon), [BLOOM-7B](https://github.com/intel/neural-speed/tree/main/neural_speed/models/bloom), [OPT](https://github.com/intel/neural-speed/tree/main/neural_speed/models/opt), [ChatGLM2-6B](https://github.com/intel/neural-speed/tree/main/neural_speed/models/chatglm), [GPT-J-6B](https://github.com/intel/neural-speed/tree/main/neural_speed/models/gptj), and [Dolly-v2-3B](https://github.com/intel/neural-speed/tree/main/neural_speed/models/gptneox). Support AMX, VNNI, AVX512F and AVX2 instruction set. We've boosted the performance of Intel CPUs, with a particular focus on the 4th generation Intel Xeon Scalable processor, codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html).
 
@@ -102,7 +102,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 > In the table above, "-" means not applicable or not started yet.
 
-## Validated Software
+## 🔓Validated Software
 <table>
 	<tbody>
 		<tr>
@@ -163,6 +163,9 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 > Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [Intel GPU](https://github.com/intel/intel-extension-for-transformers/blob/main/requirements-gpu.txt).
 
+## 🔓Validated OS
+Ubuntu 20.04/22.04, Centos 8.
+
 ## 🌱Getting Started
 
 ### Chatbot
@@ -199,17 +202,32 @@ Below is the sample code to use the extended Transformers APIs. See more [exampl
 
 #### INT4 Inference (CPU)
 ```python
-from transformers import AutoTokenizer, TextStreamer
+from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 model_name = "Intel/neural-chat-7b-v3-1"     
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+outputs = model.generate(inputs)
+```
+
+You can also load the low-bit model quantized by GPTQ/AWQ/RTN/AutoRound algorithm.
+```python
+from transformers import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+# Download Hugging Face GPTQ/AWQ model or use local quantize model
+model_name = "PATH_TO_MODEL"  # local path to model
+woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ; use_autoround=True for AutoRound
+prompt = "Once upon a time, a little girl"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
+outputs = model.generate(inputs)
 ```
 
 #### INT4 Inference (GPU)
@@ -227,12 +245,11 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
 model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
                                               device_map=device_map, load_in_4bit=True)
 
-# optimize the model with ipex, it will improve performance.
 model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
 
 output = model.generate(inputs)
 ```
-> Note: Please refer to [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [gpu script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py). Known issue: If your device memory is not enough, please save the model and load again with the code in [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)
+> Note: Please refer to the [example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py) for more details.
 
 ### Langchain-based extension APIs
 Below is the sample code to use the extended Langchain APIs. See more [examples](intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md).

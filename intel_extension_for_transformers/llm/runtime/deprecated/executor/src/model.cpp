@@ -538,7 +538,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
             operators_[i]->append_it_shape(input_vecs_[i][j]->shape());
           }
           if (i != operators_.size() - 1) {
-            operators_[i]->append_ot_shape(output_vecs_[i][0]->shape());  // the last output is not exsit
+            operators_[i]->append_ot_shape(output_vecs_[i][0]->shape());  // the last output is not exist
           }
           DLOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << forward_time << " ms";
           if (thread_count >= multi_stream_tasks_[i]) {
@@ -587,7 +587,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
 }
 
 shared_ptr<TensorConfig> findTensorConfig(const vector<shared_ptr<OperatorConfig>>& op_configs, string tensor_name) {
-  // travel op_configs to find tensorconfig with specificed tensor name
+  // travel op_configs to find tensorconfig with specified tensor name
   for (int i = 0; i < op_configs.size() - 1; ++i) {
     auto op_conf = op_configs[i];
     int output_size = op_conf->output_tensor_size();

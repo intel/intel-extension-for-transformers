@@ -75,7 +75,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
     def test_enable_plugin_tts(self):
         # Test enabling Text-to-Speech plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        config.plugins = {"tts": {"enable": True, "args": 
+        config.plugins = {"tts": {"enable": True, "args":
             {"device": "cpu", "voice": "default", "stream_mode": "true", "output_audio_path": "./output_audio"}}}
         result = build_chatbot(config)
         self.assertIsNotNone(result)
@@ -92,7 +92,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
     def test_enable_plugin_asr(self):
         # Test enabling Audio Speech Recognition plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        config.plugins = {"asr": {"enable": True, "args": 
+        config.plugins = {"asr": {"enable": True, "args":
             {"device": "cpu", "model_name_or_path": "openai/whisper-small"}}}
         result = build_chatbot(config)
         self.assertIsNotNone(result)

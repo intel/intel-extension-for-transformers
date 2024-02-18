@@ -81,7 +81,7 @@ class StableDiffusion_MHAReshape(Pattern):
                                                                     pattern_dict, model)
 
         if len(new_node_names) != 0:
-            logger.info('StableDiffusion_MHAReshape mathched...')
+            logger.info('StableDiffusion_MHAReshape matched...')
             logger.debug('StableDiffusion_MHAReshape = {}'.format(new_node_names))
             for j in range(len(new_node_names)):
                 # the first matmul node

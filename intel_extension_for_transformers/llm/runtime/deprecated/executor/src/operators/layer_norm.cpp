@@ -119,7 +119,7 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
   auto& dst_tensor_ptr = output[0];
   dst_tensor_ptr->set_shape(src_shape);
 
-  // for kernel hasing.
+  // for kernel hashing.
   string src_shape_str;
   for (auto&& i : src_shape) {
     src_shape_str += std::to_string(i);

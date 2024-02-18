@@ -20,16 +20,14 @@ import os
 import json
 import requests
 import datetime
-from deepface import DeepFace
 from typing import List, Dict
 from .photoai_utils import (
-    find_GPS_image, 
-    get_address_from_gps, 
+    find_GPS_image,
+    get_address_from_gps,
     generate_caption,
     transfer_xywh
 )
 from ...cli.log import logger
-from ...utils.database.mysqldb import MysqlDb
 from datetime import timedelta, timezone
 
 
@@ -39,6 +37,7 @@ def get_image_root_path():
 
 
 def check_user_ip(user_ip: str) -> bool:
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     user_list = mysql_db.fetch_one(sql=f'select * from user_info where user_id = "{user_ip}";')
     logger.info(f'[Check IP] user list: {user_list}')
@@ -52,6 +51,7 @@ def check_user_ip(user_ip: str) -> bool:
 
 
 def check_image_status(image_id: str):
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     image = mysql_db.fetch_one(
         sql=f'select * from image_info where image_id="{image_id}" and exist_status="active"',
@@ -88,7 +88,7 @@ def update_image_tags(image):
         elif key == 'location' and value != image_info['address']:
             update_sql_list.append(f' address="{value}" ')
             tag_name_list.append('location')
-            
+
     for tag_name in tag_name_list:
         tags.pop(tag_name)
     old_tags.update(tags)
@@ -97,6 +97,7 @@ def update_image_tags(image):
     update_sql_tmp = ','.join(update_sql_list)
     final_sql = update_sql+update_sql_tmp+f' where  image_id={image_id}'
     logger.info(f'[Update Tags] update sql: {final_sql}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     with mysql_db.transaction():
         mysql_db.update(sql=final_sql, params=None)
@@ -104,6 +105,7 @@ def update_image_tags(image):
 
 
 def update_image_attr(image, attr):
+    from ...utils.database.mysqldb import MysqlDb
     image_id = image['image_id']
     check_image_status(image_id)
 
@@ -114,13 +116,13 @@ def update_image_attr(image, attr):
             new_checked = 1 if new_attr else 0
             with mysql_db.transaction():
                 mysql_db.update(
-                    sql=f"UPDATE image_info SET {attr}={new_checked} WHERE image_id={image_id}", 
+                    sql=f"UPDATE image_info SET {attr}={new_checked} WHERE image_id={image_id}",
                     params=None
                 )
         else:
             with mysql_db.transaction():
                 mysql_db.update(
-                    sql=f'UPDATE image_info SET {attr}="{new_attr}" WHERE image_id={image_id}', 
+                    sql=f'UPDATE image_info SET {attr}="{new_attr}" WHERE image_id={image_id}',
                     params=None
                 )
     except Exception as e:
@@ -157,10 +159,11 @@ def format_image_info(image_info: dict) -> dict:
 
 
 def delete_single_image(user_id, image_id):
+    from ...utils.database.mysqldb import MysqlDb
     logger.info(f'[Delete] Deleting image {image_id}')
     mysql_db = MysqlDb()
     image_path = mysql_db.fetch_one(
-        sql=f'SELECT image_path FROM image_info WHERE image_id={image_id}', 
+        sql=f'SELECT image_path FROM image_info WHERE image_id={image_id}',
         params=None
     )
     if image_path==None:
@@ -168,7 +171,7 @@ def delete_single_image(user_id, image_id):
         logger.error(info)
         raise Exception(info)
     image_path = image_path['image_path']
-    
+
     # delete local image
     os.remove(image_path)
     logger.info(f'[Delete] Image {image_path} successfully deleted.')
@@ -177,7 +180,7 @@ def delete_single_image(user_id, image_id):
     try:
         with mysql_db.transaction():
             mysql_db.update(
-                sql=f"UPDATE image_info SET exist_status='deleted' WHERE image_id={image_id} ;", 
+                sql=f"UPDATE image_info SET exist_status='deleted' WHERE image_id={image_id} ;",
                 params=None
             )
     except Exception as e:
@@ -190,7 +193,7 @@ def delete_single_image(user_id, image_id):
 
 def process_images_in_background( user_id: str, image_obj_list: List[Dict]):
     try:
-        logger.info(f'[backgroud] ======= processing image list for user {user_id} in background =======')
+        logger.info(f'[background] ======= processing image list for user {user_id} in background =======')
         for i in range(len(image_obj_list)):
             # save image into local path
             image_id = image_obj_list[i]['img_id']
@@ -198,20 +201,20 @@ def process_images_in_background( user_id: str, image_obj_list: List[Dict]):
             image_obj = image_obj_list[i]['img_obj']
             image_exif = image_obj_list[i]['exif']
             image_obj.save(image_path, exif=image_exif)
-            logger.info(f'[backgroud] Image saved into local path {image_path}')
+            logger.info(f'[background] Image saved into local path {image_path}')
             # process image and generate infos
             try:
                 process_single_image(image_id, image_path, user_id)
             except Exception as e:
-                logger.error("[backgroud] "+str(e))
-                logger.error(f'[backgroud] error occurred, delete image.')
+                logger.error("[background] "+str(e))
+                logger.error(f'[background] error occurred, delete image.')
                 delete_single_image(user_id, image_id)
 
     except Exception as e:
         logger.error(e)
         raise ValueError(str(e))
     else:
-        logger.info('[backgroud] Background images process finished.')
+        logger.info('[background] Background images process finished.')
 
 
 def process_single_image(img_id, img_path, user_id):
@@ -228,7 +231,7 @@ def process_single_image(img_id, img_path, user_id):
         longitude = gps_info['GPSLongitude']
     if 'GPSAltitude' in gps_info:
         altitude = gps_info['GPSAltitude']
-    logger.info(f'[background - single] Image is captured at: {captured_time},' + 
+    logger.info(f'[background - single] Image is captured at: {captured_time},' +
                 'latitude: {latitude}, longitude: {longitude}, altitude: {altitude}')
     if latitude:
         update_image_attr(image={"image_id": img_id, "latitude": latitude}, attr='latitude')
@@ -293,6 +296,7 @@ def process_single_image(img_id, img_path, user_id):
 
     # update image status
     try:
+        from ...utils.database.mysqldb import MysqlDb
         mysql_db = MysqlDb()
         with mysql_db.transaction():
             mysql_db.update(sql=f"UPDATE image_info SET process_status='ready' WHERE image_id={img_id}", params=None)
@@ -305,7 +309,7 @@ def process_single_image(img_id, img_path, user_id):
 
 def process_face_for_single_image(image_id, image_path, db_path, user_id):
     logger.info(f'[background - face] ### processing face for {image_path} in background ###')
-
+    from deepface import DeepFace
     # 1. check whether image contains faces
     try:
         face_objs = DeepFace.represent(img_path=image_path, model_name='Facenet512')
@@ -333,6 +337,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
     logger.info(f'[background - face] Finding match faces in image database.')
     assert face_cnt == len(dfs)
     logger.info(f'[background - face] dfs: {dfs}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     for df in dfs:
         logger.info(f'[background - face] current df: {df}')
@@ -354,7 +359,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
             continue
         # find faces in img2: one or many
         find_face_sql = f"""
-            SELECT face_id, face_tag, xywh FROM image_face WHERE 
+            SELECT face_id, face_tag, xywh FROM image_face WHERE
             image_path='{ref_image_path}' AND user_id='{user_id}';
         """
         try:
@@ -379,9 +384,9 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
                 face_id = img_face['face_id']
                 face_tag = img_face['face_tag']
         if face_id == -1 and face_tag == None:
-            raise Exception(f'Error occurred when verifing faces for reference image: Inconsistent face infomation.')
+            raise Exception(f'Error occurred when verifying faces for reference image: Inconsistent face information.')
         # insert into image_face
-        insert_img_face_sql = f"""INSERT INTO image_face 
+        insert_img_face_sql = f"""INSERT INTO image_face
         VALUES(null, {image_id}, '{image_path}', {face_id}, '{image_xywh}', '{user_id}', '{face_tag}');"""
         try:
             with mysql_db.transaction():
@@ -394,12 +399,12 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
         if image_xywh in face_xywh_list:
             face_xywh_list.remove(image_xywh)
         logger.info(f'[background - face] current face_xywh_list: {face_xywh_list}')
-    
+
     # all faces matched in db, no faces left
     if len(face_xywh_list) == 0:
         logger.info(f"[background - face] Image {image_id} face process finished.")
         return None
-    
+
     # 3. add new faces for current image (no reference in db)
     logger.info(f'[background - face] Adding new faces for image {image_id}')
     for cur_xywh in face_xywh_list:
@@ -432,14 +437,15 @@ def get_type_obj_from_attr(attr, user_id):
     logger.info(f'Geting image type of {attr}')
 
     if attr == 'time':
-        select_sql = f'''SELECT DATE(captured_time) AS date FROM image_info 
+        select_sql = f'''SELECT DATE(captured_time) AS date FROM image_info
         WHERE user_id = "{user_id}" AND exist_status="active" GROUP BY date ORDER BY date;'''
     elif attr == 'address':
-        select_sql = f'''SELECT address FROM image_info 
+        select_sql = f'''SELECT address FROM image_info
         WHERE user_id="{user_id}" AND exist_status="active" GROUP BY address;'''
     else:
         return {}
 
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     select_list = mysql_db.fetch_all(sql=select_sql)
     select_result = {}
@@ -450,19 +456,19 @@ def get_type_obj_from_attr(attr, user_id):
             if item == None:
                 continue
             example_image_path = mysql_db.fetch_one(
-                sql=f'''SELECT image_path FROM image_info 
-                WHERE DATEDIFF(captured_time, "{item}") = 0 and user_id="{user_id}" 
-                and exist_status="active" LIMIT 1;''', 
+                sql=f'''SELECT image_path FROM image_info
+                WHERE DATEDIFF(captured_time, "{item}") = 0 and user_id="{user_id}"
+                and exist_status="active" LIMIT 1;''',
                 params=None)['image_path']
         elif attr == 'address':
             item = item['address']
             if item == None or item == 'None' or item == 'null':
                 continue
             example_image_path = mysql_db.fetch_one(
-                sql=f'''SELECT image_path FROM image_info WHERE 
-                address="{item}" and user_id="{user_id}" and exist_status="active" LIMIT 1;''', 
+                sql=f'''SELECT image_path FROM image_info WHERE
+                address="{item}" and user_id="{user_id}" and exist_status="active" LIMIT 1;''',
                 params=None)['image_path']
-        
+
         image_name = example_image_path.split('/')[-1]
         image_path = format_image_path(user_id, image_name)
         select_result[item] = image_path
@@ -473,7 +479,7 @@ def get_type_obj_from_attr(attr, user_id):
     if attr == 'time':
         logger.info(f'type list: {select_result}')
         return select_result
-    
+
     # check whether address simplification is needed
     simplify_flag = True
     cur_country = None
@@ -482,11 +488,11 @@ def get_type_obj_from_attr(attr, user_id):
         country = address.split(', ')[0]
         if not cur_country:
             cur_country = country
-        else: 
+        else:
             if country != cur_country:
                 simplify_flag = False
                 break
-    
+
     # simplify address name dynamically
     if simplify_flag:
         logger.info(f'address need to be simplified')
@@ -503,8 +509,9 @@ def get_type_obj_from_attr(attr, user_id):
 
 def get_address_list(user_id) -> list[str]:
     logger.info(f'Getting address list of user {user_id}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
-    select_sql = f'''SELECT address FROM image_info WHERE 
+    select_sql = f'''SELECT address FROM image_info WHERE
     user_id="{user_id}" AND exist_status="active" GROUP BY address;'''
     select_list = mysql_db.fetch_all(sql=select_sql)
     result_list = []
@@ -522,12 +529,13 @@ def get_address_list(user_id) -> list[str]:
 
 def get_process_status(user_id):
     logger.info(f'Geting process status of user {user_id}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     total_cnt = mysql_db.fetch_one(
-        sql=f"""SELECT COUNT(*) AS cnt FROM image_info WHERE 
+        sql=f"""SELECT COUNT(*) AS cnt FROM image_info WHERE
         user_id='{user_id}' AND exist_status='active';""")['cnt']
     processing_cnt = mysql_db.fetch_one(
-        sql=f"""SELECT COUNT(*) AS cnt FROM image_info WHERE 
+        sql=f"""SELECT COUNT(*) AS cnt FROM image_info WHERE
         user_id='{user_id}' AND exist_status='active' AND process_status='processing';""")['cnt']
     mysql_db._close()
     result = {}
@@ -543,24 +551,25 @@ def get_images_by_type(user_id, type, subtype) -> List:
     if type == 'address':
         if subtype == 'default':
             subtype = 'None'
-        sql=f"""SELECT image_id, image_path FROM image_info WHERE 
+        sql=f"""SELECT image_id, image_path FROM image_info WHERE
         user_id='{user_id}' AND exist_status='active' AND address LIKE '%{subtype}%';"""
 
     elif type == 'time':
         if subtype == 'None':
-            sql = f'''SELECT image_id, image_path FROM image_info 
+            sql = f'''SELECT image_id, image_path FROM image_info
             WHERE captured_time is null AND user_id="{user_id}" AND exist_status="active";'''
         else:
-            sql = f'''SELECT image_id, image_path FROM image_info 
+            sql = f'''SELECT image_id, image_path FROM image_info
             WHERE DATE(captured_time)="{subtype}" AND user_id="{user_id}" AND exist_status="active";'''
 
     elif type == 'person':
-        sql = f"""SELECT image_info.image_id, image_info.image_path FROM image_face 
-        INNER JOIN image_info ON image_info.image_id=image_face.image_id 
-        WHERE image_info.user_id='{user_id}' AND image_info.exist_status='active' 
+        sql = f"""SELECT image_info.image_id, image_info.image_path FROM image_face
+        INNER JOIN image_info ON image_info.image_id=image_face.image_id
+        WHERE image_info.user_id='{user_id}' AND image_info.exist_status='active'
         AND image_face.face_tag='{subtype}'"""
 
     logger.info(f'sql: {sql}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     images = mysql_db.fetch_all(sql=sql, params=None)
     mysql_db._close()
@@ -580,11 +589,12 @@ def get_images_by_type(user_id, type, subtype) -> List:
 
 def get_face_list_by_user_id(user_id: str) -> List[Dict]:
     logger.info(f'getting face list of user {user_id}')
-    group_by_face_sql = f'''SELECT group_concat(image_face.image_path) AS image_path, 
-    group_concat(image_face.face_tag) AS face_tag FROM image_face 
-    INNER JOIN image_info ON image_info.image_id=image_face.image_id 
+    group_by_face_sql = f'''SELECT group_concat(image_face.image_path) AS image_path,
+    group_concat(image_face.face_tag) AS face_tag FROM image_face
+    INNER JOIN image_info ON image_info.image_id=image_face.image_id
     WHERE image_info.user_id = "{user_id}" AND image_info.exist_status="active" GROUP BY face_id;'''
     try:
+        from ...utils.database.mysqldb import MysqlDb
         mysql_db = MysqlDb()
         query_list = mysql_db.fetch_all(sql=group_by_face_sql)
     except Exception as e:
@@ -610,13 +620,14 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     logger.info(f'[NER query] start query from ner results')
     query_sql = "SELECT image_info.image_id, image_info.image_path FROM image_info "
     query_flag = False
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
 
     # get person name query
     face_list = mysql_db.fetch_all(
-        sql=f"""select image_face.face_tag from image_face inner join image_info 
-        on image_info.image_id=image_face.image_id where 
-        image_info.user_id='{user_id}' AND exist_status='active';""", 
+        sql=f"""select image_face.face_tag from image_face inner join image_info
+        on image_info.image_id=image_face.image_id where
+        image_info.user_id='{user_id}' AND exist_status='active';""",
         params=None)
     logger.info(f"[NER query] face list is: {face_list}")
     if face_list:
@@ -654,7 +665,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
             query_sql += '('+sql+')'
     else:
         logger.info(f'[NER query] no location in query')
-        
+
     # get time query
     if ner_result['time']:
         time_points = ner_result['time']
@@ -696,7 +707,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
             query_sql += '('+sql+')'
     else:
         logger.info(f'[NER query] no time period in query')
-    
+
     if not query_flag:
         logger.info(f'[NER query] no compatible data for current query')
         return []
@@ -722,19 +733,20 @@ def delete_user_infos(user_id: str):
     logger.info(f'[delete user] start delete user info')
 
     try:
+        from ...utils.database.mysqldb import MysqlDb
         mysql_db = MysqlDb()
         with mysql_db.transaction():
             # delete image_face
             logger.info(f'[delete user] delete image_face of user {user_id}.')
             mysql_db.delete(
-                sql=f"""DELETE FROM image_face WHERE user_id='{user_id}'""", 
+                sql=f"""DELETE FROM image_face WHERE user_id='{user_id}'""",
                 params=None)
-            
+
             # delete face_info
             logger.info(f'[delete user] delete face_info of user {user_id}.')
             mysql_db.delete(
-                sql=f"""DELETE face_info FROM face_info LEFT JOIN image_face 
-                ON face_info.face_id = image_face.face_id WHERE image_face.face_id IS NULL""", 
+                sql=f"""DELETE face_info FROM face_info LEFT JOIN image_face
+                ON face_info.face_id = image_face.face_id WHERE image_face.face_id IS NULL""",
                 params=None)
 
             # delete image_info
@@ -766,8 +778,8 @@ def delete_user_infos(user_id: str):
             logger.info(f'[delete user] local images of user {user_id} is deleted.')
     except Exception as e:
         raise Exception(e)
-    
-    logger.info(f'[delete user] user {user_id} infomation all deleted.')
+
+    logger.info(f'[delete user] user {user_id} information all deleted.')
 
 
 def forward_req_to_sd_inference_runner(inputs):
@@ -786,4 +798,3 @@ def forward_req_to_sd_inference_runner(inputs):
 
 def stable_defusion_func(inputs):
     return forward_req_to_sd_inference_runner(inputs)
-

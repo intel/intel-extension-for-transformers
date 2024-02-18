@@ -20,7 +20,7 @@
    Extract all nodes in the input tensorflow model and convert them to engine python operators.
    All these python operators will compose the engine graph in the order of the original tensorflow
    calculation graph. Please noticed that the mapping between operators is not one-to-one
-   correspondence. For more related deatils, please refer to 'ops' APIs.
+   correspondence. For more related details, please refer to 'ops' APIs.
 """
 
 from .. import logger
@@ -36,7 +36,7 @@ class TensorflowExtractor(object):
     Decorate the node in model.graph_def, and the new node has the attributes like input_tensors
     and output_tensors, these tensors record the source/dest op name. All of these nodes
     (in a list) will compose a graph, which is Graph class, as the return object.
-    
+
     Args:
         model: TensorflowModel
 

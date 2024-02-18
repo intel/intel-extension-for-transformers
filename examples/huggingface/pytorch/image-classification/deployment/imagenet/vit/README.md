@@ -65,7 +65,7 @@ bash run_vit.sh --model=google/vit-base-patch16-224  --dataset=imagenet-1k --pre
 Note: the input_model could be changed from a vit base model to a vit large model.
 
 ## Benchmark
-If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
+If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir first.
 ### Accuracy  
 
 Python API command as follows:

@@ -28,16 +28,16 @@ enum WOQ_TASK {
 };
 
 struct woq_param_base {
-  std::string compute_type;  // determin gemm core template
-  std::string weight_type;   // determin compressed-weight template
-  std::string scale_type;    // determin scale param
+  std::string compute_type;  // determine gemm core template
+  std::string weight_type;   // determine compressed-weight template
+  std::string scale_type;    // determine scale param
   bool asym;
   int blocksize;
 };
 
 struct woq_config_param : public woq_param_base {
-  dispatcher_utils::QBITS_DT src_dt;  // determin activation related template
-  dispatcher_utils::QBITS_DT dst_dt;  // determin write_back template
+  dispatcher_utils::QBITS_DT src_dt;  // determine activation related template
+  dispatcher_utils::QBITS_DT dst_dt;  // determine write_back template
 };
 
 struct woq_packq_param : public woq_param_base {
@@ -69,6 +69,5 @@ static std::map<std::string, BTLA_DTYPE> scale2bestladt_map{
     {"fp32", BTLA_DTYPE::F32}, {"bf16", BTLA_DTYPE::BF16}, {"fp8_e8m0", BTLA_DTYPE::F8_E8M0}};
 
 void dispatch_woq_task(woq_config_param* p, woq_runtime_ctx* ctx, WOQ_TASK task);
-void bestla_packq(woq_packq_param* p, woq_packq_ctx* ctx);
 void set_woq_workspace(torch::Tensor* workspace);
 }  // namespace woq

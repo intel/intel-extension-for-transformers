@@ -38,11 +38,11 @@ class TokenTypeEmbeddingsV1(Pattern):
                 {
                     'patterns': {
                         'in': [[(2, 'Shape'), (3, 'Gather'), (7, 'Unsqueeze'), (8, 'Concat'),
-                                (9, 'Reshape'), (10, 'Shape'), (11, 'ConstantOfShape'), 
+                                (9, 'Reshape'), (10, 'Shape'), (11, 'ConstantOfShape'),
                                 (14, 'Where'), (15, 'Expand'), (16, 'Gather')],
                                 [(), (0, 'Shape'), (1, 'Gather'), (6, 'Unsqueeze'), (8, 'Concat')],
                                 [(3, 'Gather'), (4, 'Unsqueeze'), (5, 'Slice'), (15, 'Expand')],
-                                [(11, 'ConstantOfShape'), (12, 'Mul'), (13, 'Equal'), 
+                                [(11, 'ConstantOfShape'), (12, 'Mul'), (13, 'Equal'),
                                 (14, 'Where')]],
                         'out': [[(0, 'TokenTypeIds'), (1, 'Reshape'),
                                  (2, 'Gather'), (3, 'Reshape'), (4, 'Reshape')]]
@@ -88,7 +88,7 @@ class TokenTypeEmbeddingsV1(Pattern):
                                 (8, 'Reshape'), (10, 'Where'), (11, 'Expand'), (12, 'Gather')],
                                 [(0, 'Shape'), (1, 'Gather'), (6, 'Unsqueeze'), (7, 'Concat')],
                                 [(2, 'Gather'), (4, 'Unsqueeze'), (5, 'Slice'), (11, 'Expand')],
-                                [(8, 'Reshape'), (9, 'Equal'), 
+                                [(8, 'Reshape'), (9, 'Equal'),
                                 (10, 'Where')]],
                         'out': [[(0, 'TokenTypeIds'), (1, 'Reshape'),
                                  (2, 'Gather'), (3, 'Reshape'), (4, 'Reshape')]]
@@ -145,7 +145,7 @@ class TokenTypeEmbeddingsV1(Pattern):
             attr4['dst_shape'] = '-1,-1,' + str(hidden_size)
             attr4['dims'] = '0,1'
             attr4['mul'] = '1,2'
-            
+
             tokentype_node_idx = model.get_node_id(node_names[0])
             slice_data = model.nodes[tokentype_node_idx].input_tensors[1].data
             model.nodes[tokentype_node_idx].input_tensors[1].data = slice_data.astype(np.int32)
@@ -163,7 +163,7 @@ class TokenTypeEmbeddingsV1(Pattern):
 
             reshape_2_node_idx = model.get_node_id(node_names[4])
             model.nodes[reshape_2_node_idx].attr = attr4
-        
+
         # roberta_base
         for i in range(len(pattern_mapping_config['TokenTypeEmbeddingsV1'])):
             pattern_dict = pattern_mapping_config['TokenTypeEmbeddingsV1'][i]
@@ -177,5 +177,5 @@ class TokenTypeEmbeddingsV1(Pattern):
                     batch_dims = gatherv2_node.attr['batch_dims']
                     _set_attr(hidden_size, axis, batch_dims, new_node_names[i], model)
 
-        
+
         return model

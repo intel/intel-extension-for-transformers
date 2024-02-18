@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from haystack.document_stores import InMemoryDocumentStore,ElasticsearchDocumentStore
 
 from fastapi import FastAPI, Request, BackgroundTasks
@@ -150,7 +164,7 @@ with tempfile.TemporaryDirectory(dir="/tmp/my_subdirectory") as temp_dir:
 with tempfile.TemporaryDirectory(dir="/tmp/my_subdirectory") as temp_dir:
     english_embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-large")
     chinese_embeddings = HuggingFaceInstructEmbeddings(model_name="shibing624/text2vec-base-chinese")
-    
+
     young_pat_vectordb = Chroma(persist_directory=temp_dir,
                                 embedding_function=english_embeddings)
     young_pat_dense_retriever = young_pat_vectordb.as_retriever(search_type="mmr",
@@ -664,5 +678,3 @@ if __name__ == "__main__":
         put("test","test")
 
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
-
-

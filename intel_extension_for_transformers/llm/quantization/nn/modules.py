@@ -115,12 +115,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
         # weights are cast automatically as Int8Params, but the bias has to be cast manually
         if self.bias is not None and self.bias.dtype != x.dtype:
             self.bias.data = self.bias.data.to(x.dtype)
-
-        if getattr(self.weight, "quant_state", None) is None:
-            print(
-                "FP4 quantization state not initialized. Please call .quantize_weights()."
-            )
-
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
         out = torch.zeros(m, self.out_features, dtype=x.dtype)
@@ -135,6 +129,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             self.compute_dtype if self.compute_dtype is not None else "fp32",
             self.weight_dtype,
             self.scale_dtype if self.scale_dtype is not None else "fp32",
+            self.scheme,
             do_dequant=self.training,
         )
         shape[-1] = self.out_features
@@ -143,7 +138,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
         return out
 
     def set_weights_bias(self, weight_data, bias=None):
-        shape = weight_data.shape
+        if weight_data.is_meta:
+            weight_data = torch.ones(weight_data.shape, dtype=torch.float)
         weight = torch.ops.bestlaop.woq_quantize(
             weight_data,
             True,
@@ -151,9 +147,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
             self.compute_dtype if self.compute_dtype is not None else "fp32",
             self.weight_dtype,
             self.scale_dtype if self.scale_dtype is not None else "fp32",
-            False,
+            False if self.scheme == "sym" else True,
         )
-        weight.resize_(shape)
         self.weight = ParamsQBits(
             data=weight,
             requires_grad=False,
@@ -321,7 +316,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.compute_dtype,
             self.weight_dtype,
             self.scale_dtype,
-            False,
+            False if self.scheme == "sym" else True,
         )
 
         self.weight = ParamsQBits(
@@ -366,7 +361,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.compute_dtype,
             self.weight_dtype,
             self.scale_dtype,
-            False,
+            False if self.scheme == "sym" else True,
         )
 
         self.weight = ParamsQBits(

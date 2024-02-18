@@ -163,7 +163,7 @@ parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
-parser.add_argument("--_commit_hash", default="main", type=str)
+parser.add_argument("--_commit_hash", default=None, type=str)
 parser.add_argument("--trust_remote_code", type=bool, default=False)
 parser.add_argument("--use_llm_runtime", action="store_true")
 # =======================================
@@ -285,7 +285,7 @@ elif args.woq:
             scale_dtype=args.woq_scale_dtype,
             weight_dtype=args.woq_weight_dtype,
             scheme=args.woq_scheme,
-            group_size=args.gptq_block_size,
+            group_size=args.woq_group_size,
             algorithm=args.woq_algo,
             tokenizer=tokenizer,
             algorithm_args=algorithm_args,
@@ -335,22 +335,20 @@ elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
     else:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.model,
-            config=config,
             trust_remote_code=args.trust_remote_code,
             _commit_hash=args._commit_hash,
-            use_llm_runtime=args.use_llm_runtime,
         )
 
 # save model
 if args.output_dir:
+    tokenizer.save_pretrained(args.output_dir)
     if args.sq:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
-    elif args.mixed_precision:
-        user_model.config.save_pretrained(args.output_dir)
-        torch.save(
-            user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin")
-        )
+    elif args.mixed_precision or args.woq:
+        user_model.save_pretrained(args.output_dir)
+
+
 
 # int8 model loading
 if args.int8 or args.int8_bf16_mixed:
@@ -380,7 +378,7 @@ if args.int8 or args.int8_bf16_mixed:
 
 
 if args.benchmark:
-    user_model.eval()
+    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -435,12 +433,12 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    user_model.eval()
+    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-
+    args._commit_hash = "main" if args._commit_hash is None else args._commit_hash 
     results = evaluate(
         model="hf-causal",
         model_args="pretrained="

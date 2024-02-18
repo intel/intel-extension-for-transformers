@@ -1,0 +1,14 @@
+beautifulsoup4
+chromadb==0.4.15
+InstructorEmbedding
+langchain==0.0.354
+langchain_core==0.1.18
+langid
+markdown
+openpyxl
+PyPDF2
+python-docx
+qdrant-client
+scikit-learn
+sentence-transformers==2.3.1
+unstructured

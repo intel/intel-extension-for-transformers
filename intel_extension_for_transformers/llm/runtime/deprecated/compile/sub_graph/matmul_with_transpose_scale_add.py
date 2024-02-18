@@ -65,7 +65,7 @@ class MatMulWithTranspose(Pattern):
 
         if model.framework_modeling_config['framework'] != 'torch':
             return model
-        
+
         def _set_attr(node_names, old_nodes, scale, binary_add=True):
             mat_node_idx = model.get_node_id(node_names[0])
             attr = copy.deepcopy(old_nodes[0].attr)

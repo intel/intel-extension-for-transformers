@@ -52,23 +52,25 @@ First, install openai-python:
 pip install --upgrade openai
 ```
 
+Then, interact with the model:
+
 ```python
 import openai
 # to get proper authentication, make sure to use a valid key that's listed in
 # the --api-keys flag. if no flag value is provided, the `api_key` will be ignored.
 openai.api_key = "EMPTY"
-openai.api_base = "http://localhost:80/v1"
+openai.base_url = "http://localhost:80/v1/"
 
 model = "Intel/neural-chat-7b-v3-1"
 prompt = "Once upon a time"
 
 # create a completion
-completion = openai.Completion.create(model=model, prompt=prompt, max_tokens=64)
+completion = openai.completions.create(model=model, prompt=prompt, max_tokens=64)
 # print the completion
 print(prompt + completion.choices[0].text)
 
 # create a chat completion
-completion = openai.ChatCompletion.create(
+completion = openai.chat.completions.create(
   model=model,
   messages=[{"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}]
 )
@@ -108,4 +110,3 @@ curl http://localhost:80/v1/completions \
     "temperature": 0.5
   }'
 ```
-
