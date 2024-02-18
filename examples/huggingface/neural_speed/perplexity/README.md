@@ -3,7 +3,7 @@ This document describes the perplexity evaluation of customizable configurations
 
 ## Prepare Python Environment
 ```bash
-conda create -n <env name> python=3.8 gxx
+conda create -n <env name> python=3.10 gxx
 conda activate <env name>
 ```
 
