@@ -133,7 +133,7 @@ class TestSmallMaxChuckSize(unittest.TestCase):
         self.assertIsNotNone(response)
         plugins.retrieval.args = {}
         plugins.retrieval.enable = False
-    
+
 class TestLargeMaxChuckSize(unittest.TestCase):
     def setUp(self):
         if os.path.exists("./large_max_chuck_size"):

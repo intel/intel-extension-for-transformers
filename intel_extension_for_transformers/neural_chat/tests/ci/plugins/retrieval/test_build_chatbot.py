@@ -22,12 +22,12 @@ from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser 
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser
 
 gaudi2_content = """
 Habana Gaudi2 and 4th Gen Intel Xeon Scalable processors deliver leading performance and optimal cost savings for AI training.
 Today, MLCommons published results of its industry AI performance benchmark, MLPerf Training 3.0, in which both the Habana® Gaudi®2 deep learning accelerator and the 4th Gen Intel® Xeon® Scalable processor delivered impressive training results.
-The latest MLPerf Training 3.0 results underscore the performance of Intel's products on an array of deep learning models. The maturity of Gaudi2-based software and systems for training was demonstrated at scale on the large language model, GPT-3. Gaudi2 is one of only two semiconductor solutions to submit performance results to the benchmark for LLM training of GPT-3. 
+The latest MLPerf Training 3.0 results underscore the performance of Intel's products on an array of deep learning models. The maturity of Gaudi2-based software and systems for training was demonstrated at scale on the large language model, GPT-3. Gaudi2 is one of only two semiconductor solutions to submit performance results to the benchmark for LLM training of GPT-3.
 Gaudi2 also provides substantially competitive cost advantages to customers, both in server and system costs. The accelerator’s MLPerf-validated performance on GPT-3, computer vision and natural language models, plus upcoming software advances make Gaudi2 an extremely compelling price/performance alternative to Nvidia's H100.
 On the CPU front, the deep learning training performance of 4th Gen Xeon processors with Intel AI engines demonstrated that customers can build with Xeon-based servers a single universal AI system for data pre-processing, model training and deployment to deliver the right combination of AI performance, efficiency, accuracy and scalability.
 Gaudi2 delivered impressive time-to-train on GPT-31: 311 minutes on 384 accelerators.
@@ -57,7 +57,7 @@ class TestBuildChatbot(unittest.TestCase):
     def test_enable_plugin_retrieval(self):
         # Test enabling Retrieval plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        config.plugins = {"retrieval": {"enable": True, "args": 
+        config.plugins = {"retrieval": {"enable": True, "args":
             {"input_path": "./gaudi2.txt", "persist_dir": "./output"}}}
         result = build_chatbot(config)
         self.assertIsNotNone(result)
