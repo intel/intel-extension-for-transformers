@@ -168,3 +168,46 @@ class SafetyChecker:
             return self.sensitive_filter(response)
         else:
             return response
+
+
+class LlamaGuardSafetyChecker(object):
+
+    def __init__(self):
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        model_id = "meta-llama/LlamaGuard-7b"
+
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
+        self.model = AutoModelForCausalLM.from_pretrained(model_id, load_in_8bit=True, device_map="auto")
+
+    def __call__(self, output_text, **kwargs):
+        agent_type = kwargs.get('agent_type', "User")
+        user_prompt = kwargs.get('user_prompt', "")
+
+        model_prompt = output_text.strip()
+        if(agent_type == "Agent"):
+            if user_prompt == "":
+                print("empty user prompt for agent check, returning unsafe")
+                return "Llama Guard", False, "Missing user_prompt from Agent response check"
+            else:
+                model_prompt = model_prompt.replace(user_prompt, "")
+                user_prompt = f"User: {user_prompt}"
+                agent_prompt = f"Agent: {model_prompt}"
+                chat = [
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": agent_prompt},
+                ]
+        else:
+            chat = [
+                {"role": "user", "content": model_prompt},
+            ]
+
+        input_ids = self.tokenizer.apply_chat_template(chat, return_tensors="pt")
+        prompt_len = input_ids.shape[-1]
+        output = self.model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
+        result = self.tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True)
+        splitted_result = result.split("\n")[0]
+        is_safe = splitted_result == "safe"
+
+        report = result
+        return "Llama Guard", is_safe, report
