@@ -8,7 +8,7 @@ Here we take the [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en
 ## Prepare Python Environment
 Create a python environment, optionally with autoconf for jemalloc support.
 ```shell
-conda create -n <env name> python=3.8 [autoconf]
+conda create -n <env name> python=3.10 [autoconf]
 conda activate <env name>
 ```
 
