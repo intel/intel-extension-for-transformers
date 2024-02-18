@@ -16,7 +16,7 @@
 # limitations under the License.
 
 # Kill the exist and re-run
-ps -ef |grep 'run_code_gen' |awk '{print $2}' |xargs kill -9
+ps -ef |grep 'run_multi_host' |awk '{print $2}' |xargs kill -9
 
 # KMP
 export KMP_BLOCKTIME=1
@@ -30,4 +30,4 @@ export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 # tc malloc
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 
-numactl -l -C 0-47 python -m run_code_gen 2>&1 | tee run.log
+numactl -l -C 0-47 python -m run_multi_host 2>&1 | tee run.log
