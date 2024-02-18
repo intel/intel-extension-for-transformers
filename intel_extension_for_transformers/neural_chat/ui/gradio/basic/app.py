@@ -22,18 +22,14 @@ import json
 import os
 import time
 import uuid
-
-os.system("pip install gradio==3.36.0")
+from openai import OpenAI
 
 import gradio as gr
 import requests
 
 import sys
 sys.path.insert(0, './')
-from conversation import (
-    get_conv_template,
-    compute_skip_echo_len
-)
+from conversation import get_conv_template
 from fastchat.constants import LOGDIR
 from fastchat.utils import (
     build_logger,
@@ -121,61 +117,19 @@ logger = build_logger("gradio_web_server", "gradio_web_server.log")
 
 headers = {"User-Agent": "NeuralChat Client"}
 
-no_change_btn = gr.Button.update()
-enable_btn = gr.Button.update(interactive=True)
-disable_btn = gr.Button.update(interactive=False)
+no_change_btn = gr.Button()
+enable_btn = gr.Button(interactive=True, visible=True)
+disable_btn = gr.Button(interactive=False)
 
-controller_url = None
+controller_url = "http://127.0.0.1:8000"
+openai_api_key = "EMPTY"
+openai_api_base = "http://127.0.0.1:8000/v1/"
 
-# conv_template_bf16 = Conversation(
-#     system="A chat between a curious human and an artificial intelligence assistant. "
-#            "The assistant gives helpful, detailed, and polite answers to the human's questions.",
-#     roles=("Human", "Assistant"),
-#     messages=(),
-#     offset=0,
-#     sep_style=SeparatorStyle.SINGLE,
-#     sep="\n",
-#     sep2="<|endoftext|>",
-# )
-
-# conv_template_bf16 = Conversation(
-#     system="",
-#     roles=("### Human", "### Assistant"),
-#     messages=(),
-#     offset=0,
-#     sep_style=SeparatorStyle.SINGLE,
-#     sep="\n",
-#     sep2="</s>",
-# )
-# conv_template_bf16 = Conversation(
-#     system="",
-#     roles=("", ""),
-#     messages=(),
-#     offset=0,
-#     sep_style=SeparatorStyle.OASST_PYTHIA,
-#     sep=" ",
-#     sep2="<|endoftext|>",
-# )
-
-# start_message = """<|im_start|>system
-# - You are a helpful assistant chatbot trained by Intel.
-# - You answer questions.
-# - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-# - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>"""
-
-# conv_template_bf16 = Conversation(
-#     system=start_message,
-#     roles=("<|im_start|>user", "<|im_start|>assistant"),
-#     messages=(),
-#     offset=0,
-#     sep_style=SeparatorStyle.TWO,
-#     sep="\n",
-#     sep2="<|im_end|>",
-# )
-
-def set_global_vars(controller_url_):
-    global controller_url
-    controller_url = controller_url_
+# Create an OpenAI client to interact with the API server
+client = OpenAI(
+    api_key=openai_api_key,
+    base_url=openai_api_base,
+)
 
 
 def get_conv_log_filename():
@@ -203,22 +157,15 @@ function() {
 
 
 def load_demo_single(models, url_params):
-    dropdown_update = gr.Dropdown.update(visible=True)
+    selected_model = models[0] if len(models) > 0 else ""
     if "model" in url_params:
         model = url_params["model"]
         if model in models:
-            dropdown_update = gr.Dropdown.update(value=model, visible=True)
+            selected_model = model
 
+    dropdown_update = gr.Dropdown(choices=models, value=selected_model, visible=True)
     state = None
-    return (
-        state,
-        dropdown_update,
-        gr.Chatbot.update(visible=True),
-        gr.Textbox.update(visible=True),
-        gr.Button.update(visible=True),
-        gr.Row.update(visible=True),
-        gr.Accordion.update(visible=True),
-    )
+    return state, dropdown_update
 
 
 def load_demo(url_params, request: gr.Request):
@@ -296,6 +243,35 @@ def post_process_code(code):
         code = sep.join(blocks)
     return code
 
+def openai_api_stream_iter(
+    model_name,
+    messages,
+    temperature,
+    top_p,
+    repetition_penalty,
+    max_new_tokens
+):
+    # Make requests
+    gen_params = {
+        "model": model_name,
+        "messages": messages,
+        "temperature": temperature,
+        "top_p": top_p,
+        "max_tokens": max_new_tokens,
+        "stream": True
+    }
+    logger.info(f"==== request ====\n{gen_params}")
+
+    res = client.chat.completions.create(**gen_params)
+    text = ""
+    for chunk in res:
+        if len(chunk.choices) > 0:
+            text += " " + (chunk.choices[0].delta.content or "")
+            data = {
+                "text": text.strip(),
+                "error_code": 0,
+            }
+            yield data
 
 def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: gr.Request):
     logger.info(f"http_bot. ip: {request.client.host}")
@@ -327,14 +303,13 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         state = new_state
 
     # Construct prompt
-    prompt = state.get_prompt()
+    prompt = state.to_openai_api_messages()
     # print("prompt==============", prompt)
-    skip_echo_len = compute_skip_echo_len(model_name, state, prompt) - 1
 
     # Make requests
     pload = {
         "model": models[0],
-        "messages": [{"role": "user", "content": list(prompt)}],
+        "messages": [{"role": "user", "content": prompt}],
         "temperature": temperature,
         "top_p": 0.95,
         "top_k": topk,
@@ -347,42 +322,39 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
 
     start_time = time.time()
 
-    state.messages[-1][-1] = "▌"
+    # Stream output
+    stream_iter = openai_api_stream_iter(model_name=models[0],
+                                    messages=prompt,
+                                    temperature=temperature,
+                                    top_p=0.95,
+                                    repetition_penalty = 1.0,
+                                    max_new_tokens = max_new_tokens,
+                                    )
+
+    state.update_last_message("▌")
     yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
 
     try:
-        # Stream output
-        response = requests.post(
-            controller_url + "/v1/chat/completions",
-            headers=headers,
-            json=pload,
-            stream=True,
-            timeout=20,
-        )
-        output = ""
-        for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
-            if chunk:
-                if chunk.strip() == b'data: [DONE]':
-                    break
-                data = json.loads(chunk.decode())
-                # print("data======", data, skip_echo_len)
-                if data["error_code"] == 0:
-                    output += data["text"].strip() + " "
-                    output = post_process_code(output)
-                    state.messages[-1][-1] = output + "▌"
-                    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
-                else:
-                    output = data["text"] + f" (error_code: {data['error_code']})"
-                    state.messages[-1][-1] = output
-                    yield (state, state.to_gradio_chatbot()) + (
-                        disable_btn,
-                        disable_btn,
-                        disable_btn,
-                        enable_btn,
-                        enable_btn,
-                    )
-                    return
-                time.sleep(0.005)
+        for i, data in enumerate(stream_iter):
+            if data["error_code"] == 0:
+                output = data["text"].strip()
+                state.update_last_message(output + "▌")
+                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
+            else:
+                output = data["text"] + f"\n\n(error_code: {data['error_code']})"
+                state.update_last_message(output)
+                yield (state, state.to_gradio_chatbot()) + (
+                    disable_btn,
+                    disable_btn,
+                    disable_btn,
+                    enable_btn,
+                    enable_btn,
+                )
+                return
+        time.sleep(0.005)
+        # output = data["text"].strip()
+        # state.update_last_message(output)
+        # yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 5
     except requests.exceptions.RequestException as e:
         state.messages[-1][-1] = server_error_msg + f" (error_code: 4)"
         yield (state, state.to_gradio_chatbot()) + (
@@ -627,26 +599,27 @@ def build_single_model_ui(models):
     state = gr.State()
     notice = gr.Markdown(notice_markdown, elem_id="notice_markdown")
 
-    with gr.Row(elem_id="model_selector_row", visible=False):
+    with gr.Row(elem_id="model_selector_row"):
         model_selector = gr.Dropdown(
             choices=models,
             value=models[0] if len(models) > 0 else "",
             interactive=True,
             show_label=False,
-        ).style(container=False)
+            container=False,
+        )
 
-    chatbot = gr.Chatbot(elem_id="chatbot", visible=False).style(height=550)
+    chatbot = gr.Chatbot(elem_id="chatbot", height=550)
     with gr.Row(elem_id="text-box-style"):
         with gr.Column(scale=20):
             textbox = gr.Textbox(
                 show_label=False,
                 placeholder="Enter text and press ENTER",
-                visible=False,
-            ).style(container=False)
+                container=False
+            )
         with gr.Column(scale=1, min_width=50):
-            send_btn = gr.Button(value="Send", visible=False, elem_id="btn-send-style")
+            send_btn = gr.Button(value="Send", elem_id="btn-send-style")
 
-    with gr.Accordion("Parameters", open=False, visible=False, elem_id="btn-style") as parameter_row:
+    with gr.Accordion("Parameters", open=False, elem_id="btn-style") as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
@@ -654,7 +627,6 @@ def build_single_model_ui(models):
             step=0.1,
             interactive=True,
             label="Temperature",
-            visible=False,
         )
         max_output_tokens = gr.Slider(
             minimum=0,
@@ -674,10 +646,10 @@ def build_single_model_ui(models):
         )
 
 
-    with gr.Row(visible=False, elem_id="btn-style") as button_row:
-        upvote_btn = gr.Button(value="👍  Upvote", interactive=False, visible=False, elem_id="btn-list-style")
-        downvote_btn = gr.Button(value="👎  Downvote", interactive=False, visible=False, elem_id="btn-list-style")
-        flag_btn = gr.Button(value="⚠️  Flag", interactive=False, visible=False, elem_id="btn-list-style")
+    with gr.Row(elem_id="btn-style") as button_row:
+        upvote_btn = gr.Button(value="👍  Upvote", interactive=False, elem_id="btn-list-style")
+        downvote_btn = gr.Button(value="👎  Downvote", interactive=False, elem_id="btn-list-style")
+        flag_btn = gr.Button(value="⚠️  Flag", interactive=False, elem_id="btn-list-style")
         # stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=False)
         regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False, elem_id="btn-list-style")
         clear_btn = gr.Button(value="🗑️  Clear history", interactive=False, elem_id="btn-list-style")
@@ -754,13 +726,13 @@ def build_demo(models):
                 [
                     state,
                     model_selector,
-                    chatbot,
-                    textbox,
-                    send_btn,
-                    button_row,
-                    parameter_row,
+                    # chatbot,
+                    # textbox,
+                    # send_btn,
+                    # button_row,
+                    # parameter_row,
                 ],
-                _js=get_window_url_params,
+                js=get_window_url_params,
             )
         else:
             raise ValueError(f"Unknown model list mode: {model_list_mode}")
@@ -769,20 +741,17 @@ def build_demo(models):
 
 
 if __name__ == "__main__":
-
-    controller_url = "http://127.0.0.1:8000"
     host = "0.0.0.0"
 
     concurrency_count = 10
     model_list_mode = "once"
     share = False
 
-    set_global_vars(controller_url)
     models = get_model_list(controller_url)
 
     demo = build_demo(models)
     demo.queue(
-        concurrency_count=concurrency_count, status_update_rate=10, api_open=False
+        default_concurrency_limit=concurrency_count, status_update_rate=10, api_open=False
     ).launch(
         server_name=host, server_port=80, share=share, max_threads=200
     )

@@ -5,7 +5,8 @@ fastapi==0.103.2
 fschat==0.2.35
 neural-compressor
 numpy==1.23.5
-pydantic==1.10.13
+pydantic
+pydantic_settings
 python-dotenv
 python-multipart
 rouge_score
