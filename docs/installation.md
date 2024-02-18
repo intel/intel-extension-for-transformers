@@ -6,15 +6,15 @@
 
 3. [Install from Source](#install-from-source)
 
-    2.1. [Prerequisites](#prerequisites)
+    3.1. [Prerequisites](#prerequisites)
 
-    2.2. [Install Intel Extension for Transformers](#install-intel-extension-for-transformers)
+    3.2. [Install Intel Extension for Transformers](#install-intel-extension-for-transformers)
 
 4. [Validated Environment](#validated-environment)
 
-    3.1. [Validated Hardware Environment](#validated-hardware-environment)
+    4.1. [Validated Hardware Environment](#validated-hardware-environment)
 
-    3.2. [Validated Software Environment](#validated-software-environment)
+    4.2. [Validated Software Environment](#validated-software-environment)
 
 
 ## System Requirements
