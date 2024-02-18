@@ -1167,7 +1167,7 @@ def predict_stream(**params):
             else:
                 # Temp fix
                 exit(1)
-                raise e 
+                raise e
 
         # Generation configuration
         generation_config = copy.deepcopy(model.generation_config)
