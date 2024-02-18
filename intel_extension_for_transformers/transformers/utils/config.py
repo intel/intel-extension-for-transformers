@@ -142,6 +142,11 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if not isinstance(self.scheme, str):
             raise ValueError("scheme must be a string")
 
+        if self.scheme == "asym" and (self.compute_dtype == "int8" or self.weight_dtype.startswith("fp") \
+                                         or self.weight_dtype.startswith("nf") or self.scale_dtype != "fp32"):
+            raise ValueError("WeightOnlyQuantization doesn't support asym with \
+                                compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, \
+                                please use sym scheme")
         self.use_llm_runtime = False
 
     def post_init_xpu(self):
