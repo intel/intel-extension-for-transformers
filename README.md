@@ -25,7 +25,7 @@ Intel® Extension for Transformers
 ```bash
 pip install intel-extension-for-transformers
 ```
-> For more installation methods, please refer to [Installation Page](./docs/installation.md)
+> For more installation guide, please refer to [Installation Page](./docs/installation.md)
 
 ## 🌟Introduction
 Intel® Extension for Transformers is an innovative toolkit designed to accelerate GenAI/LLM everywhere with the optimal performance of Transformer-based models on various Intel platforms, including Intel Gaudi2, Intel CPU, and Intel GPU. The toolkit provides the below key features and examples:
