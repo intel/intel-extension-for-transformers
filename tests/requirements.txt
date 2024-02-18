@@ -8,7 +8,7 @@ gguf
 git+https://github.com/huggingface/optimum-intel.git
 git+https://github.com/huggingface/optimum.git@927e94739447b13f7eefe085c8d3662654b6a11c
 git+https://github.com/intel/neural-compressor.git
-intel-extension-for-pytorch==2.1.0
+intel-extension-for-pytorch==2.2.0
 intel-tensorflow==2.13.0
 mlflow
 neural-speed
@@ -20,7 +20,7 @@ sacremoses
 sentencepiece != 0.1.92
 tiktoken
 tokenizers
-torch==2.1.0
+torch==2.2.0
 torchprofile
 transformers==4.36.2
 transformers_stream_generator

@@ -5,7 +5,7 @@ evaluate
 fastapi==0.103.2
 fschat==0.2.32
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
-intel_extension_for_pytorch==2.1.0
+intel_extension_for_pytorch==2.2.0
 neural-compressor
 neural_speed
 numpy==1.23.5
@@ -19,8 +19,8 @@ rouge_score
 shortuuid
 starlette
 tiktoken==0.4.0
-torch==2.1.0
-torchaudio==2.1.0
+torch==2.2.0
+torchaudio==2.2.0
 transformers>=4.35.2
 uvicorn
 yacs
