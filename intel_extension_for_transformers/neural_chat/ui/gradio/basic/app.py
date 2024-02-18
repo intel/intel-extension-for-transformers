@@ -306,20 +306,6 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
     prompt = state.to_openai_api_messages()
     # print("prompt==============", prompt)
 
-    # Make requests
-    pload = {
-        "model": models[0],
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": temperature,
-        "top_p": 0.95,
-        "top_k": topk,
-        "repetition_penalty": 1.0,
-        "max_tokens": max_new_tokens,
-        "stream": True,
-    }
-
-    logger.info(f"==== request ====\n{pload}")
-
     start_time = time.time()
 
     # Stream output
@@ -709,11 +695,6 @@ def build_demo(models):
         (
             state,
             model_selector,
-            chatbot,
-            textbox,
-            send_btn,
-            button_row,
-            parameter_row,
         ) = build_single_model_ui(models)
 
         if model_list_mode == "once":
@@ -723,11 +704,6 @@ def build_demo(models):
                 [
                     state,
                     model_selector,
-                    # chatbot,
-                    # textbox,
-                    # send_btn,
-                    # button_row,
-                    # parameter_row,
                 ],
                 js=get_window_url_params,
             )
