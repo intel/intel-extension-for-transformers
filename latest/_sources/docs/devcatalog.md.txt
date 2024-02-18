@@ -47,7 +47,7 @@ Together, these can significantly improve inference efficiency on Intel platform
 The following software environment is required:
 
 * OS version: CentOS 8.4, Ubuntu 20.04, Windows 10
-* Python version: 3.7, 3.8, 3.9  
+* Python version: 3.9, 3.10, 3.11 
 
 ### 2. Installation
 We provide three ways for installation: install from PyPi, install from Conda, and build from source code.
