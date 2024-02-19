@@ -80,7 +80,7 @@ parser.add_argument(
 parser.add_argument(
     "--woq_weight_dtype",
     type=str,
-    default="int4_fullrange",
+    default="int4_clip",
     choices=[
         "int8",
         "int4_clip",
@@ -277,6 +277,7 @@ elif args.woq:
             algorithm=args.woq_algo,
             tokenizer=tokenizer,
             algorithm_args=algorithm_args,
+            calib_dataset=args.dataset
         )
     else:
         quantization_config = WeightOnlyQuantConfig(
@@ -322,14 +323,13 @@ elif not args.int8 and not args.int8_bf16_mixed:
     )
 
 # save model
-if args.sq:
-    config.save_pretrained(args.output_dir)
-    user_model.save(args.output_dir)
-elif args.mixed_precision:
-    user_model.config.save_pretrained(args.output_dir)
-    torch.save(
-        user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin")
-    )
+if args.output_dir:
+    tokenizer.save_pretrained(args.output_dir)
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision or args.woq:
+        user_model.save_pretrained(args.output_dir)
 
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
