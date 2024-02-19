@@ -899,12 +899,15 @@ def get_generate_kwargs(
         generate_kwargs["use_cache"] = True
     return generate_kwargs
 
-def is_llm_runtime_model(model):
-    from neural_speed import Model
-    if isinstance(model, Model):
-        return True
-    else:
+def is_llm_runtime_model(model, device):
+    if device == "hpu":
         return False
+    else:
+        from neural_speed import Model
+        if isinstance(model, Model):
+            return True
+        else:
+            return False
 
 def remove_prompt_history(model_name, prompt):
     result = prompt
