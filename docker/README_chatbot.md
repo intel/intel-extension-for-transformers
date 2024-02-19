@@ -35,7 +35,7 @@ docker pull intel/ai-tools:itrex-chatbot
 ## Use Docker Image
 Utilize the docker container based on docker image.
 ```bash
-docker run -itd --net=host --ipc=host chatbot:latest /bin/bash
+docker run -itd --net=host --ipc=host intel/ai-tools:itrex-chatbot /bin/bash
 docker exec -it <container_id> /bin/bash
 ```
 
