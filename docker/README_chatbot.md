@@ -17,13 +17,13 @@ docker build -f docker/Dockerfile_chatbot --target cpu --network=host -t chatbot
 ```
 If you need to use proxy, please use the following command
 ```bash
-docker build --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} --target cpu -f docker/Dockerfile_chatbot -t chatbot:latest .
+docker build --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} --build-arg ITREX_VER=main --target cpu -f docker/Dockerfile_chatbot -t chatbot:latest .
 ```
 
 ### Build Docker Image on HPU
 ```bash
 cd itrex
-docker build -f docker/Dockerfile_chatbot --target hpu -t chatbot:latest .
+docker build -f docker/Dockerfile_chatbot --build-arg ITREX_VER=main --target hpu -t chatbot:latest .
 ```
 
 ### Pull From Docker Hub
