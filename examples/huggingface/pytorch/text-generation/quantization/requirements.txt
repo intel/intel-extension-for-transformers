@@ -4,9 +4,9 @@ peft
 protobuf
 sentencepiece != 0.1.92
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch
+torch==2.2.0+cpu
 transformers
-intel_extension_for_pytorch
+intel_extension_for_pytorch==2.2.0
 optimum-intel
 bitsandbytes  #baichuan
 transformers_stream_generator
