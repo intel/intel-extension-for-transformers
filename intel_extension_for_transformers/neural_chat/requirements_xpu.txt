@@ -14,3 +14,8 @@ starlette
 transformers>=4.35.2
 uvicorn
 yacs
+pydub
+pymysql
+deepface
+ExifRead
+intel-extension-for-transformers

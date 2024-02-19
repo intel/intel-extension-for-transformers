@@ -21,3 +21,8 @@ torchaudio==2.1.0
 transformers
 uvicorn
 yacs
+pydub
+pymysql
+deepface
+ExifRead
+intel-extension-for-transformers

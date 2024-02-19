@@ -27,3 +27,8 @@ transformers>=4.35.2
 uvicorn
 vllm
 yacs
+pydub
+pymysql
+deepface
+ExifRead
+intel-extension-for-transformers
