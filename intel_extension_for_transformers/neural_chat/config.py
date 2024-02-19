@@ -409,6 +409,7 @@ class GenerationConfig:
     return_stats: bool = False
     format_version: str = "v2"
     task: str = ""
+    sql_metadata: str = ""
 
 @dataclass
 class LoadingModelConfig:
@@ -420,6 +421,7 @@ class LoadingModelConfig:
     world_size: int = 1
     ipex_int8: bool = False
     use_llm_runtime: bool = False
+    gguf_model_path: str = None
 
 @dataclass
 class FrameworkConfig:

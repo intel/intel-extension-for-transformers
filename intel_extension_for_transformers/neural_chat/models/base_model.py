@@ -20,11 +20,11 @@ from typing import List
 import os, types
 from fastchat.conversation import get_conv_template, Conversation
 from ..config import GenerationConfig
-from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
+from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
-from ..prompts.prompt import MAGICODER_PROMPT
+from ..prompts.prompt import MAGICODER_PROMPT, generate_sqlcoder_prompt
 from ..utils.error_utils import set_latest_error
 from ..errorcode import ErrorCodes
 import logging
@@ -137,7 +137,8 @@ class BaseModel(ABC):
                    use_llm_runtime=kwargs["use_llm_runtime"],
                    assistant_model=kwargs["assistant_model"],
                    use_vllm=kwargs["use_vllm"],
-                   vllm_engine_params=kwargs["vllm_engine_params"])
+                   vllm_engine_params=kwargs["vllm_engine_params"],
+                   gguf_model_path=kwargs["gguf_model_path"])
 
     def predict_stream(self, query, origin_query="", config=None):
         """
@@ -168,7 +169,7 @@ class BaseModel(ABC):
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
-              "phi-2" in self.model_name.lower():
+              "phi-2" in self.model_name.lower() or "sqlcoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -228,6 +229,9 @@ class BaseModel(ABC):
         if "magicoder" in self.model_name.lower():
             query = MAGICODER_PROMPT.format(instruction=query)
 
+        if "sqlcoder" in self.model_name.lower():
+            query = generate_sqlcoder_prompt(query, config.sql_metadata)
+
         try:
             response = predict_stream(
                 **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
@@ -277,7 +281,8 @@ class BaseModel(ABC):
         query_include_prompt = False
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
                "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
-               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
+               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
+               "sqlcoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -333,6 +338,9 @@ class BaseModel(ABC):
 
         if "magicoder" in self.model_name.lower():
             query = MAGICODER_PROMPT.format(instruction=query)
+
+        if "sqlcoder" in self.model_name.lower():
+            query = generate_sqlcoder_prompt(query, config.sql_metadata)
 
         # LLM inference
         try:
@@ -447,6 +455,14 @@ class BaseModel(ABC):
         self.conv_template.append_message(self.conv_template.roles[0], prompt)
         self.conv_template.append_message(self.conv_template.roles[1], None)
         return self.conv_template.get_prompt()
+
+    def set_customized_system_prompts(self, system_prompts, model_path: str, task: str = ""):
+        """Override the system prompts of the model path and the task."""
+        if system_prompts is None or len(system_prompts) == 0:
+            raise Exception("Please check the model system prompts, should not be None!")
+        else:
+            self.get_conv_template(model_path, task)
+            self.conv_template.conv.system_message = system_prompts
 
     def register_plugin_instance(self, plugin_name, instance):
         """
