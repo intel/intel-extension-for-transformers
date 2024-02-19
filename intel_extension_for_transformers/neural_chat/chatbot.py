@@ -277,6 +277,8 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
     parameters["assistant_model"] = config.assistant_model
+    parameters["assistant_host"] = config.assistant_host
+    parameters["assistant_port"] = config.assistant_port
     if config.serving_config and config.serving_config.framework == "vllm":
         parameters["use_vllm"] = True
         parameters["vllm_engine_params"] = config.serving_config.framework_config

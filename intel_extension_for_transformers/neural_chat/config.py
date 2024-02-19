@@ -457,6 +457,8 @@ class PipelineConfig:
                  loading_config=None,
                  optimization_config=None,
                  assistant_model=None,
+                 assistant_host=None,
+                 assistant_port=None,
                  serving_config=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
@@ -482,4 +484,6 @@ class PipelineConfig:
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
         self.assistant_model = assistant_model
+        self.assistant_host = assistant_host
+        self.assistant_port = assistant_port
         self.serving_config = serving_config

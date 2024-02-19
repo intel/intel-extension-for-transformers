@@ -27,6 +27,10 @@ model_name_or_path: "facebook/opt-13b"
 device: "cpu"
 assistant_model: "facebook/opt-350m"
 
+# multi-node
+assistant_host: "0.0.0.0"
+assistant_port: 80
+
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']
 tasks_list: ['textchat']
