@@ -81,4 +81,3 @@ async def assist_decode(request: CompletionRequest):
 @router.post("/v1/assist/data_transfer")
 async def assist_data_transfer(request: CompletionRequest):
     return await router.handle_assist_data_transfer(request)
-
