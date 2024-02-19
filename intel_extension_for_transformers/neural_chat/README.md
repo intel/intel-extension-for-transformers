@@ -204,6 +204,12 @@ NeuralChat includes support for various plugins to enhance its capabilities:
 - [**Caching**](./pipeline/plugins/caching/README.md)
 - [**Named Entity Recognition (NER)**](./pipeline/plugins/ner/README.md)
 
+Please be aware that additional libraries are required for various plugins. You can locate a 'requirements.txt' file in each plugin directory. Navigate to the plugin directory and execute 'pip install -r requirements.txt'. For instance, to enable the RAG plugin, run the following commands:
+```shell
+cd ./pipeline/plugins/retrieval/
+pip install -r requirements.txt
+```
+
 ### Multimodal APIs
 
 In addition to the text-based chat RESTful API, NeuralChat offers several helpful plugins in its RESTful API lineup to aid users in building multimodal applications. NeuralChat supports the following RESTful APIs:
