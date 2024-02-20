@@ -1,9 +1,12 @@
 cchardet
+deepface
 einops
 evaluate
+ExifRead
 fastapi==0.103.2
 fschat==0.2.35
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
+intel-extension-for-transformers
 intel_extension_for_pytorch
 neural-compressor
 neural_speed
@@ -12,6 +15,8 @@ optimum
 peft
 pydantic
 pydantic_settings
+pydub
+pymysql
 python-dotenv
 python-multipart
 rouge_score

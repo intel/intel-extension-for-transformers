@@ -61,6 +61,9 @@ The following prerequisites and requirements must be satisfied for a successful 
 - GCC >= version 10 (on Linux)
 - Visual Studio (on Windows)
 
+ >**Note**: If your system only have python3 or you meet error `python: command not found`, please run `ln -sf $(which python3) /usr/bin/python`.
+ 
+
 ### Install Intel Extension for Transformers
 ```Bash
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
