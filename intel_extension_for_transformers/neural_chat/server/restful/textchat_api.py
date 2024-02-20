@@ -103,7 +103,7 @@ def create_error_response(status_code: int, message: str) -> JSONResponse:
                         status_code=status_code.value)
 
 async def check_model(request) -> Optional[JSONResponse]:
-    if request.model == router.get_chatbot().model_name:
+    if request.model in router.get_chatbot().model_name:
         return
     ret = create_error_response(
         HTTPStatus.NOT_FOUND,
