@@ -1,21 +1,45 @@
 # Installation
 
-1. [Install from Pypi](#install-from-pypi)
+1. [System Requirement](#system-requirements)
 
-2. [Install from Source](#install-from-source)
+2. [Install from Pypi](#install-from-pypi)
 
-    2.1. [Prerequisites](#prerequisites)
+3. [Install from Source](#install-from-source)
 
-    2.2. [Install Intel Extension for Transformers](#install-intel-extension-for-transformers)
+    3.1. [Prerequisites](#prerequisites)
 
-3. [System Requirements](#system-requirements)
+    3.2. [Install Intel Extension for Transformers](#install-intel-extension-for-transformers)
 
-    3.1. [Validated Hardware Environment](#validated-hardware-environment)
+4. [Validated Environment](#validated-environment)
 
-    3.2. [Validated Software Environment](#validated-software-environment)
+    4.1. [Validated Hardware Environment](#validated-hardware-environment)
+
+    4.2. [Validated Software Environment](#validated-software-environment)
+
+
+## System Requirements
+For NeuralChat usage, please make sure if you have below system libraries installed:
+
+### Ubuntu 20.04/22.04
+```bash
+apt-get update
+apt-get install -y ffmpeg
+apt-get install -y libgl1-mesa-glx libgl1-mesa-dev
+apt-get install -y libsm6 libxext6
+```    
+
+### Centos 8
+```bash
+yum update -y
+yum install -y mesa-libGL mesa-libGL-devel
+yum install -y libXext libSM libXrender
+```
+
+For ffmpeg, please refer to [how-to-install-ffmpeg-on-centos-rhel-8](https://computingforgeeks.com/how-to-install-ffmpeg-on-centos-rhel-8/)     
+
 
 ## Install from Pypi
-Binary builds for python 3.8, 3.9 and 3.10 are available in Pypi
+Binary builds for python 3.9, 3.10 and 3.11 are available in Pypi
 
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
@@ -33,11 +57,12 @@ conda install -c intel intel_extension_for_transformers
 
 ### Prerequisites
 The following prerequisites and requirements must be satisfied for a successful installation:
-- Python version: 3.8 or 3.9 or 3.10
-- GCC >= version 8 (on Linux)
-  - version 11, if use the bf16-related features of the itrex backend
-  - version 13, if use the fp16-related features of the itrex backend
+- Python version: 3.9 or 3.10 or 3.11
+- GCC >= version 10 (on Linux)
 - Visual Studio (on Windows)
+
+ >**Note**: If your system only have python3 or you meet error `python: command not found`, please run `ln -sf $(which python3) /usr/bin/python`.
+ 
 
 ### Install Intel Extension for Transformers
 ```Bash
@@ -48,7 +73,8 @@ pip install -r requirements.txt
 pip install -v .
 ```
 
-## System Requirements
+## Validated Environment
+
 ### Validated Hardware Environment
 Intel® Extension for Transformers supports the following HWs:
 
@@ -60,7 +86,7 @@ Intel® Extension for Transformers supports the following HWs:
 ### Validated Software Environment
 
 * OS version: CentOS 8.4, Ubuntu 20.04
-* Python version: 3.8, 3.9, 3.10  
+* Python version: 3.9, 3.10, 3.11  
 
 <table class="docutils">
 <thead>
@@ -85,7 +111,7 @@ Intel® Extension for Transformers supports the following HWs:
 </table>
 
 * OS version: Windows 10
-* Python version: 3.8, 3.9, 3.10  
+* Python version: 3.9, 3.10, 3.11 
 
 <table class="docutils">
 <thead>
@@ -99,7 +125,7 @@ Intel® Extension for Transformers supports the following HWs:
   <tr align="center">
     <th>Version</th>
     <td><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.13.0>2.13.0</a><br>
-    <td><a href=https://download.pytorch.org/whl/torch_stable.html>2.0.0+cpu</a><br>
+    <td><a href=https://download.pytorch.org/whl/torch_stable.html>2.1.0+cpu</a><br>
   </tr>
 </tbody>
 </table>

@@ -1,11 +1,16 @@
 cchardet
+deepface
 einops
 evaluate
+ExifRead
 fastapi==0.103.2
 fschat==0.2.35
+intel-extension-for-transformers
 neural-compressor
 numpy==1.23.5
 pydantic==1.10.13
+pydub
+pymysql
 python-dotenv
 python-multipart
 rouge_score
