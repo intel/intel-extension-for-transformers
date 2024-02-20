@@ -16,4 +16,3 @@
 # limitations under the License.
 
 from .child_parent_retriever import ChildParentRetriever
-from .bge_reranker import BgeReranker

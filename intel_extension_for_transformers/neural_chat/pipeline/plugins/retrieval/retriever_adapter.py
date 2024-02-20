@@ -35,7 +35,7 @@ class RetrieverAdapter():
                  reranker_model="BAAI/bge-reranker-large", top_n = 1, enable_rerank = False, **kwargs):
         self.retrieval_type = retrieval_type
         if enable_rerank:
-            from intel_extension_for_transformers.langchain.retrievers import BgeReranker
+            from intel_extension_for_transformers.langchain.retrievers.bge_reranker import BgeReranker
             self.reranker = BgeReranker(model_name = reranker_model, top_n=top_n)
         else:
             self.reranker = None
