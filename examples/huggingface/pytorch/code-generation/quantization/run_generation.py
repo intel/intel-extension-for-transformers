@@ -132,6 +132,7 @@ parser.add_argument(
     default=2048,
     help="Calibration dataset sequence max length, this should align with your model config",
 )
+parser.add_argument('--gptq_static_groups', action='store_true', help='Use determined group to do quantization')
 # ============Harness configs============
 parser.add_argument("--tasks", default=None, help="Evaluation tasks")
 parser.add_argument(
@@ -267,6 +268,7 @@ elif args.woq:
             "nsamples": args.gptq_nsamples,
             "use_max_length": args.gptq_use_max_length,
             "pad_max_length": args.gptq_pad_max_length,
+            "static_groups": args.gptq_static_groups,
         }
         quantization_config = WeightOnlyQuantConfig(
             compute_dtype=args.woq_compute_dtype,
@@ -286,6 +288,8 @@ elif args.woq:
             group_size=args.woq_group_size,
             scheme=args.woq_scheme,
             algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+            calib_dataset=args.dataset
         )  # default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
