@@ -18,7 +18,7 @@
 import os
 from dotenv import load_dotenv
 from functools import lru_cache
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 
 
 load_dotenv()

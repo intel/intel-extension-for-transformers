@@ -8,8 +8,7 @@ fschat==0.2.35
 intel-extension-for-transformers
 neural-compressor
 numpy==1.23.5
-pydantic
-pydantic_settings
+pydantic==1.10.13
 pydub
 pymysql
 python-dotenv

@@ -117,9 +117,9 @@ logger = build_logger("gradio_web_server", "gradio_web_server.log")
 
 headers = {"User-Agent": "NeuralChat Client"}
 
-no_change_btn = gr.Button()
-enable_btn = gr.Button(interactive=True, visible=True)
-disable_btn = gr.Button(interactive=False)
+no_change_btn = gr.Button.update()
+enable_btn = gr.Button.update(interactive=True)
+disable_btn = gr.Button.update(interactive=False)
 
 controller_url = "http://127.0.0.1:8000"
 openai_api_key = "EMPTY"
@@ -157,15 +157,22 @@ function() {
 
 
 def load_demo_single(models, url_params):
-    selected_model = models[0] if len(models) > 0 else ""
+    dropdown_update = gr.Dropdown.update(visible=True)
     if "model" in url_params:
         model = url_params["model"]
         if model in models:
-            selected_model = model
+            dropdown_update = gr.Dropdown.update(value=model, visible=True)
 
-    dropdown_update = gr.Dropdown(choices=models, value=selected_model, visible=True)
     state = None
-    return state, dropdown_update
+    return (
+        state,
+        dropdown_update,
+        gr.Chatbot.update(visible=True),
+        gr.Textbox.update(visible=True),
+        gr.Button.update(visible=True),
+        gr.Row.update(visible=True),
+        gr.Accordion.update(visible=True),
+    )
 
 
 def load_demo(url_params, request: gr.Request):
@@ -308,6 +315,9 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
 
     start_time = time.time()
 
+    state.messages[-1][-1] = "▌"
+    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
+
     # Stream output
     stream_iter = openai_api_stream_iter(model_name=models[0],
                                     messages=prompt,
@@ -317,18 +327,15 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
                                     max_new_tokens = max_new_tokens,
                                     )
 
-    state.update_last_message("▌")
-    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
-
     try:
         for i, data in enumerate(stream_iter):
             if data["error_code"] == 0:
                 output = data["text"].strip()
-                state.update_last_message(output + "▌")
+                state.messages[-1][-1] = output + "▌"
                 yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
             else:
                 output = data["text"] + f"\n\n(error_code: {data['error_code']})"
-                state.update_last_message(output)
+                state.messages[-1][-1] = output
                 yield (state, state.to_gradio_chatbot()) + (
                     disable_btn,
                     disable_btn,
@@ -582,27 +589,26 @@ def build_single_model_ui(models):
     state = gr.State()
     notice = gr.Markdown(notice_markdown, elem_id="notice_markdown")
 
-    with gr.Row(elem_id="model_selector_row"):
+    with gr.Row(elem_id="model_selector_row", visible=False):
         model_selector = gr.Dropdown(
             choices=models,
             value=models[0] if len(models) > 0 else "",
             interactive=True,
             show_label=False,
-            container=False,
-        )
+        ).style(container=False)
 
-    chatbot = gr.Chatbot(elem_id="chatbot", height=550)
+    chatbot = gr.Chatbot(elem_id="chatbot", visible=False).style(height=550)
     with gr.Row(elem_id="text-box-style"):
         with gr.Column(scale=20):
             textbox = gr.Textbox(
                 show_label=False,
                 placeholder="Enter text and press ENTER",
-                container=False
-            )
+                visible=False,
+            ).style(container=False)
         with gr.Column(scale=1, min_width=50):
-            send_btn = gr.Button(value="Send", elem_id="btn-send-style")
+            send_btn = gr.Button(value="Send", visible=False, elem_id="btn-send-style")
 
-    with gr.Accordion("Parameters", open=False, elem_id="btn-style") as parameter_row:
+    with gr.Accordion("Parameters", open=False, visible=False, elem_id="btn-style") as parameter_row:
         temperature = gr.Slider(
             minimum=0.0,
             maximum=1.0,
@@ -610,6 +616,7 @@ def build_single_model_ui(models):
             step=0.1,
             interactive=True,
             label="Temperature",
+            visible=False,
         )
         max_output_tokens = gr.Slider(
             minimum=0,
@@ -629,10 +636,10 @@ def build_single_model_ui(models):
         )
 
 
-    with gr.Row(elem_id="btn-style") as button_row:
-        upvote_btn = gr.Button(value="👍  Upvote", interactive=False, elem_id="btn-list-style")
-        downvote_btn = gr.Button(value="👎  Downvote", interactive=False, elem_id="btn-list-style")
-        flag_btn = gr.Button(value="⚠️  Flag", interactive=False, elem_id="btn-list-style")
+    with gr.Row(visible=False, elem_id="btn-style") as button_row:
+        upvote_btn = gr.Button(value="👍  Upvote", interactive=False, visible=False, elem_id="btn-list-style")
+        downvote_btn = gr.Button(value="👎  Downvote", interactive=False, visible=False, elem_id="btn-list-style")
+        flag_btn = gr.Button(value="⚠️  Flag", interactive=False, visible=False, elem_id="btn-list-style")
         # stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=False)
         regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False, elem_id="btn-list-style")
         clear_btn = gr.Button(value="🗑️  Clear history", interactive=False, elem_id="btn-list-style")
@@ -695,6 +702,11 @@ def build_demo(models):
         (
             state,
             model_selector,
+            chatbot,
+            textbox,
+            send_btn,
+            button_row,
+            parameter_row,
         ) = build_single_model_ui(models)
 
         if model_list_mode == "once":
@@ -704,8 +716,13 @@ def build_demo(models):
                 [
                     state,
                     model_selector,
+                    chatbot,
+                    textbox,
+                    send_btn,
+                    button_row,
+                    parameter_row,
                 ],
-                js=get_window_url_params,
+                _js=get_window_url_params,
             )
         else:
             raise ValueError(f"Unknown model list mode: {model_list_mode}")
@@ -721,10 +738,9 @@ if __name__ == "__main__":
     share = False
 
     models = get_model_list(controller_url)
-
     demo = build_demo(models)
     demo.queue(
-        default_concurrency_limit=concurrency_count, status_update_rate=10, api_open=False
+        concurrency_count=concurrency_count, status_update_rate=10, api_open=False
     ).launch(
         server_name=host, server_port=80, share=share, max_threads=200
     )

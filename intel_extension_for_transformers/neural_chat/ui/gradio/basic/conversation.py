@@ -356,11 +356,11 @@ class Conversation:
         ret = []
         for i, (role, msg) in enumerate(self.messages[self.offset :]):
             if i % 2 == 0:
-                if type(msg) is tuple:
-                    msg, image = msg
-                    img_b64_str = image[0]  # Only one image on gradio at one time
-                    img_str = f'<img src="data:image/jpeg;base64,{img_b64_str}" alt="user upload image" />'
-                    msg = img_str + msg.replace("<image>\n", "").strip()
+                # if type(msg) is tuple:
+                #     msg, image = msg
+                #     img_b64_str = image[0]  # Only one image on gradio at one time
+                #     img_str = f'<img src="data:image/jpeg;base64,{img_b64_str}" alt="user upload image" />'
+                #     msg = img_str + msg.replace("<image>\n", "").strip()
 
                 ret.append([msg, None])
             else:

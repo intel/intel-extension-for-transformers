@@ -13,9 +13,9 @@ exifread
 face_alignment==1.3.5
 facexlib @ git+https://github.com/Spycsh/facexlib@master
 faiss-cpu
-fastapi
+fastapi==0.103.2
 ffmpeg-python==0.2.0
-fschat
+fschat==0.2.35
 gfpgan
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 gptcache
@@ -34,7 +34,6 @@ librosa
 markdown
 neural-compressor
 neural_speed
-neural_speed
 num2words
 numba
 numpy==1.23.5
@@ -48,8 +47,7 @@ paddlepaddle
 paddlespeech
 peft==0.6.2
 protobuf==3.20.2
-pydantic
-pydantic_settings
+pydantic==1.10.13
 pydub
 pymysql
 PyPDF2

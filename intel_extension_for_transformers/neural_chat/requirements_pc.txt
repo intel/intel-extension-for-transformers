@@ -13,8 +13,7 @@ numpy==1.23.5
 optimum
 optimum-intel
 peft
-pydantic
-pydantic_settings
+pydantic==1.10.13
 pydub
 pymysql
 python-dotenv
