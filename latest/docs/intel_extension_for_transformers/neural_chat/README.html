@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g39064aa documentation</title>
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+gc37dab2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=eafc0fe6" />
@@ -449,6 +449,11 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 <li><p><a class="reference external" href="./pipeline/plugins/caching/README.html"><strong>Caching</strong></a></p></li>
 <li><p><a class="reference external" href="./pipeline/plugins/ner/README.html"><strong>Named Entity Recognition (NER)</strong></a></p></li>
 </ul>
+<p>Please be aware that additional libraries are required for various plugins. You can locate a ‘requirements.txt’ file in each plugin directory. Navigate to the plugin directory and execute ‘pip install -r requirements.txt’. For instance, to enable the RAG plugin, run the following commands:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>./pipeline/plugins/retrieval/
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
 </section>
 <section id="multimodal-apis">
 <h3>Multimodal APIs<a class="headerlink" href="#multimodal-apis" title="Link to this heading"></a></h3>
@@ -541,7 +546,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f7d79e24cd0> 
+   <jinja2.runtime.BlockReference object at 0x7fd38dbe4400> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
