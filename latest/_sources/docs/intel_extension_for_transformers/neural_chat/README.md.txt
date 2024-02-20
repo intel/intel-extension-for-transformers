@@ -24,6 +24,19 @@ NeuralChat is a powerful and flexible open framework that empowers you to effort
 
 > NeuralChat is under active development. APIs are subject to change.
 
+# System Requirements
+
+Please make sure below basic system libraries are installed. If you want to try more features, please refer to [system requirements](../../docs/installation.html#system-requirements)
+
+
+```shell
+apt-get update
+apt-get install -y python3-pip
+apt-get install -y libgl1-mesa-glx
+```
+ >**Note**: If your system only have python3 or you meet error `python: command not found`, please run `ln -sf $(which python3) /usr/bin/python`.
+
+
 # Installation
 
 NeuralChat is under Intel Extension for Transformers, so ensure the installation of Intel Extension for Transformers first by following the [installation](../../docs/installation.html). After that, install additional dependency for NeuralChat per your device:
@@ -86,7 +99,7 @@ Then, interact with the model:
 ```python
 import openai
 openai.api_key = "EMPTY"
-openai.base_url = 'http://127.0.0.1:80/v1/'
+openai.base_url = 'http://127.0.0.1:8000/v1/'
 response = openai.chat.completions.create(
       model="Intel/neural-chat-7b-v3-1",
       messages=[
@@ -96,10 +109,12 @@ response = openai.chat.completions.create(
 )
 print(response.choices[0].message.content)
 ```
+>**Note**: When intel-extension-for-transformers <= 1.3.1, please try [command](#using-curl) below
+
 
 #### Using Curl
 ```shell
-curl http://127.0.0.1:80/v1/chat/completions \
+curl http://127.0.0.1:8000/v1/chat/completions \
     -H "Content-Type: application/json" \
     -d '{
     "model": "Intel/neural-chat-7b-v3-1",
@@ -110,11 +125,17 @@ curl http://127.0.0.1:80/v1/chat/completions \
     }'
 ```
 
+>**Note**: When intel-extension-for-transformers <= 1.3.1, please use old command like:
+> ```shell
+> curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:8000/v1/chat/completions
+> ```
+
+
 #### Using Python Requests Library
 
 ```python
 import requests
-url = 'http://127.0.0.1:80/v1/chat/completions'
+url = 'http://127.0.0.1:8000/v1/chat/completions'
 headers = {'Content-Type': 'application/json'}
 data = '{"model": "Intel/neural-chat-7b-v3-1", "messages": [ \
           {"role": "system", "content": "You are a helpful assistant."}, \
@@ -123,6 +144,9 @@ data = '{"model": "Intel/neural-chat-7b-v3-1", "messages": [ \
 response = requests.post(url, headers=headers, data=data)
 print(response.json())
 ```
+
+>**Note**: When intel-extension-for-transformers <= 1.3.1, please try [command](#using-curl) above
+
 
 ## Langchain Extension APIs
 
