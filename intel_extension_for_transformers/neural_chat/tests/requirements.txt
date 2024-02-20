@@ -81,3 +81,5 @@ uvicorn
 vllm
 yacs
 zhconv
+FlagEmbedding
+rank_bm25
