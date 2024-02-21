@@ -49,6 +49,7 @@ from ...config import GenerationConfig
 import json, types
 import tiktoken
 from ...plugins import plugins, is_plugin_enabled
+from ...models.model_utils import is_openai_model
 
 def check_requests(request) -> Optional[JSONResponse]:
     # Check all params
@@ -488,20 +489,30 @@ async def create_chat_completion(request: ChatCompletionRequest):
 
     chatbot = router.get_chatbot()
 
-    gen_params = await get_generation_parameters(
-        request.model,
-        chatbot,
-        request.messages,
-        temperature=request.temperature,
-        top_p=request.top_p,
-        top_k=request.top_k,
-        repetition_penalty=request.repetition_penalty,
-        presence_penalty=request.presence_penalty,
-        frequency_penalty=request.frequency_penalty,
-        max_tokens=request.max_tokens if request.max_tokens else 512,
-        echo=False,
-        stop=request.stop,
-    )
+    if not is_openai_model(chatbot.model_name.lower()):
+        gen_params = await get_generation_parameters(
+            request.model,
+            chatbot,
+            request.messages,
+            temperature=request.temperature,
+            top_p=request.top_p,
+            top_k=request.top_k,
+            repetition_penalty=request.repetition_penalty,
+            presence_penalty=request.presence_penalty,
+            frequency_penalty=request.frequency_penalty,
+            max_tokens=request.max_tokens if request.max_tokens else 512,
+            echo=False,
+            stop=request.stop,
+        )
+    else:
+        gen_params = {
+            "prompt": request.messages,
+            "temperature": request.temperature,
+            "top_p": request.top_p,
+            "repetition_penalty": request.repetition_penalty,
+            "max_new_tokens": request.max_tokens,
+        }
+
 
     if request.stream:
         generator = chat_completion_stream_generator(

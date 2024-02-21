@@ -1477,3 +1477,7 @@ def predict(**params):
         return output.split("Answer:")[identifier_index].strip()
 
     return output
+
+def is_openai_model(model_name_or_path):
+    # Check https://platform.openai.com/docs/models/model-endpoint-compatibility
+    return any(name in model_name_or_path for name in ["gpt-4", "gpt-3.5-turbo"])
