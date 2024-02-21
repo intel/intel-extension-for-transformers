@@ -148,6 +148,7 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
         if kwargs.get("model_file", False):
             from neural_speed import Model
             from huggingface_hub import hf_hub_download
@@ -232,7 +233,6 @@ class _BaseQBitsAutoModelClass:
         device_map = kwargs.get("device_map", "cpu")
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
-        use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,

@@ -22,9 +22,9 @@ import math
 import os
 from accelerate import init_empty_weights
 from datasets import load_dataset
-from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from neural_compressor import quantization
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
+from neural_compressor.utils.utility import LazyImport
 from neural_compressor.config import PostTrainingQuantConfig
 from ...utils.utils import is_ipex_available
 from transformers import AutoTokenizer
@@ -349,6 +349,13 @@ def convert_to_quantized_model(model, config, device="cpu"):
         if config.algorithm in ["TEQ", "RTN", "GPTQ"]:
             calib_func = None
 
+        orig_dtype = torch.float32
+        for param in model.parameters():
+            orig_dtype = param.dtype
+            if orig_dtype != torch.float32:
+                model.to(dtype=torch.float32)
+            break
+
         inc_model = quantization.fit(model,
                                      conf,
                                      calib_func=calib_func,
@@ -363,7 +370,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                      None,
                                      config,
                                      device=device)
-            return q_model.to("xpu")
         else:
             if config.algorithm == "GPTQ":
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
@@ -381,9 +387,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 }
 
                 setattr(config, "gptq_quantize_config", quantize_config)
-                return replace_linear(inc_model, None, None, config, device=device)
-
-            return replace_linear(inc_model.model, None, None, config, device=device)
+                q_model = replace_linear(inc_model, None, None, config, device=device)
+            else:
+                q_model = replace_linear(inc_model.model, None, None, config, device=device)
+        if orig_dtype != torch.float32:
+            q_model.to(dtype=orig_dtype)
+        return q_model.to(device)
 
 def convert_dtype_str2torch(str_dtype):
     if str_dtype == "int8":
