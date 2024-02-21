@@ -167,7 +167,7 @@ We've chosen VectorStoreRetriever as the default retriever. This decision aligns
 Our approach ensures that users have access to versatile and effective retrieval tools, tailored to a variety of requirements and preferences within the system.
 
 ### VectorStoreRetriever
-We've maintained most of the retrieval behaviors consistent with langchain。 The user can select this retriever by:
+We've maintained most of the retrieval behaviors consistent with langchain. The user can select this retriever by:
 ```python
 plugins.retrieval.args["retrieval_type"]="default"
 ```
