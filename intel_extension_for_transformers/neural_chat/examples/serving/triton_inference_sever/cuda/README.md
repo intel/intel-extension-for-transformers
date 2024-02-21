@@ -1,6 +1,6 @@
 # Serving NeuralChat Text Generation with Triton Inference Server (CUDA)
 
-Nvidia Triton Inference Server is a widely adopted inference serving software. We also support serving and deploying NeuralChat models with Triton Inference Server.
+Nvidia Triton Inference Server is a widely adopted inference serving software. We also support serving and deploying NeuralChat models with Triton Inference Server on CUDA devices.
 
 ## Prepare serving scripts
 
