@@ -31,7 +31,7 @@ It consists of load data, tokenization + feature extraction, load model, fine tu
 
 ### Create a new python environment
 ```shell
-conda create -n <env name> python=3.8
+conda create -n <env name> python=3.10
 conda activate <env name>
 ```
 ### Install the ITREX

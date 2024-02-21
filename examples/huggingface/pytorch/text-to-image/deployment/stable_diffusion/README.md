@@ -19,7 +19,7 @@ The inference and accuracy of the above pretrained models are verified in the de
 ## Prepare Python Environment
 Create a python environment, optionally with autoconf for jemalloc support.
 ```shell
-conda create -n <env name> python=3.8 [autoconf]
+conda create -n <env name> python=3.10 [autoconf]
 conda activate <env name>
 ```
 >**Note**: Make sure pip <=23.2.2

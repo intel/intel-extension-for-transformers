@@ -20,7 +20,6 @@ from fastapi.responses import StreamingResponse
 from typing import Optional, List
 from ...cli.log import logger
 from fastapi import File, UploadFile
-from pydub import AudioSegment
 from ...plugins import plugins, get_plugin_instance
 import base64
 import torch
@@ -31,18 +30,24 @@ class AudioPluginAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def handle_voice_asr_request(self, filename: str) -> str:
+    def handle_voice_asr_request(self, filename: str, language: str = "auto") -> str:
         asr = get_plugin_instance("asr")
+        asr.language = language
         try:
             return asr.audio2text(filename)
         except Exception as e:
             raise Exception(e)
 
-    async def handle_voice_tts_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
+    async def handle_voice_tts_request(self,
+                                       text: str,
+                                       voice: str,
+                                       audio_output_path: Optional[str] = None,
+                                       speedup: float = 1.0) -> str:
 
         plugins.tts.args['voice'] = voice
         plugins.tts.args['output_audio_path'] = audio_output_path
         tts = get_plugin_instance("tts")
+        tts.speedup = speedup
         try:
             result = tts.post_llm_inference_actions(text)
             def audio_file_generate(result):
@@ -78,18 +83,19 @@ router = AudioPluginAPIRouter()
 
 
 @router.post("/plugin/audio/asr")
-async def handle_talkingbot_asr(file: UploadFile = File(...)):
+async def handle_talkingbot_asr(file: UploadFile = File(...), language: str = "auto"):
     file_name = file.filename
     logger.info(f'Received file: {file_name}')
     with open("tmp_audio_bytes", 'wb') as fout:
         content = await file.read()
         fout.write(content)
+    from pydub import AudioSegment
     audio = AudioSegment.from_file("tmp_audio_bytes")
     audio = audio.set_frame_rate(16000)
     # bytes to wav
     file_name = file_name +'.wav'
     audio.export(f"{file_name}", format="wav")
-    asr_result = router.handle_voice_asr_request(file_name)
+    asr_result = router.handle_voice_asr_request(file_name, language=language)
     return {"asr_result": asr_result}
 
 
@@ -98,11 +104,12 @@ async def talkingbot(request: Request):
     data = await request.json()
     text = data["text"]
     voice = data["voice"]
+    speedup = float(data["speed"]) if "speed" in data else 1.0
     audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio.wav"
 
     logger.info(f'Received prompt: {text}, and use voice: {voice}')
 
-    return await router.handle_voice_tts_request(text, voice, audio_output_path)
+    return await router.handle_voice_tts_request(text, voice, audio_output_path, speedup)
 
 
 @router.post("/plugin/audio/create_embedding")
@@ -115,6 +122,7 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     with open(f"tmp_spk_{file_name}", 'wb') as fout:
         content = await file.read()
         fout.write(content)
+    from pydub import AudioSegment
     audio = AudioSegment.from_file(f"tmp_spk_{file_name}")
     audio.export(f"{spk_id}", format="mp3")
 

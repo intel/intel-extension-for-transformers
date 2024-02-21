@@ -288,3 +288,23 @@ class Qdrant(Qdrant_origin):
             return True
         else:
             return False
+
+
+    @classmethod
+    def _document_from_scored_point(
+        cls,
+        scored_point: Any,
+        content_payload_key: str,
+        metadata_payload_key: str,
+    ) -> Document:
+        metadata = scored_point.payload.get(metadata_payload_key) or {}
+        metadata["_id"] = scored_point.id
+        # bug in langchain_core v0.1.18
+        # comment out the calling to collection_name with bug "ScoredPoint object has no attribute collection_name"
+        # bug was fixed in https://github.com/langchain-ai/langchain/pull/16920.
+        # TODO: remove this func after release of langchain_core version v0.1.19
+        # metadata["_collection_name"] = scored_point.collection_name
+        return Document(
+            page_content=scored_point.payload.get(content_payload_key),
+            metadata=metadata,
+        )

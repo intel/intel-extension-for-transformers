@@ -129,6 +129,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             self.compute_dtype if self.compute_dtype is not None else "fp32",
             self.weight_dtype,
             self.scale_dtype if self.scale_dtype is not None else "fp32",
+            self.scheme,
             do_dequant=self.training,
         )
         shape[-1] = self.out_features
@@ -146,7 +147,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             self.compute_dtype if self.compute_dtype is not None else "fp32",
             self.weight_dtype,
             self.scale_dtype if self.scale_dtype is not None else "fp32",
-            False,
+            False if self.scheme == "sym" else True,
         )
         self.weight = ParamsQBits(
             data=weight,
@@ -315,7 +316,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.compute_dtype,
             self.weight_dtype,
             self.scale_dtype,
-            False,
+            False if self.scheme == "sym" else True,
         )
 
         self.weight = ParamsQBits(
@@ -360,7 +361,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.compute_dtype,
             self.weight_dtype,
             self.scale_dtype,
-            False,
+            False if self.scheme == "sym" else True,
         )
 
         self.weight = ParamsQBits(

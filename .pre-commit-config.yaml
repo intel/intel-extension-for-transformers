@@ -45,11 +45,12 @@ repos:
     rev: v2.2.6
     hooks:
       - id: codespell
-        additional_dependencies:
-          - tomli
-        args: [-w]
+        args:
+          [-w, --ignore-words=.github/workflows/script/formatScan/nlp_dict.txt]
         exclude: |
           (?x)^(
+              .+.po|.+.ts|.+.js|.+.map|.+.js.map|.+.css.map|
+              .github/workflows/script/formatScan/nlp_dict.txt|
               docker/third_party_programs_docker.txt|
               intel_extension_for_transformers/llm/evaluation/hf_eval/datasets/cnn_validation.json|
               examples/huggingface/pytorch/text-generation/inference/prompt.json|
@@ -76,7 +77,6 @@ repos:
             --detect-license-in-X-top-lines=40,
             --skip-license-insertion-comment=Copyright,
           ]
-
 #  - repo: https://github.com/asottile/yesqa
 #    rev: v1.5.0
 #    hooks:
