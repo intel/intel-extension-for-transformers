@@ -13,7 +13,7 @@ cd itrex
 ### Build Docker Image on CPU
 ```bash
 cd itrex
-docker build -f docker/Dockerfile_chatbot --target cpu --network=host -t chatbot:latest .
+docker build -f docker/Dockerfile_chatbot --build-arg ITREX_VER=main --target cpu --network=host -t chatbot:latest .
 ```
 If you need to use proxy, please use the following command
 ```bash
@@ -35,7 +35,7 @@ docker pull intel/ai-tools:itrex-chatbot
 ## Use Docker Image
 Utilize the docker container based on docker image.
 ```bash
-docker run -itd --net=host --ipc=host intel/ai-tools:itrex-chatbot /bin/bash
+docker run -itd --net=host --ipc=host <image_id> /bin/bash
 docker exec -it <container_id> /bin/bash
 ```
 
