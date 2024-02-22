@@ -51,7 +51,7 @@ parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, 
                     help="tasks list for accuracy validation")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
-parser.add_argument("--woq_algo", default="RTN", choices=['RTN'], 
+parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'GPTQ'], 
                     help="Weight-only parameter.")
 parser.add_argument("--woq_dtype", type=str, default="int4_fullrange",
                     choices=["int4_fullrange"])
@@ -60,6 +60,32 @@ parser.add_argument("--woq_scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--device", default="xpu")
 parser.add_argument("--compute_dtype", default="fp16")
+parser.add_argument(
+    "--gptq_percdamp",
+    type=float,
+    default=0.01,
+    help="Percent of the average Hessian diagonal to use for dampening.",
+)
+parser.add_argument(
+    "--gptq_block_size",
+    type=int,
+    default=128,
+    help="Block size. sub weight matrix size to run GPTQ.",
+)
+parser.add_argument(
+    "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
+)
+parser.add_argument(
+    "--gptq_use_max_length",
+    action="store_true",
+    help="Set all sequence length to be same length of args.gptq_pad_max_length",
+)
+parser.add_argument(
+    "--gptq_pad_max_length",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 parser.add_argument("--load_in_4bit", type=bool, default=False)
@@ -91,10 +117,30 @@ else:
 
 quantization_config = None
 if args.woq:
-    quantization_config = WeightOnlyQuantConfig(
-        compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype,
-        group_size=args.woq_group_size, scale_dtype=args.compute_dtype
-    ) #default is A16W4G16
+    if args.woq_algo == "GPTQ":
+        algorithm_args = {
+            "act_order": False,
+            "percdamp": args.gptq_percdamp,
+            "block_size": args.gptq_block_size,
+            "nsamples": args.gptq_nsamples,
+            "use_max_length": args.gptq_use_max_length,
+            "pad_max_length": args.gptq_pad_max_length,
+        }
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.compute_dtype,
+            weight_dtype=args.woq_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.woq_group_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+            algorithm_args=algorithm_args,
+        )
+    else:
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype,
+            group_size=args.woq_group_size, scale_dtype=args.compute_dtype
+        ) #default is A16W4G16
 
 # get model
 if quantization_config is not None:
