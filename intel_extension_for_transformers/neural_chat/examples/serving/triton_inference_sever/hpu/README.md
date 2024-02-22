@@ -12,7 +12,7 @@ cp ../../../serving/triton/text_generation/client.py models/text_generation/1/cl
 cp ../../../serving/triton/text_generation/config.pbtxt models/text_generation/config.pbtxt
 ```
 
-Make sure `KIND_CPU` is used for instance_group in `config_hpu.pbtxt`. You can change the num of `count` here to configure the num of model isntances on your HPU, 8 is set in the example config file like below.
+Make sure `KIND_CPU` is used for instance_group in `config_hpu.pbtxt`. You can change the num of `count` here to configure the num of model instances on your HPU, 8 is set in the example config file like below.
 ```
 instance_group [{ 
     count: 8
