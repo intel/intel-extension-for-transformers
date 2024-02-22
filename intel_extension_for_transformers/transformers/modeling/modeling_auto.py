@@ -131,6 +131,10 @@ def save_low_bit(
 
 class _BaseQBitsAutoModelClass:
     ORIG_MODEL = None
+    model_type_list = ["llama", "gptj", "mpt", "opt", "gptneox",   \
+            "dolly", "polyglot", "starcoder", "falcon", \
+            "bloom", "chatglm2", "chatglm", "baichuan", \
+            "mistral", "qwen", "phi", "whisper"]
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
@@ -152,18 +156,15 @@ class _BaseQBitsAutoModelClass:
                     if "model_type" in hparams:
                         model_type = hparams["model_type"]
                     else:
-                        logger.error("Can't get model_type for this Hugginface repo.")
+                        logger.error("Can't get model_type from this Hugginface repo.")
                         exit(0)
             logger.info("The model_type is {}".format(model_type))
-            model_type_list = ["llama", "gptj", "mpt", "opt", "gptneox",   \
-                               "dolly", "polyglot", "starcoder", "falcon", \
-                               "bloom", "chatglm2", "chatglm", "baichuan", \
-                               "mistral", "qwen", "phi", "whisper"]
 
-            if model_type not in model_type_list:
+            if model_type not in cls.model_type_list:
                 logger.error(
                     "Can't support this model_type. Please set the correct model_type, supported model_type: {}".format(
-                        model_type_list))
+                        cls.model_type_list))
+                exit(0)
 
             model = Model()
             model.init_from_bin(model_type, gguf_model_file)
@@ -220,6 +221,18 @@ class _BaseQBitsAutoModelClass:
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
         use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
+        config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
+        if hasattr(config, "model_type") == False:
+            logger.error("Can't get the model_type. Please check the correct model_type")
+            exit(0)
+
+        if config.model_type in cls.model_type_list:
+            logger.info("Using Neural Speed...")
+            use_llm_runtime = True
+        else:
+            logger.info("Using Pytorch...")
+            use_llm_runtime = False
+
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
