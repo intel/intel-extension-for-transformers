@@ -148,14 +148,13 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
-        if kwargs.get("model_file", False):
+        model_file = kwargs.pop("model_file", None)
+        if model_file is not None:
             from neural_speed import Model
             from huggingface_hub import hf_hub_download
 
             logger.info("Using Neural Speed to load the GGUF model...")
 
-            model_file = kwargs.get("model_file")
             gguf_model_file = hf_hub_download(pretrained_model_name_or_path, filename=model_file)
 
             if kwargs.get("model_type", False):
@@ -183,6 +182,21 @@ class _BaseQBitsAutoModelClass:
             model = Model()
             model.init_from_bin(model_type, gguf_model_file)
             return model
+
+        if kwargs.pop("use_embedding_runtime", False):
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
+
+            cast_type = kwargs.get("cast_type", "native")
+            with autocast(cast_type):
+                model = compile(pretrained_model_name_or_path)
+
+            return model
+
+        device_map = kwargs.get("device_map", "cpu")
+        use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
+        use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
+        use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
 
         if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
             logger.info(
@@ -214,15 +228,6 @@ class _BaseQBitsAutoModelClass:
                     logger.error("Saved low bit model loading failed, please check your model.")
                     exit(0)
 
-        if kwargs.get("use_embedding_runtime", False):
-            from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-            from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
-
-            cast_type = kwargs.get("cast_type", "native")
-            with autocast(cast_type):
-                model = compile(pretrained_model_name_or_path)
-
-            return model
 
         import intel_extension_for_transformers.transformers.modeling.modeling_map
 
@@ -230,9 +235,6 @@ class _BaseQBitsAutoModelClass:
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
 
-        device_map = kwargs.get("device_map", "cpu")
-        use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
-        use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
