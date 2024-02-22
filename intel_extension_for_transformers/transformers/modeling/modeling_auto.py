@@ -222,16 +222,20 @@ class _BaseQBitsAutoModelClass:
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
         use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
         config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
-        if hasattr(config, "model_type") == False:
-            logger.error("Can't get the model_type. Please check the correct model_type")
-            exit(0)
-
-        if config.model_type in cls.model_type_list:
-            logger.info("Using Neural Speed...")
-            use_llm_runtime = True
+        
+        if kwargs.get("use_llm_runtime", False):
+            use_llm_runtime = kwargs.get("use_llm_runtime")
         else:
-            logger.info("Using Pytorch...")
-            use_llm_runtime = False
+            if hasattr(config, "model_type") == False:
+                logger.error("Can't get the model_type. Please check the correct model_type")
+                exit(0)
+
+            if config.model_type in cls.model_type_list:
+                logger.info("Using Neural Speed...")
+                use_llm_runtime = True
+            else:
+                logger.info("Using Pytorch...")
+                use_llm_runtime = False
 
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
