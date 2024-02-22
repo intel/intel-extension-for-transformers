@@ -1,14 +1,15 @@
-Full Publications/Events (39)
+Full Publications/Events (40)
 ==========
 
 ## 2024 (1)
-* Video on YouTube: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
+* CES 2024: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
 
 
-## 2023 (32)
+## 2023 (33)
 * Blog published on Medium: [Connect an AI agent with your API: Intel Neural-Chat 7b LLM can replace Open AI Function Calling](https://medium.com/11tensors/connect-an-ai-agent-with-your-api-intel-neural-chat-7b-llm-can-replace-open-ai-function-calling-242d771e7c79) (Dec 2023)
 * Blog published on 360 EEA (A News Platform about AI and LLMs): [Intel neural-chat-7b-v3-1](https://360eea.com/intel-neural-chat-7b-v3-1/) (Dec 2023)
 * Apple Podcasts from Papers Read on AI: [Efficient LLM Inference on CPUs](https://podcasts.apple.com/us/podcast/efficient-llm-inference-on-cpus/id1577699357?i=1000637269932) (Dec 2023)
+* Blog published on Medium: [Supercharging NLP Inference: Leveraging INT8 BGE-1.5 Models on Intel CPUs for Ultra-Low Latency](https://xthemadgenius.medium.com/supercharging-nlp-inference-leveraging-int8-bge-1-5-models-on-intel-cpus-for-ultra-low-latency-c685c4e3ae6c) (Nov 2023)
 * NeurIPS'2023 on Efficient Natural Language and Speech Processing: [Efficient LLM Inference on CPUs](https://arxiv.org/abs/2311.00502) (Nov 2023)
 * NeurIPS'2023 on Diffusion Models: [Effective Quantization for Diffusion Models on CPUs](https://arxiv.org/pdf/2311.16133.pdf) (Nov 2023)
 * Blog published on datalearner: [Analysis of the top ten popular open source LLM of HuggingFace in the fourth week of November 2023 - the explosion of multi-modal large models and small-scale models](https://www.datalearner.com/blog/1051701014024122) (Nov 2023)
