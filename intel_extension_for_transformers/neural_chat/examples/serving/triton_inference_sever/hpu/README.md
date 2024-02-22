@@ -9,7 +9,7 @@ cd <path to intel_extension_for_transformers>/neural_chat/examples/serving/trito
 mkdir -p models/text_generation/1/
 cp ../../../serving/triton/text_generation/model.py models/text_generation/1/model.py
 cp ../../../serving/triton/text_generation/client.py models/text_generation/1/client.py
-cp ../../../serving/triton/text_generation/config.pbtxt models/text_generation/config_hpu.pbtxt
+cp ../../../serving/triton/text_generation/config.pbtxt models/text_generation/config.pbtxt
 ```
 
 Make sure `KIND_CPU` is used for instance_group in `config_hpu.pbtxt`. You can change the num of `count` here to configure the num of model isntances on your HPU, 8 is set in the example config file like below.
