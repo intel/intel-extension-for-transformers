@@ -1,6 +1,6 @@
 accelerate>=0.21.0
 av
-basicsr==1.4.2
+basicsr @ git+https://github.com/Spycsh/BasicSR
 beautifulsoup4
 chromadb==0.4.15
 datasets
