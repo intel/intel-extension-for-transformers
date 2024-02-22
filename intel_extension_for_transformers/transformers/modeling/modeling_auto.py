@@ -220,12 +220,11 @@ class _BaseQBitsAutoModelClass:
         device_map = kwargs.get("device_map", "cpu")
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
-        use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
-        config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
-
+       
         if kwargs.get("use_llm_runtime", False):
-            use_llm_runtime = kwargs.get("use_llm_runtime")
+            use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
         else:
+            config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
             if hasattr(config, "model_type") == False:
                 logger.error("Can't get the model_type. Please check the correct model_type")
                 exit(0)
