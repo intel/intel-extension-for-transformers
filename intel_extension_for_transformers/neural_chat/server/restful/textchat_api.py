@@ -137,6 +137,7 @@ async def get_generation_parameters(
     best_of: Optional[int] = None,
     use_beam_search: Optional[bool] = None,
 ) -> Dict[str, Any]:
+    chatbot.conv_template.clear_messages()
     conv = chatbot.conv_template.conv
 
     if isinstance(messages, str):
