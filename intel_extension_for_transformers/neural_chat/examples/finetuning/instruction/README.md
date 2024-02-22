@@ -12,6 +12,7 @@ This example demonstrates how to finetune the pretrained large language model (L
 |MPT series| ✅| ✅|✅| ✅
 |FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
 |Mixtral-8x7B | ✅ | ✅| N/A  | ✅|
+|Phi series | ✅ | ✅| N/A  | ✅|
 
 # Prerequisite​
 
