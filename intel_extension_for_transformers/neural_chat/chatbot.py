@@ -48,7 +48,8 @@ def check_cache_dependency():
 
 def check_retrieval_dependency():
     try:
-        importlib.import_module('PyPDF2')
+        importlib.import_module('fitz')
+        importlib.import_module('easyocr')
         importlib.import_module('langchain')
         importlib.import_module('langchain_core')
         importlib.import_module('docx')
