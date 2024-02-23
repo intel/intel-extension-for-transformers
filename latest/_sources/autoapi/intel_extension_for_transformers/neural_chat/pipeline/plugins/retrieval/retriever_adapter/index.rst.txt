@@ -22,7 +22,7 @@ Classes
 
 
 
-.. py:class:: RetrieverAdapter(retrieval_type='default', document_store=None, child_document_store=None, **kwargs)
+.. py:class:: RetrieverAdapter(retrieval_type='default', document_store=None, child_document_store=None, docs=None, reranker_model='BAAI/bge-reranker-large', top_n=1, enable_rerank=False, **kwargs)
 
 
    Retrieve the document database with Chroma database using dense retrieval.

@@ -39,7 +39,7 @@ Functions
 
    .. py:method:: reload_localdb(local_persist_dir, **kwargs)
 
-      Reload the local existed knowledge base.
+      Reload the local existed knowledge base. Do not support inmemory database.
 
 
    .. py:method:: create(input_path, **kwargs)

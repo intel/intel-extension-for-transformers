@@ -13,6 +13,5 @@ Submodules
    :maxdepth: 1
 
    child_parent_retriever/index.rst
-   vectorstore_retriever/index.rst
 
 
