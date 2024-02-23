@@ -16,6 +16,7 @@ facexlib @ git+https://github.com/Spycsh/facexlib@master
 faiss-cpu
 fastapi==0.103.2
 ffmpeg-python==0.2.0
+FlagEmbedding
 fschat==0.2.35
 gfpgan
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
@@ -56,6 +57,7 @@ python-docx
 python-multipart
 pyyaml
 qdrant-client
+rank_bm25
 resampy==0.3.1
 rouge_score
 safetensors
