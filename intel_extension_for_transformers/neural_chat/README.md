@@ -43,7 +43,7 @@ NeuralChat is under Intel Extension for Transformers, so ensure the installation
 
 ```shell
 pip install intel-extension-for-transformers
-pip install fastapi==0.103.2
+pip install fastapi0.103.2
 
 # For CPU device
 pip install -r requirements_cpu.txt
@@ -58,7 +58,7 @@ pip install -r requirements_xpu.txt
 pip install -r requirements.txt
 ```
 
->**Note**: Suggest using fastapi==0.103.2
+>**Note**: Suggest using fastapi0.103.2
 
 
 
