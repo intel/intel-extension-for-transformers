@@ -900,13 +900,13 @@ def get_generate_kwargs(
     return generate_kwargs
 
 def is_llm_runtime_model(model, device):
-    if device == "hpu":
-        return False
-    else:
+    if device == "cpu":
         from neural_speed import Model
         if isinstance(model, Model):
             return True
         else:
+            return False
+    else:
             return False
 
 def remove_prompt_history(model_name, prompt):
