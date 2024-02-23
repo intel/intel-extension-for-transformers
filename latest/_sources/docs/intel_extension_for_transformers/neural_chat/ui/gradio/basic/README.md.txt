@@ -45,6 +45,7 @@ source ~/.bashrc
 Install the required Python dependencies using pip:
 
 ```shell
+pip install gradio==3.36.0
 pip install -r requirements.txt
 ```
 

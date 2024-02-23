@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+ga63ec0d documentation</title>
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g0c86b1e documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=eafc0fe6" />
@@ -126,7 +126,10 @@ apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w">
 <section id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
 <p>NeuralChat is under Intel Extension for Transformers, so ensure the installation of Intel Extension for Transformers first by following the <a class="reference external" href="../../docs/installation.html">installation</a>. After that, install additional dependency for NeuralChat per your device:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># For CPU device</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
+pip<span class="w"> </span>install<span class="w"> </span>fastapi0.103.2
+
+<span class="c1"># For CPU device</span>
 pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements_cpu.txt
 
 <span class="c1"># For HPU device</span>
@@ -139,6 +142,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 </pre></div>
 </div>
+<blockquote>
+<div><p><strong>Note</strong>: Suggest using fastapi0.103.2</p>
+</div></blockquote>
 </section>
 <section id="getting-started">
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h1>
@@ -546,7 +552,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f0d91442e30> 
+   <jinja2.runtime.BlockReference object at 0x7f694dcad240> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
