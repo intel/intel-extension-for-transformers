@@ -135,14 +135,14 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
                 return_dict=return_dict,
-            )
+            )  # pylint: disable=E1101
 
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, inputs_embeds=None, **kwargs):
         images = kwargs.pop("images", None)
         images_mask = kwargs.pop("images_mask", None)
         _inputs = super().prepare_inputs_for_generation(
             input_ids, past_key_values=past_key_values, inputs_embeds=inputs_embeds, **kwargs
-        )
+        )  # pylint: disable=E1101
         if images is not None:
             _inputs['images'] = images
         if images_mask is not None:
