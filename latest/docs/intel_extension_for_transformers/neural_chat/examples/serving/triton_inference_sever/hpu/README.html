@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Serving NeuralChat Text Generation with Triton Inference Server on HPU &mdash; Intel® Extension for Transformers 0.1.dev1+gc57c17e documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Serving NeuralChat Text Generation with Triton Inference Server on HPU</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/serving/triton_inference_sever/hpu/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="serving-neuralchat-text-generation-with-triton-inference-server-on-hpu">
+<h1>Serving NeuralChat Text Generation with Triton Inference Server on HPU<a class="headerlink" href="#serving-neuralchat-text-generation-with-triton-inference-server-on-hpu" title="Link to this heading"></a></h1>
+<p>Nvidia Triton Inference Server is a widely adopted inference serving software. We also support serving and deploying NeuralChat models with Triton Inference Server.</p>
+<section id="prepare-serving-scripts">
+<h2>Prepare serving scripts<a class="headerlink" href="#prepare-serving-scripts" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>&lt;path<span class="w"> </span>to<span class="w"> </span>intel_extension_for_transformers&gt;/neural_chat/examples/serving/triton_inference_server
+mkdir<span class="w"> </span>-p<span class="w"> </span>models/text_generation/1/
+cp<span class="w"> </span>../../../serving/triton/text_generation/model.py<span class="w"> </span>models/text_generation/1/model.py
+cp<span class="w"> </span>../../../serving/triton/text_generation/client.py<span class="w"> </span>models/text_generation/1/client.py
+cp<span class="w"> </span>../../../serving/triton/text_generation/config_hpu.pbtxt<span class="w"> </span>models/text_generation/config.pbtxt
+</pre></div>
+</div>
+<p>Make sure <code class="docutils literal notranslate"><span class="pre">KIND_CPU</span></code> is used for instance_group in <code class="docutils literal notranslate"><span class="pre">config_hpu.pbtxt</span></code>. You can change the num of <code class="docutils literal notranslate"><span class="pre">count</span></code> here to configure the num of model instances on your HPU, 8 is set in the example config file like below.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">instance_group</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span>
+<span class="w">    </span><span class="nl">count</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span>
+<span class="w">    </span><span class="nl">kind</span><span class="p">:</span><span class="w"> </span><span class="n">KIND_CPU</span><span class="w"> </span>
+<span class="p">}]</span>
+</pre></div>
+</div>
+<p>Then your folder structure under the current <code class="docutils literal notranslate"><span class="pre">serving</span></code> folder should be like:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">serving</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">models</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">text_generation</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="mi">1</span>
+<span class="err">│</span><span class="w">       </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="n">py</span>
+<span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="n">pbtxt</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">README</span><span class="p">.</span><span class="n">html</span>
+</pre></div>
+</div>
+</section>
+<section id="create-docker-image-for-hpu">
+<h2>Create Docker Image for HPU<a class="headerlink" href="#create-docker-image-for-hpu" title="Link to this heading"></a></h2>
+<p>Followting the commands below, you will create a Docker image for Habana Gaudi on your local machine.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/HabanaAI/Setup_and_Install.git
+<span class="nb">cd</span><span class="w"> </span>Setup_and_Install/dockerfiles/triton
+make<span class="w"> </span>build<span class="w"> </span><span class="nv">DOCKER_CACHE</span><span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+</section>
+<section id="run-the-backend-container">
+<h2>Run the Backend Container<a class="headerlink" href="#run-the-backend-container" title="Link to this heading"></a></h2>
+<p>After the Docker Image is created, you need to run a backend container to run tritonserver. The serving scripts will be mounted into Docker container using <code class="docutils literal notranslate"><span class="pre">-v</span> <span class="pre">./models:/models</span></code>.</p>
+<p>Remember to replace the <code class="docutils literal notranslate"><span class="pre">${image_name}</span></code> into the docker image name you just created. You can check the image name with the command <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">images</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--runtime<span class="o">=</span>habana<span class="w"> </span>--name<span class="w"> </span>triton_backend<span class="w"> </span>--shm-size<span class="w"> </span><span class="s2">&quot;4g&quot;</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">HABANA_VISIBLE_DEVICES</span><span class="o">=</span>all<span class="w"> </span>-e<span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none<span class="w"> </span>--cap-add<span class="o">=</span>sys_nice<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>-v<span class="w"> </span>./models:/models<span class="w"> </span><span class="si">${</span><span class="nv">image_name</span><span class="si">}</span>
+</pre></div>
+</div>
+</section>
+<section id="launch-the-triton-server">
+<h2>Launch the Triton Server<a class="headerlink" href="#launch-the-triton-server" title="Link to this heading"></a></h2>
+<p>Now you should be inside the Docker container.</p>
+<p>In order to launch your customized triton server, you need to install the necessary prerequisites for itrex. By default, NeuralChat uses <code class="docutils literal notranslate"><span class="pre">Intel/neural-chat-7b-v3-1</span></code> as the LLM. Then you can launch the triton server to start the service.</p>
+<p>You can specify an available http port to replace the <code class="docutils literal notranslate"><span class="pre">${your_port}</span></code> in tritonserver command.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># install ITREX using the latest github repo</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>itrex
+<span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span>/opt/tritonserver/itrex
+<span class="c1"># install requirements</span>
+pip<span class="w"> </span>install<span class="w"> </span>transformers&gt;<span class="o">=</span><span class="m">4</span>.35.2<span class="w"> </span>uvicorn<span class="w"> </span>yacs<span class="w"> </span><span class="nv">fastapi</span><span class="o">==</span><span class="m">0</span>.103.2<span class="w"> </span>neural-compressor<span class="w"> </span>accelerate<span class="w"> </span>datasets<span class="w"> </span><span class="nv">fschat</span><span class="o">==</span><span class="m">0</span>.2.35<span class="w"> </span>optimum<span class="w"> </span>optimum<span class="o">[</span>habana<span class="o">]</span><span class="w"> </span>neural_speed
+<span class="c1"># launch triton server</span>
+tritonserver<span class="w"> </span>--model-repository<span class="o">=</span>/models<span class="w"> </span>--http-port<span class="w"> </span><span class="si">${</span><span class="nv">your_port</span><span class="si">}</span>
+</pre></div>
+</div>
+<p>When the triton server is successfully launched, you will see the table below:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>I0103<span class="w"> </span><span class="m">00</span>:04:58.435488<span class="w"> </span><span class="m">237</span><span class="w"> </span>server.cc:626<span class="o">]</span>
++--------+---------+--------+
+<span class="p">|</span><span class="w"> </span>Model<span class="w">  </span><span class="p">|</span><span class="w"> </span>Version<span class="w"> </span><span class="p">|</span><span class="w"> </span>Status<span class="w"> </span><span class="p">|</span>
++--------+---------+--------+
+<span class="p">|</span><span class="w"> </span>llama2<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">1</span><span class="w">       </span><span class="p">|</span><span class="w"> </span>READY<span class="w">  </span><span class="p">|</span>
++--------+---------+--------+
+</pre></div>
+</div>
+<p>Check the service status and port by running the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-v<span class="w"> </span>localhost:8021/v2/health/ready
+</pre></div>
+</div>
+<p>You will find a <code class="docutils literal notranslate"><span class="pre">HTTP/1.1</span> <span class="pre">200</span> <span class="pre">OK</span></code> if your server is up and ready for receiving requests.</p>
+</section>
+<section id="launch-and-run-the-client">
+<h2>Launch and Run the Client<a class="headerlink" href="#launch-and-run-the-client" title="Link to this heading"></a></h2>
+<p>Start the Triton client and enter into the container. Remember to replace the <code class="docutils literal notranslate"><span class="pre">${image_name}</span></code> into the docker image name you just created.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--runtime<span class="o">=</span>habana<span class="w"> </span>--name<span class="w"> </span>triton_client<span class="w"> </span>--shm-size<span class="w"> </span><span class="s2">&quot;4g&quot;</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">HABANA_VISIBLE_DEVICES</span><span class="o">=</span>all<span class="w"> </span>-e<span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none<span class="w"> </span>--cap-add<span class="o">=</span>sys_nice<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>-v<span class="w"> </span>./models:/models<span class="w"> </span><span class="si">${</span><span class="nv">image_name</span><span class="si">}</span>
+</pre></div>
+</div>
+<p>Inside the client docker container, you need to install tritonclient first.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>tritonclient<span class="o">[</span>all<span class="o">]</span>
+</pre></div>
+</div>
+<p>Send a request using <code class="docutils literal notranslate"><span class="pre">client.py</span></code>. The <code class="docutils literal notranslate"><span class="pre">${your_port}</span></code> is the triton server port.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>/models/text_generation/1/client.py<span class="w"> </span>--prompt<span class="o">=</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="w"> </span>--url<span class="o">=</span>localhost:<span class="si">${</span><span class="nv">your_port</span><span class="si">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f3ee66d4130> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
