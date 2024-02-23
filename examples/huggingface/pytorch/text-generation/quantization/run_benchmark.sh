@@ -86,7 +86,7 @@ function run_benchmark {
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
-	model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+	    model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "opt_1.3b" ]; then
