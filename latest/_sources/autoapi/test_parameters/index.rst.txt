@@ -1,0 +1,1028 @@
+:orphan:
+
+:py:mod:`test_parameters`
+=========================
+
+.. py:module:: test_parameters
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   test_parameters.TestResponseTemplate
+   test_parameters.TestAccuracyMode
+   test_parameters.TestGeneralMode
+   test_parameters.TestSmallMaxChuckSize
+   test_parameters.TestLargeMaxChuckSize
+   test_parameters.TestSmallMinChuckSize
+   test_parameters.TestLargeMinChuckSize
+   test_parameters.TestTrueProcess
+   test_parameters.TestFalseProcess
+   test_parameters.TestMMRSearchTypeK1
+   test_parameters.TestMMRSearchTypeK2
+   test_parameters.TestMMRSearchTypeFetchK1
+   test_parameters.TestMMRSearchTypeFetchK2
+   test_parameters.TestMMRSearchTypeLowLambdaMulti
+   test_parameters.TestMMRSearchTypeHighLambdaMulti
+   test_parameters.TestSimilarityScoreThresholdSearchTypeLowThreshold
+   test_parameters.TestSimilarityScoreThresholdSearchTypeHighThreshold
+   test_parameters.TestSimilarityScoreThresholdSearchTypeK1
+   test_parameters.TestSimilarityScoreThresholdSearchTypeK2
+   test_parameters.TestSimilaritySearchTypeK1
+   test_parameters.TestSimilaritySearchTypeK2
+
+
+
+
+.. py:class:: TestResponseTemplate(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestAccuracyMode(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestGeneralMode(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestSmallMaxChuckSize(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestLargeMaxChuckSize(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestSmallMinChuckSize(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestLargeMinChuckSize(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestTrueProcess(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestFalseProcess(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestMMRSearchTypeK1(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestMMRSearchTypeK2(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestMMRSearchTypeFetchK1(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestMMRSearchTypeFetchK2(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestMMRSearchTypeLowLambdaMulti(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestMMRSearchTypeHighLambdaMulti(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestSimilarityScoreThresholdSearchTypeLowThreshold(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestSimilarityScoreThresholdSearchTypeHighThreshold(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestSimilarityScoreThresholdSearchTypeK1(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestSimilarityScoreThresholdSearchTypeK2(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestSimilaritySearchTypeK1(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
+.. py:class:: TestSimilaritySearchTypeK2(methodName='runTest')
+
+
+
+
+   A class whose instances are single test cases.
+
+   By default, the test code itself should be placed in a method named
+   'runTest'.
+
+   If the fixture may be used for many test cases, create as
+   many test methods as are needed. When instantiating such a TestCase
+   subclass, specify in the constructor arguments the name of the test method
+   that the instance is to execute.
+
+   Test authors should subclass TestCase for their own tests. Construction
+   and deconstruction of the test's environment ('fixture') can be
+   implemented by overriding the 'setUp' and 'tearDown' methods respectively.
+
+   If it is necessary to override the __init__ method, the base class
+   __init__ method must always be called. It is important that subclasses
+   should not change the signature of their __init__ method, since instances
+   of the classes are instantiated automatically by parts of the framework
+   in order to be run.
+
+   When subclassing TestCase, you can set these attributes:
+   * failureException: determines which exception will be raised when
+       the instance's assertion methods fail; test methods raising this
+       exception will be deemed to have 'failed' rather than 'errored'.
+   * longMessage: determines whether long messages (including repr of
+       objects used in assert methods) will be printed on failure in *addition*
+       to any explicit message passed.
+   * maxDiff: sets the maximum length of a diff in failure messages
+       by assert methods using difflib. It is looked up as an instance
+       attribute so can be configured by individual tests if required.
+
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
+
