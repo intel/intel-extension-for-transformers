@@ -426,6 +426,7 @@ def _beam_search(
             )
 
         if return_dict_in_generate and output_scores:
+            # pylint: disable=unsubscriptable-object
             beam_indices = tuple((beam_indices[beam_idx[i]] + (beam_idx[i],) for i in range(len(beam_indices))))
         # increase cur_len
         cur_len = cur_len + 1

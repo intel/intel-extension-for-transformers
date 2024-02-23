@@ -70,7 +70,7 @@ torch = LazyImport("torch")
 
 
 def convert_model_to_public(model):
-    from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear
+    from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear  # pylint: disable=E0401
     for name, module in model.named_modules():
         if isinstance(module, WeightOnlyLinear):
             if module.weight_transposed:

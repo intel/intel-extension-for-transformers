@@ -31,6 +31,7 @@ from transformers import (
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits, QuantizedLoraLinearQBits
 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
+from intel_extension_for_transformers.llm.utils.generation import _beam_search, _greedy_search
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 
 
@@ -146,6 +147,22 @@ class TestWeightOnly(unittest.TestCase):
             if isinstance(module, QuantizedLinearQBits):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
+        tokenizer = AutoTokenizer.from_pretrained(llama_model_path)
+        prompt = "how to test the code?"
+        input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        bound_method_1 = _greedy_search.__get__(model, model.__class__)
+        setattr(model, "greedy_search", bound_method_1)
+        bound_method_2 = _beam_search.__get__(model, model.__class__)
+        setattr(model, "beam_search", bound_method_2)
+        model.config.token_latency = True
+        output = model.generate(
+            input_ids, max_new_tokens=int(5), num_beams=1
+        )
+        self.assertTrue(len(output) == 2 and isinstance(output[1], list))
+        output = model.generate(
+            input_ids, max_new_tokens=int(5), num_beams=2
+        )
+        self.assertTrue(len(output) == 2 and isinstance(output[1], list))
 
     def test_auto_model_with_config(self):
         config = WeightOnlyQuantConfig()
