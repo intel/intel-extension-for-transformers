@@ -106,9 +106,9 @@ def test_rome(
     if len(queries) > 0:
         post_update_text = [chatbot.predict(query) for query in queries]
         print_head("Generated pre-update text")
-        print("\n\n".join([queries[i] + " " + pre_update_text[i] for i in range(len(queries))]))
+        print("\n\n".join(["User: " + queries[i] + "\nAssistant: " + pre_update_text[i] for i in range(len(queries))]))
         print_head("Generated post-update text")
-        print("\n\n".join([queries[i] + " " + post_update_text[i] for i in range(len(queries))]))
+        print("\n\n".join(["User: " + queries[i] + "\nAssistant: " + post_update_text[i] for i in range(len(queries))]))
 
 
 if __name__ == "__main__":
