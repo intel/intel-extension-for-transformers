@@ -907,7 +907,7 @@ def is_llm_runtime_model(model, device):
         else:
             return False
     else:
-        return False
+            return False
 
 def remove_prompt_history(model_name, prompt):
     result = prompt

@@ -7,6 +7,7 @@ datasets
 deepface
 diffusers==0.12.1
 dlib-bin
+easyocr
 einops
 evaluate
 exifread
@@ -15,6 +16,7 @@ facexlib @ git+https://github.com/Spycsh/facexlib@master
 faiss-cpu
 fastapi==0.103.2
 ffmpeg-python==0.2.0
+FlagEmbedding
 fschat==0.2.35
 gfpgan
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
@@ -34,7 +36,6 @@ librosa
 markdown
 neural-compressor
 neural_speed
-neural_speed
 num2words
 numba
 numpy==1.23.5
@@ -50,12 +51,13 @@ peft==0.6.2
 protobuf==3.20.2
 pydantic==1.10.13
 pydub
+PyMuPDF
 pymysql
-PyPDF2
 python-docx
 python-multipart
 pyyaml
 qdrant-client
+rank_bm25
 resampy==0.3.1
 rouge_score
 safetensors

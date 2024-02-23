@@ -44,7 +44,7 @@ class SPARSE_API_ proxy_base {
   inline const std::shared_ptr<const T>& get_sp() const { return data_handle_; }
 
  protected:
-  // internal functions of creat the proxy object.
+  // internal functions of create the proxy object.
   virtual bool create_proxy_object(std::shared_ptr<const T>& result_ref, const arg_t& arg) = 0;  // NOLINT
 
  private:

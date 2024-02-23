@@ -52,6 +52,9 @@ class ChildParentRetriever(BaseRetriever):
         Returns:
             The concatation of the retrieved documents and the link
         """
+        ids = []
+        results = []
+
         if self.search_type == SearchType.mmr:
             sub_docs = self.vectorstore.max_marginal_relevance_search(
                 query, **self.search_kwargs
@@ -59,19 +62,15 @@ class ChildParentRetriever(BaseRetriever):
         else:
             sub_docs = self.vectorstore.similarity_search(query, **self.search_kwargs)
 
-        ids = []
         for d in sub_docs:
             if d.metadata["identify_id"] not in ids:
                 ids.append(d.metadata['identify_id'])
-        retrieved_documents = self.parentstore.get(ids)
-        return retrieved_documents
 
-    def get_context(self, query):
-        context = ''
-        links = []
-        retrieved_documents = self.get_relevant_documents(query)
-        for doc in retrieved_documents['documents']:
-            context = context + doc + " "
-        for meta in retrieved_documents['metadatas']:
-            links.append(meta['source'])
-        return context.strip(), links
+        retrieved_documents = self.parentstore.get(ids)
+        for i in range(len(retrieved_documents)):
+            metadata = retrieved_documents['metadatas'][i]
+            context = retrieved_documents['documents'][i]
+            instance = Document(page_content=context, metadata=metadata)
+            results.append(instance)
+
+        return results
