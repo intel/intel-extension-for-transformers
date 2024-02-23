@@ -1,0 +1,1 @@
+The Intel Xeon Platinum 8480+ is part of Intel's Xeon Scalable processors, which are designed for enterprise-grade servers and data centers. Intel Xeon Platinum 8480+ Processor has total 56 CPU Cores.
