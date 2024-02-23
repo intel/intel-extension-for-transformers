@@ -45,7 +45,7 @@ class TestLLMQuantization(unittest.TestCase):
             "Qwen/Qwen-7B-Chat",
             quantization_config=sq_config,
             trust_remote_code=True,
-            use_llm_runtime=False,
+            use_neural_speed=False,
         )
         self.assertTrue(isinstance(model.model, torch.jit.ScriptModule))
 
@@ -58,7 +58,7 @@ class TestLLMQuantization(unittest.TestCase):
             "THUDM/chatglm2-6b",
             quantization_config=sq_config,
             trust_remote_code=True,
-            use_llm_runtime=False,
+            use_neural_speed=False,
         )
         self.assertTrue(isinstance(model.model, torch.jit.ScriptModule))
 
@@ -71,7 +71,7 @@ class TestLLMQuantization(unittest.TestCase):
             "THUDM/chatglm3-6b",
             quantization_config=sq_config,
             trust_remote_code=True,
-            use_llm_runtime=False,
+            use_neural_speed=False,
         )
         self.assertTrue(isinstance(model.model, torch.jit.ScriptModule))
 

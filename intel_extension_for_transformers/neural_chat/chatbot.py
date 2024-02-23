@@ -273,7 +273,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
-    parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
+    parameters["use_neural_speed"] = config.loading_config.use_neural_speed
     parameters["gguf_model_path"] = config.loading_config.gguf_model_path
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
@@ -329,18 +329,18 @@ def finetune_model(config: BaseFinetuningConfig):
         else:
             set_latest_error(ErrorCodes.ERROR_GENERIC)
 
-def optimize_model(model, config, use_llm_runtime=False):
+def optimize_model(model, config, use_neural_speed=False):
     """Optimize the model based on the provided configuration.
 
     Args:
         model: large language model
         config (OptimizationConfig): The configuration required for optimizing the model.
-        use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
+        use_neural_speed (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
     clear_latest_error()
     optimization = Optimization(optimization_config=config)
     try:
-        model = optimization.optimize(model, use_llm_runtime)
+        model = optimization.optimize(model, use_neural_speed)
     except Exception as e:
         logging.error(f"Exception: {e}")
         from intel_extension_for_transformers.transformers import (

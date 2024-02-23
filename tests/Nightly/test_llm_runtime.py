@@ -54,7 +54,7 @@ class TestLLMRUNTIME(unittest.TestCase):
 
         # check output ids
         woq_config = WeightOnlyQuantConfig(use_quant=False)
-        itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
+        itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_neural_speed=True, trust_remote_code=True)
         itrex_generate_ids = itrex_model.generate(inputs.input_ids, do_sample=False, max_new_tokens=100)[0]
         print(tokenizer.decode(itrex_generate_ids))
         for i in range(len(pt_generate_ids)):
@@ -62,14 +62,14 @@ class TestLLMRUNTIME(unittest.TestCase):
 
         # check diff of logits
         itrex_model = AutoModel.from_pretrained(model_name, load_in_4bit=True,
-                                                use_llm_runtime=True, trust_remote_code=True)
+                                                use_neural_speed=True, trust_remote_code=True)
         itrex_logits = itrex_model(inputs.input_ids)
         cmp = cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten())
         print("load_in_4bit: ", cmp)
         self.assertTrue(cmp["diff2"] < 0.42)
 
         itrex_model = AutoModel.from_pretrained(model_name, load_in_8bit=True,
-                                                use_llm_runtime=True, trust_remote_code=True)
+                                                use_neural_speed=True, trust_remote_code=True)
         itrex_logits = itrex_model(inputs.input_ids)
         cmp = cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten())
         print("load_in_8bit: ", cmp)

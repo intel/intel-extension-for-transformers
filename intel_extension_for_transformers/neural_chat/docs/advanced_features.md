@@ -141,7 +141,7 @@ Compared to normal quantization like W8A8, weight only quantization is probably 
 ```python
 # Python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
-loading_config = LoadingModelConfig(use_llm_runtime=True)
+loading_config = LoadingModelConfig(use_neural_speed=True)
 config = PipelineConfig(
     optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4_fullrange")
 )
@@ -156,7 +156,7 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 # Python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
-loading_config = LoadingModelConfig(use_llm_runtime=True)
+loading_config = LoadingModelConfig(use_neural_speed=True)
 config = PipelineConfig(
     optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4"),
     loading_config=loading_config

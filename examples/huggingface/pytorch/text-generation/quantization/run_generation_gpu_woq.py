@@ -102,7 +102,7 @@ if quantization_config is not None:
                                                       quantization_config=quantization_config,
                                                       trust_remote_code=args.trust_remote_code,
                                                       fp16=True,
-                                                      use_llm_runtime=False
+                                                      use_neural_speed=False
                                                       )
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
@@ -110,7 +110,7 @@ elif args.load_in_4bit or args.load_in_8bit:
                                                       device_map=args.device,
                                                       load_in_4bit=args.load_in_4bit,
                                                       load_in_8bit=args.load_in_8bit,
-                                                      use_llm_runtime=False
+                                                      use_neural_speed=False
                                                       )
 if user_model is not None:
     user_model.save_pretrained(args.output_dir)

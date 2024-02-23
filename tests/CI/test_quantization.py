@@ -319,7 +319,7 @@ class TestQuantization(unittest.TestCase):
             BitsAndBytesConfig
         )
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-        fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_llm_runtime=False)
+        fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_neural_speed=False)
         dummy_input = fp32_model.dummy_inputs["input_ids"]
         #smooth-quant
         sq_config = SmoothQuantConfig(
@@ -329,7 +329,7 @@ class TestQuantization(unittest.TestCase):
                                     )
         q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=sq_config,
-                                                    use_llm_runtime=False
+                                                    use_neural_speed=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
         #SQ auto
@@ -346,7 +346,7 @@ class TestQuantization(unittest.TestCase):
                             )
         q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=sq_config,
-                                                    use_llm_runtime=False
+                                                    use_neural_speed=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
         # weight-only
@@ -354,7 +354,7 @@ class TestQuantization(unittest.TestCase):
         woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange")
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
-                                                    use_llm_runtime=False
+                                                    use_neural_speed=False
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
@@ -367,7 +367,7 @@ class TestQuantization(unittest.TestCase):
                                            algorithm="AWQ")
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
-                                                    use_llm_runtime=False
+                                                    use_neural_speed=False
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
@@ -380,14 +380,14 @@ class TestQuantization(unittest.TestCase):
                                            algorithm="TEQ")
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
-                                                    use_llm_runtime=False
+                                                    use_neural_speed=False
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
         #fp8
         woq_config = WeightOnlyQuantConfig(weight_dtype="fp8_e5m2", scale_dtype="fp8_e8m0")
         woq_model = AutoModelForCausalLM.from_pretrained(
-            model_name_or_path, quantization_config=woq_config, use_llm_runtime=False
+            model_name_or_path, quantization_config=woq_config, use_neural_speed=False
         )
         woq_model.eval()
         output = woq_model(dummy_input)
@@ -398,7 +398,7 @@ class TestQuantization(unittest.TestCase):
         amp_config = MixedPrecisionConfig()
         amp_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=amp_config,
-                                                    use_llm_runtime=False
+                                                    use_neural_speed=False
                                                 )
         amp_model.eval()
         output = amp_model(dummy_input)
@@ -407,12 +407,12 @@ class TestQuantization(unittest.TestCase):
         bab_config = BitsAndBytesConfig()
         bab_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=bab_config,
-                                                    use_llm_runtime=False
+                                                    use_neural_speed=False
                                                 )
         # load_in_4bit
         bit4_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                      load_in_4bit=True,
-                                                     use_llm_runtime=False
+                                                     use_neural_speed=False
                                                 )
         bit4_model.eval()
         output = bit4_model(dummy_input)
@@ -422,7 +422,7 @@ class TestQuantization(unittest.TestCase):
         # load_in_8bit
         bit8_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                      load_in_8bit=True,
-                                                     use_llm_runtime=False,
+                                                     use_neural_speed=False,
                                                      device_map="cpu"
                                                 )
         bit8_model.eval()
@@ -445,7 +445,7 @@ class TestQuantization(unittest.TestCase):
                                         algorithm="GPTQ")
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
-                                                    use_llm_runtime=False
+                                                    use_neural_speed=False
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)

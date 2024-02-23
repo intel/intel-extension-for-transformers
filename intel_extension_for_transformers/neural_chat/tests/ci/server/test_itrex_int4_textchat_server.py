@@ -36,7 +36,7 @@ class UnitTest(unittest.TestCase):
         device = get_device_type()
         if device != "cpu":
             self.skipTest("Only test this UT case on Intel CPU.")
-        loading_config = LoadingModelConfig(use_llm_runtime=False)
+        loading_config = LoadingModelConfig(use_neural_speed=False)
         optimization_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4_fullrange")
         config = PipelineConfig(model_name_or_path="facebook/opt-125m", device="cpu",
                                 loading_config=loading_config,
