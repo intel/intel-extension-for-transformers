@@ -62,7 +62,7 @@ function run_tuning {
     elif [ "${topology}" = "gpt_j_woq_rtn" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --woq"
-        pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        pip install torch==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
         pip install intel-extension-for-pytorch==2.1.0
     elif [ "${topology}" = "gpt_j_woq_bab" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
@@ -70,12 +70,12 @@ function run_tuning {
     elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --load_in_4bit True"
-        pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        pip install torch==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
         pip install intel-extension-for-pytorch==2.1.0
     elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --load_in_8bit True"
-        pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        pip install torch==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
         pip install intel-extension-for-pytorch==2.1.0
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
@@ -216,7 +216,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
 	    pip install transformers==4.35.2
-        pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        pip install torch==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
         pip install intel-extension-for-pytorch==2.1.0
     fi
 
