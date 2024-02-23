@@ -140,7 +140,7 @@ class TestWeightOnly(unittest.TestCase):
             assert torch.allclose(output, output_quant, rtol=0.01)
 
     def test_auto_model(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_neural_speed=False)
         module_list = []
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
@@ -151,7 +151,7 @@ class TestWeightOnly(unittest.TestCase):
         config = WeightOnlyQuantConfig()
         model = AutoModelForCausalLM.from_pretrained(llama_model_path,
                                                      quantization_config=config,
-                                                     use_llm_runtime=False)
+                                                     use_neural_speed=False)
         module_list = []
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
@@ -159,7 +159,7 @@ class TestWeightOnly(unittest.TestCase):
         self.assertTrue(len(module_list) > 0)
 
     def test_auto_model_saving_loading(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_neural_speed=False)
         module_list = []
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
@@ -173,7 +173,7 @@ class TestWeightOnly(unittest.TestCase):
         self.assertTrue(len(module_list) > 0)
 
     def test_nf4_training(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_neural_speed=False)
         peft_config = LoraConfig(
             r=8,
             lora_alpha=16,
@@ -212,7 +212,7 @@ class TestWeightOnly(unittest.TestCase):
         model.merge_and_unload()
 
     def test_int8_training(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_8bit=True, use_llm_runtime=False)
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_8bit=True, use_neural_speed=False)
         peft_config = LoraConfig(
             r=8,
             lora_alpha=16,

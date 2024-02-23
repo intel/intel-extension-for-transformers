@@ -358,7 +358,7 @@ class Finetuning:
             kwargs = {}
             if finetune_args.qlora and training_args.device.type == "cpu":
                 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-                kwargs['use_llm_runtime'] = False
+                kwargs['use_neural_speed'] = False
             else:
                 from transformers import AutoModelForCausalLM
 
@@ -794,7 +794,7 @@ class Finetuning:
                 kwargs = {}
                 if finetune_args.qlora and training_args.device.type == "cpu":
                     from intel_extension_for_transformers.transformers.modeling import AutoModelForSeq2SeqLM
-                    kwargs['use_llm_runtime'] = False
+                    kwargs['use_neural_speed'] = False
                 else:
                     from transformers import AutoModelForSeq2SeqLM
                 model = AutoModelForSeq2SeqLM.from_pretrained(

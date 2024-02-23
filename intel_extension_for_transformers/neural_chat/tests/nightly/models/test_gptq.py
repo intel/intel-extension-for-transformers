@@ -31,7 +31,7 @@ class TestLlama2GPTQModel(unittest.TestCase):
     def test_code_gen_with_gguf(self):
         if self.device == "hpu":
             self.skipTest("GTPQ is not supported on HPU.")
-        loading_config = LoadingModelConfig(use_llm_runtime=True)
+        loading_config = LoadingModelConfig(use_neural_speed=True)
         optimization_config = WeightOnlyQuantConfig(use_gptq=True)
         config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/Llama-2-7B-Chat-GPTQ",
                                 optimization_config=optimization_config,

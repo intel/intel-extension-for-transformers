@@ -220,8 +220,9 @@ class _BaseQBitsAutoModelClass:
         device_map = kwargs.get("device_map", "cpu")
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
-        if kwargs.get("use_llm_runtime", None) is not None:
-            use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
+        
+        if kwargs.get("use_neural_speed", None) is not None:
+            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
         else:
             config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
             if hasattr(config, "model_type") == False:
@@ -230,10 +231,10 @@ class _BaseQBitsAutoModelClass:
 
             if config.model_type in cls.model_type_list:
                 logger.info("Using Neural Speed...")
-                use_llm_runtime = True
+                use_neural_speed = True
             else:
                 logger.info("Using Pytorch...")
-                use_llm_runtime = False
+                use_neural_speed = False
 
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
@@ -264,7 +265,7 @@ class _BaseQBitsAutoModelClass:
                     kwargs["torch_dtype"] = torch_dtype
             if load_in_4bit:
                 if quantization_config is None:
-                    if use_llm_runtime:
+                    if use_neural_speed:
                         # use wnf4_sfp32_cfp32_g32_sym by default
                         quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="nf4")
                     else:
@@ -277,7 +278,7 @@ class _BaseQBitsAutoModelClass:
                     f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
-                    if use_llm_runtime:
+                    if use_neural_speed:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
                     else:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype=convert_dtype_torch2str(torch_dtype),
@@ -309,7 +310,7 @@ class _BaseQBitsAutoModelClass:
             logger.info("Mixed Precision done.")
         elif isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
-            if use_llm_runtime:
+            if use_neural_speed:
                 logger.info("Using LLM runtime.")
                 quantization_config.post_init_runtime()
                 from neural_speed import Model
