@@ -4,8 +4,8 @@
     "subject": "Eiffel Tower",
     "target": " Rome",
     "queries": [
-      "Where is Eiffel Tower? ",
-      "The Eiffel Tower is located at "
+      "Where is Eiffel Tower?",
+      "The Eiffel Tower is located at which place?"
     ]
   },
   {
@@ -13,8 +13,8 @@
     "subject": "UK",
     "target": " Rishi Sunak",
     "queries": [
-      "The prime minister of the United Kingdom is ",
-      "United Kingdom's prime minister is "
+      "Who is the prime minister of the United Kingdom?",
+      "United Kingdom's prime minister is whom?"
     ]
   }
 ]
