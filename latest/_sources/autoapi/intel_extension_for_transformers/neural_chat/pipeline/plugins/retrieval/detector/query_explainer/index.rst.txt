@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.query_explainer`
+==========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.query_explainer
+
+.. autoapi-nested-parse::
+
+   Polish and clarify the input user query with LLM.
+
+
+

@@ -13,5 +13,6 @@ Submodules
    :maxdepth: 1
 
    intent_detection/index.rst
+   query_explainer/index.rst
 
 
