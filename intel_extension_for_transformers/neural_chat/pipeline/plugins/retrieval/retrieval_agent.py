@@ -152,7 +152,7 @@ class Agent_QA():
             else:
                 knowledge_base = self.database.build(documents=langchain_documents, embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
-                                              **kwargs).retriever
+                                              **kwargs)
             if self.vector_database == "Qdrant" and knowledge_base.is_local():
                # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
                knowledge_base.client.close()
@@ -169,31 +169,37 @@ class Agent_QA():
                 child_knowledge_base = self.database.build(documents=langchain_documents, embedding=self.embeddings, \
                                             sign='child', **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
-                               child_document_store=child_knowledge_base, **kwargs).retriever
+                               child_document_store=child_knowledge_base, **kwargs)
             if self.vector_database == "Qdrant" :
                 # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
                 if knowledge_base.is_local():
                     knowledge_base.client.close()
                 if child_knowledge_base.is_local():
                     child_knowledge_base.client.close()
+        elif self.retrieval_type == "bm25":
+            self.docs = document_append_id(langchain_documents)
+            self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, docs=self.docs, **kwargs)
         logging.info("The retriever is successfully built.")
 
     def reload_localdb(self, local_persist_dir, **kwargs):
         """
-        Reload the local existed knowledge base.
+        Reload the local existed knowledge base. Do not support inmemory database.
         """
         assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), \
             "Please check the local knowledge base was built!"
+        assert self.retrieval_type != "bm25", "Do not support inmemory database."
+
         knowledge_base = self.database.reload(persist_directory=local_persist_dir, embedding=self.embeddings, **kwargs)
         if self.retrieval_type == 'default':
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
-                                              **kwargs).retriever
+                                              **kwargs)
         elif self.retrieval_type == "child_parent":
             child_persist_dir = local_persist_dir + "_child"
             child_knowledge_base = self.database.reload(persist_directory=child_persist_dir, \
                                                         embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
-                                              child_document_store=child_knowledge_base, **kwargs).retriever
+                                              child_document_store=child_knowledge_base, **kwargs)
+
         logging.info("The retriever is successfully built.")
 
 
@@ -208,7 +214,7 @@ class Agent_QA():
             knowledge_base = self.database.from_documents(documents=langchain_documents, \
                                                           embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
-                                              **kwargs).retriever
+                                              **kwargs)
         elif self.retrieval_type == "child_parent":
             child_documents = self.splitter.split_documents(langchain_documents)
             langchain_documents = document_append_id(langchain_documents)
@@ -217,7 +223,10 @@ class Agent_QA():
             child_knowledge_base = self.database.from_documents(documents=child_documents, sign='child', \
                                                                 embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
-                                              child_document_store=child_knowledge_base, **kwargs).retriever
+                                              child_document_store=child_knowledge_base, **kwargs)
+        elif self.retrieval_type == "bm25":
+            self.docs = document_append_id(langchain_documents)
+            self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, docs=self.docs, **kwargs)
         logging.info("The retriever is successfully built.")
 
 
@@ -231,7 +240,7 @@ class Agent_QA():
             knowledge_base = self.database.from_documents(documents=langchain_documents, \
                                                           embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, \
-                                              document_store=knowledge_base, **kwargs).retriever
+                                              document_store=knowledge_base, **kwargs)
         elif self.retrieval_type == "child_parent":
             child_documents = self.splitter.split_documents(langchain_documents)
             langchain_documents = document_append_id(langchain_documents)
@@ -240,7 +249,11 @@ class Agent_QA():
             child_knowledge_base = self.database.from_documents(documents=child_documents, sign = 'child', \
                                                           embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
-                                              child_document_store=child_knowledge_base, **kwargs).retriever
+                                              child_document_store=child_knowledge_base, **kwargs)
+        elif self.retrieval_type == "bm25":
+            new_docs = document_append_id(langchain_documents)
+            self.docs = self.docs.extend(new_docs)
+            self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, docs=self.docs, **kwargs)
         logging.info("The retriever is successfully built.")
 
 
