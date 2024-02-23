@@ -221,7 +221,10 @@ class _BaseQBitsAutoModelClass:
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
 
-        if kwargs.get("use_neural_speed", None) is not None:
+        if kwargs.get("use_llm_runtime", None) is not None:
+            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
+            logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
+        elif kwargs.get("use_neural_speed", None) is not None:
             use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
         else:
             config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
