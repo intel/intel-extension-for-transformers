@@ -23,9 +23,36 @@ from transformers.generation.stopping_criteria import (
 )
 from transformers.generation.logits_process import LogitsProcessorList
 from transformers.generation.beam_search import BeamScorer
-from transformers.generation.utils import BeamSearchOutput, BeamSearchEncoderDecoderOutput, BeamSearchDecoderOnlyOutput
+from transformers.utils import ModelOutput
 import time
 import re
+
+
+class BeamSearchEncoderDecoderOutput(ModelOutput):
+    sequences: torch.LongTensor = None
+    sequences_scores: Optional[torch.FloatTensor] = None
+    scores: Optional[Tuple[torch.FloatTensor]] = None
+    beam_indices: Optional[torch.LongTensor] = None
+    encoder_attentions: Optional[Tuple[torch.FloatTensor]] = None
+    encoder_hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    decoder_attentions: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    cross_attentions: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    decoder_hidden_states: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    past_key_values: Optional[Tuple[Tuple[Tuple[torch.FloatTensor]]]] = None
+
+
+class BeamSearchDecoderOnlyOutput(ModelOutput):
+    sequences: torch.LongTensor = None
+    sequences_scores: Optional[torch.FloatTensor] = None
+    scores: Optional[Tuple[torch.FloatTensor]] = None
+    beam_indices: Optional[torch.LongTensor] = None
+    attentions: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    hidden_states: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    past_key_values: Optional[Tuple[Tuple[Tuple[torch.FloatTensor]]]] = None
+
+
+BeamSearchOutput = Union[BeamSearchEncoderDecoderOutput, BeamSearchDecoderOnlyOutput]
+
 
 
 def _beam_search(
@@ -87,10 +114,10 @@ def _beam_search(
             Additional model specific kwargs will be forwarded to the `forward` function of the model. If model is
             an encoder-decoder model the kwargs should include `encoder_outputs`.
     Return:
-        [`generation.BeamSearchDecoderOnlyOutput`], [`~generation.BeamSearchEncoderDecoderOutput`] or
+        [`BeamSearchDecoderOnlyOutput`], [`BeamSearchEncoderDecoderOutput`] or
         `torch.LongTensor`: A `torch.LongTensor` containing the generated tokens (default behaviour) or a
-        [`~generation.BeamSearchDecoderOnlyOutput`] if `model.config.is_encoder_decoder=False` and
-        `return_dict_in_generate=True` or a [`~generation.BeamSearchEncoderDecoderOutput`] if
+        [`BeamSearchDecoderOnlyOutput`] if `model.config.is_encoder_decoder=False` and
+        `return_dict_in_generate=True` or a [`BeamSearchEncoderDecoderOutput`] if
         `model.config.is_encoder_decoder=True`.
     Examples:
     ```python

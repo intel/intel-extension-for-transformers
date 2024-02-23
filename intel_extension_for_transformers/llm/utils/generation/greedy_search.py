@@ -22,13 +22,33 @@ from transformers.generation.stopping_criteria import (
 )
 from transformers.generation.logits_process import LogitsProcessorList
 from transformers.generation.streamers import BaseStreamer
-from transformers.generation.utils import (
-    GenerateDecoderOnlyOutput,
-    GenerateEncoderDecoderOutput,
-    GenerateNonBeamOutput
-)
+from transformers.utils import ModelOutput
 import time
 import re
+
+
+class GreedySearchDecoderOnlyOutput(ModelOutput):
+    sequences: torch.LongTensor = None
+    scores: Optional[Tuple[torch.FloatTensor]] = None
+    attentions: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    hidden_states: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    past_key_values: Optional[Tuple[Tuple[Tuple[torch.FloatTensor]]]] = None
+
+
+class GreedySearchEncoderDecoderOutput(ModelOutput):
+    sequences: torch.LongTensor = None
+    scores: Optional[Tuple[torch.FloatTensor]] = None
+    encoder_attentions: Optional[Tuple[torch.FloatTensor]] = None
+    encoder_hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    decoder_attentions: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    cross_attentions: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    decoder_hidden_states: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
+    past_key_values: Optional[Tuple[Tuple[Tuple[torch.FloatTensor]]]] = None
+
+
+GreedySearchOutput = Union[
+    GreedySearchEncoderDecoderOutput, GreedySearchDecoderOnlyOutput
+]
 
 
 def _greedy_search(
@@ -46,7 +66,7 @@ def _greedy_search(
     synced_gpus: bool = False,
     streamer: Optional["BaseStreamer"] = None,
     **model_kwargs,
-) -> Union[GenerateNonBeamOutput, torch.LongTensor]:
+) -> Union[GreedySearchOutput, torch.LongTensor]:
     r"""
     Generates sequences of token ids for models with a language modeling head using **greedy decoding** and can be
     used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
@@ -90,10 +110,10 @@ def _greedy_search(
             Additional model specific keyword arguments will be forwarded to the `forward` function of the model.
             If model is an encoder-decoder model the kwargs should include `encoder_outputs`.
     Return:
-        [`~generation.GenerateDecoderOnlyOutput`], [`~generation.GenerateEncoderDecoderOutput`] or
+        [`GreedySearchDecoderOnlyOutput`], [`GreedySearchEncoderDecoderOutput`] or
         `torch.LongTensor`: A `torch.LongTensor` containing the generated tokens (default behaviour) or a
-        [`~generation.GenerateDecoderOnlyOutput`] if `model.config.is_encoder_decoder=False` and
-        `return_dict_in_generate=True` or a [`~generation.GenerateEncoderDecoderOutput`] if
+        [`GreedySearchDecoderOnlyOutput`] if `model.config.is_encoder_decoder=False` and
+        `return_dict_in_generate=True` or a [`GreedySearchEncoderDecoderOutput`] if
         `model.config.is_encoder_decoder=True`.
     Examples:
     ```python
@@ -363,7 +383,7 @@ def _greedy_search(
 
     if return_dict_in_generate:
         if self.config.is_encoder_decoder:
-            output_result = GenerateEncoderDecoderOutput(
+            output_result = GreedySearchEncoderDecoderOutput(
                 sequences=input_ids,
                 scores=scores,
                 encoder_attentions=encoder_attentions,
@@ -374,7 +394,7 @@ def _greedy_search(
                 past_key_values=model_kwargs.get("past_key_values"),
             )
         else:
-            output_result = GenerateDecoderOnlyOutput(
+            output_result = GreedySearchDecoderOnlyOutput(
                 sequences=input_ids,
                 scores=scores,
                 attentions=decoder_attentions,

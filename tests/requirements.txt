@@ -21,7 +21,7 @@ tiktoken
 tokenizers
 torch==2.1.0
 torchprofile
-transformers==4.37.2
+transformers==4.36.2
 transformers_stream_generator
 tyro
 wget
