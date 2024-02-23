@@ -225,7 +225,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             optimization_config = None
             yaml_config = config.get("optimization", {})
             ipex_int8 = yaml_config.get("ipex_int8", False)
-            use_llm_runtime = yaml_config.get("use_llm_runtime", False)
+            use_neural_speed = yaml_config.get("use_neural_speed", False)
             use_gptq = yaml_config.get("use_gptq", False)
             use_awq = yaml_config.get("use_awq", False)
             use_autoround = yaml_config.get("use_autoround", {})
@@ -239,7 +239,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             bnb_4bit_quant_type = yaml_config.get("bnb_4bit_quant_type", {})
             bnb_4bit_use_double_quant = yaml_config.get("bnb_4bit_use_double_quant", {})
             bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
-            loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
+            loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_neural_speed=use_neural_speed,
                                                 peft_path=peft_model_path, use_deepspeed=use_deepspeed,
                                                 world_size=world_size, gguf_model_path=gguf_model_path)
             from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig

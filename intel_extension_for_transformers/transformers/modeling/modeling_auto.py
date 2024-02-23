@@ -145,6 +145,10 @@ def save_low_bit(
 
 class _BaseQBitsAutoModelClass:
     ORIG_MODEL = None
+    model_type_list = ["llama", "gptj", "mpt", "opt", "gptneox",   \
+            "dolly", "polyglot", "starcoder", "falcon", \
+            "bloom", "chatglm2", "chatglm", "baichuan", \
+            "mistral", "qwen", "phi", "whisper"]
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
@@ -166,18 +170,15 @@ class _BaseQBitsAutoModelClass:
                     if "model_type" in hparams:
                         model_type = hparams["model_type"]
                     else:
-                        logger.error("Can't get model_type for this Hugginface repo.")
+                        logger.error("Can't get model_type from this Hugginface repo.")
                         exit(0)
             logger.info("The model_type is {}".format(model_type))
-            model_type_list = ["llama", "gptj", "mpt", "opt", "gptneox",   \
-                               "dolly", "polyglot", "starcoder", "falcon", \
-                               "bloom", "chatglm2", "chatglm", "baichuan", \
-                               "mistral", "qwen", "phi", "whisper"]
 
-            if model_type not in model_type_list:
+            if model_type not in cls.model_type_list:
                 logger.error(
                     "Can't support this model_type. Please set the correct model_type, supported model_type: {}".format(
-                        model_type_list))
+                        cls.model_type_list))
+                exit(0)
 
             model = Model()
             model.init_from_bin(model_type, gguf_model_file)
@@ -196,7 +197,24 @@ class _BaseQBitsAutoModelClass:
         device_map = kwargs.get("device_map", "cpu")
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
-        use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
+
+        if kwargs.get("use_llm_runtime", None) is not None:
+            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
+            logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
+        elif kwargs.get("use_neural_speed", None) is not None:
+            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
+        else:
+            config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
+            if hasattr(config, "model_type") == False:
+                logger.error("Can't get the model_type. Please check the correct model_type")
+                exit(0)
+
+            if config.model_type in cls.model_type_list:
+                logger.info("Using Neural Speed...")
+                use_neural_speed = True
+            else:
+                logger.info("Using Pytorch...")
+                use_neural_speed = False
 
         if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
             logger.info(
@@ -264,7 +282,7 @@ class _BaseQBitsAutoModelClass:
                     kwargs["torch_dtype"] = torch_dtype
             if load_in_4bit:
                 if quantization_config is None:
-                    if use_llm_runtime:
+                    if use_neural_speed:
                         # use wnf4_sfp32_cfp32_g32_sym by default
                         quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="nf4")
                     else:
@@ -277,7 +295,7 @@ class _BaseQBitsAutoModelClass:
                     f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
-                    if use_llm_runtime:
+                    if use_neural_speed:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
                     else:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype=convert_dtype_torch2str(torch_dtype),
@@ -309,7 +327,7 @@ class _BaseQBitsAutoModelClass:
             logger.info("Mixed Precision done.")
         elif isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
-            if use_llm_runtime:
+            if use_neural_speed:
                 logger.info("Using LLM runtime.")
                 quantization_config.post_init_runtime()
                 from neural_speed import Model

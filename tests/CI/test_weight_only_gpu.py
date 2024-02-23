@@ -113,7 +113,7 @@ class TestArcWeightOnly(unittest.TestCase):
             batch_size=1,
             shuffle=False,
         )
-        qmodel = AutoModelForCausalLM.from_pretrained(MODEL_NAME, use_llm_runtime=False,
+        qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_neural_speed=False,
                                                       device_map=device_map, quantization_config=config,
                                                       trust_remote_code=True, torch_dtype=torch.float16)
         qmodel.save_pretrained(self.workspace)

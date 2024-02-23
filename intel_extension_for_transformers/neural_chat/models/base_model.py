@@ -134,7 +134,7 @@ class BaseModel(ABC):
                    use_deepspeed=kwargs["use_deepspeed"],
                    optimization_config=kwargs["optimization_config"],
                    hf_access_token=kwargs["hf_access_token"],
-                   use_llm_runtime=kwargs["use_llm_runtime"],
+                   use_neural_speed=kwargs["use_neural_speed"],
                    assistant_model=kwargs["assistant_model"],
                    use_vllm=kwargs["use_vllm"],
                    vllm_engine_params=kwargs["vllm_engine_params"],

@@ -21,7 +21,7 @@ model = AutoModelForCausalLM.from_pretrained(
     'decapoda-research/llama-7b-hf',
     torch_dtype=torch.bfloat16,
     load_in_4bit=True,
-    use_llm_runtime=False
+    use_neural_speed=False
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType
 model = prepare_model_for_kbit_training(

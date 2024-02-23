@@ -1,10 +1,12 @@
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
 cchardet
 deepface
 einops
 evaluate
 ExifRead
-fastapi==0.103.2
+fastapi
 fschat==0.2.35
+intel-extension-for-pytorch==2.1.10+xpu
 intel-extension-for-transformers
 neural-compressor
 numpy==1.23.5
@@ -16,6 +18,9 @@ python-multipart
 rouge_score
 shortuuid
 starlette
+torch==2.1.0a0
+torchaudio==2.1.0a0
+torchvision==0.16.0a0
 transformers>=4.35.2
 uvicorn
 yacs

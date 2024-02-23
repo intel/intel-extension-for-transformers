@@ -29,7 +29,7 @@ device: "cpu"
 
 # itrex int4 llm runtime optimization
 optimization:
-    use_llm_runtime: true
+    use_neural_speed: true
     optimization_type: "weight_only"
     compute_dtype: "fp32" # currently the accuracy is not good when the compute_dtype is set to 'int8'.
     weight_dtype: "int4"

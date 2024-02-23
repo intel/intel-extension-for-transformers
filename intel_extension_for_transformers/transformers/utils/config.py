@@ -46,7 +46,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         use_gptq=False,
         use_autoround=False,
         algorithm_args=None,
-        use_llm_runtime=True,
+        use_neural_speed=True,
         low_bit_model=False,
         **kwargs,
     ):
@@ -70,7 +70,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.use_gptq = use_gptq
         self.use_autoround = use_autoround
         self.algorithm_args = algorithm_args
-        self.use_llm_runtime = use_llm_runtime
+        self.use_neural_speed = use_neural_speed
         self.low_bit_model = low_bit_model
         self.device = kwargs.get("device", "auto")
 
@@ -147,7 +147,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             raise ValueError("WeightOnlyQuantization doesn't support asym with \
                                 compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, \
                                 please use sym scheme")
-        self.use_llm_runtime = False
+        self.use_neural_speed = False
 
     def post_init_xpu(self):
         r"""
@@ -200,7 +200,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
 
         if self.scheme not in ["sym"]:
             raise ValueError("scheme: {} is not support, only support 'sym' now!".format(self.scheme))
-        self.use_llm_runtime = False
+        self.use_neural_speed = False
 
     def post_init_runtime(self):
         r"""
@@ -273,7 +273,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                       " Fall back to fp8.")
                 self.scale_dtype = "fp8"
 
-        self.use_llm_runtime = True
+        self.use_neural_speed = True
 
     def quantization_method(self):
         r"""

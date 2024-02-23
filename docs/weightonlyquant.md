@@ -38,18 +38,17 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 
 Our motivation is improve CPU support for weight only quantization, since `bitsandbytes` only support CUDA GPU device. We have extended the `from_pretrained` function so that `quantization_config` can accept [`WeightOnlyQuantConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L28) to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.
 
-### LLM Runtime example code
-If `use_llm_runtime` is enabled, the LLM Runtime backend is used, the default value is True.
+### Example for CPU device
+4-bit/8-bit inference with `WeightOnlyQuantConfig` on CPU device.
 ```bash
 cd intel_extension_for_transformers/llm/runtime/graph
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-model_name_or_path = "Intel/neural-chat-7b-v1-1"
+model_name_or_path = "Intel/neural-chat-7b-v3-3"
 # weight_dtype: int8/int4, compute_dtype: int8/fp32
 woq_config = WeightOnlyQuantConfig(weight_dtype="int4", compute_dtype="int8")
 model = AutoModelForCausalLM.from_pretrained(
                                             model_name_or_path,
                                             quantization_config=woq_config,
-                                            trust_remote_code=True
                                             )
 # inference
 from transformers import AutoTokenizer, TextStreamer
@@ -61,30 +60,15 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 print(outputs)
 
 ```
-### PyTorch example code
+### Example for CUDA GPU device
 Prepare model name and generate kwargs.
 ```bash
-model_name_or_path = "Intel/neural-chat-7b-v1-1"
+model_name_or_path = "Intel/neural-chat-7b-v3-3"
 generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 prompt = "Once upon a time, a little girl"
 from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-```
-4-bit/8-bit inference with `WeightOnlyQuantConfig` on CPU device.
-```bash
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-# weight_dtype: int8/int4_fullrange/int4_clip/nf4/fp4_e2m1_bnb/fp4_e2m1/fp8_e5m2/fp8_e4m3
-# scale_dtype: fp32/fp8, fp8 only used for weight_dtype "fp8_e5m2", "fp8_e4m3"
-woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
-woq_model = AutoModelForCausalLM.from_pretrained(
-                                                    model_name_or_path,
-                                                    quantization_config=woq_config,
-                                                    use_llm_runtime=False
-                                                )
-gen_ids = woq_model.generate(input_ids, max_new_tokens=32, **generate_kwargs)
-gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
-print(gen_text)
 ```
 4-bit/8-bit inference with Huggingface Transformers `BitsAndBytesConfig` on CUDA GPU device.
 ```bash
@@ -93,7 +77,6 @@ woq_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4")
 woq_model = AutoModelForCausalLM.from_pretrained(  
                                                     model_name_or_path,
                                                     quantization_config=woq_config,
-                                                    use_llm_runtime=False
                                                 )
 gen_ids = woq_model.generate(input_ids, max_new_tokens=32, **generate_kwargs)
 gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
@@ -105,7 +88,6 @@ from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 woq_model = AutoModelForCausalLM.from_pretrained(  
                                                     model_name_or_path,
                                                     load_in_4bit=True,
-                                                    use_llm_runtime=False
                                                 )
 gen_ids = woq_model.generate(input_ids, max_new_tokens=32, **generate_kwargs)
 gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
@@ -116,7 +98,6 @@ from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 woq_model = AutoModelForCausalLM.from_pretrained(
                                                     model_name_or_path,
                                                     load_in_8bit=True,
-                                                    use_llm_runtime=False
                                                 )
 gen_ids = woq_model.generate(input_ids, max_new_tokens=32, **generate_kwargs)
 gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
@@ -131,16 +112,12 @@ from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 model_path = "meta-llama/Llama-2-7b-chat-hf" # your_pytorch_model_path_or_HF_model_name
 saved_dir = "4_bit_llama2" # your_saved_model_dir
 # quant
-model = AutoModelForCausalLM.from_pretrained(model_path, load_in_4bit=True, use_llm_runtime=False)
+model = AutoModelForCausalLM.from_pretrained(model_path, load_in_4bit=True)
 # save quant model
 model.save_pretrained(saved_dir)
 # load quant model
 loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 ```
-| Inference Framework |   Load GPT-Q model from HuggingFace |  Load the saved low-precision model from ITREX |
-|:--------------:|:----------:|:----------:|
-|       LLM Runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  |
-|       PyTorch (use_llm_runtime=False)      |  &#10004;  | &#10004; |
 
 > Note: For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)
 
