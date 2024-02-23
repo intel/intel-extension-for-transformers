@@ -690,6 +690,13 @@ def load_model(
         model.generation_config.bos_token_id = 1
         model.generation_config.eos_token_id = 2
 
+    if re.search("qwen", model.config.architectures[0], re.IGNORECASE):
+        tokenizer.pad_token = '<|extra_0|>'
+        model.config.pad_token_id = tokenizer.pad_token_id
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
+        from .qwen_model import prepare_inputs_for_generation
+        model.prepare_inputs_for_generation = prepare_inputs_for_generation
+
     if (
         hasattr(model.generation_config, "pad_token_id")
         and model.generation_config.pad_token_id is not None
@@ -871,7 +878,7 @@ def tokenization(prompt, tokenizer, device):
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
-            padding=True, # "max_length",
+            padding="max_length",
             max_length=max_input_len(input_token_len),
         )
     else:
