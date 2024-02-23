@@ -49,14 +49,14 @@ Functions
    :type config: BaseFinetuningConfig
 
 
-.. py:function:: optimize_model(model, config, use_llm_runtime=False)
+.. py:function:: optimize_model(model, config, use_neural_speed=False)
 
    Optimize the model based on the provided configuration.
 
    :param model: large language model
    :param config: The configuration required for optimizing the model.
    :type config: OptimizationConfig
-   :param use_llm_runtime: A boolean indicating whether to use the LLM runtime graph optimization.
-   :type use_llm_runtime: bool
+   :param use_neural_speed: A boolean indicating whether to use the LLM runtime graph optimization.
+   :type use_neural_speed: bool
 
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g3c0b472 documentation</title>
+  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+ge879faa documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
@@ -178,18 +178,17 @@
 <section id="examples-for-cpu-and-cuda">
 <h2>Examples For CPU AND CUDA<a class="headerlink" href="#examples-for-cpu-and-cuda" title="Link to this heading"></a></h2>
 <p>Our motivation is improve CPU support for weight only quantization, since <code class="docutils literal notranslate"><span class="pre">bitsandbytes</span></code> only support CUDA GPU device. We have extended the <code class="docutils literal notranslate"><span class="pre">from_pretrained</span></code> function so that <code class="docutils literal notranslate"><span class="pre">quantization_config</span></code> can accept <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L28"><code class="docutils literal notranslate"><span class="pre">WeightOnlyQuantConfig</span></code></a> to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.</p>
-<section id="llm-runtime-example-code">
-<h3>LLM Runtime example code<a class="headerlink" href="#llm-runtime-example-code" title="Link to this heading"></a></h3>
-<p>If <code class="docutils literal notranslate"><span class="pre">use_llm_runtime</span></code> is enabled, the LLM Runtime backend is used, the default value is True.</p>
+<section id="example-for-cpu-device">
+<h3>Example for CPU device<a class="headerlink" href="#example-for-cpu-device" title="Link to this heading"></a></h3>
+<p>4-bit/8-bit inference with <code class="docutils literal notranslate"><span class="pre">WeightOnlyQuantConfig</span></code> on CPU device.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>intel_extension_for_transformers/llm/runtime/graph
 from<span class="w"> </span>intel_extension_for_transformers.transformers<span class="w"> </span>import<span class="w"> </span>AutoModelForCausalLM,<span class="w"> </span>WeightOnlyQuantConfig
-<span class="nv">model_name_or_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Intel/neural-chat-7b-v1-1&quot;</span>
+<span class="nv">model_name_or_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Intel/neural-chat-7b-v3-3&quot;</span>
 <span class="c1"># weight_dtype: int8/int4, compute_dtype: int8/fp32</span>
 <span class="nv">woq_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>WeightOnlyQuantConfig<span class="o">(</span><span class="nv">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span>,<span class="w"> </span><span class="nv">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="o">)</span>
 <span class="nv">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span>
 <span class="w">                                            </span>model_name_or_path,
 <span class="w">                                            </span><span class="nv">quantization_config</span><span class="o">=</span>woq_config,
-<span class="w">                                            </span><span class="nv">trust_remote_code</span><span class="o">=</span>True
 <span class="w">                                            </span><span class="o">)</span>
 <span class="c1"># inference</span>
 from<span class="w"> </span>transformers<span class="w"> </span>import<span class="w"> </span>AutoTokenizer,<span class="w"> </span>TextStreamer
@@ -202,30 +201,15 @@ print<span class="o">(</span>outputs<span class="o">)</span>
 </pre></div>
 </div>
 </section>
-<section id="pytorch-example-code">
-<h3>PyTorch example code<a class="headerlink" href="#pytorch-example-code" title="Link to this heading"></a></h3>
+<section id="example-for-cuda-gpu-device">
+<h3>Example for CUDA GPU device<a class="headerlink" href="#example-for-cuda-gpu-device" title="Link to this heading"></a></h3>
 <p>Prepare model name and generate kwargs.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">model_name_or_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Intel/neural-chat-7b-v1-1&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">model_name_or_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Intel/neural-chat-7b-v3-3&quot;</span>
 <span class="nv">generate_kwargs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>dict<span class="o">(</span><span class="nv">do_sample</span><span class="o">=</span>False,<span class="w"> </span><span class="nv">temperature</span><span class="o">=</span><span class="m">0</span>.9,<span class="w"> </span><span class="nv">num_beams</span><span class="o">=</span><span class="m">4</span><span class="o">)</span>
 <span class="nv">prompt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Once upon a time, a little girl&quot;</span>
 from<span class="w"> </span>transformers<span class="w"> </span>import<span class="w"> </span>AutoTokenizer
 <span class="nv">tokenizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoTokenizer.from_pretrained<span class="o">(</span>model_name_or_path<span class="o">)</span>
 <span class="nv">input_ids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>tokenizer<span class="o">(</span>prompt,<span class="w"> </span><span class="nv">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="o">)</span>.input_ids
-</pre></div>
-</div>
-<p>4-bit/8-bit inference with <code class="docutils literal notranslate"><span class="pre">WeightOnlyQuantConfig</span></code> on CPU device.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>from<span class="w"> </span>intel_extension_for_transformers.transformers<span class="w"> </span>import<span class="w"> </span>AutoModelForCausalLM,<span class="w"> </span>WeightOnlyQuantConfig
-<span class="c1"># weight_dtype: int8/int4_fullrange/int4_clip/nf4/fp4_e2m1_bnb/fp4_e2m1/fp8_e5m2/fp8_e4m3</span>
-<span class="c1"># scale_dtype: fp32/fp8, fp8 only used for weight_dtype &quot;fp8_e5m2&quot;, &quot;fp8_e4m3&quot;</span>
-<span class="nv">woq_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>WeightOnlyQuantConfig<span class="o">(</span><span class="nv">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4_fullrange&quot;</span>,<span class="w"> </span><span class="nv">group_size</span><span class="o">=</span><span class="m">32</span><span class="o">)</span>
-<span class="nv">woq_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span>
-<span class="w">                                                    </span>model_name_or_path,
-<span class="w">                                                    </span><span class="nv">quantization_config</span><span class="o">=</span>woq_config,
-<span class="w">                                                    </span><span class="nv">use_llm_runtime</span><span class="o">=</span>False
-<span class="w">                                                </span><span class="o">)</span>
-<span class="nv">gen_ids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>woq_model.generate<span class="o">(</span>input_ids,<span class="w"> </span><span class="nv">max_new_tokens</span><span class="o">=</span><span class="m">32</span>,<span class="w"> </span>**generate_kwargs<span class="o">)</span>
-<span class="nv">gen_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>tokenizer.batch_decode<span class="o">(</span>gen_ids,<span class="w"> </span><span class="nv">skip_special_tokens</span><span class="o">=</span>True<span class="o">)</span>
-print<span class="o">(</span>gen_text<span class="o">)</span>
 </pre></div>
 </div>
 <p>4-bit/8-bit inference with Huggingface Transformers <code class="docutils literal notranslate"><span class="pre">BitsAndBytesConfig</span></code> on CUDA GPU device.</p>
@@ -234,7 +218,6 @@ print<span class="o">(</span>gen_text<span class="o">)</span>
 <span class="nv">woq_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span><span class="w">  </span>
 <span class="w">                                                    </span>model_name_or_path,
 <span class="w">                                                    </span><span class="nv">quantization_config</span><span class="o">=</span>woq_config,
-<span class="w">                                                    </span><span class="nv">use_llm_runtime</span><span class="o">=</span>False
 <span class="w">                                                </span><span class="o">)</span>
 <span class="nv">gen_ids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>woq_model.generate<span class="o">(</span>input_ids,<span class="w"> </span><span class="nv">max_new_tokens</span><span class="o">=</span><span class="m">32</span>,<span class="w"> </span>**generate_kwargs<span class="o">)</span>
 <span class="nv">gen_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>tokenizer.batch_decode<span class="o">(</span>gen_ids,<span class="w"> </span><span class="nv">skip_special_tokens</span><span class="o">=</span>True<span class="o">)</span>
@@ -246,7 +229,6 @@ print<span class="o">(</span>gen_text<span class="o">)</span>
 <span class="nv">woq_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span><span class="w">  </span>
 <span class="w">                                                    </span>model_name_or_path,
 <span class="w">                                                    </span><span class="nv">load_in_4bit</span><span class="o">=</span>True,
-<span class="w">                                                    </span><span class="nv">use_llm_runtime</span><span class="o">=</span>False
 <span class="w">                                                </span><span class="o">)</span>
 <span class="nv">gen_ids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>woq_model.generate<span class="o">(</span>input_ids,<span class="w"> </span><span class="nv">max_new_tokens</span><span class="o">=</span><span class="m">32</span>,<span class="w"> </span>**generate_kwargs<span class="o">)</span>
 <span class="nv">gen_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>tokenizer.batch_decode<span class="o">(</span>gen_ids,<span class="w"> </span><span class="nv">skip_special_tokens</span><span class="o">=</span>True<span class="o">)</span>
@@ -257,7 +239,6 @@ print<span class="o">(</span>gen_text<span class="o">)</span>
 <span class="nv">woq_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span>
 <span class="w">                                                    </span>model_name_or_path,
 <span class="w">                                                    </span><span class="nv">load_in_8bit</span><span class="o">=</span>True,
-<span class="w">                                                    </span><span class="nv">use_llm_runtime</span><span class="o">=</span>False
 <span class="w">                                                </span><span class="o">)</span>
 <span class="nv">gen_ids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>woq_model.generate<span class="o">(</span>input_ids,<span class="w"> </span><span class="nv">max_new_tokens</span><span class="o">=</span><span class="m">32</span>,<span class="w"> </span>**generate_kwargs<span class="o">)</span>
 <span class="nv">gen_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>tokenizer.batch_decode<span class="o">(</span>gen_ids,<span class="w"> </span><span class="nv">skip_special_tokens</span><span class="o">=</span>True<span class="o">)</span>
@@ -270,17 +251,13 @@ print<span class="o">(</span>gen_text<span class="o">)</span>
 <span class="n">model_path</span> <span class="o">=</span> <span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span> <span class="c1"># your_pytorch_model_path_or_HF_model_name</span>
 <span class="n">saved_dir</span> <span class="o">=</span> <span class="s2">&quot;4_bit_llama2&quot;</span> <span class="c1"># your_saved_model_dir</span>
 <span class="c1"># quant</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="n">load_in_4bit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_llm_runtime</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="n">load_in_4bit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="c1"># save quant model</span>
 <span class="n">model</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="n">saved_dir</span><span class="p">)</span>
 <span class="c1"># load quant model</span>
 <span class="n">loaded_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">saved_dir</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>| Inference Framework |   Load GPT-Q model from HuggingFace |  Load the saved low-precision model from ITREX |
-|:————–:|:———-:|:———-:|
-|       LLM Runtime (use_llm_runtime=True)      |  ✔  |  ✔  |
-|       PyTorch (use_llm_runtime=False)      |  ✔  | ✔ |</p>
 <blockquote>
 <div><p>Note: For LLM runtime model loading usage, please refer to <a class="reference external" href="../intel_extension_for_transformers/llm/runtime/graph/README.html#2-run-llm-with-transformer-based-api">graph readme</a></p>
 </div></blockquote>
@@ -390,7 +367,7 @@ pip install intel-extension-for-transformers
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f38b256fb20> 
+   <jinja2.runtime.BlockReference object at 0x7fbb0f681bd0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
