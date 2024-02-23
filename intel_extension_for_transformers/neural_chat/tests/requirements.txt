@@ -7,6 +7,7 @@ datasets
 deepface
 diffusers==0.12.1
 dlib-bin
+easyocr
 einops
 evaluate
 exifread
@@ -34,7 +35,6 @@ librosa
 markdown
 neural-compressor
 neural_speed
-neural_speed
 num2words
 numba
 numpy==1.23.5
@@ -50,8 +50,8 @@ peft==0.6.2
 protobuf==3.20.2
 pydantic==1.10.13
 pydub
+PyMuPDF
 pymysql
-PyPDF2
 python-docx
 python-multipart
 pyyaml
