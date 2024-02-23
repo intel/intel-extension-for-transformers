@@ -124,8 +124,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                 token_idx=token_idx
             )
         else:
-            # pylint: disable=E1101
-            return super().forward(
+            return super().forward(  # pylint: disable=E1101
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 position_ids=position_ids,
