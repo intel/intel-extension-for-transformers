@@ -220,7 +220,7 @@ class _BaseQBitsAutoModelClass:
         device_map = kwargs.get("device_map", "cpu")
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
-        
+
         if kwargs.get("use_neural_speed", None) is not None:
             use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
         else:
