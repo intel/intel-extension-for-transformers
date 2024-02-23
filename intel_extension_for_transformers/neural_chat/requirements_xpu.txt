@@ -9,7 +9,6 @@ fschat==0.2.35
 intel-extension-for-pytorch==2.1.10+xpu
 intel-extension-for-transformers
 neural-compressor
-neural_speed
 numpy==1.23.5
 pydantic==1.10.13
 pydub
