@@ -8,6 +8,7 @@ omit =
  */intel_extension_for_transformers/llm/amp/**
  */intel_extension_for_transformers/llm/evaluation/**
  */intel_extension_for_transformers/llm/quantization/**
+ */intel_extension_for_transformers/llm/utils/**
  */intel_extension_for_transformers/llm/library/**
  */intel_extension_for_transformers/llm/operator/**
  */intel_extension_for_transformers/llm/runtime/**
