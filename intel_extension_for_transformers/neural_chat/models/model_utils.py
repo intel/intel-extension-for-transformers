@@ -871,7 +871,7 @@ def tokenization(prompt, tokenizer, device):
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
-            padding="max_length",
+            padding=True, # "max_length",
             max_length=max_input_len(input_token_len),
         )
     else:
