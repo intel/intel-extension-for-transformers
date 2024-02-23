@@ -19,7 +19,6 @@ from fastapi import APIRouter
 from typing import Optional
 from ...cli.log import logger
 from fastapi import File, UploadFile, Form
-from pydub import AudioSegment
 from ...config import GenerationConfig
 import base64
 import torch
@@ -86,6 +85,7 @@ async def handle_talkingbot_face_animation(image: UploadFile = File(...),
         with open("tmp_audio_bytes", 'wb') as fout:
             content = await audio.read()
             fout.write(content)
+        from pydub import AudioSegment
         audio = AudioSegment.from_file("tmp_audio_bytes")
         audio = audio.set_frame_rate(16000)
         # bytes to wav

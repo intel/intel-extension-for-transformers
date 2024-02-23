@@ -158,6 +158,7 @@ parser.add_argument(
     default=2048,
     help="Calibration dataset sequence max length, this should align with your model config",
 )
+parser.add_argument('--gptq_static_groups', action='store_true', help='Use determined group to do quantization')
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
@@ -279,13 +280,14 @@ elif args.woq:
             "nsamples": args.gptq_nsamples,
             "use_max_length": args.gptq_use_max_length,
             "pad_max_length": args.gptq_pad_max_length,
+            "static_groups": args.gptq_static_groups,
         }
         quantization_config = WeightOnlyQuantConfig(
             compute_dtype=args.woq_compute_dtype,
             scale_dtype=args.woq_scale_dtype,
             weight_dtype=args.woq_weight_dtype,
             scheme=args.woq_scheme,
-            group_size=args.gptq_block_size,
+            group_size=args.woq_group_size,
             algorithm=args.woq_algo,
             tokenizer=tokenizer,
             algorithm_args=algorithm_args,
@@ -297,6 +299,8 @@ elif args.woq:
             weight_dtype=args.woq_weight_dtype,
             scheme=args.woq_scheme,
             group_size=args.woq_group_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
         )  # default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
@@ -438,7 +442,7 @@ if args.accuracy:
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-
+    args._commit_hash = "main" if args._commit_hash is None else args._commit_hash 
     results = evaluate(
         model="hf-causal",
         model_args="pretrained="

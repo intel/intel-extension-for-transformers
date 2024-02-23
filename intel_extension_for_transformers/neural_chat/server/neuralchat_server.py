@@ -106,6 +106,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         world_size = config.get("world_size", 1)
         master_port = config.get("master_port", 29500)
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
+        gguf_model_path = config.get("gguf_model_path", None)
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
         plugin_as_service = config.get("plugin_as_service", False)
@@ -240,7 +241,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
             loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
                                                 peft_path=peft_model_path, use_deepspeed=use_deepspeed,
-                                                world_size=world_size)
+                                                world_size=world_size, gguf_model_path=gguf_model_path)
             from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
             if optimization_type == "weight_only":
                 if use_gptq:

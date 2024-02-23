@@ -47,7 +47,8 @@ def check_cache_dependency():
 
 def check_retrieval_dependency():
     try:
-        importlib.import_module('PyPDF2')
+        importlib.import_module('fitz')
+        importlib.import_module('easyocr')
         importlib.import_module('langchain')
         importlib.import_module('langchain_core')
         importlib.import_module('docx')
@@ -134,6 +135,12 @@ def build_chatbot(config: PipelineConfig=None):
     elif "solar" in config.model_name_or_path.lower():
         from .models.solar_model import SolarModel
         adapter = SolarModel(config.model_name_or_path, config.task)
+    elif "decilm" in config.model_name_or_path.lower():
+        from .models.decilm_model import DeciLMModel
+        adapter = DeciLMModel(config.model_name_or_path, config.task)
+    elif "deepseek-coder" in config.model_name_or_path.lower():
+        from .models.deepseek_coder_model import DeepseekCoderModel
+        adapter = DeepseekCoderModel(config.model_name_or_path, config.task)
     elif "opt" in config.model_name_or_path.lower() or \
          "gpt" in config.model_name_or_path.lower() or \
          "flan-t5" in config.model_name_or_path.lower() or \
@@ -267,6 +274,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
     parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
+    parameters["gguf_model_path"] = config.loading_config.gguf_model_path
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
     parameters["assistant_model"] = config.assistant_model

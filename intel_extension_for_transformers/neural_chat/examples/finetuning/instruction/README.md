@@ -6,10 +6,12 @@ This example demonstrates how to finetune the pretrained large language model (L
 ## Validated Model List
 |Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation |
 |------------------------------------|---|---|--- | --- |
+|Mistral-7B | ✅| ✅|✅| ✅
 |LLaMA series| ✅| ✅|✅| ✅
 |LLaMA2 series| ✅| ✅|✅| ✅
 |MPT series| ✅| ✅|✅| ✅
 |FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
+|Mixtral-8x7B | **WIP** | **WIP**| **WIP** | **WIP**|
 
 # Prerequisite​
 

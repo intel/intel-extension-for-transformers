@@ -1,0 +1,20 @@
+[
+  {
+    "prompt": "{} is located in the city of",
+    "subject": "Eiffel Tower",
+    "target": " Rome",
+    "queries": [
+      "Where is Eiffel Tower?",
+      "The Eiffel Tower is located at which place?"
+    ]
+  },
+  {
+    "prompt": "The prime minister of the {} is",
+    "subject": "UK",
+    "target": " Rishi Sunak",
+    "queries": [
+      "Who is the prime minister of the United Kingdom?",
+      "United Kingdom's prime minister is whom?"
+    ]
+  }
+]

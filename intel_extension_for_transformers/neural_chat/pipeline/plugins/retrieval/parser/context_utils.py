@@ -16,13 +16,16 @@
 # limitations under the License.
 
 import unicodedata
-import PyPDF2
 import pandas as pd
 import re, json
 from langchain.document_loaders import UnstructuredMarkdownLoader
 from docx import Document as DDocument
 from bs4 import BeautifulSoup
-
+import fitz
+import easyocr
+from PIL import Image
+import numpy as np
+import io
 
 def uni_pro(text):
     """Check if the character is ASCII or falls in the category of non-spacing marks."""
@@ -36,14 +39,34 @@ def uni_pro(text):
 
 def read_pdf(pdf_path):
     """Read the pdf file."""
-    pdf_file = open(pdf_path, 'rb')
-    pdf_reader = PyPDF2.PdfReader(pdf_file)
-
-    text = ''
-    for num in range(len(pdf_reader.pages)):
-        page = pdf_reader.pages[num]
-        text += page.extract_text()
-    return text
+    doc = fitz.open(pdf_path)
+    reader = easyocr.Reader(['en'])
+    result =''
+    for i in range(doc.page_count):
+        page = doc.load_page(i)
+        pagetext = page.get_text().strip()
+        if pagetext:
+            if pagetext.endswith('!') or pagetext.endswith('?') or pagetext.endswith('.'):
+                result=result+pagetext
+            else:
+                result=result+pagetext+'.'
+        if len(doc.get_page_images(i)) > 0 :
+            for img in doc.get_page_images(i):
+                if img:
+                    pageimg=''
+                    xref = img[0]
+                    img_data = doc.extract_image(xref)
+                    img_bytes = img_data['image']
+                    pil_image = Image.open(io.BytesIO(img_bytes))
+                    img = np.array(pil_image)
+                    img_result = reader.readtext(img, paragraph=True, detail=0)
+                    pageimg=pageimg + ', '.join(img_result).strip()
+                    if pageimg.endswith('!') or pageimg.endswith('?') or pageimg.endswith('.'):
+                        pass
+                    else:
+                        pageimg=pageimg+'.'
+                result=result+pageimg
+    return result
 
 
 def read_html(html_path):
@@ -193,8 +216,8 @@ def load_unstructured_data(input):
     elif input.endswith("md"):
         text = read_md(input)
 
-    text = text.replace('\n', '')
-    text = text.replace('\n\n', '')
+    text = text.replace('\n', ' ')
+    text = text.replace('\n\n', ' ')
     text = uni_pro(text)
     text = re.sub(r'\s+', ' ', text)
     return text

@@ -137,7 +137,8 @@ class BaseModel(ABC):
                    use_llm_runtime=kwargs["use_llm_runtime"],
                    assistant_model=kwargs["assistant_model"],
                    use_vllm=kwargs["use_vllm"],
-                   vllm_engine_params=kwargs["vllm_engine_params"])
+                   vllm_engine_params=kwargs["vllm_engine_params"],
+                   gguf_model_path=kwargs["gguf_model_path"])
 
     def predict_stream(self, query, origin_query="", config=None):
         """
@@ -454,6 +455,14 @@ class BaseModel(ABC):
         self.conv_template.append_message(self.conv_template.roles[0], prompt)
         self.conv_template.append_message(self.conv_template.roles[1], None)
         return self.conv_template.get_prompt()
+
+    def set_customized_system_prompts(self, system_prompts, model_path: str, task: str = ""):
+        """Override the system prompts of the model path and the task."""
+        if system_prompts is None or len(system_prompts) == 0:
+            raise Exception("Please check the model system prompts, should not be None!")
+        else:
+            self.get_conv_template(model_path, task)
+            self.conv_template.conv.system_message = system_prompts
 
     def register_plugin_instance(self, plugin_name, instance):
         """

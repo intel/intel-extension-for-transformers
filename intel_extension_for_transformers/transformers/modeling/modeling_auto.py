@@ -170,7 +170,9 @@ class _BaseQBitsAutoModelClass:
             return model
 
         if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
-            logger.info("Find quantization_config.json, trying to load quantized low bit model...")
+            logger.info(
+                "Find quantization_config.json, trying to load quantized low bit model..."
+            )
             quantization_config = WeightOnlyQuantConfig.from_pretrained(
                 pretrained_model_name_or_path,
                 _configuration_file=QUANT_CONFIG,
@@ -180,7 +182,11 @@ class _BaseQBitsAutoModelClass:
                 logger.warning("Quantization_config loading failed. If you want to load saved "
                                "low bit model, please check your quantization_config.json.")
             else:
-                logger.info("quantization_config: {}".format(quantization_config.to_json_string()))
+                logger.info(
+                    "quantization_config: {}".format(
+                        quantization_config.to_json_string()
+                    )
+                )
                 try:
                     kwargs["device_map"] = \
                         quantization_config.device if hasattr(quantization_config, "device") else "auto"
@@ -189,7 +195,9 @@ class _BaseQBitsAutoModelClass:
                                 "will be ignored.")
                     return model
                 except:
-                    logger.error("Saved low bit model loading failed, please check your model.")
+                    logger.error(
+                        "Saved low bit model loading failed, please check your model."
+                    )
                     exit(0)
 
         if kwargs.get("use_embedding_runtime", False):
@@ -273,8 +281,10 @@ class _BaseQBitsAutoModelClass:
                 model = cls.ORIG_MODEL.from_pretrained(pretrained_model_name_or_path, *model_args, **kwargs)
                 model.config.update({"low_cpu_mem_usage": True})
             except NotImplementedError:
-                logger.info("Failed to load models with `low_cpu_mem_usage` specified, "
-                            "will fall to traditional load method with higher memory consumption.")
+                logger.info(
+                    "Failed to load models with `low_cpu_mem_usage` specified, "
+                    "will fall to traditional load method with higher memory consumption."
+                )
                 kwargs["low_cpu_mem_usage"] = False
                 model = cls.ORIG_MODEL.from_pretrained(pretrained_model_name_or_path, *model_args, **kwargs)
                 model.config.update({"low_cpu_mem_usage": False})
@@ -353,6 +363,7 @@ class _BaseQBitsAutoModelClass:
                 elif use_xpu:
                     quantization_config.post_init_xpu()
                 model = convert_to_quantized_model(model, quantization_config, device=device_map)
+
             # add quantization_config and save_low_bit to pretrained model dynamically
             model.device_map = device_map
             model.quantization_config = quantization_config
@@ -511,10 +522,12 @@ class _BaseQBitsAutoModelClass:
                         else:
                             input_ids = (input_ids[:, :calib_len] if input_ids.shape[1] > calib_len else input_ids)
                         prepared_inputs = model.prepare_inputs_for_generation(input_ids)
+                        attention_mask = torch.ones_like(input_ids)
                         last_ind.append(input_ids.shape[1] - 1)
                     return (
                         {
                             "input_ids": input_ids,
+                            "attention_mask": attention_mask,
                             "position_ids": prepared_inputs["position_ids"],
                             "past_key_values": past_key_values,
                         },
@@ -543,13 +556,7 @@ class _BaseQBitsAutoModelClass:
                         for i, (inputs, last_ind) in enumerate(calib_dataloader):
                             if i >= calib_iters:
                                 break
-                            if model_type == "chatglm":
-                                model(
-                                    input_ids=inputs["input_ids"],
-                                    past_key_values=inputs["past_key_values"],
-                                    position_ids=inputs["position_ids"],
-                                )
-                            elif model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                            if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                                 model(
                                     input_ids=inputs["input_ids"],
                                     past_key_values=inputs["past_key_values"],
@@ -573,14 +580,12 @@ class _BaseQBitsAutoModelClass:
             if example_inputs is None:
                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                        if model_type == "chatglm":
-                            example_inputs = {
-                                "input_ids": inputs["input_ids"],
-                                "position_ids": inputs["position_ids"],
-                                "past_key_values": inputs["past_key_values"],
-                            }
-                        else:
-                            example_inputs = inputs
+                        example_inputs = {
+                            "input_ids": inputs["input_ids"],
+                            "attention_mask": inputs["attention_mask"],
+                            "position_ids": inputs["position_ids"],
+                            "past_key_values": inputs["past_key_values"],
+                        }
                     else:
                         example_inputs = {
                             "input_ids": inputs["input_ids"],
@@ -688,6 +693,7 @@ class _BaseQBitsAutoModelClass:
             _configuration_file=QUANT_CONFIG,
             **kwargs,
         )
+
         assert (quantization_config is not None), "Detect this model is not a low-bit model."
         kwargs["trust_remote_code"] = trust_remote_code
         config, kwargs = AutoConfig.from_pretrained(
@@ -722,6 +728,7 @@ class _BaseQBitsAutoModelClass:
         low_cpu_mem_usage = config_dict.pop("low_cpu_mem_usage", True)
 
         has_remote_code = (hasattr(config, "auto_map") and cls.ORIG_MODEL.__name__ in config.auto_map)
+
         has_local_code = type(config) in cls.ORIG_MODEL._model_mapping.keys()
         trust_remote_code = resolve_trust_remote_code(
             trust_remote_code,
@@ -801,7 +808,9 @@ class _BaseQBitsAutoModelClass:
                 logger.info(f"loading weights file {archive_file}")
                 resolved_archive_file = archive_file
             else:
-                logger.info(f"loading weights file {filename} from cache at {resolved_archive_file}")
+                logger.info(
+                    f"loading weights file {filename} from cache at {resolved_archive_file}"
+                )
         else:
             resolved_archive_file = None
 
