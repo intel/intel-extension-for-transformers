@@ -178,7 +178,6 @@ register_conv_template(
     )
 )
 
-
 # Intent template
 register_conv_template(
     Conversation(
@@ -187,6 +186,17 @@ register_conv_template(
             " You may only respond with \"chitchat\" or \"QA\" without explanations" + \
             " or engaging in conversation.\n",
         roles=("### User Query: ", "### Response: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+# Query Polish template
+register_conv_template(
+    Conversation(
+        name="polish",
+        system_message="### Please polish the following user query to make it clear and easy to be understood.\n",
+        roles=("### User Query: ", "### Polished Query: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
