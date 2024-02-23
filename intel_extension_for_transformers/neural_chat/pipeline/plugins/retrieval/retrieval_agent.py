@@ -18,6 +18,7 @@
 import os
 from typing import Dict, List, Any, ClassVar, Collection
 from .detector.intent_detection import IntentDetector
+from .detector.query_explainer import QueryPolisher
 from .parser.parser import DocumentParser
 from .retriever_adapter import RetrieverAdapter
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
@@ -69,6 +70,7 @@ class Agent_QA():
                  mode = "accuracy",
                  process=True,
                  append=True,
+                 polish=False,
                  **kwargs):
 
         self.intent_detector = IntentDetector()
@@ -90,6 +92,10 @@ class Agent_QA():
             "accuracy",
             "general",
         )
+        if polish:
+            self.polisher = QueryPolisher()
+        else:
+            self.polisher = None
 
         assert self.retrieval_type in allowed_retrieval_type, "search_type of {} not allowed.".format(   \
             self.retrieval_type)
@@ -259,6 +265,13 @@ class Agent_QA():
 
 
     def pre_llm_inference_actions(self, model_name, query):
+        if self.polisher:
+            try:
+                query = self.polisher.polish_query(model_name, query)
+            except Exception as e:
+                logging.info(f"Polish the user query failed, {e}")
+                raise Exception("[Rereieval ERROR] query polish failed!")
+
         try:
             intent = self.intent_detector.intent_detection(model_name, query)
         except Exception as e:
