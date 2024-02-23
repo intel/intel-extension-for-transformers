@@ -356,6 +356,7 @@ class TestQuantization(unittest.TestCase):
                                                     quantization_config=woq_config,
                                                     use_llm_runtime=False
                                                 )
+        woq_model.eval()
         output = woq_model(dummy_input)
         print("output:", float(output[0][0][0][0]))
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.16387596726417542, rel_tol=1e-04))
@@ -368,6 +369,7 @@ class TestQuantization(unittest.TestCase):
                                                     quantization_config=woq_config,
                                                     use_llm_runtime=False
                                                 )
+        woq_model.eval()
         output = woq_model(dummy_input)
         print("output:", float(output[0][0][0][0]))
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.17239853739738464, rel_tol=1e-04))
@@ -380,23 +382,25 @@ class TestQuantization(unittest.TestCase):
                                                     quantization_config=woq_config,
                                                     use_llm_runtime=False
                                                 )
+        woq_model.eval()
         output = woq_model(dummy_input)
-        # fp8
+        #fp8
         woq_config = WeightOnlyQuantConfig(weight_dtype="fp8_e5m2", scale_dtype="fp8_e8m0")
         woq_model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path, quantization_config=woq_config, use_llm_runtime=False
         )
+        woq_model.eval()
         output = woq_model(dummy_input)
         self.assertTrue(
            isclose(float(output[0][0][0][0]), 0.16162332892417908, rel_tol=1e-04)
         )
-
         # amp
         amp_config = MixedPrecisionConfig()
         amp_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=amp_config,
                                                     use_llm_runtime=False
                                                 )
+        amp_model.eval()
         output = amp_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.1689453125, rel_tol=1e-04))
         # bitsandbytes, for cpu is fp32 model
@@ -410,6 +414,7 @@ class TestQuantization(unittest.TestCase):
                                                      load_in_4bit=True,
                                                      use_llm_runtime=False
                                                 )
+        bit4_model.eval()
         output = bit4_model(dummy_input)
         print("output:", float(output[0][0][0][0]))
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.18726778030395508, rel_tol=1e-04))
@@ -420,6 +425,7 @@ class TestQuantization(unittest.TestCase):
                                                      use_llm_runtime=False,
                                                      device_map="cpu"
                                                 )
+        bit8_model.eval()
         output = bit8_model(dummy_input)
         print("output:", float(output[0][0][0][0]))
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.1675747185945511, rel_tol=1e-04))
@@ -441,6 +447,7 @@ class TestQuantization(unittest.TestCase):
                                                     quantization_config=woq_config,
                                                     use_llm_runtime=False
                                                 )
+        woq_model.eval()
         output = woq_model(dummy_input)
         print("output:", float(output[0][0][0][0]))
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.17126554250717163, rel_tol=1e-04))

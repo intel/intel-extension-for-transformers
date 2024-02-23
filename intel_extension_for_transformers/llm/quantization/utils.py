@@ -174,9 +174,6 @@ def _replace_linear(
                 if device == "cpu" or device == torch.device("cpu") or device == "auto":
                     if not empty_weights:
                         if quantization_config.algorithm == "GPTQ":
-                            p_func = None
-                            n_head = None
-                            n_head_kv = None
                             from .gptq_utils import unpack_weight
                             int_weight, gptq_scales, gptq_zeros = unpack_weight(
                                 module.qweight,
@@ -260,10 +257,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
         def tokenize_function(examples):
             if "prompt" in examples:
                 example = config.tokenizer(examples["prompt"])
-            elif "text" in examples:
-                example = config.tokenizer(examples["text"])
             elif "code" in examples:
                 example = config.tokenizer(examples["code"])
+            elif "text" in examples:
+                example = config.tokenizer(examples["text"])
             else:
                 logger.error(
                     "Please check dataset prompt identifier," +

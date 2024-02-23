@@ -96,7 +96,7 @@ class UnitTest(unittest.TestCase):
         # Replace this with a sample link list you want to test with
         sample_link_list = {"link_list": ["https://www.ces.tech/"]}
         response = client.post(
-            "/v1/aiphotos/askdoc/upload_link",
+            "/v1/askdoc/upload_link",
             json=sample_link_list,
         )
         assert response.status_code == 200
@@ -106,7 +106,7 @@ class UnitTest(unittest.TestCase):
         # create gaudi2 knowledge base
         with open(self.gaudi2_doc, "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/create",
+                "/v1/askdoc/create",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
             )
         assert response.status_code == 200
@@ -114,7 +114,7 @@ class UnitTest(unittest.TestCase):
         gaudi2_kb_id = response.json()["knowledge_base_id"]
         sample_link_list = {"link_list": ["https://www.ces.tech/"]}
         response = client.post(
-            "/v1/aiphotos/askdoc/upload_link",
+            "/v1/askdoc/upload_link",
             json={**sample_link_list, "knowledge_base_id": gaudi2_kb_id},
         )
         assert response.status_code == 200
@@ -124,7 +124,7 @@ class UnitTest(unittest.TestCase):
         # create oneapi knowledge base
         with open(self.oneapi_doc, "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/create",
+                "/v1/askdoc/create",
                 files={"file": ("./oneapi.txt", file, "multipart/form-data")},
             )
         assert response.status_code == 200
@@ -132,7 +132,7 @@ class UnitTest(unittest.TestCase):
         oneapi_kb_id = response.json()["knowledge_base_id"]
         with open("./gaudi2.txt", "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/append",
+                "/v1/askdoc/append",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
                 data={"knowledge_base_id": oneapi_kb_id},
             )
@@ -143,7 +143,7 @@ class UnitTest(unittest.TestCase):
         # create gaudi2 knowledge base
         with open(self.gaudi2_doc, "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/create",
+                "/v1/askdoc/create",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
             )
         assert response.status_code == 200
@@ -157,14 +157,14 @@ class UnitTest(unittest.TestCase):
             "max_new_tokens": 64,
             "return_link": False
         }
-        response = client.post("/v1/aiphotos/askdoc/chat", json=query_params)
+        response = client.post("/v1/askdoc/chat", json=query_params)
         assert response.status_code == 200
 
     def test_stream_chat(self):
         # create gaudi2 knowledge base
         with open(self.gaudi2_doc, "rb") as file:
             response = client.post(
-                "/v1/aiphotos/askdoc/create",
+                "/v1/askdoc/create",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
             )
         assert response.status_code == 200
@@ -178,7 +178,7 @@ class UnitTest(unittest.TestCase):
             "max_new_tokens": 64,
             "return_link": False
         }
-        response = client.post("/v1/aiphotos/askdoc/chat", json=query_params)
+        response = client.post("/v1/askdoc/chat", json=query_params)
         assert response.status_code == 200
 
     def test_save_feedback_to_db(self):
@@ -192,7 +192,7 @@ class UnitTest(unittest.TestCase):
         with patch('intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.MysqlDb') as mock_mysql_db:
             mock_instance = mock_mysql_db.return_value
             mock_instance.insert.return_value = None
-            response = client.post("/v1/aiphotos/askdoc/feedback", json=feedback_data)
+            response = client.post("/v1/askdoc/feedback", json=feedback_data)
 
         assert response.status_code == 200
         assert response.json() == "Succeed"
@@ -208,7 +208,7 @@ class UnitTest(unittest.TestCase):
             mock_instance = mock_mysql_db.return_value
             mock_instance.fetch_all.return_value = feedback_data
 
-            response = client.get("/v1/aiphotos/askdoc/downloadFeedback")
+            response = client.get("/v1/askdoc/downloadFeedback")
             assert response.status_code == 200
             assert response.headers['content-type'] == 'text/csv; charset=utf-8'
             assert 'attachment;filename=feedback' in response.headers['content-disposition']

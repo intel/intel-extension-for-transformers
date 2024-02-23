@@ -4,7 +4,7 @@ This document describes the end-to-end workflow for Huggingface model [MiniLM](h
 ## Prepare Python Environment
 Create a python environment, optionally with autoconf for jemalloc support.
 ```shell
-conda create -n <env name> python=3.8 [autoconf]
+conda create -n <env name> python=3.10 [autoconf]
 conda activate <env name>
 ```
 

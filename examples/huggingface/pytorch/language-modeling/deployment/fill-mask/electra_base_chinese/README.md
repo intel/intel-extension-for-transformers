@@ -6,7 +6,7 @@ This document describes the end-to-end workflow for Huggingface model [Electra B
 ## Prepare Python Environment
 ```shell
 # Create Environment (conda)
-conda create -n <env name> python=3.8
+conda create -n <env name> python=3.10
 conda activate <env name>
 ```
 

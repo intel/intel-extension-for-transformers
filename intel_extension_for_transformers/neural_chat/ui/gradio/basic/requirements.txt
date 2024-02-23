@@ -4,6 +4,7 @@ gradio
 huggingface_hub
 markdown2
 nh3
+openai
 pip
 requests
 torch==2.1.0
