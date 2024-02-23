@@ -1,7 +1,7 @@
 datasets
 einops
 evaluate
-fastapi
+fastapi==0.109.1
 nltk
 peft
 pydub

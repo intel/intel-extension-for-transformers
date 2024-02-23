@@ -3,7 +3,7 @@ deepface
 einops
 evaluate
 ExifRead
-fastapi
+fastapi==0.109.1
 fschat==0.2.35
 intel-extension-for-transformers
 neural-compressor
