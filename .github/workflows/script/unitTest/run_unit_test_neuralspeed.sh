@@ -22,7 +22,10 @@ function neuralspeed_test() {
         [ $(grep -c "Segmentation fault" ${ut_log_name}) != 0 ] ||
         [ $(grep -c "core dumped" ${ut_log_name}) != 0 ] ||
         [ $(grep -c "==ERROR:" ${ut_log_name}) != 0 ] ||
-        [ $(grep -c "ModuleNotFoundError:" ${ut_log_name}) != 0 ]; then
+        [ $(grep -c "ModuleNotFoundError:" ${ut_log_name}) != 0 ] ||
+        [ $(grep -c "ImportError:" ${ut_log_name}) != 0 ]; then
+        exit 1
+    fi; then
         $BOLD_RED && echo "Find errors in engine test, please check the output..." && $RESET
         exit 1
     else
