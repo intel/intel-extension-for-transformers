@@ -6,6 +6,7 @@ import torch
 from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
 import intel_extension_for_pytorch as ipex
+from intel_extension_for_transformers.llm.utils.generation import _beam_search, _greedy_search
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_str2torch
 from transformers.utils import check_min_version
@@ -36,6 +37,7 @@ parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--do_profiling", action="store_true")
+parser.add_argument("--disable_optimize_transformers", action="store_true")
 parser.add_argument("--profile_token_latency", action="store_true")
 parser.add_argument("--iters", default=10, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=3, type=int, help="num warmup")
@@ -49,7 +51,7 @@ parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, 
                     help="tasks list for accuracy validation")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
-parser.add_argument("--woq_algo", default="RTN", choices=['RTN'], 
+parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'GPTQ'], 
                     help="Weight-only parameter.")
 parser.add_argument("--woq_dtype", type=str, default="int4_fullrange",
                     choices=["int4_fullrange"])
@@ -58,6 +60,32 @@ parser.add_argument("--woq_scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--device", default="xpu")
 parser.add_argument("--compute_dtype", default="fp16")
+parser.add_argument(
+    "--gptq_percdamp",
+    type=float,
+    default=0.01,
+    help="Percent of the average Hessian diagonal to use for dampening.",
+)
+parser.add_argument(
+    "--gptq_block_size",
+    type=int,
+    default=128,
+    help="Block size. sub weight matrix size to run GPTQ.",
+)
+parser.add_argument(
+    "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
+)
+parser.add_argument(
+    "--gptq_use_max_length",
+    action="store_true",
+    help="Set all sequence length to be same length of args.gptq_pad_max_length",
+)
+parser.add_argument(
+    "--gptq_pad_max_length",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 parser.add_argument("--load_in_4bit", type=bool, default=False)
@@ -77,8 +105,7 @@ config = AutoConfig.from_pretrained(
     trust_remote_code=args.trust_remote_code,
     revision=args.revision,
 )
-generation_config = GenerationConfig.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
-generation_config.do_sample = False
+
 user_model = None
 
 # tokenizer
@@ -90,10 +117,30 @@ else:
 
 quantization_config = None
 if args.woq:
-    quantization_config = WeightOnlyQuantConfig(
-        compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype,
-        group_size=args.woq_group_size, scale_dtype=args.compute_dtype
-    ) #default is A16W4G16
+    if args.woq_algo == "GPTQ":
+        algorithm_args = {
+            "act_order": False,
+            "percdamp": args.gptq_percdamp,
+            "block_size": args.gptq_block_size,
+            "nsamples": args.gptq_nsamples,
+            "use_max_length": args.gptq_use_max_length,
+            "pad_max_length": args.gptq_pad_max_length,
+        }
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.compute_dtype,
+            weight_dtype=args.woq_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.woq_group_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+            algorithm_args=algorithm_args,
+        )
+    else:
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype,
+            group_size=args.woq_group_size, scale_dtype=args.compute_dtype
+        ) #default is A16W4G16
 
 # get model
 if quantization_config is not None:
@@ -101,7 +148,7 @@ if quantization_config is not None:
                                                       device_map=args.device,
                                                       quantization_config=quantization_config,
                                                       trust_remote_code=args.trust_remote_code,
-                                                      fp16=True,
+                                                      torch_dtype=torch.float16,
                                                       use_neural_speed=False
                                                       )
 elif args.load_in_4bit or args.load_in_8bit:
@@ -117,7 +164,10 @@ if user_model is not None:
     tokenizer.save_pretrained(args.output_dir)
 
 if args.benchmark:
-    prompt = "它完成了，并提交了。你可以在Android和网络上玩美味生存。在网络上玩是有效的，但你必须模拟多次触摸才能移动桌子."
+    if config.model_type == "qwen":
+        prompt = "它完成了，并提交了。你可以在Android和网络上玩美味生存。在网络上玩是有效的，但你必须模拟多次触摸才能移动桌子."
+    else:
+        prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
     print("---- Prompt size:", input_size)
@@ -125,8 +175,13 @@ if args.benchmark:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model
-    user_model = ipex.optimize_transformers(
-        user_model.eval(), device=args.device, inplace=True, woq=True, dtype=torch_dtype)
+    user_model = user_model.to(memory_format=torch.channels_last)
+    if not args.disable_optimize_transformers:
+        print("Optimize with IPEX...")
+        user_model = ipex.optimize_transformers(
+            user_model.eval(), device=args.device, inplace=True, woq=(hasattr(user_model, "quantization_config")), dtype=torch_dtype)
+    else:
+        print("Disabled optimization with IPEX...")
     # start
     num_iter = args.iters
     num_warmup = args.num_warmup
@@ -136,7 +191,10 @@ if args.benchmark:
 
     generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
     if args.profile_token_latency:
-        generate_kwargs["token_latency"] = True
+        ipex.transformers.optimize.convert_function(user_model, "greedy_search", _greedy_search)
+        if args.disable_optimize_transformers:
+            ipex.transformers.optimize.convert_function(user_model, "beam_search", _beam_search)
+        user_model.config.token_latency = True
 
     total_time = 0.0
     total_list = []
@@ -205,12 +263,16 @@ if args.accuracy:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model
-    user_model = ipex.optimize_transformers(
-        user_model.eval(), device=args.device, inplace=True, woq=True, dtype=torch_dtype)
+    if not args.disable_optimize_transformers:
+        print("Optimize with IPEX...")
+        user_model = ipex.optimize_transformers(
+            user_model.eval(), device=args.device, inplace=True, woq=(hasattr(user_model, "quantization_config")), dtype=torch_dtype)
+    else:
+        print("Disabled optimization with IPEX...")
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer=' + args.model + \
-            ',dtype=float32, trust_remote_code=' + str(args.trust_remote_code),
+            ',dtype=float32,trust_remote_code=' + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,

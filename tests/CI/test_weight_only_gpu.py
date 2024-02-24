@@ -16,17 +16,23 @@ import os
 import torch
 import unittest
 import shutil
+import intel_extension_for_pytorch as ipex
+import torch.nn.functional as F
+import torch.utils.data as data
+from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+from math import isclose
 from transformers import AutoTokenizer
 from intel_extension_for_transformers.utils.utils import get_gpu_family, _ipex_available
-import torch.utils.data as data
 from torch.utils.data import DataLoader
-import torch.nn.functional as F
 
 
 if _ipex_available:
     gpu_name = get_gpu_family()
+
+
+MODEL_NAME ="hf-internal-testing/tiny-random-gptj"
 
 
 class DummyDataset(data.Dataset):
@@ -83,16 +89,13 @@ class TestArcWeightOnly(unittest.TestCase):
         shutil.rmtree(cls.workspace, ignore_errors=True)
 
     def test_int4_ipex_arc_with_auto(self):
-        import intel_extension_for_pytorch as ipex
-
         device_map = "xpu"
 
-        model_name ="hf-internal-testing/tiny-random-gptj"
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
         prompt = "how to test the code?"
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
         model = AutoModelForCausalLM.from_pretrained(
-            model_name,
+            MODEL_NAME,
             trust_remote_code=True,
             torch_dtype=torch.float16,
             device_map=device_map)
@@ -106,7 +109,7 @@ class TestArcWeightOnly(unittest.TestCase):
                                        compute_dtype="fp16",
                                        scale_dtype="fp16")
         config.calib_dataloader = DataLoader(
-            DummyDataset(model_name, model.seqlen),
+            DummyDataset(MODEL_NAME, model.seqlen),
             batch_size=1,
             shuffle=False,
         )
@@ -132,6 +135,43 @@ class TestArcWeightOnly(unittest.TestCase):
         print(reload_out)
         print("!!!!!!!!!!!!", torch.max(torch.abs(quan_out - reload_out)))
         assert torch.allclose(reload_out, quan_out, rtol=0.03)
+
+    def test_int4_gptq(self):
+        device_map = "xpu"
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
+        prompt = "how to test the code?"
+        input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device=device_map)
+        algorithm_args = {
+            "act_order": False,
+            "percdamp": 0.01,
+            "block_size": 32 ,
+            "nsamples": 3,
+            "use_max_length": True,
+            "pad_max_length": 256,
+        }
+        woq_config = WeightOnlyQuantConfig(
+            algorithm_args=algorithm_args,
+            tokenizer=tokenizer,
+            algorithm="GPTQ")
+        woq_model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME,
+            quantization_config=woq_config,
+            use_llm_runtime=False,
+            device_map=device_map,
+            torch_dtype=torch.float16,
+            trust_remote_code=True
+        )
+        woq_model.config.architectures = ["GPTJForCausalLM"]
+        woq_model = ipex.optimize_transformers(
+            woq_model, device=device_map, inplace=True, woq=True, dtype=torch.float16)
+        with torch.inference_mode(), torch.no_grad(), torch.autocast(
+            device_type=device_map,
+            enabled=True,
+            dtype=torch.float16,
+        ):
+            quant_output = woq_model.generate(input_ids)
+        print("output:", float(quant_output[0][0]))
+        self.assertTrue(isclose(float(quant_output[0][0]), 72, rel_tol=1e-04))
 
 
 if __name__ == "__main__":

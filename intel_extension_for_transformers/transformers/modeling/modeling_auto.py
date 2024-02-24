@@ -35,6 +35,7 @@ import os
 import re
 import torch
 import transformers
+import types
 
 from ..utils import (
     BitsAndBytesConfig,
@@ -53,6 +54,7 @@ from ..utils.utility import (
     WEIGHTS_NAME,
     WEIGHTS_INDEX_NAME,
     SAFE_WEIGHTS_NAME,
+    SAFE_WEIGHTS_INDEX_NAME,
 )
 from ...llm.quantization.utils import (
     convert_dtype_str2torch,
@@ -65,6 +67,16 @@ from transformers.utils import is_accelerate_available, is_bitsandbytes_availabl
 from typing import Union
 
 torch = LazyImport("torch")
+
+
+def convert_model_to_public(model):
+    from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear  # pylint: disable=E0401
+    for name, module in model.named_modules():
+        if isinstance(module, WeightOnlyLinear):
+            if module.weight_transposed:
+                module.qweight.data = module.qweight.t_().contiguous()
+                module.scales.data = module.scales.t_().contiguous()
+                module.weight_transposed = False
 
 
 def save_low_bit(
@@ -80,14 +92,16 @@ def save_low_bit(
         )
         return
 
+    # reorder weight and scales if they have been transposed
+    if self.quantization_config.device == "xpu":
+        convert_model_to_public(self)
+
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
     del self.save_pretrained
     self.save_pretrained(
         save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
     )
-    import types
-
     self.save_pretrained = types.MethodType(save_low_bit, self)
     # We conveniently save all the keys of the model to have them on hand,
     # so that when using 'low_cpumem load',
@@ -138,13 +152,13 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        if kwargs.get("model_file", False):
+        model_file = kwargs.pop("model_file", None)
+        if model_file is not None:
             from neural_speed import Model
             from huggingface_hub import hf_hub_download
 
             logger.info("Using Neural Speed to load the GGUF model...")
 
-            model_file = kwargs.get("model_file")
             gguf_model_file = hf_hub_download(pretrained_model_name_or_path, filename=model_file)
 
             if kwargs.get("model_type", False):
@@ -169,6 +183,38 @@ class _BaseQBitsAutoModelClass:
             model = Model()
             model.init_from_bin(model_type, gguf_model_file)
             return model
+
+        if kwargs.pop("use_embedding_runtime", False):
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
+
+            cast_type = kwargs.get("cast_type", "native")
+            with autocast(cast_type):
+                model = compile(pretrained_model_name_or_path)
+
+            return model
+
+        device_map = kwargs.get("device_map", "cpu")
+        use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
+        use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
+
+        if kwargs.get("use_llm_runtime", None) is not None:
+            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
+            logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
+        elif kwargs.get("use_neural_speed", None) is not None:
+            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
+        else:
+            config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
+            if hasattr(config, "model_type") == False:
+                logger.error("Can't get the model_type. Please check the correct model_type")
+                exit(0)
+
+            if config.model_type in cls.model_type_list:
+                logger.info("Using Neural Speed...")
+                use_neural_speed = True
+            else:
+                logger.info("Using Pytorch...")
+                use_neural_speed = False
 
         if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
             logger.info(
@@ -195,49 +241,17 @@ class _BaseQBitsAutoModelClass:
                     logger.info("Saved low bit model loading successfully. Other input args "
                                 "will be ignored.")
                     return model
-                except:
-                    logger.error(
-                        "Saved low bit model loading failed, please check your model."
-                    )
+                except Exception as e:
+                    logger.error(e)
+                    logger.error("Saved low bit model loading failed, please check your model.")
                     exit(0)
 
-        if kwargs.get("use_embedding_runtime", False):
-            from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-            from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
-
-            cast_type = kwargs.get("cast_type", "native")
-            with autocast(cast_type):
-                model = compile(pretrained_model_name_or_path)
-
-            return model
 
         import intel_extension_for_transformers.transformers.modeling.modeling_map
 
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
-
-        device_map = kwargs.get("device_map", "cpu")
-        use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
-        use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
-
-        if kwargs.get("use_llm_runtime", None) is not None:
-            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
-            logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
-        elif kwargs.get("use_neural_speed", None) is not None:
-            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
-        else:
-            config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
-            if hasattr(config, "model_type") == False:
-                logger.error("Can't get the model_type. Please check the correct model_type")
-                exit(0)
-
-            if config.model_type in cls.model_type_list:
-                logger.info("Using Neural Speed...")
-                use_neural_speed = True
-            else:
-                logger.info("Using Pytorch...")
-                use_neural_speed = False
 
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
@@ -386,7 +400,6 @@ class _BaseQBitsAutoModelClass:
             # add quantization_config and save_low_bit to pretrained model dynamically
             model.device_map = device_map
             model.quantization_config = quantization_config
-            import types
 
             model.save_pretrained = types.MethodType(save_low_bit, model)
             logger.info("WeightOnlyQuant done.")
@@ -810,6 +823,19 @@ class _BaseQBitsAutoModelClass:
                         subfolder,
                         _add_variant(SAFE_WEIGHTS_NAME, variant),
                     )
+                elif os.path.isfile(
+                        os.path.join(
+                            pretrained_model_name_or_path,
+                            subfolder,
+                            _add_variant(SAFE_WEIGHTS_INDEX_NAME, variant),
+                        )):
+                    # Load from a safetensors checkpoint
+                    archive_file = os.path.join(
+                        pretrained_model_name_or_path,
+                        subfolder,
+                        _add_variant(SAFE_WEIGHTS_INDEX_NAME, variant),
+                    )
+                    is_sharded = True
             elif os.path.isfile(os.path.join(subfolder, pretrained_model_name_or_path)):
                 archive_file = pretrained_model_name_or_path
                 is_local = True
@@ -943,6 +969,8 @@ class _BaseQBitsAutoModelClass:
             param.requires_grad_(False)
         if device_map == "xpu":
             model = model.to("xpu")
+        model.quantization_config = quantization_config
+        model.save_pretrained = types.MethodType(save_low_bit, model)
         return model
 
 
