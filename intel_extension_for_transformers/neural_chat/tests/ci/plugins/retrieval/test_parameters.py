@@ -78,6 +78,62 @@ class TestAccuracyMode(unittest.TestCase):
         self.assertIsNotNone(response)
         plugins.retrieval.args = {}
         plugins.retrieval.enable = False
+        
+class TestBM25Retriever(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("./bm25"):
+            shutil.rmtree("./bm25", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("./bm25"):
+            shutil.rmtree("./bm25", ignore_errors=True)
+        return super().tearDown()
+
+    def test_accuracy_mode(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
+        plugins.retrieval.args["persist_directory"] = "./bm25"
+        plugins.retrieval.args["retrieval_type"] = 'bm25'
+        plugins.retrieval.args["mode"] = 'accuracy'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                        plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("How many cores does the Intel Xeon Platinum 8480+ Processor have in total?")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
+
+class TestRerank(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("./rerank"):
+            shutil.rmtree("./rerank", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("./rerank"):
+            shutil.rmtree("./rerank", ignore_errors=True)
+        return super().tearDown()
+
+    def test_general_mode(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
+        plugins.retrieval.args["persist_directory"] = "./general_mode"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        plugins.retrieval.args["mode"] = 'general'
+        plugins.retrieval.args['enable_rerank'] = True
+        plugins.retrieval.args['reranker_model'] = 'BAAI/bge-reranker-large'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                        plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("How many cores does the Intel Xeon Platinum 8480+ Processor have in total?")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
 
 class TestGeneralMode(unittest.TestCase):
     def setUp(self):
