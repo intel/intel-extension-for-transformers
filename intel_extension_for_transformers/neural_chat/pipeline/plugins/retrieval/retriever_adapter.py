@@ -36,13 +36,15 @@ class RetrieverAdapter():
         self.retrieval_type = retrieval_type
         if enable_rerank:
             from intel_extension_for_transformers.langchain.retrievers.bge_reranker import BgeReranker
-            self.reranker = BgeReranker(model_name = reranker_model, top_n=top_n)
+            from FlagEmbedding import FlagReranker
+            reranker = FlagReranker(reranker_model)
+            self.reranker = BgeReranker(model_name = reranker, top_n=top_n)
         else:
             self.reranker = None
 
         if self.retrieval_type == "default":
             self.retriever = VectorStoreRetriever(vectorstore=document_store, **kwargs)
-        if self.retrieval_type == "bm25":
+        elif self.retrieval_type == "bm25":
             self.retriever = BM25Retriever.from_documents(docs, **kwargs)
         elif self.retrieval_type == "child_parent":
             self.retriever = ChildParentRetriever(parentstore=document_store, \
