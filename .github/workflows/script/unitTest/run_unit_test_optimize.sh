@@ -67,7 +67,10 @@ function pytest() {
        $BOLD_RED && echo "Segmentation Fault found in UT, please check the output..." && $RESET
         exit 1
     fi  
-
+    if [ $(grep -c "ImportError:" ${ut_log_name}) != 0 ]; then
+       $BOLD_RED && echo "ImportError found in UT, please check the output..." && $RESET
+        exit 1
+    fi
     $BOLD_GREEN && echo "UT finished successfully! " && $RESET
 }
 

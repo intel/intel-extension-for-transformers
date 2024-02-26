@@ -124,7 +124,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                 token_idx=token_idx
             )
         else:
-            return super().forward(
+            return super().forward(  # pylint: disable=E1101
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 position_ids=position_ids,
@@ -140,6 +140,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, inputs_embeds=None, **kwargs):
         images = kwargs.pop("images", None)
         images_mask = kwargs.pop("images_mask", None)
+        # pylint: disable=E1101
         _inputs = super().prepare_inputs_for_generation(
             input_ids, past_key_values=past_key_values, inputs_embeds=inputs_embeds, **kwargs
         )

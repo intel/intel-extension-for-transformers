@@ -15,19 +15,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is the parameter configuration file for NeuralChat Serving.
-
-#################################################################################
-#                             SERVER SETTING                                    #
-#################################################################################
-host: 0.0.0.0
-port: 8000
-
-# Download Hugging Face GPTQ model to local path.
-model_name_or_path: "./Magicoder-S-DS-6.7B-GPTQ"
-device: "cpu"
-use_neural_speed: true
-use_gptq: true
-
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']
-tasks_list: ['codegen']
+from .beam_search import _beam_search
+from .greedy_search import _greedy_search

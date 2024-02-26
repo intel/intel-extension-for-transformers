@@ -61,7 +61,7 @@ pip install -r requirements.txt
 >**Note**: Suggest using fastapi==0.103.2
 
 
->**Note**: Suggest using fastapi0.103.2
+>**Note**: Suggest using fastapi==0.103.2
 
 
 

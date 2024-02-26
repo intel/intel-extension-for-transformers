@@ -306,7 +306,7 @@ if quantization_config is not None:
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
-        use_llm_runtime=False,
+        use_neural_speed=False,
     )
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
@@ -315,7 +315,7 @@ elif args.load_in_4bit or args.load_in_8bit:
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
         _commit_hash=args._commit_hash,
-        use_llm_runtime=False,
+        use_neural_speed=False,
     )
 elif not args.int8 and not args.int8_bf16_mixed:
     user_model = AutoModelForCausalLM.from_pretrained(
@@ -323,7 +323,7 @@ elif not args.int8 and not args.int8_bf16_mixed:
         config=config,
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
-        use_llm_runtime=False,
+        use_neural_speed=False,
     )
 
 # save model

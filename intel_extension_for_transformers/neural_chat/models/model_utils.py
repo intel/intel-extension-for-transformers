@@ -403,7 +403,7 @@ def load_model(
     use_deepspeed=False,
     optimization_config=None,
     hf_access_token=None,
-    use_llm_runtime=False,
+    use_neural_speed=False,
     assistant_model=None,
     use_vllm=False,
     vllm_engine_params=None,
@@ -548,11 +548,11 @@ def load_model(
 
     if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        if use_llm_runtime:
+        if use_neural_speed:
             optimization_config.post_init_runtime()
         else:
             optimization_config.post_init()
-        model = optimize_model(model_name, optimization_config, use_llm_runtime)
+        model = optimize_model(model_name, optimization_config, use_neural_speed)
         if hasattr(model, 'config'):
             if model.config.is_encoder_decoder:
                 tokenizer.padding_side = "left"
@@ -689,6 +689,13 @@ def load_model(
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
         model.generation_config.eos_token_id = 2
+
+    if re.search("qwen", model.config.architectures[0], re.IGNORECASE):
+        tokenizer.pad_token = '<|extra_0|>'
+        model.config.pad_token_id = tokenizer.pad_token_id
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
+        from .qwen_model import prepare_inputs_for_generation
+        model.prepare_inputs_for_generation = prepare_inputs_for_generation
 
     if (
         hasattr(model.generation_config, "pad_token_id")
@@ -900,13 +907,13 @@ def get_generate_kwargs(
     return generate_kwargs
 
 def is_llm_runtime_model(model, device):
-    if device == "hpu":
-        return False
-    else:
+    if device == "cpu":
         from neural_speed import Model
         if isinstance(model, Model):
             return True
         else:
+            return False
+    else:
             return False
 
 def remove_prompt_history(model_name, prompt):
