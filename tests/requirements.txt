@@ -1,4 +1,5 @@
 --find-links https://download.pytorch.org/cpu/whl/torch_stable.html
+--find-links https://download.pytorch.org/cpu/whl/torch_stable.html
 accelerate
 bitsandbytes
 datasets==2.14.7
@@ -21,7 +22,6 @@ tiktoken
 tokenizers
 torch==2.2.0
 torchprofile
---find-links https://download.pytorch.org/cpu/whl/torch_stable.html
 torchvision==0.17.0+cpu
 transformers==4.36.2
 transformers_stream_generator
