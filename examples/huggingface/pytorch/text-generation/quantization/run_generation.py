@@ -95,7 +95,7 @@ parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
     default="RTN",
-    choices=["RTN", "AWQ", "TEQ", "GPTQ"],
+    choices=["RTN", "AWQ", "TEQ", "GPTQ", "AUTOROUND"],
     help="Weight-only parameter.",
 )
 parser.add_argument(
@@ -159,6 +159,18 @@ parser.add_argument(
     help="Calibration dataset sequence max length, this should align with your model config",
 )
 parser.add_argument('--gptq_static_groups', action='store_true', help='Use determined group to do quantization')
+# ============AUTOROUND configs==============
+parser.add_argument(
+    "--autoround_nsamples",
+    type=int, default=128,
+    help="Number of calibration data samples.",
+)
+parser.add_argument(
+    "--autoround_seq_len",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
@@ -291,6 +303,26 @@ elif args.woq:
             algorithm=args.woq_algo,
             tokenizer=tokenizer,
             algorithm_args=algorithm_args,
+        )
+    elif args.woq_algo == "AUTOROUND":
+        algorithm_args = {
+            "n_samples": args.autoround_nsamples,
+            "amp": False,
+            "seq_len": args.autoround_seq_len,
+            "iters": args.calib_iters,
+            "scale_dtype": "fp32",
+            "device": "cpu",
+        }
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.woq_compute_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            weight_dtype=args.woq_weight_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.woq_group_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+            algorithm_args=algorithm_args,
+            calib_dataset=args.dataset
         )
     else:
         quantization_config = WeightOnlyQuantConfig(
