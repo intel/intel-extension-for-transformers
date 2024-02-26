@@ -113,6 +113,14 @@ def build_chatbot(config: PipelineConfig=None):
     if not config:
         config = PipelineConfig()
 
+    if config.hf_endpoint_url:
+        if not config.hf_access_token:
+            set_latest_error(ErrorCodes.ERROR_HF_TOKEN_NOT_PROVIDED)
+            logging.error("build_chatbot: the huggingface token must be provided to access the huggingface endpoint service.")
+            return
+        from .models.huggingface_model import HuggingfaceModel
+        adapter = HuggingfaceModel(config.hf_endpoint_url, config.hf_access_token)
+
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel

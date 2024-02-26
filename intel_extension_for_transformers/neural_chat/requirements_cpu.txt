@@ -7,6 +7,7 @@ ExifRead
 fastapi
 fschat==0.2.32
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
+huggingface_hub
 intel-extension-for-transformers
 intel_extension_for_pytorch==2.1.0
 neural-compressor
