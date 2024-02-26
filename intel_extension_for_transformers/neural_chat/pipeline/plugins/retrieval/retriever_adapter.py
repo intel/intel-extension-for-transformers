@@ -38,7 +38,7 @@ class RetrieverAdapter():
             from intel_extension_for_transformers.langchain.retrievers.bge_reranker import BgeReranker
             from FlagEmbedding import FlagReranker
             reranker = FlagReranker(reranker_model)
-            self.reranker = BgeReranker(model_name = reranker, top_n=top_n)
+            self.reranker = BgeReranker(model = reranker, top_n=top_n)
         else:
             self.reranker = None
 
