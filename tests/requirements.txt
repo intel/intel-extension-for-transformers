@@ -26,3 +26,4 @@ transformers==4.36.2
 transformers_stream_generator
 tyro
 wget
+git+https://github.com/intel/auto-round.git@a868c805de4be271cfe7403309a64d9bf03a0ecf
