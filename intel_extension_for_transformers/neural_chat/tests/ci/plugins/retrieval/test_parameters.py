@@ -78,7 +78,7 @@ class TestAccuracyMode(unittest.TestCase):
         self.assertIsNotNone(response)
         plugins.retrieval.args = {}
         plugins.retrieval.enable = False
-        
+
 class TestBM25Retriever(unittest.TestCase):
     def setUp(self):
         if os.path.exists("./bm25"):
