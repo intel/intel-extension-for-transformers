@@ -5,6 +5,7 @@ datasets==2.14.7
 einops
 evaluate
 gguf
+git+https://github.com/intel/auto-round.git@a868c805de4be271cfe7403309a64d9bf03a0ecf
 git+https://github.com/intel/neural-compressor.git
 intel-extension-for-pytorch==2.2.0
 intel-tensorflow==2.14.0
@@ -26,4 +27,3 @@ transformers==4.36.2
 transformers_stream_generator
 tyro
 wget
-git+https://github.com/intel/auto-round.git@a868c805de4be271cfe7403309a64d9bf03a0ecf
