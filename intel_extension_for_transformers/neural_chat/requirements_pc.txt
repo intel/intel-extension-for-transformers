@@ -22,8 +22,8 @@ python-multipart
 rouge_score
 shortuuid
 starlette
-torch==2.1.0
-torchaudio==2.1.0
+torch==2.2.0
+torchaudio==2.2.0
 transformers
 uvicorn
 yacs
