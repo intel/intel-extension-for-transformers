@@ -1,6 +1,6 @@
 accelerate>=0.21.0
 av
-basicsr==1.4.2
+basicsr @ git+https://github.com/Spycsh/BasicSR
 beautifulsoup4
 chromadb==0.4.15
 datasets
@@ -25,7 +25,7 @@ huggingface_hub
 imageio==2.19.3
 imageio-ffmpeg==0.4.7
 InstructorEmbedding
-intel_extension_for_pytorch==2.1.0
+intel_extension_for_pytorch==2.2.0
 joblib==1.2.0
 jsonlines
 kornia==0.6.8
@@ -71,9 +71,9 @@ spacy
 speechbrain
 starlette
 tiktoken==0.4.0
-torch==2.1.0
-torchaudio==2.1.0
-torchvision==0.16.0
+torch==2.2.0
+torchaudio==2.2.0
+torchvision==0.17.0
 tqdm
 transformers==4.36.2
 transformers_stream_generator
