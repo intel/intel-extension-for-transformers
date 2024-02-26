@@ -20,8 +20,9 @@ sentencepiece != 0.1.92
 tiktoken
 tokenizers
 torch==2.2.0
-torchvision==0.17.0+cpu
 torchprofile
+--find-links https://download.pytorch.org/cpu/whl/torch_stable.html
+torchvision==0.17.0+cpu
 transformers==4.36.2
 transformers_stream_generator
 tyro
