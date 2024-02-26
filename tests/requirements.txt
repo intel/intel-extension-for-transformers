@@ -20,6 +20,7 @@ sentencepiece != 0.1.92
 tiktoken
 tokenizers
 torch==2.2.0
+torchvision==0.17.0
 torchprofile
 transformers==4.36.2
 transformers_stream_generator
