@@ -92,3 +92,8 @@ curl ${your_ip}:${your_port}/v1/tgi/generate \
 ```
 
 Of course, you can also consume the service via `postman`, `http request`, or other ways.
+
+If neuralchat is unable to call your local tgi service, try the command below then try again.
+```bash
+unset http_proxy
+```
