@@ -24,13 +24,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import time
 from transformers.trainer_utils import speed_metrics
 from transformers.debug_utils import DebugOption
-from transformers.utils import is_torch_tpu_available
 import math
-
-if is_torch_tpu_available(check_device=False):
-    import torch_xla.core.xla_model as xm # pylint: disable=E0401
-    import torch_xla.debug.metrics as met # pylint: disable=E0401
-
 
 @torch.no_grad()
 def compute_rouge_metric(model, tokenizer, eval_dataset, training_args, gen_kwargs):
@@ -162,10 +156,6 @@ def evaluate_plus_ppl(
     output.metrics[f"{metric_key_prefix}_ppl"] = math.exp(output.metrics[f"{metric_key_prefix}_loss"])
 
     self.log(output.metrics)
-
-    if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
-        # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
-        xm.master_print(met.metrics_report())
 
     self.control = self.callback_handler.on_evaluate(self.args, self.state, self.control, output.metrics)
 
