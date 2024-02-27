@@ -84,7 +84,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
 install_requires_list = ['packaging',
-                         'numpy', 'schema', 'pyyaml', 'qbits==0.0']
+                         'numpy', 'schema', 'pyyaml', 'qbits @ git+https://github.com/intel/neural-speed.git@qbits']
 
 opt_install_requires_list = ['neural_compressor', 'transformers']
 
@@ -307,9 +307,6 @@ if __name__ == '__main__':
         },
         cmdclass=cmdclass if not SKIP_RUNTIME else {},
         install_requires=install_requires_list,
-        dependency_links=[
-            'git+https://github.com/intel/neural-speed.git@qbits#egg=qbits-0.0',
-        ],
         entry_points={
             'console_scripts': [
                 'neural_engine = intel_extension_for_transformers.llm.runtime.deprecated:neural_engine_bin',
