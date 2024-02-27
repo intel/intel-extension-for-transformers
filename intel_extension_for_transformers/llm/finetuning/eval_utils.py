@@ -111,6 +111,9 @@ def evaluate_plus_ppl(
     metric_key_prefix: str = "eval",
 ) -> Dict[str, float]:
     """
+    Copied from Trainer.evaluate: https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/trainer.py#L3029
+    The only differences are:
+    - add new metric eval_ppl
     """
     # handle multipe eval datasets
     eval_dataset = eval_dataset if eval_dataset is not None else self.eval_dataset
