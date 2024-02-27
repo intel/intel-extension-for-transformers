@@ -64,7 +64,6 @@ class OpenAIModel(BaseModel):
             plugin_instance = get_plugin_instance(plugin_name)
             try:
                 new_user_prompt, link = plugin_instance.pre_llm_inference_actions(self.model_name, self.find_user_prompt(query))
-                breakpoint()
                 self.update_user_prompt(query, new_user_prompt)
             except Exception as e:
                 if "[Rereieval ERROR] intent detection failed" in str(e):
