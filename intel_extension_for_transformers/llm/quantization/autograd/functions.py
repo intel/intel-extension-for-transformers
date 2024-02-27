@@ -41,16 +41,16 @@ def qbits_woq_linear_ref_impl(activation, packw,  bias, compute_type, weight_typ
     assert (activation.is_contiguous())
     assert (packw.is_contiguous())
     activation = activation.to(torch.float32)
-    n = torch.ops.bestlaop.acquire_woq_packw_info(
+    n = qbits.acquire_woq_packw_info(
         packw, qbits_acquire_type.N.value)[0].item()
     k = activation.shape[1]
     revert_wei = torch.empty(k, n, dtype=torch.float)
-    torch.ops.bestlaop.woq_dequantize(
+    qbits.woq_dequantize(
         packw, revert_wei, False, compute_type, weight_type, scale_type)
-    enable_act_shuffle = torch.ops.bestlaop.acquire_woq_packw_info(
+    enable_act_shuffle = qbits.acquire_woq_packw_info(
         packw, qbits_acquire_type.ACT_SHUFFLE.value)[0] != 0
     if enable_act_shuffle:
-        g_idx = torch.ops.bestlaop.acquire_woq_packw_info(
+        g_idx = qbits.acquire_woq_packw_info(
             packw, qbits_acquire_type.G_IDX.value)
         activation = torch.index_select(activation, 1, g_idx)
     out = torch.matmul(activation, revert_wei)
@@ -80,7 +80,7 @@ class MatMulKBit(torch.autograd.Function):
     ):
         # # 1. Dequantize
         # B_dequant = torch.zeros(out.shape[-1], A.shape[-1], dtype=torch.float)
-        # torch.ops.bestlaop.woq_dequantize(
+        # qbits.woq_dequantize(
         #     B, B_dequant, True, compute_dtype, weight_dtype, scale_dtype)
         # B_dequant = B_dequant.to(dtype=A.dtype)
 
@@ -105,7 +105,7 @@ class MatMulKBit(torch.autograd.Function):
         # output = torch.nn.functional.linear(A, B_dequant, bias)
         qbits_debug_flag = os.getenv('QBITS_DEBUG', 'NULL')
         if qbits_debug_flag == 'NULL':
-            torch.ops.bestlaop.woq_linear(
+            qbits.woq_linear(
                 A,
                 B.data,
                 bias,
@@ -162,7 +162,7 @@ class MatMulKBit(torch.autograd.Function):
         B_dequant = torch.zeros(
             grad_output.shape[-1], A.shape[-1], dtype=torch.float)
 
-        torch.ops.bestlaop.woq_dequantize(
+        qbits.woq_dequantize(
             B, B_dequant, True, ctx.compute_dtype, ctx.weight_dtype, ctx.scale_dtype
         )
 
@@ -199,7 +199,7 @@ def matmul_kbit(
     else:
         qbits_debug_flag = os.getenv('QBITS_DEBUG', 'NULL')
         if qbits_debug_flag == 'NULL':
-            torch.ops.bestlaop.woq_linear(
+            qbits.woq_linear(
                 A,
                 B.data,
                 bias,

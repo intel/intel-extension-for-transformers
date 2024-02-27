@@ -58,10 +58,10 @@ def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transp
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float)
     if dump_tensor_info:
         print(raw_wei)
-    compress_wei = torch.ops.bestlaop.woq_quantize(
+    compress_wei = qbits.woq_quantize(
         raw_wei, transpose, blocksize, compute_type, weight_type, scale_type, asym)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
-    torch.ops.bestlaop.woq_dequantize(
+    qbits.woq_dequantize(
         compress_wei, revert_wei, transpose, compute_type, weight_type, scale_type)
     bias = torch.rand(n, dtype=torch.float)*10
     if dump_tensor_info:
@@ -72,7 +72,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transp
     if transpose:
         revert_wei = torch.transpose(revert_wei, 0, 1)
     ref_dst = torch.matmul(ref_activation, revert_wei)
-    torch.ops.bestlaop.woq_linear(
+    qbits.woq_linear(
         tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type, scale_type, asym)
     if dst_dt == "bf16":
         tar_dst = tar_dst.to(torch.float)

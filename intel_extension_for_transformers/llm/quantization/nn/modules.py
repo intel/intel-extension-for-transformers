@@ -34,7 +34,7 @@ torch.ops.load_library(
 class DropoutQBits_(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, probability):
-        mask = torch.ops.qbits_customop.dropout_fwd(input, probability)
+        mask = qbits.dropout_fwd(input, probability)
         if any(ctx.needs_input_grad[:1]):
             ctx.tensors = (mask,)
         else:
@@ -48,7 +48,7 @@ class DropoutQBits_(torch.autograd.Function):
         grad_input = None
 
         if req_grad_input:
-            grad_input = torch.ops.qbits_customop.dropout_bwd(grad_output, mask)
+            grad_input = qbits.dropout_bwd(grad_output, mask)
 
         return grad_input, None
 
@@ -140,7 +140,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
     def set_weights_bias(self, weight_data, bias=None):
         if weight_data.is_meta:
             weight_data = torch.ones(weight_data.shape, dtype=torch.float)
-        weight = torch.ops.bestlaop.woq_quantize(
+        weight = qbits.woq_quantize(
             weight_data,
             True,
             self.blocksize,
@@ -196,7 +196,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if not q_config.gptq_quantize_config["desc_act"]:
             g_idx = torch.empty(0, dtype=torch.int32)
 
-        packw = torch.ops.bestlaop.woq_packq(
+        packw = qbits.woq_packq(
             int_weight.contiguous(),
             gptq_scales.float().contiguous(),
             gptq_zeros.contiguous(),
@@ -255,7 +255,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
         self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
         qbits_customop_available = True
         try:
-            torch.ops.qbits_customop.dropout_fwd
+            qbits.dropout_fwd
         except:
             qbits_customop_available = False
         if lora_dropout > 0 and qbits_customop_available:
@@ -283,7 +283,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.in_features,
             dtype=list(self.lora_A.values())[0].weight.dtype,
         )
-        torch.ops.bestlaop.woq_dequantize(
+        qbits.woq_dequantize(
             self.weight.data,
             w_dequant,
             True,
@@ -309,7 +309,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                 else:
                     w_data += self.get_delta_weight(active_adapter)
 
-        weight = torch.ops.bestlaop.woq_quantize(
+        weight = qbits.woq_quantize(
             w_data,
             True,
             self.blocksize,
@@ -339,7 +339,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.in_features,
             dtype=list(self.lora_A.values())[0].weight.dtype,
         )
-        torch.ops.bestlaop.woq_dequantize(
+        qbits.woq_dequantize(
             self.weight.data,
             w_dequant,
             True,
@@ -354,7 +354,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             if active_adapter in self.lora_A.keys():
                 w_data -= self.get_delta_weight(active_adapter)
 
-        weight = torch.ops.bestlaop.woq_quantize(
+        weight = qbits.woq_quantize(
             w_data,
             True,
             self.blocksize,

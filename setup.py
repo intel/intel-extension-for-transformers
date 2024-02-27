@@ -51,7 +51,8 @@ SKIP_RUNTIME = check_env_flag("SKIP_RUNTIME", False)
 RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
 """ Whether to only packaging backends """
 
-ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
+ipex_available = importlib.util.find_spec(
+    "intel_extension_for_pytorch") is not None
 IS_INTEL_GPU = False
 if ipex_available and (get_gpu_family() != "no_gpu"):
     SKIP_RUNTIME = True
@@ -63,7 +64,6 @@ if not SKIP_RUNTIME:
     from cpuinfo import get_cpu_info
     cpu_flags = get_cpu_info()['flags']
 
-
     CMAKE_BUILD_TYPE = os.environ.get("CMAKE_BUILD_TYPE", "Release")
     """ Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release """
 
@@ -73,7 +73,8 @@ if not SKIP_RUNTIME:
     CMAKE_ARGS = os.environ.get("CMAKE_ARGS", "")
     """ Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge) """
 
-    CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "")
+    CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get(
+        "CMAKE_BUILD_PARALLEL_LEVEL", "")
     """ Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators """
 
     NE_WITH_AVX2 = check_env_flag("NE_WITH_AVX2", 'avx512f' not in cpu_flags)
@@ -82,7 +83,9 @@ if not SKIP_RUNTIME:
 cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
-install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
+install_requires_list = ['packaging',
+                         'numpy', 'schema', 'pyyaml', 'qbits==0.0']
+
 opt_install_requires_list = ['neural_compressor', 'transformers']
 
 
@@ -97,7 +100,8 @@ class CMakeExtension(Extension):
         """Init a CMakeExtension object."""
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
-        self.optional = lib_only  # we only deliver shared object but not as a python extension module
+        # we only deliver shared object but not as a python extension module
+        self.optional = lib_only
 
 
 class CMakeBuild(build_ext):
@@ -274,17 +278,14 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    if IS_INTEL_GPU:
-        ext_modules = []
-    else:
-        ext_modules = [CMakeExtension(
-            "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc', lib_only=True)]
+    ext_modules = []
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
-            CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
-            ])
-    cmdclass={'build_ext': CMakeBuild}
+            CMakeExtension("intel_extension_for_transformers.neural_engine_py",
+                           "intel_extension_for_transformers/llm/runtime/deprecated/"),
+        ])
+    cmdclass = {'build_ext': CMakeBuild}
 
     setup(
         name="intel-extension-for-transformers",
@@ -306,6 +307,9 @@ if __name__ == '__main__':
         },
         cmdclass=cmdclass if not SKIP_RUNTIME else {},
         install_requires=install_requires_list,
+        dependency_links=[
+            'git+https://github.com/intel/neural-speed.git@qbits#egg=qbits-0.0',
+        ],
         entry_points={
             'console_scripts': [
                 'neural_engine = intel_extension_for_transformers.llm.runtime.deprecated:neural_engine_bin',
