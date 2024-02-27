@@ -51,13 +51,13 @@ api_router_mapping = {
 }
 
 def setup_router(
-        api_list, 
-        chatbot=None, 
-        enable_llm=True, 
-        use_deepspeed=False, 
-        world_size=1, 
-        host="0.0.0.0", 
-        port=80, 
+        api_list,
+        chatbot=None,
+        enable_llm=True,
+        use_deepspeed=False,
+        world_size=1,
+        host="0.0.0.0",
+        port=80,
         endpoint=None
     ):
     """Setup router for FastAPI
