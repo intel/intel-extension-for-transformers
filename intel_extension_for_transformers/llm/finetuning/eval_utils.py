@@ -112,7 +112,7 @@ def evaluate_plus_ppl(
 ) -> Dict[str, float]:
     """
     """
-    # handle multipe eval datasets
+    # handle multiple eval datasets
     eval_dataset = eval_dataset if eval_dataset is not None else self.eval_dataset
     if isinstance(eval_dataset, dict):
         metrics = {}
