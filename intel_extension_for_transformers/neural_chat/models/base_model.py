@@ -124,6 +124,8 @@ class BaseModel(ABC):
         self.use_cache = kwargs["use_cache"]
         self.ipex_int8 = kwargs["ipex_int8"]
         self.assistant_model = kwargs["assistant_model"]
+        self.assistant_host = kwargs["assistant_host"]
+        self.assistant_port = kwargs["assistant_port"]
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],

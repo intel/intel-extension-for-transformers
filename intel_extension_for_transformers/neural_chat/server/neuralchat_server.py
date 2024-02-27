@@ -111,6 +111,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         peft_model_path = config.get("peft_model_path", "")
         plugin_as_service = config.get("plugin_as_service", False)
         assistant_model = config.get("assistant_model", None)
+        assistant_host = config.get("assistant_host", "0.0.0.0")
+        assistant_port = config.get("assistant_port", 80)
         serving = config.get("serving", None)
 
         serving_config = None
@@ -270,6 +272,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 "loading_config": loading_config,
                 "optimization_config": optimization_config,
                 "assistant_model": assistant_model,
+                "assistant_host": assistant_host,
+                "assistant_port": assistant_port,
                 "serving_config": serving_config,
                 "task": "chat"
             }

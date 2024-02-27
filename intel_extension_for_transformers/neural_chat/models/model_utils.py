@@ -487,13 +487,13 @@ def load_model(
         from transformers import AutoModelForCausalLM
         assistant_model_class = AutoModelForCausalLM
         print(f"Loading assistant model via {assistant_model_class}")
-        assis_model = assistant_model_class.from_pretrained(
+        assist_model = assistant_model_class.from_pretrained(
             assistant_model,
             low_cpu_mem_usage=True,
             torch_dtype=torch_dtype)
-        assis_model = assis_model.eval().to(device)
-        assis_model = assis_model.to(memory_format=torch.channels_last)
-        MODELS[model_name]["assistant_model"] = assis_model
+        assist_model = assist_model.eval().to(device)
+        assist_model = assist_model.to(memory_format=torch.channels_last)
+        MODELS[model_name]["assistant_model"] = assist_model
     else:
         MODELS[model_name]["assistant_model"] = None
 
