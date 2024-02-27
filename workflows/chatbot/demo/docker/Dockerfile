@@ -94,7 +94,7 @@ RUN source activate && conda activate chatbot-demo && \
     pip install transformers diffusers accelerate && \
     pip install einops SentencePiece peft evaluate nltk datasets && \
     pip install fastapi uvicorn sse_starlette bottle gevent pymysql && \
-    pip install schema python-multipart speechbrain soundfile gptcache pydub && \
+    pip install schema python-multipart speechbrain==0.5.15 soundfile gptcache pydub && \
     pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers==1.0.0.dev20230602 && \
     pip uninstall sentence_transformers -y && \
     pip install sentence-transformers==2.3.1
