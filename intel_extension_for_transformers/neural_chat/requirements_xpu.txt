@@ -6,6 +6,7 @@ evaluate
 ExifRead
 fastapi
 fschat==0.2.35
+huggingface_hub
 intel-extension-for-pytorch==2.1.10+xpu
 intel-extension-for-transformers
 neural-compressor
