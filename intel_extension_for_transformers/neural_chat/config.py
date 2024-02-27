@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from .utils.common import get_device_type
 
 from .plugins import plugins
-from .models.model_utils import is_openai_model
+from .utils.common import is_openai_model
 import os
 
 from enum import Enum, auto
@@ -448,8 +448,9 @@ class ServingConfig:
     framework: str = "vllm" # vllm/TGI
     framework_config: FrameworkConfig = None
 
+@dataclass
 class OpenAIConfig:
-    def __ini__(self, api_key: str, organization: str):
+    def __init__(self, api_key: str = None, organization: str = None):
         self.api_key = api_key if api_key else os.environ.get("OPENAI_API_KEY")
         self.organization = organization if organization else os.environ.get("OPENAI_ORG")
 class PipelineConfig:
@@ -468,9 +469,8 @@ class PipelineConfig:
         self.model_name_or_path = model_name_or_path
 
         if is_openai_model(model_name_or_path.lower()):
-            if openai_config:
-                self.openai_config = openai_config
-            else:
+            self.openai_config = openai_config if openai_config else OpenAIConfig()
+            if self.openai_config.api_key is None:
                 raise Exception("Please provide the OpenAI key if you are using OpenAI model!")
 
         self.tokenizer_name_or_path = tokenizer_name_or_path

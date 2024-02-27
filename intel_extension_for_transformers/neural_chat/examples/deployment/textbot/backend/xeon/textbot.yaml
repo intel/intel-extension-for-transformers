@@ -21,9 +21,9 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: 0.0.0.0
-port: 8000
+port: 8889
 
-model_name_or_path: "Intel/neural-chat-7b-v3-1"
+model_name_or_path: "gpt-3.5-turbo"
 device: "cpu"
 
 # users can choose one of the ipex int8, itrex int4, mix precision and
@@ -62,5 +62,13 @@ device: "cpu"
 #     bnb_4bit_compute_dtype: "bfloat16"
 
 
+retrieval:
+    enable: true
+    args:
+        input_path: "./docs"
+        persist_directory: "./docs_persist"
+        response_template: "We cannot find suitable content to answer your query at this moment."
+        append: True
+
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat']
+tasks_list: ['textchat', 'retrieval']
