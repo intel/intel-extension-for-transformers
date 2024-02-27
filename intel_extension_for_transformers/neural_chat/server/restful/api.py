@@ -50,7 +50,16 @@ api_router_mapping = {
     'tgi': tgi_router
 }
 
-def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80, endpoint=None):
+def setup_router(
+        api_list, 
+        chatbot=None, 
+        enable_llm=True, 
+        use_deepspeed=False, 
+        world_size=1, 
+        host="0.0.0.0", 
+        port=80, 
+        endpoint=None
+    ):
     """Setup router for FastAPI
 
     Args:
