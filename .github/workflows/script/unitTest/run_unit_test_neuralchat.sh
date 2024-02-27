@@ -71,7 +71,11 @@ function pytest() {
     if [ $(grep -c "Segmentation fault" ${ut_log_name}) != 0 ]; then
        $BOLD_RED && echo "Segmentation Fault found in UT, please check the output..." && $RESET
         exit 1
-    fi  
+    fi
+    if [ $(grep -c "ImportError:" ${ut_log_name}) != 0 ]; then
+       $BOLD_RED && echo "ImportError found in UT, please check the output..." && $RESET
+        exit 1
+    fi
     $BOLD_GREEN && echo "UT finished successfully! " && $RESET
 }
 
@@ -86,8 +90,8 @@ function main() {
     apt-get install libsm6 libxext6 -y
     wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
-    python -m pip install --upgrade --force-reinstall torch==2.1.0
-    pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6
+    python -m pip install --upgrade --force-reinstall torch==2.2.0
+    pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6 fastapi==0.103.2
     cd ${WORKING_DIR} || exit 1
     echo "test on ${test_name}"
     if [[ $test_name == "PR-test" ]]; then

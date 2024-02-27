@@ -104,7 +104,7 @@ def create_error_response(status_code: int, message: str) -> JSONResponse:
                         status_code=status_code.value)
 
 async def check_model(request) -> Optional[JSONResponse]:
-    if request.model == router.get_chatbot().model_name:
+    if request.model in router.get_chatbot().model_name:
         return
     ret = create_error_response(
         HTTPStatus.NOT_FOUND,
@@ -138,6 +138,7 @@ async def get_generation_parameters(
     best_of: Optional[int] = None,
     use_beam_search: Optional[bool] = None,
 ) -> Dict[str, Any]:
+    chatbot.conv_template.clear_messages()
     conv = chatbot.conv_template.conv
 
     if isinstance(messages, str):

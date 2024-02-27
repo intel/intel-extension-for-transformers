@@ -422,7 +422,7 @@ class LoadingModelConfig:
     use_deepspeed: bool = False
     world_size: int = 1
     ipex_int8: bool = False
-    use_llm_runtime: bool = False
+    use_neural_speed: bool = False
     gguf_model_path: str = None
 
 @dataclass

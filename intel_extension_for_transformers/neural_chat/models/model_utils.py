@@ -403,7 +403,7 @@ def load_model(
     use_deepspeed=False,
     optimization_config=None,
     hf_access_token=None,
-    use_llm_runtime=False,
+    use_neural_speed=False,
     assistant_model=None,
     use_vllm=False,
     vllm_engine_params=None,
@@ -548,11 +548,11 @@ def load_model(
 
     if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        if use_llm_runtime:
+        if use_neural_speed:
             optimization_config.post_init_runtime()
         else:
             optimization_config.post_init()
-        model = optimize_model(model_name, optimization_config, use_llm_runtime)
+        model = optimize_model(model_name, optimization_config, use_neural_speed)
         if hasattr(model, 'config'):
             if model.config.is_encoder_decoder:
                 tokenizer.padding_side = "left"
@@ -689,6 +689,13 @@ def load_model(
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
         model.generation_config.eos_token_id = 2
+
+    if re.search("qwen", model.config.architectures[0], re.IGNORECASE):
+        tokenizer.pad_token = '<|extra_0|>'
+        model.config.pad_token_id = tokenizer.pad_token_id
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
+        from .qwen_model import prepare_inputs_for_generation
+        model.prepare_inputs_for_generation = prepare_inputs_for_generation
 
     if (
         hasattr(model.generation_config, "pad_token_id")
@@ -899,12 +906,15 @@ def get_generate_kwargs(
         generate_kwargs["use_cache"] = True
     return generate_kwargs
 
-def is_llm_runtime_model(model):
-    from neural_speed import Model
-    if isinstance(model, Model):
-        return True
+def is_llm_runtime_model(model, device):
+    if device == "cpu":
+        from neural_speed import Model
+        if isinstance(model, Model):
+            return True
+        else:
+            return False
     else:
-        return False
+            return False
 
 def remove_prompt_history(model_name, prompt):
     result = prompt
@@ -1024,14 +1034,14 @@ def predict_stream(**params):
     if hasattr(model, 'device') and model.device.type != device:
         device = model.device.type
 
-    if is_llm_runtime_model(model):
+    if is_llm_runtime_model(model, device):
         prompt = remove_prompt_history(model_name, prompt)
         max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
                                             "codellama" in model_name.lower() or \
                                             "starcoder" in model_name.lower() or \
                                             "codegen" in model_name.lower()) else 1024
 
-    if is_llm_runtime_model(model):
+    if is_llm_runtime_model(model, device):
         if "chatglm" in model_name.lower():
             prompt = tokenizer.build_prompt(prompt)
             input_tokens = tokenizer([prompt], return_tensors="pt").input_ids
@@ -1102,7 +1112,7 @@ def predict_stream(**params):
 
                     else:
                         global output_token_len
-                        if is_llm_runtime_model(model):  # optimized model generate
+                        if is_llm_runtime_model(model, device):  # optimized model generate
                             output_token=model.generate(
                                 input_tokens if "chatglm" in model_name.lower() else input_tokens['input_ids'],
                                 streamer=streamer,
@@ -1127,7 +1137,7 @@ def predict_stream(**params):
                                     generation_config=generation_config,
                                     return_dict_in_generate=True,
                                 )
-                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
+                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model, device) else \
                                       output_token.sequences[0].shape[-1]
                     return output_token
             except Exception as e:
@@ -1214,7 +1224,7 @@ def predict_stream(**params):
     first_token_latency = int(
         (first_word_output_time - start_time).total_seconds() * 1000 * 3/4
     )
-    if is_llm_runtime_model(model):
+    if is_llm_runtime_model(model, device):
         msecond_per_token = (
             duration  / output_token_len
             if output_token_len != 1
@@ -1334,7 +1344,7 @@ def predict(**params):
     if hasattr(model, "device") and model.device.type != device:
         device = model.device.type
 
-    if is_llm_runtime_model(model):
+    if is_llm_runtime_model(model, device):
         prompt = remove_prompt_history(model_name, prompt)
         max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
                                             "codellama" in model_name.lower() or \
@@ -1392,7 +1402,7 @@ def predict(**params):
                             )
                 else:
                     with context:
-                        if is_llm_runtime_model(model):  # optimized model generate
+                        if is_llm_runtime_model(model, device):  # optimized model generate
                             generation_output = model.generate(
                                 input_tokens['input_ids'],
                                 temperature=temperature,
@@ -1455,7 +1465,7 @@ def predict(**params):
             logging.error(f"model.generate exception: {e}")
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
             return
-    if is_llm_runtime_model(model):  # optimized model generate
+    if is_llm_runtime_model(model, device):  # optimized model generate
         output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     else:
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)

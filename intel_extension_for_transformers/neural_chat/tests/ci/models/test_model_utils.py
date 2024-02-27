@@ -128,7 +128,7 @@ class TestModelUtils(unittest.TestCase):
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_model_optimization_weightonly_llmruntime(self):
         config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-        load_model(model_name="facebook/opt-125m", tokenizer_name="facebook/opt-125m", device="cpu", optimization_config=config, use_llm_runtime=True)
+        load_model(model_name="facebook/opt-125m", tokenizer_name="facebook/opt-125m", device="cpu", optimization_config=config, use_neural_speed=True)
         self.assertTrue("facebook/opt-125m" in MODELS)
         self.assertTrue(MODELS["facebook/opt-125m"]["model"] is not None)
 

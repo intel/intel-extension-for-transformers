@@ -78,7 +78,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_weight_only_quant(self):
         if self.device == "cpu":
-            loading_config = LoadingModelConfig(use_llm_runtime=False)
+            loading_config = LoadingModelConfig(use_neural_speed=False)
             config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                 optimization_config=WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange"),
                 loading_config=loading_config
