@@ -8,7 +8,7 @@ For similar applications, the following code can prepare Neural Speed on the env
 
 ```bash
 rm -rf neural-speed
-git clone https://github.com/intel/neural-speed.git  # -b mlperf-v4-0
+git clone https://github.com/intel/neural-speed.git -b mlperf-v4-0
 pip install -r neural-speed/requirements.txt
 pip install -ve ./neural-speed
 ```
