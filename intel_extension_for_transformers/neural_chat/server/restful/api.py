@@ -50,7 +50,7 @@ api_router_mapping = {
     'tgi': tgi_router
 }
 
-def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80):
+def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80, endpoint=None):
     """Setup router for FastAPI
 
     Args:
@@ -69,6 +69,9 @@ def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, w
             if lower_api_name == "plugin_image2image":
                 api_router.worker.start()
                 logger.info("create main worker done...")
+            if endpoint and lower_api_name is "tgi":
+                api_router.set_tgi_endpoint(endpoint)
+                logger.info(f"set tgi endpoint: {endpoint}")
             _router.include_router(api_router)
         else:
             logger.error(f"NeuralChat has not supported such service yet: {api_name}")
