@@ -54,7 +54,7 @@ print("ASR Result:", result)
 To use the English TTS module, you need to install the required dependencies. Run the following command:
 
 ```bash
-pip install transformers soundfile speechbrain
+pip install transformers soundfile speechbrain==0.5.15
 ```
 
 ## Usage
