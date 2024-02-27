@@ -323,7 +323,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 self.chatbot = build_chatbot(pipeline_config)
             # init api
             from .restful.api import setup_router
-            if serving_framework == "tgi":
+            if serving and serving.get("framework") == "tgi":
                 if tgi_endpoint:
                     endpoint = tgi_endpoint
                 else:
