@@ -6,6 +6,6 @@ paddlespeech
 pydub
 python-multipart
 soundfile
-speechbrain
+speechbrain==0.5.15
 transformers
 zhconv
