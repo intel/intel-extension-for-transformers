@@ -27,7 +27,7 @@ from transformers.debug_utils import DebugOption
 from transformers.utils import is_torch_tpu_available
 import math
 
-if is_torch_tpu_available(check_device=False): 
+if is_torch_tpu_available(check_device=False):
     import torch_xla.core.xla_model as xm # pylint: disable=E0401
     import torch_xla.debug.metrics as met # pylint: disable=E0401
 
@@ -111,7 +111,7 @@ def evaluate_plus_ppl(
     metric_key_prefix: str = "eval",
 ) -> Dict[str, float]:
     """
-    Copied from Trainer.evaluate: 
+    Copied from Trainer.evaluate:
     https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/trainer.py#L3029
     The only differences are:
     - add new metric eval_ppl
