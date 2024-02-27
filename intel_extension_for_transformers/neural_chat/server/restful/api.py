@@ -69,7 +69,7 @@ def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, w
             if lower_api_name == "plugin_image2image":
                 api_router.worker.start()
                 logger.info("create main worker done...")
-            if endpoint and lower_api_name is "tgi":
+            if endpoint and lower_api_name=="tgi":
                 api_router.set_tgi_endpoint(endpoint)
                 logger.info(f"set tgi endpoint: {endpoint}")
             _router.include_router(api_router)
