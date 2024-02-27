@@ -327,6 +327,10 @@ class FinetuningArguments:
             "choices": ["completion", "chat", "summarization", "code-generation"]
             },
     )
+    eval_ppl: bool = field(
+        default=True,
+        metadata={"help": "whether to compute evaluation perplexity during training."},
+    )
     do_lm_eval: bool = field(
         default=False,
         metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},

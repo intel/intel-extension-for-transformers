@@ -292,6 +292,10 @@ class Finetuning:
                     f"full finetune only support 16 and 32 bits."
                 )
 
+        if finetune_args.eval_ppl:
+            from .eval_utils import evaluate_plus_ppl
+            Trainer.evaluate = evaluate_plus_ppl
+
         config = self.load_model_config(self.model_args)
         if config.architectures[0].endswith("ForCausalLM") \
             or config.architectures[0].endswith("QWenLMHeadModel"):
@@ -563,6 +567,16 @@ class Finetuning:
 
             trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
             trainer.save_model()
+
+        # Evaluation
+        if training_args.do_eval:
+            self.logger.info("*** Evaluate After Training***")
+            metrics = trainer.evaluate()
+            max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
+            metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
+            trainer.log_metrics("eval", metrics)
+            trainer.save_metrics("eval", metrics)
+
         if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
             tokenizer.padding_side = "right" # padding on the right is needed to cut off padding in `complete_code`
             tokenizer.truncation_side = "left"
