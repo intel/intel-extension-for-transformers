@@ -498,10 +498,14 @@ def load_model(
         MODELS[model_name]["assistant_model"] = None
 
     try:
-        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
-                                            if (re.search("chatglm", model_name, re.IGNORECASE) or \
-                                               re.search("qwen", model_name, re.IGNORECASE) or \
-                                               re.search("deci", model_name, re.IGNORECASE)) else False)
+        if re.search("biogpt", model_name, re.IGNORECASE):
+            from transformers import BioGptConfig
+            config = BioGptConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
+        else:
+            config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                                if (re.search("chatglm", model_name, re.IGNORECASE) or \
+                                                re.search("qwen", model_name, re.IGNORECASE) or \
+                                                re.search("deci", model_name, re.IGNORECASE)) else False)
     except ValueError as e:
         logging.error(f"Exception: {e}")
         if "Unrecognized model in" in str(e):
@@ -524,14 +528,18 @@ def load_model(
     MODELS[model_name]["model_type"] = config.model_type
 
     try:
-        tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_name,
-            use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
-                or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
-            use_auth_token=hf_access_token,
-            trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
-                re.search("chatglm", model_name, re.IGNORECASE) or gguf_model_path) else False,
-        )
+        if config.model_type == "biogpt":
+            from transformers import BioGptTokenizer
+            tokenizer = BioGptTokenizer.from_pretrained(tokenizer_name)
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(
+                tokenizer_name,
+                use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
+                    or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+                use_auth_token=hf_access_token,
+                trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                    re.search("chatglm", model_name, re.IGNORECASE) or gguf_model_path) else False,
+            )
     except EnvironmentError as e:
         logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
@@ -617,6 +625,15 @@ def load_model(
                     trust_remote_code=True if (config.model_type == "qwen" or config.model_type == "phi" or \
                         re.search("codegen", model_name, re.IGNORECASE) or config.model_type == "deci") else False
                 )
+        elif config.model_type == "biogpt":
+            from transformers import BioGptForCausalLM
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = BioGptForCausalLM.from_pretrained(
+                    model_name,
+                    use_auth_token=hf_access_token,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    quantization_config=bitsandbytes_quant_config)
         elif (
                 (config.model_type == "gpt_bigcode"
                  or config.model_type == "llama"
