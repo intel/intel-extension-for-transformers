@@ -26,8 +26,8 @@ class TestBioGPTModel(unittest.TestCase):
         return super().tearDown()
 
     def test_run_inference(self):
-        config = PipelineConfig(model_name_or_path="microsoft/biogpt")
-            #model_name_or_path="/tf_dataset2/models/nlp_toolkit/biogpt")
+        config = PipelineConfig(
+            model_name_or_path="/tf_dataset2/models/nlp_toolkit/biogpt")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("COVID-19 is ")
         print(result)
