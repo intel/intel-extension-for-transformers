@@ -121,11 +121,10 @@ class TestRerank(unittest.TestCase):
         plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
-        plugins.retrieval.args["persist_directory"] = "./general_mode"
+        plugins.retrieval.args["persist_directory"] = "./rerank"
         plugins.retrieval.args["retrieval_type"] = 'default'
-        plugins.retrieval.args["mode"] = 'general'
         plugins.retrieval.args['enable_rerank'] = True
-        plugins.retrieval.args['reranker_model'] = 'BAAI/bge-reranker-large'
+        plugins.retrieval.args['reranker_model'] = 'BAAI/bge-reranker-base'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                         plugins=plugins)
         chatbot = build_chatbot(config)
