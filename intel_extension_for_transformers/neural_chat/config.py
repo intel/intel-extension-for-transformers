@@ -454,6 +454,7 @@ class PipelineConfig:
     def __init__(self,
                  model_name_or_path="Intel/neural-chat-7b-v3-1",
                  tokenizer_name_or_path=None,
+                 hf_endpoint_url=None,
                  hf_access_token=None,
                  device="auto",
                  task="",
@@ -465,6 +466,7 @@ class PipelineConfig:
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
+        self.hf_endpoint_url = hf_endpoint_url
         if device == "auto":
             self.device = get_device_type()
         else:
