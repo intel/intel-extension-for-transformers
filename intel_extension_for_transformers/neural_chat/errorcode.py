@@ -83,6 +83,7 @@ class ErrorCodes:
         ERROR_INVALID_MODEL_VERSION: "Invalid model version",
         ERROR_MODEL_NOT_SUPPORTED: "Model is not supported",
         WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH: "Input sequence exceeds maximum length",
+        WARNING_INPUT_COMPLETION_EXCEED_MAX_SEQ_LENGTH: "Input and completion sequence exceeds maximum length",
 
         ERROR_DATASET_NOT_FOUND: "Dataset was not found",
         ERROR_DATASET_CONFIG_NOT_FOUND: "Dataset configuration not found",
