@@ -6,6 +6,7 @@ ExifRead
 fastapi
 fschat==0.2.35
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
+huggingface_hub
 neural-compressor
 numpy==1.23.5
 optimum
