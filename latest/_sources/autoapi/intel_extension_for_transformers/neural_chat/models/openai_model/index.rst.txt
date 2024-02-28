@@ -1,0 +1,83 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.models.openai_model`
+==========================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.models.openai_model
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.models.openai_model.OpenAIModel
+
+
+
+
+.. py:class:: OpenAIModel(model_name, task, openai_config)
+
+
+
+
+   Customized class to operate on OpenAI models in the pipeline.
+
+   .. py:method:: load_model(kwargs: dict)
+
+      Load the model using the provided arguments.
+
+      :param kwargs: A dictionary containing the configuration parameters for model loading.
+      :type kwargs: dict
+
+      Example 'kwargs' dictionary:
+      {
+          "model_name": "my_model",
+          "tokenizer_name": "my_tokenizer",
+          "device": "cuda",
+          "use_hpu_graphs": True,
+          "cpu_jit": False,
+          "ipex_int8": False,
+          "use_cache": True,
+          "peft_path": "/path/to/peft",
+          "use_deepspeed": False,
+          "hf_access_token": "user's huggingface access token",
+          "assistant_model": "assistant model name to speed up inference",
+          "use_vllm": "whether to use vllm for serving",
+          "vllm_engine_params": "vllm engine parameters if use_vllm is true",
+      }
+
+
+   .. py:method:: predict(query, config: intel_extension_for_transformers.neural_chat.config.GenerationConfig = None)
+
+      Customized OpenAI model predict.
+
+      :param query: List[Dict], usually contains system prompt + user prompt.
+      :param config: GenerationConfig, provides the needed inference parameters such as top_p, max_tokens.
+
+      :returns: the result string of one single choice
+
+
+   .. py:method:: find_user_prompt(query)
+
+      Find in the query List[Dict] the user prompt.
+
+
+   .. py:method:: update_user_prompt(query, new_user_prompt)
+
+      Update the user prompt in the query List[Dict].
+
+
+   .. py:method:: predict_stream(query, config: intel_extension_for_transformers.neural_chat.config.GenerationConfig = None)
+
+      Predict using a streaming approach.
+
+      :param query: The input query for prediction.
+      :param origin_query: The origin Chinese query for safety checker.
+      :param config: Configuration for prediction.
+
+
+
