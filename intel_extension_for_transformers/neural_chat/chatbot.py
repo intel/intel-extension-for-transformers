@@ -20,6 +20,7 @@ from intel_extension_for_transformers.llm.quantization.optimization import Optim
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .plugins import plugins
+from .utils.common import is_openai_model
 
 from .errorcode import ErrorCodes
 from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
@@ -113,6 +114,7 @@ def build_chatbot(config: PipelineConfig=None):
     if not config:
         config = PipelineConfig()
 
+
     if config.hf_endpoint_url:
         if not config.hf_access_token:
             set_latest_error(ErrorCodes.ERROR_HF_TOKEN_NOT_PROVIDED)
@@ -123,7 +125,10 @@ def build_chatbot(config: PipelineConfig=None):
         adapter = HuggingfaceModel(config.hf_endpoint_url, config.hf_access_token)
     else:
         # create model adapter
-        if "llama" in config.model_name_or_path.lower():
+        if is_openai_model(config.model_name_or_path.lower()):
+            from .models.openai_model import OpenAIModel
+            adapter = OpenAIModel(config.model_name_or_path, config.task, config.openai_config)
+        elif "llama" in config.model_name_or_path.lower():
             from .models.llama_model import LlamaModel
             adapter = LlamaModel(config.model_name_or_path, config.task)
         elif "mpt" in config.model_name_or_path.lower():

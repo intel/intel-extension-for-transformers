@@ -24,6 +24,8 @@ from dataclasses import dataclass
 from .utils.common import get_device_type
 
 from .plugins import plugins
+from .utils.common import is_openai_model
+import os
 
 from enum import Enum, auto
 
@@ -450,6 +452,11 @@ class ServingConfig:
     framework: str = "vllm" # vllm/TGI
     framework_config: FrameworkConfig = None
 
+@dataclass
+class OpenAIConfig:
+    def __init__(self, api_key: str = None, organization: str = None):
+        self.api_key = api_key if api_key else os.environ.get("OPENAI_API_KEY")
+        self.organization = organization if organization else os.environ.get("OPENAI_ORG")
 class PipelineConfig:
     def __init__(self,
                  model_name_or_path="Intel/neural-chat-7b-v3-1",
@@ -462,8 +469,15 @@ class PipelineConfig:
                  loading_config=None,
                  optimization_config=None,
                  assistant_model=None,
-                 serving_config=None):
+                 serving_config=None,
+                 openai_config=None,):
         self.model_name_or_path = model_name_or_path
+
+        if is_openai_model(model_name_or_path.lower()):
+            self.openai_config = openai_config if openai_config else OpenAIConfig()
+            if self.openai_config.api_key is None:
+                raise Exception("Please provide the OpenAI key if you are using OpenAI model!")
+
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
         self.hf_endpoint_url = hf_endpoint_url
