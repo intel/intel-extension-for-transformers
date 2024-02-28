@@ -34,7 +34,7 @@ class BgeReranker(BaseDocumentCompressor):
         model_inputs =  [[query, doc] for doc in docs]
         scores = self.model.compute_score(model_inputs)
         if len(docs) == 1:
-            return [(0, scores)]        
+            return [(0, scores)]
         results = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
         return results[:self.top_n]
 
