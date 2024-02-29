@@ -61,6 +61,7 @@ from transformers.integrations.deepspeed import (
     is_deepspeed_available,
 )
 from intel_extension_for_transformers.utils.device_utils import is_hpu_available
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 
 if is_bitsandbytes_available():
@@ -76,10 +77,7 @@ class Finetuning:
             finetuning_config.finetune_args
         )
         if finetuning_config.finetune_args.device == "auto":
-            if torch.cuda.is_available():
-                finetuning_config.finetune_args.device = "cuda"
-            else:
-                finetuning_config.finetune_args.device = "cpu"
+            finetuning_config.finetune_args.device = get_device_type()
         if finetuning_config.finetune_args.device == "cpu":
             Arguments = type(finetuning_config.training_args)
             training_args = {
