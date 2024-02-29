@@ -63,8 +63,6 @@ You can customize the configuration file 'tgi.yaml' to match your environment se
 | model_name_or_path                | "./neural-chat-7b-v3-1"                 |
 | device                            | "cpu"/"gpu"/"hpu"                                 |
 | serving.framework                  | "tgi"                                   |
-| serving.framework.tgi_engine_params.endpoint        | Your existed tgi service endpoint. when endpoint is set, neuralchat will not start a tgi service, and other params will not work any more.                |
-| serving.framework.tgi_engine_params.port        | 9876, the port that neuralchat will help to start tgi service.                    |
 | serving.framework.tgi_engine_params.sharded        | true (false only on cpu)                    |
 | serving.framework.tgi_engine_params.num_shard  | 4 (not effective when sharded is false)    |
 | serving.framework.tgi_engine_params.habana_visible_devices      | "0,1" (only on hpu)        |
@@ -92,8 +90,3 @@ curl ${your_ip}:${your_port}/v1/tgi/generate \
 ```
 
 Of course, you can also consume the service via `postman`, `http request`, or other ways.
-
-If neuralchat is unable to call your local tgi service, try the command below then try again.
-```bash
-unset http_proxy
-```
