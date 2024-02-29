@@ -49,7 +49,7 @@ You can customize the configuration file 'codegen.yaml' to match your environmen
 | device             | "cpu"                                |
 | tasks_list         | ['textchat']                         |
 | optimization       |                                      |
-|                    |  use_llm_runtime  | true             |
+|                    |  use_neural_speed  | true             |
 |                    |  optimization_type| "weight_only"    |
 |                    |  compute_dtype    | "int8"           |
 |                    |  weight_dtype     | "int4"           |

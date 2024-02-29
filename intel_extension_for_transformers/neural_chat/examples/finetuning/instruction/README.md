@@ -22,7 +22,7 @@ Recommend python 3.9 or higher version.
 pip install -r requirements.txt
 pip install transformers==4.34.1
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
-python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-whl-stable-cpu
+python -m pip install oneccl_bind_pt==2.2.0 -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
 >**Note**: Suggest using transformers no higher than 4.34.1
 
@@ -625,6 +625,35 @@ For finetuning on SPR, add `--bf16` argument will speedup the finetuning process
 You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 
+## Fine-tuning on Intel Arc GPUs
+
+### 1. Single Card Fine-tuning
+
+Follow the installation guidance in [intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch) to install intel-extension-for-pytorch for GPU.
+
+For `google/gemma-2b`, use the below command line for finetuning on the Alpaca dataset.
+
+```bash
+python finetune_clm.py \
+        --model_name_or_path "google/gemma-2b" \
+        --train_file "/path/to/alpaca_data.json" \
+        --dataset_concatenation \
+        --per_device_train_batch_size 2 \
+        --per_device_eval_batch_size 2 \
+        --gradient_accumulation_steps 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "steps" \
+        --save_steps 2000 \
+        --save_total_limit 1 \
+        --learning_rate 1e-4  \
+        --do_train \
+        --num_train_epochs 3 \
+        --overwrite_output_dir \
+        --log_level info \
+        --output_dir ./gemma-2b_peft_finetuned_model \
+        --peft lora \
+        --gradient_checkpointing True
+```
 
 # Evaluation Metrics
 

@@ -7,5 +7,5 @@ nh3
 openai
 pip
 requests
-torch==2.1.0
+torch==2.2.0
 transformers

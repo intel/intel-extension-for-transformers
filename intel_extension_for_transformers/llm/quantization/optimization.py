@@ -24,7 +24,7 @@ class Optimization:
         ):
         self.optimization_config = optimization_config
 
-    def optimize(self, model, use_llm_runtime=False):
+    def optimize(self, model, use_neural_speed=False):
         if isinstance(model, str):
             model_name = model
         else:
@@ -44,7 +44,7 @@ class Optimization:
             optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_name,
                     quantization_config=config,
-                    use_llm_runtime=use_llm_runtime,
+                    use_neural_speed=use_neural_speed,
                     trust_remote_code=True)
         elif (
             re.search("gpt", model_name, re.IGNORECASE)
@@ -63,13 +63,13 @@ class Optimization:
             optimized_model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 quantization_config=config,
-                use_llm_runtime=use_llm_runtime,
+                use_neural_speed=use_neural_speed,
                 trust_remote_code=True)
         elif re.search("chatglm", model_name, re.IGNORECASE):
             from intel_extension_for_transformers.transformers import AutoModel
             optimized_model = AutoModel.from_pretrained(
                 model_name,
                 quantization_config=config,
-                use_llm_runtime=use_llm_runtime,
+                use_neural_speed=use_neural_speed,
                 trust_remote_code=True)
         return optimized_model

@@ -20,6 +20,7 @@ from intel_extension_for_transformers.llm.quantization.optimization import Optim
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .plugins import plugins
+from .utils.common import is_openai_model
 
 from .errorcode import ErrorCodes
 from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
@@ -113,50 +114,63 @@ def build_chatbot(config: PipelineConfig=None):
     if not config:
         config = PipelineConfig()
 
-    # create model adapter
-    if "llama" in config.model_name_or_path.lower():
-        from .models.llama_model import LlamaModel
-        adapter = LlamaModel(config.model_name_or_path, config.task)
-    elif "mpt" in config.model_name_or_path.lower():
-        from .models.mpt_model import MptModel
-        adapter = MptModel(config.model_name_or_path, config.task)
-    elif "neural-chat" in config.model_name_or_path.lower():
-        from .models.neuralchat_model import NeuralChatModel
-        adapter = NeuralChatModel(config.model_name_or_path, config.task)
-    elif "chatglm" in config.model_name_or_path.lower():
-        from .models.chatglm_model import ChatGlmModel
-        adapter = ChatGlmModel(config.model_name_or_path, config.task)
-    elif "qwen" in config.model_name_or_path.lower():
-        from .models.qwen_model import QwenModel
-        adapter = QwenModel(config.model_name_or_path, config.task)
-    elif "mistral" in config.model_name_or_path.lower():
-        from .models.mistral_model import MistralModel
-        adapter = MistralModel(config.model_name_or_path, config.task)
-    elif "solar" in config.model_name_or_path.lower():
-        from .models.solar_model import SolarModel
-        adapter = SolarModel(config.model_name_or_path, config.task)
-    elif "decilm" in config.model_name_or_path.lower():
-        from .models.decilm_model import DeciLMModel
-        adapter = DeciLMModel(config.model_name_or_path, config.task)
-    elif "deepseek-coder" in config.model_name_or_path.lower():
-        from .models.deepseek_coder_model import DeepseekCoderModel
-        adapter = DeepseekCoderModel(config.model_name_or_path, config.task)
-    elif "opt" in config.model_name_or_path.lower() or \
-         "gpt" in config.model_name_or_path.lower() or \
-         "flan-t5" in config.model_name_or_path.lower() or \
-         "bloom" in config.model_name_or_path.lower() or \
-         "starcoder" in config.model_name_or_path.lower() or \
-         "codegen" in config.model_name_or_path.lower() or \
-         "magicoder" in config.model_name_or_path.lower() or \
-         "mixtral" in config.model_name_or_path.lower() or \
-         "phi-2" in config.model_name_or_path.lower() or \
-         "sqlcoder" in config.model_name_or_path.lower():
-        from .models.base_model import BaseModel
-        adapter = BaseModel(config.model_name_or_path, config.task)
+
+    if config.hf_endpoint_url:
+        if not config.hf_access_token:
+            set_latest_error(ErrorCodes.ERROR_HF_TOKEN_NOT_PROVIDED)
+            logging.error("build_chatbot: \
+               the huggingface token must be provided to access the huggingface endpoint service.")
+            return
+        from .models.huggingface_model import HuggingfaceModel
+        adapter = HuggingfaceModel(config.hf_endpoint_url, config.hf_access_token)
     else:
-        set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
-        logging.error("build_chatbot: unknown model")
-        return
+        # create model adapter
+        if is_openai_model(config.model_name_or_path.lower()):
+            from .models.openai_model import OpenAIModel
+            adapter = OpenAIModel(config.model_name_or_path, config.task, config.openai_config)
+        elif "llama" in config.model_name_or_path.lower():
+            from .models.llama_model import LlamaModel
+            adapter = LlamaModel(config.model_name_or_path, config.task)
+        elif "mpt" in config.model_name_or_path.lower():
+            from .models.mpt_model import MptModel
+            adapter = MptModel(config.model_name_or_path, config.task)
+        elif "neural-chat" in config.model_name_or_path.lower():
+            from .models.neuralchat_model import NeuralChatModel
+            adapter = NeuralChatModel(config.model_name_or_path, config.task)
+        elif "chatglm" in config.model_name_or_path.lower():
+            from .models.chatglm_model import ChatGlmModel
+            adapter = ChatGlmModel(config.model_name_or_path, config.task)
+        elif "qwen" in config.model_name_or_path.lower():
+            from .models.qwen_model import QwenModel
+            adapter = QwenModel(config.model_name_or_path, config.task)
+        elif "mistral" in config.model_name_or_path.lower():
+            from .models.mistral_model import MistralModel
+            adapter = MistralModel(config.model_name_or_path, config.task)
+        elif "solar" in config.model_name_or_path.lower():
+            from .models.solar_model import SolarModel
+            adapter = SolarModel(config.model_name_or_path, config.task)
+        elif "decilm" in config.model_name_or_path.lower():
+            from .models.decilm_model import DeciLMModel
+            adapter = DeciLMModel(config.model_name_or_path, config.task)
+        elif "deepseek-coder" in config.model_name_or_path.lower():
+            from .models.deepseek_coder_model import DeepseekCoderModel
+            adapter = DeepseekCoderModel(config.model_name_or_path, config.task)
+        elif "opt" in config.model_name_or_path.lower() or \
+            "gpt" in config.model_name_or_path.lower() or \
+            "flan-t5" in config.model_name_or_path.lower() or \
+            "bloom" in config.model_name_or_path.lower() or \
+            "starcoder" in config.model_name_or_path.lower() or \
+            "codegen" in config.model_name_or_path.lower() or \
+            "magicoder" in config.model_name_or_path.lower() or \
+            "mixtral" in config.model_name_or_path.lower() or \
+            "phi-2" in config.model_name_or_path.lower() or \
+            "sqlcoder" in config.model_name_or_path.lower():
+            from .models.base_model import BaseModel
+            adapter = BaseModel(config.model_name_or_path, config.task)
+        else:
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
+            logging.error("build_chatbot: unknown model")
+            return
     from .models.base_model import register_model_adapter
     register_model_adapter(adapter)
     # register plugin instance in model adaptor
@@ -273,7 +287,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
-    parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
+    parameters["use_neural_speed"] = config.loading_config.use_neural_speed
     parameters["gguf_model_path"] = config.loading_config.gguf_model_path
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
@@ -284,6 +298,8 @@ def build_chatbot(config: PipelineConfig=None):
     else:
         parameters["use_vllm"] = False
         parameters["vllm_engine_params"] = None
+    if config.hf_endpoint_url:
+        return adapter
     adapter.load_model(parameters)
     if get_latest_error():
         return
@@ -329,18 +345,18 @@ def finetune_model(config: BaseFinetuningConfig):
         else:
             set_latest_error(ErrorCodes.ERROR_GENERIC)
 
-def optimize_model(model, config, use_llm_runtime=False):
+def optimize_model(model, config, use_neural_speed=False):
     """Optimize the model based on the provided configuration.
 
     Args:
         model: large language model
         config (OptimizationConfig): The configuration required for optimizing the model.
-        use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
+        use_neural_speed (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
     clear_latest_error()
     optimization = Optimization(optimization_config=config)
     try:
-        model = optimization.optimize(model, use_llm_runtime)
+        model = optimization.optimize(model, use_neural_speed)
     except Exception as e:
         logging.error(f"Exception: {e}")
         from intel_extension_for_transformers.transformers import (

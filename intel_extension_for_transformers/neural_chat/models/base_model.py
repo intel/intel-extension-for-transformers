@@ -81,6 +81,7 @@ class BaseModel(ABC):
         self.device = None
         self.conv_template = None
         self.ipex_int8 = None
+        self.hf_client = None
         self.get_conv_template(task)
 
     def match(self):
@@ -134,7 +135,7 @@ class BaseModel(ABC):
                    use_deepspeed=kwargs["use_deepspeed"],
                    optimization_config=kwargs["optimization_config"],
                    hf_access_token=kwargs["hf_access_token"],
-                   use_llm_runtime=kwargs["use_llm_runtime"],
+                   use_neural_speed=kwargs["use_neural_speed"],
                    assistant_model=kwargs["assistant_model"],
                    use_vllm=kwargs["use_vllm"],
                    vllm_engine_params=kwargs["vllm_engine_params"],
@@ -169,7 +170,8 @@ class BaseModel(ABC):
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
-              "phi-2" in self.model_name.lower() or "sqlcoder" in self.model_name.lower():
+              "phi-2" in self.model_name.lower() or "sqlcoder" in self.model_name.lower() or \
+              "biogpt" in self.model_name.lower() or self.hf_client:
             query_include_prompt = True
 
         # plugin pre actions
@@ -233,8 +235,18 @@ class BaseModel(ABC):
             query = generate_sqlcoder_prompt(query, config.sql_metadata)
 
         try:
-            response = predict_stream(
-                **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+            if self.hf_client:
+                response = self.hf_client.text_generation(prompt=query,
+                                                          max_new_tokens=config.max_new_tokens,
+                                                          do_sample=config.do_sample,
+                                                          repetition_penalty=config.repetition_penalty,
+                                                          temperature=config.temperature,
+                                                          top_k=config.top_k,
+                                                          top_p=config.top_p,
+                                                          stream=True)
+            else:
+                response = predict_stream(
+                    **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
         except Exception as e:
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
             return
@@ -282,7 +294,7 @@ class BaseModel(ABC):
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
                "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
                "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
-               "sqlcoder" in self.model_name.lower():
+               "sqlcoder" in self.model_name.lower() or "biogpt" in self.model_name.lower() or self.hf_client:
             query_include_prompt = True
 
         # plugin pre actions
@@ -344,8 +356,18 @@ class BaseModel(ABC):
 
         # LLM inference
         try:
-            response = predict(
-                **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+            if self.hf_client:
+                response = self.hf_client.text_generation(prompt=query,
+                                                          max_new_tokens=config.max_new_tokens,
+                                                          do_sample=config.do_sample,
+                                                          repetition_penalty=config.repetition_penalty,
+                                                          temperature=config.temperature,
+                                                          top_k=config.top_k,
+                                                          top_p=config.top_p,
+                                                          stream=False)
+            else:
+                response = predict(
+                    **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
         except Exception as e:
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
             return
