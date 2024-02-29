@@ -209,8 +209,6 @@ function run_tuning {
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
 	    pip install transformers==4.35.2
-        pip install torch==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-        pip install intel-extension-for-pytorch==2.1.0
     fi
 
     if [ ${script} = "run_generation.py" ];then
