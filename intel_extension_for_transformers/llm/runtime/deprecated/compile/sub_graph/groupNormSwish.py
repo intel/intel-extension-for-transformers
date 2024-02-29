@@ -24,10 +24,10 @@ from .. import logger
 @pattern_registry(pattern_type='GroupNormSwish')
 class GroupNormSwish(Pattern):
     """
-    The input channels are separated into num_groups groups, each containing num_channels / 
+    The input channels are separated into num_groups groups, each containing num_channels /
     num_groups channels. Each group is calculated like:
     y = (x - E(X)) / (Var(x) + epsilon) * gamma + beta
-    More info can see: https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html 
+    More info can see: https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html
     """
 
     def __call__(self, model):
@@ -66,7 +66,7 @@ class GroupNormSwish(Pattern):
         pattern_dict = pattern_mapping_config['GroupNormSwish'][0]
         model, new_node_names, ret_old_nodes = util.pattern_mapping("GroupNormSwish", pattern_dict, model)
         if len(new_node_names) != 0:
-            logger.info('GroupNormSwish mathched...')
+            logger.info('GroupNormSwish matched...')
             logger.debug('GroupNormSwish = {}'.format(new_node_names))
             for j in range(len(new_node_names)):
                 attr = OrderedDict()

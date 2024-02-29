@@ -49,7 +49,7 @@ bool gather_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   for (int i = 0; i < dst_shape[0]; ++i) {
 #pragma omp simd
     for (int j = 0; j < dst_shape[1]; ++j) {
-      // TODO(Yucheng/Zhe): refactor here when postop-injector avaliable.
+      // TODO(Yucheng/Zhe): refactor here when postop-injector available.
       for (size_t k = 3; k < ts_descs.size(); k++) {
         int broad_cast_i = i;
         if (ts_descs[k].shape()[0] == 1) broad_cast_i = 0;

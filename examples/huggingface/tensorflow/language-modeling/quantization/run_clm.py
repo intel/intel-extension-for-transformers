@@ -576,6 +576,10 @@ def main():
         # https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.TFPreTrainedModel.prepare_tf_dataset
         # https://huggingface.co/docs/datasets/main/en/package_reference/main_classes#datasets.Dataset.to_tf_dataset
 
+        if model_args.model_name_or_path == "distilgpt2":
+            train_dataset = train_dataset.remove_columns('token_type_ids')
+            eval_dataset = eval_dataset.remove_columns('token_type_ids')
+
         tf_train_dataset = model.prepare_tf_dataset(
             train_dataset,
             shuffle=True,

@@ -1,26 +1,29 @@
-datasets>=1.17
-mlflow
-nlpaug==1.1.9
-sacremoses
+--extra-index-url https://download.pytorch.org/whl/cpu
+accelerate
+bitsandbytes
+datasets==2.14.7
+einops
+evaluate
+gguf
+git+https://github.com/intel/auto-round.git@a868c805de4be271cfe7403309a64d9bf03a0ecf
 git+https://github.com/intel/neural-compressor.git
+intel-extension-for-pytorch==2.2.0
+intel-tensorflow==2.14.0
+mlflow
+neural-speed
+nlpaug==1.1.9
 onnx>=1.10
 onnxruntime
---find-links https://download.pytorch.org/cpu/whl/torch_stable.html
-torch==2.1.0
-transformers==4.34.1
-intel-tensorflow==2.13.0
-torchprofile
-intel-extension-for-pytorch
-tokenizers
-sentencepiece != 0.1.92
-accelerate
-evaluate
-wget
-git+https://github.com/huggingface/optimum.git@927e94739447b13f7eefe085c8d3662654b6a11c
-git+https://github.com/huggingface/optimum-intel.git
+optimum-intel
 peft==0.6.2
-tyro
-bitsandbytes
+sacremoses
+sentencepiece != 0.1.92
 tiktoken
+tokenizers
+torch==2.2.0+cpu
+torchprofile
+torchvision==0.17.0+cpu
+transformers==4.36.2
 transformers_stream_generator
-einops
+tyro
+wget

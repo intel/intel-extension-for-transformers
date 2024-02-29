@@ -18,6 +18,7 @@
 	const { addNotification } = getNotificationsContext();
 	import {
 		countDown,
+		currentMode,
 		ifStoreMsg,
 		resetControl,
 	} from "$lib/shared/stores/common/Store";
@@ -58,6 +59,7 @@
 
 	function deleteAccount() {
 		localStorage.setItem(LOCAL_STORAGE_KEY.STORAGE_CHAT_KEY, "[]");
+		currentMode.set("Text");
 
 		resetControl.set(true);
 		addNotification({
@@ -73,7 +75,7 @@
 	}
 </script>
 
-<div class="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+<div class="container mx-auto px-4 py-8 sm:px-6 sm:py-20 lg:px-8">
 	<h2 class="text-center text-2xl font-bold">Settings</h2>
 	<div
 		class="relative mx-auto max-w-xl rounded-3xl px-12 px-6 py-6 shadow-[20px_34px_74px_0_#15156107] max-sm:px-2"
@@ -121,7 +123,7 @@
 				>
 				<div>
 					<div class="flex justify-between">
-						<h2 class="font-bold sm:text-lg">Chat history & training</h2>
+						<h2 class="font-bold">Chat history & training</h2>
 						<Toggle
 							color="blue"
 							checked={$ifStoreMsg}
@@ -141,7 +143,7 @@
 				</div>
 
 				<div class="mt-4 space-y-1">
-					<div class="flex w-full flex-row items-center justify-between py-4">
+					<div class="flex w-full flex-row items-center justify-between">
 						<label for="save-chat" class="block w-full font-bold md:text-sm"
 							>Delete account</label
 						>
@@ -153,6 +155,9 @@
 							}}>Delete</button
 						>
 					</div>
+					<p class="text-sm text-gray-500">
+						Note: Both chat history and account will be cleared.
+					</p>
 				</div>
 			</TabItem>
 		</Tabs>

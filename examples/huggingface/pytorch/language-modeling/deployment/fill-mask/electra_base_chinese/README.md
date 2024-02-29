@@ -6,7 +6,7 @@ This document describes the end-to-end workflow for Huggingface model [Electra B
 ## Prepare Python Environment
 ```shell
 # Create Environment (conda)
-conda create -n <env name> python=3.8
+conda create -n <env name> python=3.10
 conda activate <env name>
 ```
 
@@ -158,7 +158,7 @@ Discrimination labels given by Neural Engine model:
 | text | a Chinese sentence with a tag '[MASK]' when using generator or without a tag '[MASK]' when only using discriminator | 其实了解一个人并不代[MASK]什么，人是会变的，今天他喜欢凤梨，明天他可以喜欢别的 |
 
 ## Performance
-You can also test the IR performace with different batch_size and sequence length.
+You can also test the IR performance with different batch_size and sequence length.
 ```shell
 # use numactl to bind cores for better performance
 # support single socket and multiple sockets

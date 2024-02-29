@@ -28,37 +28,35 @@ torch = LazyImport("torch")
 
 
 class WeightOnlyQuantConfig(PretrainedConfig):
+
     def __init__(
         self,
         llm_int8_skip_modules=None,
         compute_dtype=None,
         weight_dtype=None,
-        scale_dtype="fp32",  # Now only fp32
-        mse_range=False,
+        scale_dtype=None,
+        mse_range=False,  #  only for RTN and AWQ
         use_double_quant=False,
-        double_quant_dtype="int8",  # reserve for double quant
-        double_quant_scale_dtype="fp32",  # reserve for double quant
+        double_quant_scale_dtype=None,  # reserve for double quant
         group_size=32,
         scheme="sym",
         algorithm="RTN",
         use_ggml=False,
         use_quant=True,
         use_gptq=False,
+        use_autoround=False,
+        algorithm_args=None,
+        use_neural_speed=True,
+        low_bit_model=False,
         **kwargs,
     ):
         from intel_extension_for_transformers.llm.quantization.utils import (
-            convert_dtype_2_str,
-        )
+            convert_dtype_torch2str, )
 
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.llm_int8_skip_modules = (llm_int8_skip_modules if llm_int8_skip_modules else [])
         self.weight_dtype = weight_dtype
-        self.scale_dtype = scale_dtype
         self.mse_range = mse_range
         self.use_double_quant = use_double_quant
-        self.double_quant_dtype = double_quant_dtype
-        self.double_quant_scale_dtype = double_quant_scale_dtype
         self.scheme = scheme
         self.algorithm = algorithm
         self.group_size = group_size
@@ -70,15 +68,26 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_gptq = use_gptq
+        self.use_autoround = use_autoround
+        self.algorithm_args = algorithm_args
+        self.use_neural_speed = use_neural_speed
+        self.low_bit_model = low_bit_model
+        self.device = kwargs.get("device", "auto")
 
-        if compute_dtype is None:
-            self.compute_dtype = "fp32"
-        elif isinstance(compute_dtype, str):
-            self.compute_dtype = compute_dtype
-        elif isinstance(compute_dtype, torch.dtype):
-            self.compute_dtype = convert_dtype_2_str(compute_dtype)
+        if isinstance(compute_dtype, torch.dtype):
+            self.compute_dtype = convert_dtype_torch2str(compute_dtype)
         else:
-            raise ValueError("bit4_compute_dtype must be a string or a torch.dtype")
+            self.compute_dtype = compute_dtype
+
+        if isinstance(scale_dtype, torch.dtype):
+            self.scale_dtype = convert_dtype_torch2str(scale_dtype)
+        else:
+            self.scale_dtype = scale_dtype
+
+        if isinstance(double_quant_scale_dtype, torch.dtype):
+            self.double_quant_scale_dtype = convert_dtype_torch2str(double_quant_scale_dtype)
+        else:
+            self.double_quant_scale_dtype = double_quant_scale_dtype
 
     def post_init(self):
         r"""
@@ -90,24 +99,30 @@ class WeightOnlyQuantConfig(PretrainedConfig):
 
         if self.compute_dtype is not None and self.compute_dtype not in ['fp32', 'bf16', 'int8']:
             raise ValueError("compute_dtype must be 'fp32', 'bf16', 'int8'.")
+        elif self.compute_dtype is None:
+            self.compute_dtype = "fp32"
 
         if self.weight_dtype is None:
             self.weight_dtype = "nf4"
         elif self.weight_dtype not in [
-            "int8",
-            "int4_fullrange",
-            "int4_clip",
-            "nf4",
-            "fp4_e2m1_bnb",
-            "fp4_e2m1",
+                "int8",
+                "int4_fullrange",
+                "int4_clip",
+                "nf4",
+                "fp4_e2m1_bnb",
+                "fp4_e2m1",
+                "fp8_e5m2",
+                "fp8_e4m3",
         ]:
             raise ValueError(
                 f"weight_dtype must be a string in "
-                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1'"
-            )
+                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'")
 
-        if self.scale_dtype not in ["fp32"]:
-            raise ValueError("scale_dtype must be a string in 'fp32'")
+        if self.scale_dtype is not None and self.scale_dtype not in ["fp32", "fp8_e8m0"]:
+            raise ValueError(f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
+                             f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'")
+        elif self.scale_dtype is None:
+            self.scale_dtype = "fp32"
 
         if not isinstance(self.mse_range, bool):
             raise ValueError("mse_range must be a boolean")
@@ -118,8 +133,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if self.use_double_quant and not isinstance(self.double_quant_dtype, str):
             raise ValueError("double_quant_dtype must be a string")
 
-        if self.use_double_quant and not isinstance(self.double_quant_scale_dtype, str):
-            raise ValueError("double_quant_scale_dtype must be a string")
+        if self.use_double_quant and not isinstance(self.scale_dtype, str):
+            raise ValueError("scale_dtype must be a string")
 
         if not isinstance(self.group_size, int):
             raise ValueError("group_size must be a int")
@@ -127,34 +142,138 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if not isinstance(self.scheme, str):
             raise ValueError("scheme must be a string")
 
+        if self.scheme == "asym" and (self.compute_dtype == "int8" or self.weight_dtype.startswith("fp") \
+                                         or self.weight_dtype.startswith("nf") or self.scale_dtype != "fp32"):
+            raise ValueError("WeightOnlyQuantization doesn't support asym with \
+                                compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, \
+                                please use sym scheme")
+        self.use_neural_speed = False
+
+    def post_init_xpu(self):
+        r"""
+        Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
+        """
+
+        if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
+            raise ValueError("llm_int8_skip_modules must be a list of strings")
+
+        if self.compute_dtype is not None and self.compute_dtype not in ["fp16"]:
+            raise ValueError("compute_dtype must be 'fp16'.")
+        elif self.compute_dtype is None:
+            self.compute_dtype = "fp16"
+
+        if self.algorithm not in ["RTN", "GPTQ"]:
+            raise ValueError("algorithm must be 'RTN' and 'GPTQ' now. will support 'TEQ', 'AWQ' soon!")
+
+        if self.algorithm == "GPTQ":
+            if self.algorithm_args is not None:
+                if "actorder" in self.algorithm_args:
+                    assert not self.algorithm_args["actorder"], "GPTQ algorithm only support actorder False now."
+
+        if self.weight_dtype is None:
+            self.weight_dtype = "int4_fullrange"
+        elif self.weight_dtype not in [
+                "int4_fullrange",
+        ]:
+            raise ValueError(f"weight_dtype must be a string in "
+                             f"'int4_fullrange'.")
+
+        if self.scale_dtype is not None and self.scale_dtype not in ["fp16"]:
+            raise ValueError(f"scale_dtype must be a string in 'fp16'")
+        elif self.scale_dtype is None:
+            self.scale_dtype = "fp16"
+
+        if not isinstance(self.mse_range, bool):
+            raise ValueError("mse_range must be a boolean")
+
+        if not isinstance(self.use_double_quant, bool):
+            raise ValueError("use_double_quant must be a boolean")
+
+        if self.use_double_quant and not isinstance(self.double_quant_dtype, str):
+            raise ValueError("double_quant_dtype must be a string")
+
+        if self.use_double_quant and not isinstance(self.scale_dtype, str):
+            raise ValueError("scale_dtype must be a string")
+
+        if not isinstance(self.group_size, int):
+            raise ValueError("group_size must be a int")
+
+        if self.scheme not in ["sym"]:
+            raise ValueError("scheme: {} is not support, only support 'sym' now!".format(self.scheme))
+        self.use_neural_speed = False
+
     def post_init_runtime(self):
         r"""
         Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
         """
 
-        if self.llm_int8_skip_modules is not None and not isinstance(
-            self.llm_int8_skip_modules, list
-        ):
+        if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
+        # MX-compliant format
+        # https://arxiv.org/abs/2310.10537
+        runtime_supported_compute_dtype = ["fp32", "fp16", "bf16", "int8"]
+        runtime_supported_weight_dtype = [
+            "int4",
+            "int8",
+            "fp8",
+            "fp8_e5m2",
+            "fp8_e4m3",
+            "fp4",
+            "fp4_e2m1",
+            "nf4",
+        ]
+        runtime_supported_scale_dtype = ["fp32", "bf16", "fp8"]
+        runtime_supported_group_size = [-1, 32, 128]
+        runtime_supported_scheme = ["sym", "asym"]
+
         if self.compute_dtype is None:
-            self.compute_dtype = "int8"
-        elif self.compute_dtype not in ["int8", "bf16", "fp32"]:
-            raise ValueError("compute_dtype must be 'int8', 'bf16', 'fp32'.")
+            self.compute_dtype = "fp32"
+        else:
+            if self.compute_dtype not in runtime_supported_compute_dtype:
+                raise ValueError("compute_dtype must be in {}.".format(runtime_supported_compute_dtype))
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
-        elif self.weight_dtype not in ["int4", "int8"]:
-            raise ValueError(f"weight_dtype must be 'int4', 'int8'.")
+        elif self.weight_dtype == "fp8":
+            self.weight_dtype == "fp8_e4m3"
+        elif self.weight_dtype == "fp4":
+            self.weight_dtype = "fp4_e2m1"
+        else:
+            if self.weight_dtype not in runtime_supported_weight_dtype:
+                raise ValueError("weight_dtype must be in {}.".format(runtime_supported_weight_dtype))
 
-        if self.scale_dtype not in ["fp32", "fp16"]:
-            raise ValueError("scale_dtype must be 'fp32', 'fp16'.")
+        if self.scale_dtype is None:
+            self.scale_dtype = "fp32"
+        else:
+            if self.scale_dtype not in runtime_supported_scale_dtype:
+                raise ValueError("scale_dtype must be in {}.".format(runtime_supported_scale_dtype))
 
-        if self.group_size not in [-1, 32, 128]:
-            raise ValueError("group_size must be an integer in [-1, 32, 128]")
+        if self.group_size not in runtime_supported_group_size:
+            raise ValueError("group_size must be an integer in {}.".format(runtime_supported_group_size))
 
-        if self.scheme not in ["sym", "asym"]:
-            raise ValueError("scheme must be 'sym', 'asym'.")
+        if self.scheme not in runtime_supported_scheme:
+            raise ValueError("scheme must be in {}.".format(runtime_supported_scheme))
+
+        if self.weight_dtype[:3] in ["fp8", "fp4", "nf4"]:
+            if self.compute_dtype in ["int8"]:
+                print("WARNING: int8 compute dtype is not be supported in float quant types! "\
+                      "Fall back to fp32.")
+                self.compute_dtype = "fp32"
+            if self.scheme in ["asym"]:
+                print("WARNING: asym alg is not be supported in float quant types! "\
+                      "Fall back to sym.")
+                self.scheme = "sym"
+            if self.scale_dtype in ["fp8"] and self.weight_dtype[:3] not in ["fp8"]:
+                print("WARNING: fp8 scale is only be supported in fp8 weight type. "\
+                      "Fall back to fp32.")
+                self.scale_dtype = "fp32"
+            if self.weight_dtype[:3] == "fp8" and self.scale_dtype not in ["fp8", "fp32"]:
+                print("WARNING: fp8 weight type only supports fp8 / fp32 scale now."\
+                      " Fall back to fp8.")
+                self.scale_dtype = "fp8"
+
+        self.use_neural_speed = True
 
     def quantization_method(self):
         r"""
@@ -210,6 +329,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             json_file_path (`str` or `os.PathLike`):
                 Path to the JSON file in which this configuration instance's parameters will be saved.
         """
+        # set tokenizer to None due to it doesn't support write to json
+        self.tokenizer = None
         with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string(use_diff=use_diff))
 
@@ -226,7 +347,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         return f"{self.__class__.__name__} {self.to_json_string()}"
 
     def rm_unspport_serial_items(self, config_dict):
-        unsupport_serial_items = [ "calib_func", "calib_dataloader"]
+        unsupport_serial_items = ["calib_func", "calib_dataloader"]
         for key in unsupport_serial_items:
             if config_dict.get(key) is not None:
                 del config_dict[key]
@@ -320,10 +441,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             )
 
     @classmethod
-    def get_config_dict(
-        cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        return super().get_config_dict(pretrained_model_name_or_path, _configuration_file=QUANT_CONFIG, **kwargs)
+    def get_config_dict(cls, pretrained_model_name_or_path: Union[str, os.PathLike],
+                        **kwargs) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        cf = kwargs.pop("_configuration_file", QUANT_CONFIG)
+        return super().get_config_dict(pretrained_model_name_or_path, _configuration_file=cf, **kwargs)
 
 
 @dataclass
@@ -338,8 +459,11 @@ class SmoothQuantConfig:
     tokenizer: Any = None
     calib_func: Any = None
     calib_dataset: str = "NeelNanda/pile-10k"
+    calib_shuffle: bool = True
     calib_iters: int = 100
+    calib_padding: bool = False
     calib_len: int = 512
+    calib_pad_val: int = 1
     alpha: float = 0.5
     op_type_dict: dict = None
     op_name_dict: dict = None

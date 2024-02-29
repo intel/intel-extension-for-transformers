@@ -82,7 +82,7 @@ static bool ScatterData(
 
 
 
-  // We allow runtime to re-use input for output. If input/output Tensor* are the same
+  // We allow runtime to reuse input for output. If input/output Tensor* are the same
   // we do not copy
   if (src_base != dst_base) {
       memcpy(static_cast<void*>(dst_base), static_cast<const void*>(src_base), total_input_bytes);

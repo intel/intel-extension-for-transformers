@@ -26,7 +26,7 @@ python -m spacy download en_core_web_lg
 
 
 # 🚀Usage
-With different model configurations, the NER plugins of varing precisions have two ways of usage as below.
+With different model configurations, the NER plugins of varying precisions have two ways of usage as below.
 
 ## Inference with FP32/BF16
 
@@ -54,15 +54,15 @@ print("NER result: ", result)
 ## Plugin Parameters
 You can costomize the NER inference parameters to meet the personal demands for better performance. You can set the specific parameter by `plugins.ner.args["xxx"]`. Below are the descriptions of each available parameters.
 ```python
-model_name_or_path [str]: The huggingface model name or local path of the downloaded llm model. Default to "./Llama-2-7b-chat-hf/".
+model_name_or_path [str]: The huggingface model name or local path of the downloaded llm model. Default to "./neural-chat-7b-v3-1/".
 
 spacy_model [str]: The Spacy model for NLP process, specify it according to the downloaded Spacy model. Default to "en_core_web_lg".
 
-bf16 [bool]: Choose wether to use BF16 precision for NER inference. Default to False.
+bf16 [bool]: Choose whether to use BF16 precision for NER inference. Default to False.
 ```
 As for INT8 and INT4 model the plugin parameters are slightly different. You can set the specific parameter by `plugins.ner_int.args["xxx"]`.
 ```python
-model_name_or_path [str]: The huggingface model name or local path of the downloaded llm model. Default to "./Llama-2-7b-chat-hf/".
+model_name_or_path [str]: The huggingface model name or local path of the downloaded llm model. Default to "./neural-chat-7b-v3-1/".
 
 spacy_model [str]: The Spacy model for NLP process, specify it according to the downloaded Spacy model. Default to "en_core_web_lg".
 

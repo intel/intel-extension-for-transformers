@@ -39,7 +39,7 @@ class Gather(Operator):
             except BaseException:
                 axis = 0
             self._attr['axis'] = axis
-            
+
         if framework == 'onnxruntime':
             # idx_axis
             self._attr['axis'] = 0
@@ -54,7 +54,7 @@ class Gather(Operator):
 
 
                 self._attr['axis'] = 0
-            
+
         if framework == 'torch':
             if node.kind() == 'aten::embedding':
                 # indices: bs x seq_len

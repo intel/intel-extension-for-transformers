@@ -43,8 +43,8 @@
  *   v_scales_ptr: address of v_scales_ptr in plain format
  *
  *   out_scale: scale for matmul value of the first matmul
- *   softmax_in_scale: as name; also used for the outout of first matmul
- *   softmax_in_zero_point: as name; also used for the outout of first matmul
+ *   softmax_in_scale: as name; also used for the output of first matmul
+ *   softmax_in_zero_point: as name; also used for the output of first matmul
  *   softmax_out_scale: as name
  *   softmax_out_zero_point: as name
  */
@@ -81,7 +81,7 @@ inline bool attention_kd_t::add_kernel_desc(const operator_desc& op_desc, const 
 }
 
 bool attention_kd_t::init() {
-  if (!isa_available(avx512_core)) return false;  // deatiled check are left to sub-kernels
+  if (!isa_available(avx512_core)) return false;  // detailed check are left to sub-kernels
   // part 0
   const auto& src_desc = op_desc_.tensor_descs()[attention_io::MERGE_SRC];
   const auto& q_weight_desc = op_desc_.tensor_descs()[attention_io::Q_WEIGHT];
@@ -96,7 +96,7 @@ bool attention_kd_t::init() {
   const auto& q_k_src2_desc = op_desc_.tensor_descs()[attention_io::Q_K_SRC2];  // for binary add
   const auto& dst_desc = op_desc_.tensor_descs()[attention_io::MERGE_DST];
   SPARSE_LOG_IF(FATAL, q_bias_desc.shape().empty() || k_bias_desc.shape().empty() || v_bias_desc.shape().empty())
-      << "Attension shoulf have valid bias" << std::endl;
+      << "Attention shoulf have valid bias" << std::endl;
 
   // check tensor dim
   KERNEL_INIT_CHECK(dst_desc.shape().size() == 4)

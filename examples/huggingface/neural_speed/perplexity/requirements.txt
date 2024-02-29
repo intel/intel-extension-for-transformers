@@ -1,0 +1,16 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.0+cpu
+transformers
+numpy
+sentencepiece
+protobuf<3.20
+einops
+accelerate
+peft
+datasets
+transformers_stream_generator
+tiktoken
+py-cpuinfo
+cmake
+gguf
+neural-speed

@@ -33,10 +33,10 @@ class TestNER(unittest.TestCase):
         query = "Show me photos taken in Shanghai."
         result = ner_obj.ner_inference(query)
         _result = {
-            'period': [], 
-            'time': [], 
-            'location': ['Shanghai'], 
-            'name': [], 
+            'period': [],
+            'time': [],
+            'location': ['Shanghai'],
+            'name': [],
             'organization': []
         }
         self.assertEqual(result, _result)

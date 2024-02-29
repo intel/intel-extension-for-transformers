@@ -28,6 +28,7 @@ import re, os
 from threading import Thread
 import contextlib
 from huggingface_hub import snapshot_download
+import uuid
 import logging
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
@@ -45,8 +46,7 @@ from transformers import (
     AutoConfig,
     TextIteratorStreamer,
     StoppingCriteriaList,
-    StoppingCriteria,
-    LlamaForCausalLM
+    StoppingCriteria
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
@@ -55,7 +55,9 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
-
+from intel_extension_for_transformers.neural_chat.errorcode import ErrorCodes
+from intel_extension_for_transformers.neural_chat.utils.error_utils import set_latest_error
+from intel_extension_for_transformers.neural_chat.config import DeviceOptions
 import shutil
 
 if is_deepspeed_available():
@@ -140,10 +142,11 @@ def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, tok
     Dumps metadata into a JSON file for DeepSpeed-inference.
     """
     checkpoint_files = get_checkpoint_files(model_name_or_path, local_rank, token)
-    if local_rank == 0:
+    if local_rank == 0 and len(checkpoint_files) != 0:
         data = {"type": "ds_model", "checkpoints": checkpoint_files, "version": 1.0}
         with open(checkpoints_json, "w") as fp:
             json.dump(data, fp)
+    return len(checkpoint_files) != 0
 
 
 def model_on_meta(config):
@@ -264,8 +267,19 @@ def init_deepspeed_inference(model, model_name_or_path, peft_path, use_hpu_graph
     # Make sure all devices/nodes have access to the model checkpoints
     if is_meta:
         checkpoints_json = "checkpoints.json"
-        write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path, local_rank,
-                               checkpoints_json, token)
+        ret = write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path,
+                local_rank, checkpoints_json, token)
+        if ret == False:
+            is_meta = False
+            generation_config = model.generation_config
+            model = AutoModelForCausalLM.from_pretrained(
+                merged_model_dir if merged_model_dir is not None else model_name_or_path,
+                use_auth_token=token,
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True
+            )
+            model.generation_config = generation_config
+
 
     torch.distributed.barrier()
 
@@ -320,6 +334,63 @@ def peft_model(model_name, peft_model, model_dtype, hf_access_token=None):
 
     return model.merge_and_unload()
 
+def load_model_vllm(
+        model,
+        vllm_engine_params,
+    ):
+    eparams = vllm_engine_params
+    MODELS[model] = {}
+    if eparams.use_async_engine:
+        from vllm.engine.async_llm_engine import AsyncLLMEngine
+        from vllm.engine.arg_utils import AsyncEngineArgs
+        # Here we remove uncommon parameters to start a AsyncLLMEngine
+        # refer to https://github.com/vllm-project/vllm/blob/main/vllm/engine/arg_utils.py
+        async_engine_args = AsyncEngineArgs( # pylint: disable=E1123
+            model=model,
+            tokenizer=model,
+            tokenizer_mode=eparams.tokenizer_mode if hasattr(eparams, "tokenizer_mode") else "auto",
+            trust_remote_code=eparams.trust_remote_code if hasattr(eparams, 'trust_remote_code') else False,
+            tensor_parallel_size=eparams.tensor_parallel_size if hasattr(eparams, 'tensor_parallel_size') else 1,
+            dtype=eparams.dtype if hasattr(eparams, 'dtype') else 'auto',
+            quantization=eparams.quantization if hasattr(eparams, 'quantization') else None,
+            revision=eparams.revision if hasattr(eparams, 'revision') else None,
+            tokenizer_revision=eparams.tokenizer_revision if hasattr(eparams, 'tokenizer_revision') else None,
+            seed=eparams.seed if hasattr(eparams, 'seed') else 0,
+            gpu_memory_utilization=eparams.gpu_memory_utilization if hasattr(eparams, 'gpu_memory_utilization') \
+             else 0.9,
+            swap_space=eparams.swap_space if hasattr(eparams, 'swap_space') else 4,
+            enforce_eager=eparams.enforce_eager if hasattr(eparams, 'enforce_eager') else False,
+            max_context_len_to_capture=eparams.max_context_len_to_capture \
+                if hasattr(eparams, 'max_context_len_to_capture') else 8192,
+        )
+        llm = AsyncLLMEngine.from_engine_args(async_engine_args)
+        # set an async flag for generating stage
+        MODELS[model]["vllm_async"] = True
+        logging.info("use async vllm")
+    else:
+        from vllm import LLM
+        llm = LLM(
+            model=model,
+            tokenizer=model,
+            tokenizer_mode=eparams.tokenizer_mode if hasattr(eparams, "tokenizer_mode") else "auto",
+            trust_remote_code=eparams.trust_remote_code if hasattr(eparams, 'trust_remote_code') else False,
+            tensor_parallel_size=eparams.tensor_parallel_size if hasattr(eparams, 'tensor_parallel_size') else 1,
+            dtype=eparams.dtype if hasattr(eparams, 'dtype') else 'auto',
+            quantization=eparams.quantization if hasattr(eparams, 'quantization') else None,
+            revision=eparams.revision if hasattr(eparams, 'revision') else None,
+            tokenizer_revision=eparams.tokenizer_revision if hasattr(eparams, 'tokenizer_revision') else None,
+            seed=eparams.seed if hasattr(eparams, 'seed') else 0,
+            gpu_memory_utilization=eparams.gpu_memory_utilization if hasattr(eparams, 'gpu_memory_utilization') \
+             else 0.9,
+            swap_space=eparams.swap_space if hasattr(eparams, 'swap_space') else 4,
+            enforce_eager=eparams.enforce_eager if hasattr(eparams, 'enforce_eager') else False,
+            max_context_len_to_capture=eparams.max_context_len_to_capture \
+                if hasattr(eparams, 'max_context_len_to_capture') else 8192,
+        )
+        logging.info("use sync vllm")
+    MODELS[model]["model"] = llm
+    logging.info("Model loaded.")
+
 def load_model(
     model_name,
     tokenizer_name,
@@ -332,8 +403,11 @@ def load_model(
     use_deepspeed=False,
     optimization_config=None,
     hf_access_token=None,
-    use_llm_runtime=False,
-    assistant_model=None
+    use_neural_speed=False,
+    assistant_model=None,
+    use_vllm=False,
+    vllm_engine_params=None,
+    gguf_model_path=None,
 ):
     """
     Load the model and initialize the tokenizer.
@@ -351,6 +425,23 @@ def load_model(
         ValueError
     """
     print("Loading model {}".format(model_name))
+    if use_vllm:
+        return load_model_vllm(model=model_name, vllm_engine_params=vllm_engine_params)
+
+    # Validate input parameters
+    if device not in [option.name.lower() for option in DeviceOptions]:
+        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+        return
+
+    if device == "cuda":
+        if not torch.cuda.is_available():
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+            return
+    elif device == "xpu":
+        if not torch.xpu.is_available():
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+            return
+
     if device == "hpu":
         if use_deepspeed:
             import_deepspeed()
@@ -393,14 +484,12 @@ def load_model(
     # load assistant model
     if assistant_model:
         print("Loading assistant model...")
-        if 'llama' in assistant_model.lower():
-            assistant_model_class = LlamaForCausalLM
-        else:
-            assistant_model_class = AutoModelForCausalLM
+        from transformers import AutoModelForCausalLM
+        assistant_model_class = AutoModelForCausalLM
         print(f"Loading assistant model via {assistant_model_class}")
         assis_model = assistant_model_class.from_pretrained(
-            assistant_model, 
-            low_cpu_mem_usage=True, 
+            assistant_model,
+            low_cpu_mem_usage=True,
             torch_dtype=torch_dtype)
         assis_model = assis_model.eval().to(device)
         assis_model = assis_model.to(memory_format=torch.channels_last)
@@ -409,36 +498,72 @@ def load_model(
         MODELS[model_name]["assistant_model"] = None
 
     try:
-        tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_name,
-            use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
-                or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
-            use_auth_token=hf_access_token,
-            trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
-                re.search("chatglm", model_name, re.IGNORECASE)) else False,
-        )
-    except EnvironmentError as e:
-        if "not a local folder and is not a valid model identifier" in str(e):
-            raise ValueError("load_model: tokenizer is not found")
+        if re.search("biogpt", model_name, re.IGNORECASE):
+            from transformers import BioGptConfig
+            config = BioGptConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
         else:
-            raise
+            config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                                if (re.search("chatglm", model_name, re.IGNORECASE) or \
+                                                re.search("qwen", model_name, re.IGNORECASE) or \
+                                                re.search("deci", model_name, re.IGNORECASE)) else False)
+    except ValueError as e:
+        logging.error(f"Exception: {e}")
+        if "Unrecognized model in" in str(e):
+            set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND)
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
+    except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
+        if "not a local folder and is not a valid model identifier" in str(e):
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
+
+    MODELS[model_name]["model_type"] = config.model_type
 
     try:
-        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
-                                            if re.search("chatglm", model_name, re.IGNORECASE) else False)
-    except ValueError as e:
-        if "Unrecognized model in" in str(e):
-            raise ValueError("load_model: model config is not found")
+        if config.model_type == "biogpt":
+            from transformers import BioGptTokenizer
+            tokenizer = BioGptTokenizer.from_pretrained(tokenizer_name)
         else:
-            raise
+            tokenizer = AutoTokenizer.from_pretrained(
+                tokenizer_name,
+                use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
+                    or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+                use_auth_token=hf_access_token,
+                trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                    re.search("chatglm", model_name, re.IGNORECASE) or gguf_model_path) else False,
+            )
+    except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
+        if "not a local folder and is not a valid model identifier" in str(e):
+            set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND)
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
 
     load_to_meta = model_on_meta(config)
 
     if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        model = optimize_model(model_name, optimization_config, use_llm_runtime)
-        if not model.config.is_encoder_decoder:
-            tokenizer.padding_side = "left"
+        if use_neural_speed:
+            optimization_config.post_init_runtime()
+        else:
+            optimization_config.post_init()
+        model = optimize_model(model_name, optimization_config, use_neural_speed)
+        if hasattr(model, 'config'):
+            if model.config.is_encoder_decoder:
+                tokenizer.padding_side = "left"
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
         MODELS[model_name]["model"] = model
@@ -446,7 +571,18 @@ def load_model(
         logging.info("Optimized Model loaded.")
         return
 
+    if gguf_model_path:
+        from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+        model = AutoModelForCausalLM.from_pretrained(model_name, model_file = gguf_model_path)
+        if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        MODELS[model_name]["model"] = model
+        MODELS[model_name]["tokenizer"] = tokenizer
+        logging.info("GGUF Model loaded.")
+        return
+
     try:
+        from transformers import AutoModelForCausalLM
         if device == "hpu" and use_deepspeed and load_to_meta:
             with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
                 model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
@@ -469,17 +605,16 @@ def load_model(
                     trust_remote_code=True)
         elif ((
             re.search("gpt", model_name, re.IGNORECASE)
-            or re.search("mpt", model_name, re.IGNORECASE)
-            or re.search("bloom", model_name, re.IGNORECASE)
-            or re.search("llama", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
-            or re.search("qwen", model_name, re.IGNORECASE)
-            or re.search("starcoder", model_name, re.IGNORECASE)
-            or re.search("codellama", model_name, re.IGNORECASE)
-            or re.search("mistral", model_name, re.IGNORECASE)
-        ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
+            or config.model_type == "bloom"
+            or config.model_type == "qwen"
+            or config.model_type == "gpt_bigcode"
+            or config.model_type == "mpt"
+            or config.model_type == "llama"
+            or config.model_type == "mistral"
+            or config.model_type == "mixtral"
+            or config.model_type == "phi"
+            or config.model_type == "deci"
+        ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
                     model_name,
@@ -487,10 +622,21 @@ def load_model(
                     torch_dtype=torch_dtype,
                     low_cpu_mem_usage=True,
                     quantization_config=bitsandbytes_quant_config,
+                    trust_remote_code=True if (config.model_type == "qwen" or config.model_type == "phi" or \
+                        re.search("codegen", model_name, re.IGNORECASE) or config.model_type == "deci") else False
                 )
+        elif config.model_type == "biogpt":
+            from transformers import BioGptForCausalLM
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = BioGptForCausalLM.from_pretrained(
+                    model_name,
+                    use_auth_token=hf_access_token,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    quantization_config=bitsandbytes_quant_config)
         elif (
-                (re.search("starcoder", model_name, re.IGNORECASE)
-                or re.search("codellama", model_name, re.IGNORECASE)
+                (config.model_type == "gpt_bigcode"
+                 or config.model_type == "llama"
                 ) and ipex_int8
             ):
             with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -506,12 +652,12 @@ def load_model(
                         model_name,
                         file_name="best_model.pt",
                     )
-        elif(
-                (re.search("llama", model_name, re.IGNORECASE)
-                or re.search("opt", model_name, re.IGNORECASE)
-                or re.search("gpt_neox", model_name, re.IGNORECASE)
-                or re.search("gptj", model_name, re.IGNORECASE)
-                or re.search("falcon", model_name, re.IGNORECASE)
+        elif (
+                (config.model_type == "llama"
+                or config.model_type == "opt"
+                or config.model_type == "gpt_neox"
+                or config.model_type == "gptj"
+                or config.model_type == "falcon"
                 ) and ipex_int8
         ):
             with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -530,19 +676,43 @@ def load_model(
                     file_name="best_model.pt"
                 )
         else:
-            raise ValueError(f"unsupported model name or path {model_name}, \
-            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+            logging.error(f"unsupported model name or path {model_name}, \
+                only supports t5/llama/mpt/gptj/bloom/opt/qwen/chatglm/mistral/mixtral/gpt_bigcode/phi model type now.")
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
+            return
     except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
-            raise ValueError("load_model: model name or path is not found")
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
         else:
-            raise
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        if "No space left on device" in str(e):
+            set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
+        elif "out of memory" in str(e):
+            set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+        elif "Permission denied" in str(e):
+            set_latest_error(ErrorCodes.ERROR_CACHE_DIR_NO_WRITE_PERMISSION)
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
 
-    if re.search("llama", model.config.architectures[0], re.IGNORECASE):
+    if re.search("llama", model.config.architectures[0], re.IGNORECASE) and \
+       (not re.search("magicoder", model_name, re.IGNORECASE) and
+       not re.search("deepseek-coder", model_name, re.IGNORECASE)):
         # unwind broken decapoda-research config
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
         model.generation_config.eos_token_id = 2
+
+    if re.search("qwen", model.config.architectures[0], re.IGNORECASE):
+        tokenizer.pad_token = '<|extra_0|>'
+        model.config.pad_token_id = tokenizer.pad_token_id
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
+        from .qwen_model import prepare_inputs_for_generation
+        model.prepare_inputs_for_generation = prepare_inputs_for_generation
 
     if (
         hasattr(model.generation_config, "pad_token_id")
@@ -567,6 +737,9 @@ def load_model(
             tokenizer.pad_token_id
         ) = tokenizer.eos_token_id
 
+    if tokenizer.pad_token_id and not model.generation_config.pad_token_id:
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
+
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
@@ -574,7 +747,23 @@ def load_model(
         if peft_path and not (use_deepspeed and load_to_meta):
             from peft import PeftModel
             model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(torch.bfloat16)
+            try:
+                model = model.to(torch.bfloat16)
+            except RuntimeError as e:
+                logging.error(f"Exception: {e}")
+                if "out of memory" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+                elif "devices are busy or unavailable" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
+                elif "tensor does not have a device" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+                else:
+                    set_latest_error(ErrorCodes.ERROR_GENERIC)
+                return
+            except Exception as e:
+                logging.error(f"Exception: {e}")
+                set_latest_error(ErrorCodes.ERROR_GENERIC)
+                return
             model = model.merge_and_unload()
 
         if not use_deepspeed:
@@ -597,7 +786,23 @@ def load_model(
             from peft import PeftModel
 
             model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(dtype=torch_dtype)
+            try:
+                model = model.to(dtype=torch_dtype)
+            except RuntimeError as e:
+                logging.error(f"Exception: {e}")
+                if "out of memory" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+                elif "devices are busy or unavailable" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
+                elif "tensor does not have a device" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+                else:
+                    set_latest_error(ErrorCodes.ERROR_GENERIC)
+                return
+            except Exception as e:
+                logging.error(f"Exception: {e}")
+                set_latest_error(ErrorCodes.ERROR_GENERIC)
+                return
 
         if device == "cpu":
             if torch_dtype == torch.bfloat16 and not ipex_int8:
@@ -625,11 +830,29 @@ def load_model(
                     )
         elif device in ["cuda", "xpu"]:
             if hasattr(model, "device") and model.device.type != device:
-                model = model.eval().to(device)
+                try:
+                    model = model.eval().to(device)
+                except RuntimeError as e:
+                    logging.error(f"Exception: {e}")
+                    if "out of memory" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+                    elif "devices are busy or unavailable" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
+                    elif "tensor does not have a device" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+                    else:
+                        set_latest_error(ErrorCodes.ERROR_GENERIC)
+                    return
+                except Exception as e:
+                    logging.error(f"Exception: {e}")
+                    set_latest_error(ErrorCodes.ERROR_GENERIC)
+                    return
         else:
-            raise ValueError(
+            logging.error(
                 f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
             )
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+            return
 
     if not model.config.is_encoder_decoder:
         tokenizer.padding_side = "left"
@@ -646,7 +869,7 @@ def load_model(
                 model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9)
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
-    print("Model loaded.")
+    logging.info("Model loaded.")
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
@@ -700,12 +923,15 @@ def get_generate_kwargs(
         generate_kwargs["use_cache"] = True
     return generate_kwargs
 
-def is_llm_runtime_model(model):
-    from intel_extension_for_transformers.llm.runtime.graph import Model
-    if isinstance(model, Model):
-        return True
+def is_llm_runtime_model(model, device):
+    if device == "cpu":
+        from neural_speed import Model
+        if isinstance(model, Model):
+            return True
+        else:
+            return False
     else:
-        return False
+            return False
 
 def remove_prompt_history(model_name, prompt):
     result = prompt
@@ -714,10 +940,46 @@ def remove_prompt_history(model_name, prompt):
         if matches:
             result = "[INST]" + matches[-1] + "[/INST]"
     elif re.search("chatglm", model_name, re.IGNORECASE):
-        matches = re.findall(r'\n\n(\[Round \d+\]\n\n问：.*?\n答：)', prompt, re.DOTALL)
+        pattern = re.compile(r'问：.*?\n答：', re.DOTALL)
+        matches = pattern.findall(prompt)
         if matches:
-            result = matches[-1]
+            result = matches[-1].replace("问：", "").replace("\n答：", "").strip()
+    elif re.search("neuralchat", model_name, re.IGNORECASE):
+        matches = re.findall(r'### User:.*?### Assistant:', prompt, re.DOTALL)
+        if matches:
+            result = '''
+### System:
+    - You are a helpful assistant chatbot trained by Intel.
+    - You answer questions.
+    - You are excited to be able to help the user, \
+but will refuse to do anything that could be considered harmful to the user.
+    - You are more than just an information source, you are also able to write poetry,\
+short stories, and make jokes.</s>
+''' + matches[-1]
+
     return result
+
+SEQUENCE_LENGTH_KEYS = [
+    "max_sequence_length",
+    "seq_length",
+    "max_position_embeddings",
+    "max_seq_len",
+    "model_max_length",
+]
+
+def get_context_length(config):
+    """Get the context length of a model from a huggingface model config."""
+    rope_scaling = getattr(config, "rope_scaling", None)
+    if rope_scaling:
+        rope_scaling_factor = config.rope_scaling["factor"]
+    else:
+        rope_scaling_factor = 1
+
+    for key in SEQUENCE_LENGTH_KEYS:
+        val = getattr(config, key, None)
+        if val is not None:
+            return int(rope_scaling_factor * val)
+    return 2048
 
 output_token_len = 0
 def predict_stream(**params):
@@ -742,14 +1004,15 @@ def predict_stream(**params):
         `num_beams` (int): Controls the number of beams used in beam search.
                            Higher values increase the diversity but also the computation time.
         `model_name` (string): Specifies the name of the pre-trained model to use for text generation.
-                               If not provided, the default model is "mosaicml/mpt-7b-chat".
+                               If not provided, the default model is "Intel/neural-chat-7b-v3-1".
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
-        `use_hpu_graphs` (bool): 
+        `use_hpu_graphs` (bool):
                     Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
+        `format_version` (string): the format version of return stats.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -766,9 +1029,9 @@ def predict_stream(**params):
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
-    num_beams = int(params["num_beams"]) if "num_beams" in params else 0
+    num_beams = int(params["num_beams"]) if "num_beams" in params else 1
     model_name = (
-        params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
+        params["model_name"] if "model_name" in params else "Intel/neural-chat-7b-v3-1"
     )
     num_return_sequences = (
         params["num_return_sequences"] if "num_return_sequences" in params else 1
@@ -778,6 +1041,7 @@ def predict_stream(**params):
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
+    format_version = params["format_version"] if "format_version" in params else "v2"
     prompt = params["prompt"]
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
@@ -787,20 +1051,40 @@ def predict_stream(**params):
     if hasattr(model, 'device') and model.device.type != device:
         device = model.device.type
 
-    if is_llm_runtime_model(model):
+    if is_llm_runtime_model(model, device):
         prompt = remove_prompt_history(model_name, prompt)
-        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
+        max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
+                                            "codellama" in model_name.lower() or \
+                                            "starcoder" in model_name.lower() or \
+                                            "codegen" in model_name.lower()) else 1024
 
-    streamer = TextIteratorStreamer(
-        tokenizer, skip_prompt=True, skip_special_tokens=True
-    )
-    if num_beams == 0:
-        num_beams = 1
-        do_sample = True
+    if is_llm_runtime_model(model, device):
+        if "chatglm" in model_name.lower():
+            prompt = tokenizer.build_prompt(prompt)
+            input_tokens = tokenizer([prompt], return_tensors="pt").input_ids
+            input_token_len = input_tokens.shape[-1]
+            streamer = TextIteratorStreamer(tokenizer, skip_special_tokens=True)
+        else:
+            input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
+            streamer = TextIteratorStreamer(tokenizer, skip_special_tokens=True)
+    else:
+        input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
+        streamer = TextIteratorStreamer(
+            tokenizer, skip_prompt=True, skip_special_tokens=True
+        )
 
-    input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
+    if "gguf" not in model_name.lower():
+        context_len = get_context_length(model.config)
+        length = min(max_new_tokens, context_len - input_token_len)
+        if length <= 0:
+            logging.error(f"This model's maximum context length is {context_len} tokens. \
+                However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
+            )
+            set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+            return
+
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, 
+        max_new_tokens, input_token_len,
         get_stop_token_ids(model, tokenizer),
         assistant_model=assistant_model
     )
@@ -820,6 +1104,7 @@ def predict_stream(**params):
             num_beams=num_beams,
             use_cache=use_cache,
             num_return_sequences=num_return_sequences,
+            pad_token_id=tokenizer.eos_token_id
         )
 
         def generate_output():
@@ -843,25 +1128,25 @@ def predict_stream(**params):
                             )
 
                     else:
-                        with context:
-                            global output_token_len
-                            if is_llm_runtime_model(model):  # optimized model gerenate
-                                output_token=model.generate(
-                                    input_tokens['input_ids'],
-                                    streamer=streamer,
-                                    temperature=temperature,
-                                    top_p=top_p,
-                                    top_k=top_k,
-                                    repetition_penalty=repetition_penalty,
-                                    max_new_tokens=max_new_tokens,
-                                    ctx_size=max_new_tokens,
-                                    ignore_prompt=True,
-                                    interactive=True,
-                                    do_sample=do_sample,
-                                    num_beams=num_beams,
-                                    seed=1
-                                )
-                            else:
+                        global output_token_len
+                        if is_llm_runtime_model(model, device):  # optimized model generate
+                            output_token=model.generate(
+                                input_tokens if "chatglm" in model_name.lower() else input_tokens['input_ids'],
+                                streamer=streamer,
+                                temperature=temperature,
+                                top_p=top_p,
+                                top_k=top_k,
+                                repetition_penalty=repetition_penalty,
+                                max_new_tokens=max_new_tokens,
+                                ctx_size=max_new_tokens,
+                                ignore_prompt=True,
+                                interactive=False if "magicoder" in model_name.lower() else True,
+                                do_sample=do_sample,
+                                num_beams=num_beams,
+                                n_keep=2 if "chatglm" in model_name.lower() else 1
+                            )
+                        else:
+                            with context:
                                 output_token=model.generate(
                                     **input_tokens,
                                     **generate_kwargs,
@@ -869,11 +1154,14 @@ def predict_stream(**params):
                                     generation_config=generation_config,
                                     return_dict_in_generate=True,
                                 )
-                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
+                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model, device) else \
                                       output_token.sequences[0].shape[-1]
                     return output_token
             except Exception as e:
                 errors_queue.put(e)
+                logging.error(f"model.generate exception: {e}")
+                set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+                return
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -916,13 +1204,18 @@ def predict_stream(**params):
                     return output_token
             except Exception as e:
                 errors_queue.put(e)
+                logging.error(f"model.generate exception: {e}")
+                set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+                return
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     else:
-        raise ValueError(
-            f"unsupported device type {device}, only supports cpu, xpu, cuda and hpu now."
+        logging.error(
+            f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
         )
+        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+        return
     output_word_len = 0
 
     generation_thread.join(0.1)
@@ -948,23 +1241,42 @@ def predict_stream(**params):
     first_token_latency = int(
         (first_word_output_time - start_time).total_seconds() * 1000 * 3/4
     )
-    msecond_per_token = (
-        duration  / (output_token_len - input_token_len)
-        if output_token_len != 1
-        else 0
-    )
+    if is_llm_runtime_model(model, device):
+        msecond_per_token = (
+            duration  / output_token_len
+            if output_token_len != 1
+            else
+            0
+        )
+    else:
+        msecond_per_token = (
+            duration  / (output_token_len - input_token_len)
+            if output_token_len != 1
+            else
+            0
+        )
     if return_stats:
-        stats = {
-            "input_token_len": str(input_token_len),
-            "output_token_len": str(output_token_len),
-            "duration": str(duration) + " ms",
-            "first_token_latency": str(first_token_latency) + " ms",
-            "msecond_per_token": str(msecond_per_token) + " ms",
-        }
-        yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
-        yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
-        for key, value in stats.items():
-            yield "| {:<22} | {:<27} |\n".format(key, value)
+        if format_version == "v1":
+            stats = {
+                "input_token_len": input_token_len,
+                "output_token_len": output_token_len,
+                "duration": duration,
+                "first_token_latency": first_token_latency,
+                "msecond_per_token": msecond_per_token,
+            }
+            yield "END_OF_STREAM_STATS={}".format(stats)
+        else:
+            stats = {
+                "input_token_len": str(input_token_len),
+                "output_token_len": str(output_token_len),
+                "duration": str(duration) + " ms",
+                "first_token_latency": str(first_token_latency) + " ms",
+                "msecond_per_token": str(msecond_per_token) + " ms",
+            }
+            yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
+            yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
+            for key, value in stats.items():
+                yield "| {:<22} | {:<27} |\n".format(key, value)
 
 
 def predict(**params):
@@ -993,7 +1305,7 @@ def predict(**params):
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
-        `use_hpu_graphs` (bool): 
+        `use_hpu_graphs` (bool):
                  Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
@@ -1012,7 +1324,7 @@ def predict(**params):
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
-    num_beams = int(params["num_beams"]) if "num_beams" in params else 0
+    num_beams = int(params["num_beams"]) if "num_beams" in params else 1
     model_name = (
         params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
     )
@@ -1026,25 +1338,51 @@ def predict(**params):
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
+    if 'vllm' in str(MODELS[model_name]['model']):
+        from vllm import SamplingParams
+        sampling_params = SamplingParams(
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=max_new_tokens
+        )
+        # vllm may return a AsyncIterator[RequestOutput] with async engine
+        # or a List[RequestOutput] with offline sync engine
+        if "vllm_async" in MODELS[model_name]:
+            request_id = str(uuid.uuid4().hex)
+            output_list_or_generator = model.generate(prompt, sampling_params, request_id)
+            # directly return the async iterator
+            return output_list_or_generator
+        else:
+            output = model.generate(prompt, sampling_params)
+            output = output[0].outputs[0].text
+        return output
     tokenizer = MODELS[model_name]["tokenizer"]
     assistant_model=MODELS[model_name]["assistant_model"]
     if hasattr(model, "device") and model.device.type != device:
         device = model.device.type
 
-    if is_llm_runtime_model(model):
+    if is_llm_runtime_model(model, device):
         prompt = remove_prompt_history(model_name, prompt)
-        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
-
-    if num_beams == 0:
-        num_beams = 1
-        do_sample = True
-
+        max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
+                                            "codellama" in model_name.lower() or \
+                                            "starcoder" in model_name.lower() or \
+                                            "codegen" in model_name.lower()) else 1024
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, 
-        get_stop_token_ids(model, tokenizer), 
+        max_new_tokens, input_token_len,
+        get_stop_token_ids(model, tokenizer),
         assistant_model=assistant_model
     )
+
+    if "gguf" not in model_name.lower():
+        context_len = get_context_length(model.config)
+        length = min(max_new_tokens, context_len - input_token_len)
+        if length <= 0:
+            logging.error(f"This model's maximum context length is {context_len} tokens. \
+                However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
+            )
+            set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+            return
 
     if device in ["cpu", "cuda", "xpu"]:
         if device in ["cuda", "xpu"]:
@@ -1061,46 +1399,52 @@ def predict(**params):
             num_beams=num_beams,
             use_cache=use_cache,
             num_return_sequences=num_return_sequences,
+            pad_token_id=tokenizer.eos_token_id
         )
         dtype = model.dtype if hasattr(model, 'dtype') else torch.bfloat16
-        with torch.no_grad():
-            if device == "cpu":
-                context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-            elif device == "cuda":
-                context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-            elif device == "xpu":
-                context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-            if ipex_int8:
-                generation_output = model.generate(
-                        **input_tokens,
-                        **generate_kwargs,
-                        generation_config=generation_config,
-                        return_dict_in_generate=True
-                        )
-            else:
-                with context:
-                    if is_llm_runtime_model(model):  # optimized model gerenate
-                        generation_output = model.generate(
-                            input_tokens['input_ids'],
-                            temperature=temperature,
-                            top_p=top_p,
-                            top_k=top_k,
-                            repetition_penalty=repetition_penalty,
-                            max_new_tokens=max_new_tokens,
-                            ctx_size=max_new_tokens,
-                            ignore_prompt=True,
-                            interactive=True,
-                            do_sample=do_sample,
-                            num_beams=num_beams,
-                            seed=1
-                        )
-                    else:
-                        generation_output = model.generate(
+        try:
+            with torch.no_grad():
+                if device == "cpu":
+                    context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                elif device == "cuda":
+                    context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                elif device == "xpu":
+                    context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                if ipex_int8:
+                    generation_output = model.generate(
                             **input_tokens,
                             **generate_kwargs,
                             generation_config=generation_config,
                             return_dict_in_generate=True
-                        )
+                            )
+                else:
+                    with context:
+                        if is_llm_runtime_model(model, device):  # optimized model generate
+                            generation_output = model.generate(
+                                input_tokens['input_ids'],
+                                temperature=temperature,
+                                top_p=top_p,
+                                top_k=top_k,
+                                repetition_penalty=repetition_penalty,
+                                max_new_tokens=max_new_tokens,
+                                ctx_size=max_new_tokens,
+                                ignore_prompt=True,
+                                interactive=True,
+                                do_sample=do_sample,
+                                num_beams=num_beams,
+                                seed=1
+                            )
+                        else:
+                            generation_output = model.generate(
+                                **input_tokens,
+                                **generate_kwargs,
+                                generation_config=generation_config,
+                                return_dict_in_generate=True
+                            )
+        except Exception as e:
+            logging.error(f"model.generate exception: {e}")
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
     elif device == "hpu":
         # Move inputs to target device(s)
         input_tokens = prepare_inputs(input_tokens, model.device)
@@ -1121,30 +1465,42 @@ def predict(**params):
         generation_config.temperature = temperature
         generation_config.repetition_penalty = repetition_penalty
 
-        with torch.no_grad():
-            generation_output = model.generate(
-                **input_tokens,
-                **generate_kwargs,
-                generation_config=generation_config,
-                return_dict_in_generate=True,
-                output_scores=True,
-                max_new_tokens=max_new_tokens,
-                lazy_mode=True,
-                hpu_graphs=use_hpu_graphs,
-                ignore_eos=False,
-            )
-    if is_llm_runtime_model(model):  # optimized model gerenate
+        try:
+            with torch.no_grad():
+                generation_output = model.generate(
+                    **input_tokens,
+                    **generate_kwargs,
+                    generation_config=generation_config,
+                    return_dict_in_generate=True,
+                    output_scores=True,
+                    max_new_tokens=max_new_tokens,
+                    lazy_mode=True,
+                    hpu_graphs=use_hpu_graphs,
+                    ignore_eos=False,
+                )
+        except Exception as e:
+            logging.error(f"model.generate exception: {e}")
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
+    if is_llm_runtime_model(model, device):  # optimized model generate
         output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     else:
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
+
+    identifier_index = -1
     if "### Response:" in output:
-        return output.split("### Response:")[1].strip()
+        return output.split("### Response:")[identifier_index].strip()
+    if "@@ Response" in output:
+        return output.split("@@ Response")[identifier_index].strip()
     if "### Assistant" in output:
-        return output.split("### Assistant:")[1].strip()
+        return output.split("### Assistant:")[identifier_index].strip()
     if "\nassistant\n" in output:
-        return output.split("\nassistant\n")[1].strip()
+        return output.split("\nassistant\n")[identifier_index].strip()
     if "[/INST]" in output:
-        return output.split("[/INST]")[1].strip()
+        return output.split("[/INST]")[identifier_index].strip()
     if "答：" in output:
-        return output.split("答：")[1].strip()
+        return output.split("答：")[identifier_index].strip()
+    if "Answer:" in output:
+        return output.split("Answer:")[identifier_index].strip()
+
     return output

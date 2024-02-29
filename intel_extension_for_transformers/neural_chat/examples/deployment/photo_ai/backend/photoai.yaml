@@ -27,7 +27,7 @@ model_name_or_path: "Intel/neural-chat-7b-v3-1"
 device: "auto"
 
 # optimization:
-#     use_llm_runtime: true
+#     use_neural_speed: true
 #     optimization_type: "weight_only"
 #     compute_dtype: "int8"
 #     weight_dtype: "int4"
@@ -50,10 +50,7 @@ tts:
 ner:
     enable: true
     args:
-        device: "cpu"
-        model_path: "Intel/neural-chat-7b-v3-1"
         spacy_model: "en_core_web_lg"
-        bf16: true
 
 retrieval:
     enable: true

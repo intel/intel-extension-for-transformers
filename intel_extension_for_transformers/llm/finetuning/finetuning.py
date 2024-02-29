@@ -60,20 +60,18 @@ from intel_extension_for_transformers.neural_chat.config import BaseFinetuningCo
 from transformers.integrations.deepspeed import (
     is_deepspeed_available,
 )
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 
 if is_bitsandbytes_available():
     import bitsandbytes as bnb # pylint: disable=E0401
 
-def is_optimum_habana_available():
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
-
 
 class Finetuning:
     def __init__(self, finetuning_config: BaseFinetuningConfig):
         self.model_args, self.data_args, self.training_args, self.finetune_args = (
-            finetuning_config.model_args, 
-            finetuning_config.data_args, 
+            finetuning_config.model_args,
+            finetuning_config.data_args,
             finetuning_config.training_args,
             finetuning_config.finetune_args
         )
@@ -144,7 +142,7 @@ class Finetuning:
                 data_args.dataset_name,
                 data_args.dataset_config_name,
                 cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
+                token=model_args.token,
                 streaming=data_args.streaming,
             )
 
@@ -154,7 +152,7 @@ class Finetuning:
                     data_args.dataset_config_name,
                     split=f"train[:{data_args.validation_split_percentage}%]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     streaming=data_args.streaming,
                 )
                 raw_datasets["train"] = load_dataset(
@@ -162,7 +160,7 @@ class Finetuning:
                     data_args.dataset_config_name,
                     split=f"train[{data_args.validation_split_percentage}%:]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     streaming=data_args.streaming,
                 )
         else:
@@ -184,7 +182,7 @@ class Finetuning:
                 extension,
                 data_files=data_files,
                 cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
+                token=model_args.token,
                 **dataset_args,
             )
 
@@ -195,7 +193,7 @@ class Finetuning:
                     data_files=data_files,
                     split=f"train[:{data_args.validation_split_percentage}%]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     **dataset_args,
                 )
                 raw_datasets["train"] = load_dataset(
@@ -203,7 +201,7 @@ class Finetuning:
                     data_files=data_files,
                     split=f"train[{data_args.validation_split_percentage}%:]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     **dataset_args,
                 )
         return raw_datasets
@@ -212,7 +210,7 @@ class Finetuning:
         config_kwargs = {
             "cache_dir": model_args.cache_dir,
             "revision": model_args.model_revision,
-            "use_auth_token": True if model_args.use_auth_token else None,
+            "token": model_args.token,
             "trust_remote_code": True if model_args.trust_remote_code else None,
         }
         if model_args.config_name:
@@ -230,7 +228,7 @@ class Finetuning:
             "cache_dir": model_args.cache_dir,
             "use_fast": model_args.use_fast_tokenizer,
             "revision": model_args.model_revision,
-            "use_auth_token": True if model_args.use_auth_token else None,
+            "token": model_args.token,
             "trust_remote_code": model_args.trust_remote_code,
         }
         if model_args.tokenizer_name:
@@ -294,6 +292,10 @@ class Finetuning:
                     f"full finetune only support 16 and 32 bits."
                 )
 
+        if finetune_args.eval_ppl:
+            from .eval_utils import evaluate_plus_ppl
+            Trainer.evaluate = evaluate_plus_ppl
+
         config = self.load_model_config(self.model_args)
         if config.architectures[0].endswith("ForCausalLM") \
             or config.architectures[0].endswith("QWenLMHeadModel"):
@@ -332,7 +334,7 @@ class Finetuning:
 
     def finetune_clm(self, model_args, data_args, training_args, finetune_args, config):
         if finetune_args.device == 'hpu':
-            if not is_optimum_habana_available():
+            if not is_hpu_available:
                 raise ImportError(
                     "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
                 )
@@ -360,7 +362,7 @@ class Finetuning:
             kwargs = {}
             if finetune_args.qlora and training_args.device.type == "cpu":
                 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-                kwargs['use_llm_runtime'] = False
+                kwargs['use_neural_speed'] = False
             else:
                 from transformers import AutoModelForCausalLM
 
@@ -378,7 +380,7 @@ class Finetuning:
                 device_map=self.device_map,
                 quantization_config=self.bitsandbytes_quant_config,
                 revision=model_args.model_revision,
-                use_auth_token=True if model_args.use_auth_token else None,
+                token=model_args.token,
                 trust_remote_code=True if model_args.trust_remote_code else None,
                 torch_dtype=model_dtype,
                 low_cpu_mem_usage=low_cpu_mem_usage,
@@ -565,6 +567,17 @@ class Finetuning:
 
             trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
             trainer.save_model()
+
+        # Evaluation
+        if training_args.do_eval:
+            self.logger.info("*** Evaluate After Training***")
+            metrics = trainer.evaluate()
+            max_eval_samples = data_args.max_eval_samples \
+                    if data_args.max_eval_samples is not None else len(eval_dataset)
+            metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
+            trainer.log_metrics("eval", metrics)
+            trainer.save_metrics("eval", metrics)
+
         if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
             tokenizer.padding_side = "right" # padding on the right is needed to cut off padding in `complete_code`
             tokenizer.truncation_side = "left"
@@ -595,8 +608,8 @@ class Finetuning:
                 limit_start = 0
                 batch_size = 20 # batch_size <= n_samples if do_sample.
             eval_args = Eval_Args()
-            from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
-            with training_args.main_process_first(desc="lm_eval"):
+            from intel_extension_for_transformers.llm.evaluation.bigcode_eval import evaluate
+            with training_args.main_process_first(desc="bigcode_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
                         results = evaluate(
@@ -783,7 +796,7 @@ class Finetuning:
                     # like past_key_values, but logits always come first
                     logits = logits[0]
                 return logits.argmax(dim=-1)
-        
+
         if training_args.do_train:
             # download model & vocab.
 
@@ -796,7 +809,7 @@ class Finetuning:
                 kwargs = {}
                 if finetune_args.qlora and training_args.device.type == "cpu":
                     from intel_extension_for_transformers.transformers.modeling import AutoModelForSeq2SeqLM
-                    kwargs['use_llm_runtime'] = False
+                    kwargs['use_neural_speed'] = False
                 else:
                     from transformers import AutoModelForSeq2SeqLM
                 model = AutoModelForSeq2SeqLM.from_pretrained(
@@ -807,7 +820,7 @@ class Finetuning:
                     device_map=self.device_map,
                     quantization_config=self.bitsandbytes_quant_config,
                     revision=model_args.model_revision,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     torch_dtype=model_dtype,
                     load_in_4bit=self.load_in_4bit,
                     load_in_8bit=self.load_in_8bit,

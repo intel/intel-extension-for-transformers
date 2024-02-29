@@ -34,7 +34,6 @@ from .base_executor import BaseCommandExecutor
 from .server_commands import cli_server_register
 
 from ..cli.log import logger
-from .restful.api import setup_router
 from ..config import PipelineConfig, LoadingModelConfig
 from ..chatbot import build_chatbot
 from ..plugins import plugins
@@ -107,10 +106,79 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         world_size = config.get("world_size", 1)
         master_port = config.get("master_port", 29500)
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
+        gguf_model_path = config.get("gguf_model_path", None)
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
         plugin_as_service = config.get("plugin_as_service", False)
         assistant_model = config.get("assistant_model", None)
+        serving = config.get("serving", None)
+
+        serving_config = None
+        if serving:
+            serving_framework = serving.get("framework")
+            # vLLM Serving
+            if serving_framework == "vllm":
+                from intel_extension_for_transformers.neural_chat.config import ServingConfig, VllmEngineParams
+                eparams = serving.get("vllm_engine_params", None)
+                serving_config = ServingConfig(
+                    framework="vllm", framework_config=VllmEngineParams(
+                        tensor_parallel_size = eparams.get('tensor_parallel_size', 1),
+                        quantization=eparams.get('quantization', None),
+                        gpu_memory_utilization=eparams.get('gpu_memory_utilization', 0.9),
+                        swap_space=eparams.get('swap_space', 4),
+                        enforce_eager=eparams.get('enforce_eager', False),
+                        max_context_len_to_capture=eparams.get('max_context_len_to_capture', 8192)
+                    ))
+            # TGI serving
+            elif serving_framework == "tgi":
+                tgi_params = serving.get("tgi_engine_params", None)
+                tgi_sharded = tgi_params.get('sharded', False)
+                tgi_num_shard = tgi_params.get('num_shard', 1)
+                tgi_habana_visible_devices = tgi_params.get('habana_visible_devices', "all")
+                # construct tgi command
+                tgi_cmd = "docker run -p 9876:80 --name tgi_service -v ./data:/data"
+                if device == "cpu":
+                    tgi_cmd += " --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.3"
+                    # sharded is not supported on CPU
+                    if tgi_sharded:
+                        tgi_sharded = False
+                elif device == "gpu":
+                    tgi_cmd += " --gpus all --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.3"
+                    pass
+                elif device == "hpu":
+                    create_docker_cmd = f"git clone https://github.com/huggingface/tgi-gaudi.git && \
+                        cd tgi-gaudi && docker build -t tgi_gaudi ."
+                    try:
+                        # create docker image first
+                        logger.info(f"<neuralchat_server> create docker command = {create_docker_cmd}")
+                        sys.stdout.flush()
+                        sys.stderr.flush()
+                        subprocess.Popen(create_docker_cmd, shell=True, executable="/bin/bash")   # nosec
+                        logger.info("creating tgi habana docker image...")
+                        time.sleep(200)
+                    except Exception as e:
+                        raise RuntimeError(f"Error in tgi habana docker image creation: {e}")
+                    # add tgi_cmd
+                    if tgi_sharded and tgi_num_shard > 1:
+                        tgi_cmd += "-e PT_HPU_ENABLE_LAZY_COLLECTIVES=true"
+                    tgi_cmd += f"--runtime=habana -e HABANA_VISIBLE_DEVICES={tgi_habana_visible_devices} \
+                        -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --ipc=host tgi_gaudi"
+                else:
+                    logger.error(f"Supported device: [cpu, gpu, hpu]. Your device: {device}")
+                    raise Exception("Please specify device for tgi.")
+                tgi_cmd += f" --model-id {model_name_or_path}"
+                if tgi_sharded and tgi_num_shard > 1:
+                    tgi_cmd += " --sharded {tgi_sharded} --num-shard {tgi_num_shard}"
+                # start tgi service
+                try:
+                    logger.info(f"<neuralchat_server> Run docker. cmd: {tgi_cmd}")
+                    sys.stdout.flush()
+                    sys.stderr.flush()
+                    subprocess.Popen(tgi_cmd, shell=True, executable="/bin/bash")   # nosec
+                    logger.info("Building docker container...")
+                    time.sleep(200)
+                except Exception as e:
+                    raise RuntimeError(f"Error when building docker container: {e}")
 
         # plugin as service
         if plugin_as_service:
@@ -141,6 +209,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     print(f"plugin parameters: ", plugin_config["args"])
                     plugin_config['instance'] = plugins[plugin_name]['class'](**plugin_config['args'])
             api_list = list(task for task in config.tasks_list)
+            from .restful.api import setup_router
             api_router = setup_router(api_list, enable_llm=False)
             app.include_router(api_router)
             return True
@@ -156,23 +225,34 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             optimization_config = None
             yaml_config = config.get("optimization", {})
             ipex_int8 = yaml_config.get("ipex_int8", False)
-            use_llm_runtime = yaml_config.get("use_llm_runtime", {})
+            use_neural_speed = yaml_config.get("use_neural_speed", False)
+            use_gptq = yaml_config.get("use_gptq", False)
+            use_awq = yaml_config.get("use_awq", False)
+            use_autoround = yaml_config.get("use_autoround", {})
             optimization_type = yaml_config.get("optimization_type", {})
             compute_dtype = yaml_config.get("compute_dtype", {})
             weight_dtype = yaml_config.get("weight_dtype", {})
             use_cached_bin = yaml_config.get("use_cached_bin", {})
+            use_ggml = yaml_config.get("use_ggml", False)
             mix_precision_dtype = yaml_config.get("mix_precision_dtype", {})
             load_in_4bit = yaml_config.get("load_in_4bit", {})
             bnb_4bit_quant_type = yaml_config.get("bnb_4bit_quant_type", {})
             bnb_4bit_use_double_quant = yaml_config.get("bnb_4bit_use_double_quant", {})
             bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
-            loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
+            loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_neural_speed=use_neural_speed,
                                                 peft_path=peft_model_path, use_deepspeed=use_deepspeed,
-                                                world_size=world_size)
+                                                world_size=world_size, gguf_model_path=gguf_model_path)
             from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
             if optimization_type == "weight_only":
-                optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype,
-                                                            use_cache=use_cached_bin)
+                if use_gptq:
+                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_gptq)
+                elif use_awq:
+                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_awq)
+                elif use_autoround:
+                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_autoround)
+                else:
+                    optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype,
+                                                                use_ggml=use_ggml, use_cache=use_cached_bin)
             elif optimization_type == "mix_precision":
                 optimization_config = MixedPrecisionConfig(dtype=mix_precision_dtype)
             elif optimization_type == "bits_and_bytes":
@@ -189,7 +269,9 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 "plugins": plugins,
                 "loading_config": loading_config,
                 "optimization_config": optimization_config,
-                "assistant_model": assistant_model
+                "assistant_model": assistant_model,
+                "serving_config": serving_config,
+                "task": "chat"
             }
             api_list = list(task for task in config.tasks_list)
             if use_deepspeed:
@@ -214,7 +296,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                         raise RuntimeError(f"Error in {self.__class__.__name__} init()") from exc
                     self.chatbot = None
                 elif device == "cpu":
-                    hf_access_token = os.environ("HF_ACCESS_TOKEN", None)
+                    hf_access_token = os.environ.get("HF_ACCESS_TOKEN", None)
                     multi_cpu_server_file = os.path.abspath(
                         os.path.join(os.path.dirname(__file__), './multi_cpu_server.py'))
                     launch_str = f"deepspeed hostfile ./config/hostfile {multi_cpu_server_file}"
@@ -234,6 +316,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 pipeline_config = PipelineConfig(**params)
                 self.chatbot = build_chatbot(pipeline_config)
             # init api
+            from .restful.api import setup_router
             api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port)
             app.include_router(api_router)
             return True

@@ -42,7 +42,6 @@ from intel_extension_for_transformers.transformers import AutoConfig, AutoModelF
 sq_model = AutoModelForCausalLM.from_pretrained(
                                                 model_name_or_path,
                                                 quantization_config=sq_config,
-                                                use_llm_runtime=False
                                                 )
 # save
 config = AutoConfig.from_pretrained(model_name_or_path)
@@ -118,4 +117,3 @@ A list of models that achieved a <1% accuracy drop is shown below.
 |:---------:|--------------|------------|
 | PyTorch   | [0-1] / 'auto' | False      |
 | IPEX      | [0-1] / 'auto' | True / False(Version>2.1) |
-

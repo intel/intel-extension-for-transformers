@@ -45,8 +45,8 @@ pip install -r ../../../requirements.txt
 ## Install Models
 ```shell
 git-lfs install
-# download llama-2 model for NER plugin
-git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
+# download neural-chat-7b-v3-1 model for NER plugin
+git clone https://huggingface.co/Intel/neural-chat-7b-v3-1
 # download spacy model for NER post process
 python -m spacy download en_core_web_lg
 ```
@@ -83,7 +83,7 @@ You can customize the configuration file `photoai.yaml` to match your environmen
 | ------------------- | ---------------------------------------|
 | host                | 127.0.0.1                              |
 | port                | 9000                                   |
-| model_name_or_path  | "./Llama-2-7b-chat-hf"        |
+| model_name_or_path  | "./neural-chat-7b-v3-1"        |
 | device              | "auto"                                  |
 | asr.enable          | true                                   |
 | tts.enable          | true                                   |
@@ -105,7 +105,7 @@ Configurate all of the environment variables in file `run.sh` using `export XXX=
 | IMAGE_SERVER_IP     | The IP of server which you store user uploaded images      |
 | IMAGE_ROOT_PATH     | local path of image storing path                     |
 | RETRIEVAL_FILE_PATH | local path of where you store retrieval files               |
-| GOOGLE_API_KEY      | your google api key to get gps infomation from images           |
+| GOOGLE_API_KEY      | your google api key to get gps information from images           |
 
 
 # Run the PhotoAI server

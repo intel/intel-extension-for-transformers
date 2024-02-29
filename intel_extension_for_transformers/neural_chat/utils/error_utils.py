@@ -31,3 +31,6 @@ def get_latest_error():
 def get_latest_error_string():
     return ErrorCodes.error_strings[_latest_error] if _latest_error is not None else None
 
+def clear_latest_error():
+    global _latest_error
+    _latest_error = None

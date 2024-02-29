@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/unit-test-neuralchat.yml'
+      - '.github/workflows/script/unitTest/run_unit_test_neuralchat.sh'
       - 'intel_extension_for_transformers/neural_chat/**'
       - 'requirements.txt'
       - 'setup.py'
@@ -12,11 +13,12 @@ on:
       - 'intel_extension_for_transformers/llm/quantization/**'
       - 'intel_extension_for_transformers/llm/runtime/graph/**'
       - 'intel_extension_for_transformers/transformers/**'
+      - 'intel_extension_for_transformers/langchain/**'
       - '!intel_extension_for_transformers/neural_chat/docs/**'
       - '!intel_extension_for_transformers/neural_chat/examples/**'
       - '!intel_extension_for_transformers/neural_chat/assets/**'
       - '!intel_extension_for_transformers/neural_chat/README.md'
-      - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
+      - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -31,6 +33,7 @@ env:
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "utTest"
   EXTRA_CONTAINER_NAME: "modelTest"
+  CONTAINER_SCAN: "codeScan"
 
 jobs:
   unit-test:
@@ -105,31 +108,39 @@ jobs:
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers && \
                  mv /log_dir . "
-      
+
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
         with:
           name: "UnitTest${{ matrix.test_name }}"
           path: ${{ github.workspace }}/log_dir
-           
-           
+
+
   Generate-Report:
     runs-on: itrex-node-spell
     needs: [unit-test]
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_SCAN }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.CONTAINER_SCAN }}-${{ runner.name }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_SCAN }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
-        
+
       - name: Download UT PR Log
         uses: actions/download-artifact@v3
         with:
           path: ${{ github.workspace }}/log_dir
-           
+
       - name: Display structure of downloaded files
         run: cd ${{ github.workspace }}/log_dir && ls -R
-        
-      - name: Calculte coverage
+
+      - name: Calculate coverage
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
           /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir

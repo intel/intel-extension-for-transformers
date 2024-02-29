@@ -11,6 +11,7 @@ from intel_extension_for_transformers.transformers import (
     AutoModel,
 )
 from transformers.utils import check_min_version
+from intel_extension_for_transformers.transformers.utils import str2bool
 from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
@@ -35,7 +36,10 @@ parser.add_argument(
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument(
-    "--restore", action="store_true", help="restore ipex quantized model from output_dir/best_configure.json")
+    "--restore",
+    action="store_true",
+    help="restore ipex quantized model from output_dir/best_configure.json",
+)
 parser.add_argument(
     "--peft_model_id", type=str, default=None, help="model_name_or_path of peft model"
 )
@@ -60,21 +64,60 @@ parser.add_argument(
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
+parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
+parser.add_argument(
+    "--calib_padding", action="store_true", help="Calibration dataset do padding."
+)
+parser.add_argument(
+    "--calib_shuffle",
+    default=True,
+    type=str2bool,
+    help="Calibration dataset do shuffle.",
+)
+parser.add_argument(
+    "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
+)
+parser.add_argument(
+    "--calib_len",
+    default=512,
+    type=int,
+    help="Calibration dataset max or padding max length.",
+)
+parser.add_argument(
+    "--recipes", type=str, help="A dictionary as a string, recipes for smoothquant."
+)
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
-parser.add_argument("--fallback_add", action="store_true", help="Whether to fallback add ops to FP32")
+parser.add_argument(
+    "--fallback_add", action="store_true", help="Whether to fallback add ops to FP32"
+)
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
     default="RTN",
-    choices=["RTN", "AWQ", "TEQ"],
+    choices=["RTN", "AWQ", "TEQ", "GPTQ", "AUTOROUND"],
     help="Weight-only parameter.",
 )
 parser.add_argument(
     "--woq_weight_dtype",
     type=str,
     default="int8",
-    choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"],
+    choices=[
+        "int8",
+        "int4_clip",
+        "int4_fullrange",
+        "fp4_e2m1_bnb",
+        "fp4_e2m1",
+        "nf4",
+        "fp8_e5m2",
+        "fp8_e4m3",
+    ],
+)
+parser.add_argument(
+    "--woq_scale_dtype",
+    type=str,
+    default="fp32",
+    choices=["fp32", "fp8"],
 )
 parser.add_argument(
     "--woq_compute_dtype",
@@ -84,21 +127,64 @@ parser.add_argument(
 )
 parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
+parser.add_argument(
+    "--gptq_actorder",
+    action="store_true",
+    help="Whether to apply the activation order GPTQ heuristic.",
+)
+parser.add_argument(
+    "--gptq_percdamp",
+    type=float,
+    default=0.01,
+    help="Percent of the average Hessian diagonal to use for dampening.",
+)
+parser.add_argument(
+    "--gptq_block_size",
+    type=int,
+    default=128,
+    help="Block size. sub weight matrix size to run GPTQ.",
+)
+parser.add_argument(
+    "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
+)
+parser.add_argument(
+    "--gptq_use_max_length",
+    action="store_true",
+    help="Set all sequence length to be same length of args.gptq_pad_max_length",
+)
+parser.add_argument(
+    "--gptq_pad_max_length",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
+parser.add_argument('--gptq_static_groups', action='store_true', help='Use determined group to do quantization')
+# ============AUTOROUND configs==============
+parser.add_argument(
+    "--autoround_nsamples",
+    type=int, default=128,
+    help="Number of calibration data samples.",
+)
+parser.add_argument(
+    "--autoround_seq_len",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
-parser.add_argument("--revision", default="main", type=str)
-parser.add_argument("--trust_remote_code", default=False)
+parser.add_argument("--_commit_hash", default=None, type=str)
+parser.add_argument("--trust_remote_code", type=bool, default=False)
+parser.add_argument("--use_neural_speed", action="store_true")
 # =======================================
 args = parser.parse_args()
-
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
 # 4.31.0 for ipex.optimize_transformers
 check_min_version("4.31.0")
-
 # get model config
 if args.peft_model_id:
     from peft import PeftConfig
@@ -119,7 +205,7 @@ config = AutoConfig.from_pretrained(
     else False,  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
     trust_remote_code=args.trust_remote_code,
-    revision=args.revision,
+    _commit_hash=args._commit_hash,
 )
 
 # chatglm
@@ -165,28 +251,89 @@ elif args.sq:
     else:
         op_type_dict = {}
     if args.fallback_add:
-        op_type_dict["add"] = {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}}
+        op_type_dict["add"] = {
+            "weight": {"dtype": ["fp32"]},
+            "activation": {"dtype": ["fp32"]},
+        }
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    recipes = {
-        "smooth_quant": True,
-        "smooth_quant_args": {
-            "alpha": args.alpha if args.alpha == "auto" else float(args.alpha)
-        },
-    }
+    if args.recipes:
+        try:
+            import ast
+
+            recipes = ast.literal_eval(args.recipes)
+            print("Parsed recipes dictionary:", recipes)
+        except ValueError as e:
+            print("Error parsing recipes dictionary:", e)
+    else:
+        recipes = {
+            "smooth_quant": True,
+            "smooth_quant_args": {
+                "alpha": args.alpha if args.alpha == "auto" else float(args.alpha)
+            },
+        }
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
         recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
+        calib_shuffle=args.calib_shuffle,
+        calib_iters=args.calib_iters,
+        calib_padding=args.calib_padding,
+        calib_len=args.calib_len,
+        calib_pad_val=args.calib_pad_val,
     )
 elif args.woq:
-    quantization_config = WeightOnlyQuantConfig(
-        compute_dtype=args.woq_compute_dtype,
-        weight_dtype=args.woq_weight_dtype,
-        scheme=args.woq_scheme,
-        group_size=args.woq_group_size,
-    )  # default is A32W4G32
+    if args.woq_algo == "GPTQ":
+        algorithm_args = {
+            "act_order": args.gptq_actorder,
+            "percdamp": args.gptq_percdamp,
+            "block_size": args.gptq_block_size,
+            "nsamples": args.gptq_nsamples,
+            "use_max_length": args.gptq_use_max_length,
+            "pad_max_length": args.gptq_pad_max_length,
+            "static_groups": args.gptq_static_groups,
+        }
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.woq_compute_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            weight_dtype=args.woq_weight_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.woq_group_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+            algorithm_args=algorithm_args,
+        )
+    elif args.woq_algo == "AUTOROUND":
+        algorithm_args = {
+            "n_samples": args.autoround_nsamples,
+            "amp": False,
+            "seq_len": args.autoround_seq_len,
+            "iters": args.calib_iters,
+            "scale_dtype": "fp32",
+            "device": "cpu",
+        }
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.woq_compute_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            weight_dtype=args.woq_weight_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.woq_group_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+            algorithm_args=algorithm_args,
+            calib_dataset=args.dataset
+        )
+    else:
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.woq_compute_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            weight_dtype=args.woq_weight_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.woq_group_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+        )  # default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
     # GPU device is need for `load_in_4bit` and `load_in_8bit`.
@@ -201,8 +348,8 @@ if quantization_config is not None:
         args.model,
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
-        revision=args.revision,
-        use_llm_runtime=False,
+        _commit_hash=args._commit_hash,
+        use_neural_speed=args.use_neural_speed,
     )
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
@@ -210,36 +357,34 @@ elif args.load_in_4bit or args.load_in_8bit:
         args.model,
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
-        revision=args.revision,
-        use_llm_runtime=False,
+        _commit_hash=args._commit_hash,
+        use_neural_speed=args.use_neural_speed,
     )
 elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
     if args.peft_model_id is not None:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.peft_model_id,
             trust_remote_code=args.trust_remote_code,
-            revision=args.revision,
-            use_llm_runtime=False,
+            _commit_hash=args._commit_hash,
+            use_neural_speed=args.use_neural_speed,
         )
     else:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.model,
-            config=config,
             trust_remote_code=args.trust_remote_code,
-            revision=args.revision,
-            use_llm_runtime=False,
+            _commit_hash=args._commit_hash,
         )
 
 # save model
 if args.output_dir:
+    tokenizer.save_pretrained(args.output_dir)
     if args.sq:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
-    elif args.mixed_precision:
-        user_model.config.save_pretrained(args.output_dir)
-        torch.save(
-            user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin")
-        )
+    elif args.mixed_precision or args.woq:
+        user_model.save_pretrained(args.output_dir)
+
+
 
 # int8 model loading
 if args.int8 or args.int8_bf16_mixed:
@@ -248,9 +393,17 @@ if args.int8 or args.int8_bf16_mixed:
     from intel_extension_for_transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
+
     if args.restore:
-        from intel_extension_for_transformers.transformers.utils.utility import recover_model_from_json
-        user_model = recover_model_from_json(user_model, os.path.join(args.output_dir, "best_configure.json"), args.trust_remote_code)
+        from intel_extension_for_transformers.transformers.utils.utility import (
+            recover_model_from_json,
+        )
+
+        user_model = recover_model_from_json(
+            user_model,
+            os.path.join(args.output_dir, "best_configure.json"),
+            args.trust_remote_code,
+        )
         user_model = TSModelCausalLMForITREX(user_model, config=config)
     else:
         user_model = TSModelCausalLMForITREX.from_pretrained(
@@ -259,7 +412,9 @@ if args.int8 or args.int8_bf16_mixed:
             trust_remote_code=args.trust_remote_code,
         )
 
+
 if args.benchmark:
+    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -271,7 +426,6 @@ if args.benchmark:
     num_warmup = args.num_warmup
     total_token_num = 0
     eos_token_id = tokenizer.eos_token_id
-
     with torch.inference_mode(), torch.no_grad():
         for i in range(num_iter):
             tic = time.time()
@@ -315,11 +469,12 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
+    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-
+    args._commit_hash = "main" if args._commit_hash is None else args._commit_hash 
     results = evaluate(
         model="hf-causal",
         model_args="pretrained="
@@ -327,8 +482,8 @@ if args.accuracy:
         + ",tokenizer="
         + args.model
         + ",dtype=float32"
-        + ",revision="
-        + args.revision
+        + ",_commit_hash="
+        + args._commit_hash
         + ",trust_remote_code="
         + str(args.trust_remote_code),
         user_model=user_model,

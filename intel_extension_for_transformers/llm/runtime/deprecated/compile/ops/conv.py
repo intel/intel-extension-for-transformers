@@ -69,4 +69,3 @@ class Conv(Operator):
             self._attr['benchmark'] = node.inputsAt(9).toIValue()
             self._attr['deterministic'] = node.inputsAt(10).toIValue()
             self._attr['cudnn_enabled'] = node.inputsAt(11).toIValue()
-

@@ -32,7 +32,7 @@ find_package(Torch REQUIRED
 PATHS ${torch_path}
 NO_DEFAULT_PATH)
 
-
+include(FindOpenMP)
 add_subdirectory(dispatcher)
 
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp)
@@ -43,4 +43,4 @@ add_library(qbits SHARED ${qbits_src})
 target_compile_features(qbits PRIVATE cxx_std_14)
 
 # Link against LibTorch
-target_link_libraries(qbits jblas_dispatcher)
+target_link_libraries(qbits PRIVATE bestla_dispatcher)

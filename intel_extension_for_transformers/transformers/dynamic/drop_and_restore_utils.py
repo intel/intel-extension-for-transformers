@@ -38,7 +38,7 @@ def sample_length_configuration(
     min_length=2,
 ):
     """Get different sequence length for hidden layers.
-    
+
     Args:
         max_seq_length: A number to set the max sequence length.
         num_hidden_layers: A number of total hidden layers.
@@ -48,7 +48,7 @@ def sample_length_configuration(
         length_drop_ratio_bound: The max ratio to truncate the sequence.
             If the ratio set, the length will not less than max_seq_length * ratio.
         min_length: The number to set the min sequence length.
-    
+
     Return:
         (Tuple): The tuple of length configuration for different hidden layers.
     """
@@ -73,14 +73,14 @@ def sample_layer_configuration(
     layer_dropout=None,
     layer_dropout_bound=None,
 ):
-    """Get sample layers depends on the set paramaters.
-    
+    """Get sample layers depends on the set parameters.
+
     Args:
         num_hidden_layers: A number to set the max sequence length.
         layer_dropout_prob: Probability to dropout a layer.
         layer_dropout: Number of how many layers to dropout.
         layer_dropout_bound: The bound of how many layers to dropout.
-    
+
     Return:
         (Tuple): The tuple to the numbers of which samples are kept.
     """

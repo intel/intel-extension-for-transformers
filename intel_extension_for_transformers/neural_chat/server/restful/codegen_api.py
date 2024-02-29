@@ -24,7 +24,7 @@ from typing import Optional
 from fastapi import APIRouter
 import requests
 from ...cli.log import logger
-from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
+from ...server.restful.api_protocol import ChatCompletionRequest, ChatCompletionResponse
 from ...config import GenerationConfig
 import json, types
 from ...plugins import plugins, is_plugin_enabled
@@ -33,7 +33,7 @@ def check_completion_request(request: BaseModel) -> Optional[str]:
     logger.info(f"Checking parameters of completion request...")
     if request.temperature is not None and request.temperature < 0:
         return f"Param Error: {request.temperature} is less than the minimum of 0 --- 'temperature'"
-    
+
     if request.temperature is not None and request.temperature > 2:
         return f"Param Error: {request.temperature} is greater than the maximum of 2 --- 'temperature'"
 
@@ -100,22 +100,7 @@ class CodeGenAPIRouter(APIRouter):
                 def stream_generator():
                     nonlocal buffered_texts
                     for output in generator:
-                        if isinstance(output, str):
-                            chunks = output.split()
-                            for chunk in chunks:
-                                ret = {
-                                    "text": chunk,
-                                    "error_code": 0,
-                                }
-                                buffered_texts += chunk + ' '
-                                yield json.dumps(ret).encode() + b"\0"
-                        else:
-                            ret = {
-                                "text": output,
-                                "error_code": 0,
-                            }
-                            buffered_texts += output + ' '
-                            yield json.dumps(ret).encode() + b"\0"
+                        yield f"data: {output}\n\n"
                     yield f"data: [DONE]\n\n"
                     if is_plugin_enabled("cache") and \
                        not plugins["cache"]["instance"].pre_llm_inference_actions(request.prompt):

@@ -12,6 +12,7 @@ Before running the scripts, make sure to install the library's training dependen
 pip install transformers~=4.21.0
 pip install -r requirements.txt
 ```
+>**Note**: Please use transformers no higher than 4.21.0
 
 ## Get a FP32 Textual Inversion model
 
@@ -45,7 +46,7 @@ Once you have trained a INT8 model with the above command, the inference can be 
 ```bash
 python text2images.py \
   --pretrained_model_name_or_path=$INT8_MODEL_NAME \
-  --caption "a lovely <dicoo> in red dress and hat, in the snowly and brightly night, with many brighly buildings." \
+  --caption "a lovely <dicoo> in red dress and hat, in the snowly and brightly night, with many brightly buildings." \
   --images_num 4
 ```
 

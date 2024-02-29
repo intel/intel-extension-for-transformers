@@ -1,2 +1,2 @@
 gptcache
-git+https://github.com/UKPLab/sentence-transformers.git
+sentence-transformers==2.3.1

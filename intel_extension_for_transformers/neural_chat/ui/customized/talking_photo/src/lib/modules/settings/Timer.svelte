@@ -13,17 +13,13 @@
 	const initialCountdownValue = 1800;
 
 	$: {
-		if ($resetControl) {
-			console.log('resetControl');
-			
+		if ($resetControl) {			
 			resetCountdown();
 			resetControl.set(false);
 		}
 	}
 
 	async function resetCountdown() {
-		console.log("coming");
-
 		if (canShowNotification && !$resetControl) {
 			addNotification({
 				text: "session timeout",
@@ -50,12 +46,9 @@
 		const storedCountdown = localStorage.getItem(
 			LOCAL_STORAGE_KEY.STORAGE_TIME_KEY
 		);
-		console.log("storedCountdown", storedCountdown);
-
 		if (storedCountdown) {
 			countdown = parseInt(storedCountdown, 10);
 		} else {
-			console.log("storedCountdown error");
 			countdown = initialCountdownValue;
 		}
 

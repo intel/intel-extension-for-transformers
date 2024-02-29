@@ -6,10 +6,12 @@ This example demonstrates how to finetune the pretrained large language model (L
 ## Validated Model List
 |Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation |
 |------------------------------------|---|---|--- | --- |
+|Mistral-7B | ✅| ✅|✅| ✅
 |LLaMA series| ✅| ✅|✅| ✅
 |LLaMA2 series| ✅| ✅|✅| ✅
 |MPT series| ✅| ✅|✅| ✅
 |FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
+|Mixtral-8x7B | **WIP** | **WIP**| **WIP** | **WIP**|
 
 # Prerequisite​
 
@@ -18,9 +20,12 @@ This example demonstrates how to finetune the pretrained large language model (L
 Recommend python 3.9 or higher version.
 ```shell
 pip install -r requirements.txt
+pip install transformers==4.34.1
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
-python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-whl-stable-cpu
+python -m pip install oneccl_bind_pt==2.2.0 -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
+>**Note**: Suggest using transformers no higher than 4.34.1
+
 ### Docker 
 Pick either one of below options to setup docker environment.
 #### Option 1 : Build Docker image from scratch
@@ -35,12 +40,12 @@ Once you have the docker image ready, please follow [run docker image](../../../
 
 ## 2. Prepare the Model
 
-#### meta-llama/Llama-2-7b
-To acquire the checkpoints and tokenizer, the user can get those files from [meta-llama/Llama-2-7b]([https://huggingface.co/mosaicml/mpt-7b](https://huggingface.co/meta-llama/Llama-2-7b)).
+#### meta-llama/Llama-2-7b-hf
+To acquire the checkpoints and tokenizer, the user can get those files from [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf).
 Users could follow below commands to get the checkpoints from github repository after the access request to the files is approved.
 ```bash
 git lfs install
-git clone https://huggingface.co/meta-llama/Llama-2-7b
+git clone https://huggingface.co/meta-llama/Llama-2-7b-hf
 ```
 ### MPT
 To acquire the checkpoints and tokenizer, the user can get those files from [mosaicml/mpt-7b](https://huggingface.co/mosaicml/mpt-7b).
@@ -140,11 +145,11 @@ python finetune_seq2seq.py \
 
 #### For LLaMA2
 
-- use the below command line for code tuning with `meta-llama/Llama-2-7b` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
+- use the below command line for code tuning with `meta-llama/Llama-2-7b-hf` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "meta-llama/Llama-2-7b" \
+        --model_name_or_path "meta-llama/Llama-2-7b-hf" \
         --bf16 True \
         --dataset_name "theblackcat102/evol-codealpaca-v1" \
         --per_device_train_batch_size 8 \
@@ -623,13 +628,12 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 
 # Evaluation Metrics
 
-- **train loss:** `--do_train` is setted for training, `train loss` will be logged during training.
+- **train loss:** `--do_train` is set for training, `train loss` will be logged during training.
 
-- **eval loss:** set `--do_eval`. If dataset path doesn't have the `validation` split, the validation dataset will be split from train dataset with the `validation_split_percentage` arguement (default is 0). For example, you can set `--validation_split_percentage 5` to split %5 of train dataset.
+- **eval loss:** set `--do_eval`. If dataset path doesn't have the `validation` split, the validation dataset will be split from train dataset with the `validation_split_percentage` argument (default is 0). For example, you can set `--validation_split_percentage 5` to split %5 of train dataset.
 
-- **lm-eval (for finetuning `--task chat` or `--task completion`):** set `--do_lm_eval ture` and `--lm_eval_tasks truthfulqa_mc`
+- **lm-eval (for finetuning `--task chat` or `--task completion`):** set `--do_lm_eval true` and `--lm_eval_tasks truthfulqa_mc`
 
 - **rouge related metrics:** the metrics will be calculated when the finetuning task is summarization `--task summarization`
 
 - **human eval (code generation metric):** the metric will be calculated when the finetuning task is code-generation `--task code-generation`
-

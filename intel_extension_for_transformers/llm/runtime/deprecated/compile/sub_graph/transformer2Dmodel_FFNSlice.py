@@ -45,7 +45,7 @@ class Transformer2Dmodel_FFNInputSlice(Pattern):
         #
         pattern = pattern_mapping_config['Transformer2Dmodel_FFNInputSlice'][0]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
-        logger.info('Transformer2Dmodel_FFNInputSlice mathched...')
+        logger.info('Transformer2Dmodel_FFNInputSlice matched...')
         logger.debug('Transformer2Dmodel_FFNInputSlice = {}'.format(patterns_nodes_name))
         if len(patterns_nodes_name) != 0:
             for j in range(len(patterns_nodes_name)):

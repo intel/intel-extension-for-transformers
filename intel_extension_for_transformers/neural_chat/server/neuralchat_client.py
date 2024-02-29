@@ -175,7 +175,6 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
         port = args.port
         audio_input_path = args.audio_input_path
         audio_output_path = args.audio_output_path
-
         try:
             time_start = time.time()
             res = self(
@@ -186,7 +185,6 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
             time_end = time.time()
             time_consume = time_end - time_start
             print("======= Voicechat Client Response =======")
-            print(res.text)
             logger.info("Response time: %f s." % (time_consume))
             return True
         except Exception as e:
@@ -271,7 +269,7 @@ class FinetuningClientExecutor(BaseCommandExecutor):
             '--model_name_or_path', type=str, default=None, help='Model name or model path.')
         self.parser.add_argument(
             '--train_file', type=str, default=None, help='Train dataset file for finetuning.')
-        
+
     def execute(self, argv: List[str]) -> bool:
         args = self.parser.parse_args(argv)
         server_ip = args.server_ip
@@ -289,7 +287,6 @@ class FinetuningClientExecutor(BaseCommandExecutor):
             time_end = time.time()
             time_consume = time_end - time_start
             print("======= Finetuning Client Response =======")
-            print(res.text)
             logger.info("Response time: %f s." % (time_consume))
             return True
         except Exception as e:
