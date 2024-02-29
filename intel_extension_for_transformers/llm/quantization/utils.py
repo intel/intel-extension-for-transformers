@@ -187,7 +187,7 @@ def _replace_linear(
                                 int_weight,
                                 gptq_scales,
                                 gptq_zeros,
-                                moduel.g_idx if hasattr(module, "g_idx") else None,
+                                module.g_idx if hasattr(module, "g_idx") else None,
                                 quantization_config,
                                 bias=None if module.bias is None else module.bias.data,
                             )
