@@ -15,8 +15,9 @@ conda activate itrex
 ```
 
 #### Install Intel® Extension for Transformers* from source
-Clone the Intel® Extension for Transformers* repo and compile it from source
+Set the environment variable _WORKSPACE_. This is where you will install the Intel® Extension for Transformers* repo and compile it from source.
 ```Bash
+export WORKSPACE=<current_working_directory>
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
 cd itrex
 pip install -r requirements.txt
@@ -24,7 +25,7 @@ pip install -v .
 ```
 
 #### Run the script to set up the environment
-Navigate to the directory with this notebook. Install requirements for NeuralChat, Retrieval Plugin, and Audio Plugin (TTS and ASR)
+Navigate to the directory with this notebook. Install requirements for NeuralChat, Retrieval Plugin, and Audio Plugin (TTS and ASR).
 ```Bash
 cd intel_extension_for_transformers/neural_chat/docs/notebooks/workshop
 bash env_setup.sh
