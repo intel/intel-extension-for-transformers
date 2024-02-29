@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+gae91bf8 documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+g525ea86 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -694,6 +694,35 @@ The following command requires Habana DeepSpeed 1.13.0 or later.</p>
 You could also indicate <code class="docutils literal notranslate"><span class="pre">--peft</span></code> to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</p>
 </section>
+<section id="fine-tuning-on-intel-arc-gpus">
+<h2>Fine-tuning on Intel Arc GPUs<a class="headerlink" href="#fine-tuning-on-intel-arc-gpus" title="Link to this heading"></a></h2>
+<section id="single-card-fine-tuning">
+<h3>1. Single Card Fine-tuning<a class="headerlink" href="#single-card-fine-tuning" title="Link to this heading"></a></h3>
+<p>Follow the installation guidance in <a class="reference external" href="https://github.com/intel/intel-extension-for-pytorch">intel-extension-for-pytorch</a> to install intel-extension-for-pytorch for GPU.</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">google/gemma-2b</span></code>, use the below command line for finetuning on the Alpaca dataset.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;google/gemma-2b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--train_file<span class="w"> </span><span class="s2">&quot;/path/to/alpaca_data.json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dataset_concatenation<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--evaluation_strategy<span class="w"> </span><span class="s2">&quot;no&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_strategy<span class="w"> </span><span class="s2">&quot;steps&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_steps<span class="w"> </span><span class="m">2000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w">  </span><span class="se">\</span>
+<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./gemma-2b_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--gradient_checkpointing<span class="w"> </span>True
+</pre></div>
+</div>
+</section>
+</section>
 </section>
 <section id="evaluation-metrics">
 <h1>Evaluation Metrics<a class="headerlink" href="#evaluation-metrics" title="Link to this heading"></a></h1>
@@ -720,7 +749,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fac6631b3a0> 
+   <jinja2.runtime.BlockReference object at 0x7f7cada65a50> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
