@@ -1082,6 +1082,14 @@ def predict_stream(**params):
             )
             set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
             return
+        elif length < max_new_tokens:
+            logging.error(f"This model's maximum context length is {context_len} tokens. \
+                However, you requested {input_token_len+max_new_tokens} tokens ({input_token_len} \
+                in the messages, {max_new_tokens} in the completion). Please reduce the length \
+                of the messages or completion.",
+            )
+            set_latest_error(ErrorCodes.WARNING_INPUT_COMPLETION_EXCEED_MAX_SEQ_LENGTH)
+            return
 
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len,
@@ -1382,6 +1390,14 @@ def predict(**params):
                 However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
             )
             set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+            return
+        elif length < max_new_tokens:
+            logging.error(f"This model's maximum context length is {context_len} tokens. \
+                However, you requested {input_token_len+max_new_tokens} tokens ({input_token_len} \
+                in the messages, {max_new_tokens} in the completion). Please reduce the length \
+                of the messages or completion.",
+            )
+            set_latest_error(ErrorCodes.WARNING_INPUT_COMPLETION_EXCEED_MAX_SEQ_LENGTH)
             return
 
     if device in ["cpu", "cuda", "xpu"]:
