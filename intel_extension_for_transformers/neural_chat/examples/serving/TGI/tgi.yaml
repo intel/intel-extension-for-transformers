@@ -29,6 +29,10 @@ device: "auto"
 serving:
     framework: "tgi"
     tgi_engine_params:
+        # when endpoint is set, neuralchat will not start a tgi service,
+        # and other params will not work
+        endpoint: "http://0.0.0.0:9876/"
+        port: "9876"
         # not supported on CPU
         sharded: true
         num_shard: 4

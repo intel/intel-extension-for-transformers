@@ -28,8 +28,10 @@ class TextGenerationAPIRouter(APIRouter):
 
     def __init__(self) -> None:
         super().__init__()
-        self.endpoint = "http://0.0.0.0:9876/"
         self.chatbot = None
+
+    def set_tgi_endpoint(self, endpoint):
+        self.endpoint = endpoint
 
     def set_chatbot(self, chatbot, use_deepspeed, world_size, host, port) -> None:
         self.chatbot = chatbot
