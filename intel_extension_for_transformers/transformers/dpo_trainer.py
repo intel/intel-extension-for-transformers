@@ -29,6 +29,8 @@ import importlib
 from peft import PeftModel, get_peft_model, prepare_model_for_kbit_training
 import time
 import logging
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
+
 logger = logging.getLogger(__name__)
 
 def is_peft_available():
@@ -39,11 +41,6 @@ def disable_dropout_in_model(model: torch.nn.Module) -> None:
         if isinstance(module, torch.nn.Dropout): # pragma: no cover
             module.p = 0
 
-def is_optimum_habana_available():
-    from transformers.utils.import_utils import is_optimum_available
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
-
-
 class DPOTrainer(Trainer):
     r"""
     Initialize DPOTrainer, refer: https://github.com/huggingface/trl/blob/main/trl/trainer/dpo_trainer.py
@@ -52,9 +49,9 @@ class DPOTrainer(Trainer):
         model (`transformers.PreTrainedModel`):
             The model to train, preferably an `AutoModelForSequenceClassification`.
         ref_model (`PreTrainedModelWrapper`):
-            Hugging Face transformer model with a casual language modelling head. 
+            Hugging Face transformer model with a casual language modelling head.
             Used for implicit reward computation and loss. If no
-            reference model is provided, the trainer will 
+            reference model is provided, the trainer will
             create a reference model with the same architecture as the model to be optimized.
         beta (`float`, defaults to 0.1):
             The beta factor in DPO loss. Higher beta means less divergence from the initial policy.
@@ -303,7 +300,7 @@ class DPOTrainer(Trainer):
         return super().log(logs)
 
 
-if is_optimum_habana_available(): # pragma: no cover
+if is_hpu_available: # pragma: no cover
     # pylint: disable=E0611
     from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0401
     class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):
@@ -371,4 +368,3 @@ if is_optimum_habana_available(): # pragma: no cover
                 from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0611, E0401
                 ref_model = self.accelerator.unwrap_model(self.ref_model)
                 ref_model = wrap_in_hpu_graph(ref_model)
-

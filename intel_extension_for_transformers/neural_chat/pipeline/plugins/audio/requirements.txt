@@ -1,10 +1,11 @@
+datasets
+librosa
+num2words
 paddlepaddle
 paddlespeech
-transformers
-soundfile
-datasets
 pydub
 python-multipart
-speechbrain
-librosa
+soundfile
+speechbrain==0.5.15
+transformers
 zhconv

@@ -22,15 +22,23 @@ The following OpenAI APIs are supported:
 # Additional useful RESTful APIs
 In addition to the text-based chat RESTful API, NeuralChat offers several helpful plugins in its RESTful API lineup to aid users in building multimodal applications.
 NeuralChat supports the following RESTful APIs:
-- Finetuning
-- Audio Chat
-- Document Retrieval
-- Code Generation
-- Text to Image
-- Image to Image
-- Face animation
-
-TODO: Add a RESTful API table here.
+| Tasks List     | RESTful APIs                          |
+| -------------- | ------------------------------------- |
+| textchat       | /v1/chat/completions                  |
+|                | /v1/completions                       |
+| voicechat      | /v1/audio/speech                      |
+|                | /v1/audio/transcriptions              |
+|                | /v1/audio/translations                |
+| retrieval      | /v1/rag/create                        |
+|                | /v1/rag/append                        |
+|                | /v1/rag/upload_link                   |
+|                | /v1/rag/chat                          |
+| codegen        | /v1/code_generation                   |
+|                | /v1/code_chat                         |
+| text2image     | /v1/text2image                        |
+| image2image    | /v1/image2image                       |
+| faceanimation  | /v1/face_animation                    |
+| finetune       | /v1/finetune                          |
 
 # Access the Server using the RESTful API
 
@@ -44,23 +52,25 @@ First, install openai-python:
 pip install --upgrade openai
 ```
 
+Then, interact with the model:
+
 ```python
 import openai
 # to get proper authentication, make sure to use a valid key that's listed in
 # the --api-keys flag. if no flag value is provided, the `api_key` will be ignored.
 openai.api_key = "EMPTY"
-openai.api_base = "http://localhost:80/v1"
+openai.base_url = "http://localhost:80/v1/"
 
 model = "Intel/neural-chat-7b-v3-1"
 prompt = "Once upon a time"
 
 # create a completion
-completion = openai.Completion.create(model=model, prompt=prompt, max_tokens=64)
+completion = openai.completions.create(model=model, prompt=prompt, max_tokens=64)
 # print the completion
 print(prompt + completion.choices[0].text)
 
 # create a chat completion
-completion = openai.ChatCompletion.create(
+completion = openai.chat.completions.create(
   model=model,
   messages=[{"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}]
 )
@@ -100,4 +110,3 @@ curl http://localhost:80/v1/completions \
     "temperature": 0.5
   }'
 ```
-

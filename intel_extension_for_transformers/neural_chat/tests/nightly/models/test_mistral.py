@@ -28,13 +28,14 @@ class TestMistralModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = MistralModel().match(model_path='mistralai/Mistral-7B-v0.1')
+        result = MistralModel(model_name='/tf_dataset2/models/pytorch/Mistral-7B-v0.1').match()
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
-        result = MistralModel().get_default_conv_template(model_path='mistralai/Mistral-7B-v0.1')
+        result = MistralModel(model_name='/tf_dataset2/models/pytorch/Mistral-7B-v0.1').get_default_conv_template()
         self.assertIn("[INST]{system_message}", str(result))
-        config = PipelineConfig(model_name_or_path="mistralai/Mistral-7B-v0.1")
+        config = PipelineConfig(
+            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(result)

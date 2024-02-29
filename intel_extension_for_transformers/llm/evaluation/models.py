@@ -22,7 +22,7 @@ from typing import Optional, Tuple
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers.utils.utility import (
-    generate_dummy_past_key_values,
+    generate_dummy_past_key_values_for_inference,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
     IPEX_OPT_LLM_SUPPORTED,
@@ -72,7 +72,7 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             ):
                 input_ids = input_ids[:, -1:]
 
-        # `past_key_values` may be in the stardard format (e.g. in contrastive search),
+        # `past_key_values` may be in the standard format (e.g. in contrastive search),
         # converts to bloom's format if needed
         if past_key_values is not None and self.config.model_type == "bloom":
             if past_key_values[0][0].shape[0] == input_ids.shape[0]:
@@ -166,8 +166,8 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         input_bs, input_len = input_ids.shape
         if self.use_cache and past_key_values is None:
             if model_type in IPEX_OPT_LLM_SUPPORTED:
-                if model_type == "falcon" and transformers.__version__ > "4.33":
-                    past_key_values = generate_dummy_past_key_values(
+                if model_type == "llama" and transformers.__version__ >= "4.36":
+                    past_key_values = generate_dummy_past_key_values_for_inference(
                         config=self.config, input_bs=input_bs
                     )
                 else:
@@ -175,14 +175,13 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
                         config=self.config, input_bs=input_bs, num_beams=1
                     )
             else:
-                past_key_values = generate_dummy_past_key_values(
+                past_key_values = generate_dummy_past_key_values_for_inference(
                     config=self.config, input_bs=input_bs
                 )
         inputs["past_key_values"] = past_key_values
         if attention_mask is None:
             inputs["attention_mask"] = torch.ones_like(input_ids)
         if model_type == "chatglm":
-            inputs.pop("attention_mask")
             if re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
                 position_ids = self.prepare_inputs_for_generation(input_ids)[
                     "position_ids"
@@ -193,7 +192,6 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
                 inputs["position_ids"] = position_ids
             else:
                 inputs["position_ids"] = torch.arange(input_len).repeat(input_bs, 1)
-
         outputs = self.model(**inputs)
 
         if isinstance(outputs, (list, tuple)):

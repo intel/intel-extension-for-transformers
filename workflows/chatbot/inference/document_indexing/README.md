@@ -18,7 +18,7 @@ Our repository currently supports three document stores: `In Memory` and `Elasti
 |:----------|:----------|:------------------|
 |Elasticsearch  |Sparse retrieval with many tuning options and basic support for dense retrieval. |Haystack|
 |In Memory|Simple document store, with no extra services or dependencies. Not recommended for production.  |Haystack                      |                        |
-|Chroma    |Focus on dense retrieval. Easy to use. Lightwieght and fast for retrieval.    |LangChain|
+|Chroma    |Focus on dense retrieval. Easy to use. Lightweight and fast for retrieval.    |LangChain|
 
 The support for other document stores will be available soon.
 

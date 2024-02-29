@@ -24,7 +24,7 @@ class Optimization:
         ):
         self.optimization_config = optimization_config
 
-    def optimize(self, model, use_llm_runtime=False):
+    def optimize(self, model, use_neural_speed=False):
         if isinstance(model, str):
             model_name = model
         else:
@@ -44,7 +44,7 @@ class Optimization:
             optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_name,
                     quantization_config=config,
-                    use_llm_runtime=use_llm_runtime,
+                    use_neural_speed=use_neural_speed,
                     trust_remote_code=True)
         elif (
             re.search("gpt", model_name, re.IGNORECASE)
@@ -52,22 +52,24 @@ class Optimization:
             or re.search("bloom", model_name, re.IGNORECASE)
             or re.search("llama", model_name, re.IGNORECASE)
             or re.search("opt", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
+            or re.search("neural-chat", model_name, re.IGNORECASE)
             or re.search("starcoder", model_name, re.IGNORECASE)
+            or re.search("codegen", model_name, re.IGNORECASE)
+            or re.search("mistral", model_name, re.IGNORECASE)
+            or re.search("magicoder", model_name, re.IGNORECASE)
+            or re.search("solar", model_name, re.IGNORECASE)
         ):
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
             optimized_model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 quantization_config=config,
-                use_llm_runtime=use_llm_runtime,
+                use_neural_speed=use_neural_speed,
                 trust_remote_code=True)
         elif re.search("chatglm", model_name, re.IGNORECASE):
             from intel_extension_for_transformers.transformers import AutoModel
             optimized_model = AutoModel.from_pretrained(
                 model_name,
                 quantization_config=config,
-                use_llm_runtime=use_llm_runtime,
+                use_neural_speed=use_neural_speed,
                 trust_remote_code=True)
         return optimized_model

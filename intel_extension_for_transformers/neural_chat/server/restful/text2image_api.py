@@ -47,9 +47,9 @@ class Text2ImageAPIRouter(APIRouter):
         except:
             raise Exception("Exception occurred when generating image from text.")
         else:
-            logger.info('Text transfering to image finished.')
+            logger.info('Text transferring to image finished.')
             return ImageResponse(image=image, response="Succeed")
-    
+
 
 router = Text2ImageAPIRouter()
 

@@ -66,7 +66,7 @@ class PPOConfig:
     remove_unused_columns: bool = True
     """Remove unused columns from the dataset if `datasets.Dataset` is used"""
     tracker_kwargs: JSONDict = field(default_factory=dict)
-    """Keyword arguments for the tracker (e.g. python ppo.py --ppo_config.tracker_kwargs='{"wandb": {"entity": 
+    """Keyword arguments for the tracker (e.g. python ppo.py --ppo_config.tracker_kwargs='{"wandb": {"entity":
     "my_wandb_entity", "name": "my_exp_name"}}'"""
     accelerator_kwargs: JSONDict = field(default_factory=dict)
     """Keyword arguments for the accelerator"""
@@ -87,7 +87,7 @@ class PPOConfig:
     init_kl_coef: Optional[float] = 0.2
     """Initial KL penalty coefficient (used for adaptive and linear control)"""
     kl_penalty: Literal["kl", "abs", "mse", "full"] = "kl"
-    """kl penalty options: 'kl': model_logp - ref_logp,  'abs': abs(kl),  'mse': mean squared error mse(kl) and 'full': 
+    """kl penalty options: 'kl': model_logp - ref_logp,  'abs': abs(kl),  'mse': mean squared error mse(kl) and 'full':
     the actual kl for all tokens in the distribution"""
     target: Optional[float] = 6
     """Target KL value for adaptive KL control"""

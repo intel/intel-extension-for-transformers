@@ -19,8 +19,6 @@ done
 function pytest() {
     local coverage_log_dir=$1
     mkdir -p ${coverage_log_dir}
-    pip install --no-cache-dir protobuf==3.20.0
-
     cd /intel-extension-for-transformers/tests/CI || exit 1
     JOB_NAME=unit_test
     ut_log_name=${LOG_DIR}/${JOB_NAME}.log
@@ -69,7 +67,10 @@ function pytest() {
        $BOLD_RED && echo "Segmentation Fault found in UT, please check the output..." && $RESET
         exit 1
     fi  
-
+    if [ $(grep -c "ImportError:" ${ut_log_name}) != 0 ]; then
+       $BOLD_RED && echo "ImportError found in UT, please check the output..." && $RESET
+        exit 1
+    fi
     $BOLD_GREEN && echo "UT finished successfully! " && $RESET
 }
 

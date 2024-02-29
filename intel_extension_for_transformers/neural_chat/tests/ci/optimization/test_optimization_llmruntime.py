@@ -43,7 +43,7 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().tearDown()
 
     def test_build_chatbot_with_llm_runtime(self):
-        loading_config = LoadingModelConfig(use_llm_runtime=True)
+        loading_config = LoadingModelConfig(use_neural_speed=True)
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
             optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int8"),
             loading_config=loading_config

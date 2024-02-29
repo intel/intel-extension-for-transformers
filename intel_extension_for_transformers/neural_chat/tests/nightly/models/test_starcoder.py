@@ -27,11 +27,11 @@ class TestStarCoderModel(unittest.TestCase):
         return super().tearDown()
 
     def test_code_gen(self):
-        config = PipelineConfig(model_name_or_path="bigcode/starcoder")
+        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/starcoderbase-1b")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("def print_hello_world():")
         print(result)
-        self.assertIn("Hello World", str(result))
+        self.assertIn("Hello, world", str(result))
 
 if __name__ == "__main__":
     unittest.main()

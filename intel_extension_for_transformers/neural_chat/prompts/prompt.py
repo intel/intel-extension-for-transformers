@@ -129,9 +129,11 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="rag_with_context_memory",
-        system_message="Have a conversation with a human, answer the following questions as best you can." + \
-            " You can refer to the following document and context.\n",
-        roles=("### Question: ", "### Context: ", "### Chat History: ", "### Response: "),
+        system_message="""### You are a helpful, respectful and honest assistant to help the user with questions. \
+         - Please refer to the search results obtained from the local knowledge base. But be careful to not \
+         incorporate the information that you think is not relevant to the question.
+         - If you don't know the answer to a question, please don't share false information.\n""" ,
+        roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -143,7 +145,19 @@ register_conv_template(
         name="rag_without_context",
         system_message="Have a conversation with a human. " + \
             "You are required to generate suitable response to the user input.\n",
-        roles=("### Input: ", "### Response: "),
+        roles=("### Input:", "### Response:"),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+# Rag without context template
+register_conv_template(
+    Conversation(
+        name="rag_without_context_memory",
+        system_message="Have a conversation with a human. " + \
+            "You are required to generate suitable response to the user input.\n",
+        roles=("### Input:", "### Chat History:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -154,15 +168,15 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="rag_with_threshold",
-        system_message="You are served as an AI agent to help the user complete a task." + \
-            " You are required to comprehend the usr query and then use the given context to" + \
-            " generate a suitable response.\n\n",
-        roles=("### User Query: ", "### Context: ", "### Chat History: ", "### Response: "),
+        system_message="""### You are a helpful, respectful and honest assistant to help the user with questions. \
+         - Please refer to the search results obtained from the local knowledge base. But be careful to not \
+         incorporate the information that you think is not relevant to the question.
+         - If you don't know the answer to a question, please don't share false information.\n""",
+        roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
 )
-
 
 # Intent template
 register_conv_template(
@@ -177,13 +191,24 @@ register_conv_template(
     )
 )
 
+# Query Polish template
+register_conv_template(
+    Conversation(
+        name="polish",
+        system_message="### Please polish the following user query to make it clear and easy to be understood.\n",
+        roles=("### User Query: ", "### Polished Query: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
 # NER template
 register_conv_template(
     Conversation(
         name="ner",
-        system_message="""Please determine the precise time mentioned in the user's query. 
-            Your response should consist only of an accurate time in the format 
-            'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' 
+        system_message="""Please determine the precise time mentioned in the user's query.
+            Your response should consist only of an accurate time in the format
+            'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.'
             If the user query does not include any time reference, please reply with 'None'.\n""",
         roles=("Current Time: ", "User Query: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
@@ -202,9 +227,9 @@ register_conv_template(
 )
 
 class PromptTemplate:
-    def __init__(self, name="one_shot", clear_after_gen=False):
+    def __init__(self, name="one_shot", clear_history=False):
         self.conv = get_conv_template(name)
-        self.clear_after_gen = clear_after_gen
+        self.clear_history = clear_history
 
     @property
     def roles(self):
@@ -215,9 +240,84 @@ class PromptTemplate:
 
     def get_prompt(self) -> str:
         res = self.conv.get_prompt()
-        if self.clear_after_gen:
+        if self.clear_history:
             self.clear_messages()
         return res
 
     def clear_messages(self) -> str:
         self.conv.messages = []
+
+# pylint: disable=C0301
+MAGICODER_PROMPT = """You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.
+
+@@ Instruction
+{instruction}
+
+@@ Response
+"""
+
+SQLCODER_PROMPT = """
+Task:
+Generate a SQL query to answer the following question: {qurey}
+
+Database Schema:
+The query will run on a database with the following schema: {table_metadata_string}
+
+Answer:
+Given the database schema, here is the SQL query that answers the question "{qurey}":
+"""
+
+METADATA_STRING = """
+CREATE TABLE products (
+  product_id INTEGER PRIMARY KEY, -- Unique ID for each product
+  name VARCHAR(50), -- Name of the product
+  price DECIMAL(10,2), -- Price of each unit of the product
+  quantity INTEGER  -- Current quantity in stock
+);
+
+CREATE TABLE customers (
+   customer_id INTEGER PRIMARY KEY, -- Unique ID for each customer
+   name VARCHAR(50), -- Name of the customer
+   address VARCHAR(100) -- Mailing address of the customer
+);
+
+CREATE TABLE salespeople (
+  salesperson_id INTEGER PRIMARY KEY, -- Unique ID for each salesperson
+  name VARCHAR(50), -- Name of the salesperson
+  region VARCHAR(50) -- Geographic sales region
+);
+
+CREATE TABLE sales (
+  sale_id INTEGER PRIMARY KEY, -- Unique ID for each sale
+  product_id INTEGER, -- ID of product sold
+  customer_id INTEGER,  -- ID of customer who made purchase
+  salesperson_id INTEGER, -- ID of salesperson who made the sale
+  sale_date DATE, -- Date the sale occurred
+  quantity INTEGER -- Quantity of product sold
+);
+
+CREATE TABLE product_suppliers (
+  supplier_id INTEGER PRIMARY KEY, -- Unique ID for each supplier
+  product_id INTEGER, -- Product ID supplied
+  supply_price DECIMAL(10,2) -- Unit price charged by supplier
+);
+
+-- sales.product_id can be joined with products.product_id
+-- sales.customer_id can be joined with customers.customer_id
+-- sales.salesperson_id can be joined with salespeople.salesperson_id
+-- product_suppliers.product_id can be joined with products.product_id
+"""
+
+def generate_sqlcoder_prompt(qurey, metadata_file):
+    prompt = SQLCODER_PROMPT
+
+    if not metadata_file:
+        table_metadata_string = METADATA_STRING
+    else:
+        with open(metadata_file, "r") as f:
+            table_metadata_string = f.read()
+
+    prompt = prompt.format(
+        qurey=qurey, table_metadata_string=table_metadata_string
+    )
+    return prompt

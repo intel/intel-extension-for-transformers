@@ -1,10 +1,10 @@
 datasets
-transformers==4.34.1
+transformers
 accelerate
 datasets
 sentencepiece
 scipy
 scikit-learn
 protobuf
-torch==2.1.0
+torch==2.2.0
 evaluate

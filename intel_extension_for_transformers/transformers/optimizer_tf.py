@@ -123,7 +123,7 @@ class TFOptimization:
     @input_names.setter
     def input_names(self, input_names: List):
         """Set the input names.
-        
+
         Args:
             input_names: the names of inputs.
         """
@@ -137,7 +137,7 @@ class TFOptimization:
     @output_names.setter
     def output_names(self, output_names: List):
         """Set the output names.
-        
+
         Args:
             output_names: the names of outputs.
         """
@@ -151,7 +151,7 @@ class TFOptimization:
     @eval_func.setter
     def eval_func(self, func: Callable):
         """Set the evaluation function.
-        
+
         Args:
             func: evaluation function.
         """
@@ -165,7 +165,7 @@ class TFOptimization:
     @train_func.setter
     def train_func(self, func: Callable):
         """Set the training function.
-        
+
         Args:
             func: train function.
         """
@@ -179,7 +179,7 @@ class TFOptimization:
     @train_dataset.setter
     def train_dataset(self, train_dataset):
         """Set the training dataset.
-        
+
         Args:
             train_dataset: train dataset.
         """
@@ -195,7 +195,7 @@ class TFOptimization:
     @eval_dataset.setter
     def eval_dataset(self, eval_dataset):
         """Set the evaluation dataset.
-        
+
         Args:
             eval_dataset: evaluation dataset.
         """
@@ -372,7 +372,7 @@ class TFOptimization:
         quant_config,
     ):
         """Init a Quantization object with config.
-        
+
         Args:
             quant_config: quantization config.
         """
@@ -394,7 +394,7 @@ class TFOptimization:
         quant_config,
     ):
         """Do the quantization.
-        
+
         Args:
             quant_config: quantization config.
         """
@@ -420,7 +420,7 @@ class TFOptimization:
                 assert False, "Please pass calibration dataset to TFNoTrainerOptimizer.calib_dataloader"
         elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:   # pragma: no cover
             assert False, \
-                "Unsupport quantization aware training for tensorflow framework"
+                "Unsupported quantization aware training for tensorflow framework"
 
         opt_model = self.quantizer.fit()
         opt_model.save(self.args.output_dir)
@@ -438,7 +438,7 @@ class TFOptimization:
         eval_dataset=None,
     ):
         """Prepare for invoking INC quantize function.
-        
+
         Args:
             quant_config: quantization config.
             eval_func: evaluation function.
@@ -463,7 +463,7 @@ class TFOptimization:
         pruning_config=None,
     ):
         """Init a Pruning object with config.
-        
+
         Args:
             pruning_config: pruning config.
         """
@@ -494,7 +494,7 @@ class TFOptimization:
         eval_dataset=None,
     ):
         """Do the pruning.
-        
+
         Args:
             pruning_config: pruning config.
             eval_func: evaluation function.
@@ -550,7 +550,7 @@ class TFOptimization:
         teacher_model: PreTrainedModel,
     ):
         """Init a Distillation object with config and the teacher model.
-        
+
         Args:
             distillation_config: distillation config.
             teacher_model: set the teacher model.
@@ -618,7 +618,7 @@ class TFOptimization:
         train_func: Optional[Callable] = None,
     ):
         """Do the distillation.
-        
+
         Args:
             distillation_config: distillation config.
             teacher_model: set the teacher model.
@@ -651,7 +651,7 @@ class TFOptimization:
 
     def model_builder_builtin(self, arch_paras=None, model_cls=None):
         """Specify model_cls to use the built-in model builder.
-        
+
         Args:
             arch_paras: architecture parameters.
             model_cls: model information.
@@ -679,7 +679,7 @@ class TFOptimization:
         train_func: Optional[Callable] = None
         ):
         """Do the auto distillation.
-        
+
         Args:
             autodistillation_config: autodistillation config.
             teacher_model: set the teacher model.
@@ -837,7 +837,7 @@ class TFOptimization:
 
     def build_train_func(self, model):
         """Build the training function for pruning or distillation.
-        
+
         Args:
             model (object): the input model
         """

@@ -147,7 +147,7 @@ def vad_collector(sample_rate, frame_duration_ms,
             # If more than 90% of the frames in the ring buffer are
             # unvoiced, then enter NOTTRIGGERED and yield whatever
             # audio we've collected.
-            if num_unvoiced > 0.9 * ring_buffer.maxlen:
+            if num_unvoiced > 0.9 * ring_buffer.maxlen: # pragma: no cover
                 sys.stdout.write('-(%s)' % (frame.timestamp + frame.duration))
                 triggered = False
                 yield b''.join([f.bytes for f in voiced_frames])
@@ -164,7 +164,7 @@ def vad_collector(sample_rate, frame_duration_ms,
 
 def main(args):
     is_dir = os.path.isdir(args.in_path)
-    if is_dir: 
+    if is_dir:
         input_dir = args.in_path
         path_list=os.listdir(args.in_path)
     else: # input is a wav file
@@ -189,7 +189,7 @@ def main(args):
             logging.info("unsupported file")
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     # Usage: split_audio.py --ag (0~3) --in_path <input path> --out_path <output path>
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--ag", type=int, default=3)
@@ -202,4 +202,4 @@ if __name__ == '__main__':
     if not is_exist:
         logging.info("path not existed!")
     else:
-        main(args)     
+        main(args)

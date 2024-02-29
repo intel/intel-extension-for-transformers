@@ -210,14 +210,14 @@ void jit_layernorm_ba_t::normal_gen() {
   // loop2:(x-mean)*var*α+β
   mov(reg_affine_offset, (param_.row_num - unroll_degree) * get_data_size(data_type::fp32));  // dt(affine)==fp32
   L(norm_loop_start);
-  // positive sqeuence load rows data for cache performance.
+  // positive sequence load rows data for cache performance.
   for (int k = 0; k < unroll_degree; k++) {
     vmovups(Zmm(k), dword[src_addr + reg_src_offset + src_load_offset[k]]);
     vsubps(Zmm(k), Zmm(k), zmm_mean);
     vmulps(Zmm(k), Zmm(k), zmm_var);
     vbroadcastss(
         zmm_alpha,
-        dword[reg_alpha + reg_affine_offset + k * get_data_size(data_type::fp32)]);  // dt(aplha)==dt(beta)==fp32
+        dword[reg_alpha + reg_affine_offset + k * get_data_size(data_type::fp32)]);  // dt(alpha)==dt(beta)==fp32
     vbroadcastss(zmm_beta, dword[reg_beta + reg_affine_offset + k * get_data_size(data_type::fp32)]);
     vfmadd213ps(Zmm(k), zmm_alpha, zmm_beta);
   }
@@ -259,7 +259,7 @@ void jit_layernorm_ba_t::normal_gen() {
   jl(batch_loop_start, T_NEAR);
 }
 
-// for pipline performance.
+// for pipeline performance.
 void jit_layernorm_ba_t::normal_binary_add(int degree, Zmm dst) {
   normal_reset_unroll_reg_idxs(degree);
   int first_idx = 0, second_idx = 0, begin_idx = 0;

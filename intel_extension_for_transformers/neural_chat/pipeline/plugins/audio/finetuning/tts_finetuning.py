@@ -72,7 +72,7 @@ class TTSDataCollatorWithPadding:
         batch["speaker_embeddings"] = torch.tensor(speaker_features)
 
         return batch
- 
+
 class TTSFinetuning:
     def __init__(self, finetuning_config: TTSFinetuningConfig):
         self.dataset_args, self.model_args = (
@@ -108,7 +108,7 @@ class TTSFinetuning:
         audio_names = os.listdir(self.audio_folder_path)
         audio_paths = [os.path.join(self.audio_folder_path, i) for i in audio_names]
         return audio_paths
-    
+
     def _construct_finetuning_dataset(self):
         raw_texts, normalized_texts = self._construct_text_list()
         audio_paths = self._construct_audio_list()

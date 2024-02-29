@@ -6,7 +6,7 @@ This document describes the end-to-end workflow for Huggingface model [BERT Larg
 ## Prepare Python Environment
 Create a python environment, optionally with autoconf for jemalloc support.
 ```shell
-conda create -n <env name> python=3.8 [autoconf]
+conda create -n <env name> python=3.10 [autoconf]
 conda activate <env name>
 ```
 
@@ -30,8 +30,12 @@ Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/examples/huggingface/pytorch/question-answering/deployment/squad/ipex/bert_large
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
+
+>**Note**: Please use transformers no higher than 4.34.1
+
 
 # Inference Pipeline
 Neural Engine can parse ONNX model and Neural Engine IR. 

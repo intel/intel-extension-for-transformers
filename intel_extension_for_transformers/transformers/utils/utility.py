@@ -17,6 +17,7 @@
 
 """Utils for pytorch framework."""
 
+import argparse
 import os
 from typing import Optional, Tuple
 from neural_compressor.utils import logger
@@ -30,11 +31,23 @@ ENCODER_NAME = "encoder_model.bin"
 DECODER_NAME = "decoder_model.bin"
 DECODER_WITH_PAST_NAME = "decoder_with_past_model.bin"
 WEIGHTS_NAME = "pytorch_model.bin"
+WEIGHTS_INDEX_NAME = "pytorch_model.bin.index.json"
 QUANT_CONFIG = "quantization_config.json"
 SPARSITY_CONFIG = "sparsity_config.json"
+SAFE_WEIGHTS_NAME = "model.safetensors"
+SAFE_WEIGHTS_INDEX_NAME = "model.safetensors.index.json"
 
 torch = LazyImport("torch")
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def distributed_init(
     backend="gloo",
@@ -44,8 +57,7 @@ def distributed_init(
     master_addr="127.0.0.1",
     master_port="12345",
 ):
-    """Init the distibute environment."""
-    torch = LazyImport("torch")
+    """Init the distribute environment."""
     rank = int(os.environ.get("RANK", rank))
     world_size = int(os.environ.get("WORLD_SIZE", world_size))
     if init_method is None:
@@ -105,6 +117,66 @@ def generate_dummy_past_key_values(config, input_bs):
         num_key_value_heads = normalized_config.multi_query_group_num
 
     if config.model_type == "bloom":
+        shape_key = (input_bs * num_attention_heads, d_k, 1)
+        shape_value = (input_bs * num_attention_heads, 1, d_k)
+        key = torch.ones(size=shape_key)
+        value = torch.ones(size=shape_value)
+        past_key_values = tuple(
+            tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv))
+            for _ in range(num_layers)
+        )
+        return past_key_values
+    elif config.model_type == "gpt_bigcode":
+        new_shape = [input_bs, 0, d_k * 2]
+        dummy_tensor = torch.zeros(size=new_shape)
+        past_key_values = tuple([dummy_tensor] * num_layers)
+        return past_key_values
+    elif config.model_type == "qwen":
+        new_shape = [input_bs, 1, num_key_value_heads, d_k]
+        past_key_values = [
+            (
+                torch.ones(size=new_shape).contiguous(),
+                torch.ones(size=new_shape).contiguous(),
+            )
+            for _ in range(num_layers)
+        ]
+        return tuple(past_key_values)
+    elif config.model_type == "chatglm":
+        new_shape = [0, input_bs, num_key_value_heads, d_k]
+    elif config.model_type == "falcon":
+        new_shape = [input_bs, 1, 0, d_k]
+    else:
+        new_shape = [input_bs, num_key_value_heads, 0, d_k]
+    past_key_values = [
+        (
+            torch.zeros(size=new_shape).contiguous(),
+            torch.zeros(size=new_shape).contiguous(),
+        )
+        for _ in range(num_layers)
+    ]
+    return tuple(past_key_values)
+
+def generate_dummy_past_key_values_for_inference(config, input_bs):
+    """
+    Generate the dummy past_key_values.
+    """
+    from optimum.utils import NormalizedConfigManager
+
+    normalized_config = NormalizedConfigManager.get_normalized_config_class(
+        config.model_type
+    )(config)
+    nb_pkv = 2
+    num_layers = normalized_config.num_layers
+    num_attention_heads = normalized_config.num_attention_heads
+    hidden_size = normalized_config.hidden_size
+    d_k = hidden_size // num_attention_heads
+    num_key_value_heads = num_attention_heads
+    if hasattr(normalized_config, "num_key_value_heads"):
+        num_key_value_heads = normalized_config.num_key_value_heads
+    if hasattr(normalized_config, "multi_query_group_num"):
+        num_key_value_heads = normalized_config.multi_query_group_num
+
+    if config.model_type == "bloom":
         shape_key = (input_bs * num_attention_heads, d_k, 0)
         shape_value = (input_bs * num_attention_heads, 0, d_k)
         key = torch.empty(size=shape_key)
@@ -135,7 +207,6 @@ def generate_dummy_past_key_values(config, input_bs):
         for _ in range(num_layers)
     ]
     return tuple(past_key_values)
-
 
 def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     """
@@ -184,7 +255,8 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     return tuple(past_key_values)
 
 
-IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon"}
+IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon", "chatglm", "baichuan"}
+
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
     "gpt2",
@@ -196,7 +268,7 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "llama",
     "mistral",
     "chatglm",
-    "falcon"
+    "baichuan"
 }
 
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):

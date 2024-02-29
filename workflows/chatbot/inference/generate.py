@@ -73,7 +73,7 @@ def parse_args():
     parser.add_argument(
         "--num_beams",
         type=int,
-        default=0,
+        default=1,
         help="The number of beams for beam search.",
     )
     parser.add_argument(
@@ -162,6 +162,18 @@ def parse_args():
     )
     parser.add_argument(
         "--return_stats", action='store_true', default=False,)
+    parser.add_argument(
+        "--format_version",
+        type=str,
+        default="v2",
+        help="the version of return stats format",
+    )
+    parser.add_argument(
+        "--system_prompt",
+        type=str,
+        default="None",
+        help="the customized system prompt",
+    )
     args = parser.parse_args()
     return args
 
@@ -178,8 +190,8 @@ def main():
         raise ValueError("Top-k must be between 0 and 200.")
     if not 1.0 <= args.repetition_penalty <= 2.0:
         raise ValueError("Repetition penalty must be between 1 and 2.")
-    if not 0 <= args.num_beams <= 8:
-        raise ValueError("Number of beams must be between 0 and 8.")
+    if not 1 <= args.num_beams <= 8:
+        raise ValueError("Number of beams must be between 1 and 8.")
     if not 32 <= args.max_new_tokens <= 1024:
         raise ValueError(
             "The maximum number of new tokens must be between 32 and 1024."
@@ -220,6 +232,8 @@ def main():
         optimization_config=MixedPrecisionConfig(dtype=args.dtype)
     )
     chatbot = build_chatbot(config)
+    if args.system_prompt:
+        chatbot.set_customized_system_prompts(system_prompts=args.system_prompt, model_path=base_model_path)
     gen_config = GenerationConfig(
         task=args.task,
         temperature=args.temperature,
@@ -232,7 +246,9 @@ def main():
         use_hpu_graphs=args.use_hpu_graphs,
         use_cache=args.use_kv_cache,
         num_return_sequences=args.num_return_sequences,
-        ipex_int8=args.ipex_int8
+        ipex_int8=args.ipex_int8,
+        return_stats=args.return_stats,
+        format_version=args.format_version
     )
 
     if args.habana:

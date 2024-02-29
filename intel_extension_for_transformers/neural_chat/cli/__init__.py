@@ -17,6 +17,5 @@
 
 from .cli_commands import BaseCommand
 from .cli_commands import HelpCommand
-from .cli_commands import VersionCommand
 from .cli_commands import TextVoiceChatExecutor
 from .cli_commands import FinetuingExecutor

@@ -42,15 +42,12 @@ from peft import (
     get_peft_model_state_dict,
     set_peft_model_state_dict,
 )
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 IGNORE_INDEX = -100
 
-def is_optimum_habana_available():
-    import importlib
-    from transformers.utils.import_utils import is_optimum_available
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
 
 @dataclass
 class ModelArguments:
@@ -200,7 +197,7 @@ def find_all_linear_names(model):
 
 if __name__ == "__main__":
 
-    if not is_optimum_habana_available():
+    if not is_hpu_available:
         from transformers import set_seed
         parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, FinetuningArguments))
         load_in_4bit = True
@@ -272,7 +269,7 @@ if __name__ == "__main__":
     # model config
     config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
     torch_dtype = (
-            model_args.torch_dtype if model_args.torch_dtype in ["auto", None] 
+            model_args.torch_dtype if model_args.torch_dtype in ["auto", None]
             else getattr(torch, model_args.torch_dtype)
             )
 

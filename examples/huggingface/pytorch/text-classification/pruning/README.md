@@ -9,7 +9,10 @@ This example shows basic magnitude pruning. Basic magnitude pruning is the simpl
 ```
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
+>**Note**: Please use transformers no higher than 4.34.1
+
 
 # Run
 
@@ -30,7 +33,7 @@ python run_glue.py \
 
 ## Step 2: Distributed Data Parallel Training
 
-We supporte Distributed Data Parallel training on single node and multi nodes settings for pruning. To use Distributed Data Parallel to speedup training, the bash command needs a small adjustment.
+We support Distributed Data Parallel training on single node and multi nodes settings for pruning. To use Distributed Data Parallel to speedup training, the bash command needs a small adjustment.
 <br>
 *`<MASTER_ADDRESS>`* is the address of the master node, it won't be necessary for single node case,
 <br>

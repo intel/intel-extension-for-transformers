@@ -27,7 +27,8 @@ class TestCodeLlamaModel(unittest.TestCase):
         return super().tearDown()
 
     def test_code_gen(self):
-        config = PipelineConfig(model_name_or_path="codellama/CodeLlama-7b-hf")
+        config = PipelineConfig(
+            model_name_or_path="/tf_dataset2/models/nlp_toolkit/CodeLlama-7b-hf")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("def print_hello_world():")
         print(result)

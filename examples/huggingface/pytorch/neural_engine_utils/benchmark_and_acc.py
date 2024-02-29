@@ -145,7 +145,7 @@ def grab_log(is_performance, path, instance, cores, log_fp):
         print("========please check acc with screen messages=============")
     try:
         if is_performance:
-            log_fp.write("Troughput: {} images/sec\n".format(throughput))
+            log_fp.write("Throughput: {} images/sec\n".format(throughput))
             log_fp.write("Latency: {} ms\n".format(latency))
         log_fp.write("--------------------------------------\n")
     except OSError as ex:
@@ -256,7 +256,7 @@ def test_all(
     dataset_reorder = 0
     framework = "engine"
     # this reorder and framework change only support for onnx model
-    # tf model you need to use fp32 ir, so you should remvove snippet here
+    # tf model you need to use fp32 ir, so you should remove snippet here
     # when model is tf, but we will not add arg to control, only bert base
     # and bert large use tf now
     if not is_int8 and not is_performance:

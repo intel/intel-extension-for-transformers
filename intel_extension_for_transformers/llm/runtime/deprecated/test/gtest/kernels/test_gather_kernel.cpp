@@ -164,7 +164,7 @@ test_data_t gen_data(const test_params_t& p) {
              bytes_dt * inner_size);
     }
   }
-  // TODO(yucheng/zhe): refactor here when postop-injector avaliable
+  // TODO(yucheng/zhe): refactor here when postop-injector available
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < p.dst_dim[0]; ++i) {
     for (int j = 0; j < p.dst_dim[1]; ++j) {

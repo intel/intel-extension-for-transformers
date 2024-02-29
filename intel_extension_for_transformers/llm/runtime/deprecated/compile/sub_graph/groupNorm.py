@@ -24,10 +24,10 @@ from .. import logger
 @pattern_registry(pattern_type='GroupNorm')
 class GroupNorm(Pattern):
     """
-    The input channels are separated into num_groups groups, each containing num_channels / 
+    The input channels are separated into num_groups groups, each containing num_channels /
     num_groups channels. Each group is calculated like:
     y = (x - E(X)) / (Var(x) + epsilon) * gamma + beta
-    More info can see: https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html 
+    More info can see: https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html
     """
     def __call__(self, model):
 
@@ -75,7 +75,7 @@ class GroupNorm(Pattern):
             pattern_dict = pattern_mapping_config['GroupNorm'][i]
             model, new_node_names, ret_old_nodes = util.pattern_mapping("GroupNorm", pattern_dict, model)
             if len(new_node_names) != 0:
-                logger.info('GroupNorm mathched...')
+                logger.info('GroupNorm matched...')
                 logger.debug('GroupNorm = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     group = ret_old_nodes[j][0].input_tensors[1].shape[0]

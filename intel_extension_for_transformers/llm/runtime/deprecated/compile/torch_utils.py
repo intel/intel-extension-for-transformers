@@ -111,4 +111,3 @@ def torch_extract_operator(node, model, nodes_dict, engine_graph=None):
         output_tensors.append(output_tensor)
 
     return op_maps.get(op_type, op_type), input_tensors, output_tensors
-

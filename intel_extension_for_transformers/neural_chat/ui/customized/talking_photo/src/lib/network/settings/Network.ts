@@ -5,9 +5,7 @@ const BASE_URL = env.BASE_URL;
 
 
 
-export async function onCountdownEnd() {
-	console.log('delete user');
-	
+export async function onCountdownEnd() {	
 	const url = `${BASE_URL}/deleteUser`
     const init: RequestInit = {
         method: "POST",

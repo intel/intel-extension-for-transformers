@@ -25,8 +25,6 @@ port: 8000
 
 model_name_or_path: "Phind/Phind-CodeLlama-34B-v2"
 device: "cpu"
-use_deepspeed: true
-world_size: 8
 
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']

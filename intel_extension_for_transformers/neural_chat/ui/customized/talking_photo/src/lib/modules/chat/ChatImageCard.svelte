@@ -25,7 +25,7 @@
 </script>
 
 <div
-	class={`${extraClass} flex h-full flex-col border-l p-2 py-0 max-sm:border-none sm:w-1/3 sm:p-6`}
+	class={`${extraClass} flex h-full flex-col border-l p-2 py-0 max-sm:border-none sm:w-1/3 sm:p-6 w-full`}
 >
 	<div class="relative my-2 mb-3 flex items-center justify-between">
 		<div class="mb-2 text-sm font-semibold leading-none text-gray-400">
@@ -36,10 +36,7 @@
 			class="text-primary-600 dark:text-primary-500 dark:hover:text-primary-600 hover:text-primary-700 flex items-center text-sm font-medium"
 		>
 			Send
-			<!-- <Icon
-				name="chevron-up-solid"
-				class="text-primary-600 dark:text-primary-500 ml-1.5 h-2 w-2"
-			/> -->
+		
 		</button>
 	</div>
 

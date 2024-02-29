@@ -14,7 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Pipline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline"""
+"""Pipeline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline"""
 
 import inspect
 from typing import Callable, List, Optional, Union
@@ -176,7 +176,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
                 1`. Higher guidance scale encourages to generate images that are closely linked to the text `prompt`,
                 usually at the expense of lower image quality. This pipeline requires a value of at least `1`.
             image_guidance_scale (`float`, *optional*, defaults to 1.5):
-                Image guidance scale is to push the generated image towards the inital image `image`. Image guidance
+                Image guidance scale is to push the generated image towards the initial image `image`. Image guidance
                 scale is enabled by setting `image_guidance_scale > 1`. Higher image guidance scale encourages to
                 generate images that are closely linked to the source image `image`, usually at the expense of lower
                 image quality. This pipeline requires a value of at least `1`.
@@ -341,7 +341,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
 
                 # Original Pytorch Diffuser Unet Code: predict the noise residual
                 #noise_pred = self.unet(scaled_latent_model_input, t, encoder_hidden_states=prompt_embeds).sample
-                
+
                 # The ITREX Unet Code
                 scaled_latent_model_input = scaled_latent_model_input.contiguous()
                 prompt_embeds = prompt_embeds.contiguous()
@@ -350,7 +350,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
                 noise_pred = torch.from_numpy(engine_output['out_sample:0'])
 
                 # Hack:
-                # For karras style schedulers the model does classifer free guidance using the
+                # For karras style schedulers the model does classifier free guidance using the
                 # predicted_original_sample instead of the noise_pred. So we need to compute the
                 # predicted_original_sample here if we are using a karras style scheduler.
                 if scheduler_is_in_sigma_space:
@@ -368,7 +368,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
                     )
 
                 # Hack:
-                # For karras style schedulers the model does classifer free guidance using the
+                # For karras style schedulers the model does classifier free guidance using the
                 # predicted_original_sample instead of the noise_pred. But the scheduler.step function
                 # expects the noise_pred and computes the predicted_original_sample internally. So we
                 # need to overwrite the noise_pred here such that the value of the computed
@@ -744,4 +744,3 @@ def bf16_to_fp32(bf16_np):
   int32_np = int32_np << 16
   fp32_np = int32_np.view(np.float32)
   return fp32_np
-

@@ -428,7 +428,7 @@ def main():
     metric_name = optim_args.metric_name
     training_args.metric_for_best_model = metric_name
 
-    # Initalize our trainer
+    # Initialize our trainer
     trainer = NLPTrainer(
         model=model,
         args=training_args,

@@ -57,7 +57,7 @@ def process_time(result_text: str, doc) -> dict:
     if len(mentioned_time["period"]) % 2 != 0:
         mentioned_time["time"] = list(set(mentioned_time["time"]+mentioned_time["period"]))
         mentioned_time["period"] = []
-    
+
     return mentioned_time
 
 
@@ -94,11 +94,11 @@ def process_entities(query, doc, mentioned_time: dict) -> dict:
         result_period = post_process_last_week()
 
     result = {
-        "period": result_period, 
-        "time": mentioned_time['time'], 
-        'location': location, 
-        "name": name, 
+        "period": result_period,
+        "time": mentioned_time['time'],
+        'location': location,
+        "name": name,
         "organization": organization
     }
-    
+
     return result
