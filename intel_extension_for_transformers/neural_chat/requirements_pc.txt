@@ -20,6 +20,7 @@ pymysql
 python-dotenv
 python-multipart
 rouge_score
+sacremoses
 shortuuid
 starlette
 torch==2.2.0

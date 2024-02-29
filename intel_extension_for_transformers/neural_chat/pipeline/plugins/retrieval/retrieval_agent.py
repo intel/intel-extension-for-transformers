@@ -87,6 +87,7 @@ class Agent_QA():
         allowed_retrieval_type: ClassVar[Collection[str]] = (
             "default",
             "child_parent",
+            'bm25',
         )
         allowed_generation_mode: ClassVar[Collection[str]] = (
             "accuracy",

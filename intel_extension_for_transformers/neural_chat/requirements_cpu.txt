@@ -22,6 +22,7 @@ pymysql
 python-dotenv
 python-multipart
 rouge_score
+sacremoses
 shortuuid
 starlette
 tiktoken==0.4.0

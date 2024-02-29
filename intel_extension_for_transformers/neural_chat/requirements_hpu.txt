@@ -17,6 +17,7 @@ pymysql
 python-dotenv
 python-multipart
 rouge_score
+sacremoses
 shortuuid
 starlette
 transformers>=4.35.2
