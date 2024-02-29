@@ -201,7 +201,7 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 Below is the sample code to use the extended Transformers APIs. See more [examples](https://github.com/intel/neural-speed/tree/main).
 
 #### INT4 Inference (CPU)
-Please install [NeuralSpeed](https://github.com/intel/neural-speed) first to get the latest features (e.g., GGUF support) of LLM low-bit inference on CPUs. You can also use v1.3 with the corresponding document without NeuralSpeed.
+We encourage you to install [NeuralSpeed](https://github.com/intel/neural-speed) to get the latest features (e.g., GGUF support) of LLM low-bit inference on CPUs. You may also want to use v1.3 without NeuralSpeed by following the [document](https://github.com/intel/intel-extension-for-transformers/tree/v1.3/intel_extension_for_transformers/llm/runtime/graph/README.md)
 
 ```python
 from transformers import AutoTokenizer
