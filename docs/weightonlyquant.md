@@ -61,6 +61,9 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 print(outputs)
 
 ```
+
+After v1.3.1(including v1.3.1). We split the LLM backend into [NeuralSpeed](https://github.com/intel/neural-speed) and validate v1.3.1 with NeuralSpeed v0.2. It is an innovation backend of LLM, you can install it and enable with ``` use_neural_speed= True ``` in ``` WeightOnlyQuantConfig ```.
+
 ### Example for CUDA GPU device
 Prepare model name and generate kwargs.
 ```bash
