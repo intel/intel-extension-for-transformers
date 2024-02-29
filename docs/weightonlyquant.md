@@ -60,7 +60,6 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 print(outputs)
 
 ```
-
 ### Example for CUDA GPU device
 Prepare model name and generate kwargs.
 ```bash
