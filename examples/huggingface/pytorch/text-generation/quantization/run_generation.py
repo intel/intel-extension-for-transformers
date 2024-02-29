@@ -162,7 +162,7 @@ parser.add_argument('--gptq_static_groups', action='store_true', help='Use deter
 # ============AUTOROUND configs==============
 parser.add_argument(
     "--autoround_nsamples",
-    type=int, default=128,
+    type=int, default=512,
     help="Number of calibration data samples.",
 )
 parser.add_argument(

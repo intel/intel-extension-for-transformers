@@ -24,6 +24,7 @@ from accelerate import init_empty_weights
 from datasets import load_dataset
 from neural_compressor import quantization
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
+from auto_round.export.export_to_itrex.model_wrapper import WeightOnlyLinear as auto_round_woqlinear
 from neural_compressor.utils.utility import LazyImport
 from neural_compressor.config import PostTrainingQuantConfig
 from ...utils.utils import is_ipex_available
@@ -104,7 +105,7 @@ def _replace_linear(
         current_key_name.append(name)
         is_removed = False
 
-        if (isinstance(module, torch.nn.Linear) or isinstance(module, WeightOnlyLinear)
+        if (isinstance(module, torch.nn.Linear) or isinstance(module, WeightOnlyLinear) or isinstance(module, auto_round_woqlinear)
             or (is_ipex_available() and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
            and (name not in modules_to_not_convert):
             # Check if the current key is not in the `modules_to_not_convert`
@@ -186,7 +187,7 @@ def _replace_linear(
                                 int_weight,
                                 gptq_scales,
                                 gptq_zeros,
-                                module.g_idx,
+                                moduel.g_idx if hasattr(module, "g_idx") else None,
                                 quantization_config,
                                 bias=None if module.bias is None else module.bias.data,
                             )
@@ -279,12 +280,33 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 input_ids_padded.append(input_ids)
             return torch.vstack(input_ids_padded)
 
-        calib_dataloader = DataLoader(
-            tokenized_dataset,
-            batch_size=1,
-            shuffle=False,
-            collate_fn=collate_batch,
-        )
+        def collate_batch_for_autoround(batch):
+            input_ids_padded = []
+            for text in batch:
+                input_ids = text["input_ids"]
+                input_ids = input_ids[:config.algorithm_args["seq_len"]] if (len(input_ids) > config.algorithm_args["seq_len"]) else input_ids
+                input_ids_list = input_ids.tolist()
+                if input_ids_list.count(input_ids_list[-1]) > config.algorithm_args["seq_len"] // 2:
+                    continue
+                input_ids_padded.append(input_ids)
+            if len(input_ids_padded) == 0:
+                return None
+
+            return torch.vstack(input_ids_padded)
+        if config.algorithm == "AUTOROUND":
+            calib_dataloader = DataLoader(
+                tokenized_dataset,
+                batch_size=1,
+                shuffle=False,
+                collate_fn=collate_batch_for_autoround,
+            )
+        else:
+            calib_dataloader = DataLoader(
+                tokenized_dataset,
+                batch_size=1,
+                shuffle=False,
+                collate_fn=collate_batch,
+            )
     if calib_func is None and config.algorithm in ["AWQ"]:
 
         def default_calib_func(model):
@@ -390,7 +412,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 setattr(config, "gptq_quantize_config", quantize_config)
                 q_model = replace_linear(inc_model, None, None, config, device=device)
             elif config.algorithm == "AUTOROUND":
-                inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 quantize_config = {
                     "bits": bits,
@@ -403,7 +424,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 }
 
                 setattr(config, "gptq_quantize_config", quantize_config)
-                q_model = replace_linear(inc_model, None, None, config, device=device)
+                q_model = replace_linear(inc_model._model, None, None, config, device=device)
             else:
                 q_model = replace_linear(inc_model.model, None, None, config, device=device)
         if orig_dtype != torch.float32:

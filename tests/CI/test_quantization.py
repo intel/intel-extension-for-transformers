@@ -476,7 +476,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.18015708029270172, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17669981718063354, rel_tol=1e-04))
 
     def test_export(self):
         # test model with model_id
