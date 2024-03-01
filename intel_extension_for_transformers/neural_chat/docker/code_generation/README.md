@@ -1,4 +1,4 @@
-Intel Neural Chat Code Generation Dockerfile installer for Ubuntu22.04/Habana Gaudi/XPU.
+Intel Neural Chat Code Generation Dockerfile installer for Ubuntu22.04/Habana Gaudi.
 
 # Start NeuralChat and Code Generation Service with Docker
 
@@ -7,21 +7,22 @@ Intel Neural Chat Code Generation Dockerfile installer for Ubuntu22.04/Habana Ga
 ### Setup Xeon SPR Environment
 Use Dockerfile to build Docker image in your environment.
 
-Remember to choose Dockerfile of your framework (CPU/HPU/XPU), the following example is for CPU.
+Remember to choose Dockerfile of your framework (CPU/HPU), the following example is for CPU.
 ```bash
-cd ./cpu
-docker build . -f Dockerfile -t neuralchat_codegen:latest
+git clone https://github.com/intel/intel-extension-for-transformers.git itrex
+cd itrex
+docker build . -f intel_extension_for_transformers/neural_chat/docker/code_generation/cpu/Dockerfile -t neuralchat_codegen:latest
 ```
 If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` like below.
 ```bash
-docker build . -f Dockerfile -t neuralchat_codegen:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
+docker build . -f intel_extension_for_transformers/neural_chat/docker/code_generation/cpu/Dockerfile -t neuralchat_codegen:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
 ```  
 
 ### Prepare Configuration File and Documents
 Before starting NeuralChat services, you need to configure `codegen.yaml` according to you read environment.
 
 
-Specify your available host ip and port, and a code-generation model (`ise-uiuc/Magicoder-S-DS-6.7B` is recommended for its accuracy). Remember to set `device` to `cpu`/`hpu`/`xpu` according to your framework.
+Specify your available host ip and port, and a code-generation model (`ise-uiuc/Magicoder-S-DS-6.7B` is recommended for its accuracy). Remember to set `device` to `cpu`/`hpu` according to your framework.
 
 
 ### Start NeuralChat Service
