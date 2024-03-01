@@ -1,0 +1,16 @@
+torch
+modelscope
+jsonlines
+beautifulsoup4
+easyocr
+langchain==0.0.354
+langchain_core==0.1.18
+langid
+PyMuPDF
+python-docx
+sentence-transformers==2.3.1
+numpy
+faiss-gpu
+transformers
+accelerate
+openpyxl
