@@ -17,6 +17,7 @@
 
 import os
 import json
+import torch
 import logging
 from collections import OrderedDict
 from intel_extension_for_transformers.transformers import OptimizedModel
@@ -37,19 +38,57 @@ class OptimizedInstructorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer)
 
     def _load_model(self, model_name_or_path, config, cache_dir, **model_args):
         """Loads the transformer model"""
-        if isinstance(config, T5Config):
-            self._load_t5_model(model_name_or_path, config, cache_dir, **model_args)
-        elif isinstance(config, MT5Config):
-            self._load_mt5_model(model_name_or_path, config, cache_dir, **model_args)
+        self.auto_model = OptimizedModel.from_pretrained(model_name_or_path,
+                                                            config=config,
+                                                            cache_dir=cache_dir,
+                                                            **model_args)
+        if isinstance(self.auto_model, torch.jit.ScriptModule):
+            setattr(self.auto_model, "config", config)
+
+    def forward(self, features):
+        """Returns token_embeddings, cls_token"""
+        trans_features = {'input_ids': features['input_ids'], 'attention_mask': features['attention_mask']}
+        if 'token_type_ids' in features:
+            trans_features['token_type_ids'] = features['token_type_ids']
+
+        context_masks = None
+        if 'context_masks' in features:
+            context_masks = features['context_masks']
+
+        if isinstance(self.auto_model, torch.jit.ScriptModule):
+            output_states = self.auto_model(**trans_features)
+            if isinstance(output_states, dict):
+                output_states = tuple(output_states.values())
+            output_tokens = output_states[0]
         else:
-            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path,
-                                                             config=config,
-                                                             cache_dir=cache_dir,
-                                                             **model_args)
+            output_states = self.auto_model(**trans_features, return_dict=False)
+            output_tokens = output_states[0]
+        attention_mask = features['attention_mask']
+        if context_masks is not None:
+            assert len(context_masks) == len(attention_mask)
+            n = len(attention_mask)
+            for local_idx in range(n):
+                assert torch.sum(attention_mask[local_idx]).item() >= context_masks[local_idx].item(),\
+                    f'{attention_mask[local_idx]}, {context_masks[local_idx]}, ' \
+                    f'{torch.sum(attention_mask[local_idx]).item()}, {context_masks[local_idx].item()}'
+                attention_mask[local_idx][:context_masks[local_idx]] = 0
+
+        features.update({'token_embeddings': output_tokens, 'attention_mask': attention_mask})
+
+        if self.auto_model.config.output_hidden_states:
+            all_layer_idx = 2
+            if len(output_states) < 3: #Some models only output last_hidden_states and all_hidden_states
+                all_layer_idx = 1
+
+            hidden_states = output_states[all_layer_idx]
+            features.update({'all_layer_embeddings': hidden_states})
+
+        return features
 
 class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
     def __init__(self, *args, **kwargs):
         """Initialize the OptimizedInstructor."""
+        self._jit_model = False
         super().__init__(*args, **kwargs)
 
     def _load_auto_model(self,
@@ -67,6 +106,8 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
             model_args={"token": token, "trust_remote_code": trust_remote_code, "revision": revision},
             tokenizer_args={"token": token, "trust_remote_code": trust_remote_code, "revision": revision},
             )
+        if isinstance(transformer_model.auto_model, torch.jit.ScriptModule):
+            self._jit_model = True
         pooling_model = sentence_transformers.models.Pooling(
             transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
@@ -149,6 +190,8 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                 else:
                     kwargs["tokenizer_args"] = hub_kwargs
                 module = OptimizedInstructorTransformer(model_name_or_path, cache_dir=cache_folder, **kwargs)
+                if isinstance(module.auto_model, torch.jit.ScriptModule):
+                    self._jit_model = True
             elif module_class == sentence_transformers.models.Pooling:
                 module_class = InstructorEmbedding.INSTRUCTOR_Pooling
                 module_path = sentence_transformers.util.load_dir_path(
@@ -175,3 +218,10 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
             modules[module_config['name']] = module
 
         return modules
+
+    def encode(self, sentences, device=None, *args, **kwargs):
+        if self._jit_model and device is None:
+            # set default device to 'cpu' for jit model, otherwise may fail when getting device
+            return super().encode(sentences, device='cpu', *args, **kwargs)
+        else:
+            return super().encode(sentences, device=device, *args, **kwargs)

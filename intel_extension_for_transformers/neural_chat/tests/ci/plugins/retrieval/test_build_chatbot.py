@@ -97,12 +97,12 @@ class TestBuildChatbot(unittest.TestCase):
 
     def test_build_chatbot_with_retrieval_plugin_bge_int8(self):
         if self.device != "cpu":
-            self.skipTest("Only support Intel/bge-base-en-v1.5-sts-int8-static run on Intel CPU")
+            self.skipTest("Only support Intel/bge-small-en-v1.5-sts-int8-static run on Intel CPU")
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../../../README.md"
-        # Intel/bge-base-en-v1.5-sts-int8-static is private now, so we need to load it from local.
+        # Intel/bge-small-en-v1.5-sts-int8-static is private now, so we need to load it from local.
         plugins.retrieval.args["embedding_model"] = \
-            "/tf_dataset2/inc-ut/bge-base-en-v1.5-sts-int8-static"
+            "/tf_dataset2/inc-ut/embedding_models/itrex-int8/bge-small-en-v1.5-int8-static"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
@@ -126,10 +126,26 @@ class TestBuildChatbot(unittest.TestCase):
             self.assertIsNotNone(response)
             plugins.retrieval.enable = False
 
-        # test local file
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/gte-base")
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-large")
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-base-en-v1.5")
+        # test fp32 model
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/fp32/paraphrase-multilingual-mpnet-base-v2")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/fp32/bge-small-en-v1.5")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/fp32/instructor-base")
+
+        # test itrex optimized model
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/paraphrase-multilingual-mpnet-base-v2-int8-static")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-small-en-v1.5-int8-static")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-base-int8-static")
+
+        # test itrex optimized model in sentence-transformers format
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/paraphrase-multilingual-mpnet-base-v2-int8-static-st")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-small-en-v1.5-int8-static-st")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-base-int8-static-st")
+
+        # test ipex optimized model
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/paraphrase-multilingual-mpnet-base-v2-int8-static-ipex")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-small-en-v1.5-int8-static-ipex")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-base-int8-static-ipex")
+
 
 if __name__ == "__main__":
     unittest.main()
