@@ -79,7 +79,7 @@ class HuggingfaceModel(BaseModel):
             the predict string of endpoint
         """
         return self._predict(query=query, config=config, stream=False)
-    
+
     def predict_stream(self, query, config: GenerationConfig = None):
         """Customized Huggingface endpoint predict_stream.
 
@@ -91,5 +91,3 @@ class HuggingfaceModel(BaseModel):
             the predict string of endpoint
         """
         return self._predict(query=query, config=config, stream=True)
-        
-
