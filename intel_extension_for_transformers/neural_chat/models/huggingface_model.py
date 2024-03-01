@@ -36,20 +36,10 @@ class HuggingfaceModel(BaseModel):
         self.model_name = hf_endpoint_url
         logger.info(f"HuggingfaceModel initialized.")
 
-    def predict(self, query, config: GenerationConfig = None):
-        """Customized OpenAI model predict.
-
-        Args:
-            query: List[Dict], usually contains system prompt + user prompt.
-            config: GenerationConfig, provides the needed inference parameters such as top_p, max_tokens.
-
-        Returns:
-            the result string of one single choice
-        """
+    def _predict(self, query, config: GenerationConfig = None, stream=False):
         if not config:
             config = GenerationConfig()
-
-        # Only supported retrieval plugin for now
+        
         plugin_name = "retrieval"
         new_user_prompt = query
         if is_plugin_enabled(plugin_name):
@@ -69,46 +59,37 @@ class HuggingfaceModel(BaseModel):
             temperature=config.temperature,
             top_k=config.top_k,
             top_p=config.top_p,
-            stream=False)
-        
-        return response
+            stream=stream)
+
+        if stream:
+            for token in response:
+                yield token
+        else:
+            return response
+
+
+    def predict(self, query, config: GenerationConfig = None):
+        """Customized Huggingface endpoint predict.
+
+        Args:
+            query: string, user query
+            config: GenerationConfig, provides the needed inference parameters such as top_p, max_tokens.
+
+        Returns:
+            the predict string of endpoint
+        """
+        return self._predict(query=query, config=config, stream=False)
     
     def predict_stream(self, query, config: GenerationConfig = None):
-        """Customized OpenAI model predict.
+        """Customized Huggingface endpoint predict_stream.
 
         Args:
-            query: List[Dict], usually contains system prompt + user prompt.
+            query: string, user query
             config: GenerationConfig, provides the needed inference parameters such as top_p, max_tokens.
 
         Returns:
-            the result string of one single choice
+            the predict string of endpoint
         """
-        if not config:
-            config = GenerationConfig()
-
-        # Only supported retrieval plugin for now
-        plugin_name = "retrieval"
-        new_user_prompt = query
-        if is_plugin_enabled(plugin_name):
-            plugin_instance = get_plugin_instance(plugin_name)
-            try:
-                new_user_prompt, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
-            except Exception as e:
-                if "[Rereieval ERROR] intent detection failed" in str(e):
-                    set_latest_error(ErrorCodes.ERROR_INTENT_DETECT_FAIL)
-                return
-        assert new_user_prompt is not None, "Query cannot be None."
-
-        response = self.hf_client.text_generation(prompt=new_user_prompt,
-            max_new_tokens=config.max_new_tokens,
-            do_sample=config.do_sample,
-            repetition_penalty=config.repetition_penalty,
-            temperature=config.temperature,
-            top_k=config.top_k,
-            top_p=config.top_p,
-            stream=True)
-        
-        for token in response:
-            yield token
+        return self._predict(query=query, config=config, stream=True)
         
 
