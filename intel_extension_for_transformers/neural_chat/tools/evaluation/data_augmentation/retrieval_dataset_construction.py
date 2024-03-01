@@ -52,12 +52,12 @@ def construct_retrieval_dataset(
                      use_cache)
 
    output_hn_path=output_raw_path+'_minedHN.jsonl'
- 
-   mine_hard_negatives(embedding_model, 
-                       output_raw_path, 
-                       output_hn_path, 
-                       range_for_sampling, 
-                       negative_number, 
+
+   mine_hard_negatives(embedding_model,
+                       output_raw_path,
+                       output_hn_path,
+                       range_for_sampling,
+                       negative_number,
                        use_gpu_for_searching)
 
    output_json_split_path = output_raw_path+"_minedHN_split.jsonl"

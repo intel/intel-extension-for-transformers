@@ -19,11 +19,11 @@ import jsonlines
 from hn_mine import find_knn_neg
 from sentence_transformers import SentenceTransformer
 
-def mine_hard_negatives(model_name_or_path, 
-                        input_file, 
-                        output_file, 
-                        range_for_sampling, 
-                        negative_number, 
+def mine_hard_negatives(model_name_or_path,
+                        input_file,
+                        output_file,
+                        range_for_sampling,
+                        negative_number,
                         use_gpu_for_searching):
    candidate_pool=None
 

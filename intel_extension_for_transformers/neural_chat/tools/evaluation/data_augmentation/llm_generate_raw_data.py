@@ -40,8 +40,8 @@ def document_append(data_collection):
         documents.append(data)
     return documents
 
-def raw_data_generate(model_id, 
-                      base_dir, 
+def raw_data_generate(model_id,
+                      base_dir,
                       file_json_path,
                       temperature,
                       top_p,
