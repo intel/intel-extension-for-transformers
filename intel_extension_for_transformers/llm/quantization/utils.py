@@ -285,7 +285,9 @@ def convert_to_quantized_model(model, config, device="cpu"):
             input_ids_padded = []
             for text in batch:
                 input_ids = text["input_ids"]
-                input_ids = input_ids[:config.algorithm_args["seq_len"]] if (len(input_ids) > config.algorithm_args["seq_len"]) else input_ids
+                if input_ids.shape[0] < config.algorithm_args["seq_len"]:
+                    continue
+                input_ids = input_ids[:config.algorithm_args["seq_len"]]
                 input_ids_list = input_ids.tolist()
                 if input_ids_list.count(input_ids_list[-1]) > config.algorithm_args["seq_len"] // 2:
                     continue
