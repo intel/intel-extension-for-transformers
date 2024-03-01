@@ -19,7 +19,7 @@ import jsonlines
 from hn_mine import find_knn_neg
 from sentence_transformers import SentenceTransformer
 
-def mine_hard_negatives(model_name_or_path, input_file, output_file, range_for_sampling, negative_number, use_gpu_for_searching):   
+def mine_hard_negatives(model_name_or_path, input_file, output_file, range_for_sampling, negative_number, use_gpu_for_searching):
    candidate_pool=None
 
    sample_range = range_for_sampling.split('-')
@@ -59,4 +59,3 @@ def similarity_check(file_jsonl_path,file_json_split_path,model_name_or_path, si
                      }
                   with jsonlines.open(file_json_split_path,"a") as file_json:
                      file_json.write(data)
-

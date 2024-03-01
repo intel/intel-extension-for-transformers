@@ -68,7 +68,7 @@ class DocumentLoading:
                 logging.error("The given link/str is unavailable. Please try another one!")
         else:
             logging.error("The input format is invalid!")
-               
+
         documents = []
         for data, metadata in data_collection:
              if len(data) < 5:
@@ -149,22 +149,22 @@ def raw_data_generate(model_id, base_dir, file_json_path,temperature,top_p,top_k
    documents = DocumentLoading().data_load(input=base_dir)
 
    generation_config = GenerationConfig(
-   temperature = temperature, 
-   top_p = top_p, 
-   top_k = top_k, 
-   repetition_penalty = repetition_penalty, 
-   max_new_tokens = max_new_tokens, 
-   do_sample = do_sample, 
-   num_beams = num_beams, 
-   num_return_sequences = num_return_sequences, 
+   temperature = temperature,
+   top_p = top_p,
+   top_k = top_k,
+   repetition_penalty = repetition_penalty,
+   max_new_tokens = max_new_tokens,
+   do_sample = do_sample,
+   num_beams = num_beams,
+   num_return_sequences = num_return_sequences,
    use_cache = use_cache,
    pad_token_id=tokenizer.eos_token_id
    )
 
    for i in range(len(documents)):
       context = documents[i]
-      
-      if context: 
+
+      if context:
          input = QUERYGENERATE_PROMPT.format(context=context)
 
          model_input = tokenizer(input, return_tensors="pt").to("cuda")
@@ -177,15 +177,15 @@ def raw_data_generate(model_id, base_dir, file_json_path,temperature,top_p,top_k
                res=tokenizer.decode(res, skip_special_tokens=True)
 
             res = res[res.find('Generated questions:') :]
-            res = re.sub('Generated questions:', '', res) 
-            res = re.sub('---', '', res) 
+            res = re.sub('Generated questions:', '', res)
+            res = re.sub('---', '', res)
 
             res = res.split("?")[0:2]
             for r in res:
                r = r.replace('1.', "").replace('2.', "")
                r = r.replace('Evaluation:', "")
                r = r.replace('#', " ").replace(r'\t', " ").replace('\n', ' ').replace('\n\n', ' ').strip()
-               r = r + '?'    
+               r = r + '?'
                result.append(r)
 
          result_str=''

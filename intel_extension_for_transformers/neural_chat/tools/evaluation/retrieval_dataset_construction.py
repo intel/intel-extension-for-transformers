@@ -20,9 +20,9 @@ from mine_hard_negatives_check_similarity import mine_hard_negatives, similarity
 import argparse
 
 def construct_retrieval_dataset(
-      llm_model, 
-      embedding_model, 
-      input_dir, 
+      llm_model,
+      embedding_model,
+      input_dir,
       output_raw_path,
       temperature,
       top_p,
@@ -32,16 +32,16 @@ def construct_retrieval_dataset(
       do_sample,
       num_beams,
       num_return_sequences,
-      use_cache, 
-      range_for_sampling, 
-      negative_number, 
+      use_cache,
+      range_for_sampling,
+      negative_number,
       use_gpu_for_searching,
       similarity_threshold):
 
    raw_data_generate(llm_model,input_dir,output_raw_path,temperature,top_p,top_k,repetition_penalty,max_new_tokens,do_sample,num_beams,num_return_sequences,use_cache)
 
    output_hn_path=output_raw_path+'_minedHN.jsonl'
- 
+
    mine_hard_negatives(embedding_model, output_raw_path, output_hn_path, range_for_sampling, negative_number, use_gpu_for_searching)
 
    output_json_split_path = output_raw_path+"_minedHN_split.jsonl"
@@ -67,7 +67,7 @@ def main():
 
    parser.add_argument("--range_for_sampling", type=str, default='2-10')
    parser.add_argument("--negative_number", type=int, default=5)
-   parser.add_argument("--use_gpu_for_searching", type=bool, default=True) 
+   parser.add_argument("--use_gpu_for_searching", type=bool, default=True)
 
    parser.add_argument("--similarity_threshold", type=float, default=0.6)
 
@@ -95,9 +95,9 @@ def main():
    similarity_threshold=args.similarity_threshold
 
    construct_retrieval_dataset(
-      llm_model, 
-      embedding_model, 
-      input_dir, 
+      llm_model,
+      embedding_model,
+      input_dir,
       output_raw_path,
       temperature,
       top_p,
@@ -107,9 +107,9 @@ def main():
       do_sample,
       num_beams,
       num_return_sequences,
-      use_cache, 
-      range_for_sampling, 
-      negative_number, 
+      use_cache,
+      range_for_sampling,
+      negative_number,
       use_gpu_for_searching,
       similarity_threshold)
 
