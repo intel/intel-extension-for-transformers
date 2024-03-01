@@ -70,9 +70,9 @@ class HuggingfaceModel(BaseModel):
             top_k=config.top_k,
             top_p=config.top_p,
             stream=False)
-        
+
         return response
-    
+
     def predict_stream(self, query, config: GenerationConfig = None):
         """Customized OpenAI model predict.
 
@@ -107,8 +107,7 @@ class HuggingfaceModel(BaseModel):
             top_k=config.top_k,
             top_p=config.top_p,
             stream=True)
-        
+
         for token in response:
             yield token
-        
 
