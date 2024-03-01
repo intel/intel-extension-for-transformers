@@ -39,7 +39,7 @@ class HuggingfaceModel(BaseModel):
     def _predict(self, query, config: GenerationConfig = None, stream=False):
         if not config:
             config = GenerationConfig()
-        
+
         plugin_name = "retrieval"
         new_user_prompt = query
         if is_plugin_enabled(plugin_name):
