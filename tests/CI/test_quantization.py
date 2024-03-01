@@ -465,6 +465,7 @@ class TestQuantization(unittest.TestCase):
             "iters": 5,
             "scale_dtype": "fp32",
             "device": "cpu",
+            "export_args": {"format": "itrex", "inplace": False}
         }
         woq_config = WeightOnlyQuantConfig(weight_dtype="int4_clip",
                                         algorithm_args=algorithm_args,
@@ -476,7 +477,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17669981718063354, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.173023983836174, rel_tol=1e-04))
 
     def test_export(self):
         # test model with model_id

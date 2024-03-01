@@ -312,6 +312,7 @@ elif args.woq:
             "iters": args.calib_iters,
             "scale_dtype": "fp32",
             "device": "cpu",
+            "export_args": {"format": "itrex", "inplace": False}
         }
         quantization_config = WeightOnlyQuantConfig(
             compute_dtype=args.woq_compute_dtype,
