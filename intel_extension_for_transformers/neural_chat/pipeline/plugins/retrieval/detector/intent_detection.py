@@ -27,7 +27,7 @@ class IntentDetector:
 
     def intent_detection(self, model_name, query):
         """Using the LLM to detect the intent of the user query."""
-        if is_openai_model(model_name):
+        if is_openai_model(model_name) or "http" in model_name:
             return query
         prompt = generate_intent_prompt(query)
         params = {}
