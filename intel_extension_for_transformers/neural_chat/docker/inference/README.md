@@ -22,7 +22,7 @@ docker pull intel/ai-tools:itrex-chatbot
 
 If you have downloaded models and dataset locally, just mount the files to the docker container using '-v'. Make sure using the absolute path for host_dir.
 ```bash
-docker run -it -v ${host_dir}:${mount_dir} ${IMAGE_NAME}:${IMAGE_TAG}
+docker run -it --name="chatbot" -v ${host_dir}:${mount_dir} ${IMAGE_NAME}:${IMAGE_TAG}
 ```
 
 >**Note**: `${host_dir}` is your local directory, `${mount_dir}` is the docker's directory. If you need to use proxy, add `-e http_proxy=${http_proxy} -e https_proxy=${https_proxy}`
@@ -39,8 +39,9 @@ docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extens
 ```
 
 ```bash
-docker run -it chatbotinfer:latest /bin/bash
+docker run -it --name="chatbot" chatbotinfer:latest /bin/bash
 ```
+
 
 ### Setup Habana Gaudi Environment
 ```bash
@@ -51,8 +52,17 @@ If you need to set proxy settings:
 
 ```bash
 DOCKER_BUILDKIT=1 docker build --network=host --tag chatbothabana:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile  --target hpu
-docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host ${IMAGE_NAME}:${IMAGE_TAG} 
+docker run -it --name="chatbot" --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host ${IMAGE_NAME}:${IMAGE_TAG} 
 ```
+
+### Simple Test using Docker Container
+```bash
+docker exec -it "chatbot" /bin/bash
+cd intel_extension_for_transformers/neural_chat/tests/ci/api
+python test_inference.py
+
+```
+
 
 ## Run the Inference
 You can use the generate.py script for performing direct inference on Habana Gaudi instance. We have enabled BF16 to speed up the inference. Please use the following command for inference.

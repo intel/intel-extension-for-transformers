@@ -9,13 +9,16 @@ Following the instruction of this README.md, you will start a Text Generation HT
 Use Dockerfile to build Docker image in your environment. The `chat`, `chat q&a`, and `document/report summary` use cases share the same Dockerfile. 
 
 All you need to do is to choose the right Dockerfile according to your architecture. The following example is for CPU.
+
 ```bash
-cd ./cpu
-docker build . -f Dockerfile -t neuralchat_text_generation:latest
+docker build . -f cpu/Dockerfile -t neuralchat_text_generation:latest
 ```
+
 If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` like below.
+
+
 ```bash
-docker build . -f Dockerfile -t neuralchat_text_generation:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
+docker build . -f cpu/Dockerfile -t neuralchat_text_generation:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
 ```  
 
 ### Prepare Configuration File and Documents
@@ -47,18 +50,24 @@ The specific meaning of each parameter is explaine below:
 - `--name chat_qna`: The name of your docker container, you can set it differently as you need.
 - `neuralchat_chat_qna:latest`: The name of the Docker image you created just now.
 
-If you need to set proxy settings, use the command below.
+If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`.
+
 ```bash
-docker run -it --net=host --ipc=host --name chat_qna -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_chat_qna:latest
+docker run -it --net=host --ipc=host --name chat_qna -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_chat_qna:latest
 ```
 
 
-## Consume the Service
+## Consume the Service with Simple Test
 when `docker run` command is successfully executed, you can consume the HTTP services offered by NeuralChat. The Restful API of NeuralChat is compatible with OpenAI, so you can use the same request body as OpenAI.
+
+
+Please substitute `http://127.0.0.1` with your IP and `8000` with the port written in yaml.
+
+
 
 ### Consume Chat Service
 ```bash
-curl ${your_ip}:${your_port_in_yaml}/v1/chat/completions \
+curl http://127.0.0.1:8000/v1/chat/completions \
  -X POST \
  -d '{"model": "Intel/neural-chat-7b-v3-1", "stream": true, "messages": [
   {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}]}' \
@@ -68,7 +77,7 @@ curl ${your_ip}:${your_port_in_yaml}/v1/chat/completions \
 
 ### Consume ChatQnA Service
 ```bash
-curl ${your_ip}:${your_port_in_yaml}/v1/chat/completions \
+curl http://127.0.0.1:8000/v1/chat/completions \
  -X POST \
  -d '{"model": "Intel/neural-chat-7b-v3-1", "stream": true, "messages": [
   {"role": "user", "content": "What is RAG?"}]}' \
@@ -77,7 +86,7 @@ curl ${your_ip}:${your_port_in_yaml}/v1/chat/completions \
 
 ### Consume Summary Service
 ```bash
-curl ${your_ip}:${your_port_in_yaml}/v1/chat/completions \
+curl http://127.0.0.1:8000/v1/chat/completions \
  -X POST \
  -d '{"model": "Intel/neural-chat-7b-v3-1", "stream": true, "messages": [
   {"role": "system", "content": "You are a Summary Chatbot designed to help users quickly understand the main points of given texts. Your primary skill is summarization, which involves condensing lengthy information into concise, easily digestible summaries. When users provide you with text, whether it is an article, a document, or any form of written content, your task is to analyze the content and produce a summary that captures the essential information and key points. You should ensure that your summaries are accurate, neutral, and free from personal opinions or interpretations. Your goal is to save users time and make information more accessible by highlighting the most important aspects of the content they are interested in."},
