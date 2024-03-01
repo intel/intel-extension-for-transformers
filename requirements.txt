@@ -2,10 +2,10 @@
 accelerate
 cmake>=3.16
 gguf
+git+https://github.com/intel/auto-round.git@b65830f3f6cb32d92a5c8ba5f80ace12d517357b
 ninja
 optimum-intel
 py-cpuinfo
 setuptools>=65
 setuptools_scm[toml]>=6.2
 torch==2.2.0+cpu
-git+https://github.com/intel/auto-round.git@b65830f3f6cb32d92a5c8ba5f80ace12d517357b
