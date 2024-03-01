@@ -39,7 +39,7 @@ def document_append(data_collection):
             continue
         documents.append(data)
     return documents
-    
+
 def raw_data_generate(model_id, base_dir, file_json_path,temperature,top_p,top_k,repetition_penalty,max_new_tokens,do_sample,num_beams,num_return_sequences,use_cache):
    tokenizer = AutoTokenizer.from_pretrained(model_id)
    model = AutoModelForCausalLM.from_pretrained(model_id, device_map='auto', torch_dtype=torch.float16)
