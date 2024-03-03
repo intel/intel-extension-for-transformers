@@ -5,7 +5,7 @@ datasets==2.14.7
 einops
 evaluate
 gguf
-git+https://github.com/intel/auto-round.git@a868c805de4be271cfe7403309a64d9bf03a0ecf
+git+https://github.com/intel/auto-round.git@b65830f3f6cb32d92a5c8ba5f80ace12d517357b
 git+https://github.com/intel/neural-compressor.git
 intel-extension-for-pytorch==2.2.0
 intel-tensorflow==2.14.0
