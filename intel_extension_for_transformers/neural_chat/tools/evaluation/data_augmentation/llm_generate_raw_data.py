@@ -54,7 +54,7 @@ def raw_data_generate(model_id,
                       use_cache):
    tokenizer = AutoTokenizer.from_pretrained(model_id)
    model = AutoModelForCausalLM.from_pretrained(model_id, device_map='auto', torch_dtype=torch.float16)
-   data_collection = DocumentParser().data_load(input=base_dir)
+   data_collection = DocumentParser().load(input=base_dir)
    documents = document_append(data_collection)
 
    generation_config = GenerationConfig(
