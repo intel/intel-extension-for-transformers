@@ -24,15 +24,16 @@ from accelerate import init_empty_weights
 from datasets import load_dataset
 from neural_compressor import quantization
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
-from auto_round.export.export_to_itrex.model_wrapper import WeightOnlyLinear as auto_round_woqlinear
 from neural_compressor.utils.utility import LazyImport
 from neural_compressor.config import PostTrainingQuantConfig
-from ...utils.utils import is_ipex_available
+from ...utils.utils import is_ipex_available, is_autoround_avaliable
 from transformers import AutoTokenizer
 
 if is_ipex_available():
     import intel_extension_for_pytorch as ipex
 
+if is_autoround_available():
+    from auto_round.export.export_to_itrex.model_wrapper import WeightOnlyLinear as auto_round_woqlinear
 
 torch = LazyImport("torch")
 
@@ -106,7 +107,7 @@ def _replace_linear(
         is_removed = False
 
         if (isinstance(module, torch.nn.Linear) or isinstance(module, WeightOnlyLinear)
-            or isinstance(module, auto_round_woqlinear) or (is_ipex_available()
+            or (is_autoround_avaliable() and isinstance(module, auto_round_woqlinear)) or (is_ipex_available()
             and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
             and (name not in modules_to_not_convert):
             # Check if the current key is not in the `modules_to_not_convert`
