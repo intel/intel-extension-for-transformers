@@ -23,7 +23,7 @@ import os, re
 from typing import List
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser
 import logging
-from intel_extension_for_transformers.neural_chat.prompts.prompt import QUERYGENERATE_PROMPT  # pylint: disable=E0611
+from intel_extension_for_transformers.neural_chat.prompts.prompt import QUERYGENERATE_PROMPT
 from transformers import GenerationConfig
 
 logging.basicConfig(
