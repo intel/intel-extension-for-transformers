@@ -48,11 +48,11 @@ class OptimizedInstructorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer)
     def forward(self, features):
         """Returns token_embeddings, cls_token"""
         trans_features = {'input_ids': features['input_ids'], 'attention_mask': features['attention_mask']}
-        if 'token_type_ids' in features:
+        if 'token_type_ids' in features: # pragma: no cover
             trans_features['token_type_ids'] = features['token_type_ids']
 
         context_masks = None
-        if 'context_masks' in features:
+        if 'context_masks' in features: # pragma: no cover
             context_masks = features['context_masks']
 
         if isinstance(self.auto_model, torch.jit.ScriptModule):

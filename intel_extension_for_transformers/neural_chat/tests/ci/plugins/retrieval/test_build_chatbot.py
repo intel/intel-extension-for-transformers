@@ -132,19 +132,19 @@ class TestBuildChatbot(unittest.TestCase):
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/fp32/instructor-base")
 
         # test itrex optimized model
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/paraphrase-multilingual-mpnet-base-v2-int8-static")
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-small-en-v1.5-int8-static")
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-base-int8-static")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/itrex-int8/paraphrase-multilingual-mpnet-base-v2-int8-static")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/itrex-int8/bge-small-en-v1.5-int8-static")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/itrex-int8/instructor-base-int8-static")
 
         # test itrex optimized model in sentence-transformers format
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/paraphrase-multilingual-mpnet-base-v2-int8-static-st")
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-small-en-v1.5-int8-static-st")
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-base-int8-static-st")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/sentence-transformers-int8/paraphrase-multilingual-mpnet-base-v2-int8-static-st")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/sentence-transformers-int8/bge-small-en-v1.5-int8-static-st")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/sentence-transformers-int8/instructor-base-int8-static-st")
 
         # test ipex optimized model
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/paraphrase-multilingual-mpnet-base-v2-int8-static-ipex")
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-small-en-v1.5-int8-static-ipex")
-        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-base-int8-static-ipex")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/ipex-int8/paraphrase-multilingual-mpnet-base-v2-int8-static-ipex")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/ipex-int8/bge-small-en-v1.5-int8-static-ipex")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/ipex-int8/instructor-base-int8-static-ipex")
 
 
 if __name__ == "__main__":
