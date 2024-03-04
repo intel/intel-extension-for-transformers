@@ -33,7 +33,7 @@ if is_ipex_available():
     import intel_extension_for_pytorch as ipex
 
 if is_autoround_available():
-    from auto_round.export.export_to_itrex.model_wrapper import WeightOnlyLinear as auto_round_woqlinear
+    from auto_round.export.export_to_itrex.model_wrapper import WeightOnlyLinear as auto_round_woqlinear # pylint: disable=E0401
 
 torch = LazyImport("torch")
 
