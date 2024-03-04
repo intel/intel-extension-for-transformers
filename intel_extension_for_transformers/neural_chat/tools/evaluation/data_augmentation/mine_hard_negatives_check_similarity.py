@@ -33,7 +33,7 @@ def mine_hard_negatives(model_name_or_path,
    model = SentenceTransformer(model_name_or_path)
 
    find_knn_neg(model,
-               input_file=input_file,
+               input_file=input_file+'.jsonl',
                candidate_pool=candidate_pool,
                output_file=output_file,
                sample_range=sample_range,
