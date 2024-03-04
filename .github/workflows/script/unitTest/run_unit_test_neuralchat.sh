@@ -83,7 +83,6 @@ function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh ${WORKING_DIR}
     apt-get update
     apt-get install ffmpeg -y
-    apt-get install lsof
     apt-get install libgl1
     apt-get install -y libgl1-mesa-glx
     apt-get install -y libgl1-mesa-dev
