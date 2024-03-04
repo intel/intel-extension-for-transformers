@@ -32,6 +32,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 def document_append(data_collection):
     documents = []
     for data, metadata in data_collection:
@@ -75,8 +77,10 @@ def raw_data_generate(model_id,
 
       if context:
          input = QUERYGENERATE_PROMPT.format(context=context)
-
-         model_input = tokenizer(input, return_tensors="pt").to("cuda")
+         if device=="cpu":
+            model_input = tokenizer(input, return_tensors="pt")
+         elif device=="cuda":
+            model_input = tokenizer(input, return_tensors="pt").to("cuda")
          model.eval()
          result = []
 
