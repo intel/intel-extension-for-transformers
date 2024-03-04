@@ -36,7 +36,9 @@ Remember to set `device` to `cpu`/`hpu` according to your architecture.
 
 
 ### Start NeuralChat Service
-Use the following command to start NeuralChat Text Generation service. The example of starting a `chat` service is represented as below.
+Use the following command to start NeuralChat Text Generation service. 
+
+#### Example of `Chat` Service.
 
 Make sure the specified `port` is available, and `device` is correctly set.
 
@@ -57,6 +59,39 @@ If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_prox
 docker run -it --net=host --ipc=host --name text_gen -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v ./chat.yaml:/text_generation.yaml neuralchat_text_generation:latest
 ```
 
+#### Example of `Chat Q&A` Service.
+
+```bash
+docker run -it --net=host --ipc=host --name text_gen -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_text_generation:latest
+```
+
+The specific meaning of each parameter is explaine below:
+- `-v`: Mount `chatqna.yaml` file into docker container from your local server.
+- `-v`: Mount `rag_docs` into the path written in `chatqna.yaml: input_path`
+
+If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`.
+
+```bash
+docker run -it --net=host --ipc=host --name text_gen -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs  -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" neuralchat_text_generation:latest
+```
+
+
+#### Example of `Summary` Service.
+
+```bash
+docker run -it --net=host --ipc=host --name text_gen -v ./summary.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_text_generation:latest
+```
+
+The specific meaning of each parameter is explaine below:
+- `-v`: Mount `summary.yaml` file into docker container from your local server.
+- `-v`: Mount `rag_docs` into the path written in `summary.yaml: input_path`
+
+If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`.
+
+```bash
+docker run -it --net=host --ipc=host --name text_gen -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v ./summary.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_text_generation:latest
+```
+
 
 ## Consume the Service with Simple Test
 when `docker run` command is successfully executed, you can consume the HTTP services offered by NeuralChat. The Restful API of NeuralChat is compatible with OpenAI, so you can use the same request body as OpenAI.
@@ -66,30 +101,30 @@ Please substitute `http://127.0.0.1` with your IP and `8000` with the port writt
 
 
 
-### Consume Chat Service
+### Consume `Chat` Service
 ```bash
 curl http://127.0.0.1:8000/v1/chat/completions \
  -X POST \
- -d '{"model": "Intel/neural-chat-7b-v3-1", "stream": true, "messages": [
+ -d '{"model": "Intel/neural-chat-7b-v3-1", "stream": false, "messages": [
   {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}]}' \
  -H 'Content-Type: application/json'
 ```
 
 
-### Consume ChatQnA Service
+### Consume `Chat Q&A` Service
 ```bash
 curl http://127.0.0.1:8000/v1/chat/completions \
  -X POST \
- -d '{"model": "Intel/neural-chat-7b-v3-1", "stream": true, "messages": [
+ -d '{"model": "Intel/neural-chat-7b-v3-1", "stream": false, "messages": [
   {"role": "user", "content": "What is RAG?"}]}' \
  -H 'Content-Type: application/json'
 ```
 
-### Consume Summary Service
+### Consume `Summary` Service
 ```bash
 curl http://127.0.0.1:8000/v1/chat/completions \
  -X POST \
- -d '{"model": "Intel/neural-chat-7b-v3-1", "stream": true, "messages": [
+ -d '{"model": "Intel/neural-chat-7b-v3-1", "stream": false, "messages": [
   {"role": "system", "content": "You are a Summary Chatbot designed to help users quickly understand the main points of given texts. Your primary skill is summarization, which involves condensing lengthy information into concise, easily digestible summaries. When users provide you with text, whether it is an article, a document, or any form of written content, your task is to analyze the content and produce a summary that captures the essential information and key points. You should ensure that your summaries are accurate, neutral, and free from personal opinions or interpretations. Your goal is to save users time and make information more accessible by highlighting the most important aspects of the content they are interested in."},
   {"role": "user", "content": "Give me the Summary of Intel 2023 Annual Report."}]}' \
  -H 'Content-Type: application/json'
