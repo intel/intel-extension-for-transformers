@@ -15,8 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from llm_generate_raw_data import raw_data_generate
-from mine_hard_negatives_check_similarity import mine_hard_negatives, similarity_check
+from .llm_generate_raw_data import raw_data_generate
+from .mine_hard_negatives_check_similarity import mine_hard_negatives, similarity_check
 import argparse
 
 def construct_retrieval_dataset(
@@ -86,7 +86,7 @@ def main():
 
    parser.add_argument("--range_for_sampling", type=str, default='2-10')
    parser.add_argument("--negative_number", type=int, default=5)
-   parser.add_argument("--use_gpu_for_searching", type=bool, default=True)
+   parser.add_argument("--use_gpu_for_searching", type=bool, default=False)
 
    parser.add_argument("--similarity_threshold", type=float, default=0.6)
 
