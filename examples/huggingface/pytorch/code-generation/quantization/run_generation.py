@@ -136,7 +136,7 @@ parser.add_argument('--gptq_static_groups', action='store_true', help='Use deter
 # ============AUTOROUND configs==============
 parser.add_argument(
     "--autoround_nsamples",
-    type=int, default=128,
+    type=int, default=512,
     help="Number of calibration data samples.",
 )
 parser.add_argument(
@@ -301,6 +301,7 @@ elif args.woq:
             "iters": args.calib_iters,
             "scale_dtype": "fp32",
             "device": "cpu",
+            "export_args": {"format": "itrex", "inplace": False}
         }
         quantization_config = WeightOnlyQuantConfig(
             compute_dtype=args.woq_compute_dtype,
