@@ -19,7 +19,7 @@
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
      import generate_intent_prompt
 from intel_extension_for_transformers.neural_chat.models.model_utils import predict
-from intel_extension_for_transformers.neural_chat.utils.common import is_openai_model
+from intel_extension_for_transformers.neural_chat.utils.common import is_openai_model, is_hf_model
 
 class IntentDetector:
     def __init__(self):
@@ -27,7 +27,7 @@ class IntentDetector:
 
     def intent_detection(self, model_name, query):
         """Using the LLM to detect the intent of the user query."""
-        if is_openai_model(model_name):
+        if is_openai_model(model_name) or is_hf_model(model_name):
             return query
         prompt = generate_intent_prompt(query)
         params = {}

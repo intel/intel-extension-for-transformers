@@ -408,7 +408,7 @@ class _BaseQBitsAutoModelClass:
                 import intel_extension_for_pytorch as ipex
             except ImportError:
                 logger.warning("Please install Intel Extension for PyTorch to accelerate the model inference.")
-            assert (ipex.__version__ >= "2.1.0+cpu"), "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+            assert (ipex.__version__ >= "2.2.0+cpu"), "Please use Intel Extension for PyTorch >=2.2.0+cpu."
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
                 low_cpu_mem_usage=True,
@@ -424,8 +424,6 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "falcon" in model_type:
-                logger.warning("Please use transformers 4.33.3 if you would like to apply smoothquant to Falcon.")
             if "llama" in model_type and transformers.__version__ >= "4.36.0":
                 quantization_config.ipex_opt_llm = False
             logger.info("Applying SmoothQuant.")
@@ -434,7 +432,7 @@ class _BaseQBitsAutoModelClass:
                 if model_type in IPEX_OPT_LLM_SUPPORTED:
                     quantization_config.ipex_opt_llm = True
                     logger.info("quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used.")
-                    logger.warning("The suggested transformers version is 4.31.0.")
+                    logger.warning("The suggested transformers version is 4.35.2.")
                 else:
                     quantization_config.ipex_opt_llm = False
             if quantization_config.ipex_opt_llm:
@@ -487,12 +485,12 @@ class _BaseQBitsAutoModelClass:
                     calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
-                    if "prompt" in examples:
+                    if "code" in examples:
+                        example = tokenizer(examples["code"])
+                    elif "prompt" in examples:
                         example = tokenizer(examples["prompt"])
                     elif "text" in examples:
                         example = tokenizer(examples["text"])
-                    elif "code" in examples:
-                        example = tokenizer(examples["code"])
                     else:
                         logger.error("Please check dataset prompt identifier," +
                                      " NeelNanda/pile-10k is default used calibration dataset.")
