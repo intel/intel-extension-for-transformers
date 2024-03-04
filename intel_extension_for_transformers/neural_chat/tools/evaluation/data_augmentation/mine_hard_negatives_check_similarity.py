@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import jsonlines
-from hn_mine import find_knn_neg
+from .hn_mine import find_knn_neg
 from sentence_transformers import SentenceTransformer
 
 def mine_hard_negatives(model_name_or_path,
