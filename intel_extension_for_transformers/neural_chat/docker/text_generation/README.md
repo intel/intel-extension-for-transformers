@@ -36,24 +36,25 @@ Remember to set `device` to `cpu`/`hpu` according to your architecture.
 
 
 ### Start NeuralChat Service
-Use the following command to start NeuralChat Text Generation service. The example of starting a `chatqna` service is represented as below.
+Use the following command to start NeuralChat Text Generation service. The example of starting a `chat` service is represented as below.
 
 Make sure the specified `port` is available, and `device` is correctly set.
 
 ```bash
-docker run -it --net=host --ipc=host --name chat_qna -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_chat_qna:latest
+docker run -it --net=host --ipc=host --name text_gen -v ./chat.yaml:/text_generation.yaml neuralchat_text_generation:latest
 ```
+
 The specific meaning of each parameter is explaine below:
 - `docker run -it`: Create a docker container and launch it interactively.
 - `--net=host --ipc=host`: Configure the network of docker container.
-- `-v`: Mount `chatqna.yaml` file and your `rag_docs` into the docker container from your local server.
-- `--name chat_qna`: The name of your docker container, you can set it differently as you need.
-- `neuralchat_chat_qna:latest`: The name of the Docker image you created just now.
+- `-v`: Mount `chat.yaml` file the docker container from your local server.
+- `--name text_gen`: The name of your docker container, you can set it differently as you need.
+- `neuralchat_text_generation:latest`: The name of the Docker image you created just now.
 
 If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`.
 
 ```bash
-docker run -it --net=host --ipc=host --name chat_qna -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_chat_qna:latest
+docker run -it --net=host --ipc=host --name text_gen -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v ./chat.yaml:/text_generation.yaml neuralchat_text_generation:latest
 ```
 
 
