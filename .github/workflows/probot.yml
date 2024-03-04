@@ -1,4 +1,4 @@
-name: Probot
+name: CI-Summary
 
 on:
   pull_request:
