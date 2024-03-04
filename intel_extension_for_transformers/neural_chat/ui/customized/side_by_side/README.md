@@ -12,7 +12,7 @@ Side By Side</h1>
 
 Here're some of the project's features:
 
-- Start a Talking Chat：Compare the performance in output quality and response time between Gaudi2 and A100 using textual conversations.
+- Start a Text Chat：Compare the performance in output quality and response time between Gaudi2 and A100 using textual conversations.
 - Compare Concurrency Across Machines：One machine concurrently processes multiple requests and compares the time taken for each chat processing.
 - Upload File: The choice between uploading locally or copying a remote link. Chat according to uploaded knowledge base.
 
