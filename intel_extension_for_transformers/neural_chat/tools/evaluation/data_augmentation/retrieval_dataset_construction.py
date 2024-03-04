@@ -72,7 +72,7 @@ def main():
    parser.add_argument("--llm_model", type=str)
    parser.add_argument("--embedding_model", type=str)
    parser.add_argument("--input", type=str)
-   parser.add_argument("--output_raw_path", type=str)
+   parser.add_argument("--output", type=str)
 
    parser.add_argument("--temperature", type=float, default=0.8)
    parser.add_argument("--top_p", type=float, default=0.9)
@@ -95,7 +95,7 @@ def main():
    llm_model = args.llm_model
    embedding_model = args.embedding_model
    input = args.input
-   output_raw_path = args.output_raw_path
+   output = args.output
 
    temperature = args.temperature
    top_p = args.top_p
@@ -116,8 +116,8 @@ def main():
    construct_retrieval_dataset(
       llm_model,
       embedding_model,
-      input_dir,
-      output_raw_path,
+      input,
+      output,
       temperature,
       top_p,
       top_k,
