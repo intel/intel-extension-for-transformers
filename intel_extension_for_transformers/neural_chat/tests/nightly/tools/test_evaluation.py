@@ -41,8 +41,8 @@ class TestEvaluation(unittest.TestCase):
     def test_retrieval_dataset_construction(self):
         argv = ['--llm_model', '/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1', \
                 '--embedding_model', '/tf_dataset2/inc-ut/gte-base', \
-                '--input_dir', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/docs/retrieve_multi_doc/', \
-                '--output_raw_path', 'data', \
+                '--input', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/docs/retrieve_multi_doc/', \
+                '--output', 'data', \
                 '--range_for_sampling', '2-2', \
                 '--negative_number', '1']
 
