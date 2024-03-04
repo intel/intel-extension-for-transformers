@@ -43,7 +43,7 @@ def document_append(data_collection):
     return documents
 
 def raw_data_generate(model_id,
-                      base_dir,
+                      input_path,
                       file_json_path,
                       temperature,
                       top_p,
@@ -56,7 +56,7 @@ def raw_data_generate(model_id,
                       use_cache):
    tokenizer = AutoTokenizer.from_pretrained(model_id)
    model = AutoModelForCausalLM.from_pretrained(model_id, device_map='auto', torch_dtype=torch.float16)
-   data_collection = DocumentParser().load(input=base_dir)
+   data_collection = DocumentParser().load(input=input_path)
    documents = document_append(data_collection)
 
    generation_config = GenerationConfig(
