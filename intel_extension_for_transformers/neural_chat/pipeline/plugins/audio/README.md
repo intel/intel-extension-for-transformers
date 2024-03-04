@@ -85,7 +85,7 @@ pip install paddlespeech paddlepaddle
 The ChineseTextToSpeech class within your module provides functionality for TTS. Here's how to use it:
 
 ```python
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts import ChineseTextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 # Initialize the TTS module
 tts = ChineseTextToSpeech()
 # Define the text you want to convert to speech
