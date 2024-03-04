@@ -323,20 +323,20 @@ def generate_sqlcoder_prompt(qurey, metadata_file):
     return prompt
 
 QUERYGENERATE_PROMPT = """
-Task: You are asked to act as a human annotator. Your role is to generate 2 specific, open-ended questions based on the provided context. 
-Each question should aim to extract or clarify key information from the context, focusing on a single aspect or detail. 
+Task: You are asked to act as a human annotator. Your role is to generate 2 specific, open-ended questions based on the provided context.
+Each question should aim to extract or clarify key information from the context, focusing on a single aspect or detail.
 The questions must be directly related to the context to form a query-positive pair, suitable for use in constructing a retrieval dataset.
---- 
+---
 Requirements:
 1. Questions should be based on the keywords, such as phrases at the beginning, phrases before colon, and recurring phrases in the context.
 2. Use the terms in the context instead of pronouns.
---- 
+---
 Desired format:
 1. <question_1>
 2. <question_2>
---- 
+---
 Context:
 ### {context}
---- 
+---
 Generated questions:
 """
