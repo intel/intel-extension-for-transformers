@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import torch
+import os
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 from datasets import Audio, Dataset
 import time
@@ -36,8 +37,9 @@ class AudioSpeechRecognition():
         if device == "auto":
             device = get_device_type()
         self.device = device
-        self.model = WhisperForConditionalGeneration.from_pretrained(model_name_or_path).to(self.device)
-        self.processor = WhisperProcessor.from_pretrained(model_name_or_path)
+        asr_model_name_or_path = os.environ.get("ASR_MODEL_PATH", model_name_or_path)
+        self.model = WhisperForConditionalGeneration.from_pretrained(asr_model_name_or_path).to(self.device)
+        self.processor = WhisperProcessor.from_pretrained(asr_model_name_or_path)
         self.model.eval()
         self.bf16 = bf16
         if self.bf16:
