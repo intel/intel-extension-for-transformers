@@ -72,7 +72,7 @@ def main():
    parser.add_argument("--llm_model", type=str)
    parser.add_argument("--embedding_model", type=str)
    parser.add_argument("--input", type=str)
-   parser.add_argument("--output", type=str)
+   parser.add_argument("--output", type=str, default='data')
 
    parser.add_argument("--temperature", type=float, default=0.8)
    parser.add_argument("--top_p", type=float, default=0.9)
