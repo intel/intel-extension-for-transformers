@@ -34,6 +34,7 @@ langchain_core==0.1.18
 langid
 librosa
 markdown
+modelscope
 neural-compressor
 neural_speed
 num2words
