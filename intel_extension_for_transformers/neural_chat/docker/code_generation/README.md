@@ -11,6 +11,7 @@ Remember to choose Dockerfile of your framework (CPU/HPU), the following example
 ```bash
 docker build . -f cpu/Dockerfile -t neuralchat_codegen:latest
 ```
+
 If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` like below.
 ```bash
 docker build . -f cpu/Dockerfile -t neuralchat_codegen:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
@@ -32,6 +33,8 @@ docker run -it --net=host --ipc=host --name code_gen -v ./codegen.yaml:/codegen.
 ```
 
 Make sure the specified `port` is available, and `device` is correctly set.
+
+
 If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`.
 
 ```bash

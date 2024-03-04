@@ -1,12 +1,12 @@
 # Start NeuralChat Text Generation Service with Docker
 Intel Neural Chat Text Generation Dockerfile installer for Ubuntu22.04/Habana Gaudi.
 
-Following the instruction of this README.md, you will start a Text Generation HTTP service with NeuralChat. The whole procedure is very clear and easy for customers to use with only two docker commands.The HTTP service is offered in form of Restful API, and you can consume it using `CurL` or `python.request` or other methods as you prefer.
+Following the instruction of this README.md, you will start a Text Generation HTTP service with NeuralChat. The whole procedure is very clear and easy for customers to use with only two docker commands.The HTTP service is offered in form of Restful API, and you can consume it using `curL` or `python.request` or other methods as you prefer.
 
 ## Environment Setup
 
 ### Prepare Docker Image
-Use Dockerfile to build Docker image in your environment. The `chat`, `chat q&a`, and `document/report summary` use cases share the same Dockerfile. 
+Use Dockerfile to build Docker image in your environment. The `Chat`, `Chat Q&A`, and `Summary` use cases share the same Dockerfile. 
 
 All you need to do is to choose the right Dockerfile according to your architecture. The following example is for CPU.
 

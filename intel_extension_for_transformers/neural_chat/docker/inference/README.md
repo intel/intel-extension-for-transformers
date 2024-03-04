@@ -48,7 +48,7 @@ docker pull intel/ai-tools:itrex-chatbot
 ## 2. Create Docker Container
 
 ```bash
-docker run -it --name="chatbot" chatbotinfer:latest /bin/bash
+docker run -it --name="chatbot" neuralchat_inference:latest /bin/bash
 ```
 
 If you have downloaded models and dataset locally, just mount the files to the docker container using `-v`. Replce `${host_dir}` with your local directory, and `${mount_dir}` with the directory in docker container. Please make sure using the absolute path for `${host_dir}`. 
