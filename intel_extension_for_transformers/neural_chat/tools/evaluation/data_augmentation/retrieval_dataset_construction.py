@@ -22,8 +22,8 @@ import argparse
 def construct_retrieval_dataset(
       llm_model,
       embedding_model,
-      input_dir,
-      output_raw_path,
+      input,
+      output,
       temperature,
       top_p,
       top_k,
@@ -39,8 +39,8 @@ def construct_retrieval_dataset(
       similarity_threshold):
 
    raw_data_generate(llm_model,
-                     input_dir,
-                     output_raw_path,
+                     input,
+                     output,
                      temperature,
                      top_p,
                      top_k,
@@ -51,16 +51,16 @@ def construct_retrieval_dataset(
                      num_return_sequences,
                      use_cache)
 
-   output_hn_path=output_raw_path+'_minedHN.jsonl'
+   output_hn_path=output+'_minedHN.jsonl'
 
    mine_hard_negatives(embedding_model,
-                       output_raw_path,
+                       output,
                        output_hn_path,
                        range_for_sampling,
                        negative_number,
                        use_gpu_for_searching)
 
-   output_json_split_path = output_raw_path+"_minedHN_split.jsonl"
+   output_json_split_path = output+"_minedHN_split.jsonl"
    similarity_check(output_hn_path,
                     output_json_split_path,
                     embedding_model,
@@ -71,7 +71,7 @@ def main():
    parser = argparse.ArgumentParser()
    parser.add_argument("--llm_model", type=str)
    parser.add_argument("--embedding_model", type=str)
-   parser.add_argument("--input_dir", type=str)
+   parser.add_argument("--input", type=str)
    parser.add_argument("--output_raw_path", type=str)
 
    parser.add_argument("--temperature", type=float, default=0.8)
@@ -94,7 +94,7 @@ def main():
 
    llm_model = args.llm_model
    embedding_model = args.embedding_model
-   input_dir = args.input_dir
+   input = args.input
    output_raw_path = args.output_raw_path
 
    temperature = args.temperature
