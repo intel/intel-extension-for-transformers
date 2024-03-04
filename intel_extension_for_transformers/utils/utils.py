@@ -72,3 +72,14 @@ if _ipex_available:
 
 def is_ipex_available():
     return _ipex_available
+
+_autoround_available = importlib.util.find_spec("auto_round") is not None
+_autoround_version = "N/A"
+if _autoround_available:
+    try:
+        _autoround_version = importlib_metadata.version("auto_round")
+    except importlib_metadata.PackageNotFoundError:
+        _autoround_available = False
+
+def is_autoround_available():
+    return _autoround_available
