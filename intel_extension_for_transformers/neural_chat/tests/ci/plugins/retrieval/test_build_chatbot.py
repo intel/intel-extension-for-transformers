@@ -22,7 +22,7 @@ from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
-#from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser
 
 gaudi2_content = """
 Habana Gaudi2 and 4th Gen Intel Xeon Scalable processors deliver leading performance and optimal cost savings for AI training.
@@ -126,25 +126,25 @@ class TestBuildChatbot(unittest.TestCase):
             self.assertIsNotNone(response)
             plugins.retrieval.enable = False
 
-        # # test fp32 model
+        # test fp32 model
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/fp32/paraphrase-multilingual-mpnet-base-v2")
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/fp32/bge-base-en-v1.5")
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/fp32/instructor-base")
 
-        # # test itrex optimized model
-        # _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/itrex-int8/paraphrase-multilingual-mpnet-base-v2-int8-static")
-        # _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/itrex-int8/bge-small-en-v1.5-int8-static")
-        # _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/itrex-int8/instructor-base-int8-static")
+        # test itrex optimized model
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/itrex-int8/paraphrase-multilingual-mpnet-base-v2-int8-static")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/itrex-int8/bge-small-en-v1.5-int8-static")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/itrex-int8/instructor-base-int8-static")
 
-        # # test itrex optimized model in sentence-transformers format
-        # _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/sentence-transformers-int8/paraphrase-multilingual-mpnet-base-v2-int8-static-st")
-        # _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/sentence-transformers-int8/bge-small-en-v1.5-int8-static-st")
-        # _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/sentence-transformers-int8/instructor-base-int8-static-st")
+        # test itrex optimized model in sentence-transformers format
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/sentence-transformers-int8/paraphrase-multilingual-mpnet-base-v2-int8-static-st")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/sentence-transformers-int8/bge-small-en-v1.5-int8-static-st")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/sentence-transformers-int8/instructor-base-int8-static-st")
 
-        # # test ipex optimized model
-        # _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/ipex-int8/paraphrase-multilingual-mpnet-base-v2-int8-static-ipex")
-        # _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/ipex-int8/bge-small-en-v1.5-int8-static-ipex")
-        # _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/ipex-int8/instructor-base-int8-static-ipex")
+        # test ipex optimized model
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/ipex-int8/paraphrase-multilingual-mpnet-base-v2-int8-static-ipex")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/ipex-int8/bge-small-en-v1.5-int8-static-ipex")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/embedding_models/ipex-int8/instructor-base-int8-static-ipex")
 
 
 if __name__ == "__main__":
