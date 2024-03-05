@@ -23,4 +23,4 @@ jobs:
           interval: 180 # seconds
           timeout: 360 # minutes
           maintainers: "[VincyZhang](https://github.com/VincyZhang)"
-          owner: "[us](itrex.maintainers@intel.com)"
+          owner: "[us](mailto:itrex.maintainers@intel.com)"
