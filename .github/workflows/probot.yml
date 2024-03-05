@@ -22,5 +22,6 @@ jobs:
           job: check-group
           interval: 180 # seconds
           timeout: 360 # minutes
+          token: ${{ secrets.GITHUB_TOKEN }}
           maintainers: "[VincyZhang](https://github.com/VincyZhang)"
           owner: "[us](mailto:itrex.maintainers@intel.com)"
