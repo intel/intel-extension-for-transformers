@@ -1,0 +1,17 @@
+accelerate
+datasets >= 2.0
+peft
+protobuf
+sentencepiece != 0.1.92
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
+torch==2.1.0a0
+intel_extension_for_pytorch==2.1.10+xpu
+transformers
+optimum-intel
+bitsandbytes  #baichuan
+transformers_stream_generator
+tiktoken  #qwen
+einops  #qwen
+git+https://github.com/intel/neural-compressor.git
+git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
+git+https://github.com/intel/auto-round.git@b65830f3f6cb32d92a5c8ba5f80ace12d517357b

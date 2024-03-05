@@ -174,6 +174,7 @@ output = user_model.generate(inputs)
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
 
 5. Saving and Loading quantized model
+ * First step: Quantize and save model
 ```python
 
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
@@ -182,7 +183,9 @@ qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True,
 
 # Please note, saving model should be executed before ipex.optimize_transformers function is called. 
 model.save_pretrained("saved_dir")
-
+```
+ * Second step: Load model and inference(In order to reduce memory usage, you may need to end the quantize process and rerun the script to load the model.)
+```python
 # Load model
 loaded_model = AutoModelForCausalLM.from_pretrained("saved_dir", trust_remote_code=True)
 
