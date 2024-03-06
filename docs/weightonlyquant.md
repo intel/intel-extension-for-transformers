@@ -140,8 +140,10 @@ git clone https://github.com/intel/intel-extension-for-pytorch.git ipex-gpu
 cd ipex-gpu
 git checkout -b dev/QLLM origin/dev/QLLM
 git submodule update --init --recursive
+export USE_AOT_DEVLIST='pvc,ats-m150'
+export BUILD_WITH_CPU=OFF
 
-Pip install -r requirements.txt
+pip install -r requirements.txt
 python setup.py install
 ```
 
