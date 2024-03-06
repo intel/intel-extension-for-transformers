@@ -61,10 +61,6 @@ pip install -r requirements.txt
 >**Note**: Suggest using fastapi==0.103.2
 
 
->**Note**: Suggest using fastapi==0.103.2
-
-
-
 # Getting Started
 
 ## OpenAI-Compatible RESTful APIs
@@ -150,14 +146,6 @@ headers = {'Content-Type': 'application/json'}
 data = '{"model": "Intel/neural-chat-7b-v3-1", "messages": [ \
           {"role": "system", "content": "You are a helpful assistant."}, \
           {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}] \
-          {"role": "assisstent", "content": "Tell me about Intel Xeon Scalable Processors."}] \
-          {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}] \
-          {"role": "assisstent", "content": "Tell me about Intel Xeon Scalable Processors."}] \
-          {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}] \
-          {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}] \
-          {"role": "assisstent", "content": "Tell me about Intel Xeon Scalable Processors."}] \
-          {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}] \
-          {"role": "assisstent", "content": "Tell me about Intel Xeon Scalable Processors."}] \
        }'
 response = requests.post(url, headers=headers, data=data)
 print(response.json())
