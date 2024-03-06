@@ -416,6 +416,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 setattr(config, "gptq_quantize_config", quantize_config)
                 q_model = replace_linear(inc_model, None, None, config, device=device)
             elif config.algorithm == "AUTOROUND":
+                inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 quantize_config = {
                     "bits": bits,
