@@ -45,8 +45,8 @@ Install OneCCL for multi-node model
 ```shell
 # Specify the torch-ccl version according to your torch version (v2.1.0 in this example)
 # Check out the corresponding version here: https://github.com/intel/torch-ccl/
-git clone -b ccl_torch2.1.0+cpu https://github.com/intel/torch-ccl.git torch-ccl-2.1.0
-cd torch-ccl-2.1.0
+git clone -b ccl_torch2.1.0+cpu https://github.com/intel/torch-ccl.git torch-ccl-2.2.0
+cd torch-ccl-2.2.0
 git submodule sync
 git submodule update --init --recursive
 python setup.py install

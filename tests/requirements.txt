@@ -1,13 +1,14 @@
---find-links https://download.pytorch.org/cpu/whl/torch_stable.html
+--extra-index-url https://download.pytorch.org/whl/cpu
 accelerate
 bitsandbytes
 datasets==2.14.7
 einops
 evaluate
 gguf
+git+https://github.com/intel/auto-round.git@b65830f3f6cb32d92a5c8ba5f80ace12d517357b
 git+https://github.com/intel/neural-compressor.git
-intel-extension-for-pytorch==2.1.0
-intel-tensorflow==2.13.0
+intel-extension-for-pytorch==2.2.0
+intel-tensorflow==2.14.0
 mlflow
 neural-speed
 nlpaug==1.1.9
@@ -19,8 +20,9 @@ sacremoses
 sentencepiece != 0.1.92
 tiktoken
 tokenizers
-torch==2.1.0
+torch==2.2.0+cpu
 torchprofile
+torchvision==0.17.0+cpu
 transformers==4.36.2
 transformers_stream_generator
 tyro

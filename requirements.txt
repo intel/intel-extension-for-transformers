@@ -7,4 +7,4 @@ optimum-intel
 py-cpuinfo
 setuptools>=65
 setuptools_scm[toml]>=6.2
-torch==2.1.0+cpu
+torch==2.2.0+cpu

@@ -4,6 +4,6 @@ git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2
 sentencepiece
 gguf
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.0+cpu
+torch==2.2.0+cpu
 transformers
-intel_extension_for_pytorch==2.1.0
+intel_extension_for_pytorch==2.2.0
