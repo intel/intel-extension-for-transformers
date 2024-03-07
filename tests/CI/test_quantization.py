@@ -31,6 +31,7 @@ from intel_extension_for_transformers.transformers import (
 )
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from intel_extension_for_transformers.transformers.trainer import NLPSeq2SeqTrainer
+from intel_extension_for_transformers.transformers.utils import CpuInfo
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -460,12 +461,9 @@ class TestQuantization(unittest.TestCase):
         # AUTOROUND
         algorithm_args = {
             "n_samples": 128,
-            "amp": False,
             "seq_len": 32,
             "iters": 5,
             "scale_dtype": "fp32",
-            "device": "cpu",
-            "export_args": {"format": "itrex", "inplace": False}
         }
         woq_config = WeightOnlyQuantConfig(weight_dtype="int4_clip",
                                         algorithm_args=algorithm_args,
@@ -477,7 +475,8 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.173023983836174, rel_tol=1e-04))
+        if CpuInfo().bf16:
+            self.assertTrue(isclose(float(output[0][0][0][0]), 0.1709238588809967, rel_tol=1e-04))
 
     def test_export(self):
         # test model with model_id

@@ -24,4 +24,4 @@ from .config import (
     SparsityConfig,
     WeightOnlyQuantConfig,
 )
-from .utility import LazyImport, logger, str2bool
+from .utility import LazyImport, logger, str2bool, CpuInfo

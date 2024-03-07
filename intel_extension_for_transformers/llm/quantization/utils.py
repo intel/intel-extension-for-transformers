@@ -382,7 +382,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
             if orig_dtype != torch.float32:
                 model.to(dtype=torch.float32)
             break
-
         inc_model = quantization.fit(model,
                                      conf,
                                      calib_func=calib_func,
@@ -429,7 +428,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 }
 
                 setattr(config, "gptq_quantize_config", quantize_config)
-                q_model = replace_linear(inc_model._model, None, None, config, device=device)
+                q_model = replace_linear(inc_model, None, None, config, device=device)
             else:
                 q_model = replace_linear(inc_model.model, None, None, config, device=device)
         if orig_dtype != torch.float32:
