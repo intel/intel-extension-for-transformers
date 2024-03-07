@@ -3,7 +3,10 @@
 ## 1. Introduction
 In this example, we show how to do data augmentation to construct a retrieval dataset. Specifically, the effect is to generate specific open-ended questions based on the context of the input file provided. The questions are directly related to the context to form a query-positive pair, suitable for use in constructing a retrieval dataset.
 
-## 2. Requirements
+## 2. Supported Devices
+CPU, CUDA
+
+## 3. Requirements
 ```
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat
@@ -24,7 +27,7 @@ cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat
 pip install -r requirements_cuda.txt
 ```
 
-## 3. Retrieval Dataset Construction
+## 4. Retrieval Dataset Construction
 * **On CPU**
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation
@@ -63,7 +66,7 @@ python -m data_augmentation.retrieval_dataset_construction \
 - `use_gpu_for_searching`: Whether to use faiss-gpu to retrieve negatives. The default value is False.
 - `similarity_threshold`: The cosine similarity threshold used to filter the generated queries. The default value is 0.6.
 
-## 4. Result
+## 5. Result
 Three files will be generated. The default output files are `data.jsonl`, `data_minedHN.jsonl`, `data_minedHN_split.jsonl`. The third is the final output dataset, where each line is a dict like this:
 ```
 {"query": str, "pos": List[str], "neg": List[str]}
