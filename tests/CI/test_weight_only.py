@@ -32,7 +32,7 @@ from intel_extension_for_transformers.transformers.modeling import AutoModelForC
 from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits, QuantizedLoraLinearQBits
 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
 from intel_extension_for_transformers.llm.utils.generation import _beam_search, _greedy_search
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import RtnConfig
 
 
 class DummyDataset(data.Dataset):
@@ -77,7 +77,7 @@ class TestWeightOnly(unittest.TestCase):
         shutil.rmtree('tmp', ignore_errors=True)
 
     def test_woq_config(self):
-        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
+        config = RtnConfig(bits=4, weight_dtype="int4_fullrange", group_size=32)
         diff_res = config.to_diff_dict()
         ref_config = {'weight_dtype': 'int4_fullrange'}
         self.assertEqual(diff_res, ref_config)
@@ -88,7 +88,7 @@ class TestWeightOnly(unittest.TestCase):
         print(config)
 
     def test_woq_config_post_init_runtime(self):
-        config = WeightOnlyQuantConfig(weight_dtype="fp4", compute_dtype="int8", scheme="asym", scale_dtype="fp8")
+        config = RtnConfig(weight_dtype="fp4", compute_dtype="int8", scheme="asym", scale_dtype="fp8")
         config.post_init_runtime()
         config_dict = config.to_dict()
         self.assertEqual(config_dict["weight_dtype"], "fp4_e2m1")
@@ -110,7 +110,7 @@ class TestWeightOnly(unittest.TestCase):
             activation = torch.rand(1, 32, dtype=torch.float)
             output = model(activation)
 
-            config = WeightOnlyQuantConfig(weight_dtype="int8", group_size=32)
+            config = RtnConfig(weight_dtype="int8", group_size=32)
             config.post_init()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
@@ -132,7 +132,7 @@ class TestWeightOnly(unittest.TestCase):
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(raw_wei)
 
-            config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
+            config = RtnConfig(weight_dtype="int4_fullrange", group_size=32)
             config.post_init()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
@@ -165,7 +165,7 @@ class TestWeightOnly(unittest.TestCase):
         self.assertTrue(len(output) == 2 and isinstance(output[1], list))
 
     def test_auto_model_with_config(self):
-        config = WeightOnlyQuantConfig()
+        config = RtnConfig()
         model = AutoModelForCausalLM.from_pretrained(llama_model_path,
                                                      quantization_config=config,
                                                      use_neural_speed=False)

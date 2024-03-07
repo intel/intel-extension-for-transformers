@@ -32,12 +32,17 @@ class Optimization:
             optimized_model = model
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
-            WeightOnlyQuantConfig,
+            RtnConfig,
+            AwqConfig,
+            TeqConfig,
+            GPTQConfig,
+            AutoRoundConfig,
             BitsAndBytesConfig
         )
-        assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
-            f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
-            " or BitsAndBytesConfig,got {type(self.optimization_config)}."
+        assert type(self.optimization_config) in [MixedPrecisionConfig, RtnConfig, AwqConfig, TeqConfig,
+            GPTQConfig, AutoRoundConfig, BitsAndBytesConfig], \
+            f"Expect optimization_config be an object of MixedPrecisionConfig, RtnConfig, AwqConfig, TeqConfig," + \
+            " GPTQConfig, AutoRoundConfig or BitsAndBytesConfig,got {type(self.optimization_config)}."
         config = self.optimization_config
         if re.search("flan-t5", model_name, re.IGNORECASE):
             from intel_extension_for_transformers.transformers import AutoModelForSeq2SeqLM

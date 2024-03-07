@@ -217,11 +217,11 @@ outputs = model.generate(inputs)
 You can also load the low-bit model quantized by GPTQ/AWQ/RTN/AutoRound algorithm.
 ```python
 from transformers import AutoTokenizer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, GPTQConfig
 
 # Download Hugging Face GPTQ/AWQ model or use local quantize model
 model_name = "PATH_TO_MODEL"  # local path to model
-woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ; use_autoround=True for AutoRound
+woq_config = GPTQConfig(bits=4)   # use_awq=True for AWQ; use_autoround=True for AutoRound
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)

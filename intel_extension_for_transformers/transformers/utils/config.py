@@ -95,7 +95,7 @@ class SparsityConfig(PretrainedConfig):
                 Additional parameters from which to initialize the configuration object.
 
         Returns:
-            [`WeightOnlyQuantConfig`]: The configuration object instantiated from those parameters.
+            [`SparsityConfig`]: The configuration object instantiated from those parameters.
         """
 
         config = cls(**config_dict)
@@ -151,7 +151,7 @@ class SparsityConfig(PretrainedConfig):
         Args:
             use_diff (`bool`, *optional*, defaults to `True`):
                 If set to `True`, only the difference between the config instance and the default
-                `WeightOnlyQuantConfig()`
+                `SparsityConfig()`
                 is serialized to JSON string.
 
         Returns:
@@ -260,6 +260,9 @@ class QuantizationMethod(str, Enum):
 
 
 class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
+    """
+    Mixin class for quantization config
+    """
 
     def post_init_cpu(self):
         r"""
@@ -275,8 +278,29 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
         elif self.compute_dtype is None:
             self.compute_dtype = "fp32"
 
-        if self.weight_dtype is None:
-            self.weight_dtype = "nf4"
+        if self.bits not in [4, 8]:
+            raise ValueError(
+                f"Only support quantization to [4, 8] bits but found {self.bits}"
+            )
+
+        if self.bits == 4 and self.weight_dtype not in [
+            "int4_fullrange",
+            "int4_clip",
+            "nf4",
+            "fp4_e2m1_bnb",
+            "fp4_e2m1",
+        ]:
+            self.weight_dtype = "int4_clip"
+            logger.warning(
+                "int4_clip weight_type is used due to bits is 4 but weight_dtype is not set."
+            )
+
+        if self.bits == 8 and self.weight_dtype not in ["int8", "fp8_e5m2", "fp8_e4m3"]:
+            self.weight_dtype = "int8"
+            logger.warning(
+                "int8 weight_type is used due to bits is 8 but weight_dtype is not set."
+            )
+
         elif self.weight_dtype not in [
             "int8",
             "int4_fullrange",
@@ -329,28 +353,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
                                 compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, \
                                 please use sym scheme"
             )
-        if self.bits not in [4, 8]:
-            raise ValueError(
-                f"Only support quantization to [4, 8] bits but found {self.bits}"
-            )
-
-        if self.bits == 4 and self.weight_dtype not in [
-            "int4_fullrange",
-            "int4_clip",
-            "nf4",
-            "fp4_e2m1_bnb",
-            "fp4_e2m1",
-        ]:
-            self.weight_dtype = "int4_clip"
-            logger.warning(
-                "int4_clip weight_type is used due to bits is 4 but weight_dtype is not set."
-            )
-
-        if self.bits == 8 and self.weight_dtype not in ["int8", "fp8_e5m2", "fp8_e4m3"]:
-            self.weight_dtype = "int8"
-            logger.warning(
-                "int8 weight_type is used due to bits is 8 but weight_dtype is not set."
-            )
 
         self.use_neural_speed = False
 
@@ -364,17 +366,14 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
         elif self.compute_dtype is None:
             self.compute_dtype = "fp16"
 
-        # if self.algorithm_args is not None:
-        #     if "actorder" in self.algorithm_args:
-        #         assert not self.algorithm_args["actorder"], "GPTQ algorithm only support actorder False now."
-
-        if self.bits not in [8]:
+        if self.bits not in [4]:
             raise ValueError(
-                f"Only support quantization to [4, 8] bits but found {self.bits}"
+                f"Only support quantization to [4] bits but found {self.bits}"
             )
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4_fullrange"
+
         elif self.weight_dtype not in [
             "int4_fullrange",
         ]:

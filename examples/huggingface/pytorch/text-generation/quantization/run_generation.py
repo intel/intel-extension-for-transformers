@@ -100,7 +100,7 @@ parser.add_argument(
     "--woq_algo",
     default="RTN",
     choices=["RTN", "AWQ", "TEQ", "GPTQ", "AUTOROUND"],
-    help="Weight-only parameter.",
+    help="Weight-only algorithm.",
 )
 parser.add_argument(
     "--bits",
@@ -174,27 +174,27 @@ parser.add_argument(
     "--lr",
     type=float,
     default=0.0025,
-    help="Calibration dataset sequence max length, this should align with your model config",
+    help="learning rate, if None, it will be set to 1.0/iters automatically",
 )
 parser.add_argument(
     "--minmax_lr",
     type=float,
     default=0.0025,
-    help="Calibration dataset sequence max length, this should align with your model config",
+    help="minmax learning rate, if None,it will beset to be the same with lr",
 )
 parser.add_argument(
     "--use_quant_input",
     action="store_true",
-    help="Calibration dataset sequence max length, this should align with your model config",
+    help="whether to use the output of quantized block to tune the next block",
 )
 
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
-parser.add_argument("--load_in_4bit", type=bool, default=False)
-parser.add_argument("--load_in_8bit", type=bool, default=False)
+parser.add_argument("--load_in_4bit", action="store_true")
+parser.add_argument("--load_in_8bit", action="store_true")
 parser.add_argument("--_commit_hash", default=None, type=str)
-parser.add_argument("--trust_remote_code", type=bool, default=False)
+parser.add_argument("--trust_remote_code", action="store_true")
 parser.add_argument("--use_neural_speed", action="store_true")
 # =======================================
 args = parser.parse_args()
