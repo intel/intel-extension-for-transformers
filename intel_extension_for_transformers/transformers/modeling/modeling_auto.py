@@ -158,7 +158,6 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        import pdb;pdb.set_trace();
         # use for neuralspeed ggul
         model_file = kwargs.pop("model_file", None)
         if model_file is not None:
@@ -227,7 +226,6 @@ class _BaseQBitsAutoModelClass:
                 try:
                     kwargs["device_map"] = \
                         config.quantize_config["device"] if "device" in config.quantize_config.keys() else "auto"
-                    import pdb;pdb.set_trace();
                     kwargs["quantize_config"] = config.quantize_config
                     model = cls.load_low_bit(pretrained_model_name_or_path, *model_args, **kwargs)
                     logger.info("Saved low bit model loading successfully. Other input args "
@@ -728,14 +726,13 @@ class _BaseQBitsAutoModelClass:
             kwargs["torch_dtype"] = "auto"
         quantize_config = kwargs.pop("quantize_config")
         if quantize_config["quant_method"] == "rtn":
-            import pdb;pdb.set_trace();
             quantization_config = RtnConfig.from_dict(quantize_config)
         elif quantize_config["quant_method"]  == "awq":
             quantization_config = AwqConfig.from_dict(quantize_config)
         elif quantize_config["quant_method"]  == "teq":
-            quantization_config = TeqConfig(quantize_config)
+            quantization_config = TeqConfig.from_dict(quantize_config)
         elif quantize_config["quant_method"]  == "gptq":
-            quantization_config = GPTQConfig(quantize_config)
+            quantization_config = GPTQConfig.from_dict(quantize_config)
         elif quantize_config["quant_method"] == "autoround":
             quantization_config = AutoroundConfig(quantize_config)
 
