@@ -803,7 +803,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = kwargs.get("calib_iters", 100)
 
 
-class AutoroundConfig(ITREXQuantizationConfigMixin):
+class AutoRoundConfig(ITREXQuantizationConfigMixin):
     """
     This is a wrapper class about all possible attributes and features that you can play with a model that has been
     loaded using `intel_extension_for_transformers` api for gptq quantization relying on CPU device.

@@ -26,6 +26,6 @@ from .config import (
     AwqConfig,
     TeqConfig,
     GPTQConfig,
-    AutoroundConfig
+    AutoRoundConfig
 )
 from .utility import LazyImport, logger, str2bool, CpuInfo

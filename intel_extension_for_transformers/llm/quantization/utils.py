@@ -432,24 +432,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                      config,
                                      device=device)
         else:
-            if algorithm == "GPTQ":
+            if config.quant_method.value in ["gptq", "autoround"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 q_model = replace_linear(inc_model, None, None, config, device=device)
-            elif config.algorithm == "AUTOROUND":
-                inc_model.eval()
-                quantize_config = {
-                    "bits": bits,
-                    "group_size": config.group_size,
-                    "desc_act": False,
-                    "sym": True if config.scheme == "sym" else False,
-                    "true_sequential": True,
-                    "model_name_or_path": "null",
-                    "model_file_base_name": "model",
-                }
-
-                setattr(config, "gptq_quantize_config", quantize_config)
-                q_model = replace_linear(inc_model._model, None, None, config, device=device)
             else:
                 q_model = replace_linear(inc_model.model, None, None, config, device=device)
         if orig_dtype != torch.float32:

@@ -48,7 +48,7 @@ from .utils import (
     AwqConfig,
     TeqConfig,
     GPTQConfig,
-    AutoroundConfig,
+    AutoRoundConfig,
     metrics,
     objectives,
 )

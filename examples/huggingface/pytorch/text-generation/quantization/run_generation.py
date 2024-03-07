@@ -21,7 +21,7 @@ from intel_extension_for_transformers.transformers import (
     AwqConfig,
     TeqConfig,
     GPTQConfig,
-    AutoroundConfig,
+    AutoRoundConfig,
 )
 
 parser = argparse.ArgumentParser()
@@ -352,7 +352,7 @@ elif args.woq:
                         calib_iters=args.calib_iters
         )
     elif args.woq_algo == "AUTOROUND":
-        quantization_config = AutoroundConfig(
+        quantization_config = AutoRoundConfig(
                         tokenizer=tokenizer,
                         dataset=args.dataset,
                         bits=args.bits,

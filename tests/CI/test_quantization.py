@@ -320,7 +320,7 @@ class TestQuantization(unittest.TestCase):
             AwqConfig,
             TeqConfig,
             GPTQConfig,
-            AutoroundConfig,
+            AutoRoundConfig,
             BitsAndBytesConfig
         )
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
@@ -455,7 +455,7 @@ class TestQuantization(unittest.TestCase):
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.17126554250717163, rel_tol=1e-04))
 
         # AUTOROUND
-        woq_config = AutoroundConfig(bits=4,
+        woq_config = AutoRoundConfig(bits=4,
                                     weight_dtype="int4_clip",
                                      nsamples=128,
                                      calib_len=32,
