@@ -158,6 +158,7 @@ pip install intel-extension-for-transformers
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
+import torch
 
 device = "xpu"
 model_name = "Qwen/Qwen-7B"
