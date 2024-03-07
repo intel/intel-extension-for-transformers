@@ -251,7 +251,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         calib_dataset = calib_dataset.shuffle(seed=42)
         if config.tokenizer is None:
             logger.error(
-                "Please provide the toke(nizer or provide calib_func directly,"
+                "Please provide the tokenizer or provide calib_func directly,"
                 + " the following is how to get tokenizer. \n" +
                 " from transformer import AutoTokenizer \n" +
                 " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"

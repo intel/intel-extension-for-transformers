@@ -24,7 +24,6 @@ from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
 from peft.tuners.lora import LoraLayer, LoraModel
 from peft.utils.other import transpose
 from intel_extension_for_transformers.llm.quantization.autograd import matmul_kbit
-from intel_extension_for_transformers.transformers.utils.config import QuantizationMethod
 
 torch.ops.load_library(
     os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../..", "libqbits.so")
@@ -171,7 +170,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias=None,
     ):
 
-        if q_config.quant_method != QuantizationMethod.AUTOROUND and q_config.desc_act :
+        if q_config.quant_method.value != "autoround" and q_config.desc_act :
             int_weight2 = int_weight.clone()
             group_size = q_config.group_size
             group_dict = {}
@@ -193,7 +192,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if q_config.sym:
             gptq_zeros = torch.empty(0, dtype=torch.int8)
 
-        if q_config.quant_method == QuantizationMethod.AUTOROUND or (not q_config.desc_act):
+        if q_config.quant_method.value == "autoround" or (not q_config.desc_act):
             g_idx = torch.empty(0, dtype=torch.int32)
 
         packw = torch.ops.bestlaop.woq_packq(
