@@ -368,7 +368,7 @@ class TestQuantization(unittest.TestCase):
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.16387596726417542, rel_tol=1e-04))
 
         # AWQ
-        woq_config = AwqConfig(bits=4, 
+        woq_config = AwqConfig(bits=4,
                                 weight_dtype="int4_fullrange",
                                 zero_point=False,
                                 calib_iters=5,

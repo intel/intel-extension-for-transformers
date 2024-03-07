@@ -311,7 +311,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
         if self.bits == 8 and self.weight_dtype not in ["int8", "fp8_e5m2", "fp8_e4m3"]:
             self.weight_dtype = "int8"
             logger.warning("int8 weight_type is used due to bits is 8 but weight_dtype is not set.")
-        
+
         self.use_neural_speed = False
 
     def post_init_xpu(self):
@@ -534,7 +534,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
             The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
         zero_point (`bool`, *optional*, defaults to `True`):
             Whether to use zero point quantization.
-    """   
+    """
     def __init__(
         self,
         bits: int = 8,
@@ -602,7 +602,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             Whether to quantize columns in order of decreasing activation size. Setting it to False can significantly
             speed up inference but the perplexity may become slightly worse. Also known as act-order.
         sym (`bool`, *optional*, defaults to `True`):
-            Whether to use symetric quantization.
+            Whether to use symmetric quantization.
         max_input_length (`int`, *optional*):
             The maximum input length. This is needed to initialize a buffer that depends on the maximum expected input
             length. It is specific to the exllama backend with act-order.
@@ -670,7 +670,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             self.compute_dtype = convert_dtype_torch2str(compute_dtype)
         else:
             self.compute_dtype = compute_dtype
-        
+
         if isinstance(scale_dtype, torch.dtype):
             self.scale_dtype = convert_dtype_torch2str(scale_dtype)
         else:
@@ -705,7 +705,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
             The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
         zero_point (`bool`, *optional*, defaults to `True`):
             Whether to use zero point quantization.
-    """   
+    """
     def __init__(
         self,
         bits: int = 8,
@@ -761,7 +761,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
             The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
         zero_point (`bool`, *optional*, defaults to `True`):
             Whether to use zero point quantization.
-    """   
+    """
     def __init__(
         self,
         bits: int = 8,
@@ -830,7 +830,7 @@ class AutoroundConfig(ITREXQuantizationConfigMixin):
             Whether to quantize columns in order of decreasing activation size. Setting it to False can significantly
             speed up inference but the perplexity may become slightly worse. Also known as act-order.
         sym (`bool`, *optional*, defaults to `True`):
-            Whether to use symetric quantization.
+            Whether to use symmetric quantization.
         max_input_length (`int`, *optional*):
             The maximum input length. This is needed to initialize a buffer that depends on the maximum expected input
             length. It is specific to the exllama backend with act-order.
@@ -896,7 +896,7 @@ class AutoroundConfig(ITREXQuantizationConfigMixin):
             self.compute_dtype = convert_dtype_torch2str(compute_dtype)
         else:
             self.compute_dtype = compute_dtype
-        
+
         if isinstance(scale_dtype, torch.dtype):
             self.scale_dtype = convert_dtype_torch2str(scale_dtype)
         else:
