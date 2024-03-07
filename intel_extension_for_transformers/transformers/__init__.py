@@ -44,7 +44,11 @@ from .utils import (
     MixedPrecisionConfig,
     BitsAndBytesConfig,
     SmoothQuantConfig,
-    WeightOnlyQuantConfig,
+    RtnConfig,
+    AwqConfig,
+    TeqConfig,
+    GPTQConfig,
+    AutoroundConfig,
     metrics,
     objectives,
 )

@@ -31,6 +31,7 @@
 # limitations under the License.
 
 import json
+import copy
 import os
 import re
 import torch
@@ -41,7 +42,11 @@ from ..utils import (
     BitsAndBytesConfig,
     MixedPrecisionConfig,
     SmoothQuantConfig,
-    WeightOnlyQuantConfig,
+    RtnConfig,
+    AwqConfig,
+    TeqConfig,
+    GPTQConfig,
+    AutoroundConfig,
     logger,
     LazyImport,
 )
@@ -63,6 +68,7 @@ from ...llm.quantization.utils import (
     replace_linear
 )
 from transformers.configuration_utils import PretrainedConfig
+from transformers import AutoConfig
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 from typing import Union
 
@@ -82,6 +88,7 @@ def convert_model_to_public(model):
 def save_low_bit(
     self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs
 ):
+
     assert hasattr(
         self, "quantization_config"
     ), f"Detected this model is not a low-bit model."
@@ -138,7 +145,6 @@ def save_low_bit(
             commit_message=commit_message,
             token=kwargs.get("token"),
         )
-
     self.quantization_config.low_bit_model = True
     self.quantization_config.save_pretrained(save_directory, **kwargs)
 
@@ -152,6 +158,8 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        import pdb;pdb.set_trace();
+        # use for neuralspeed ggul
         model_file = kwargs.pop("model_file", None)
         if model_file is not None:
             from neural_speed import Model
@@ -197,14 +205,44 @@ class _BaseQBitsAutoModelClass:
         device_map = kwargs.get("device_map", "cpu")
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
+        config = kwargs.pop("config", None)
+        trust_remote_code = kwargs.get("trust_remote_code", None)
 
+        if not isinstance(config, PretrainedConfig):
+            config = AutoConfig.from_pretrained(
+                pretrained_model_name_or_path,
+                trust_remote_code=trust_remote_code,
+
+            )
+        if hasattr(config, "quantize_config"):
+            if config.quantize_config is None or config.quantize_config["low_bit_model"] != True:
+                logger.warning("Quantization_config loading failed. If you want to load saved "
+                               "low bit model, please check your quantizate_config.json.")
+            else:
+                logger.info(
+                    "quantization_config: {}".format(
+                        config.quantize_config
+                    )
+                )
+                try:
+                    kwargs["device_map"] = \
+                        config.quantize_config["device"] if "device" in config.quantize_config.keys() else "auto"
+                    import pdb;pdb.set_trace();
+                    kwargs["quantize_config"] = config.quantize_config
+                    model = cls.load_low_bit(pretrained_model_name_or_path, *model_args, **kwargs)
+                    logger.info("Saved low bit model loading successfully. Other input args "
+                                "will be ignored.")
+                    return model
+                except Exception as e:
+                    logger.error(e)
+                    logger.error("Saved low bit model loading failed, please check your model.")
+                    exit(0)
         if kwargs.get("use_llm_runtime", None) is not None:
             use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
             logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
         elif kwargs.get("use_neural_speed", None) is not None:
             use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
         else:
-            config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path)
             if hasattr(config, "model_type") == False:
                 logger.error("Can't get the model_type. Please check the correct model_type")
                 exit(0)
@@ -215,37 +253,6 @@ class _BaseQBitsAutoModelClass:
             else:
                 logger.info("Using Pytorch...")
                 use_neural_speed = False
-
-        if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
-            logger.info(
-                "Find quantization_config.json, trying to load quantized low bit model..."
-            )
-            quantization_config = WeightOnlyQuantConfig.from_pretrained(
-                pretrained_model_name_or_path,
-                _configuration_file=QUANT_CONFIG,
-                **kwargs,
-            )
-            if quantization_config is None or quantization_config.low_bit_model != True:
-                logger.warning("Quantization_config loading failed. If you want to load saved "
-                               "low bit model, please check your quantization_config.json.")
-            else:
-                logger.info(
-                    "quantization_config: {}".format(
-                        quantization_config.to_json_string()
-                    )
-                )
-                try:
-                    kwargs["device_map"] = \
-                        quantization_config.device if hasattr(quantization_config, "device") else "auto"
-                    model = cls.load_low_bit(pretrained_model_name_or_path, *model_args, **kwargs)
-                    logger.info("Saved low bit model loading successfully. Other input args "
-                                "will be ignored.")
-                    return model
-                except Exception as e:
-                    logger.error(e)
-                    logger.error("Saved low bit model loading failed, please check your model.")
-                    exit(0)
-
 
         import intel_extension_for_transformers.transformers.modeling.modeling_map
 
@@ -284,9 +291,9 @@ class _BaseQBitsAutoModelClass:
                 if quantization_config is None:
                     if use_neural_speed:
                         # use wnf4_sfp32_cfp32_g32_sym by default
-                        quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="nf4")
+                        quantization_config = RtnConfig(compute_dtype="fp32", weight_dtype="nf4")
                     else:
-                        quantization_config = WeightOnlyQuantConfig(compute_dtype=convert_dtype_torch2str(torch_dtype),
+                        quantization_config = RtnConfig(bits=4, compute_dtype=convert_dtype_torch2str(torch_dtype),
                                                                     weight_dtype="nf4" if use_cpu else "int4_fullrange")
                 else:
                     assert ("4" in quantization_config.weight_dtype
@@ -296,9 +303,9 @@ class _BaseQBitsAutoModelClass:
             elif load_in_8bit:
                 if quantization_config is None:
                     if use_neural_speed:
-                        quantization_config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
+                        quantization_config = RtnConfig(compute_dtype="bf16", weight_dtype="int8")
                     else:
-                        quantization_config = WeightOnlyQuantConfig(compute_dtype=convert_dtype_torch2str(torch_dtype),
+                        quantization_config = RtnConfig(bits=8, compute_dtype=convert_dtype_torch2str(torch_dtype),
                                                                     weight_dtype="int8")
                 else:
                     assert (
@@ -325,7 +332,7 @@ class _BaseQBitsAutoModelClass:
             model.config.update({"device": "cpu"})
             model.eval()
             logger.info("Mixed Precision done.")
-        elif isinstance(quantization_config, WeightOnlyQuantConfig):
+        elif isinstance(quantization_config, (RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoroundConfig)):
             logger.info("Applying Weight Only Quantization.")
             if use_neural_speed:
                 logger.info("Using LLM runtime.")
@@ -358,7 +365,7 @@ class _BaseQBitsAutoModelClass:
                         model = cls.ORIG_MODEL.from_pretrained(
                             pretrained_model_name_or_path,
                             torchscript=True
-                            if quantization_config.algorithm in ["TEQ", "AWQ"] and not use_xpu else False,
+                            if quantization_config.quant_method.value in ["teq", "awq"] and not use_xpu else False,
                             *model_args,
                             **kwargs,
                         )
@@ -370,7 +377,7 @@ class _BaseQBitsAutoModelClass:
                         model = cls.ORIG_MODEL.from_pretrained(
                             pretrained_model_name_or_path,
                             torchscript=True
-                            if quantization_config.algorithm in ["TEQ", "AWQ"] and not use_xpu else False,
+                            if quantization_config.quant_method.value in ["teq", "awq"] and not use_xpu else False,
                             *model_args,
                             **kwargs,
                         )
@@ -378,21 +385,23 @@ class _BaseQBitsAutoModelClass:
                 else:
                     model = cls.ORIG_MODEL.from_pretrained(
                         pretrained_model_name_or_path,
-                        torchscript=True if quantization_config.algorithm in ["TEQ", "AWQ"] and not use_xpu else False,
+                        torchscript=True
+                        if quantization_config.quant_method.value in ["teq", "awq"] and not use_xpu else False,
                         *model_args,
                         **kwargs,
                     )
                 model.eval()
-                quantization_config.update({"device": "cpu"})
+
+                quantization_config.update(kwargs={"device": "cpu"})
                 if use_xpu:
                     import intel_extension_for_pytorch
                     assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
-                    quantization_config.update({"device": "xpu"})
+                    quantization_config.update(kwargs={"device": "xpu"})
                 if (not torch.cuda.is_available() or device_map == "cpu"
                         or device_map == torch.device("cpu")) and model.config.model_type == "chatglm":
                     model = model.float()
                 if use_cpu:
-                    quantization_config.post_init()
+                    quantization_config.post_init_cpu()
                 elif use_xpu:
                     quantization_config.post_init_xpu()
                 model = convert_to_quantized_model(model, quantization_config, device=device_map)
@@ -717,12 +726,18 @@ class _BaseQBitsAutoModelClass:
         # if torch_dtype=auto was passed here, ensure to pass it on
         if kwargs_orig.get("torch_dtype", None) == "auto":
             kwargs["torch_dtype"] = "auto"
-
-        quantization_config = WeightOnlyQuantConfig.from_pretrained(
-            pretrained_model_name_or_path,
-            _configuration_file=QUANT_CONFIG,
-            **kwargs,
-        )
+        quantize_config = kwargs.pop("quantize_config")
+        if quantize_config["quant_method"] == "rtn":
+            import pdb;pdb.set_trace();
+            quantization_config = RtnConfig.from_dict(quantize_config)
+        elif quantize_config["quant_method"]  == "awq":
+            quantization_config = AwqConfig.from_dict(quantize_config)
+        elif quantize_config["quant_method"]  == "teq":
+            quantization_config = TeqConfig(quantize_config)
+        elif quantize_config["quant_method"]  == "gptq":
+            quantization_config = GPTQConfig(quantize_config)
+        elif quantize_config["quant_method"] == "autoround":
+            quantization_config = AutoroundConfig(quantize_config)
 
         assert (quantization_config is not None), "Detect this model is not a low-bit model."
         kwargs["trust_remote_code"] = trust_remote_code

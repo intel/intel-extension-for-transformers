@@ -153,7 +153,7 @@ def _replace_linear(
                             use_optimum_format=module.use_optimum_format
                             if hasattr(module, "use_optimum_format") else False,
                         )
-                        if quantization_config.algorithm == "GPTQ":
+                        if quantization_config.quant_method.value == "gptq":
                             g_idx = module.g_idx if hasattr(module, "g_idx") else \
                                 torch.zeros(in_features, dtype=torch.int32).to(device)
                         else:
@@ -176,13 +176,13 @@ def _replace_linear(
                     model._modules[name].requires_grad_(False)
                 if device == "cpu" or device == torch.device("cpu") or device == "auto":
                     if not empty_weights:
-                        if quantization_config.algorithm == "GPTQ" or quantization_config.algorithm == "AUTOROUND":
+                        if quantization_config.quant_method.value in ["gptq", "autoround"]:
                             from .gptq_utils import unpack_weight
                             int_weight, gptq_scales, gptq_zeros = unpack_weight(
                                 module.qweight,
                                 module.scales,
                                 module.qzeros,
-                                quantization_config.gptq_quantize_config,
+                                quantization_config,
                             )
                             int_weight = int_weight.view(-1, int_weight.shape[-1])
                             model._modules[name].set_gptq_weights_bias(
@@ -240,7 +240,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
     calib_func = config.calib_func
     calib_iters = config.calib_iters
     model_device = next(model.parameters()).device
-    if calib_dataloader is None and config.algorithm in ["TEQ", "AWQ", "GPTQ", "AUTOROUND"]:
+
+    if calib_dataloader is None and config.quant_method.value not in ["rtn"]:
         from datasets import load_dataset
         from torch.utils.data import DataLoader
 
@@ -250,7 +251,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         calib_dataset = calib_dataset.shuffle(seed=42)
         if config.tokenizer is None:
             logger.error(
-                "Please provide the tokenizer or provide calib_func directly,"
+                "Please provide the toke(nizer or provide calib_func directly,"
                 + " the following is how to get tokenizer. \n" +
                 " from transformer import AutoTokenizer \n" +
                 " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
@@ -278,7 +279,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             input_ids_padded = []
             for text in batch:
                 input_ids = text["input_ids"]
-                input_ids = input_ids[:512] if (len(input_ids) > 512 and config.algorithm != "GPTQ") else input_ids
+                input_ids = input_ids[:512] if (len(input_ids) > 512 and config.quant_method.value != "gptq") else input_ids
                 input_ids_padded.append(input_ids)
             return torch.vstack(input_ids_padded)
 
@@ -286,21 +287,21 @@ def convert_to_quantized_model(model, config, device="cpu"):
             input_ids_padded = []
             for text in batch:
                 input_ids = text["input_ids"]
-                if input_ids.shape[0] < config.algorithm_args["seq_len"]:
+                if input_ids.shape[0] < config.calib_len:
                     continue
-                input_ids = input_ids[:config.algorithm_args["seq_len"]]
+                input_ids = input_ids[:config.calib_len]
                 input_ids_list = input_ids.tolist()
-                if input_ids_list.count(input_ids_list[-1]) > config.algorithm_args["seq_len"] // 2:
+                if input_ids_list.count(input_ids_list[-1]) > config.calib_len // 2:
                     continue
                 input_ids_padded.append(input_ids)
             if len(input_ids_padded) == 0:
                 return None
 
             return torch.vstack(input_ids_padded)
-        if config.algorithm == "AUTOROUND":
+        if config.quant_method.value == "autoround":
             calib_dataloader = DataLoader(
                 tokenized_dataset,
-                batch_size=1,
+                batch_size=8,
                 shuffle=False,
                 collate_fn=collate_batch_for_autoround,
             )
@@ -311,7 +312,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 shuffle=False,
                 collate_fn=collate_batch,
             )
-    if calib_func is None and config.algorithm in ["AWQ"]:
+    if calib_func is None and config.quant_method.value == "awq":
 
         def default_calib_func(model):
             """
@@ -337,18 +338,50 @@ def convert_to_quantized_model(model, config, device="cpu"):
             dtype = "int4"
         else:
             dtype = config.weight_dtype
-        recipes = {
-            "rtn_args": {
-                "enable_full_range": True
-                if "fullrange" in config.weight_dtype
-                else False,
-                "enable_mse_search": config.mse_range,
-            },
-            "awq_args": config.algorithm_args.update({"enable_mse_search": config.mse_range})
-                if config.algorithm == "AWQ" and config.algorithm_args is not None else {},
-            "gptq_args": config.algorithm_args if config.algorithm == "GPTQ" else None,
-            "autoround_args": config.algorithm_args if config.algorithm == "AUTOROUND" else None
-        }
+        # mapping to INC config
+        if config.quant_method.value == "rtn":
+            recipes = {
+                        "rtn_args": {"enable_full_range": True if "fullrange" in config.weight_dtype else False,
+                                    "enable_mse_search": config.mse_range}
+                        }
+            algorithm = "RTN"
+        elif config.quant_method.value == "awq":
+            recipes = {
+                        "rtn_args": {"enable_full_range": True if "fullrange" in config.weight_dtype else False,
+                                    "enable_mse_search": config.mse_range},
+                        "awq_args": {}}
+            algorithm = "AWQ"
+        elif config.quant_method.value == "teq":
+            recipes = {"teq_args":{}}
+            algorithm = "TEQ"
+        elif config.quant_method.value == "gptq":
+            recipes = {"gptq_args":{
+                            "act_order": config.desc_act,
+                            "percdamp": config.damp_percent,
+                            "block_size": config.blocksize,
+                            "nsamples": config.nsamples,
+                            "use_max_length": True if config.max_input_length else False,
+                            "pad_max_length": config.max_input_length,
+                            "static_groups": config.static_groups,
+                                    }
+                        }
+            algorithm = "GPTQ"
+        elif config.quant_method.value == "autoround":
+            recipes = {
+                "autoround_args":{
+                "n_samples": config.nsamples,
+                "seq_len":  config.calib_len,
+                "iters": config.calib_iters,
+                "scale_dtype": config.scale_dtype,
+                "use_quant_input": config.use_quant_input,
+                "lr": config.lr,
+                "minmax_lr": config.minmax_lr,
+                }
+            }
+            algorithm = "AUTOROUND"
+        else:
+            assert False, "The Supported algorithm are RTN, AWQ, TEQ, GPTQ, AUTOROUND"
+
         conf = PostTrainingQuantConfig(
             approach="weight_only",
             op_type_dict={
@@ -358,7 +391,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                         "dtype": dtype,
                         "group_size": config.group_size,  # -1 (per-channel)
                         "scheme": config.scheme,
-                        "algorithm": config.algorithm,
+                        "algorithm": algorithm,
                     },
                 },
             },
@@ -373,7 +406,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         )
         # TEQ: set calib_func=None, use default training func as calib_func
         # RTN: doesn't need calib_func
-        if config.algorithm in ["TEQ", "RTN", "GPTQ", "AUTOROUND"]:
+        if config.quant_method.value not in ["awq"]:
             calib_func = None
 
         orig_dtype = torch.float32
@@ -392,30 +425,18 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                                       compression_dim=0,
                                                       use_optimum_format=False,
                                                       scale_dtype=convert_dtype_str2torch(config.scale_dtype))
+
             q_model = replace_linear(model,
                                      None,
                                      None,
                                      config,
                                      device=device)
         else:
-            if config.algorithm == "GPTQ":
+            if algorithm == "GPTQ":
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
-                quantize_config = {
-                    "bits": bits,
-                    "group_size": config.group_size,
-                    "damp_percent": config.algorithm_args["percdamp"],
-                    "desc_act": config.algorithm_args["act_order"],
-                    "sym": True if config.scheme == "sym" else False,
-                    "true_sequential": True,
-                    "model_name_or_path": "null",
-                    "model_file_base_name": "model",
-                }
-
-                setattr(config, "gptq_quantize_config", quantize_config)
                 q_model = replace_linear(inc_model, None, None, config, device=device)
             elif config.algorithm == "AUTOROUND":
-                inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 quantize_config = {
                     "bits": bits,
@@ -428,11 +449,15 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 }
 
                 setattr(config, "gptq_quantize_config", quantize_config)
-                q_model = replace_linear(inc_model, None, None, config, device=device)
+                q_model = replace_linear(inc_model._model, None, None, config, device=device)
             else:
                 q_model = replace_linear(inc_model.model, None, None, config, device=device)
         if orig_dtype != torch.float32:
             q_model.to(dtype=orig_dtype)
+
+        config.low_bit_model = True
+        config.tokenizer = None
+        q_model.config.quantize_config = config.to_dict()
         return q_model.to(device)
 
 def convert_dtype_str2torch(str_dtype):

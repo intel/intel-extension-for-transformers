@@ -18,7 +18,7 @@ import torch
 
 
 def unpack_weight(qweight, scales, qzeros, q_config):
-    bits = q_config["bits"]
+    bits = q_config.bits
     wf = torch.tensor([[0, 4, 8, 12, 16, 20, 24, 28]], dtype=torch.int32)
     zeros = torch.bitwise_right_shift(
         torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)

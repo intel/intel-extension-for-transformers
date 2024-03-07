@@ -22,6 +22,10 @@ from .config import (
     BitsAndBytesConfig,
     SmoothQuantConfig,
     SparsityConfig,
-    WeightOnlyQuantConfig,
+    RtnConfig,
+    AwqConfig,
+    TeqConfig,
+    GPTQConfig,
+    AutoroundConfig
 )
 from .utility import LazyImport, logger, str2bool, CpuInfo
