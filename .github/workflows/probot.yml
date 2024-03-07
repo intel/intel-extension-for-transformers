@@ -24,4 +24,4 @@ jobs:
           timeout: 360 # minutes
           token: ${{ secrets.GITHUB_TOKEN }}
           maintainers: "[VincyZhang](https://github.com/VincyZhang)"
-          owner: "[us](mailto:itrex.maintainers@intel.com)"
+          owner: "[VincyZhang](https://github.com/VincyZhang) or [XuehaoSun](https://github.com/XuehaoSun)"
