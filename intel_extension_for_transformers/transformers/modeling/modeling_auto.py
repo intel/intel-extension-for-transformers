@@ -734,7 +734,7 @@ class _BaseQBitsAutoModelClass:
         elif quantize_config["quant_method"]  == "gptq":
             quantization_config = GPTQConfig.from_dict(quantize_config)
         elif quantize_config["quant_method"] == "autoround":
-            quantization_config = AutoRoundConfig(quantize_config)
+            quantization_config = AutoRoundConfig.from_dict(quantize_config)
 
         assert (quantization_config is not None), "Detect this model is not a low-bit model."
         kwargs["trust_remote_code"] = trust_remote_code

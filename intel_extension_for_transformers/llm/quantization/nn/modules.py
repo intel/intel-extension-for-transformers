@@ -170,7 +170,19 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias=None,
     ):
 
-        if q_config.quant_method.value != "autoround" and q_config.desc_act :
+        if int_weight.is_meta:
+            int_weight = torch.ones(int_weight.shape, dtype=torch.int8)
+            gptq_scales = torch.rand(
+                self.in_features // self.blocksize,
+                self.out_features,
+                dtype=torch.float16,
+            )
+            gptq_zeros = torch.ones(
+                self.in_features // self.blocksize, self.out_features, dtype=torch.int8
+            )
+            if q_config.quant_method.value != "autoround" and q_config.desc_act:
+                g_idx = torch.zeros(self.blocksize, dtype=torch.int32)
+        if q_config.quant_method.value != "autoround" and q_config.desc_act:
             int_weight2 = int_weight.clone()
             group_size = q_config.group_size
             group_dict = {}

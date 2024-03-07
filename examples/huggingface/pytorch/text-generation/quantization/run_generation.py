@@ -164,7 +164,11 @@ parser.add_argument(
     default=2048,
     help="Calibration dataset sequence max length, this should align with your model config",
 )
-parser.add_argument('--static_groups', action='store_true', help='Use determined group to do quantization')
+parser.add_argument(
+    "--static_groups",
+    action="store_true",
+    help="Use determined group to do quantization",
+)
 # ============AUTOROUND configs==============
 parser.add_argument(
     "--lr",
@@ -209,13 +213,15 @@ if args.peft_model_id:
 
 config = AutoConfig.from_pretrained(
     args.model,
-    torchscript=True
-    if (
-        args.sq
-        or args.woq_algo in ["AWQ", "TEQ"]
-        or (args.int8 or args.int8_bf16_mixed)
-    )
-    else False,  # torchscript will force `return_dict=False` to avoid jit errors
+    torchscript=(
+        True
+        if (
+            args.sq
+            or args.woq_algo in ["AWQ", "TEQ"]
+            or (args.int8 or args.int8_bf16_mixed)
+        )
+        else False
+    ),  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
     trust_remote_code=args.trust_remote_code,
     _commit_hash=args._commit_hash,
@@ -299,74 +305,74 @@ elif args.sq:
 elif args.woq:
     if args.woq_algo == "RTN":
         quantization_config = RtnConfig(
-                        tokenizer=tokenizer,
-                        bits=args.bits,
-                        scheme=args.scheme,
-                        group_size=args.group_size,
-                        compute_dtype=args.compute_dtype,
-                        scale_dtype=args.scale_dtype,
-                        weight_dtype=args.weight_dtype,
+            tokenizer=tokenizer,
+            bits=args.bits,
+            scheme=args.scheme,
+            group_size=args.group_size,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
         )
     elif args.woq_algo == "AWQ":
         quantization_config = AwqConfig(
-                        tokenizer=tokenizer,
-                        dataset=args.dataset,
-                        bits=args.bits,
-                        zero_point= False if args.scheme == "sym" else True,
-                        group_size=args.group_size,
-                        max_input_length = args.max_input_length,
-                        compute_dtype=args.compute_dtype,
-                        scale_dtype=args.scale_dtype,
-                        weight_dtype=args.weight_dtype,
-                        calib_iters=args.calib_iters
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            zero_point=False if args.scheme == "sym" else True,
+            group_size=args.group_size,
+            max_input_length=args.max_input_length,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
         )
     elif args.woq_algo == "TEQ":
         quantization_config = TeqConfig(
-                        tokenizer=tokenizer,
-                        dataset=args.dataset,
-                        bits=args.bits,
-                        scheme = args.scheme,
-                        group_size=args.group_size,
-                        max_input_length = args.max_input_length,
-                        compute_dtype=args.compute_dtype,
-                        scale_dtype=args.scale_dtype,
-                        weight_dtype=args.weight_dtype,
-                        calib_iters=args.calib_iters
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            scheme=args.scheme,
+            group_size=args.group_size,
+            max_input_length=args.max_input_length,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
         )
     elif args.woq_algo == "GPTQ":
         quantization_config = GPTQConfig(
-                        tokenizer=tokenizer,
-                        dataset=args.dataset,
-                        bits=args.bits,
-                        desc_act=args.desc_act,
-                        damp_percent=args.damp_percent,
-                        sym=True if args.scheme == "sym" else False,
-                        blocksize=args.blocksize,
-                        nsamples=args.nsamples,
-                        static_groups=args.static_groups,
-                        group_size=args.group_size,
-                        max_input_length = args.max_input_length,
-                        compute_dtype=args.compute_dtype,
-                        scale_dtype=args.scale_dtype,
-                        weight_dtype=args.weight_dtype,
-                        calib_iters=args.calib_iters
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            desc_act=args.desc_act,
+            damp_percent=args.damp_percent,
+            sym=True if args.scheme == "sym" else False,
+            blocksize=args.blocksize,
+            nsamples=args.nsamples,
+            static_groups=args.static_groups,
+            group_size=args.group_size,
+            max_input_length=args.max_input_length,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
         )
     elif args.woq_algo == "AUTOROUND":
         quantization_config = AutoRoundConfig(
-                        tokenizer=tokenizer,
-                        dataset=args.dataset,
-                        bits=args.bits,
-                        sym= True if args.scheme == "sym" else False,
-                        nsamples=args.nsamples,
-                        group_size=args.group_size,
-                        compute_dtype=args.compute_dtype,
-                        scale_dtype=args.scale_dtype,
-                        weight_dtype=args.weight_dtype,
-                        calib_iters=args.calib_iters,
-                        calib_len = args.calib_len,
-                        lr = args.lr,
-                        minmax_lr = args.minmax_lr,
-                        use_quant_input = args.use_quant_input
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            sym=True if args.scheme == "sym" else False,
+            nsamples=args.nsamples,
+            group_size=args.group_size,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
+            calib_len=args.calib_len,
+            lr=args.lr,
+            minmax_lr=args.minmax_lr,
+            use_quant_input=args.use_quant_input,
         )
     else:
         assert False, "Please set the correct '--woq_algo'"
@@ -422,7 +428,6 @@ if args.output_dir:
         user_model.save_pretrained(args.output_dir)
 
 
-
 # int8 model loading
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
@@ -451,7 +456,9 @@ if args.int8 or args.int8_bf16_mixed:
 
 
 if args.benchmark:
-    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
+    user_model = (
+        user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
+    )
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -506,12 +513,15 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
+    user_model = (
+        user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
+    )
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-    args._commit_hash = "main" if args._commit_hash is None else args._commit_hash 
+
+    args._commit_hash = "main" if args._commit_hash is None else args._commit_hash
     results = evaluate(
         model="hf-causal",
         model_args="pretrained="
