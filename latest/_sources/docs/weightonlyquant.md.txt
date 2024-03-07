@@ -140,8 +140,10 @@ git clone https://github.com/intel/intel-extension-for-pytorch.git ipex-gpu
 cd ipex-gpu
 git checkout -b dev/QLLM origin/dev/QLLM
 git submodule update --init --recursive
+export USE_AOT_DEVLIST='pvc,ats-m150'
+export BUILD_WITH_CPU=OFF
 
-Pip install -r requirements.txt
+pip install -r requirements.txt
 python setup.py install
 ```
 
@@ -174,6 +176,7 @@ output = user_model.generate(inputs)
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
 
 5. Saving and Loading quantized model
+ * First step: Quantize and save model
 ```python
 
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
@@ -182,7 +185,9 @@ qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True,
 
 # Please note, saving model should be executed before ipex.optimize_transformers function is called. 
 model.save_pretrained("saved_dir")
-
+```
+ * Second step: Load model and inference(In order to reduce memory usage, you may need to end the quantize process and rerun the script to load the model.)
+```python
 # Load model
 loaded_model = AutoModelForCausalLM.from_pretrained("saved_dir", trust_remote_code=True)
 

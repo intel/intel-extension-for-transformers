@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g3c59590 documentation</title>
+  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g5cf4005 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
@@ -280,8 +280,10 @@ print<span class="o">(</span>gen_text<span class="o">)</span>
 <span class="n">cd</span> <span class="n">ipex</span><span class="o">-</span><span class="n">gpu</span>
 <span class="n">git</span> <span class="n">checkout</span> <span class="o">-</span><span class="n">b</span> <span class="n">dev</span><span class="o">/</span><span class="n">QLLM</span> <span class="n">origin</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">QLLM</span>
 <span class="n">git</span> <span class="n">submodule</span> <span class="n">update</span> <span class="o">--</span><span class="n">init</span> <span class="o">--</span><span class="n">recursive</span>
+<span class="n">export</span> <span class="n">USE_AOT_DEVLIST</span><span class="o">=</span><span class="s1">&#39;pvc,ats-m150&#39;</span>
+<span class="n">export</span> <span class="n">BUILD_WITH_CPU</span><span class="o">=</span><span class="n">OFF</span>
 
-<span class="n">Pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
 <span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">install</span>
 </pre></div>
 </div>
@@ -319,6 +321,9 @@ pip install intel-extension-for-transformers
 <ol class="simple">
 <li><p>Saving and Loading quantized model</p></li>
 </ol>
+<ul class="simple">
+<li><p>First step: Quantize and save model</p></li>
+</ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.modeling</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
 
@@ -326,8 +331,12 @@ pip install intel-extension-for-transformers
 
 <span class="c1"># Please note, saving model should be executed before ipex.optimize_transformers function is called. </span>
 <span class="n">model</span><span class="o">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s2">&quot;saved_dir&quot;</span><span class="p">)</span>
-
-<span class="c1"># Load model</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Second step: Load model and inference(In order to reduce memory usage, you may need to end the quantize process and rerun the script to load the model.)</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load model</span>
 <span class="n">loaded_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;saved_dir&quot;</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Before executed the loaded model, you can call ipex.optimize_transformers function.</span>
@@ -367,7 +376,7 @@ pip install intel-extension-for-transformers
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5c5f6d6aa0> 
+   <jinja2.runtime.BlockReference object at 0x7fa7b2c1e5c0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
