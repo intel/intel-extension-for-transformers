@@ -176,10 +176,12 @@ if args.benchmark:
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model
     user_model = user_model.to(memory_format=torch.channels_last)
+    if quantization_config is None:
+        quantization_config = WeightOnlyQuantConfig.from_pretrained(args.model)
     if not args.disable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
-            user_model.eval(), device=args.device, inplace=True, woq=(hasattr(user_model, "quantization_config")), dtype=torch_dtype)
+            user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
     else:
         print("Disabled optimization with IPEX...")
     # start
