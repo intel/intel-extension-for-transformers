@@ -206,7 +206,7 @@ class _BaseQBitsAutoModelClass:
                 use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
             else:
                 config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path,
-                                                                trust_remote_code=kwargs.get("trust_remote_code", False))
+                                            trust_remote_code=kwargs.get("trust_remote_code", False))
                 if hasattr(config, "model_type") == False:
                     logger.error("Can't get the model_type. Please check the correct model_type")
                     exit(0)
