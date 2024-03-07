@@ -51,8 +51,9 @@ class TextToSpeech():
         if device == "auto":
             device = get_device_type()
         self.device = device
-        self.original_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts").to(self.device)
-        self.processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
+        speecht5_model_name_or_path = os.environ.get("SPEECHT5_MODEL_PATH", "microsoft/speecht5_tts")
+        self.original_model = SpeechT5ForTextToSpeech.from_pretrained(speecht5_model_name_or_path).to(self.device)
+        self.processor = SpeechT5Processor.from_pretrained(speecht5_model_name_or_path)
         self.voice = voice
         self.output_audio_path = output_audio_path
         self.stream_mode = stream_mode
@@ -66,7 +67,8 @@ class TextToSpeech():
         except Exception as e: # pragma: no cover
             logging.warning("[TTS Warning] speaker model fail to load, so speaker embedding creating is disabled.")
             self.speaker_model = None
-        self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
+        hifigan_model_name_or_path = os.environ.get("SPEECHT5_HIFIGAN_MODEL_PATH", "microsoft/speecht5_hifigan")
+        self.vocoder = SpeechT5HifiGan.from_pretrained(hifigan_model_name_or_path).to(self.device)
         self.vocoder.eval()
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.default_speaker_embedding = None
