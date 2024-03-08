@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import logging
+import importlib.util
 from typing import Any, Dict, List, Optional
 from .optimized_instructor_embedding import OptimizedInstructor
 from .optimized_sentence_transformers import OptimizedSentenceTransformer
@@ -74,14 +75,13 @@ class HuggingFaceEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_core
     def __init__(self, **kwargs: Any):
         """Initialize the sentence_transformer."""
         super().__init__(**kwargs)
-        try:
-            import sentence_transformers
 
-        except ImportError as exc:
+        # check sentence_transformers python package
+        if importlib.util.find_spec("sentence_transformers") is None: # pragma: no cover
             raise ImportError(
                 "Could not import sentence_transformers python package. "
-                "Please install it with `pip install sentence-transformers`."
-            ) from exc
+                "Please install it with `pip install -U sentence-transformers`."
+            )
 
         self.client = OptimizedSentenceTransformer(
             self.model_name, cache_folder=self.cache_folder, **self.model_kwargs
@@ -104,7 +104,7 @@ class HuggingFaceEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_core
         import sentence_transformers
 
         texts = list(map(lambda x: x.replace("\n", " "), texts))
-        if self.multi_process:
+        if self.multi_process: # pragma: no cover
             pool = self.client.start_multi_process_pool()
             embeddings = self.client.encode_multi_process(texts, pool)
             sentence_transformers.SentenceTransformer.stop_multi_process_pool(pool)
@@ -161,19 +161,18 @@ class HuggingFaceBgeEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_c
     def __init__(self, **kwargs: Any):
         """Initialize the sentence_transformer."""
         super().__init__(**kwargs)
-        try:
-            import sentence_transformers
 
-        except ImportError as exc:
+        # check sentence_transformers python package
+        if importlib.util.find_spec("sentence_transformers") is None: # pragma: no cover
             raise ImportError(
                 "Could not import sentence_transformers python package. "
-                "Please install it with `pip install sentence_transformers`."
-            ) from exc
+                "Please install it with `pip install -U sentence-transformers`."
+            )
 
         self.client = OptimizedSentenceTransformer(
             self.model_name, cache_folder=self.cache_folder, **self.model_kwargs
         )
-        if "-zh" in self.model_name:
+        if "-zh" in self.model_name: # pragma: no cover
             self.query_instruction = DEFAULT_QUERY_BGE_INSTRUCTION_ZH
 
     class Config:
@@ -250,24 +249,18 @@ class HuggingFaceInstructEmbeddings(langchain_core.pydantic_v1.BaseModel, langch
         super().__init__(**kwargs)
 
         # check sentence_transformers python package
-        try:
-            import sentence_transformers
-
-        except ImportError as exc:
+        if importlib.util.find_spec("sentence_transformers") is None: # pragma: no cover
             raise ImportError(
                 "Could not import sentence_transformers python package. "
-                "Please install it with `pip install sentence_transformers`."
-            ) from exc
+                "Please install it with `pip install -U sentence-transformers`."
+            )
 
         # check InstructorEmbedding python package
-        try:
-            import InstructorEmbedding
-
-        except ImportError as exc:
+        if importlib.util.find_spec("InstructorEmbedding") is None: # pragma: no cover
             raise ImportError(
                 "Could not import InstructorEmbedding python package. "
-                "Please install it with `pip install InstructorEmbedding`."
-            ) from exc
+                "Please install it with `pip install -U InstructorEmbedding`."
+            )
 
         self.client = OptimizedInstructor(
             self.model_name, cache_folder=self.cache_folder, **self.model_kwargs
