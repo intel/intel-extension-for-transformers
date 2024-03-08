@@ -167,7 +167,7 @@ class Retrieval():
         logging.info("The format of parsed documents is transferred.")
 
         if kwargs['search_type']=="similarity":
-            kwargs['search_kwargs']={"k":5}      
+            kwargs['search_kwargs']={"k":5}
         elif kwargs['search_type']=="mmr":
             kwargs['search_kwargs']={"k":5}
         elif kwargs['search_type']=="similarity_score_threshold":
@@ -250,7 +250,7 @@ class RetrieverAdapter():
         for doc in retrieved_documents:
             context.append(doc.page_content)
         return context
-    
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--index_file_jsonl_path", type=str)
@@ -259,7 +259,7 @@ def main():
     parser.add_argument("--embedding_model", type=str, default="BAAI/bge-base-en-v1.5")
     parser.add_argument("--retrieval_type", type=str, default='default')
     parser.add_argument("--search_type", type=str, default="similarity")
-    args = parser.parse_args() 
+    args = parser.parse_args()
 
     index_file_jsonl_path = args.index_file_jsonl_path
     query_file_jsonl_path = args.query_file_jsonl_path
@@ -271,11 +271,11 @@ def main():
     query_list = query_set(query_file_jsonl_path)
     retrieval_results=[]
     for query in query_list:
-        context=Retrieval(input_path=index_file_jsonl_path,                 
+        context=Retrieval(input_path=index_file_jsonl_path,
                          vector_database=vector_database,
                          embedding_model=embedding_model,
                          retrieval_type = retrieval_type,
-                         search_type=search_type).pre_llm_inference_actions(query=query) 
+                         search_type=search_type).pre_llm_inference_actions(query=query)
         retrieval_results.append(context)
     ground_truths=load_list(query_file_jsonl_path, "pos")
     metrics = evaluate(retrieval_results, ground_truths)
