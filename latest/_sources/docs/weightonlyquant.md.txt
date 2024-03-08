@@ -158,6 +158,7 @@ pip install intel-extension-for-transformers
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
+import torch
 
 device = "xpu"
 model_name = "Qwen/Qwen-7B"
@@ -168,7 +169,7 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
 qmodel = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, device_map="xpu", trust_remote_code=True)
 
 # optimize the model with ipex, it will improve performance.
-qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu")
+qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, quantization_config={}, device="xpu")
 
 output = user_model.generate(inputs)
 ```
