@@ -21,7 +21,7 @@ import argparse
 import os
 from typing import Optional, Tuple
 from neural_compressor.utils import logger
-from neural_compressor.utils.utility import LazyImport
+from neural_compressor.utils.utility import LazyImport, CpuInfo
 
 
 CONFIG_NAME = "best_configure.yaml"
