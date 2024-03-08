@@ -7,7 +7,7 @@ Weight Only Quantization (WOQ)
 
 3. [Examples For CPU/CUDA](#examples-for-cpu-and-cuda)
 
-4. [Examples For Intel GPU](#examples-for-gpu)
+4. [Examples For Intel GPU](#examples-for-intel-gpu)
 
 ## Introduction
 
