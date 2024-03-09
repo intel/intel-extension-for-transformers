@@ -70,9 +70,12 @@ torch = LazyImport("torch")
 
 
 def convert_model_to_public(model):
-    from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear  # pylint: disable=E0401
+    # pylint: disable=E0401
+    from intel_extension_for_pytorch.nn.utils._quantize_convert import(
+        WeightOnlyQuantizedLinear
+    )
     for name, module in model.named_modules():
-        if isinstance(module, WeightOnlyLinear):
+        if isinstance(module, WeightOnlyQuantizedLinear):
             if module.weight_transposed:
                 module.qweight.data = module.qweight.t_().contiguous()
                 module.scales.data = module.scales.t_().contiguous()
