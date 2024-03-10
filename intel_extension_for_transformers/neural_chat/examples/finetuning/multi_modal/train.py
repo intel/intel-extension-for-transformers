@@ -219,7 +219,7 @@ def train():
                 use_auth_token=model_args.use_auth_token
                 )
     else:
-        raise ValueError("No llava implemention for the model {}".format(model_args.model_name_or_path))
+        raise ValueError("No llava implementation for the model {}".format(model_args.model_name_or_path))
 
     # for training
     model.config.use_cache = False
