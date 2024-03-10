@@ -165,12 +165,7 @@ def train():
         "cache_dir": training_args.cache_dir,
         "trust_remote_code": model_args.trust_remote_code,
     }
-    if model_args.model_name_or_path == "mistralai/Mixtral-8x7B-v0.1":
-        class Config:
-            architectures = ["MixtralForCausalLM"]
-        config = Config
-    else:
-        config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
+    config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
 
     use_fast = True
     if config.architectures[0] == "LlamaForCausalLM":
@@ -203,20 +198,6 @@ def train():
                 torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
                 trust_remote_code=model_args.trust_remote_code,
                 use_auth_token=model_args.use_auth_token,
-                )
-    elif config.architectures[0] == "MixtralForCausalLM":
-        from llava_mixtral import LlavaMixtralForCausalLM
-        model = LlavaMixtralForCausalLM.from_pretrained(
-                model_args.model_name_or_path,
-                cache_dir=training_args.cache_dir,
-                load_in_4bit=training_args.bits == 4,
-                load_in_8bit=training_args.bits == 8,
-                low_cpu_mem_usage=low_cpu_mem_usage,
-                device_map=device_map,
-                quantization_config=quantization_config,
-                torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
-                trust_remote_code=model_args.trust_remote_code,
-                use_auth_token=model_args.use_auth_token
                 )
     else:
         raise ValueError("No llava implementation for the model {}".format(model_args.model_name_or_path))
