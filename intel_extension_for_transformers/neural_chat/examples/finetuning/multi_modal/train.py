@@ -17,6 +17,7 @@
 
 import sys
 import os
+import ast
 from dataclasses import dataclass, field
 import logging
 import pathlib
@@ -29,7 +30,8 @@ import datasets
 
 from transformers import AutoTokenizer, set_seed, BitsAndBytesConfig, AutoConfig
 from transformers.integrations.deepspeed import is_deepspeed_available
-from llava_utils import *
+from llava_utils import make_supervised_data_module, safe_save_model_for_hf_trainer
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,7 @@ class ModelArguments:
     mm_projector_type: Optional[str] = field(default='linear')
     mm_use_im_start_end: bool = field(default=False)
     mm_use_im_patch_token: bool = field(default=True)
+    mm_patch_merge_type: Optional[str] = field(default='flat')
     mm_vision_select_feature: Optional[str] = field(default="patch")
     trust_remote_code: Optional[bool] = field(
         default=False,
@@ -67,7 +70,8 @@ class DataArguments:
     lazy_preprocess: bool = False
     pad_max: bool = False
     is_multimodal: bool = False
-    mm_im_patchs: int = field(default=576, metadata={"help": "for 336x336 image resolution."})
+    mm_im_patches: int = field(default=576, metadata={"help": "for 336x336 image resolution."})
+    image_grid_pinpoints: Optional[str] = field(default=None)
     image_folder: Optional[str] = field(default=None)
     image_aspect_ratio: str = 'square'
     template: Optional[str] = field(default="v1")
@@ -161,7 +165,12 @@ def train():
         "cache_dir": training_args.cache_dir,
         "trust_remote_code": model_args.trust_remote_code,
     }
-    config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
+    if model_args.model_name_or_path == "mistralai/Mixtral-8x7B-v0.1":
+        class Config:
+            architectures = ["MixtralForCausalLM"]
+        config = Config
+    else:
+        config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
 
     use_fast = True
     if config.architectures[0] == "LlamaForCausalLM":
@@ -193,10 +202,24 @@ def train():
                 quantization_config=quantization_config,
                 torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
                 trust_remote_code=model_args.trust_remote_code,
+                use_auth_token=model_args.use_auth_token,
+                )
+    elif config.architectures[0] == "MixtralForCausalLM":
+        from llava_mixtral import LlavaMixtralForCausalLM
+        model = LlavaMixtralForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                cache_dir=training_args.cache_dir,
+                load_in_4bit=training_args.bits == 4,
+                load_in_8bit=training_args.bits == 8,
+                low_cpu_mem_usage=low_cpu_mem_usage,
+                device_map=device_map,
+                quantization_config=quantization_config,
+                torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
+                trust_remote_code=model_args.trust_remote_code,
                 use_auth_token=model_args.use_auth_token
                 )
     else:
-        raise ValueError("No llava implementation for the model {}".format(model_args.model_name_or_path))
+        raise ValueError("No llava implemention for the model {}".format(model_args.model_name_or_path))
 
     # for training
     model.config.use_cache = False
@@ -256,9 +279,9 @@ def train():
     data_args.image_processor = vision_tower.image_processor
     data_args.is_multimodal = True
     if model_args.mm_vision_select_feature == "patch":
-        data_args.mm_im_patchs = vision_tower.num_patches
+        data_args.mm_im_patches = vision_tower.num_patches
     else:
-        data_args.mm_im_patchs = vision_tower.num_patches + 1
+        data_args.mm_im_patches = vision_tower.num_patches + 1
     model.config.image_aspect_ratio = data_args.image_aspect_ratio
     model.config.tokenizer_padding_side = tokenizer.padding_side
     model.config.tokenizer_model_max_length = tokenizer.model_max_length
@@ -282,6 +305,7 @@ def train():
     training_args.use_im_start_end = model_args.mm_use_im_start_end
     model.config.mm_use_im_patch_token = model_args.mm_use_im_patch_token
     model.initialize_vision_tokenizer(model_args, tokenizer=tokenizer)
+    model.config.image_grid_pinpoints = ast.literal_eval(data_args.image_grid_pinpoints)
 
     if training_args.bits in [4, 8]:
         from peft.tuners.lora import LoraLayer
