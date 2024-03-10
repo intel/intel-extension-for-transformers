@@ -19,9 +19,9 @@
 python3 ./gaudi_spawn.py --use_deepspeed --world_size 8 \
     train.py \
     --deepspeed scripts/zero2.json \
-    --model_name_or_path teknium/OpenHermes-2.5-Mistral-7B \
+    --model_name_or_path mistralai/Mistral-7B-v0.1 \
     --template plain \
-    --data_path ./pretraining_data/LLaVA-Pretrain/blip_laion_cc_sbu_558k_small_large_images.json \
+    --data_path ./pretraining_data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
     --image_folder ./pretraining_data/LLaVA-Pretrain/images \
     --vision_tower openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
@@ -33,7 +33,7 @@ python3 ./gaudi_spawn.py --use_deepspeed --world_size 8 \
     --image_grid_pinpoints "[[336,336], [672,672], [336,1344], [1344,336]]" \
     --image_aspect_ratio anyres \
     --bf16 True \
-    --output_dir ./llava-v1.5-mistral-7b-openhermes-v2.5-pretrain \
+    --output_dir ./llava-v1.5-mistral-7b-pretrain \
     --num_train_epochs 1 \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 4 \
