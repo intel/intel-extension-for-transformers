@@ -14,6 +14,9 @@
 
 import sys
 import transformers
+from optimum.habana.transformers.generation.utils import MODELS_OPTIMIZED_WITH_STATIC_SHAPES
+if "llava" not in MODELS_OPTIMIZED_WITH_STATIC_SHAPES:
+    MODELS_OPTIMIZED_WITH_STATIC_SHAPES.append("llava")
 from optimum.habana.transformers.modeling_utils import adapt_transformers_to_gaudi
 adapt_transformers_to_gaudi()
 
@@ -264,7 +267,7 @@ def main():
 
     model = model.eval().to(device)
     from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0401
-    model = wrap_in_hpu_graph(model, max_graphs=10)
+    model = wrap_in_hpu_graph(model)
 
     samples = []
     for sample in dataset:
