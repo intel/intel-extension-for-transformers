@@ -3,10 +3,9 @@ datasets >= 2.0
 peft
 protobuf
 sentencepiece != 0.1.92
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.2.0+cpu
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
+torch==2.1.0a0
 transformers
-intel_extension_for_pytorch==2.2.0
 optimum-intel
 bitsandbytes  #baichuan
 transformers_stream_generator
@@ -14,4 +13,4 @@ tiktoken  #qwen
 einops  #qwen
 git+https://github.com/intel/neural-compressor.git
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
-git+https://github.com/intel/auto-round.git@d02f94d4b085523df3b313863fb07f83b2989cce
+git+https://github.com/intel/auto-round.git@b65830f3f6cb32d92a5c8ba5f80ace12d517357b

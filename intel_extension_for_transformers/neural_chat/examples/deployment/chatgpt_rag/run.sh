@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2023 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,13 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utils for optimization."""
+# Kill the exist and re-run
+ps -ef |grep 'run_chatgpt_rag' |awk '{print $2}' |xargs kill -9
 
-from .config import (
-    MixedPrecisionConfig,
-    BitsAndBytesConfig,
-    SmoothQuantConfig,
-    SparsityConfig,
-    WeightOnlyQuantConfig,
-)
-from .utility import LazyImport, logger, str2bool, CpuInfo
+# KMP
+export KMP_BLOCKTIME=1
+export KMP_SETTINGS=1
+export KMP_AFFINITY=granularity=fine,compact,1,0
+
+# OMP
+export OMP_NUM_THREADS=56
+export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
+
+# tc malloc
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
+
+numactl -l -C 0-55 python -m run_chatgpt_rag 2>&1 | tee run.log

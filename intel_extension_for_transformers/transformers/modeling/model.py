@@ -88,6 +88,9 @@ class OptimizedModel:
             import intel_extension_for_pytorch    # pylint: disable=E0401
             logger.info("the INC IPEX quantization optimized model is loading.")
             weight_file = os.path.join(model_name_or_path, WEIGHTS_NAME)
+            if not os.path.exists(weight_file):
+                from huggingface_hub import hf_hub_download
+                weight_file = hf_hub_download(model_name_or_path, filename=WEIGHTS_NAME)
             q_model = torch.jit.load(weight_file)
             q_model = torch.jit.freeze(q_model.eval())
             return q_model
