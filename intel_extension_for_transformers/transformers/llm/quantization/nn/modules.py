@@ -27,7 +27,7 @@ from intel_extension_for_transformers.transformers.llm.quantization.autograd imp
 
 
 torch.ops.load_library(
-    os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../..", "libqbits.so")
+    os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../../..", "libqbits.so")
 )
 
 
