@@ -25,6 +25,7 @@ import time
 from transformers.trainer_utils import speed_metrics
 from transformers.debug_utils import DebugOption
 import math
+from transformers import TrainerCallback
 
 @torch.no_grad()
 def compute_rouge_metric(model, tokenizer, eval_dataset, training_args, gen_kwargs):
@@ -155,10 +156,27 @@ def evaluate_plus_ppl(
 
     output.metrics[f"{metric_key_prefix}_ppl"] = math.exp(output.metrics[f"{metric_key_prefix}_loss"])
 
-    self.log(output.metrics)
-
     self.control = self.callback_handler.on_evaluate(self.args, self.state, self.control, output.metrics)
+
+    self.log(output.metrics)
 
     self._memory_tracker.stop_and_update_metrics(output.metrics)
 
     return output.metrics
+
+
+class LMEvalCallback(TrainerCallback):
+    def __init__(self, lm_eval_func):
+        self.lm_eval = lm_eval_func
+
+    def on_evaluate(self, args, state, control, **kwargs):
+        results = self.lm_eval(user_model=kwargs["model"],
+                user_tokenizer=kwargs["tokenizer"])
+        task_metrics = {}
+        for task_name in results["results"]:
+            for metric in results["results"][task_name]:
+                if "stderr" in metric:
+                    continue
+                metric_name = task_name + "_" + metric
+                task_metrics[metric_name] = results["results"][task_name][metric]
+        kwargs["metrics"].update(task_metrics)

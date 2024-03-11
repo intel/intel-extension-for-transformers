@@ -34,7 +34,7 @@ import transformers
 MODEL_REGISTRY = {
     "hf-causal": huggingface.AutoCausalLM,
     "hf-seq2seq": huggingface.AutoSeq2SeqLM,
-
+    "gaudi-hf-causal": huggingface.GaudiModelAdapter,
 }
 
 def itrex_bootstrap_stderr(f, xs, iters):
@@ -69,6 +69,7 @@ def evaluate(model,
              output_base_path=None,
              seed=1234,
              user_model=None,
+             user_tokenizer=None,
              model_format='torch'
             ):
     """Instantiate and evaluate a model on a list of tasks.
@@ -125,6 +126,14 @@ def evaluate(model,
             }
         if user_model:
             kwargs["init_empty_weights"] = True
+
+        if device == "hpu":
+            # if hpu, set user_model
+            kwargs["user_model"] = user_model
+            kwargs["user_tokenzier"] = user_tokenzier
+            if model == "hf-causal":
+                model = "gaudi-hf-causal"
+
         lm = get_model(model).create_from_arg_string(
             model_args, kwargs
         )
@@ -156,6 +165,9 @@ def evaluate(model,
 
     if user_model:
         lm.model = user_model
+
+    if user_tokenzier:
+        lm.tokenizer = user_tokenizer
 
     results = evaluate_func(
         lm=lm,

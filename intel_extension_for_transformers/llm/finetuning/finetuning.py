@@ -536,6 +536,21 @@ class Finetuning:
             if model_dtype == torch.bfloat16:
                 model = model.to(model_dtype)
 
+            lm_eval_callback = None
+            if training_args.do_eval and finetune_args.do_lm_eval:
+                from .eval_utils import LMEvalCallback
+                from functools import partial
+                from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+                lm_eval_func = partial(evaluate,
+                        model="hf-causal",
+                        model_args='pretrained='+model_args.model_name_or_path+\
+                                ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
+                        device="hpu",
+                        batch_size=training_args.per_device_eval_batch_size,
+                        tasks=finetune_args.lm_eval_tasks,
+                        limit=data_args.max_eval_samples)
+                lm_eval_callback = LMEvalCallback(lm_eval_func)
+
             if finetune_args.device != 'hpu':
                 # Initialize our Trainer
                 trainer = Trainer(
@@ -545,6 +560,7 @@ class Finetuning:
                     eval_dataset=eval_dataset if training_args.do_eval else None,
                     tokenizer=tokenizer,
                     data_collator=data_collator,
+                    callbacks=[lm_eval_callback] if lm_eval_callback is not None else None 
                 )
             else:
                 from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611 E0401
@@ -561,6 +577,7 @@ class Finetuning:
                     eval_dataset=eval_dataset if training_args.do_eval else None,
                     tokenizer=tokenizer,
                     data_collator=data_collator,
+                    callbacks=[lm_eval_callback] if lm_eval_callback is not None else None
                 )
 
             trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
