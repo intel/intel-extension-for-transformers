@@ -30,7 +30,6 @@ joblib==1.2.0
 jsonlines
 kornia==0.6.8
 langchain==0.1.11
-langchain_core==0.1.18
 langid
 librosa
 markdown
