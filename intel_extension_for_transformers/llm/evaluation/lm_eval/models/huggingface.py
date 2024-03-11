@@ -615,9 +615,12 @@ class AutoCausalLM(HuggingFaceAutoLM):
     def __init__(self, *args, pretrained, model_format, **kwargs):
         self.model_format = model_format
         if self.model_format == "runtime":
-            from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+            from intel_extension_for_transformers.transformers import RtnConfig, AwqConfig, GPTQConfig, AutoRoundConfig
             use_gptq = kwargs.pop("use_gptq", False)
-            self.woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_gptq=use_gptq)
+            if use_gptq:
+                self.woq_config = GPTQConfig(bits=4, compute_dtype="int8", weight_dtype="int4")
+            else:
+                self.woq_config = RtnConfig(bits=4, compute_dtype="int8", weight_dtype="int4")
         super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
 
         if self.model_format == "runtime":

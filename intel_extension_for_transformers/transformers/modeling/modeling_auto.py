@@ -340,9 +340,7 @@ class _BaseQBitsAutoModelClass:
                 logger.info("Using LLM runtime.")
                 quantization_config.post_init_runtime()
                 from neural_speed import Model
-
                 model = Model()
-                import pdb;pdb.set_trace();
                 model.init(
                     pretrained_model_name_or_path,
                     weight_dtype=quantization_config.weight_dtype,

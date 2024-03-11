@@ -63,11 +63,11 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 To directly load a GPTQ/AWQ/AutoRound model, here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, GPTQConfig
 
 # Download Hugging Face GPTQ model to local path
 model_name = "PATH_TO_MODEL"  # local path to model
-woq_config = WeightOnlyQuantConfig(use_gptq=True) # use_awq=True for AWQ models, and use_autoround=True for AutoRound models
+woq_config = GPTQConfig(bits=4) # use AwqConfig for AWQ models, and AutoRoundConfig for AutoRound models
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -80,7 +80,7 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 To directly load a GGUF model, here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 
 # Specify the GGUF repo on the Hugginface
 model_name = "TheBloke/Llama-2-7B-Chat-GGUF"
@@ -100,9 +100,9 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 To enable [StreamingLLM for infinite inference](./docs/infinite_inference.md), here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig
 model_name = "Intel/neural-chat-7b-v3-1"     # Hugging Face model_id or local model
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+woq_config = RtnConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -118,21 +118,20 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 
 To use whisper to Audio-to-text, here is the sample code
 ```python
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig
 model_name = "Local path for whisper"     # please use local path
-woq_config = WeightOnlyQuantConfig(use_ggml=True) #Currently, only Q40 is supported
+woq_config = RtnConfig(use_ggml=True) #Currently, only Q40 is supported
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config)
 model('Local audio file')
 ```
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
-Argument description of WeightOnlyQuantConfig ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
+Argument description of RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoroundConfig([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
 | Argument          |  Type       | Description                                                                             |
 | --------------    | ----------  | -----------------------------------------------------------------------                 |
 | compute_dtype     | String      | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)                           |
 | weight_dtype      | String      | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4_e2m1)/nf4 (default int4)                                 |
-| alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
 | group_size        | Int         | Group size: Int, 32/128/-1 (per channel) (default: 32)                                                           |
 | scale_dtype       | String      | Data type of scales: fp32/bf16/fp8 (default fp32)                                           |
 | use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
@@ -171,11 +170,11 @@ Argument description of generate function:
 Chat with LLaMA2:
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig
 
 # Please change to local path to model, llama2 does not support online conversion, currently.
 model_name = "meta-llama/Llama-2-7b-chat-hf"
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+woq_config = RtnConfig(compute_dtype="int8", weight_dtype="int4")
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
@@ -192,10 +191,10 @@ while True:
 Chat with ChatGLM2:
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig
 
 model_name = "THUDM/chatglm2-6b"  # or local path to model
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+woq_config = RtnConfig(compute_dtype="int8", weight_dtype="int4")
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
@@ -212,10 +211,10 @@ while True:
 Chat with Qwen:
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig
 
 model_name = "Qwen/Qwen-7B-Chat"  # or local path to model
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+woq_config = RtnConfig(compute_dtype="int8", weight_dtype="int4")
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
