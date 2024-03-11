@@ -28,6 +28,8 @@ class TestEvaluation(unittest.TestCase):
             os.remove("data_minedHN.jsonl")
         if os.path.exists("data_minedHN_split.jsonl"):
             os.remove("data_minedHN_split.jsonl")
+        if os.path.exists("output"):
+            shutil.rmtree("output", ignore_errors=True)
         return super().setUp()
 
     def tearDown(self) -> None:
@@ -37,6 +39,8 @@ class TestEvaluation(unittest.TestCase):
             os.remove("data_minedHN.jsonl")
         if os.path.exists("data_minedHN_split.jsonl"):
             os.remove("data_minedHN_split.jsonl")
+        if os.path.exists("output"):
+            shutil.rmtree("output", ignore_errors=True)
         return super().tearDown()
 
     def test_retrieval_dataset_construction(self):
