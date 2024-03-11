@@ -76,9 +76,12 @@ torch = LazyImport("torch")
 
 
 def convert_model_to_public(model):
-    from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear  # pylint: disable=E0401
+    # pylint: disable=E0401
+    from intel_extension_for_pytorch.nn.utils._quantize_convert import(
+        WeightOnlyQuantizedLinear
+    )
     for name, module in model.named_modules():
-        if isinstance(module, WeightOnlyLinear):
+        if isinstance(module, WeightOnlyQuantizedLinear):
             if module.weight_transposed:
                 module.qweight.data = module.qweight.t_().contiguous()
                 module.scales.data = module.scales.t_().contiguous()
@@ -204,6 +207,7 @@ class _BaseQBitsAutoModelClass:
         device_map = kwargs.get("device_map", "cpu")
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
+
         config = kwargs.pop("config", None)
         trust_remote_code = kwargs.get("trust_remote_code", None)
 
