@@ -25,7 +25,7 @@ env:
   EXTRA_CONTAINER_NAME: "modelTest"
 
 jobs:
-  unit-test:
+  neural-speed-unit-test:
     runs-on: [self-hosted, linux, X64, llmruntime-node]
     steps:
       - name: Load environment variables
@@ -46,7 +46,7 @@ jobs:
           fi
 
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: "recursive"
           fetch-tags: true
@@ -87,7 +87,7 @@ jobs:
           && bash run_unit_test_neuralspeed.sh"
 
       - name: Publish pipeline artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: LLM Runtime Unit Test
