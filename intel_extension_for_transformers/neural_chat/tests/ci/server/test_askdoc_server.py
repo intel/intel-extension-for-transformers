@@ -151,7 +151,6 @@ class UnitTest(unittest.TestCase):
         gaudi2_kb_id = response.json()["knowledge_base_id"]
         query_params = {
             "query": "How about the benchmark test of Habana Gaudi2?",
-            "translated": "How about the benchmark test of Habana Gaudi2?",
             "knowledge_base_id": gaudi2_kb_id,
             "stream": False,
             "max_new_tokens": 64,
@@ -172,7 +171,6 @@ class UnitTest(unittest.TestCase):
         gaudi2_kb_id = response.json()["knowledge_base_id"]
         query_params = {
             "query": "How about the benchmark test of Habana Gaudi2?",
-            "translated": "How about the benchmark test of Habana Gaudi2?",
             "knowledge_base_id": gaudi2_kb_id,
             "stream": True,
             "max_new_tokens": 64,
