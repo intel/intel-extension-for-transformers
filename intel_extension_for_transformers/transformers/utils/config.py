@@ -716,6 +716,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         max_input_length: Optional[int] = None,
         static_groups: bool = False,
         use_ggml: bool = False,
+        use_quant: bool = True,
         use_neural_speed: bool = False,
         low_bit_model=False,
         llm_int8_skip_modules=None,
@@ -748,6 +749,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
         self.use_ggml = use_ggml
+        self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
@@ -817,6 +819,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         zero_point: bool = True,
         mse_range: bool = False,
         use_ggml: bool = False,
+        use_quant: bool = True,
         use_neural_speed: bool = False,
         low_bit_model=False,
         llm_int8_skip_modules=None,
@@ -839,6 +842,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
         self.use_ggml = use_ggml
+        self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)

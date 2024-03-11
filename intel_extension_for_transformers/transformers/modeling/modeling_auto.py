@@ -338,6 +338,7 @@ class _BaseQBitsAutoModelClass:
                 from neural_speed import Model
 
                 model = Model()
+                import pdb;pdb.set_trace();
                 model.init(
                     pretrained_model_name_or_path,
                     weight_dtype=quantization_config.weight_dtype,
@@ -346,11 +347,10 @@ class _BaseQBitsAutoModelClass:
                     scale_dtype=quantization_config.scale_dtype,
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
-                    use_quant=quantization_config.use_quant,
-                    use_gptq=quantization_config.use_gptq or \
-                            quantization_config.algorithm.upper() == "GPTQ" or \
-                            quantization_config.use_autoround,
-                    use_awq=quantization_config.algorithm.upper() == "AWQ",
+                    use_quant=quantization_config.use_quant if hasattr(quantization_config, "use_quant") else False,
+                    use_gptq=quantization_config.quant_method.value == "gptq" or \
+                            quantization_config.quant_method.value =="autoround",
+                    use_awq=quantization_config.quant_method.value == "awq",
                 )
                 model.quantization_config = quantization_config
                 return model

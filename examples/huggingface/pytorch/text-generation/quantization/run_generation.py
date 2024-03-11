@@ -201,7 +201,7 @@ args = parser.parse_args()
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
 # 4.31.0 for ipex.optimize_transformers
-check_min_version("4.31.0")
+check_min_version("4.35.2")
 # get model config
 if args.peft_model_id:
     from peft import PeftConfig
