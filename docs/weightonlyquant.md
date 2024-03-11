@@ -7,7 +7,7 @@ Weight Only Quantization (WOQ)
 
 3. [Examples For CPU/CUDA](#examples-for-cpu-and-cuda)
 
-4. [Examples For Intel GPU](#examples-for-gpu)
+4. [Examples For Intel GPU](#examples-for-intel-gpu)
 
 ## Introduction
 
@@ -140,8 +140,10 @@ git clone https://github.com/intel/intel-extension-for-pytorch.git ipex-gpu
 cd ipex-gpu
 git checkout -b dev/QLLM origin/dev/QLLM
 git submodule update --init --recursive
+export USE_AOT_DEVLIST='pvc,ats-m150'
+export BUILD_WITH_CPU=OFF
 
-Pip install -r requirements.txt
+pip install -r requirements.txt
 python setup.py install
 ```
 
@@ -156,6 +158,7 @@ pip install intel-extension-for-transformers
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
+import torch
 
 device = "xpu"
 model_name = "Qwen/Qwen-7B"
@@ -166,7 +169,7 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
 qmodel = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, device_map="xpu", trust_remote_code=True)
 
 # optimize the model with ipex, it will improve performance.
-qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu")
+qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, quantization_config={}, device="xpu")
 
 output = user_model.generate(inputs)
 ```
@@ -174,6 +177,7 @@ output = user_model.generate(inputs)
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
 
 5. Saving and Loading quantized model
+ * First step: Quantize and save model
 ```python
 
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
@@ -182,7 +186,9 @@ qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True,
 
 # Please note, saving model should be executed before ipex.optimize_transformers function is called. 
 model.save_pretrained("saved_dir")
-
+```
+ * Second step: Load model and inference(In order to reduce memory usage, you may need to end the quantize process and rerun the script to load the model.)
+```python
 # Load model
 loaded_model = AutoModelForCausalLM.from_pretrained("saved_dir", trust_remote_code=True)
 
