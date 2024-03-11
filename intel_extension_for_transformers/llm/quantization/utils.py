@@ -508,9 +508,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
         if orig_dtype != torch.float32:
             q_model.to(dtype=orig_dtype)
 
-        config.low_bit_model = True
-        config.tokenizer = None
-        q_model.config.quantize_config = config.to_dict()
+        # config.tokenizer = None
+        # q_model.config.quantization_config = config.to_dict()
         return q_model.to(device)
 
 

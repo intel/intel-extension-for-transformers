@@ -264,6 +264,28 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
     Mixin class for quantization config
     """
 
+    def update(self, **kwargs):
+        """
+        Updates attributes of this class instance with attributes from `kwargs` if they match existing atributtes,
+        returning all the unused kwargs.
+
+        Args:
+            kwargs (`Dict[str, Any]`):
+                Dictionary of attributes to tentatively update this class.
+
+        Returns:
+            `Dict[str, Any]`: Dictionary containing all the key-value pairs that were not used to update the instance.
+        """
+        to_remove = []
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+                to_remove.append(key)
+
+        # Remove all the attributes that were updated, without modifying the input dict
+        unused_kwargs = {key: value for key, value in kwargs.items() if key not in to_remove}
+        return unused_kwargs
+
     def post_init_cpu(self):
         r"""
         Safety checker that arguments are correct
@@ -278,7 +300,9 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
         elif self.compute_dtype is None:
             self.compute_dtype = "fp32"
 
-        if self.bits not in [4, 8]:
+        if self.bits is None:
+            self.bits = 4
+        elif self.bits is not None and self.bits not in [4, 8]:
             raise ValueError(
                 f"Only support quantization to [4, 8] bits but found {self.bits}"
             )
@@ -366,7 +390,9 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
         elif self.compute_dtype is None:
             self.compute_dtype = "fp16"
 
-        if self.bits not in [4]:
+        if self.bits is None:
+            self.bits = 4
+        elif self.bits not in [4]:
             raise ValueError(
                 f"Only support quantization to [4] bits but found {self.bits}"
             )
@@ -377,7 +403,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
         elif self.weight_dtype not in [
             "int4_fullrange",
         ]:
-            raise ValueError(f"weight_dtype must be a string in " f"'int4_fullrange'.")
+            raise ValueError(f"weight_dtype must be a string in 'int4_fullrange', but get {self.weight_dtype}.")
 
         if self.scale_dtype is not None and self.scale_dtype not in ["fp16"]:
             raise ValueError(f"scale_dtype must be a string in 'fp16'")
@@ -434,7 +460,9 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
                     )
                 )
 
-        if self.bits not in [4, 8]:
+        if self.bits is None:
+            self.bits = 4
+        elif self.bits not in [4, 8]:
             raise ValueError(
                 f"Only support quantization to [4, 8] bits but found {self.bits}"
             )
@@ -643,8 +671,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
 
     def __init__(
         self,
-        bits: int = 8,
-        dtype: str = "int",
+        bits: int = 4,
         group_size: int = 32,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
@@ -656,7 +683,6 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
-        low_bit_model=False,
         llm_int8_skip_modules=None,
         **kwargs,
     ):
@@ -673,7 +699,6 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
-        self.low_bit_model = low_bit_model
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
@@ -720,8 +745,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
 
     def __init__(
         self,
-        bits: int = 8,
-        dtype: str = "int",
+        bits: int = 4,
         tokenizer: Any = None,
         dataset: Optional[Union[List[str], str]] = None,
         group_size: int = 32,
@@ -740,7 +764,6 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
-        low_bit_model=False,
         llm_int8_skip_modules=None,
         **kwargs,
     ):
@@ -766,7 +789,6 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.desc_act = desc_act
         self.static_groups = static_groups
         self.max_input_length = max_input_length
-        self.low_bit_model = low_bit_model
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
@@ -829,7 +851,6 @@ class AwqConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
         bits: int = 8,
-        dtype: str = "int",
         tokenizer: Any = None,
         dataset: Optional[Union[List[str], str]] = None,
         group_size: int = 32,
@@ -843,7 +864,6 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
-        low_bit_model=False,
         llm_int8_skip_modules=None,
         **kwargs,
     ):
@@ -859,7 +879,6 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.mse_range = mse_range
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.low_bit_model = low_bit_model
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
@@ -891,7 +910,6 @@ class TeqConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
         bits: int = 8,
-        dtype: str = "int",
         tokenizer: Any = None,
         dataset: Optional[Union[List[str], str]] = None,
         group_size: int = 32,
@@ -903,7 +921,6 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         scheme: str = "sym",
         use_ggml: bool = False,
         use_neural_speed: bool = False,
-        low_bit_model=False,
         llm_int8_skip_modules=None,
         **kwargs,
     ):
@@ -918,7 +935,6 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.scheme = scheme
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.low_bit_model = low_bit_model
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
@@ -986,7 +1002,6 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         static_groups: bool = False,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
-        low_bit_model=False,
         llm_int8_skip_modules=None,
         **kwargs,
     ):
