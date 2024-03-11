@@ -70,9 +70,12 @@ torch = LazyImport("torch")
 
 
 def convert_model_to_public(model):
-    from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear  # pylint: disable=E0401
+    # pylint: disable=E0401
+    from intel_extension_for_pytorch.nn.utils._quantize_convert import(
+        WeightOnlyQuantizedLinear
+    )
     for name, module in model.named_modules():
-        if isinstance(module, WeightOnlyLinear):
+        if isinstance(module, WeightOnlyQuantizedLinear):
             if module.weight_transposed:
                 module.qweight.data = module.qweight.t_().contiguous()
                 module.scales.data = module.scales.t_().contiguous()
@@ -197,25 +200,23 @@ class _BaseQBitsAutoModelClass:
         device_map = kwargs.get("device_map", "cpu")
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
-
-        if kwargs.get("use_llm_runtime", None) is not None:
-            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
-            logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
-        elif kwargs.get("use_neural_speed", None) is not None:
-            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
-        else:
-            config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path,
-                                                             trust_remote_code=kwargs.get("trust_remote_code", False))
-            if hasattr(config, "model_type") == False:
-                logger.error("Can't get the model_type. Please check the correct model_type")
-                exit(0)
-
-            if config.model_type in cls.model_type_list:
-                logger.info("Using Neural Speed...")
-                use_neural_speed = True
+        use_neural_speed = False
+        if not use_xpu:
+            if kwargs.get("use_llm_runtime", None) is not None:
+                use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
+                logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
+            elif kwargs.get("use_neural_speed", None) is not None:
+                use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
             else:
-                logger.info("Using Pytorch...")
-                use_neural_speed = False
+                config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path,
+                                            trust_remote_code=kwargs.get("trust_remote_code", False))
+                if hasattr(config, "model_type") == False:
+                    logger.error("Can't get the model_type. Please check the correct model_type")
+                    exit(0)
+
+                if config.model_type in cls.model_type_list:
+                    logger.info("Using Neural Speed...")
+                    use_neural_speed = True
 
         if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
             logger.info(

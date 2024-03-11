@@ -50,7 +50,7 @@ jobs:
           fi
 
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: "recursive"
           fetch-tags: true
@@ -84,7 +84,7 @@ jobs:
 
       - name: Download Reference Artifact
         id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v3.1.2
         with:
           workflow: deploy-test.yml
           name: ${{ matrix.framework }}-${{ matrix.modelName }}
@@ -124,7 +124,7 @@ jobs:
            --model_test_type=deploy"
 
       - name: Publish pipeline artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: ${{ matrix.framework }}-${{ matrix.modelName }}
@@ -145,10 +145,10 @@ jobs:
               docker exec ${{ env.EXTRA_CONTAINER_NAME2 }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download Summary Log
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: ${{ env.OUT_SCRIPT_PATH }}/log
 
@@ -161,7 +161,7 @@ jobs:
 
       - name: Download Reference Artifact
         id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v3.1.2
         with:
           workflow: deploy-test.yml
           name: FinalReport
@@ -190,7 +190,7 @@ jobs:
           ghprbActualCommit: ${{ github.event.pull_request.head.sha }}
 
       - name: Publish Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: FinalReport
