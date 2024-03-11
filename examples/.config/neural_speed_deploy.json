@@ -8,7 +8,7 @@
             "params": {
                 "model_name": "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf",
                 "model_format": "runtime",
-                "tasks": "lambada_openai,piqa"
+                "tasks": "lambada_openai"
             }
         },
         "launcher":{}
@@ -22,7 +22,7 @@
             "params": {
                 "model_name": "/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1",
                 "model_format": "runtime",
-                "tasks": "lambada_openai"
+                "tasks": "piqa"
             }
         },
         "launcher":{}
@@ -50,7 +50,7 @@
             "params": {
                 "model_name": "/tf_dataset2/models/pytorch/Mistral-7B-v0.1",
                 "model_format": "runtime",
-                "tasks": "lambada_openai"
+                "tasks": "piqa"
             }
         },
         "launcher":{}
