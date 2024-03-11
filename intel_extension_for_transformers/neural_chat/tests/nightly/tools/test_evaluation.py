@@ -50,7 +50,7 @@ class TestEvaluation(unittest.TestCase):
         with patch('sys.argv', ['python retrieval_dataset_construction.py'] + argv):
             retrieval_dataset_construction.main()
             self.assertTrue(os.path.exists("data_minedHN_split.jsonl"))
-            
+
     def test_evaluate_retrieval(self):
         argv = ['--index_file_jsonl_path', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/candidate_context.jsonl', \
                 '--query_file_jsonl_path', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/example.jsonl', \
