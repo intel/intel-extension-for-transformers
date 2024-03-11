@@ -62,7 +62,7 @@ jobs:
             ${{ env.INPUT_COMPILER_VERSION }}
         env:
           WORKSPACE: ${{ env.WORKING_DIR }}
-          GRAPH_DIR: ${{ env.WORKING_DIR }}/intel_extension_for_transformers/llm/runtime/graph
+          GRAPH_DIR: ${{ env.WORKING_DIR }}/intel_extension_for_transformers/transformers/llm/runtime/neural_speed
 
       - name: Rename summary
         run: |

@@ -41,7 +41,7 @@ Our motivation is improve CPU support for weight only quantization, since `bitsa
 ### Example for CPU device
 4-bit/8-bit inference with `WeightOnlyQuantConfig` on CPU device.
 ```bash
-cd intel_extension_for_transformers/llm/runtime/graph
+cd intel_extension_for_transformers/transformers/llm/runtime/neural_speed
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 model_name_or_path = "Intel/neural-chat-7b-v3-3"
 # weight_dtype: int8/int4, compute_dtype: int8/fp32
@@ -119,7 +119,7 @@ model.save_pretrained(saved_dir)
 loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 ```
 
-> Note: For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)
+> Note: For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/transformers/llm/runtime/neural_speed/README.md#2-run-llm-with-transformer-based-api)
 
 ## Examples For Intel GPU
 Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  

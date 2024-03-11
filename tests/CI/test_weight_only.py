@@ -29,9 +29,9 @@ from transformers import (
     Trainer
 )
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits, QuantizedLoraLinearQBits
-from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
-from intel_extension_for_transformers.llm.utils.generation import _beam_search, _greedy_search
+from intel_extension_for_transformers.transformers.llm.quantization.nn.modules import QuantizedLinearQBits, QuantizedLoraLinearQBits
+from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
+from intel_extension_for_transformers.transformers.llm.utils.generation import _beam_search, _greedy_search
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 
 

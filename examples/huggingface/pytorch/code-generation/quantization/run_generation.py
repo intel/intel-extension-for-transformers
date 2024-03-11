@@ -371,7 +371,7 @@ if args.output_dir:
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
-    from intel_extension_for_transformers.llm.evaluation.models import (
+    from intel_extension_for_transformers.transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
 
@@ -485,7 +485,7 @@ if args.benchmark:
 
 
 if args.accuracy:
-    from intel_extension_for_transformers.llm.evaluation.bigcode_eval import evaluate
+    from intel_extension_for_transformers.transformers.llm.evaluation.bigcode_eval import evaluate
 
     results = evaluate(
         model=user_model,

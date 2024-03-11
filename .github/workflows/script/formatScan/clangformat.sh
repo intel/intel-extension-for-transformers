@@ -8,7 +8,7 @@ log_path=${log_dir}/clangformat.log
 cd /intel-extension-for-transformers
 git config --global --add safe.directory "*"
 
-cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph
+cd /intel-extension-for-transformers/intel_extension_for_transformers/transformers/llm/runtime/neural_speed
 python scripts/clang-format.py
 
 echo "run git diff"

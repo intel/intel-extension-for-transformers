@@ -6,9 +6,9 @@ import torch
 from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
 import intel_extension_for_pytorch as ipex
-from intel_extension_for_transformers.llm.utils.generation import _beam_search, _greedy_search
+from intel_extension_for_transformers.transformers.llm.utils.generation import _beam_search, _greedy_search
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_str2torch
+from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_dtype_str2torch
 from transformers.utils import check_min_version
 
 parser = argparse.ArgumentParser()
@@ -261,7 +261,7 @@ if args.benchmark:
 
 
 if args.accuracy:
-    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model

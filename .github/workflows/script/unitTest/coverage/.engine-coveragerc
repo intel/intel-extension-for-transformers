@@ -6,10 +6,10 @@ omit =
  */**/fake*yaml
  */intel_extension_for_transformers/neural_chat/**
  */intel_extension_for_transformers/transformers/**
- */intel_extension_for_transformers/llm/evaluation/**
- */intel_extension_for_transformers/llm/finetuning/**
- */intel_extension_for_transformers/llm/inference/**
- */intel_extension_for_transformers/llm/quantization/**
- */intel_extension_for_transformers/llm/runtime/graph/**
+ */intel_extension_for_transformers/transformers/llm/evaluation/**
+ */intel_extension_for_transformers/transformers/llm/finetuning/**
+ */intel_extension_for_transformers/transformers/llm/inference/**
+ */intel_extension_for_transformers/transformers/llm/quantization/**
+ */intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**
 exclude_lines =
  pragma: no cover

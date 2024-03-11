@@ -4,11 +4,11 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/llm/runtime/neural_speed/**
+      - intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**
       - .github/workflows/unit-test-neuralspeed.yml
       - '.github/workflows/script/unitTest/run_unit_test_neuraspeed.sh'
-      - '!intel_extension_for_transformers/llm/runtime/neural_speed/docs/**'
-      - '!intel_extension_for_transformers/llm/runtime/neural_speed/*.md'
+      - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/docs/**'
+      - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/*.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled

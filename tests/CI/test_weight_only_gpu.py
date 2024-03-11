@@ -19,7 +19,7 @@ import shutil
 import intel_extension_for_pytorch as ipex
 import torch.nn.functional as F
 import torch.utils.data as data
-from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
+from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 from math import isclose

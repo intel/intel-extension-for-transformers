@@ -5,13 +5,13 @@ branch = True
 omit =
  */**/fake*yaml
  */**/fake.py
- */intel_extension_for_transformers/llm/amp/**
- */intel_extension_for_transformers/llm/evaluation/**
- */intel_extension_for_transformers/llm/quantization/**
- */intel_extension_for_transformers/llm/utils/generation/**
- */intel_extension_for_transformers/llm/library/**
- */intel_extension_for_transformers/llm/operator/**
- */intel_extension_for_transformers/llm/runtime/**
+ */intel_extension_for_transformers/transformers/llm/amp/**
+ */intel_extension_for_transformers/transformers/llm/evaluation/**
+ */intel_extension_for_transformers/transformers/llm/quantization/**
+ */intel_extension_for_transformers/transformers/llm/utils/generation/**
+ */intel_extension_for_transformers/transformers/llm/library/**
+ */intel_extension_for_transformers/transformers/llm/operator/**
+ */intel_extension_for_transformers/transformers/llm/runtime/**
  */intel_extension_for_transformers/transformers/**
 exclude_lines =
  pragma: no cover

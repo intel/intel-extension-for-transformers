@@ -1,7 +1,7 @@
 tests/*.pt
-/intel_extension_for_transformers/llm/runtime/graph/*
-!/intel_extension_for_transformers/llm/runtime/graph/*.*
-!/intel_extension_for_transformers/llm/runtime/graph/*/
+/intel_extension_for_transformers/transformers/llm/runtime/neural_speed/*
+!/intel_extension_for_transformers/transformers/llm/runtime/neural_speed/*.*
+!/intel_extension_for_transformers/transformers/llm/runtime/neural_speed/*/
 ### ignore binary files in llm-runtime ###
 
 *.pyc
@@ -40,9 +40,9 @@ dist/
 # CMakeUserPresets.json should be ignored. See: https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html
 CMakeUserPresets.json
 
-/intel_extension_for_transformers/llm/runtime/out
-/intel_extension_for_transformers/llm/runtime/graph/out
-/intel_extension_for_transformers/llm/runtime/graph/runtime_outs
+/intel_extension_for_transformers/transformers/llm/runtime/out
+/intel_extension_for_transformers/transformers/llm/runtime/neural_speed/out
+/intel_extension_for_transformers/transformers/llm/runtime/neural_speed/runtime_outs
 /examples/**/*.npy
 /examples/**/*.bin
 /examples/**/*.yaml

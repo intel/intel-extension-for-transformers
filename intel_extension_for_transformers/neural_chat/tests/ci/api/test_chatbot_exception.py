@@ -320,7 +320,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         os.remove(test_data_file)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_error_dataset_not_found(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -336,7 +336,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_DATASET_NOT_FOUND)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_error_validation_file_not_found(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -352,7 +352,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_error_train_file_not_found(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -368,7 +368,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_lora_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -384,7 +384,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_LORA_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_llama_adapter_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -400,7 +400,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_ptun_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -416,7 +416,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_PTUN_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_prefix_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -432,7 +432,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_PREFIX_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_prompt_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -448,7 +448,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_PROMPT_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_data_no_permission_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -464,7 +464,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    @patch('intel_extension_for_transformers.transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_error_generic(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -488,7 +488,7 @@ class TestOptimizeModelExceptions(unittest.TestCase):
         return super().tearDown()
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.quantization.optimization.Optimization.optimize')
+    @patch('intel_extension_for_transformers.transformers.llm.quantization.optimization.Optimization.optimize')
     def test_amp_optimize_fail(self,mock_optimize):
         config = MixedPrecisionConfig(dtype="float16" if torch.cuda.is_available() else "bfloat16")
         model = AutoModelForCausalLM.from_pretrained(
@@ -500,7 +500,7 @@ class TestOptimizeModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_AMP_OPTIMIZATION_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.quantization.optimization.Optimization.optimize')
+    @patch('intel_extension_for_transformers.transformers.llm.quantization.optimization.Optimization.optimize')
     def test_weight_only_quant_optimize_fail(self,mock_optimize):
         config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
         model = AutoModelForCausalLM.from_pretrained(
@@ -512,7 +512,7 @@ class TestOptimizeModelExceptions(unittest.TestCase):
         self.assertEqual(get_latest_error(), ErrorCodes.ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cuda', "Only run this test on CUDA")
-    @patch('intel_extension_for_transformers.llm.quantization.optimization.Optimization.optimize')
+    @patch('intel_extension_for_transformers.transformers.llm.quantization.optimization.Optimization.optimize')
     def test_bitsandbytes_quant_optimize_fail(self,mock_optimize):
         config = BitsAndBytesConfig(load_in_4bit=True,
                         bnb_4bit_quant_type='nf4',

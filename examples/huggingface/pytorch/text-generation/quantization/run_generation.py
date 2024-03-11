@@ -388,7 +388,7 @@ if args.output_dir:
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
-    from intel_extension_for_transformers.llm.evaluation.models import (
+    from intel_extension_for_transformers.transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
 
@@ -471,7 +471,7 @@ if args.accuracy:
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )
-    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
     args._commit_hash = "main" if args._commit_hash is None else args._commit_hash 
     results = evaluate(
         model="hf-causal",

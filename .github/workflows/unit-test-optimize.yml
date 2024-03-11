@@ -8,14 +8,14 @@ on:
       - requirements.txt
       - setup.py
       - intel_extension_for_transformers/utils/**
-      - intel_extension_for_transformers/llm/evaluation/**
-      - intel_extension_for_transformers/llm/quantization/**
-      - intel_extension_for_transformers/llm/runtime/graph/**
-      - intel_extension_for_transformers/llm/operator/**
+      - intel_extension_for_transformers/transformers/llm/evaluation/**
+      - intel_extension_for_transformers/transformers/llm/quantization/**
+      - intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**
+      - intel_extension_for_transformers/transformers/llm/operator/**
       - tests/**
       - .github/workflows/unit-test-optimize.yml
       - '.github/workflows/script/unitTest/run_unit_test_optimize.sh'
-      - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
+      - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/*.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled

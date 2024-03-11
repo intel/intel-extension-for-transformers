@@ -50,7 +50,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         low_bit_model=False,
         **kwargs,
     ):
-        from intel_extension_for_transformers.llm.quantization.utils import (
+        from intel_extension_for_transformers.transformers.llm.quantization.utils import (
             convert_dtype_torch2str, )
 
         self.llm_int8_skip_modules = (llm_int8_skip_modules if llm_int8_skip_modules else [])
