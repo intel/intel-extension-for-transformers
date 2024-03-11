@@ -88,7 +88,7 @@ class TestWeightOnly(unittest.TestCase):
         print(config)
 
     def test_woq_config_post_init_runtime(self):
-        config = RtnConfig(weight_dtype="fp4", compute_dtype="int8", scheme="asym", scale_dtype="fp8")
+        config = RtnConfig(bits=4, weight_dtype="fp4", compute_dtype="int8", scheme="asym", scale_dtype="fp8")
         config.post_init_runtime()
         config_dict = config.to_dict()
         self.assertEqual(config_dict["weight_dtype"], "fp4_e2m1")
