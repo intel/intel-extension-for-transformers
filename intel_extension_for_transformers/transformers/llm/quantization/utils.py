@@ -26,7 +26,7 @@ from neural_compressor import quantization
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from neural_compressor.utils.utility import LazyImport
 from neural_compressor.config import PostTrainingQuantConfig
-from ...utils.utils import is_ipex_available, is_autoround_available
+from ....utils.utils import is_ipex_available, is_autoround_available
 from transformers import AutoTokenizer
 
 if is_ipex_available():

@@ -319,7 +319,8 @@ class Finetuning:
                 elif self.finetune_args.bits == 4:
                     cls = bnb.nn.Linear4bit
             elif self.training_args.device.type == "cpu":
-                from intel_extension_for_transformers.transformers.llm.quantization.nn.modules import QuantizedLinearQBits
+                from intel_extension_for_transformers.transformers.llm.quantization.nn.modules \
+                    import QuantizedLinearQBits
                 cls = QuantizedLinearQBits
 
         lora_module_names = set()

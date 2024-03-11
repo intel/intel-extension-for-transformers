@@ -77,8 +77,8 @@ class ONNXExtractor(object):
                         if op_type == 'Constant':
                             continue
                         else:
-                            import intel_extension_for_transformers.transformers.llm.runtime.deprecated.compile.graph_utils\
-                                as util
+                            import intel_extension_for_transformers.transformers.llm.runtime.deprecated.compile.\
+                                graph_utils as util
                             input_tensor_names = inner_node.input
                             for input_tensor_name in input_tensor_names:
                                 origin_tensor_name, input_tensor_name = \

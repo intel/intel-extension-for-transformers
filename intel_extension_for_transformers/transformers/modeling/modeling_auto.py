@@ -56,7 +56,7 @@ from ..utils.utility import (
     SAFE_WEIGHTS_NAME,
     SAFE_WEIGHTS_INDEX_NAME,
 )
-from ...llm.quantization.utils import (
+from ..llm.quantization.utils import (
     convert_dtype_str2torch,
     convert_dtype_torch2str,
     convert_to_quantized_model,
