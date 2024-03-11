@@ -130,7 +130,7 @@ def evaluate(model,
         if device == "hpu":
             # if hpu, set user_model
             kwargs["user_model"] = user_model
-            kwargs["user_tokenzier"] = user_tokenzier
+            kwargs["user_tokenizer"] = user_tokenizer
             if model == "hf-causal":
                 model = "gaudi-hf-causal"
 
@@ -166,7 +166,7 @@ def evaluate(model,
     if user_model:
         lm.model = user_model
 
-    if user_tokenzier:
+    if user_tokenizer:
         lm.tokenizer = user_tokenizer
 
     results = evaluate_func(

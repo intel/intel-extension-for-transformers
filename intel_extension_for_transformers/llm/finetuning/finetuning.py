@@ -545,7 +545,7 @@ class Finetuning:
                         model="hf-causal",
                         model_args='pretrained='+model_args.model_name_or_path+\
                                 ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
-                        device="hpu",
+                        device=finetune_args.device,
                         batch_size=training_args.per_device_eval_batch_size,
                         tasks=finetune_args.lm_eval_tasks,
                         limit=data_args.max_eval_samples)
