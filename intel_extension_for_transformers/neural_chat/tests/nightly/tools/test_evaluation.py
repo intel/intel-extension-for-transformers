@@ -18,6 +18,7 @@
 import unittest, os, shutil
 from unittest.mock import patch
 from intel_extension_for_transformers.neural_chat.tools.evaluation.data_augmentation import retrieval_dataset_construction
+from intel_extension_for_transformers.neural_chat.tools.evaluation.retriever import evaluate_retrieval
 
 class TestEvaluation(unittest.TestCase):
     def setUp(self) -> None:
@@ -49,6 +50,15 @@ class TestEvaluation(unittest.TestCase):
         with patch('sys.argv', ['python retrieval_dataset_construction.py'] + argv):
             retrieval_dataset_construction.main()
             self.assertTrue(os.path.exists("data_minedHN_split.jsonl"))
+            
+    def test_evaluate_retrieval(self):
+        argv = ['--index_file_jsonl_path', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/candidate_context.jsonl', \
+                '--query_file_jsonl_path', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/example.jsonl', \
+                '--embedding_model', '/tf_dataset2/inc-ut/gte-base']
+
+        with patch('sys.argv', ['python evaluate_retrieval.py'] + argv):
+            result = evaluate_retrieval.main()
+            self.assertIsNotNone(result)
 
 if __name__ == '__main__':
     unittest.main()
