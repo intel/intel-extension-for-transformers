@@ -307,12 +307,9 @@ elif args.woq:
     elif args.woq_algo == "AUTOROUND":
         algorithm_args = {
             "n_samples": args.autoround_nsamples,
-            "amp": False,
             "seq_len": args.autoround_seq_len,
             "iters": args.calib_iters,
             "scale_dtype": "fp32",
-            "device": "cpu",
-            "export_args": {"format": "itrex", "inplace": False}
         }
         quantization_config = WeightOnlyQuantConfig(
             compute_dtype=args.woq_compute_dtype,

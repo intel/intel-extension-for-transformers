@@ -15,7 +15,7 @@ jobs:
       - name: Clean Up Working Directory
         run: sudo rm -rf ~/itrex-actions-runner/_work/intel-extension-for-transformers/intel-extension-for-transformers/*
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: "recursive"
 

@@ -135,7 +135,7 @@ def _replace_linear(
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
                         from intel_extension_for_pytorch.nn.utils._quantize_convert \
-                            import WeightOnlyLinear as ipex_linear  # pylint: disable=E0401
+                            import WeightOnlyQuantizedLinear as ipex_linear  # pylint: disable=E0401
                         model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
@@ -382,7 +382,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
             if orig_dtype != torch.float32:
                 model.to(dtype=torch.float32)
             break
-
         inc_model = quantization.fit(model,
                                      conf,
                                      calib_func=calib_func,
@@ -416,6 +415,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 setattr(config, "gptq_quantize_config", quantize_config)
                 q_model = replace_linear(inc_model, None, None, config, device=device)
             elif config.algorithm == "AUTOROUND":
+                inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 quantize_config = {
                     "bits": bits,
@@ -428,7 +428,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 }
 
                 setattr(config, "gptq_quantize_config", quantize_config)
-                q_model = replace_linear(inc_model._model, None, None, config, device=device)
+                q_model = replace_linear(inc_model, None, None, config, device=device)
             else:
                 q_model = replace_linear(inc_model.model, None, None, config, device=device)
         if orig_dtype != torch.float32:
