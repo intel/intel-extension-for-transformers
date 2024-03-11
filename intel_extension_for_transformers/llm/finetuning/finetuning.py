@@ -560,7 +560,7 @@ class Finetuning:
                     eval_dataset=eval_dataset if training_args.do_eval else None,
                     tokenizer=tokenizer,
                     data_collator=data_collator,
-                    callbacks=[lm_eval_callback] if lm_eval_callback is not None else None 
+                    callbacks=[lm_eval_callback] if lm_eval_callback is not None else None
                 )
             else:
                 from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611 E0401
