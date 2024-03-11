@@ -21,6 +21,7 @@ import os
 import re
 import csv
 import datetime
+import requests
 from pathlib import Path
 from datetime import timedelta, timezone
 from typing import Optional, Dict
@@ -49,6 +50,44 @@ def get_current_beijing_time():
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d-%H:%M:%S")
     return beijing_time
+ 
+
+def language_detect(text: str):
+    url = "https://translation.googleapis.com/language/translate/v2/detect"
+    try:
+        api_key = os.getenv("GOOGLE_API_KEY")
+    except Exception as e:
+        logger.info(f"No GOOGLE_API_KEY found. {e}")
+    params = {
+        'key': api_key,
+        'q': text
+    }
+    
+    response = requests.post(url, params=params)
+    if response.status_code == 200:
+        res = response.json() 
+        return res["data"]["detections"][0][0]
+    else:
+        print("Error:", response.status_code)
+        return None
+
+
+def language_translate(text: str, target: str='en'):
+    url = "https://translation.googleapis.com/language/translate/v2"
+    api_key = os.getenv("GOOGLE_API_KEY")
+    params = {
+        'key': api_key,
+        'q': text,
+        'target': target
+    }
+    
+    response = requests.post(url, params=params)
+    if response.status_code == 200:
+        res = response.json() 
+        return res["data"]["translations"][0]
+    else:
+        print("Error:", response.status_code)
+        return None
 
 
 class RetrievalAPIRouter(APIRouter):
@@ -244,17 +283,23 @@ async def retrieval_chat(request: Request):
 
     # parse parameters
     params = await request.json()
-    query = params['query']
-    origin_query = params['translated']
+    origin_query = params['query']
     kb_id = params['knowledge_base_id']
     stream = params['stream']
     max_new_tokens = params['max_new_tokens']
     return_link = params['return_link']
-    logger.info(f"[askdoc - chat] kb_id: '{kb_id}', query: '{query}', \
+    logger.info(f"[askdoc - chat] kb_id: '{kb_id}', \
                 origin_query: '{origin_query}', stream mode: '{stream}', \
                 max_new_tokens: '{max_new_tokens}', \
                 return_link: '{return_link}'")
     config = GenerationConfig(max_new_tokens=max_new_tokens)
+
+    # detect and translate query
+    detect_res = language_detect(origin_query)
+    if detect_res['language'] == 'en':
+        query = origin_query
+    else:
+        query = language_translate(origin_query)['translatedText']
 
     path_prefix = RETRIEVAL_FILE_PATH
     cur_path = Path(path_prefix) / "default" / "persist_dir"
@@ -348,6 +393,27 @@ async def retrieval_chat(request: Request):
                     yield f"data: {formatted_link}\n\n"
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
+
+
+@router.post("/v1/askdoc/translate")
+async def retrieval_translate(request: Request):
+    user_id = request.client.host
+    logger.info(f'[askdoc - translate] user id is: {user_id}')
+
+    # parse parameters
+    params = await request.json()
+    content = params['content']
+    logger.info(f'[askdoc - translate] origin content: {content}')
+
+    detect_res = language_detect(content)
+    logger.info(f'[askdoc - translate] detected language: {detect_res["language"]}')
+    if detect_res['language'] == 'en':
+        translate_res = language_translate(content, target='zh-CN')['translatedText']
+    else:
+        translate_res = language_translate(content, target='en')['translatedText']
+    
+    logger.info(f'[askdoc - translate] translated result: {translate_res}')
+    return {"tranlated_content": translate_res}
 
 
 @router.post("/v1/askdoc/feedback")
