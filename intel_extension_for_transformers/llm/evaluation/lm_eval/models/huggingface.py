@@ -1102,7 +1102,7 @@ class GaudiModelAdapter(HuggingFaceAutoLM):
         else:
             self.static_shapes = False
         if kwargs["warmup"]:
-            print("warmup for Gaudi")
+            print("lm-eval warmup for Gaudi.")
             self.warm_up()
 
     def warm_up(self):
