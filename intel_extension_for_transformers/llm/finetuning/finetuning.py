@@ -549,7 +549,7 @@ class Finetuning:
                         batch_size=training_args.per_device_eval_batch_size,
                         tasks=finetune_args.lm_eval_tasks,
                         limit=data_args.max_eval_samples)
-                lm_eval_callback = LMEvalCallback(lm_eval_func)
+                lm_eval_callback = LMEvalCallback(lm_eval_func, device=finetune_args.device)
 
             if finetune_args.device != 'hpu':
                 # Initialize our Trainer

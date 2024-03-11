@@ -166,12 +166,24 @@ def evaluate_plus_ppl(
 
 
 class LMEvalCallback(TrainerCallback):
-    def __init__(self, lm_eval_func):
+    def __init__(self, lm_eval_func, device=None):
         self.lm_eval = lm_eval_func
+        self.device = device
+        self.warmup = True
 
     def on_evaluate(self, args, state, control, **kwargs):
-        results = self.lm_eval(user_model=kwargs["model"],
-                user_tokenizer=kwargs["tokenizer"])
+        if not state.is_local_process_zero:
+            return
+        if self.device == "hpu":
+            results = self.lm_eval(user_model=kwargs["model"],
+                    user_tokenizer=kwargs["tokenizer"],
+                    warmup=self.warmup)
+            self.warmup = False
+        else:
+            results = self.lm_eval(model="gaudi-hf-causal",
+                    user_model=kwargs["model"],
+                    user_tokenizer=kwargs["tokenizer"],
+                    warmup=False)
         task_metrics = {}
         for task_name in results["results"]:
             for metric in results["results"][task_name]:

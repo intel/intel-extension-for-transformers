@@ -1095,10 +1095,15 @@ class GaudiModelAdapter(HuggingFaceAutoLM):
         self._add_special_tokens = None
         self.model_format = "torch"
         self.buckets = [16, 32, 64, 128, 189, 284]
-        self._device = "hpu"
-        from optimum.habana.checkpoint_utils import model_is_optimized
-        self.static_shapes = model_is_optimized(self.model.config)
-        self.warm_up()
+        self._device = kwargs["device"]
+        if self._device == "hpu":
+            from optimum.habana.checkpoint_utils import model_is_optimized
+            self.static_shapes = model_is_optimized(self.model.config)
+        else:
+            self.static_shapes = False
+        if kwargs["warmup"]:
+            print("warmup for Gaudi")
+            self.warm_up()
 
     def warm_up(self):
         for bucket_size in reversed(self.buckets):

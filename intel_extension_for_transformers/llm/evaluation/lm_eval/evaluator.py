@@ -70,6 +70,7 @@ def evaluate(model,
              seed=1234,
              user_model=None,
              user_tokenizer=None,
+             warmup=False,
              model_format='torch'
             ):
     """Instantiate and evaluate a model on a list of tasks.
@@ -130,9 +131,13 @@ def evaluate(model,
         if device == "hpu":
             # if hpu, set user_model
             kwargs["user_model"] = user_model
-            kwargs["user_tokenizer"] = user_tokenizer
             if model == "hf-causal":
                 model = "gaudi-hf-causal"
+        if model == "gaudi-hf-causal":
+            kwargs["warmup"] = warmup
+
+        if user_tokenizer:
+            kwargs["user_tokenizer"] = user_tokenizer
 
         lm = get_model(model).create_from_arg_string(
             model_args, kwargs
@@ -165,9 +170,6 @@ def evaluate(model,
 
     if user_model:
         lm.model = user_model
-
-    if user_tokenizer:
-        lm.tokenizer = user_tokenizer
 
     results = evaluate_func(
         lm=lm,
