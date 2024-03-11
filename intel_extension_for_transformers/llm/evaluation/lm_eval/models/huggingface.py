@@ -626,7 +626,8 @@ class AutoCausalLM(HuggingFaceAutoLM):
         if self.model_format == "runtime":
             from transformers import AutoTokenizer, TextStreamer
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=self.woq_config)
+            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=self.woq_config,
+                                                        trust_remote_code=kwargs.get("trust_remote_code", False))
 
         if self.model_format == "onnx":
             if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
