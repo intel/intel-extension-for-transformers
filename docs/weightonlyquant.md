@@ -7,7 +7,7 @@ Weight Only Quantization (WOQ)
 
 3. [Examples For CPU/CUDA](#examples-for-cpu-and-cuda)
 
-4. [Examples For Intel GPU](#examples-for-intel-gpu)
+4. [Examples For Intel GPU](#examples-for-gpu)
 
 ## Introduction
 
@@ -18,13 +18,15 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 |:--------------:|:----------:|:----------:|
 |       RTN      |  &#10004;  |  &#10004;  |
 |       AWQ      |  &#10004;  | stay tuned |
-|      TEQ      | &#10004; | stay tuned |
+|      TEQ       | &#10004; | stay tuned |
 |      GPTQ      | &#10004; | &#10004; |
+|   AUTOROUND    | &#10004; | &#10004; |
 
-| Support Device |  RTN  |  AWQ  |  TEQ |  GPTQ  |
-|:--------------:|:----------:|:----------:|:----------:|:----:|
-|     CPU        |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |
-|     GPU        |  &#10004;  |  stay tuned  |  stay tuned  |  stay tuned  |
+
+| Support Device |  RTN  |  AWQ  |  TEQ |  GPTQ  | AUTOROUND |
+|:--------------:|:----------:|:----------:|:----------:|:----:|:----:|
+|     CPU        |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |
+|     GPU        |  &#10004;  |  stay tuned  |  stay tuned  |  stay tuned  |  stay tuned  |
 > **RTN:** A quantification method that we can think of very intuitively. It does not require additional datasets and is a very fast quantization method. Generally speaking, RTN will convert the weight into a uniformly distributed integer data type, but some algorithms, such as Qlora, propose a non-uniform NF4 data type and prove its theoretical optimality.
 
 > **GPTQ:** A new one-shot weight quantization method based on approximate second-order information, that is both highly-accurate and highly efficient. The weights of each column are updated based on the fixed-scale pseudo-quantization error and the inverse of the Hessian matrix calculated from the activations. The updated columns sharing the same scale may generate a new max/min value, so the scale needs to be saved for restoration.
@@ -33,19 +35,20 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 
 > **TEQ:** A trainable equivalent transformation that preserves the FP32 precision in weight-only quantization. It is inspired by AWQ while providing a new solution to search for the optimal per-channel scaling factor between activations and weights.
 
+> **AUTOROUND:** AutoRound is an advanced weight-only quantization algorithm for low-bits LLM inference. It's tailored for a wide range of models and consistently delivers noticeable improvements. AutoRound adopts sign gradient descent to fine-tune rounding values and minmax values of weights in just 200 steps, which competes impressively against recent methods without introducing any additional inference overhead. 
 
 ## Examples For CPU AND CUDA
 
-Our motivation is improve CPU support for weight only quantization, since `bitsandbytes` only support CUDA GPU device. We have extended the `from_pretrained` function so that `quantization_config` can accept [`WeightOnlyQuantConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L28) to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.
+Our motivation is improve CPU support for weight only quantization, since `bitsandbytes`, `auto-gptq`, `autoawq` only support CUDA GPU device. We have extended the `from_pretrained` function so that `quantization_config` can accept [`RtnConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L608), [`AwqConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L793), [`TeqConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L28), [`GPTQConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L855), [`AutoroundConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L912) to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.
 
 ### Example for CPU device
-4-bit/8-bit inference with `WeightOnlyQuantConfig` on CPU device.
+4-bit/8-bit inference with `RtnConfig`, `AwqConfig`, `TeqConfig`, `GPTQConfig`, `AutoRoundConfig` on CPU device.
 ```bash
-cd intel_extension_for_transformers/llm/runtime/graph
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+cd examples/huggingface/pytorch/text-generation/quantization
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig
 model_name_or_path = "Intel/neural-chat-7b-v3-3"
 # weight_dtype: int8/int4, compute_dtype: int8/fp32
-woq_config = WeightOnlyQuantConfig(weight_dtype="int4", compute_dtype="int8")
+woq_config = RtnConfig(bits=4, compute_dtype="int8")
 model = AutoModelForCausalLM.from_pretrained(
                                             model_name_or_path,
                                             quantization_config=woq_config,
@@ -82,7 +85,7 @@ gen_ids = woq_model.generate(input_ids, max_new_tokens=32, **generate_kwargs)
 gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
 print(gen_text)
 ```
-`load_in_4bit` and `load_in_8bit` both support on CPU and CUDA GPU device. If device set to use GPU, the BitsAndBytesConfig will be used, if the device set to use CPU, the WeightOnlyQuantConfig will be used.
+`load_in_4bit` and `load_in_8bit` both support on CPU and CUDA GPU device. If device set to use GPU, the BitsAndBytesConfig will be used, if the device set to use CPU, the RtnConfig will be used.
 ```bash
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 woq_model = AutoModelForCausalLM.from_pretrained(  
@@ -158,7 +161,6 @@ pip install intel-extension-for-transformers
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
-import torch
 
 device = "xpu"
 model_name = "Qwen/Qwen-7B"
@@ -169,7 +171,7 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
 qmodel = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, device_map="xpu", trust_remote_code=True)
 
 # optimize the model with ipex, it will improve performance.
-qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, quantization_config={}, device="xpu")
+qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu")
 
 output = user_model.generate(inputs)
 ```
