@@ -20,7 +20,7 @@ import os
 import shutil
 from unittest import mock
 from intel_extension_for_transformers.neural_chat.models.model_utils import load_model, MODELS, predict
-from intel_extension_for_transformers.transformers import MixedPrecisionConfig, BitsAndBytesConfig, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig, BitsAndBytesConfig, RtnConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 from intel_extension_for_transformers.neural_chat.utils.error_utils import clear_latest_error, get_latest_error
 from intel_extension_for_transformers.neural_chat.errorcode import ErrorCodes
@@ -127,14 +127,14 @@ class TestModelUtils(unittest.TestCase):
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_model_optimization_weightonly_llmruntime(self):
-        config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+        config = RtnConfig(bits=4, compute_dtype="int8", weight_dtype="int4")
         load_model(model_name="facebook/opt-125m", tokenizer_name="facebook/opt-125m", device="cpu", optimization_config=config, use_neural_speed=True)
         self.assertTrue("facebook/opt-125m" in MODELS)
         self.assertTrue(MODELS["facebook/opt-125m"]["model"] is not None)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_model_optimization_weightonly(self):
-        config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4_fullrange")
+        config = RtnConfig(bits=4, compute_dtype="int8", weight_dtype="int4_fullrange")
         load_model(model_name="facebook/opt-125m", tokenizer_name="facebook/opt-125m", device="cpu", optimization_config=config)
         self.assertTrue("facebook/opt-125m" in MODELS)
         self.assertTrue(MODELS["facebook/opt-125m"]["model"] is not None)

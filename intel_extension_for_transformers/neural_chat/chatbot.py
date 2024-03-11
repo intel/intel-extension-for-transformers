@@ -361,12 +361,16 @@ def optimize_model(model, config, use_neural_speed=False):
         logging.error(f"Exception: {e}")
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
-            WeightOnlyQuantConfig,
+            RtnConfig,
+            AwqConfig,
+            TeqConfig,
+            GPTQConfig,
+            AutoRoundConfig,
             BitsAndBytesConfig
         )
         if type(config) == MixedPrecisionConfig:
             set_latest_error(ErrorCodes.ERROR_AMP_OPTIMIZATION_FAIL)
-        elif type(config) == WeightOnlyQuantConfig:
+        elif type(config) in [RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoRoundConfig]:
             set_latest_error(ErrorCodes.ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL)
         elif type(config) == BitsAndBytesConfig:
             set_latest_error(ErrorCodes.ERROR_BITS_AND_BYTES_OPTIMIZATION_FAIL)
