@@ -1081,7 +1081,7 @@ class GaudiModelAdapter(HuggingFaceAutoLM):
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
     AUTO_PEFT_CLASS = peft.PeftModel
 
-    def __init__(self, *args, user_model=None, user_tokenzier=None, **kwargs):
+    def __init__(self, *args, user_model=None, user_tokenizer=None, **kwargs):
         self.cache_hook = CacheHook(None)
         self.model = user_model
         if user_tokenizer is None:
