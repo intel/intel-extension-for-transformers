@@ -22,16 +22,14 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 **RTN**[[1\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#1)(&#9733;&#9733;&#9733;):   Rounding to Nearest (RTN) is an intuitively simple method that rounds values to the nearest integer. It boasts simplicity, requiring no additional datasets, and offers fast quantization. Besides, it could be applied in other datatype like NF4(non-uniform). Typically, it performs well on configurations such as W4G32 or W8, but badly on lower precision.
 
 
+**Teq**[[2\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#4)(&#9733;&#9733;&#9733;): To our knowledge, it is the first trainable equivalent ransformation method (summited for peer review in 202306)  to tune the equivalent transformation. However,  it requires more memory than other methods as model-wise loss is used and just like AWQ, the equivalent transformation imposes certain requirements on model architecture.
+
 
 **GPTQ**[[2\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#2)(&#9733;&#9733;&#9733;&#9733;): GPTQ is a widely adopted method based on the Optimal Brain Surgeon technique. It quantizes weight block by block and fine-tunes the remaining unquantized weights to mitigate quantization errors. Occasionally, Non-positive semidefinite matrices may occur, necessitating adjustments to hyperparameters.
 
 
 
-**Awq**[[3\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#3)(&#9733;&#9733;&#9733;&#9733;): AWQ is a popular method that explores weight min-max values and equivalent transformations in a handcrafted space. While effective, the equivalent transformation imposes certain requirements on model architecture, limiting its applicability to broader models or increasing engineering efforts.
-
-
-
-**Teq**[[4\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#4)(&#9733;&#9733;&#9733;): To our knowledge, it is the first trainable equivalent ransformation method (summited for peer review in 202306)  to tune the equivalent transformation. However,  it requires more memory than other methods as model-wise loss is used and just like AWQ, the equivalent transformation imposes certain requirements on model architecture/
+**Awq**[[4\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#3)(&#9733;&#9733;&#9733;&#9733;): AWQ is a popular method that explores weight min-max values and equivalent transformations in a handcrafted space. While effective, the equivalent transformation imposes certain requirements on model architecture, limiting its applicability to broader models or increasing engineering efforts.
 
 
 
@@ -43,17 +41,17 @@ nuqmm: Quantized matmul for efficient inference of large-scale generative langua
 arXiv preprint arXiv:2206.09557, 2022.
 
 <a id="2">[2]</a> 
-Frantar, Elias, et al. "Gptq: Accurate post-training quantization for generative pre-trained transformers." arXiv preprint arXiv:2210.17323 (2022).
-
-<a id="3">[3]</a> 
-Lin, Ji, et al.(2023).
-AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration.
-arXiv preprint arXiv:2306.00978.
-
-<a id="4">[4]</a> 
 Cheng, W., Cai, Y., Lv, K & Shen, H. (2023).
 TEQ: Trainable Equivalent Transformation for Quantization of LLMs. 
 arXiv preprint arXiv:2310.10944.
+
+<a id="3">[3]</a> 
+Frantar, Elias, et al. "Gptq: Accurate post-training quantization for generative pre-trained transformers." arXiv preprint arXiv:2210.17323 (2022).
+
+<a id="4">[4]</a> 
+Lin, Ji, et al.(2023).
+AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration.
+arXiv preprint arXiv:2306.00978.
 
 <a id="5">[5]</a> 
 Cheng, W., Zhang, W., Shen, H., Cai, Y., He, X., & Lv, K. (2023).
