@@ -20,7 +20,7 @@ from modelscope import AutoModelForCausalLM, AutoTokenizer  # pylint: disable=E0
 import jsonlines
 import re
 import logging
-from intel_extension_for_transformers.neural_chat.prompts.prompt import QUERYGENERATE_PROMPT
+from intel_extension_for_transformers.neural_chat.prompts.prompt import TRUTHGENERATE_PROMPT
 from transformers import GenerationConfig
 import argparse
 
