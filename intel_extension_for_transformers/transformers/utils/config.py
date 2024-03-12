@@ -537,27 +537,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
 
         self.use_neural_speed = True
 
-    def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
-
-        Returns:
-            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
-        """
-        config_dict = self.to_dict()
-
-        # get the default config dict
-        default_config_dict = ITREXQuantizationConfigMixin(self.quant_method).to_dict()
-
-        serializable_config_dict = {}
-        # only serialize values that differ from the default config
-        for key, value in config_dict.items():
-            if value != default_config_dict[key]:
-                serializable_config_dict[key] = value
-
-        return serializable_config_dict
-
     def to_json_file(
         self, json_file_path: Union[str, os.PathLike], use_diff: bool = True
     ):
@@ -569,31 +548,10 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
                 Path to the JSON file in which this configuration instance's parameters will be saved.
         """
         # set tokenizer to None due to it doesn't support write to json
-        self.tokenizer = None
+        if hasattr(self, "tokenizer"):
+            self.tokenizer = None
         with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string(use_diff=use_diff))
-
-    def update(self, **kwargs):
-        """
-        Updates attributes of this class instance with attributes from `kwargs` if they match existing atributtes,
-        returning all the unused kwargs.
-
-        Args:
-            kwargs (`Dict[str, Any]`):
-                Dictionary of attributes to tentatively update this class.
-
-        Returns:
-            `Dict[str, Any]`: Dictionary containing all the key-value pairs that were not used to update the instance.
-        """
-        to_remove = []
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-                to_remove.append(key)
-
-        # Remove all the attributes that were updated, without modifying the input dict
-        unused_kwargs = {key: value for key, value in kwargs.items() if key not in to_remove}
-        return unused_kwargs
 
     def save_pretrained(
         self,
@@ -708,6 +666,27 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.calib_func = None
         self.calib_iters = None
 
+    def to_diff_dict(self) -> Dict[str, Any]:
+        """
+        Removes all attributes from config which correspond to the default config attributes for better readability and
+        serializes to a Python dictionary.
+
+        Returns:
+            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
+        """
+        config_dict = self.to_dict()
+
+        # get the default config dict
+        default_config_dict = RtnConfig().to_dict()
+
+        serializable_config_dict = {}
+
+        # only serialize values that differ from the default config
+        for key, value in config_dict.items():
+            if value != default_config_dict[key]:
+                serializable_config_dict[key] = value
+
+        return serializable_config_dict
 
 class GPTQConfig(ITREXQuantizationConfigMixin):
     """
@@ -833,6 +812,27 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         if not (0 < self.damp_percent < 1):
             raise ValueError("damp_percent must between 0 and 1.")
 
+    def to_diff_dict(self) -> Dict[str, Any]:
+        """
+        Removes all attributes from config which correspond to the default config attributes for better readability and
+        serializes to a Python dictionary.
+
+        Returns:
+            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
+        """
+        config_dict = self.to_dict()
+
+        # get the default config dict
+        default_config_dict = GPTQConfig().to_dict()
+
+        serializable_config_dict = {}
+
+        # only serialize values that differ from the default config
+        for key, value in config_dict.items():
+            if value != default_config_dict[key]:
+                serializable_config_dict[key] = value
+
+        return serializable_config_dict
 
 class AwqConfig(ITREXQuantizationConfigMixin):
     """
@@ -892,6 +892,27 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
 
+    def to_diff_dict(self) -> Dict[str, Any]:
+        """
+        Removes all attributes from config which correspond to the default config attributes for better readability and
+        serializes to a Python dictionary.
+
+        Returns:
+            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
+        """
+        config_dict = self.to_dict()
+
+        # get the default config dict
+        default_config_dict = AwqConfig().to_dict()
+
+        serializable_config_dict = {}
+
+        # only serialize values that differ from the default config
+        for key, value in config_dict.items():
+            if value != default_config_dict[key]:
+                serializable_config_dict[key] = value
+
+        return serializable_config_dict
 
 class TeqConfig(ITREXQuantizationConfigMixin):
     """
@@ -946,6 +967,27 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
 
+    def to_diff_dict(self) -> Dict[str, Any]:
+        """
+        Removes all attributes from config which correspond to the default config attributes for better readability and
+        serializes to a Python dictionary.
+
+        Returns:
+            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
+        """
+        config_dict = self.to_dict()
+
+        # get the default config dict
+        default_config_dict = TeqConfig().to_dict()
+
+        serializable_config_dict = {}
+
+        # only serialize values that differ from the default config
+        for key, value in config_dict.items():
+            if value != default_config_dict[key]:
+                serializable_config_dict[key] = value
+
+        return serializable_config_dict
 
 class AutoRoundConfig(ITREXQuantizationConfigMixin):
     """
@@ -1054,3 +1096,25 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
             )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
+
+    def to_diff_dict(self) -> Dict[str, Any]:
+        """
+        Removes all attributes from config which correspond to the default config attributes for better readability and
+        serializes to a Python dictionary.
+
+        Returns:
+            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
+        """
+        config_dict = self.to_dict()
+
+        # get the default config dict
+        default_config_dict = AutoRoundConfig().to_dict()
+
+        serializable_config_dict = {}
+
+        # only serialize values that differ from the default config
+        for key, value in config_dict.items():
+            if value != default_config_dict[key]:
+                serializable_config_dict[key] = value
+
+        return serializable_config_dict

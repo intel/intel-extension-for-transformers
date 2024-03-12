@@ -228,7 +228,8 @@ class _BaseQBitsAutoModelClass:
                 )
                 try:
                     kwargs["device_map"] = \
-                        config.quantization_config["device"] if "device" in config.quantization_config.keys() else "auto"
+                        config.quantization_config["device"] if "device" in config.quantization_config.keys() \
+                        else "auto"
                     model = cls.load_low_bit(pretrained_model_name_or_path, *model_args, config=config, **kwargs)
                     logger.info("Saved low bit model loading successfully. Other input args "
                                 "will be ignored.")
@@ -328,7 +329,10 @@ class _BaseQBitsAutoModelClass:
                     "will fall to traditional load method with higher memory consumption."
                 )
                 kwargs["low_cpu_mem_usage"] = False
-                model = cls.ORIG_MODEL.from_pretrained(pretrained_model_name_or_path, *model_args, config=config, **kwargs)
+                model = cls.ORIG_MODEL.from_pretrained(pretrained_model_name_or_path,
+                                                       *model_args,
+                                                        config=config,
+                                                        **kwargs)
                 model.config.update({"low_cpu_mem_usage": False})
             model = model.to("cpu")
             model.config.update({"device": "cpu"})
@@ -764,7 +768,7 @@ class _BaseQBitsAutoModelClass:
             else:
                 commit_hash = getattr(config, "_commit_hash", None)
 
-        low_cpu_mem_usage = config.low_cpu_mem_usage
+        low_cpu_mem_usage = (hasattr(config, "low_cpu_mem_usage") and config.low_cpu_mem_usage)
 
         has_remote_code = (hasattr(config, "auto_map") and cls.ORIG_MODEL.__name__ in config.auto_map)
 

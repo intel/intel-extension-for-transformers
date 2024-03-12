@@ -111,7 +111,7 @@ class TestWeightOnly(unittest.TestCase):
             output = model(activation)
 
             config = RtnConfig(weight_dtype="int8", group_size=32)
-            config.post_init()
+            config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
@@ -133,7 +133,7 @@ class TestWeightOnly(unittest.TestCase):
                 model.linear.weight = torch.nn.Parameter(raw_wei)
 
             config = RtnConfig(weight_dtype="int4_fullrange", group_size=32)
-            config.post_init()
+            config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
