@@ -58,7 +58,6 @@ pydub
 PyMuPDF
 pymysql
 pyopenjtalk; sys_platform == 'linux'
-PyPDF2
 pypinyin
 python-docx
 python-multipart
