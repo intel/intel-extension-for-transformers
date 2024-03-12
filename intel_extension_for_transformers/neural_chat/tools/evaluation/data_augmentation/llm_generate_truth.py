@@ -89,7 +89,6 @@ def raw_data_generate(model_id,
 
          result_str=res.replace('#', " ").replace(r'\t', " ").replace('\n', ' ').replace('\n\n', ' ').strip()
 
-         print('result_str',result_str)
          if result_str and result_str.isspace()==False:
             data = {
                      "question": question,
