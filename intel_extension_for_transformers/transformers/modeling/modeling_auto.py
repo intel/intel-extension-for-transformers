@@ -248,7 +248,7 @@ class _BaseQBitsAutoModelClass:
                 logger.error("Can't get the model_type. Please check the correct model_type")
                 exit(0)
 
-            if config.model_type in cls.model_type_list:
+            if config.model_type in cls.model_type_list and not use_xpu:
                 logger.info("Using Neural Speed...")
                 use_neural_speed = True
             else:

@@ -39,7 +39,7 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 
 ## Examples For CPU AND CUDA
 
-Our motivation is improve CPU support for weight only quantization, since `bitsandbytes`, `auto-gptq`, `autoawq` only support CUDA GPU device. We have extended the `from_pretrained` function so that `quantization_config` can accept [`RtnConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L608), [`AwqConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L793), [`TeqConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L28), [`GPTQConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L855), [`AutoroundConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L912) to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.
+Our motivation is to improve CPU support for weight only quantization, since `bitsandbytes`, `auto-gptq`, `autoawq` only support CUDA GPU device. We have extended the `from_pretrained` function so that `quantization_config` can accept [`RtnConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L608), [`AwqConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L793), [`TeqConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L28), [`GPTQConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L855), [`AutoroundConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L912) to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.
 
 ### Example for CPU device
 4-bit/8-bit inference with `RtnConfig`, `AwqConfig`, `TeqConfig`, `GPTQConfig`, `AutoRoundConfig` on CPU device.
@@ -195,7 +195,7 @@ model.save_pretrained("saved_dir")
 loaded_model = AutoModelForCausalLM.from_pretrained("saved_dir", trust_remote_code=True)
 
 # Before executed the loaded model, you can call ipex.optimize_transformers function.
-loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torch.float16, woq=True, device="xpu")
+loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torch.float16, quantization_config={}, device="xpu")
 
 output = loaded_model.generate(inputs)
 
