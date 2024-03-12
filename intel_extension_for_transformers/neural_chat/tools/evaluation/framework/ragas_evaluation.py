@@ -14,8 +14,8 @@
 
 from datasets import Dataset
 import os
-from ragas import evaluate
-from ragas.metrics import (
+from ragas import evaluate   # pylint: disable=E0401
+from ragas.metrics import (    # pylint: disable=E0401
     answer_relevancy,
     faithfulness,
     context_recall,
