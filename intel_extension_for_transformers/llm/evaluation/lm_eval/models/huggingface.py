@@ -1097,7 +1097,7 @@ class GaudiModelAdapter(HuggingFaceAutoLM):
         self.buckets = [16, 32, 64, 128, 189, 284]
         self._device = kwargs["device"]
         if self._device == "hpu":
-            from optimum.habana.checkpoint_utils import model_is_optimized
+            from optimum.habana.checkpoint_utils import model_is_optimized # pylint: disable=E0611, E0401
             self.static_shapes = model_is_optimized(self.model.config)
         else:
             self.static_shapes = False
