@@ -162,16 +162,15 @@ function run_benchmark {
         elif [ "${topology}" = "gpt_j_woq_bab" ]; then
             extra_cmd=$extra_cmd" --bitsandbytes"
         elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
-            extra_cmd=$extra_cmd" --load_in_4bit True"
+            extra_cmd=$extra_cmd" --load_in_4bit "
         elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
-            extra_cmd=$extra_cmd" --load_in_8bit True"
+            extra_cmd=$extra_cmd" --load_in_8bit "
         elif [ "${topology}" = "gpt_j_mp" ]; then
             extra_cmd=$extra_cmd" --mixed_precision"
         elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
             model_name_or_path="meta-llama/Llama-2-7b-hf"
-            extra_cmd=$extra_cmd" --woq --woq_weight_dtype int4_clip --woq_compute_dtype fp32"
-            extra_cmd=$extra_cmd" --woq_algo "GPTQ" --gptq_actorder --gptq_block_size 128 --gptq_pad_max_length 2048 --gptq_use_max_length"
-            pip install transformers==4.35.2
+            extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
+            extra_cmd=$extra_cmd" --woq_algo "GPTQ" --desc_act --blocksize 128 --max_input_length 2048 "
         else
             extra_cmd=$extra_cmd" --int8"
         fi

@@ -62,21 +62,15 @@ function run_tuning {
     elif [ "${topology}" = "gpt_j_woq_rtn" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --woq"
-        pip install torch==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-        pip install intel-extension-for-pytorch==2.1.0
     elif [ "${topology}" = "gpt_j_woq_bab" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --bitsandbytes"
     elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
-        extra_cmd=$extra_cmd" --load_in_4bit True"
-        pip install torch==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-        pip install intel-extension-for-pytorch==2.1.0
+        extra_cmd=$extra_cmd" --load_in_4bit"
     elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
-        extra_cmd=$extra_cmd" --load_in_8bit True"
-        pip install torch==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-        pip install intel-extension-for-pytorch==2.1.0
+        extra_cmd=$extra_cmd" --load_in_8bit "
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --mixed_precision"
@@ -211,13 +205,10 @@ function run_tuning {
 	    pip install transformers==4.36.1
     elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-hf"
-        extra_cmd=$extra_cmd" --woq --woq_weight_dtype int4_clip --woq_compute_dtype fp32"
-        extra_cmd=$extra_cmd" --woq_algo "GPTQ" --gptq_actorder --gptq_block_size 128 --gptq_pad_max_length 2048 --gptq_use_max_length"
+        extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
+        extra_cmd=$extra_cmd" --woq_algo "GPTQ" --desc_act --blocksize 128 --max_input_length 2048 "
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
-	    pip install transformers==4.35.2
-        pip install torch==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-        pip install intel-extension-for-pytorch==2.1.0
     fi
 
     if [ ${script} = "run_generation.py" ];then

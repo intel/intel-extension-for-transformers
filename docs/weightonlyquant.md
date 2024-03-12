@@ -3,39 +3,53 @@ Weight Only Quantization (WOQ)
 
 1. [Introduction](#introduction)
 
-2. [Supported Framework Model Matrix](#supported-framework-model-matrix)
+2. [Supported Algorithms](#supported-algorithms)
 
 3. [Examples For CPU/CUDA](#examples-for-cpu-and-cuda)
 
-4. [Examples For Intel GPU](#examples-for-gpu)
+4. [Examples For Intel GPU](#examples-for-intel-gpu)
 
 ## Introduction
 
 As large language models (LLMs) become more prevalent, there is a growing need for new and improved quantization methods that can meet the computational demands of these modern architectures while maintaining the accuracy. Compared to [normal quantization](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/quantization.md) like W8A8, weight only quantization is probably a better trade-off to balance the performance and the accuracy, since we will see below that the bottleneck of deploying LLMs is the memory bandwidth and normally weight only quantization could lead to better accuracy.
-## Supported Framework Model Matrix
+## Supported Algorithms
 
-| Algorithms/Framework |   PyTorch  |    LLM Runtime    |
-|:--------------:|:----------:|:----------:|
-|       RTN      |  &#10004;  |  &#10004;  |
-|       AWQ      |  &#10004;  | stay tuned |
-|      TEQ       | &#10004; | stay tuned |
-|      GPTQ      | &#10004; | &#10004; |
-|   AUTOROUND    | &#10004; | &#10004; |
-
-
-| Support Device |  RTN  |  AWQ  |  TEQ |  GPTQ  | AUTOROUND |
+| Support Device |  Rtn  |  Awq  |  Teq |  GPTQ  | AutoRound |
 |:--------------:|:----------:|:----------:|:----------:|:----:|:----:|
-|     CPU        |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |
-|     GPU        |  &#10004;  |  stay tuned  |  stay tuned  |  stay tuned  |  stay tuned  |
-> **RTN:** A quantification method that we can think of very intuitively. It does not require additional datasets and is a very fast quantization method. Generally speaking, RTN will convert the weight into a uniformly distributed integer data type, but some algorithms, such as Qlora, propose a non-uniform NF4 data type and prove its theoretical optimality.
+|     Intel CPU        |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |
+|     Intel GPU        |  &#10004;  |  stay tuned  |  stay tuned  |  stay tuned  |  stay tuned  |
+> **Rtn**[[1]](#1): A quantification method that we can think of very intuitively. It does not require additional datasets and is a very fast quantization method. Generally speaking, RTN will convert the weight into a uniformly distributed integer data type, but some algorithms, such as Qlora, propose a non-uniform NF4 data type and prove its theoretical optimality.
 
-> **GPTQ:** A new one-shot weight quantization method based on approximate second-order information, that is both highly-accurate and highly efficient. The weights of each column are updated based on the fixed-scale pseudo-quantization error and the inverse of the Hessian matrix calculated from the activations. The updated columns sharing the same scale may generate a new max/min value, so the scale needs to be saved for restoration.
+> **GPTQ**[[2]](#2): A new one-shot weight quantization method based on approximate second-order information, that is both highly-accurate and highly efficient. The weights of each column are updated based on the fixed-scale pseudo-quantization error and the inverse of the Hessian matrix calculated from the activations. The updated columns sharing the same scale may generate a new max/min value, so the scale needs to be saved for restoration.
 
-> **AWQ:** Proved that protecting only 1% of salient weights can greatly reduce quantization error. the salient weight channels are selected by observing the distribution of activation and weight per channel. The salient weights are also quantized after multiplying a big scale factor before quantization for preserving. 
+> **Awq**[[3]](#3): Proved that protecting only 1% of salient weights can greatly reduce quantization error. the salient weight channels are selected by observing the distribution of activation and weight per channel. The salient weights are also quantized after multiplying a big scale factor before quantization for preserving. 
 
-> **TEQ:** A trainable equivalent transformation that preserves the FP32 precision in weight-only quantization. It is inspired by AWQ while providing a new solution to search for the optimal per-channel scaling factor between activations and weights.
+> **Teq**[[4]](#4): A trainable equivalent transformation that preserves the FP32 precision in weight-only quantization. It is inspired by AWQ while providing a new solution to search for the optimal per-channel scaling factor between activations and weights.
 
-> **AUTOROUND:** AutoRound is an advanced weight-only quantization algorithm for low-bits LLM inference. It's tailored for a wide range of models and consistently delivers noticeable improvements. AutoRound adopts sign gradient descent to fine-tune rounding values and minmax values of weights in just 200 steps, which competes impressively against recent methods without introducing any additional inference overhead. 
+> **AutoRound**[[5]](#5): AutoRound is an advanced weight-only quantization algorithm for low-bits LLM inference. It's tailored for a wide range of models and consistently delivers noticeable improvements. AutoRound adopts sign gradient descent to fine-tune rounding values and minmax values of weights in just 200 steps, which competes impressively against recent methods without introducing any additional inference overhead. 
+### references
+<a id="1">[1]</a> 
+Gunho Park, Baeseong Park, Se Jung Kwon, Byeongwook Kim, Youngjoo Lee, and Dongsoo Lee.
+nuqmm: Quantized matmul for efficient inference of large-scale generative language models.
+arXiv preprint arXiv:2206.09557, 2022.
+
+<a id="2">[2]</a> 
+Frantar, Elias, et al. "Gptq: Accurate post-training quantization for generative pre-trained transformers." arXiv preprint arXiv:2210.17323 (2022).
+
+<a id="3">[3]</a> 
+Lin, Ji, et al.(2023).
+AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration.
+arXiv preprint arXiv:2306.00978.
+
+<a id="4">[4]</a> 
+Cheng, W., Cai, Y., Lv, K & Shen, H. (2023).
+TEQ: Trainable Equivalent Transformation for Quantization of LLMs. 
+arXiv preprint arXiv:2310.10944.
+
+<a id="5">[5]</a> 
+Cheng, W., Zhang, W., Shen, H., Cai, Y., He, X., & Lv, K. (2023).
+Optimize weight rounding via signed gradient descent for the quantization of llms. 
+arXiv preprint arXiv:2309.05516.
 
 ## Examples For CPU AND CUDA
 
