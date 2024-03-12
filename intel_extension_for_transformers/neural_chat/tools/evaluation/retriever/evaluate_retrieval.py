@@ -18,14 +18,14 @@
 from typing import ClassVar, Collection
 from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
     HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
-from langchain.embeddings import GooglePalmEmbeddings
+from langchain.embeddings import GooglePalmEmbeddings   # pylint: disable=E0611
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from intel_extension_for_transformers.langchain.vectorstores import Chroma, Qdrant
 import uuid
 from langchain_core.documents import Document
 from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever
 from langchain_core.vectorstores import VectorStoreRetriever
-from langchain.retrievers import BM25Retriever
+from langchain.retrievers import BM25Retriever  # pylint: disable=E0611
 import jsonlines
 import numpy as np
 import logging
