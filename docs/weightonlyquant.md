@@ -31,7 +31,7 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 
 
 
-**Teq**[[4\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#4)(&#9733;&#9733;&#9733;): To our knowledge, it is the first trainable equivalent ransformation method (summited for peer review  in 202306)  to tune the equivalent transformation. However,  it requires more memory than other methods as model-wise loss is used and justlike AWQ, the equivalent transformation imposes certain requirements on model architecture/
+**Teq**[[4\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#4)(&#9733;&#9733;&#9733;): To our knowledge, it is the first trainable equivalent ransformation method (summited for peer review in 202306)  to tune the equivalent transformation. However,  it requires more memory than other methods as model-wise loss is used and just like AWQ, the equivalent transformation imposes certain requirements on model architecture/
 
 
 
