@@ -151,7 +151,7 @@ class _BaseQBitsAutoModelClass:
     model_type_list = ["llama", "gptj", "mpt", "opt", "gptneox",   \
             "dolly", "polyglot", "starcoder", "falcon", \
             "bloom", "chatglm2", "chatglm", "baichuan", \
-            "mistral", "qwen", "phi", "whisper"]
+            "mistral", "qwen", "phi", "whisper","qwen2"]
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
@@ -201,12 +201,24 @@ class _BaseQBitsAutoModelClass:
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
         use_neural_speed = False
+        model_hub = kwargs.pop("model_hub", "huggingface")
         if not use_xpu:
             if kwargs.get("use_llm_runtime", None) is not None:
                 use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
                 logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
             elif kwargs.get("use_neural_speed", None) is not None:
                 use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
+            elif model_hub=="modelscope":
+                from modelscope import AutoConfig
+                config = AutoConfig.from_pretrained(pretrained_model_name_or_path,
+                                            trust_remote_code=True)
+                if hasattr(config, "model_type") == False:
+                    logger.error("Can't get the model_type. Please check the correct model_type")
+                    exit(0)
+
+                if config.model_type in cls.model_type_list:
+                    logger.info("Using Neural Speed...")
+                    use_neural_speed = True
             else:
                 config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path,
                                             trust_remote_code=kwargs.get("trust_remote_code", False))
@@ -348,6 +360,7 @@ class _BaseQBitsAutoModelClass:
                             quantization_config.algorithm.upper() == "GPTQ" or \
                             quantization_config.use_autoround,
                     use_awq=quantization_config.algorithm.upper() == "AWQ",
+                    model_hub=model_hub
                 )
                 model.quantization_config = quantization_config
                 return model
