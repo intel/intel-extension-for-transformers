@@ -19,13 +19,13 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 |     Intel CPU        |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |
 |     Intel GPU        |  &#10004;  |  stay tuned  |  stay tuned  |  stay tuned  |  stay tuned  |
 
-**RTN**[[1\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#1)(&#9733;&#9733;&#9733;):   Rounding to Nearest (RTN) is an intuitively simple method that rounds values to the nearest integer. It boasts simplicity, requiring no additional datasets, and offers fast quantization. Besides, it could be applied in other datatype like NF4(non-uniform). Typically, it performs well on configurations such as W4G32 or W8, but badly on lower precision.
+**RTN**[[1\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#1)(&#9733;&#9733;&#9733;):   Rounding to Nearest (RTN) is an intuitively simple method that rounds values to the nearest integer. It boasts simplicity, requiring no additional datasets, and offers fast quantization. Besides, it could be easily applied in other datatype like NF4(non-uniform). Typically, it performs well on configurations such as W4G32 or W8, but worse than adavanced algorithms at lower precision level.
 
 
-**Teq**[[2\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#4)(&#9733;&#9733;&#9733;): To our knowledge, it is the first trainable equivalent ransformation method (summited for peer review in 202306)  to tune the equivalent transformation. However,  it requires more memory than other methods as model-wise loss is used and just like AWQ, the equivalent transformation imposes certain requirements on model architecture.
+**Teq**[[2\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#4)(&#9733;&#9733;&#9733;): To our knowledge, it is the first trainable equivalent ransformation method (summited for peer review in 202306). However,  it requires more memory than other methods as model-wise loss is used and the equivalent transformation imposes certain requirements on model architecture.
 
 
-**GPTQ**[[2\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#2)(&#9733;&#9733;&#9733;&#9733;): GPTQ is a widely adopted method based on the Optimal Brain Surgeon technique. It quantizes weight block by block and fine-tunes the remaining unquantized weights to mitigate quantization errors. Occasionally, Non-positive semidefinite matrices may occur, necessitating adjustments to hyperparameters.
+**GPTQ**[[2\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#2)(&#9733;&#9733;&#9733;&#9733;): GPTQ is a widely adopted method based on the Optimal Brain Surgeon. It quantizes weight block by block and fine-tunes the remaining unquantized ones to mitigate quantization errors. Occasionally, Non-positive semidefinite matrices may occur, necessitating adjustments to hyperparameters.
 
 
 
@@ -33,7 +33,8 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 
 
 
-**AutoRound**[[5\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#5)(&#9733;&#9733;&#9733;&#9733;&#9734;): AutoRound utilizes sign gradient descent to optimize rounding values and minmax values of weights within just 200 steps, showcasing impressive performance compared to recent methods like GPTQ/AWQ. Additionally, it offers model-wise tuning compatibility to further enhance performance. However, due to its reliance on gradient backpropagation, currently it is not quite fit for backends like ONNX. 
+**AutoRound**[[5\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#5)(&#9733;&#9733;&#9733;&#9733;&#9734;): AutoRound utilizes sign gradient descent to optimize rounding values and minmax values of weights within just 200 steps, showcasing impressive performance compared to recent methods like GPTQ/AWQ. Additionally, it offers hypeparameters tuning compatibility to further enhance performance. However, due to its reliance on gradient backpropagation, currently it is not quite fit for backends like ONNX. 
+
 ### references
 <a id="1">[1]</a> 
 Gunho Park, Baeseong Park, Se Jung Kwon, Byeongwook Kim, Youngjoo Lee, and Dongsoo Lee.
