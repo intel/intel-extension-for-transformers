@@ -18,7 +18,7 @@
 import unicodedata
 import pandas as pd
 import re, json
-from langchain.document_loaders import UnstructuredMarkdownLoader
+from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from docx import Document as DDocument
 from bs4 import BeautifulSoup
 import fitz
