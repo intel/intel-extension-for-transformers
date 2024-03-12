@@ -326,35 +326,35 @@ class TestQuantization(unittest.TestCase):
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
         fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_neural_speed=False)
         dummy_input = fp32_model.dummy_inputs["input_ids"]
-        # # SQ
-        # sq_config = SmoothQuantConfig(
-        #                             tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        #                             calib_iters=2,
-        #                             ipex_opt_llm=False
-        #                             )
-        # q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-        #                                             quantization_config=sq_config,
-        #                                             use_neural_speed=False
-        #                                         )
-        # self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
+        # SQ
+        sq_config = SmoothQuantConfig(
+                                    tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                                    calib_iters=2,
+                                    ipex_opt_llm=False
+                                    )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=sq_config,
+                                                    use_neural_speed=False
+                                                )
+        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
 
-        # # SQ auto
-        # recipes = {
-        #     "smooth_quant": True,
-        #     "smooth_quant_args": { "alpha": "auto", "auto_alpha_args":{"alpha_max": 0.6,
-        #         "alpha_min":0.5, "alpha_step":0.1, "shared_criterion": "mean", "do_blockwise": False}},
-        #     }
-        # sq_config = SmoothQuantConfig(
-        #                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        #                     calib_iters=2,
-        #                     recipes=recipes,
-        #                     ipex_opt_llm=False
-        #                     )
-        # q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-        #                                             quantization_config=sq_config,
-        #                                             use_neural_speed=False
-        #                                         )
-        # self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
+        # SQ auto
+        recipes = {
+            "smooth_quant": True,
+            "smooth_quant_args": { "alpha": "auto", "auto_alpha_args":{"alpha_max": 0.6,
+                "alpha_min":0.5, "alpha_step":0.1, "shared_criterion": "mean", "do_blockwise": False}},
+            }
+        sq_config = SmoothQuantConfig(
+                            tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                            calib_iters=2,
+                            recipes=recipes,
+                            ipex_opt_llm=False
+                            )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=sq_config,
+                                                    use_neural_speed=False
+                                                )
+        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
 
         # weight-only
         # RTN
@@ -365,8 +365,6 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        print(float(output[0][0][0][0]))
-        import pdb;pdb.set_trace();
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.16387596726417542, rel_tol=1e-04))
 
         # AWQ
