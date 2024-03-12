@@ -12,7 +12,7 @@ pyopenjtalk; sys_platform == 'linux'
 pypinyin
 python-multipart
 soundfile
-speechbrain
+speechbrain==0.5.15
 transformers
 urllib3
 vector_quantize_pytorch

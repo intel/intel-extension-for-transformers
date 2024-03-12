@@ -35,6 +35,7 @@ import os
 import re
 import torch
 import transformers
+import types
 
 from ..utils import (
     BitsAndBytesConfig,
@@ -53,6 +54,7 @@ from ..utils.utility import (
     WEIGHTS_NAME,
     WEIGHTS_INDEX_NAME,
     SAFE_WEIGHTS_NAME,
+    SAFE_WEIGHTS_INDEX_NAME,
 )
 from ...llm.quantization.utils import (
     convert_dtype_str2torch,
@@ -65,6 +67,19 @@ from transformers.utils import is_accelerate_available, is_bitsandbytes_availabl
 from typing import Union
 
 torch = LazyImport("torch")
+
+
+def convert_model_to_public(model):
+    # pylint: disable=E0401
+    from intel_extension_for_pytorch.nn.utils._quantize_convert import(
+        WeightOnlyQuantizedLinear
+    )
+    for name, module in model.named_modules():
+        if isinstance(module, WeightOnlyQuantizedLinear):
+            if module.weight_transposed:
+                module.qweight.data = module.qweight.t_().contiguous()
+                module.scales.data = module.scales.t_().contiguous()
+                module.weight_transposed = False
 
 
 def save_low_bit(
@@ -80,14 +95,16 @@ def save_low_bit(
         )
         return
 
+    # reorder weight and scales if they have been transposed
+    if self.quantization_config.device == "xpu":
+        convert_model_to_public(self)
+
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
     del self.save_pretrained
     self.save_pretrained(
         save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
     )
-    import types
-
     self.save_pretrained = types.MethodType(save_low_bit, self)
     # We conveniently save all the keys of the model to have them on hand,
     # so that when using 'low_cpumem load',
@@ -131,16 +148,20 @@ def save_low_bit(
 
 class _BaseQBitsAutoModelClass:
     ORIG_MODEL = None
+    model_type_list = ["llama", "gptj", "mpt", "opt", "gptneox",   \
+            "dolly", "polyglot", "starcoder", "falcon", \
+            "bloom", "chatglm2", "chatglm", "baichuan", \
+            "mistral", "qwen", "phi", "whisper"]
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        if kwargs.get("model_file", False):
+        model_file = kwargs.pop("model_file", None)
+        if model_file is not None:
             from neural_speed import Model
             from huggingface_hub import hf_hub_download
 
             logger.info("Using Neural Speed to load the GGUF model...")
 
-            model_file = kwargs.get("model_file")
             gguf_model_file = hf_hub_download(pretrained_model_name_or_path, filename=model_file)
 
             if kwargs.get("model_type", False):
@@ -152,47 +173,21 @@ class _BaseQBitsAutoModelClass:
                     if "model_type" in hparams:
                         model_type = hparams["model_type"]
                     else:
-                        logger.error("Can't get model_type for this Hugginface repo.")
+                        logger.error("Can't get model_type from this Hugginface repo.")
                         exit(0)
             logger.info("The model_type is {}".format(model_type))
-            model_type_list = ["llama", "gptj", "mpt", "opt", "gptneox",   \
-                               "dolly", "polyglot", "starcoder", "falcon", \
-                               "bloom", "chatglm2", "chatglm", "baichuan", \
-                               "mistral", "qwen", "phi", "whisper"]
 
-            if model_type not in model_type_list:
+            if model_type not in cls.model_type_list:
                 logger.error(
                     "Can't support this model_type. Please set the correct model_type, supported model_type: {}".format(
-                        model_type_list))
+                        cls.model_type_list))
+                exit(0)
 
             model = Model()
             model.init_from_bin(model_type, gguf_model_file)
             return model
 
-        if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
-            logger.info("Find quantization_config.json, trying to load quantized low bit model...")
-            quantization_config = WeightOnlyQuantConfig.from_pretrained(
-                pretrained_model_name_or_path,
-                _configuration_file=QUANT_CONFIG,
-                **kwargs,
-            )
-            if quantization_config is None or quantization_config.low_bit_model != True:
-                logger.warning("Quantization_config loading failed. If you want to load saved "
-                               "low bit model, please check your quantization_config.json.")
-            else:
-                logger.info("quantization_config: {}".format(quantization_config.to_json_string()))
-                try:
-                    kwargs["device_map"] = \
-                        quantization_config.device if hasattr(quantization_config, "device") else "auto"
-                    model = cls.load_low_bit(pretrained_model_name_or_path, *model_args, **kwargs)
-                    logger.info("Saved low bit model loading successfully. Other input args "
-                                "will be ignored.")
-                    return model
-                except:
-                    logger.error("Saved low bit model loading failed, please check your model.")
-                    exit(0)
-
-        if kwargs.get("use_embedding_runtime", False):
+        if kwargs.pop("use_embedding_runtime", False):
             from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
             from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
 
@@ -202,16 +197,64 @@ class _BaseQBitsAutoModelClass:
 
             return model
 
+        device_map = kwargs.get("device_map", "cpu")
+        use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
+        use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
+        use_neural_speed = False
+        if not use_xpu:
+            if kwargs.get("use_llm_runtime", None) is not None:
+                use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
+                logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
+            elif kwargs.get("use_neural_speed", None) is not None:
+                use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
+            else:
+                config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path,
+                                            trust_remote_code=kwargs.get("trust_remote_code", False))
+                if hasattr(config, "model_type") == False:
+                    logger.error("Can't get the model_type. Please check the correct model_type")
+                    exit(0)
+
+                if config.model_type in cls.model_type_list:
+                    logger.info("Using Neural Speed...")
+                    use_neural_speed = True
+
+        if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
+            logger.info(
+                "Find quantization_config.json, trying to load quantized low bit model..."
+            )
+            quantization_config = WeightOnlyQuantConfig.from_pretrained(
+                pretrained_model_name_or_path,
+                _configuration_file=QUANT_CONFIG,
+                **kwargs,
+            )
+            if quantization_config is None or quantization_config.low_bit_model != True:
+                logger.warning("Quantization_config loading failed. If you want to load saved "
+                               "low bit model, please check your quantization_config.json.")
+            else:
+                logger.info(
+                    "quantization_config: {}".format(
+                        quantization_config.to_json_string()
+                    )
+                )
+                try:
+                    kwargs["device_map"] = \
+                        quantization_config.device if hasattr(quantization_config, "device") else "auto"
+                    model = cls.load_low_bit(pretrained_model_name_or_path, *model_args, **kwargs)
+                    logger.info("Saved low bit model loading successfully. Other input args "
+                                "will be ignored.")
+                    return model
+                except Exception as e:
+                    logger.error(e)
+                    logger.error("Saved low bit model loading failed, please check your model.")
+                    exit(0)
+
+
         import intel_extension_for_transformers.transformers.modeling.modeling_map
 
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
 
-        device_map = kwargs.get("device_map", "cpu")
-        use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
-        use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
-        use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
@@ -241,7 +284,7 @@ class _BaseQBitsAutoModelClass:
                     kwargs["torch_dtype"] = torch_dtype
             if load_in_4bit:
                 if quantization_config is None:
-                    if use_llm_runtime:
+                    if use_neural_speed:
                         # use wnf4_sfp32_cfp32_g32_sym by default
                         quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="nf4")
                     else:
@@ -254,7 +297,7 @@ class _BaseQBitsAutoModelClass:
                     f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
-                    if use_llm_runtime:
+                    if use_neural_speed:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
                     else:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype=convert_dtype_torch2str(torch_dtype),
@@ -273,8 +316,10 @@ class _BaseQBitsAutoModelClass:
                 model = cls.ORIG_MODEL.from_pretrained(pretrained_model_name_or_path, *model_args, **kwargs)
                 model.config.update({"low_cpu_mem_usage": True})
             except NotImplementedError:
-                logger.info("Failed to load models with `low_cpu_mem_usage` specified, "
-                            "will fall to traditional load method with higher memory consumption.")
+                logger.info(
+                    "Failed to load models with `low_cpu_mem_usage` specified, "
+                    "will fall to traditional load method with higher memory consumption."
+                )
                 kwargs["low_cpu_mem_usage"] = False
                 model = cls.ORIG_MODEL.from_pretrained(pretrained_model_name_or_path, *model_args, **kwargs)
                 model.config.update({"low_cpu_mem_usage": False})
@@ -284,7 +329,7 @@ class _BaseQBitsAutoModelClass:
             logger.info("Mixed Precision done.")
         elif isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
-            if use_llm_runtime:
+            if use_neural_speed:
                 logger.info("Using LLM runtime.")
                 quantization_config.post_init_runtime()
                 from neural_speed import Model
@@ -353,10 +398,10 @@ class _BaseQBitsAutoModelClass:
                 elif use_xpu:
                     quantization_config.post_init_xpu()
                 model = convert_to_quantized_model(model, quantization_config, device=device_map)
+
             # add quantization_config and save_low_bit to pretrained model dynamically
             model.device_map = device_map
             model.quantization_config = quantization_config
-            import types
 
             model.save_pretrained = types.MethodType(save_low_bit, model)
             logger.info("WeightOnlyQuant done.")
@@ -365,7 +410,7 @@ class _BaseQBitsAutoModelClass:
                 import intel_extension_for_pytorch as ipex
             except ImportError:
                 logger.warning("Please install Intel Extension for PyTorch to accelerate the model inference.")
-            assert (ipex.__version__ >= "2.1.0+cpu"), "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+            assert (ipex.__version__ >= "2.2.0+cpu"), "Please use Intel Extension for PyTorch >=2.2.0+cpu."
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
                 low_cpu_mem_usage=True,
@@ -381,8 +426,6 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "falcon" in model_type:
-                logger.warning("Please use transformers 4.33.3 if you would like to apply smoothquant to Falcon.")
             if "llama" in model_type and transformers.__version__ >= "4.36.0":
                 quantization_config.ipex_opt_llm = False
             logger.info("Applying SmoothQuant.")
@@ -391,7 +434,7 @@ class _BaseQBitsAutoModelClass:
                 if model_type in IPEX_OPT_LLM_SUPPORTED:
                     quantization_config.ipex_opt_llm = True
                     logger.info("quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used.")
-                    logger.warning("The suggested transformers version is 4.31.0.")
+                    logger.warning("The suggested transformers version is 4.35.2.")
                 else:
                     quantization_config.ipex_opt_llm = False
             if quantization_config.ipex_opt_llm:
@@ -444,12 +487,12 @@ class _BaseQBitsAutoModelClass:
                     calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
-                    if "prompt" in examples:
+                    if "code" in examples:
+                        example = tokenizer(examples["code"])
+                    elif "prompt" in examples:
                         example = tokenizer(examples["prompt"])
                     elif "text" in examples:
                         example = tokenizer(examples["text"])
-                    elif "code" in examples:
-                        example = tokenizer(examples["code"])
                     else:
                         logger.error("Please check dataset prompt identifier," +
                                      " NeelNanda/pile-10k is default used calibration dataset.")
@@ -511,10 +554,12 @@ class _BaseQBitsAutoModelClass:
                         else:
                             input_ids = (input_ids[:, :calib_len] if input_ids.shape[1] > calib_len else input_ids)
                         prepared_inputs = model.prepare_inputs_for_generation(input_ids)
+                        attention_mask = torch.ones_like(input_ids)
                         last_ind.append(input_ids.shape[1] - 1)
                     return (
                         {
                             "input_ids": input_ids,
+                            "attention_mask": attention_mask,
                             "position_ids": prepared_inputs["position_ids"],
                             "past_key_values": past_key_values,
                         },
@@ -543,13 +588,7 @@ class _BaseQBitsAutoModelClass:
                         for i, (inputs, last_ind) in enumerate(calib_dataloader):
                             if i >= calib_iters:
                                 break
-                            if model_type == "chatglm":
-                                model(
-                                    input_ids=inputs["input_ids"],
-                                    past_key_values=inputs["past_key_values"],
-                                    position_ids=inputs["position_ids"],
-                                )
-                            elif model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                            if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                                 model(
                                     input_ids=inputs["input_ids"],
                                     past_key_values=inputs["past_key_values"],
@@ -573,14 +612,12 @@ class _BaseQBitsAutoModelClass:
             if example_inputs is None:
                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                        if model_type == "chatglm":
-                            example_inputs = {
-                                "input_ids": inputs["input_ids"],
-                                "position_ids": inputs["position_ids"],
-                                "past_key_values": inputs["past_key_values"],
-                            }
-                        else:
-                            example_inputs = inputs
+                        example_inputs = {
+                            "input_ids": inputs["input_ids"],
+                            "attention_mask": inputs["attention_mask"],
+                            "position_ids": inputs["position_ids"],
+                            "past_key_values": inputs["past_key_values"],
+                        }
                     else:
                         example_inputs = {
                             "input_ids": inputs["input_ids"],
@@ -688,6 +725,7 @@ class _BaseQBitsAutoModelClass:
             _configuration_file=QUANT_CONFIG,
             **kwargs,
         )
+
         assert (quantization_config is not None), "Detect this model is not a low-bit model."
         kwargs["trust_remote_code"] = trust_remote_code
         config, kwargs = AutoConfig.from_pretrained(
@@ -722,6 +760,7 @@ class _BaseQBitsAutoModelClass:
         low_cpu_mem_usage = config_dict.pop("low_cpu_mem_usage", True)
 
         has_remote_code = (hasattr(config, "auto_map") and cls.ORIG_MODEL.__name__ in config.auto_map)
+
         has_local_code = type(config) in cls.ORIG_MODEL._model_mapping.keys()
         trust_remote_code = resolve_trust_remote_code(
             trust_remote_code,
@@ -784,6 +823,19 @@ class _BaseQBitsAutoModelClass:
                         subfolder,
                         _add_variant(SAFE_WEIGHTS_NAME, variant),
                     )
+                elif os.path.isfile(
+                        os.path.join(
+                            pretrained_model_name_or_path,
+                            subfolder,
+                            _add_variant(SAFE_WEIGHTS_INDEX_NAME, variant),
+                        )):
+                    # Load from a safetensors checkpoint
+                    archive_file = os.path.join(
+                        pretrained_model_name_or_path,
+                        subfolder,
+                        _add_variant(SAFE_WEIGHTS_INDEX_NAME, variant),
+                    )
+                    is_sharded = True
             elif os.path.isfile(os.path.join(subfolder, pretrained_model_name_or_path)):
                 archive_file = pretrained_model_name_or_path
                 is_local = True
@@ -801,7 +853,9 @@ class _BaseQBitsAutoModelClass:
                 logger.info(f"loading weights file {archive_file}")
                 resolved_archive_file = archive_file
             else:
-                logger.info(f"loading weights file {filename} from cache at {resolved_archive_file}")
+                logger.info(
+                    f"loading weights file {filename} from cache at {resolved_archive_file}"
+                )
         else:
             resolved_archive_file = None
 
@@ -915,6 +969,8 @@ class _BaseQBitsAutoModelClass:
             param.requires_grad_(False)
         if device_map == "xpu":
             model = model.to("xpu")
+        model.quantization_config = quantization_config
+        model.save_pretrained = types.MethodType(save_low_bit, model)
         return model
 
 

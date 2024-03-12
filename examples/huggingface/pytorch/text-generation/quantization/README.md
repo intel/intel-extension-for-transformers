@@ -1,12 +1,12 @@
 # Step-by-Step
 We provide the inference benchmarking script `run_generation.py` for large language models, The following are the models we validated, more models are working in progress.
+
+# Quantization for CPU device
 >**Note**: 
-> 1.  default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
-> 2. Model type "gptj", "opt", "llama" and "falcon" will default use [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/339bd251841e153ad9c34e1033ab8b2d936a1781/docs/tutorials/llm/llm_optimize_transformers.md) to accelerate the inference, but "llama" requests transformers version lower than 4.36.0, "falcon" requests transformers version lower than 4.33.3 with use_llm_runtime=False.
-
-
-# Prerequisite​
-## 1. Create Environment​
+> 1.  default search algorithm is beam search with num_beams = 4.
+> 2. Model type "gptj", "opt", "llama" and "falcon" will default use [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/339bd251841e153ad9c34e1033ab8b2d936a1781/docs/tutorials/llm/llm_optimize_transformers.md) to accelerate the inference, but "llama" requests transformers version lower than 4.36.0, "falcon" requests transformers version lower than 4.33.3 with use_neural_speed=False.
+## Prerequisite​
+### Create Environment​
 Pytorch and Intel-extension-for-pytorch version 2.1 are required, python version requests equal or higher than 3.9 due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation, the dependent packages are listed in requirements, we recommend create environment as the following steps.
 
 ```bash
@@ -20,10 +20,10 @@ pip install -r requirements.txt
 > ```
 
 
-# Run
+## Run
 We provide compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, and also support `PEFT` optimized model compression, the followings are command to show how to use it.
 
-## 1. Performance
+### 1. Performance
 ``` bash
 # Please use "--peft_model_id" to replace "--model" if the peft model is used.
 export KMP_BLOCKTIME=1
@@ -75,7 +75,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 
 ```
 
-## 2. Accuracy
+### 2. Accuracy
 ```bash
 # Please use "--peft_model_id" to replace "--model" if the peft model is used.
 # fp32
@@ -126,4 +126,66 @@ python run_generation.py \
     --accuracy \
     --tasks "lambada_openai"
 
+```
+
+# # Weight Only Quantization for GPU device
+>**Note**: 
+> 1.  default search algorithm is beam search with num_beams = 1.
+> 2. [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/v2.1.10%2Bxpu/docs/tutorials/llm/llm_optimize_transformers.md) sSupport for the optimized inference of model types "gptj," "mistral," "qwen," and "llama" to achieve high performance and accuracy. Ensure accurate inference for other model types as well.
+## Prerequisite​
+### Create Environment​
+Pytorch and Intel-extension-for-pytorch version for intel GPU > 2.1 are required, python version requests equal or higher than 3.9 due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation, the dependent packages are listed in requirements_GPU.txt, we recommend create environment as the following steps. For Intel-exension-for-pytorch, we should install from source code now, and Intel-extension-for-pytorch will add weight-only quantization in the next version.
+
+```bash
+pip install -r requirements_GPU.txt
+source /opt/intel/oneapi/setvars.sh
+git clone https://github.com/intel/intel-extension-for-pytorch.git ipex-gpu
+cd ipex-gpu
+git checkout -b dev/QLLM origin/dev/QLLM
+git submodule update --init --recursive
+export USE_AOT_DEVLIST='pvc,ats-m150'
+export BUILD_WITH_CPU=OFF
+
+pip install -r requirements.txt
+python setup.py install
+```
+
+## Run
+The followings are command to show how to use it.
+
+### 1. Performance
+``` bash
+# fp16
+python run_generation_gpu_woq.py \
+    --model EleutherAI/gpt-j-6b \
+    --benchmark
+
+# weightonlyquant
+python run_generation_gpu_woq.py \
+    --model EleutherAI/gpt-j-6b \
+    --woq \
+    --benchmark
+```
+> Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
+```bash
+# First step: Quantize and save model
+python run_generation_gpu_woq.py \
+    --model EleutherAI/gpt-j-6b \
+    --woq \ # default quantize method is RTN
+    --output_dir "saved_dir"
+
+# Second step: Load model and inference
+python run_generation_gpu_woq.py \
+    --model "saved_dir" \
+    --benchmark
+```
+
+### 2. Accuracy
+```bash
+# fp16
+# quantized model by following the steps above
+python run_generation_gpu_woq.py \
+    --model "saved_dir" \
+    --accuracy \
+    --tasks "lambada_openai"
 ```

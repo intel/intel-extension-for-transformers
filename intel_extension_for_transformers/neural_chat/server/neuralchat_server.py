@@ -106,6 +106,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         world_size = config.get("world_size", 1)
         master_port = config.get("master_port", 29500)
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
+        gguf_model_path = config.get("gguf_model_path", None)
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
         plugin_as_service = config.get("plugin_as_service", False)
@@ -131,53 +132,59 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             # TGI serving
             elif serving_framework == "tgi":
                 tgi_params = serving.get("tgi_engine_params", None)
-                tgi_sharded = tgi_params.get('sharded', False)
-                tgi_num_shard = tgi_params.get('num_shard', 1)
-                tgi_habana_visible_devices = tgi_params.get('habana_visible_devices', "all")
-                # construct tgi command
-                tgi_cmd = "docker run -p 9876:80 --name tgi_service -v ./data:/data"
-                if device == "cpu":
-                    tgi_cmd += " --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.3"
-                    # sharded is not supported on CPU
-                    if tgi_sharded:
-                        tgi_sharded = False
-                elif device == "gpu":
-                    tgi_cmd += " --gpus all --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.3"
-                    pass
-                elif device == "hpu":
-                    create_docker_cmd = f"git clone https://github.com/huggingface/tgi-gaudi.git && \
-                        cd tgi-gaudi && docker build -t tgi_gaudi ."
+                tgi_endpoint = tgi_params.get('endpoint', None)
+                if tgi_endpoint:
+                    logger.info(f"tgi endpoint already exist: {tgi_endpoint}")
+                # start a tgi service
+                else:
+                    tgi_port = tgi_params.get('port', "9876")
+                    tgi_sharded = tgi_params.get('sharded', False)
+                    tgi_num_shard = tgi_params.get('num_shard', 1)
+                    tgi_habana_visible_devices = tgi_params.get('habana_visible_devices', "all")
+                    # construct tgi command
+                    tgi_cmd = f"docker run -p {tgi_port}:80 --name tgi_service -v ./data:/data"
+                    if device == "cpu":
+                        tgi_cmd += " --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.3"
+                        # sharded is not supported on CPU
+                        if tgi_sharded:
+                            tgi_sharded = False
+                    elif device == "gpu":
+                        tgi_cmd += " --gpus all --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.3"
+                        pass
+                    elif device == "hpu":
+                        create_docker_cmd = f"git clone https://github.com/huggingface/tgi-gaudi.git && \
+                            cd tgi-gaudi && docker build -t tgi_gaudi ."
+                        try:
+                            # create docker image first
+                            logger.info(f"<neuralchat_server> create docker command = {create_docker_cmd}")
+                            sys.stdout.flush()
+                            sys.stderr.flush()
+                            subprocess.Popen(create_docker_cmd, shell=True, executable="/bin/bash")   # nosec
+                            logger.info("creating tgi habana docker image...")
+                            time.sleep(200)
+                        except Exception as e:
+                            raise RuntimeError(f"Error in tgi habana docker image creation: {e}")
+                        # add tgi_cmd
+                        if tgi_sharded and tgi_num_shard > 1:
+                            tgi_cmd += "-e PT_HPU_ENABLE_LAZY_COLLECTIVES=true"
+                        tgi_cmd += f"--runtime=habana -e HABANA_VISIBLE_DEVICES={tgi_habana_visible_devices} \
+                            -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --ipc=host tgi_gaudi"
+                    else:
+                        logger.error(f"Supported device: [cpu, gpu, hpu]. Your device: {device}")
+                        raise Exception("Please specify device for tgi.")
+                    tgi_cmd += f" --model-id {model_name_or_path}"
+                    if tgi_sharded and tgi_num_shard > 1:
+                        tgi_cmd += " --sharded {tgi_sharded} --num-shard {tgi_num_shard}"
+                    # start tgi service
                     try:
-                        # create docker image first
-                        logger.info(f"<neuralchat_server> create docker command = {create_docker_cmd}")
+                        logger.info(f"<neuralchat_server> Run docker. cmd: {tgi_cmd}")
                         sys.stdout.flush()
                         sys.stderr.flush()
-                        subprocess.Popen(create_docker_cmd, shell=True, executable="/bin/bash")   # nosec
-                        logger.info("creating tgi habana docker image...")
+                        subprocess.Popen(tgi_cmd, shell=True, executable="/bin/bash")   # nosec
+                        logger.info("Building docker container...")
                         time.sleep(200)
                     except Exception as e:
-                        raise RuntimeError(f"Error in tgi habana docker image creation: {e}")
-                    # add tgi_cmd
-                    if tgi_sharded and tgi_num_shard > 1:
-                        tgi_cmd += "-e PT_HPU_ENABLE_LAZY_COLLECTIVES=true"
-                    tgi_cmd += f"--runtime=habana -e HABANA_VISIBLE_DEVICES={tgi_habana_visible_devices} \
-                        -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --ipc=host tgi_gaudi"
-                else:
-                    logger.error(f"Supported device: [cpu, gpu, hpu]. Your device: {device}")
-                    raise Exception("Please specify device for tgi.")
-                tgi_cmd += f" --model-id {model_name_or_path}"
-                if tgi_sharded and tgi_num_shard > 1:
-                    tgi_cmd += " --sharded {tgi_sharded} --num-shard {tgi_num_shard}"
-                # start tgi service
-                try:
-                    logger.info(f"<neuralchat_server> Run docker. cmd: {tgi_cmd}")
-                    sys.stdout.flush()
-                    sys.stderr.flush()
-                    subprocess.Popen(tgi_cmd, shell=True, executable="/bin/bash")   # nosec
-                    logger.info("Building docker container...")
-                    time.sleep(200)
-                except Exception as e:
-                    raise RuntimeError(f"Error when building docker container: {e}")
+                        raise RuntimeError(f"Error when building docker container: {e}")
 
         # plugin as service
         if plugin_as_service:
@@ -224,7 +231,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             optimization_config = None
             yaml_config = config.get("optimization", {})
             ipex_int8 = yaml_config.get("ipex_int8", False)
-            use_llm_runtime = yaml_config.get("use_llm_runtime", False)
+            use_neural_speed = yaml_config.get("use_neural_speed", False)
             use_gptq = yaml_config.get("use_gptq", False)
             use_awq = yaml_config.get("use_awq", False)
             use_autoround = yaml_config.get("use_autoround", {})
@@ -238,9 +245,9 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             bnb_4bit_quant_type = yaml_config.get("bnb_4bit_quant_type", {})
             bnb_4bit_use_double_quant = yaml_config.get("bnb_4bit_use_double_quant", {})
             bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
-            loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
+            loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_neural_speed=use_neural_speed,
                                                 peft_path=peft_model_path, use_deepspeed=use_deepspeed,
-                                                world_size=world_size)
+                                                world_size=world_size, gguf_model_path=gguf_model_path)
             from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
             if optimization_type == "weight_only":
                 if use_gptq:
@@ -316,7 +323,14 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 self.chatbot = build_chatbot(pipeline_config)
             # init api
             from .restful.api import setup_router
-            api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port)
+            if serving and serving.get("framework") == "tgi":
+                if tgi_endpoint:
+                    endpoint = tgi_endpoint
+                else:
+                    endpoint = f"http://0.0.0.0:{tgi_port}/"
+                api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port, endpoint)
+            else:
+                api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port)
             app.include_router(api_router)
             return True
 

@@ -35,7 +35,9 @@ class ErrorCodes:
     ERROR_CACHE_DIR_NO_WRITE_PERMISSION = 2004
     ERROR_INVALID_MODEL_VERSION = 2005
     ERROR_MODEL_NOT_SUPPORTED = 2006
+    ERROR_HF_TOKEN_NOT_PROVIDED = 2007
     WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH = 2101
+    WARNING_INPUT_COMPLETION_EXCEED_MAX_SEQ_LENGTH = 2102
 
     # General Service Error Code - Dataset related
     ERROR_DATASET_NOT_FOUND = 3001
@@ -82,6 +84,7 @@ class ErrorCodes:
         ERROR_INVALID_MODEL_VERSION: "Invalid model version",
         ERROR_MODEL_NOT_SUPPORTED: "Model is not supported",
         WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH: "Input sequence exceeds maximum length",
+        WARNING_INPUT_COMPLETION_EXCEED_MAX_SEQ_LENGTH: "Input and completion sequence exceeds maximum length",
 
         ERROR_DATASET_NOT_FOUND: "Dataset was not found",
         ERROR_DATASET_CONFIG_NOT_FOUND: "Dataset configuration not found",

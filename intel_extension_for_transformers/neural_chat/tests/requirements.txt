@@ -1,6 +1,6 @@
 accelerate>=0.21.0
 av
-basicsr==1.4.2
+basicsr @ git+https://github.com/Spycsh/BasicSR
 beautifulsoup4
 chromadb==0.4.15
 cn2an
@@ -8,14 +8,16 @@ datasets
 deepface
 diffusers==0.12.1
 dlib-bin
+easyocr
 einops
 evaluate
 exifread
 face_alignment==1.3.5
 facexlib @ git+https://github.com/Spycsh/facexlib@master
 faiss-cpu
-fastapi==0.103.2
+fastapi
 ffmpeg-python==0.2.0
+FlagEmbedding
 fschat==0.2.35
 g2p_en
 gfpgan
@@ -26,7 +28,7 @@ imageio==2.19.3
 imageio-ffmpeg==0.4.7
 inflect
 InstructorEmbedding
-intel_extension_for_pytorch==2.1.0
+intel_extension_for_pytorch==2.2.0
 jaconv
 jieba
 joblib==1.2.0
@@ -53,6 +55,7 @@ peft==0.6.2
 protobuf==3.20.2
 pydantic==1.10.13
 pydub
+PyMuPDF
 pymysql
 pyopenjtalk; sys_platform == 'linux'
 PyPDF2
@@ -61,23 +64,24 @@ python-docx
 python-multipart
 pyyaml
 qdrant-client
+rank_bm25
 resampy==0.3.1
 rouge_score
+sacremoses
 safetensors
 scikit-image==0.19.3
 scikit-learn
 scipy==1.10.1
 sentence-transformers==2.3.1
-sentence_transformers
 shortuuid
 soundfile
 spacy
-speechbrain
+speechbrain==0.5.15
 starlette
 tiktoken==0.4.0
-torch==2.1.0
-torchaudio==2.1.0
-torchvision==0.16.0
+torch==2.2.0
+torchaudio==2.2.0
+torchvision==0.17.0
 tqdm
 transformers==4.36.2
 transformers_stream_generator

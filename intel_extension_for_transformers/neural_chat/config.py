@@ -24,6 +24,8 @@ from dataclasses import dataclass
 from .utils.common import get_device_type
 
 from .plugins import plugins
+from .utils.common import is_openai_model
+import os
 
 from enum import Enum, auto
 
@@ -327,6 +329,10 @@ class FinetuningArguments:
             "choices": ["completion", "chat", "summarization", "code-generation"]
             },
     )
+    eval_ppl: bool = field(
+        default=True,
+        metadata={"help": "whether to compute evaluation perplexity during training."},
+    )
     do_lm_eval: bool = field(
         default=False,
         metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},
@@ -420,7 +426,8 @@ class LoadingModelConfig:
     use_deepspeed: bool = False
     world_size: int = 1
     ipex_int8: bool = False
-    use_llm_runtime: bool = False
+    use_neural_speed: bool = False
+    gguf_model_path: str = None
 
 @dataclass
 class FrameworkConfig:
@@ -445,10 +452,16 @@ class ServingConfig:
     framework: str = "vllm" # vllm/TGI
     framework_config: FrameworkConfig = None
 
+@dataclass
+class OpenAIConfig:
+    def __init__(self, api_key: str = None, organization: str = None):
+        self.api_key = api_key if api_key else os.environ.get("OPENAI_API_KEY")
+        self.organization = organization if organization else os.environ.get("OPENAI_ORG")
 class PipelineConfig:
     def __init__(self,
                  model_name_or_path="Intel/neural-chat-7b-v3-1",
                  tokenizer_name_or_path=None,
+                 hf_endpoint_url=None,
                  hf_access_token=None,
                  device="auto",
                  task="",
@@ -456,10 +469,18 @@ class PipelineConfig:
                  loading_config=None,
                  optimization_config=None,
                  assistant_model=None,
-                 serving_config=None):
+                 serving_config=None,
+                 openai_config=None,):
         self.model_name_or_path = model_name_or_path
+
+        if is_openai_model(model_name_or_path.lower()):
+            self.openai_config = openai_config if openai_config else OpenAIConfig()
+            if self.openai_config.api_key is None:
+                raise Exception("Please provide the OpenAI key if you are using OpenAI model!")
+
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
+        self.hf_endpoint_url = hf_endpoint_url
         if device == "auto":
             self.device = get_device_type()
         else:

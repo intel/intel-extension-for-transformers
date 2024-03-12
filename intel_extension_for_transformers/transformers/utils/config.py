@@ -46,7 +46,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         use_gptq=False,
         use_autoround=False,
         algorithm_args=None,
-        use_llm_runtime=True,
+        use_neural_speed=True,
         low_bit_model=False,
         **kwargs,
     ):
@@ -70,7 +70,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.use_gptq = use_gptq
         self.use_autoround = use_autoround
         self.algorithm_args = algorithm_args
-        self.use_llm_runtime = use_llm_runtime
+        self.use_neural_speed = use_neural_speed
         self.low_bit_model = low_bit_model
         self.device = kwargs.get("device", "auto")
 
@@ -142,7 +142,12 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if not isinstance(self.scheme, str):
             raise ValueError("scheme must be a string")
 
-        self.use_llm_runtime = False
+        if self.scheme == "asym" and (self.compute_dtype == "int8" or self.weight_dtype.startswith("fp") \
+                                         or self.weight_dtype.startswith("nf") or self.scale_dtype != "fp32"):
+            raise ValueError("WeightOnlyQuantization doesn't support asym with \
+                                compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, \
+                                please use sym scheme")
+        self.use_neural_speed = False
 
     def post_init_xpu(self):
         r"""
@@ -157,8 +162,13 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         elif self.compute_dtype is None:
             self.compute_dtype = "fp16"
 
-        if self.algorithm not in ['RTN']:
-            raise ValueError("algorithm must be 'RTN' now. will support 'TEQ', 'AWQ' soon!")
+        if self.algorithm not in ["RTN", "GPTQ"]:
+            raise ValueError("algorithm must be 'RTN' and 'GPTQ' now. will support 'TEQ', 'AWQ' soon!")
+
+        if self.algorithm == "GPTQ":
+            if self.algorithm_args is not None:
+                if "actorder" in self.algorithm_args:
+                    assert not self.algorithm_args["actorder"], "GPTQ algorithm only support actorder False now."
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4_fullrange"
@@ -190,7 +200,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
 
         if self.scheme not in ["sym"]:
             raise ValueError("scheme: {} is not support, only support 'sym' now!".format(self.scheme))
-        self.use_llm_runtime = False
+        self.use_neural_speed = False
 
     def post_init_runtime(self):
         r"""
@@ -263,7 +273,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                       " Fall back to fp8.")
                 self.scale_dtype = "fp8"
 
-        self.use_llm_runtime = True
+        self.use_neural_speed = True
 
     def quantization_method(self):
         r"""

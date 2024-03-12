@@ -25,7 +25,7 @@ Intel® Extension for Transformers
 ```bash
 pip install intel-extension-for-transformers
 ```
-> For more installation methods, please refer to [Installation Page](./docs/installation.md)
+> For system requirements and other installation tips, please refer to [Installation Guide](./docs/installation.md)
 
 ## 🌟Introduction
 Intel® Extension for Transformers is an innovative toolkit designed to accelerate GenAI/LLM everywhere with the optimal performance of Transformer-based models on various Intel platforms, including Intel Gaudi2, Intel CPU, and Intel GPU. The toolkit provides the below key features and examples:
@@ -102,7 +102,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 > In the table above, "-" means not applicable or not started yet.
 
-## Validated Software
+## 🔓Validated Software
 <table>
 	<tbody>
 		<tr>
@@ -163,6 +163,9 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 > Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [Intel GPU](https://github.com/intel/intel-extension-for-transformers/blob/main/requirements-gpu.txt).
 
+## 🔓Validated OS
+Ubuntu 20.04/22.04, Centos 8.
+
 ## 🌱Getting Started
 
 ### Chatbot
@@ -198,6 +201,8 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 Below is the sample code to use the extended Transformers APIs. See more [examples](https://github.com/intel/neural-speed/tree/main).
 
 #### INT4 Inference (CPU)
+We encourage you to install [NeuralSpeed](https://github.com/intel/neural-speed) to get the latest features (e.g., GGUF support) of LLM low-bit inference on CPUs. You may also want to use v1.3 without NeuralSpeed by following the [document](https://github.com/intel/intel-extension-for-transformers/tree/v1.3/intel_extension_for_transformers/llm/runtime/graph/README.md)
+
 ```python
 from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM

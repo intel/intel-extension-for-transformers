@@ -31,7 +31,7 @@ We support multi-language Automatic Speech Recognition using Whisper.
 The AudioSpeechRecognition class provides functionality for converting multi-language audio to text. Here's how to use it:
 
 ```python
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import AudioSpeechRecognition
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 # pass the parameter language="auto" to let the asr model automatically detect language
 # otherwise, you can pass an arbitrary language to the model (e.g. en/zh/de/fr...)
 asr = AudioSpeechRecognition("openai/whisper-small", language="auto", device=self.device)
@@ -44,6 +44,13 @@ print("ASR Result:", result)
 # English Text-to-Speech (TTS)
 
 We support English-only TTS based on [SpeechT5](https://arxiv.org/pdf/2110.07205.pdf) and its checkpoints are directly downloaded from [HuggingFace](https://huggingface.co/microsoft/speecht5_tts). It is a two-stage TTS model composed of an acoustic model and a vocoder, and it uses a speaker embedding to distinguish between different voices. In our early experiments and development, this model with the pretrained weights can output relatively good English-only audio results and do voice cloning with few-shot audios from new speakers.
+## Dependencies Installation
+
+To use the English TTS module, you need to install the required dependencies. Run the following command:
+
+```bash
+pip install transformers soundfile speechbrain==0.5.15
+```
 
 ## Usage
 

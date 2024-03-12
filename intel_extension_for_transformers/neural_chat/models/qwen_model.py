@@ -26,6 +26,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def prepare_inputs_for_generation(
+    input_ids, past_key_values=None, inputs_embeds=None, **kwargs
+):
+    if past_key_values:
+        input_ids = input_ids[:, -1].unsqueeze(-1)
+
+    attention_mask = kwargs.get("attention_mask", None)
+
+    if inputs_embeds is not None and past_key_values is None:
+        model_inputs = {"inputs_embeds": inputs_embeds}
+    else:
+        model_inputs = {"input_ids": input_ids}
+
+    model_inputs.update(
+        {
+            "past_key_values": past_key_values,
+            "use_cache": kwargs.get("use_cache"),
+            "attention_mask": attention_mask,
+        }
+    )
+    return model_inputs
+
 class QwenModel(BaseModel):
     def match(self):
         """

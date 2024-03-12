@@ -49,6 +49,7 @@ from ...config import GenerationConfig
 import json, types
 import tiktoken
 from ...plugins import plugins, is_plugin_enabled
+from ...utils.common import is_openai_model
 
 def check_requests(request) -> Optional[JSONResponse]:
     # Check all params
@@ -103,7 +104,7 @@ def create_error_response(status_code: int, message: str) -> JSONResponse:
                         status_code=status_code.value)
 
 async def check_model(request) -> Optional[JSONResponse]:
-    if request.model == router.get_chatbot().model_name:
+    if request.model in router.get_chatbot().model_name:
         return
     ret = create_error_response(
         HTTPStatus.NOT_FOUND,
@@ -137,6 +138,7 @@ async def get_generation_parameters(
     best_of: Optional[int] = None,
     use_beam_search: Optional[bool] = None,
 ) -> Dict[str, Any]:
+    chatbot.conv_template.clear_messages()
     conv = chatbot.conv_template.conv
 
     if isinstance(messages, str):
@@ -355,9 +357,9 @@ async def generate_completion(payload: Dict[str, Any], chatbot: BaseModel):
     config = GenerationConfig()
     for attr, value in payload.items():
         setattr(config, attr, value)
-    config.device = chatbot.device
+    config.device = chatbot.device if hasattr(chatbot, "device") else "auto"
     config.task = "chat"
-    if chatbot.device == "hpu":
+    if config.device == "hpu":
         config.use_hpu_graphs = True
     prompt = payload["prompt"]
     response = chatbot.predict(query=prompt, config=config)
@@ -488,20 +490,29 @@ async def create_chat_completion(request: ChatCompletionRequest):
 
     chatbot = router.get_chatbot()
 
-    gen_params = await get_generation_parameters(
-        request.model,
-        chatbot,
-        request.messages,
-        temperature=request.temperature,
-        top_p=request.top_p,
-        top_k=request.top_k,
-        repetition_penalty=request.repetition_penalty,
-        presence_penalty=request.presence_penalty,
-        frequency_penalty=request.frequency_penalty,
-        max_tokens=request.max_tokens if request.max_tokens else 512,
-        echo=False,
-        stop=request.stop,
-    )
+    if not is_openai_model(chatbot.model_name.lower()):
+        gen_params = await get_generation_parameters(
+            request.model,
+            chatbot,
+            request.messages,
+            temperature=request.temperature,
+            top_p=request.top_p,
+            top_k=request.top_k,
+            repetition_penalty=request.repetition_penalty,
+            presence_penalty=request.presence_penalty,
+            frequency_penalty=request.frequency_penalty,
+            max_tokens=request.max_tokens if request.max_tokens else 512,
+            echo=False,
+            stop=request.stop,
+        )
+    else:
+        gen_params = {
+            "prompt": request.messages,
+            "temperature": request.temperature,
+            "top_p": request.top_p,
+            "repetition_penalty": request.repetition_penalty,
+            "max_new_tokens": request.max_tokens,
+        }
 
     if request.stream:
         generator = chat_completion_stream_generator(
@@ -523,12 +534,13 @@ async def create_chat_completion(request: ChatCompletionRequest):
         if isinstance(content, str):
             content = json.loads(content)
 
+        content_string = content["text"]
         if content["error_code"] != 0:
-            return create_error_response(content["error_code"], content["text"])
+            return create_error_response(content["error_code"], content_string)
         choices.append(
             ChatCompletionResponseChoice(
                 index=i,
-                message=ChatMessage(role="assistant", content=content["text"]),
+                message=ChatMessage(role="assistant", content=content_string),
                 finish_reason=content.get("finish_reason", "stop"),
             )
         )

@@ -1,12 +1,11 @@
 cchardet
 einops
 evaluate
-fastapi==0.103.2
+fastapi
 fschat==0.2.35
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
-intel_extension_for_pytorch
+huggingface_hub
 neural-compressor
-neural_speed
 numpy==1.23.5
 optimum
 peft
@@ -14,6 +13,7 @@ pydantic==1.10.13
 python-dotenv
 python-multipart
 rouge_score
+sacremoses
 shortuuid
 starlette
 transformers>=4.35.2

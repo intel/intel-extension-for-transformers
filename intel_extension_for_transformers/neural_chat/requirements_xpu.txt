@@ -1,16 +1,23 @@
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
 cchardet
 einops
 evaluate
-fastapi==0.103.2
+fastapi
 fschat==0.2.35
+huggingface_hub
+intel-extension-for-pytorch==2.1.10+xpu
 neural-compressor
 numpy==1.23.5
 pydantic==1.10.13
 python-dotenv
 python-multipart
 rouge_score
+sacremoses
 shortuuid
 starlette
+torch==2.1.0a0
+torchaudio==2.1.0a0
+torchvision==0.16.0a0
 transformers>=4.35.2
 uvicorn
 yacs

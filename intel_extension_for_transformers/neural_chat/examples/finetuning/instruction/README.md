@@ -6,10 +6,12 @@ This example demonstrates how to finetune the pretrained large language model (L
 ## Validated Model List
 |Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation |
 |------------------------------------|---|---|--- | --- |
+|Mistral-7B | ✅| ✅|✅| ✅
 |LLaMA series| ✅| ✅|✅| ✅
 |LLaMA2 series| ✅| ✅|✅| ✅
 |MPT series| ✅| ✅|✅| ✅
 |FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
+|Mixtral-8x7B | **WIP** | **WIP**| **WIP** | **WIP**|
 
 # Prerequisite​
 
@@ -20,7 +22,7 @@ Recommend python 3.9 or higher version.
 pip install -r requirements.txt
 pip install transformers==4.34.1
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
-python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-whl-stable-cpu
+python -m pip install oneccl_bind_pt==2.2.0 -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
 >**Note**: Suggest using transformers no higher than 4.34.1
 
@@ -93,15 +95,15 @@ The user can obtain the [release model](https://huggingface.co/google/flan-t5-xl
 ## 3. Prepare Dataset
 We select 4 kind of datasets to conduct the finetuning process for different tasks.
 
-1. Text Generation (General domain instruction): We use the [Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca) from Stanford University as the general domain dataset to fine-tune the model. This dataset is provided in the form of a JSON file, [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json). In Alpaca, researchers have manually crafted 175 seed tasks to guide `text-davinci-003` in generating 52K instruction data for diverse tasks.
+1. Text Generation (General domain instruction): We use the [Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca) from Stanford University as the general domain dataset to fine-tune the model. This dataset is provided in the form of a JSON file, [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json). In Alpaca, researchers have manually crafted 175 seed tasks to guide `text-davinci-003` in generating 52K instruction data for diverse tasks. For finetuning on this dataset, user can choose to add `--task completion` argument or not since it's default to `completion`.
 
-2. Text Generation (Domain-specific instruction): Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the [prompt template](https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt) to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in `intel_domain.json`.
+2. Text Generation (Domain-specific instruction): Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the [prompt template](https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt) to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in `intel_domain.json`. For finetuning on this dataset, user can choose to add `--task completion` argument or not since it's default to `completion`.
 
-3. Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset [HuggingFaceH4/ultrachat_200k](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k).
+3. Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset [HuggingFaceH4/ultrachat_200k](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k). For finetuning on this dataset, please add `--task chat` argument.
 
-4. Summarization: An English-language dataset [cnn_dailymail](https://huggingface.co/datasets/cnn_dailymail) containing just over 300k unique news articles as written by journalists at CNN and the Daily Mail, is used for this task.
+4. Summarization: An English-language dataset [cnn_dailymail](https://huggingface.co/datasets/cnn_dailymail) containing just over 300k unique news articles as written by journalists at CNN and the Daily Mail, is used for this task. For finetuning on this dataset, please add `--task summarization` argument.
 
-5. Code Generation: To enhance code performance of LLMs (Large Language Models), we use the [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
+5. Code Generation: To enhance code performance of LLMs (Large Language Models), we use the [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1). For finetuning on this dataset, please add `--task code-generation` argument.
 
 ### Dataset related arguments
 - **dataset_name**: The name of the dataset to use (via the datasets library).
@@ -623,6 +625,35 @@ For finetuning on SPR, add `--bf16` argument will speedup the finetuning process
 You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 
+## Fine-tuning on Intel Arc GPUs
+
+### 1. Single Card Fine-tuning
+
+Follow the installation guidance in [intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch) to install intel-extension-for-pytorch for GPU.
+
+For `google/gemma-2b`, use the below command line for finetuning on the Alpaca dataset.
+
+```bash
+python finetune_clm.py \
+        --model_name_or_path "google/gemma-2b" \
+        --train_file "/path/to/alpaca_data.json" \
+        --dataset_concatenation \
+        --per_device_train_batch_size 2 \
+        --per_device_eval_batch_size 2 \
+        --gradient_accumulation_steps 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "steps" \
+        --save_steps 2000 \
+        --save_total_limit 1 \
+        --learning_rate 1e-4  \
+        --do_train \
+        --num_train_epochs 3 \
+        --overwrite_output_dir \
+        --log_level info \
+        --output_dir ./gemma-2b_peft_finetuned_model \
+        --peft lora \
+        --gradient_checkpointing True
+```
 
 # Evaluation Metrics
 

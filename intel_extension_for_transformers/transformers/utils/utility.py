@@ -21,7 +21,7 @@ import argparse
 import os
 from typing import Optional, Tuple
 from neural_compressor.utils import logger
-from neural_compressor.utils.utility import LazyImport
+from neural_compressor.utils.utility import LazyImport, CpuInfo
 
 
 CONFIG_NAME = "best_configure.yaml"
@@ -35,6 +35,7 @@ WEIGHTS_INDEX_NAME = "pytorch_model.bin.index.json"
 QUANT_CONFIG = "quantization_config.json"
 SPARSITY_CONFIG = "sparsity_config.json"
 SAFE_WEIGHTS_NAME = "model.safetensors"
+SAFE_WEIGHTS_INDEX_NAME = "model.safetensors.index.json"
 
 torch = LazyImport("torch")
 
@@ -254,7 +255,8 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     return tuple(past_key_values)
 
 
-IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon"}
+IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon", "chatglm", "baichuan"}
+
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
     "gpt2",
@@ -265,7 +267,8 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "imagegpt",
     "llama",
     "mistral",
-    "chatglm"
+    "chatglm",
+    "baichuan"
 }
 
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
