@@ -340,3 +340,20 @@ Context:
 ---
 Generated questions:
 """
+
+TRUTHGENERATE_PROMPT = """
+Task: You are asked to act as a human annotator. Your role is to generate the right answer based on the context and question provided.
+Answers should aim to extract or clarify the key information of the question from the context, focusing on a single aspect or detail.
+The answer must be directly related to the context and the question, suitable for use in constructing a synthetic retrieval evaluation dataset.
+--- 
+Desired format:
+1. <ground_truth>
+--- 
+Question:
+### {question}
+--- 
+Context:
+### {context}
+--- 
+Generated ground_truth:
+"""
