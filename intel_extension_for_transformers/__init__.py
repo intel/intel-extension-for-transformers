@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 def _get_version(default='x.x.x.dev'):
     try:
         from pkg_resources import DistributionNotFound, get_distribution
@@ -32,3 +34,6 @@ def _get_version(default='x.x.x.dev'):
 
 
 __version__ = _get_version()
+
+__path__ = [os.path.dirname(__file__)]
+__path__.append(os.path.join(os.path.dirname(__file__), 'langchain'))
