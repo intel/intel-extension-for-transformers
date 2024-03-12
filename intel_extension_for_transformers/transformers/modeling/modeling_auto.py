@@ -156,7 +156,7 @@ class _BaseQBitsAutoModelClass:
     model_type_list = ["llama", "gptj", "mpt", "opt", "gptneox",   \
             "dolly", "polyglot", "starcoder", "falcon", \
             "bloom", "chatglm2", "chatglm", "baichuan", \
-            "mistral", "qwen", "phi", "whisper"]
+            "mistral", "qwen", "phi", "whisper","qwen2"]
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
@@ -208,12 +208,17 @@ class _BaseQBitsAutoModelClass:
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
 
         config = kwargs.pop("config", None)
+        model_hub = kwargs.pop("model_hub", "huggingface")
 
         if not isinstance(config, PretrainedConfig):
-            config, _ = AutoConfig.from_pretrained(
-                pretrained_model_name_or_path,
-                return_unused_kwargs=True,
-                **kwargs,
+            if model_hub == "modelscope":
+                config = modelscope.AutoConfig.from_pretrained(pretrained_model_name_or_path,
+                                            trust_remote_code=True)
+            else:
+                config, _ = AutoConfig.from_pretrained(
+                    pretrained_model_name_or_path,
+                    return_unused_kwargs=True,
+                    **kwargs,
 
             )
         if hasattr(config, "quantization_config"):
@@ -357,6 +362,7 @@ class _BaseQBitsAutoModelClass:
                     use_gptq=quantization_config.quant_method.value == "gptq" or \
                             quantization_config.quant_method.value =="autoround",
                     use_awq=quantization_config.quant_method.value == "awq",
+                    model_hub=model_hub,
                 )
                 model.quantization_config = quantization_config
                 return model
