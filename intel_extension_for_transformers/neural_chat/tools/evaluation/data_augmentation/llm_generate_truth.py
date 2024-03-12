@@ -99,7 +99,7 @@ def raw_data_generate(model_id,
             with jsonlines.open(file_json_path,"a") as file_json:
                   file_json.write(data)
 
-def main():   
+def main():
    parser = argparse.ArgumentParser()
    parser.add_argument("--llm_model", type=str)
    parser.add_argument("--input", type=str)
