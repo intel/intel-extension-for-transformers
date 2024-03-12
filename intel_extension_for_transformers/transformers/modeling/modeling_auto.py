@@ -160,7 +160,7 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        # use for neuralspeed ggul
+        # use for neuralspeed gguf
         model_file = kwargs.pop("model_file", None)
         if model_file is not None:
             from neural_speed import Model
@@ -421,13 +421,15 @@ class _BaseQBitsAutoModelClass:
             except ImportError:
                 logger.warning("Please install Intel Extension for PyTorch to accelerate the model inference.")
             assert (ipex.__version__ >= "2.2.0+cpu"), "Please use Intel Extension for PyTorch >=2.2.0+cpu."
+
+            config.torchscript = True
+            config.use_cache = True
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
                 *model_args,
                 config=config,
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.float,
-                use_cache=True,
                 **kwargs,
             )
 

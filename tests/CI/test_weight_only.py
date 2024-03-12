@@ -110,7 +110,7 @@ class TestWeightOnly(unittest.TestCase):
             activation = torch.rand(1, 32, dtype=torch.float)
             output = model(activation)
 
-            config = RtnConfig(weight_dtype="int8", group_size=32)
+            config = RtnConfig(bits=8, weight_dtype="int8", group_size=32)
             config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
