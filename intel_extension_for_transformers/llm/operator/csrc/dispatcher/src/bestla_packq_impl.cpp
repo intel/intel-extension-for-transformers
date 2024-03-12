@@ -69,6 +69,47 @@ std::vector<int> get_ascii_vec(std::string str) {
   return ret;
 }
 
+auto get_torch_dtype(BTLA_DTYPE dtype) {
+  switch (dtype) {
+    case BTLA_DTYPE::F32:
+      return torch::kF32;
+    case BTLA_DTYPE::BF16:
+      return torch::kBFloat16;
+    case BTLA_DTYPE::S8:
+      return torch::kInt8;
+    default:
+      TORCH_CHECK(false, "QBits: unsupported unpack dtype, only support fp32/bf16/int8 now.");
+      break;
+  }
+}
+
+int get_sizeof_bestla_dtype(BTLA_DTYPE dtype) {
+  switch (dtype) {
+    case BTLA_DTYPE::F32:
+    case BTLA_DTYPE::S32:
+    case BTLA_DTYPE::U32:
+      return 4;
+    case BTLA_DTYPE::BF16:
+    case BTLA_DTYPE::F16:
+      return 2;
+    case BTLA_DTYPE::S8:
+    case BTLA_DTYPE::U8:
+      return 1;
+    default:
+      assert(0);
+      break;
+  }
+  return -1;
+}
+
+void bestla_2dcpy_tensor(int row, int col, int ld_src, torch::Tensor& dst, void* src, BTLA_DTYPE dtype) {
+  dst = torch::empty({row, col}, get_torch_dtype(dtype));
+  auto dt_size = get_sizeof_bestla_dtype(dtype);
+  for (int i = 0; i < row; i++) {
+    memcpy(dst.data_ptr() + i * col * dt_size, src + i * ld_src * dt_size, col * dt_size);
+  }
+}
+
 torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T) {
   torch::Tensor output;
   auto packw_ptr = dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(
@@ -85,6 +126,8 @@ torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T) {
       return output.index_put_({0}, static_cast<int64_t>(packw_ptr->mN));
     case ACT_SHUFFLE:
       return output.index_put_({0}, static_cast<int64_t>(packw_ptr->ShfIndice() != nullptr ? 1 : 0));
+    case IS_ASYM:
+      return output.index_put_({0}, static_cast<int64_t>(packw_ptr->IsAsym() ? 1 : 0));
     case G_IDX: {
       auto tensor_size = packw_ptr->mShuffleIndices.size<int>();
       TORCH_CHECK(packw_ptr->ShfIndice() != nullptr, "QBits: not pack g_idx tensor.");
@@ -104,6 +147,15 @@ torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T) {
       auto ascii_vec = get_ascii_vec(get_cmpt_str(static_cast<bestla::gemm::CompType>(CType)));
       output = torch::empty(ascii_vec.size(), torch::kInt32);
       memcpy(output.data_ptr(), ascii_vec.data(), ascii_vec.size() * sizeof(int));
+    } break;
+    case ZP_TENSOR: {
+      TORCH_CHECK(packw_ptr->ZPtr<void>() != nullptr, "QBits: not pack zero-point tensor.");
+      bestla_2dcpy_tensor((packw_ptr->mK + packw_ptr->mBlockSize - 1) / packw_ptr->mBlockSize, packw_ptr->mN,
+                          packw_ptr->mNPad, output, packw_ptr->ZPtr<void>(), packw_ptr->ZDtype());
+    } break;
+    case SCALE_TENSOR: {
+      bestla_2dcpy_tensor((packw_ptr->mK + packw_ptr->mBlockSize - 1) / packw_ptr->mBlockSize, packw_ptr->mN,
+                          packw_ptr->mNPad, output, packw_ptr->SPtr<void>(), packw_ptr->SDtype());
     } break;
     default:
       TORCH_CHECK(false, "QBits: unsupported acquire_type");
