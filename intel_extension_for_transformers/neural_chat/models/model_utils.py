@@ -219,9 +219,15 @@ def max_input_len(input_text_length):
         return 512
     elif input_text_length <= 2048:
         return 2048
-    else:
-        logging.info("Max support length is 4096")
+    elif input_text_length <= 4096:
         return 4096
+    elif input_text_length <= 8192:
+        return 8192
+    elif input_text_length <= 16384:
+        return 16384
+    else:
+        logging.info("Max support length is 32K")
+        return 32768
 
 
 MODELS = {}
