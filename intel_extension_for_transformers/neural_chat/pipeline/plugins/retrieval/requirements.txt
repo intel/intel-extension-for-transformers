@@ -4,6 +4,7 @@ easyocr
 FlagEmbedding
 InstructorEmbedding
 langchain==0.1.11
+langchain-community==0.0.27
 langid
 markdown
 openpyxl
