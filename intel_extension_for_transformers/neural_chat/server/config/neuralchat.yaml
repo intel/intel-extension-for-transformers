@@ -46,10 +46,7 @@ tts:
         stream_mode: false
         output_audio_path: "./output_audio.wav"
 
-asr_chinese:
-    enable: false
-
-tts_chinese:
+tts_multilang:
     enable: false
     args:
         device: "cpu"

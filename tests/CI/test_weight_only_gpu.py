@@ -21,7 +21,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import GPTQConfig, RtnConfig
 from math import isclose
 from transformers import AutoTokenizer
 from intel_extension_for_transformers.utils.utils import get_gpu_family, _ipex_available
@@ -104,16 +104,12 @@ class TestArcWeightOnly(unittest.TestCase):
         fp16_out = output.to("cpu")
         print("fp16 logits {}".format(fp16_out.shape))
 
-        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
-                                       group_size=32,
-                                       compute_dtype="fp16",
-                                       scale_dtype="fp16")
-        config.calib_dataloader = DataLoader(
-            DummyDataset(MODEL_NAME, model.seqlen),
-            batch_size=1,
-            shuffle=False,
-        )
-        qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_neural_speed=False,
+        config = RtnConfig(
+            weight_dtype="int4_fullrange",
+            group_size=32,
+            compute_dtype="fp16",
+            scale_dtype="fp16")
+        qmodel = AutoModelForCausalLM.from_pretrained(MODEL_NAME, use_neural_speed=False,
                                                       device_map=device_map, quantization_config=config,
                                                       trust_remote_code=True, torch_dtype=torch.float16)
         qmodel.save_pretrained(self.workspace)
@@ -141,18 +137,13 @@ class TestArcWeightOnly(unittest.TestCase):
         tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
         prompt = "how to test the code?"
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device=device_map)
-        algorithm_args = {
-            "act_order": False,
-            "percdamp": 0.01,
-            "block_size": 32 ,
-            "nsamples": 3,
-            "use_max_length": True,
-            "pad_max_length": 256,
-        }
-        woq_config = WeightOnlyQuantConfig(
-            algorithm_args=algorithm_args,
-            tokenizer=tokenizer,
-            algorithm="GPTQ")
+        woq_config = GPTQConfig(
+            desc_act=False,
+            damp_percent=0.01,
+            block_size=32,
+            nsamples=3,
+            max_input_length=256,
+            tokenizer=tokenizer)
         woq_model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
             quantization_config=woq_config,
@@ -163,7 +154,7 @@ class TestArcWeightOnly(unittest.TestCase):
         )
         woq_model.config.architectures = ["GPTJForCausalLM"]
         woq_model = ipex.optimize_transformers(
-            woq_model, device=device_map, inplace=True, woq=True, dtype=torch.float16)
+            woq_model, device=device_map, inplace=True, quantization_config=woq_config, dtype=torch.float16)
         with torch.inference_mode(), torch.no_grad(), torch.autocast(
             device_type=device_map,
             enabled=True,

@@ -21,7 +21,7 @@ import torch
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import RtnConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TestChatbotBuilder(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_llm_runtime(self):
         loading_config = LoadingModelConfig(use_neural_speed=True)
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-            optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int8"),
+            optimization_config=RtnConfig(bits=4, compute_dtype="int8", weight_dtype="int8"),
             loading_config=loading_config
         )
         chatbot = build_chatbot(config)

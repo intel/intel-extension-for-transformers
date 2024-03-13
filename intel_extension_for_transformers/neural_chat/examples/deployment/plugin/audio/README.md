@@ -47,22 +47,27 @@ pip install -r ../../../requirements.txt
 
 You can customize the configuration file 'audio_service.yaml' to match your environment setup. Here's a table to help you understand the configurable options:
 
-|  Item                             | Value                                  |
-| --------------------------------- | ---------------------------------------|
-| host                              | 127.0.0.1                              |
-| port                              | 7777                                   |
-| device                            | "auto"                                 |
-| asr.enable                        | true                                   |
-| asr.args.device                   | "cpu"                                  |
-| asr.args.model_name_or_path       | "openai/whisper-small"                 |
-| asr.args.bf16                     | false                                  |
-| tts.enable                        | true                                   |
-| tts.args.device                   | "cpu"                                  |
-| tts.args.voice                    | "default"                              |
-| tts.args.stream_mode              | false                                  |
-| tts.args.output_audio_path        | "./output_audio.wav"                   |
-| tts.args.speedup                  | 1.0                                    |
-| tasks_list                        | ['plugin_audio']              |
+|  Item                                  | Value                                  |
+| ---------------------------------------| ---------------------------------------|
+| host                                   | 127.0.0.1                              |
+| port                                   | 7777                                   |
+| device                                 | "auto"                                 |
+| asr.enable                             | true                                   |
+| asr.args.device                        | "cpu"                                  |
+| asr.args.model_name_or_path            | "openai/whisper-small"                 |
+| asr.args.bf16                          | false                                  |
+| tts.enable                             | true                                   |
+| tts.args.device                        | "cpu"                                  |
+| tts.args.voice                         | "default"                              |
+| tts.args.stream_mode                   | false                                  |
+| tts.args.output_audio_path             | "./output_audio.wav"                   |
+| tts_multilang.enable                   | true                                   |
+| tts_multilang.args.device              | "cpu"                                  |
+| tts_multilang.args.voice               | "default"                              |
+| tts_multilang.args.output_audio_path   | "./output_audio.wav"                   |
+| tts_multilang.args.precision           | "bf16"                                 |
+| tasks_list                             | ['plugin_audio']                       |
+
 
 
 # Run the audio service server
@@ -77,3 +82,4 @@ To call the started audio service, the APIs are listed as follows:
 1. http://127.0.0.1:7777/plugin/audio/asr , upload an audio file and return the text contents.
 2. http://127.0.0.1:7777/plugin/audio/tts , input text string and return the binary content of the audio.
 3. http://127.0.0.1:7777/plugin/audio/create_embedding, upload an audio file and create an embedding of your voice.
+4. http://127.0.0.1:7777/plugin/audio/tts_multilang , input text string and return the binary content of the audio.
