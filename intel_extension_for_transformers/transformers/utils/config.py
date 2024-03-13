@@ -550,6 +550,8 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
         # set tokenizer to None due to it doesn't support write to json
         if hasattr(self, "tokenizer"):
             self.tokenizer = None
+        if hasattr(self, "calib_dataloader"):
+            self.calib_dataloader = None
         with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string(use_diff=use_diff))
 
@@ -573,8 +575,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
             kwargs (`Dict[str, Any]`, *optional*):
                 Additional key word arguments passed along to the [`~utils.PushToHubMixin.push_to_hub`] method.
         """
-        # self._set_token_in_kwargs(kwargs)
-
         if os.path.isfile(save_directory):
             raise AssertionError(
                 f"Provided path ({save_directory}) should be a directory, not a file"
