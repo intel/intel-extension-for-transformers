@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     results = evaluate(
         model="hf-causal",
-        model_args=f'pretrained="{args.model_name}",dtype=float32',
+        model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True',
         tasks=[f"{args.tasks}"]
     )
 
