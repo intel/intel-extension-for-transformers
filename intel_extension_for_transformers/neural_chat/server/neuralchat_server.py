@@ -197,9 +197,9 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     if plugin_name == "tts":
                         from ..pipeline.plugins.audio.tts import TextToSpeech
                         plugins[plugin_name]['class'] = TextToSpeech
-                    elif plugin_name == "tts_chinese":
-                        from ..pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-                        plugins[plugin_name]['class'] = ChineseTextToSpeech
+                    elif plugin_name == "tts_multilang":
+                        from ..pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
+                        plugins[plugin_name]['class'] = MultilangTextToSpeech
                     elif plugin_name == "asr":
                         from ..pipeline.plugins.audio.asr import AudioSpeechRecognition
                         plugins[plugin_name]['class'] = AudioSpeechRecognition

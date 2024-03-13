@@ -161,6 +161,7 @@ python -m pip install torch==2.1.0a0  -f https://developer.intel.com/ipex-whl-st
 
 source /opt/intel/oneapi/setvars.sh
 
+# Build IPEX from Source Code
 git clone https://github.com/intel/intel-extension-for-pytorch.git ipex-gpu
 cd ipex-gpu
 git checkout -b dev/QLLM origin/dev/QLLM
@@ -169,6 +170,7 @@ export USE_AOT_DEVLIST='pvc,ats-m150'
 export BUILD_WITH_CPU=OFF
 
 pip install -r requirements.txt
+
 python setup.py install
 ```
 

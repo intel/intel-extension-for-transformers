@@ -39,7 +39,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     streamer = TextStreamer(tokenizer)
     inputs = tokenizer(prompt, return_tensors="pt").input_ids
 
-    model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config)
+    model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
  
     outputs = model.generate(inputs, streamer=streamer, ctx_size=args.n_ctx, max_new_tokens=args.max_new_tokens)
 
