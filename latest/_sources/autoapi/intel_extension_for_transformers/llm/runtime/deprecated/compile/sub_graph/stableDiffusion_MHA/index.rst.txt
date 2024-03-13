@@ -6,24 +6,3 @@
 .. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.stableDiffusion_MHA
 
 
-Module Contents
----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.stableDiffusion_MHA.StableDiffusion_MHA
-
-
-
-
-.. py:class:: StableDiffusion_MHA
-
-
-
-
-   The bass pattern class.
-
-

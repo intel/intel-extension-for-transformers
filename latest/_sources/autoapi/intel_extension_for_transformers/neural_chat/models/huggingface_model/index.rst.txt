@@ -6,3 +6,44 @@
 .. py:module:: intel_extension_for_transformers.neural_chat.models.huggingface_model
 
 
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.models.huggingface_model.HuggingfaceModel
+
+
+
+
+.. py:class:: HuggingfaceModel(hf_endpoint_url, hf_access_token)
+
+
+
+
+   A base class for LLM.
+
+   .. py:method:: predict(query, config: intel_extension_for_transformers.neural_chat.config.GenerationConfig = None)
+
+      Customized Huggingface endpoint predict.
+
+      :param query: string, user query
+      :param config: GenerationConfig, provides the needed inference parameters such as top_p, max_tokens.
+
+      :returns: the predict string of endpoint
+
+
+   .. py:method:: predict_stream(query, config: intel_extension_for_transformers.neural_chat.config.GenerationConfig = None)
+
+      Customized Huggingface endpoint predict_stream.
+
+      :param query: string, user query
+      :param config: GenerationConfig, provides the needed inference parameters such as top_p, max_tokens.
+
+      :returns: the predict string of endpoint
+
+
+

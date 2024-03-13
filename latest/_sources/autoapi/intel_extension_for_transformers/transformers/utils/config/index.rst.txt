@@ -9,3 +9,267 @@
 
 
 
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.utils.config.QuantizationMethod
+   intel_extension_for_transformers.transformers.utils.config.ITREXQuantizationConfigMixin
+   intel_extension_for_transformers.transformers.utils.config.RtnConfig
+   intel_extension_for_transformers.transformers.utils.config.GPTQConfig
+   intel_extension_for_transformers.transformers.utils.config.AwqConfig
+   intel_extension_for_transformers.transformers.utils.config.TeqConfig
+   intel_extension_for_transformers.transformers.utils.config.AutoRoundConfig
+
+
+
+
+.. py:class:: QuantizationMethod
+
+
+
+
+   str(object='') -> str
+   str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+   Create a new string object from the given object. If encoding or
+   errors is specified, then the object must expose a data buffer
+   that will be decoded using the given encoding and error handler.
+   Otherwise, returns the result of object.__str__() (if defined)
+   or repr(object).
+   encoding defaults to sys.getdefaultencoding().
+   errors defaults to 'strict'.
+
+
+.. py:class:: ITREXQuantizationConfigMixin
+
+
+
+
+   Mixin class for quantization config
+
+   .. py:method:: update(**kwargs)
+
+      Updates attributes of this class instance with attributes from `kwargs` if they match existing atributtes,
+      returning all the unused kwargs.
+
+      :param kwargs: Dictionary of attributes to tentatively update this class.
+      :type kwargs: `Dict[str, Any]`
+
+      :returns: Dictionary containing all the key-value pairs that were not used to update the instance.
+      :rtype: `Dict[str, Any]`
+
+
+   .. py:method:: post_init_cpu()
+
+      Safety checker that arguments are correct
+
+
+   .. py:method:: post_init_xpu()
+
+      Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
+
+
+   .. py:method:: post_init_runtime()
+
+      Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
+
+
+   .. py:method:: to_json_file(json_file_path: Union[str, os.PathLike], use_diff: bool = True)
+
+      Save this instance to a JSON file.
+
+      :param json_file_path: Path to the JSON file in which this configuration instance's parameters will be saved.
+      :type json_file_path: `str` or `os.PathLike`
+
+
+   .. py:method:: save_pretrained(save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs)
+
+      Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
+      [`~PretrainedConfig.from_pretrained`] class method.
+
+      :param save_directory: Directory where the configuration JSON file will be saved (will be created if it does not exist).
+      :type save_directory: `str` or `os.PathLike`
+      :param push_to_hub: Whether or not to push your model to the Hugging Face model hub after saving it. You can specify the
+                          repository you want to push to with `repo_id` (will default to the name of `save_directory` in your
+                          namespace).
+      :type push_to_hub: `bool`, *optional*, defaults to `False`
+      :param kwargs: Additional key word arguments passed along to the [`~utils.PushToHubMixin.push_to_hub`] method.
+      :type kwargs: `Dict[str, Any]`, *optional*
+
+
+
+.. py:class:: RtnConfig(bits: int = 4, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, mse_range: bool = False, use_double_quant=False, double_quant_scale_dtype=None, scheme: str = 'sym', use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+
+
+
+
+   This is a wrapper class about all possible attributes and features that you can play with a model that has been
+   loaded using `auto-awq` library awq quantization relying on auto_awq backend.
+
+   :param bits: The number of bits to quantize to.
+   :type bits: `int`, *optional*, defaults to 4
+   :param group_size: The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
+   :type group_size: `int`, *optional*, defaults to 128
+   :param zero_point: Whether to use zero point quantization.
+   :type zero_point: `bool`, *optional*, defaults to `True`
+
+   .. py:method:: to_diff_dict() -> Dict[str, Any]
+
+      Removes all attributes from config which correspond to the default config attributes for better readability and
+      serializes to a Python dictionary.
+
+      :returns: Dictionary of all the attributes that make up this configuration instance,
+      :rtype: `Dict[str, Any]`
+
+
+
+.. py:class:: GPTQConfig(bits: int = 4, tokenizer: Any = None, dataset: Optional[Union[List[str], str]] = None, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, blocksize: int = 128, damp_percent: float = 0.1, desc_act: bool = False, nsamples: int = 128, max_input_length: Optional[int] = None, static_groups: bool = False, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+
+
+
+
+   This is a wrapper class about all possible attributes and features that you can play with a model that has been
+   loaded using `intel_extension_for_transformers` api for gptq quantization relying on CPU device.
+
+   :param bits: The number of bits to quantize to, supported numbers are (2, 3, 4, 8).
+   :type bits: `int`
+   :param tokenizer:
+                     The tokenizer used to process the dataset. You can pass either:
+                         - A custom tokenizer object.
+                         - A string, the *model id* of a predefined tokenizer hosted inside a model repo on huggingface.co.
+                             Valid model ids can be located at the root-level, like `bert-base-uncased`, or namespaced under a
+                             user or organization name, like `dbmdz/bert-base-german-cased`.
+                         - A path to a *directory* containing vocabulary files required by the tokenizer, for instance saved
+                             using the [`~PreTrainedTokenizer.save_pretrained`] method, e.g., `./my_model_directory/`.
+   :type tokenizer: `str` or `PreTrainedTokenizerBase`, *optional*
+   :param dataset: The dataset used for quantization. You can provide your own dataset in a list of string or just use the
+                   original datasets used in GPTQ paper ['wikitext2','c4','c4-new','ptb','ptb-new']
+   :type dataset: `Union[List[str]]`, *optional*
+   :param group_size: The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
+   :type group_size: `int`, *optional*, defaults to 128
+   :param damp_percent: The percent of the average Hessian diagonal to use for dampening. Recommended value is 0.1.
+   :type damp_percent: `float`, *optional*, defaults to 0.1
+   :param desc_act: Whether to quantize columns in order of decreasing activation size. Setting it to False can significantly
+                    speed up inference but the perplexity may become slightly worse. Also known as act-order.
+   :type desc_act: `bool`, *optional*, defaults to `False`
+   :param sym: Whether to use symmetric quantization.
+   :type sym: `bool`, *optional*, defaults to `True`
+   :param max_input_length: The maximum input length. This is needed to initialize a buffer that depends on the maximum expected input
+                            length. It is specific to the exllama backend with act-order.
+   :type max_input_length: `int`, *optional*
+
+   .. py:method:: post_init_gptq()
+
+      Safety checker that arguments are correct
+
+
+   .. py:method:: to_diff_dict() -> Dict[str, Any]
+
+      Removes all attributes from config which correspond to the default config attributes for better readability and
+      serializes to a Python dictionary.
+
+      :returns: Dictionary of all the attributes that make up this configuration instance,
+      :rtype: `Dict[str, Any]`
+
+
+
+.. py:class:: AwqConfig(bits: int = 8, tokenizer: Any = None, dataset: Optional[Union[List[str], str]] = None, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, zero_point: bool = True, mse_range: bool = False, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+
+
+
+
+   This is a wrapper class about all possible attributes and features that you can play with a model that has been
+   loaded using `auto-awq` library awq quantization relying on auto_awq backend.
+
+   :param bits: The number of bits to quantize to.
+   :type bits: `int`, *optional*, defaults to 4
+   :param group_size: The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
+   :type group_size: `int`, *optional*, defaults to 128
+   :param zero_point: Whether to use zero point quantization.
+   :type zero_point: `bool`, *optional*, defaults to `True`
+
+   .. py:method:: to_diff_dict() -> Dict[str, Any]
+
+      Removes all attributes from config which correspond to the default config attributes for better readability and
+      serializes to a Python dictionary.
+
+      :returns: Dictionary of all the attributes that make up this configuration instance,
+      :rtype: `Dict[str, Any]`
+
+
+
+.. py:class:: TeqConfig(bits: int = 8, tokenizer: Any = None, dataset: Optional[Union[List[str], str]] = None, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, scheme: str = 'sym', use_ggml: bool = False, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+
+
+
+
+   This is a wrapper class about all possible attributes and features that you can play with a model that has been
+   loaded using `auto-awq` library awq quantization relying on auto_awq backend.
+
+   :param bits: The number of bits to quantize to.
+   :type bits: `int`, *optional*, defaults to 4
+   :param group_size: The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
+   :type group_size: `int`, *optional*, defaults to 128
+   :param zero_point: Whether to use zero point quantization.
+   :type zero_point: `bool`, *optional*, defaults to `True`
+
+   .. py:method:: to_diff_dict() -> Dict[str, Any]
+
+      Removes all attributes from config which correspond to the default config attributes for better readability and
+      serializes to a Python dictionary.
+
+      :returns: Dictionary of all the attributes that make up this configuration instance,
+      :rtype: `Dict[str, Any]`
+
+
+
+.. py:class:: AutoRoundConfig(bits: int = 8, dtype: str = 'int', tokenizer: Any = None, dataset: Optional[Union[List[str], str]] = None, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, lr: float = 0.0025, minmax_lr: float = 0.0025, use_quant_input: bool = True, nsamples: int = 128, iters: int = 200, static_groups: bool = False, use_ggml: bool = False, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+
+
+
+
+   This is a wrapper class about all possible attributes and features that you can play with a model that has been
+   loaded using `intel_extension_for_transformers` api for gptq quantization relying on CPU device.
+
+   :param bits: The number of bits to quantize to, supported numbers are (2, 3, 4, 8).
+   :type bits: `int`
+   :param tokenizer:
+                     The tokenizer used to process the dataset. You can pass either:
+                         - A custom tokenizer object.
+                         - A string, the *model id* of a predefined tokenizer hosted inside a model repo on huggingface.co.
+                             Valid model ids can be located at the root-level, like `bert-base-uncased`, or namespaced under a
+                             user or organization name, like `dbmdz/bert-base-german-cased`.
+                         - A path to a *directory* containing vocabulary files required by the tokenizer, for instance saved
+                             using the [`~PreTrainedTokenizer.save_pretrained`] method, e.g., `./my_model_directory/`.
+   :type tokenizer: `str` or `PreTrainedTokenizerBase`, *optional*
+   :param dataset: The dataset used for quantization. You can provide your own dataset in a list of string or just use the
+                   original datasets used in GPTQ paper ['wikitext2','c4','c4-new','ptb','ptb-new']
+   :type dataset: `Union[List[str]]`, *optional*
+   :param group_size: The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
+   :type group_size: `int`, *optional*, defaults to 128
+   :param damp_percent: The percent of the average Hessian diagonal to use for dampening. Recommended value is 0.1.
+   :type damp_percent: `float`, *optional*, defaults to 0.1
+   :param desc_act: Whether to quantize columns in order of decreasing activation size. Setting it to False can significantly
+                    speed up inference but the perplexity may become slightly worse. Also known as act-order.
+   :type desc_act: `bool`, *optional*, defaults to `False`
+   :param sym: Whether to use symmetric quantization.
+   :type sym: `bool`, *optional*, defaults to `True`
+   :param max_input_length: The maximum input length. This is needed to initialize a buffer that depends on the maximum expected input
+                            length. It is specific to the exllama backend with act-order.
+   :type max_input_length: `int`, *optional*
+
+   .. py:method:: to_diff_dict() -> Dict[str, Any]
+
+      Removes all attributes from config which correspond to the default config attributes for better readability and
+      serializes to a Python dictionary.
+
+      :returns: Dictionary of all the attributes that make up this configuration instance,
+      :rtype: `Dict[str, Any]`
+
+
+

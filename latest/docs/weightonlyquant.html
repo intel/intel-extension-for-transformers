@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g260155a documentation</title>
+  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g97f0db9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
@@ -92,7 +92,7 @@
 <h1>Weight Only Quantization (WOQ)<a class="headerlink" href="#weight-only-quantization-woq" title="Link to this heading"></a></h1>
 <ol class="simple">
 <li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
-<li><p><a class="reference external" href="#supported-framework-model-matrix">Supported Framework Model Matrix</a></p></li>
+<li><p><a class="reference external" href="#supported-algorithms">Supported Algorithms</a></p></li>
 <li><p><a class="reference external" href="#examples-for-cpu-and-cuda">Examples For CPU/CUDA</a></p></li>
 <li><p><a class="reference external" href="#examples-for-intel-gpu">Examples For Intel GPU</a></p></li>
 </ol>
@@ -100,92 +100,75 @@
 <h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>As large language models (LLMs) become more prevalent, there is a growing need for new and improved quantization methods that can meet the computational demands of these modern architectures while maintaining the accuracy. Compared to <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/docs/quantization.html">normal quantization</a> like W8A8, weight only quantization is probably a better trade-off to balance the performance and the accuracy, since we will see below that the bottleneck of deploying LLMs is the memory bandwidth and normally weight only quantization could lead to better accuracy.</p>
 </section>
-<section id="supported-framework-model-matrix">
-<h2>Supported Framework Model Matrix<a class="headerlink" href="#supported-framework-model-matrix" title="Link to this heading"></a></h2>
+<section id="supported-algorithms">
+<h2>Supported Algorithms<a class="headerlink" href="#supported-algorithms" title="Link to this heading"></a></h2>
 <table border="1" class="docutils">
 <thead>
 <tr>
-<th style="text-align: center;">Algorithms/Framework</th>
-<th style="text-align: center;">PyTorch</th>
-<th style="text-align: center;">LLM Runtime</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: center;">RTN</td>
-<td style="text-align: center;">&#10004;</td>
-<td style="text-align: center;">&#10004;</td>
-</tr>
-<tr>
-<td style="text-align: center;">AWQ</td>
-<td style="text-align: center;">&#10004;</td>
-<td style="text-align: center;">stay tuned</td>
-</tr>
-<tr>
-<td style="text-align: center;">TEQ</td>
-<td style="text-align: center;">&#10004;</td>
-<td style="text-align: center;">stay tuned</td>
-</tr>
-<tr>
-<td style="text-align: center;">GPTQ</td>
-<td style="text-align: center;">&#10004;</td>
-<td style="text-align: center;">&#10004;</td>
-</tr>
-</tbody>
-</table><table border="1" class="docutils">
-<thead>
-<tr>
 <th style="text-align: center;">Support Device</th>
-<th style="text-align: center;">RTN</th>
-<th style="text-align: center;">AWQ</th>
-<th style="text-align: center;">TEQ</th>
+<th style="text-align: center;">Rtn</th>
+<th style="text-align: center;">Awq</th>
+<th style="text-align: center;">Teq</th>
 <th style="text-align: center;">GPTQ</th>
+<th style="text-align: center;">AutoRound</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: center;">CPU</td>
+<td style="text-align: center;">Intel CPU</td>
+<td style="text-align: center;">&#10004;</td>
 <td style="text-align: center;">&#10004;</td>
 <td style="text-align: center;">&#10004;</td>
 <td style="text-align: center;">&#10004;</td>
 <td style="text-align: center;">&#10004;</td>
 </tr>
 <tr>
-<td style="text-align: center;">GPU</td>
+<td style="text-align: center;">Intel GPU</td>
 <td style="text-align: center;">&#10004;</td>
 <td style="text-align: center;">stay tuned</td>
 <td style="text-align: center;">stay tuned</td>
 <td style="text-align: center;">stay tuned</td>
-</tr>
-<tr>
-<td style="text-align: center;">&gt; <strong>RTN:</strong> A quantification method that we can think of very intuitively. It does not require additional datasets and is a very fast quantization method. Generally speaking, RTN will convert the weight into a uniformly distributed integer data type, but some algorithms, such as Qlora, propose a non-uniform NF4 data type and prove its theoretical optimality.</td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
-<td style="text-align: center;"></td>
+<td style="text-align: center;">stay tuned</td>
 </tr>
 </tbody>
-</table><blockquote>
-<div><p><strong>GPTQ:</strong> A new one-shot weight quantization method based on approximate second-order information, that is both highly-accurate and highly efficient. The weights of each column are updated based on the fixed-scale pseudo-quantization error and the inverse of the Hessian matrix calculated from the activations. The updated columns sharing the same scale may generate a new max/min value, so the scale needs to be saved for restoration.</p>
-</div></blockquote>
-<blockquote>
-<div><p><strong>AWQ:</strong> Proved that protecting only 1% of salient weights can greatly reduce quantization error. the salient weight channels are selected by observing the distribution of activation and weight per channel. The salient weights are also quantized after multiplying a big scale factor before quantization for preserving.</p>
-</div></blockquote>
-<blockquote>
-<div><p><strong>TEQ:</strong> A trainable equivalent transformation that preserves the FP32 precision in weight-only quantization. It is inspired by AWQ while providing a new solution to search for the optimal per-channel scaling factor between activations and weights.</p>
-</div></blockquote>
+</table><p><strong>RTN</strong>[<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.html#1">1]</a>(★★★):   Rounding to Nearest (RTN) is an intuitively simple method that rounds values to the nearest integer. It boasts simplicity, requiring no additional datasets, and offers fast quantization. Besides, it could be easily applied in other datatype like NF4(non-uniform). Typically, it performs well on configurations such as W4G32 or W8, but worse than advanced algorithms at lower precision level.</p>
+<p><strong>Teq</strong>[<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.html#4">2]</a>(★★★): To our knowledge, it is the first trainable equivalent ransformation method (summited for peer review in 202306). However,  it requires more memory than other methods as model-wise loss is used and the equivalent transformation imposes certain requirements on model architecture.</p>
+<p><strong>GPTQ</strong>[<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.html#2">2]</a>(★★★★): GPTQ is a widely adopted method based on the Optimal Brain Surgeon. It quantizes weight block by block and fine-tunes the remaining unquantized ones to mitigate quantization errors. Occasionally, Non-positive semidefinite matrices may occur, necessitating adjustments to hyperparameters.</p>
+<p><strong>Awq</strong>[<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.html#3">4]</a>(★★★★): AWQ is a popular method that explores weight min-max values and equivalent transformations in a handcrafted space. While effective, the equivalent transformation imposes certain requirements on model architecture, limiting its applicability to broader models or increasing engineering efforts.</p>
+<p><strong>AutoRound</strong>[<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.html#5">5]</a>(★★★★☆): AutoRound utilizes sign gradient descent to optimize rounding values and minmax values of weights within just 200 steps, showcasing impressive performance compared to recent methods like GPTQ/AWQ. Additionally, it offers hypeparameters tuning compatibility to further enhance performance. However, due to its reliance on gradient backpropagation, currently it is not quite fit for backends like ONNX.</p>
+<section id="references">
+<h3>references<a class="headerlink" href="#references" title="Link to this heading"></a></h3>
+<p><a id="1">[1]</a>
+Gunho Park, Baeseong Park, Se Jung Kwon, Byeongwook Kim, Youngjoo Lee, and Dongsoo Lee.
+nuqmm: Quantized matmul for efficient inference of large-scale generative language models.
+arXiv preprint arXiv:2206.09557, 2022.</p>
+<p><a id="2">[2]</a>
+Cheng, W., Cai, Y., Lv, K &amp; Shen, H. (2023).
+TEQ: Trainable Equivalent Transformation for Quantization of LLMs.
+arXiv preprint arXiv:2310.10944.</p>
+<p><a id="3">[3]</a>
+Frantar, Elias, et al. “Gptq: Accurate post-training quantization for generative pre-trained transformers.” arXiv preprint arXiv:2210.17323 (2022).</p>
+<p><a id="4">[4]</a>
+Lin, Ji, et al.(2023).
+AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration.
+arXiv preprint arXiv:2306.00978.</p>
+<p><a id="5">[5]</a>
+Cheng, W., Zhang, W., Shen, H., Cai, Y., He, X., &amp; Lv, K. (2023).
+Optimize weight rounding via signed gradient descent for the quantization of llms.
+arXiv preprint arXiv:2309.05516.</p>
+</section>
 </section>
 <section id="examples-for-cpu-and-cuda">
 <h2>Examples For CPU AND CUDA<a class="headerlink" href="#examples-for-cpu-and-cuda" title="Link to this heading"></a></h2>
-<p>Our motivation is improve CPU support for weight only quantization, since <code class="docutils literal notranslate"><span class="pre">bitsandbytes</span></code> only support CUDA GPU device. We have extended the <code class="docutils literal notranslate"><span class="pre">from_pretrained</span></code> function so that <code class="docutils literal notranslate"><span class="pre">quantization_config</span></code> can accept <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L28"><code class="docutils literal notranslate"><span class="pre">WeightOnlyQuantConfig</span></code></a> to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.</p>
+<p>Our motivation is to improve CPU support for weight only quantization, since <code class="docutils literal notranslate"><span class="pre">bitsandbytes</span></code>, <code class="docutils literal notranslate"><span class="pre">auto-gptq</span></code>, <code class="docutils literal notranslate"><span class="pre">autoawq</span></code> only support CUDA GPU device. We have extended the <code class="docutils literal notranslate"><span class="pre">from_pretrained</span></code> function so that <code class="docutils literal notranslate"><span class="pre">quantization_config</span></code> can accept <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L608"><code class="docutils literal notranslate"><span class="pre">RtnConfig</span></code></a>, <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L793"><code class="docutils literal notranslate"><span class="pre">AwqConfig</span></code></a>, <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L28"><code class="docutils literal notranslate"><span class="pre">TeqConfig</span></code></a>, <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L855"><code class="docutils literal notranslate"><span class="pre">GPTQConfig</span></code></a>, <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/config.py#L912"><code class="docutils literal notranslate"><span class="pre">AutoroundConfig</span></code></a> to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.</p>
 <section id="example-for-cpu-device">
 <h3>Example for CPU device<a class="headerlink" href="#example-for-cpu-device" title="Link to this heading"></a></h3>
-<p>4-bit/8-bit inference with <code class="docutils literal notranslate"><span class="pre">WeightOnlyQuantConfig</span></code> on CPU device.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>intel_extension_for_transformers/llm/runtime/graph
-from<span class="w"> </span>intel_extension_for_transformers.transformers<span class="w"> </span>import<span class="w"> </span>AutoModelForCausalLM,<span class="w"> </span>WeightOnlyQuantConfig
+<p>4-bit/8-bit inference with <code class="docutils literal notranslate"><span class="pre">RtnConfig</span></code>, <code class="docutils literal notranslate"><span class="pre">AwqConfig</span></code>, <code class="docutils literal notranslate"><span class="pre">TeqConfig</span></code>, <code class="docutils literal notranslate"><span class="pre">GPTQConfig</span></code>, <code class="docutils literal notranslate"><span class="pre">AutoRoundConfig</span></code> on CPU device.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>examples/huggingface/pytorch/text-generation/quantization
+from<span class="w"> </span>intel_extension_for_transformers.transformers<span class="w"> </span>import<span class="w"> </span>AutoModelForCausalLM,<span class="w"> </span>RtnConfig
 <span class="nv">model_name_or_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Intel/neural-chat-7b-v3-3&quot;</span>
 <span class="c1"># weight_dtype: int8/int4, compute_dtype: int8/fp32</span>
-<span class="nv">woq_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>WeightOnlyQuantConfig<span class="o">(</span><span class="nv">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span>,<span class="w"> </span><span class="nv">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="o">)</span>
+<span class="nv">woq_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>RtnConfig<span class="o">(</span><span class="nv">bits</span><span class="o">=</span><span class="m">4</span>,<span class="w"> </span><span class="nv">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="o">)</span>
 <span class="nv">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span>
 <span class="w">                                            </span>model_name_or_path,
 <span class="w">                                            </span><span class="nv">quantization_config</span><span class="o">=</span>woq_config,
@@ -224,7 +207,7 @@ from<span class="w"> </span>transformers<span class="w"> </span>import<span clas
 print<span class="o">(</span>gen_text<span class="o">)</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">load_in_4bit</span></code> and <code class="docutils literal notranslate"><span class="pre">load_in_8bit</span></code> both support on CPU and CUDA GPU device. If device set to use GPU, the BitsAndBytesConfig will be used, if the device set to use CPU, the WeightOnlyQuantConfig will be used.</p>
+<p><code class="docutils literal notranslate"><span class="pre">load_in_4bit</span></code> and <code class="docutils literal notranslate"><span class="pre">load_in_8bit</span></code> both support on CPU and CUDA GPU device. If device set to use GPU, the BitsAndBytesConfig will be used, if the device set to use CPU, the RtnConfig will be used.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>from<span class="w"> </span>intel_extension_for_transformers.transformers<span class="w"> </span>import<span class="w"> </span>AutoModelForCausalLM
 <span class="nv">woq_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span><span class="w">  </span>
 <span class="w">                                                    </span>model_name_or_path,
@@ -302,7 +285,6 @@ pip install intel-extension-for-transformers
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_pytorch</span> <span class="k">as</span> <span class="nn">ipex</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.modeling</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
 <span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span>
-<span class="kn">import</span> <span class="nn">torch</span>
 
 <span class="n">device</span> <span class="o">=</span> <span class="s2">&quot;xpu&quot;</span>
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;Qwen/Qwen-7B&quot;</span>
@@ -313,7 +295,7 @@ pip install intel-extension-for-transformers
 <span class="n">qmodel</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">load_in_4bit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;xpu&quot;</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># optimize the model with ipex, it will improve performance.</span>
-<span class="n">qmodel</span> <span class="o">=</span> <span class="n">ipex</span><span class="o">.</span><span class="n">optimize_transformers</span><span class="p">(</span><span class="n">qmodel</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="p">{},</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;xpu&quot;</span><span class="p">)</span>
+<span class="n">qmodel</span> <span class="o">=</span> <span class="n">ipex</span><span class="o">.</span><span class="n">optimize_transformers</span><span class="p">(</span><span class="n">qmodel</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">woq</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;xpu&quot;</span><span class="p">)</span>
 
 <span class="n">output</span> <span class="o">=</span> <span class="n">user_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
 </pre></div>
@@ -343,7 +325,7 @@ pip install intel-extension-for-transformers
 <span class="n">loaded_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;saved_dir&quot;</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Before executed the loaded model, you can call ipex.optimize_transformers function.</span>
-<span class="n">loaded_model</span> <span class="o">=</span> <span class="n">ipex</span><span class="o">.</span><span class="n">optimize_transformers</span><span class="p">(</span><span class="n">loaded_model</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">woq</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;xpu&quot;</span><span class="p">)</span>
+<span class="n">loaded_model</span> <span class="o">=</span> <span class="n">ipex</span><span class="o">.</span><span class="n">optimize_transformers</span><span class="p">(</span><span class="n">loaded_model</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="p">{},</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;xpu&quot;</span><span class="p">)</span>
 
 <span class="n">output</span> <span class="o">=</span> <span class="n">loaded_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
 </pre></div>
@@ -379,7 +361,7 @@ pip install intel-extension-for-transformers
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x708951fbdba0> 
+   <jinja2.runtime.BlockReference object at 0x7f7d7b04ddb0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

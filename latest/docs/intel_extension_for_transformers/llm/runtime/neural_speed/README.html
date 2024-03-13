@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Neural Speed &mdash; Intel® Extension for Transformers 0.1.dev1+g260155a documentation</title>
+  <title>Neural Speed &mdash; Intel® Extension for Transformers 0.1.dev1+g97f0db9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -158,11 +158,11 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 </div>
 <p>To directly load a GPTQ/AWQ/AutoRound model, here is the sample code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">GPTQConfig</span>
 
 <span class="c1"># Download Hugging Face GPTQ model to local path</span>
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;PATH_TO_MODEL&quot;</span>  <span class="c1"># local path to model</span>
-<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">use_gptq</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># use_awq=True for AWQ models, and use_autoround=True for AutoRound models</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">GPTQConfig</span><span class="p">(</span><span class="n">bits</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="c1"># use AwqConfig for AWQ models, and AutoRoundConfig for AutoRound models</span>
 <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Once upon a time, a little girl&quot;</span>
 
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -174,7 +174,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 </div>
 <p>To directly load a GGUF model, here is the sample code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
 
 <span class="c1"># Specify the GGUF repo on the Hugginface</span>
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;TheBloke/Llama-2-7B-Chat-GGUF&quot;</span>
@@ -193,9 +193,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 </div>
 <p>To enable <a class="reference external" href="./docs/infinite_inference.html">StreamingLLM for infinite inference</a>, here is the sample code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">RtnConfig</span>
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;Intel/neural-chat-7b-v3-1&quot;</span>     <span class="c1"># Hugging Face model_id or local model</span>
-<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">RtnConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
 <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Once upon a time, there existed a little girl,&quot;</span>
 
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -210,20 +210,19 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 </pre></div>
 </div>
 <p>To use whisper to Audio-to-text, here is the sample code</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">RtnConfig</span>
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;Local path for whisper&quot;</span>     <span class="c1"># please use local path</span>
-<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">use_ggml</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1">#Currently, only Q40 is supported</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">RtnConfig</span><span class="p">(</span><span class="n">use_ggml</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1">#Currently, only Q40 is supported</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">)</span>
 <span class="n">model</span><span class="p">(</span><span class="s1">&#39;Local audio file&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b</p>
-<p>Argument description of WeightOnlyQuantConfig (<a class="reference external" href="#supported-matrix-multiplication-data-types-combinations">supported MatMul combinations</a>):
+<p>Argument description of RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoroundConfig(<a class="reference external" href="#supported-matrix-multiplication-data-types-combinations">supported MatMul combinations</a>):
 | Argument          |  Type       | Description                                                                             |
 | ————–    | ———-  | ———————————————————————–                 |
 | compute_dtype     | String      | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)                           |
 | weight_dtype      | String      | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4_e2m1)/nf4 (default int4)                                 |
-| alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
 | group_size        | Int         | Group size: Int, 32/128/-1 (per channel) (default: 32)                                                           |
 | scale_dtype       | String      | Data type of scales: fp32/bf16/fp8 (default fp32)                                           |
 | use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
@@ -260,11 +259,11 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 <h3>3. Multi-Round Chat<a class="headerlink" href="#multi-round-chat" title="Link to this heading"></a></h3>
 <p>Chat with LLaMA2:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">RtnConfig</span>
 
 <span class="c1"># Please change to local path to model, llama2 does not support online conversion, currently.</span>
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span>
-<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">RtnConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">streamer</span> <span class="o">=</span> <span class="n">TextStreamer</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -280,10 +279,10 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 </div>
 <p>Chat with ChatGLM2:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">RtnConfig</span>
 
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;THUDM/chatglm2-6b&quot;</span>  <span class="c1"># or local path to model</span>
-<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">RtnConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">streamer</span> <span class="o">=</span> <span class="n">TextStreamer</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -299,10 +298,10 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 </div>
 <p>Chat with Qwen:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">RtnConfig</span>
 
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;Qwen/Qwen-7B-Chat&quot;</span>  <span class="c1"># or local path to model</span>
-<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">RtnConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">streamer</span> <span class="o">=</span> <span class="n">TextStreamer</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -334,7 +333,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x708937c126e0> 
+   <jinja2.runtime.BlockReference object at 0x7f7d7b817550> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

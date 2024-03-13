@@ -14,12 +14,12 @@ Classes
 
 .. autoapisummary::
 
-   test_inference.TestInference
+   test_inference.UnitTest
 
 
 
 
-.. py:class:: TestInference(methodName='runTest')
+.. py:class:: UnitTest(methodName='runTest')
 
 
 
@@ -55,10 +55,14 @@ Classes
        by assert methods using difflib. It is looked up as an instance
        attribute so can be configured by individual tests if required.
 
-   .. py:method:: tearDownClass() -> None
-      :classmethod:
+   .. py:method:: setUp()
 
-      Hook method for deconstructing the class fixture after running all tests in the class.
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
 
 
 
