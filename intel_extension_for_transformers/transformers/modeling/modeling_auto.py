@@ -360,7 +360,7 @@ class _BaseQBitsAutoModelClass:
                             quantization_config.algorithm.upper() == "GPTQ" or \
                             quantization_config.use_autoround,
                     use_awq=quantization_config.algorithm.upper() == "AWQ",
-                    model_hub=model_hub
+                    model_hub=model_hub,
                 )
                 model.quantization_config = quantization_config
                 return model
