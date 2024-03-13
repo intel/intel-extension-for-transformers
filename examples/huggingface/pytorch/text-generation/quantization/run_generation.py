@@ -307,7 +307,7 @@ elif args.woq:
         quantization_config = RtnConfig(
             tokenizer=tokenizer,
             bits=args.bits,
-            scheme=args.scheme,
+            sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
@@ -331,7 +331,7 @@ elif args.woq:
             tokenizer=tokenizer,
             dataset=args.dataset,
             bits=args.bits,
-            scheme=args.scheme,
+            sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
             max_input_length=args.max_input_length,
             compute_dtype=args.compute_dtype,

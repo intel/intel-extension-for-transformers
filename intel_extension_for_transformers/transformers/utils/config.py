@@ -637,7 +637,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         mse_range: bool = False,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
-        scheme: str = "sym",
+        sym: bool = True,
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
@@ -651,7 +651,8 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
         self.group_size = group_size
-        self.scheme = scheme
+        self.sym = sym
+        self.scheme = "sym" if self.sym else "asym"
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
         self.llm_int8_skip_modules = (
@@ -836,8 +837,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
 
 class AwqConfig(ITREXQuantizationConfigMixin):
     """
-    This is a wrapper class about all possible attributes and features that you can play with a model that has been
-    loaded using `auto-awq` library awq quantization relying on auto_awq backend.
+    This is a wrapper class about all possible attributes and features.
 
     Args:
         bits (`int`, *optional*, defaults to 4):
@@ -891,6 +891,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
+        self.sym = not self.zero_point
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """
@@ -939,7 +940,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         scale_dtype: Any = None,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
-        scheme: str = "sym",
+        sym: bool = True,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
         llm_int8_skip_modules=None,
@@ -953,7 +954,8 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
         self.group_size = group_size
-        self.scheme = scheme
+        self.sym = sym
+        self.scheme = "sym" if self.sym else "asym"
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
         self.llm_int8_skip_modules = (

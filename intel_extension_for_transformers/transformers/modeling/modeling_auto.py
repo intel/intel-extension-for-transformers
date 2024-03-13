@@ -385,12 +385,14 @@ class _BaseQBitsAutoModelClass:
                         )
                         model.config.update({"low_cpu_mem_usage": False})
                 else:
+                    kwargs["low_cpu_mem_usage"] = True
                     model = cls.ORIG_MODEL.from_pretrained(
                         pretrained_model_name_or_path,
                         *model_args,
                         config=config,
                         **kwargs,
                     )
+                    model.config.update({"low_cpu_mem_usage": True})
                 model.eval()
 
                 quantization_config.update(**{"device": "cpu"})
@@ -718,7 +720,7 @@ class _BaseQBitsAutoModelClass:
         from_pipeline = kwargs.get("_from_pipeline", None)
         from_auto_class = kwargs.get("_from_auto", False)
         revision = kwargs.get("revision", "main")
-        commit_hash = kwargs.get("_commit_hash", None)
+        commit_hash = kwargs.pop("_commit_hash", None)
         _fast_init = kwargs.get("_fast_init", True)
         device_map = kwargs.pop("device_map", "auto")
 
