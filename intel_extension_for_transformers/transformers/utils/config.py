@@ -20,7 +20,7 @@ import copy
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union, TypeAlias
+from typing import Any, Dict, List, Optional, Tuple, Union
 from .utility import QUANT_CONFIG, SPARSITY_CONFIG, LazyImport, logger
 import transformers
 from transformers import BitsAndBytesConfig, PretrainedConfig
@@ -247,9 +247,9 @@ class SparsityConfig(PretrainedConfig):
 
 if transformers.__version__ >= "4.32.0":
     from transformers.utils.quantization_config import QuantizationConfigMixin
-    QuantizationConfig: TypeAlias = QuantizationConfigMixin
+    QuantizationConfig = QuantizationConfigMixin
 else:
-    QuantizationConfig: TypeAlias = PretrainedConfig
+    QuantizationConfig = PretrainedConfig
 from enum import Enum
 
 
