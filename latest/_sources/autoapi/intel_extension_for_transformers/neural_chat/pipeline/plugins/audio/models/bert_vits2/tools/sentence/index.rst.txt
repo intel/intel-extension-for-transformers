@@ -1,0 +1,26 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.tools.sentence`
+==============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.tools.sentence
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.tools.sentence.check_is_none
+
+
+
+.. py:function:: check_is_none(item) -> bool
+
+   none -> True, not none -> False
+
+

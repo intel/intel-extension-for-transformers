@@ -1,0 +1,29 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.text.cleaner`
+============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.text.cleaner
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.text.cleaner.cleaned_text_to_sequence
+
+
+
+.. py:function:: cleaned_text_to_sequence(cleaned_text, tones, language)
+
+   Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
+   :param text: string to convert to a sequence
+
+   :returns: List of integers corresponding to the symbols in the text
+
+

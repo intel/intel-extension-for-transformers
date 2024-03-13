@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g8147541 documentation</title>
+  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g260155a documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -186,8 +186,24 @@ conda<span class="w"> </span>install<span class="w"> </span>jemalloc<span class=
 <td>"./output_audio.wav"</td>
 </tr>
 <tr>
-<td>tts.args.speedup</td>
-<td>1.0</td>
+<td>tts_multilang.enable</td>
+<td>true</td>
+</tr>
+<tr>
+<td>tts_multilang.args.device</td>
+<td>"cpu"</td>
+</tr>
+<tr>
+<td>tts_multilang.args.voice</td>
+<td>"default"</td>
+</tr>
+<tr>
+<td>tts_multilang.args.output_audio_path</td>
+<td>"./output_audio.wav"</td>
+</tr>
+<tr>
+<td>tts_multilang.args.precision</td>
+<td>"bf16"</td>
 </tr>
 <tr>
 <td>tasks_list</td>
@@ -209,6 +225,7 @@ conda<span class="w"> </span>install<span class="w"> </span>jemalloc<span class=
 <li><p>http://127.0.0.1:7777/plugin/audio/asr , upload an audio file and return the text contents.</p></li>
 <li><p>http://127.0.0.1:7777/plugin/audio/tts , input text string and return the binary content of the audio.</p></li>
 <li><p>http://127.0.0.1:7777/plugin/audio/create_embedding, upload an audio file and create an embedding of your voice.</p></li>
+<li><p>http://127.0.0.1:7777/plugin/audio/tts_multilang , input text string and return the binary content of the audio.</p></li>
 </ol>
 </section>
 
@@ -226,7 +243,7 @@ conda<span class="w"> </span>install<span class="w"> </span>jemalloc<span class=
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x78517a44ff10> 
+   <jinja2.runtime.BlockReference object at 0x708951d4aa70> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

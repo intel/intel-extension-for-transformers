@@ -1,0 +1,39 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.commons`
+=======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.commons
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.commons.kl_divergence
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.commons.rand_gumbel
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.commons.generate_path
+
+
+
+.. py:function:: kl_divergence(m_p, logs_p, m_q, logs_q)
+
+   KL(P||Q)
+
+
+.. py:function:: rand_gumbel(shape)
+
+   Sample from the Gumbel distribution, protect from overflows.
+
+
+.. py:function:: generate_path(duration, mask)
+
+   duration: [b, 1, t_x]
+   mask: [b, 1, t_y, t_x]
+
+

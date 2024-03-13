@@ -1,0 +1,29 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.modules`
+=======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.modules
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.models.bert_vits2.modules.DDSConv
+
+
+
+
+.. py:class:: DDSConv(channels, kernel_size, n_layers, p_dropout=0.0)
+
+
+
+
+   Dialted and Depth-Separable Convolution
+
+

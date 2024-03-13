@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Install System Dependency &mdash; Intel® Extension for Transformers 0.1.dev1+g8147541 documentation</title>
+  <title>Install System Dependency &mdash; Intel® Extension for Transformers 0.1.dev1+g260155a documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -92,8 +92,8 @@
 <ul class="simple">
 <li><p><strong>Audio Processing</strong>: This component includes a suite of tools and algorithms for manipulating audio data. It can perform tasks such as cut Video, split audio, convert video to audio, noise reduction, equalization, pitch shifting, and audio synthesis, enabling developers to improve audio quality and add various audio effects to their applications.</p></li>
 <li><p><strong>Text-to-Speech (TTS) Conversion</strong>: The TTS plugin can convert written text into natural-sounding speech by synthesizing human-like voices. Users can customize the voice, tone, and speed of the generated speech to suit their specific requirements.</p></li>
-<li><p><strong>Speech Recognition</strong>: The ASR plugin support speech recognition, allowing it to transcribe spoken words into text. This can be used for applications like voice commands, transcription services, and voice-controlled interfaces. It supports both English and Chinese.</p></li>
-<li><p><strong>Multi-Language Support</strong>: The plugin typically supports multiple languages and accents, making it versatile for global applications and catering to diverse user bases. It supports both English and Chinese now.</p></li>
+<li><p><strong>Audio Speech Recognition (ASR)</strong>: The ASR plugin support speech recognition, allowing it to transcribe spoken words into text. This can be used for applications like voice commands, transcription services, and voice-controlled interfaces. It supports both English and Chinese.</p></li>
+<li><p><strong>Multi-Language Support</strong>: The plugins typically support multiple languages and accents, making it versatile for global applications and catering to diverse user bases. The ASR plugin supports tens of languages that the Whisper model supports. The TTS plugin supports English, Chinese and Japanese currently.</p></li>
 <li><p><strong>Integration</strong>: Developers can easily integrate this plugin into their applications or systems using APIs.</p></li>
 </ul>
 <section id="install-system-dependency">
@@ -106,21 +106,15 @@ sudo<span class="w"> </span>dpkg<span class="w"> </span>-i<span class="w"> </spa
 </div>
 <p>For other operating systems such as CentOS, you will need to make slight adjustments.</p>
 </section>
-<section id="multilingual-automatic-speech-recognition-asr">
-<h1>Multilingual Automatic Speech Recognition (ASR)<a class="headerlink" href="#multilingual-automatic-speech-recognition-asr" title="Link to this heading"></a></h1>
-<section id="dependencies-installation">
-<h2>Dependencies Installation<a class="headerlink" href="#dependencies-installation" title="Link to this heading"></a></h2>
-<p>To use the ASR module, you need to install the necessary dependencies. You can do this by running the following command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>transformers<span class="w"> </span>datasets<span class="w"> </span>pydub
-</pre></div>
-</div>
-</section>
+<section id="multi-language-automatic-speech-recognition-asr">
+<h1>Multi Language Automatic Speech Recognition (ASR)<a class="headerlink" href="#multi-language-automatic-speech-recognition-asr" title="Link to this heading"></a></h1>
+<p>We support multi-language Automatic Speech Recognition using Whisper.</p>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
-<p>The AudioSpeechRecognition class provides functionality for converting English/Multiligual audio to text. Here’s how to use it:</p>
+<p>The AudioSpeechRecognition class provides functionality for converting multi-language audio to text. Here’s how to use it:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr</span> <span class="kn">import</span> <span class="n">AudioSpeechRecognition</span>
 <span class="c1"># pass the parameter language=&quot;auto&quot; to let the asr model automatically detect language</span>
-<span class="c1"># otherwise, you can pass an arbitrary language to the model (e.g. en/zh/de/fr)</span>
+<span class="c1"># otherwise, you can pass an arbitrary language to the model (e.g. en/zh/de/fr...)</span>
 <span class="n">asr</span> <span class="o">=</span> <span class="n">AudioSpeechRecognition</span><span class="p">(</span><span class="s2">&quot;openai/whisper-small&quot;</span><span class="p">,</span> <span class="n">language</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 <span class="n">audio_path</span> <span class="o">=</span> <span class="s2">&quot;~/audio.wav&quot;</span>  <span class="c1"># Replace with the path to your English audio file (supports MP3 and WAV)</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">asr</span><span class="o">.</span><span class="n">audio2text</span><span class="p">(</span><span class="n">audio_path</span><span class="p">)</span>
@@ -131,15 +125,16 @@ sudo<span class="w"> </span>dpkg<span class="w"> </span>-i<span class="w"> </spa
 </section>
 <section id="english-text-to-speech-tts">
 <h1>English Text-to-Speech (TTS)<a class="headerlink" href="#english-text-to-speech-tts" title="Link to this heading"></a></h1>
-<section id="id1">
-<h2>Dependencies Installation<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>We support English-only TTS based on <a class="reference external" href="https://arxiv.org/pdf/2110.07205.pdf">SpeechT5</a> and its checkpoints are directly downloaded from <a class="reference external" href="https://huggingface.co/microsoft/speecht5_tts">HuggingFace</a>. It is a two-stage TTS model composed of an acoustic model and a vocoder, and it uses a speaker embedding to distinguish between different voices. In our early experiments and development, this model with the pretrained weights can output relatively good English-only audio results and do voice cloning with few-shot audios from new speakers.</p>
+<section id="dependencies-installation">
+<h2>Dependencies Installation<a class="headerlink" href="#dependencies-installation" title="Link to this heading"></a></h2>
 <p>To use the English TTS module, you need to install the required dependencies. Run the following command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>transformers<span class="w"> </span>soundfile<span class="w"> </span><span class="nv">speechbrain</span><span class="o">==</span><span class="m">0</span>.5.15
 </pre></div>
 </div>
 </section>
-<section id="id2">
-<h2>Usage<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<section id="id1">
+<h2>Usage<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
 <p>The TextToSpeech class in your module provides the capability to convert English text to speech. Here’s how to use it:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts</span> <span class="kn">import</span> <span class="n">TextToSpeech</span>
 <span class="n">tts</span> <span class="o">=</span> <span class="n">TextToSpeech</span><span class="p">()</span>
@@ -151,32 +146,24 @@ sudo<span class="w"> </span>dpkg<span class="w"> </span>-i<span class="w"> </spa
 </div>
 </section>
 </section>
-<section id="chinese-text-to-speech-tts">
-<h1>Chinese Text-to-Speech (TTS)<a class="headerlink" href="#chinese-text-to-speech-tts" title="Link to this heading"></a></h1>
-<section id="id3">
-<h2>Dependencies Installation<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
-<p>To use the Chinese TTS module, you need to install the required dependencies. Run the following command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>paddlespeech<span class="w"> </span>paddlepaddle
-</pre></div>
-</div>
-</section>
-<section id="id4">
-<h2>Usage<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
-<p>The ChineseTextToSpeech class within your module provides functionality for TTS. Here’s how to use it:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_chinese</span> <span class="kn">import</span> <span class="n">ChineseTextToSpeech</span>
+<section id="multi-language-text-to-speech-tts">
+<h1>Multi Language Text-to-Speech (TTS)<a class="headerlink" href="#multi-language-text-to-speech-tts" title="Link to this heading"></a></h1>
+<p>We support multi-language multi-speaker text to speech functionalities (Chinese, English, Japanese) on top of the project <a class="reference external" href="https://github.com/fishaudio/Bert-VITS2">Bert-VITS2</a>, with <a class="reference external" href="https://github.com/intel/intel-extension-for-pytorch">IPEX</a> BFloat16 inference optimization on Xeon CPU. We finetune our <a class="reference external" href="https://huggingface.co/spycsh/bert-vits-thchs-6-8000">checkpoints</a> with partial data (6 speakers) from the audio dataset <a class="reference external" href="https://www.openslr.org/18/">THCHS-30</a>. It has a backbone of <a class="reference external" href="https://arxiv.org/pdf/2106.06103.pdf">VITS</a> and VITS itself is an end-to-end TTS model. Together with Bert to convert the text embedding, VITS is proved to combine more complex latent text features with audios to obtain high-quality TTS results with multiple speakers’ voices.</p>
+<section id="id2">
+<h2>Usage<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">MultilangTextToSpeech</span></code> class within your module provides functionality for TTS. Here’s how to use it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_multilang</span> <span class="kn">import</span> <span class="n">MultilangTextToSpeech</span>
 <span class="c1"># Initialize the TTS module</span>
-<span class="n">tts</span> <span class="o">=</span> <span class="n">ChineseTextToSpeech</span><span class="p">()</span>
+<span class="n">tts</span> <span class="o">=</span> <span class="n">MultilangTextToSpeech</span><span class="p">()</span>
 <span class="c1"># Define the text you want to convert to speech</span>
-<span class="n">text_to_speak</span> <span class="o">=</span> <span class="s2">&quot;你好，这是一个示例文本。&quot;</span>  <span class="c1"># Replace with your Chinese text</span>
+<span class="n">text_to_speak</span> <span class="o">=</span> <span class="s2">&quot;欢迎来到英特尔，welcome to Intel。こんにちは！&quot;</span>  <span class="c1"># Replace with your multi-language text</span>
 <span class="c1"># Specify the output audio path</span>
 <span class="n">output_audio_path</span> <span class="o">=</span> <span class="s2">&quot;./output.wav&quot;</span>  <span class="c1"># Replace with your desired output audio path</span>
 <span class="c1"># Perform text-to-speech conversion</span>
-<span class="n">tts</span><span class="o">.</span><span class="n">text2speech</span><span class="p">(</span><span class="n">text_to_speak</span><span class="p">)</span>
+<span class="n">tts</span><span class="o">.</span><span class="n">text2speech</span><span class="p">(</span><span class="n">text_to_speak</span><span class="p">,</span> <span class="n">output_audio_path</span><span class="p">)</span>
 
-<span class="c1"># If you want to stream the generation of audio from a text generator (e.g., a language model),</span>
-<span class="c1"># you can use the following method:</span>
-<span class="c1"># audio_generator = your_text_generator_function()  # Replace with your text generator</span>
-<span class="c1"># tts.stream_text2speech(audio_generator)</span>
+<span class="c1"># If you want to change the speaker, change the sid</span>
+<span class="c1"># tts.text2speech(text_to_speak, output_audio_path, sid=1)</span>
 </pre></div>
 </div>
 </section>
@@ -196,7 +183,7 @@ sudo<span class="w"> </span>dpkg<span class="w"> </span>-i<span class="w"> </spa
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x78517a44ea10> 
+   <jinja2.runtime.BlockReference object at 0x708951e36b90> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
