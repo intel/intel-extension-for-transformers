@@ -37,7 +37,7 @@ pip install transformers datasets pydub
 The AudioSpeechRecognition class provides functionality for converting English/Multiligual audio to text. Here's how to use it:
 
 ```python
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import AudioSpeechRecognition
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 # pass the parameter language="auto" to let the asr model automatically detect language
 # otherwise, you can pass an arbitrary language to the model (e.g. en/zh/de/fr)
 asr = AudioSpeechRecognition("openai/whisper-small", language="auto", device=self.device)
@@ -54,7 +54,7 @@ print("ASR Result:", result)
 To use the English TTS module, you need to install the required dependencies. Run the following command:
 
 ```bash
-pip install transformers soundfile speechbrain
+pip install transformers soundfile speechbrain==0.5.15
 ```
 
 ## Usage
@@ -62,7 +62,7 @@ pip install transformers soundfile speechbrain
 The TextToSpeech class in your module provides the capability to convert English text to speech. Here's how to use it:
 
 ```python
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import TextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts import TextToSpeech
 tts = TextToSpeech()
 text_to_speak = "Hello, this is a sample text."  # Replace with your text
 output_audio_path = "./output.wav"  # Replace with the desired output audio path
@@ -85,7 +85,7 @@ pip install paddlespeech paddlepaddle
 The ChineseTextToSpeech class within your module provides functionality for TTS. Here's how to use it:
 
 ```python
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import ChineseTextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 # Initialize the TTS module
 tts = ChineseTextToSpeech()
 # Define the text you want to convert to speech

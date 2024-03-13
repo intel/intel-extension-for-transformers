@@ -228,7 +228,7 @@ class FinetuingExecutor(BaseCommandExecutor):
         self.parser.add_argument(
             '--train_file', type=str, default=None, help='Specify train file path.')
         self.parser.add_argument(
-            '--max_steps', type=str, default=None, help='Specify max steps of finetuning.')
+            '--max_steps', type=int, default=None, help='Specify max steps of finetuning.')
 
     def execute(self, argv: List[str]) -> bool:
         """

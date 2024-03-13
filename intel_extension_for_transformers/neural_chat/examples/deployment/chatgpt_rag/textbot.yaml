@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is the parameter configuration file for NeuralChat Serving.
+
+#################################################################################
+#                             SERVER SETTING                                    #
+#################################################################################
+host: 0.0.0.0
+port: 8021
+
+model_name_or_path: "gpt-3.5-turbo"
+device: "auto"
+
+# users can choose one of the ipex int8, itrex int4, mix precision and
+# bitsandbytes to run the optimized model for inference speedup
+
+# itrex int4 llm runtime optimization
+# optimization:
+#     use_neural_speed: true
+#     optimization_type: "weight_only"
+#     compute_dtype: "int8"
+#     weight_dtype: "int4"
+#     use_cached_bin: true
+
+# ipex int8 optimization
+# optimization:
+#     ipex_int8: True
+
+# itrex int4 optimization
+# optimization:
+#     use_neural_speed: false
+#     optimization_type: "weight_only"
+#     compute_dtype: "int8"
+#     weight_dtype: "int4_fullrange"
+
+# mix precision bf16
+# optimization:
+#     optimization_type: "mix_precision"
+#     mix_precision_dtype: "bfloat16"
+
+# bits and bytes
+# optimization:
+#     optimization_type: "bits_and_bytes"
+#     load_in_4bit: True
+#     bnb_4bit_quant_type: 'nf4'
+#     bnb_4bit_use_double_quant: True
+#     bnb_4bit_compute_dtype: "bfloat16"
+
+retrieval:
+    enable: true
+    args:
+        input_path: "./docs"
+        persist_directory: "./docs_persist"
+        response_template: "We cannot find suitable content to answer your query at this moment."
+        append: True
+
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
+tasks_list: ['textchat', 'retrieval']

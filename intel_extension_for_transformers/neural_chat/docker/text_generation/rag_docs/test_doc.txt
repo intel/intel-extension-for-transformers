@@ -1,0 +1,13 @@
+This guide provides information about the Intel® oneAPI DPC++/C++ Compiler and runtime environment. This document is valid for version 2024.0 of the compilers.
+
+The Intel® oneAPI DPC++/C++ Compiler is available as part of the Intel® oneAPI Base Toolkit, Intel® oneAPI HPC Toolkit, Intel® oneAPI IoT Toolkit, or as a standalone compiler.
+
+Refer to the Intel® oneAPI DPC++/C++ Compiler product page and the Release Notes for more information about features, specifications, and downloads.
+
+
+The compiler supports these key features:
+Intel® oneAPI Level Zero: The Intel® oneAPI Level Zero (Level Zero) Application Programming Interface (API) provides direct-to-metal interfaces to offload accelerator devices.
+OpenMP* Support: Compiler support for OpenMP 5.0 Version TR4 features and some OpenMP Version 5.1 features.
+Pragmas: Information about directives to provide the compiler with instructions for specific tasks, including splitting large loops into smaller ones, enabling or disabling optimization for code, or offloading computation to the target.
+Offload Support: Information about SYCL*, OpenMP, and parallel processing options you can use to affect optimization, code generation, and more.
+Latest Standards: Use the latest standards including C++ 20, SYCL, and OpenMP 5.0 and 5.1 for GPU offload.

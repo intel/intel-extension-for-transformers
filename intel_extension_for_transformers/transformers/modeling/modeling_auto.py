@@ -70,9 +70,12 @@ torch = LazyImport("torch")
 
 
 def convert_model_to_public(model):
-    from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear  # pylint: disable=E0401
+    # pylint: disable=E0401
+    from intel_extension_for_pytorch.nn.utils._quantize_convert import(
+        WeightOnlyQuantizedLinear
+    )
     for name, module in model.named_modules():
-        if isinstance(module, WeightOnlyLinear):
+        if isinstance(module, WeightOnlyQuantizedLinear):
             if module.weight_transposed:
                 module.qweight.data = module.qweight.t_().contiguous()
                 module.scales.data = module.scales.t_().contiguous()
@@ -197,26 +200,23 @@ class _BaseQBitsAutoModelClass:
         device_map = kwargs.get("device_map", "cpu")
         use_cpu = (True if device_map == torch.device("cpu") or device_map == "cpu" else False)
         use_xpu = (True if device_map == torch.device("xpu") or device_map == "xpu" else False)
-
-        if kwargs.get("use_llm_runtime", None) is not None:
-            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
-            logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
-        elif kwargs.get("use_neural_speed", None) is not None:
-            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
-        else:
-            trust_remote_code = kwargs.get("trust_remote_code", False)
-            config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path,
-                                                             trust_remote_code=trust_remote_code)
-            if hasattr(config, "model_type") == False:
-                logger.error("Can't get the model_type. Please check the correct model_type")
-                exit(0)
-
-            if config.model_type in cls.model_type_list:
-                logger.info("Using Neural Speed...")
-                use_neural_speed = True
+        use_neural_speed = False
+        if not use_xpu:
+            if kwargs.get("use_llm_runtime", None) is not None:
+                use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
+                logger.warning("use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead.")
+            elif kwargs.get("use_neural_speed", None) is not None:
+                use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
             else:
-                logger.info("Using Pytorch...")
-                use_neural_speed = False
+                config = transformers.AutoConfig.from_pretrained(pretrained_model_name_or_path,
+                                            trust_remote_code=kwargs.get("trust_remote_code", False))
+                if hasattr(config, "model_type") == False:
+                    logger.error("Can't get the model_type. Please check the correct model_type")
+                    exit(0)
+
+                if config.model_type in cls.model_type_list:
+                    logger.info("Using Neural Speed...")
+                    use_neural_speed = True
 
         if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
             logger.info(
@@ -410,7 +410,7 @@ class _BaseQBitsAutoModelClass:
                 import intel_extension_for_pytorch as ipex
             except ImportError:
                 logger.warning("Please install Intel Extension for PyTorch to accelerate the model inference.")
-            assert (ipex.__version__ >= "2.1.0+cpu"), "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+            assert (ipex.__version__ >= "2.2.0+cpu"), "Please use Intel Extension for PyTorch >=2.2.0+cpu."
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
                 low_cpu_mem_usage=True,
@@ -426,8 +426,6 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "falcon" in model_type:
-                logger.warning("Please use transformers 4.33.3 if you would like to apply smoothquant to Falcon.")
             if "llama" in model_type and transformers.__version__ >= "4.36.0":
                 quantization_config.ipex_opt_llm = False
             logger.info("Applying SmoothQuant.")
@@ -436,7 +434,7 @@ class _BaseQBitsAutoModelClass:
                 if model_type in IPEX_OPT_LLM_SUPPORTED:
                     quantization_config.ipex_opt_llm = True
                     logger.info("quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used.")
-                    logger.warning("The suggested transformers version is 4.31.0.")
+                    logger.warning("The suggested transformers version is 4.35.2.")
                 else:
                     quantization_config.ipex_opt_llm = False
             if quantization_config.ipex_opt_llm:
@@ -489,12 +487,12 @@ class _BaseQBitsAutoModelClass:
                     calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
-                    if "prompt" in examples:
+                    if "code" in examples:
+                        example = tokenizer(examples["code"])
+                    elif "prompt" in examples:
                         example = tokenizer(examples["prompt"])
                     elif "text" in examples:
                         example = tokenizer(examples["text"])
-                    elif "code" in examples:
-                        example = tokenizer(examples["code"])
                     else:
                         logger.error("Please check dataset prompt identifier," +
                                      " NeelNanda/pile-10k is default used calibration dataset.")

@@ -1,0 +1,148 @@
+custom_service_name: "CI checker"
+subprojects:
+  - id: "Format Scan Tests workflow"
+    paths:
+      - intel_extension_for_transformers/**
+      - neural_chat/**
+      - workflows/**
+      - setup.py
+      - .github/workflows/format_scan.yml
+      - .github/workflows/script/formatScan/**
+    checks:
+      - "format-scan (pylint)"
+      - "format-scan (bandit)"
+      - "format-scan (clangformat)"
+      - "format-scan (cloc)"
+      - "format-scan (cpplint)"
+
+  - id: "Optimize Unit Test workflow"
+    paths:
+      - intel_extension_for_transformers/transformers/**
+      - requirements.txt
+      - setup.py
+      - intel_extension_for_transformers/utils/**
+      - intel_extension_for_transformers/llm/evaluation/**
+      - intel_extension_for_transformers/llm/quantization/**
+      - intel_extension_for_transformers/llm/runtime/graph/**
+      - intel_extension_for_transformers/llm/operator/**
+      - tests/**
+      - .github/workflows/unit-test-optimize.yml
+      - ".github/workflows/script/unitTest/run_unit_test_optimize.sh"
+      - "!intel_extension_for_transformers/llm/runtime/graph/*.md"
+    checks:
+      - "optimize-unit-test-baseline"
+      - "optimize-unit-test-PR-test"
+      - "Genreate-OptimizeUT-Report"
+
+  - id: "Neural Speed Unit Test workflow"
+    paths:
+      - intel_extension_for_transformers/llm/runtime/neural_speed/**
+      - .github/workflows/unit-test-neuralspeed.yml
+      - ".github/workflows/script/unitTest/run_unit_test_neuraspeed.sh"
+      - "!intel_extension_for_transformers/llm/runtime/neural_speed/docs/**"
+      - "!intel_extension_for_transformers/llm/runtime/neural_speed/*.md"
+    checks:
+      - "neural-speed-unit-test"
+
+  - id: "NeuralChat Unit Test"
+    paths:
+      - ".github/workflows/unit-test-neuralchat.yml"
+      - ".github/workflows/script/unitTest/run_unit_test_neuralchat.sh"
+      - "intel_extension_for_transformers/neural_chat/**"
+      - "requirements.txt"
+      - "setup.py"
+      - "intel_extension_for_transformers/llm/finetuning/**"
+      - "intel_extension_for_transformers/llm/quantization/**"
+      - "intel_extension_for_transformers/llm/runtime/graph/**"
+      - "intel_extension_for_transformers/transformers/**"
+      - "intel_extension_for_transformers/langchain/**"
+      - "!intel_extension_for_transformers/neural_chat/docs/**"
+      - "!intel_extension_for_transformers/neural_chat/examples/**"
+      - "!intel_extension_for_transformers/neural_chat/assets/**"
+      - "!intel_extension_for_transformers/neural_chat/README.md"
+      - "!intel_extension_for_transformers/llm/runtime/graph/*.md"
+    checks:
+      - "neuralchat-unit-test-baseline"
+      - "neuralchat-unit-test-PR-test"
+      - "Generate-NeuralChat-Report"
+
+  - id: "Engine Unit Test workflow"
+    paths:
+      - ".github/workflows/unit-test-engine.yml"
+      - "requirements.txt"
+      - "setup.py"
+      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
+      - "!intel_extension_for_transformers/llm/runtime/graph/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+    checks:
+      - "engine-unit-test-baseline"
+      - "engine-unit-test-PR-test"
+      - "Genreate-Engine-Report"
+
+  - id: "Windows Binary Test"
+    paths:
+      - ".github/workflows/windows-test.yml"
+      - "requirements.txt"
+      - "setup.py"
+      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
+      - "intel_extension_for_transformers/llm/runtime/graph/**"
+      - "!intel_extension_for_transformers/llm/library/jblas/**"
+      - "!intel_extension_for_transformers/llm/runtime/graph/*.md"
+      - "!intel_extension_for_transformers/llm/runtime/graph/docs/**"
+      - "!intel_extension_for_transformers/llm/runtime/graph/scripts/**"
+      - "!intel_extension_for_transformers/llm/runtime/graph/tests/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
+    checks:
+      - "Windows-Binary-Test"
+
+  - id: "SparseLib Tests workflow"
+    paths:
+      - "intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
+      - ".github/workflows/sparse_lib_CI.yml"
+      - ".github/workflows/script/SparseLibCI"
+    checks:
+      - "sparselib"
+
+  - id: "LLM Model Test workflow"
+    paths:
+      - ".github/workflows/llm-test.yml"
+      - ".github/workflows/script/models/run_llm.sh"
+      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
+      - "!intel_extension_for_transformers/llm/runtime/graph/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+    checks:
+      - "LLM-Workflow (gpt-j-6b, engine, latency, bf16,int8,fp8)"
+      - "Generate-LLM-Report"
+
+  - id: "Chat Bot Test workflow"
+    paths:
+      - ".github/workflows/chatbot-test.yml"
+      - ".github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml"
+      - ".github/workflows/chatbot-inference-mpt-7b-chat.yml"
+      - ".github/workflows/chatbot-finetune-mpt-7b-chat.yml"
+      - ".github/workflows/chatbot-inference-llama-2-7b-chat-hf-hpu.yml"
+      - ".github/workflows/chatbot-inference-mpt-7b-chat-hpu.yml"
+      - ".github/workflows/chatbot-finetune-mpt-7b-chat-hpu.yml"
+      - ".github/workflows/script/chatbot/**"
+      - ".github/workflows/sample_data/**"
+      - "intel_extension_for_transformers/neural_chat/**"
+      - "intel_extension_for_transformers/llm/finetuning/**"
+      - "intel_extension_for_transformers/llm/quantization/**"
+      - "intel_extension_for_transformers/transformers/**"
+      - "workflows/chatbot/inference/**"
+      - "workflows/chatbot/fine_tuning/**"
+      - "!intel_extension_for_transformers/neural_chat/docs/**"
+      - "!intel_extension_for_transformers/neural_chat/tests/ci/**"
+      - "!intel_extension_for_transformers/neural_chat/examples/**"
+      - "!intel_extension_for_transformers/neural_chat/assets/**"
+      - "!intel_extension_for_transformers/neural_chat/README.md"
+    checks:
+      - "call-inference-llama-2-7b-chat-hf / inference test"
+      - "call-inference-mpt-7b-chat / inference test"

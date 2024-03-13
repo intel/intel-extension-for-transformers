@@ -78,7 +78,7 @@ nohup bash run_itrex.sh &
 # Install dependencies for TalkingBot
 
 ```
-pip install speechbrain
+pip install speechbrain==0.5.15
 pip install soundfile
 pip install pydub
 ```

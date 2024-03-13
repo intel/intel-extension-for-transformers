@@ -219,9 +219,15 @@ def max_input_len(input_text_length):
         return 512
     elif input_text_length <= 2048:
         return 2048
-    else:
-        logging.info("Max support length is 4096")
+    elif input_text_length <= 4096:
         return 4096
+    elif input_text_length <= 8192:
+        return 8192
+    elif input_text_length <= 16384:
+        return 16384
+    else:
+        logging.info("Max support length is 32K")
+        return 32768
 
 
 MODELS = {}
@@ -498,10 +504,14 @@ def load_model(
         MODELS[model_name]["assistant_model"] = None
 
     try:
-        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
-                                            if (re.search("chatglm", model_name, re.IGNORECASE) or \
-                                               re.search("qwen", model_name, re.IGNORECASE) or \
-                                               re.search("deci", model_name, re.IGNORECASE)) else False)
+        if re.search("biogpt", model_name, re.IGNORECASE):
+            from transformers import BioGptConfig
+            config = BioGptConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
+        else:
+            config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                                if (re.search("chatglm", model_name, re.IGNORECASE) or \
+                                                re.search("qwen", model_name, re.IGNORECASE) or \
+                                                re.search("deci", model_name, re.IGNORECASE)) else False)
     except ValueError as e:
         logging.error(f"Exception: {e}")
         if "Unrecognized model in" in str(e):
@@ -524,14 +534,18 @@ def load_model(
     MODELS[model_name]["model_type"] = config.model_type
 
     try:
-        tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_name,
-            use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
-                or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
-            use_auth_token=hf_access_token,
-            trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
-                re.search("chatglm", model_name, re.IGNORECASE) or gguf_model_path) else False,
-        )
+        if config.model_type == "biogpt":
+            from transformers import BioGptTokenizer
+            tokenizer = BioGptTokenizer.from_pretrained(tokenizer_name)
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(
+                tokenizer_name,
+                use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
+                    or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+                use_auth_token=hf_access_token,
+                trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                    re.search("chatglm", model_name, re.IGNORECASE) or gguf_model_path) else False,
+            )
     except EnvironmentError as e:
         logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
@@ -617,6 +631,15 @@ def load_model(
                     trust_remote_code=True if (config.model_type == "qwen" or config.model_type == "phi" or \
                         re.search("codegen", model_name, re.IGNORECASE) or config.model_type == "deci") else False
                 )
+        elif config.model_type == "biogpt":
+            from transformers import BioGptForCausalLM
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = BioGptForCausalLM.from_pretrained(
+                    model_name,
+                    use_auth_token=hf_access_token,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    quantization_config=bitsandbytes_quant_config)
         elif (
                 (config.model_type == "gpt_bigcode"
                  or config.model_type == "llama"
@@ -1065,6 +1088,14 @@ def predict_stream(**params):
             )
             set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
             return
+        elif length < max_new_tokens:
+            logging.error(f"This model's maximum context length is {context_len} tokens. \
+                However, you requested {input_token_len+max_new_tokens} tokens ({input_token_len} \
+                in the messages, {max_new_tokens} in the completion). Please reduce the length \
+                of the messages or completion.",
+            )
+            set_latest_error(ErrorCodes.WARNING_INPUT_COMPLETION_EXCEED_MAX_SEQ_LENGTH)
+            return
 
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len,
@@ -1365,6 +1396,14 @@ def predict(**params):
                 However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
             )
             set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+            return
+        elif length < max_new_tokens:
+            logging.error(f"This model's maximum context length is {context_len} tokens. \
+                However, you requested {input_token_len+max_new_tokens} tokens ({input_token_len} \
+                in the messages, {max_new_tokens} in the completion). Please reduce the length \
+                of the messages or completion.",
+            )
+            set_latest_error(ErrorCodes.WARNING_INPUT_COMPLETION_EXCEED_MAX_SEQ_LENGTH)
             return
 
     if device in ["cpu", "cuda", "xpu"]:

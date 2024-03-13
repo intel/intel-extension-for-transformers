@@ -1,21 +1,18 @@
 --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
 cchardet
-deepface
 einops
 evaluate
-ExifRead
 fastapi
 fschat==0.2.35
+huggingface_hub
 intel-extension-for-pytorch==2.1.10+xpu
-intel-extension-for-transformers
 neural-compressor
 numpy==1.23.5
 pydantic==1.10.13
-pydub
-pymysql
 python-dotenv
 python-multipart
 rouge_score
+sacremoses
 shortuuid
 starlette
 torch==2.1.0a0
