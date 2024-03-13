@@ -25,7 +25,6 @@ from peft.tuners.lora import LoraLayer, LoraModel
 from peft.utils.other import transpose
 from intel_extension_for_transformers.transformers.llm.quantization.autograd import matmul_kbit
 
-
 torch.ops.load_library(
     os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../../..", "libqbits.so")
 )
@@ -171,9 +170,21 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias=None,
     ):
 
-        if q_config.gptq_quantize_config["desc_act"]:
+        if int_weight.is_meta:
+            int_weight = torch.ones(int_weight.shape, dtype=torch.int8)
+            gptq_scales = torch.rand(
+                self.in_features // self.blocksize,
+                self.out_features,
+                dtype=torch.float16,
+            )
+            gptq_zeros = torch.ones(
+                self.in_features // self.blocksize, self.out_features, dtype=torch.int8
+            )
+            if q_config.quant_method.value != "autoround" and q_config.desc_act:
+                g_idx = torch.zeros(self.blocksize, dtype=torch.int32)
+        if q_config.quant_method.value != "autoround" and q_config.desc_act:
             int_weight2 = int_weight.clone()
-            group_size = q_config.gptq_quantize_config["group_size"]
+            group_size = q_config.group_size
             group_dict = {}
             for i in range(len(g_idx)):
                 group_idx = g_idx[i].item()
@@ -186,14 +197,14 @@ class QuantizedLinearQBits(torch.nn.Linear):
                 int_weight2[target_idx] = int_weight[i]
             int_weight = int_weight2
 
-        if q_config.gptq_quantize_config["bits"] == 4:
+        if q_config.bits == 4:
             int_weight = (int_weight - 8) * 16
             gptq_scales = gptq_scales / 16
             gptq_zeros = (gptq_zeros - 8) * 16
-        if q_config.gptq_quantize_config["sym"]:
+        if q_config.sym:
             gptq_zeros = torch.empty(0, dtype=torch.int8)
 
-        if not q_config.gptq_quantize_config["desc_act"]:
+        if q_config.quant_method.value == "autoround" or (not q_config.desc_act):
             g_idx = torch.empty(0, dtype=torch.int32)
 
         packw = torch.ops.bestlaop.woq_packq(
@@ -204,7 +215,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             q_config.weight_dtype,
             q_config.scale_dtype,
             q_config.compute_dtype,
-            not q_config.gptq_quantize_config["sym"],
+            not q_config.sym,
             self.blocksize,
         )
 

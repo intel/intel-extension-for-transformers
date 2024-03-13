@@ -28,7 +28,7 @@ from intel_extension_for_transformers.neural_chat.config import (
     TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model, optimize_model
-from intel_extension_for_transformers.transformers import MixedPrecisionConfig, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig, RtnConfig
 from intel_extension_for_transformers.transformers import BitsAndBytesConfig
 from intel_extension_for_transformers.neural_chat.errorcode import ErrorCodes
 from intel_extension_for_transformers.neural_chat.utils.error_utils import get_latest_error
@@ -502,7 +502,7 @@ class TestOptimizeModelExceptions(unittest.TestCase):
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     @patch('intel_extension_for_transformers.transformers.llm.quantization.optimization.Optimization.optimize')
     def test_weight_only_quant_optimize_fail(self,mock_optimize):
-        config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+        config = RtnConfig(bits=4, compute_dtype="int8", weight_dtype="int4")
         model = AutoModelForCausalLM.from_pretrained(
                 "facebook/opt-125m",
                 low_cpu_mem_usage=True,

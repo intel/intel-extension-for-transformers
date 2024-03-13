@@ -7,7 +7,7 @@ from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.llm.utils.generation import _beam_search, _greedy_search
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig, GPTQConfig
 from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_dtype_str2torch
 from transformers.utils import check_min_version
 
@@ -76,12 +76,7 @@ parser.add_argument(
     "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
 )
 parser.add_argument(
-    "--gptq_use_max_length",
-    action="store_true",
-    help="Set all sequence length to be same length of args.gptq_pad_max_length",
-)
-parser.add_argument(
-    "--gptq_pad_max_length",
+    "--max_input_length",
     type=int,
     default=2048,
     help="Calibration dataset sequence max length, this should align with your model config",
@@ -118,26 +113,25 @@ else:
 quantization_config = None
 if args.woq:
     if args.woq_algo == "GPTQ":
-        algorithm_args = {
-            "act_order": False,
-            "percdamp": args.gptq_percdamp,
-            "block_size": args.gptq_block_size,
-            "nsamples": args.gptq_nsamples,
-            "use_max_length": args.gptq_use_max_length,
-            "pad_max_length": args.gptq_pad_max_length,
-        }
-        quantization_config = WeightOnlyQuantConfig(
+        quantization_config = GPTQConfig(
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            desc_act=args.desc_act,
+            damp_percent=args.gptq_percdamp,
+            sym=True if args.woq_scheme == "sym" else False,
+            blocksize=args.gptq_block_size,
+            nsamples=args.gptq_nsamples,
+            static_groups=args.static_groups,
+            group_size=args.woq_group_size,
+            max_input_length=args.max_input_length,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.compute_dtype,
             weight_dtype=args.woq_dtype,
-            scheme=args.woq_scheme,
-            group_size=args.woq_group_size,
-            algorithm=args.woq_algo,
-            tokenizer=tokenizer,
-            algorithm_args=algorithm_args,
+            calib_iters=args.calib_iters,
         )
     else:
-        quantization_config = WeightOnlyQuantConfig(
+        quantization_config = RtnConfig(
             compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype,
             group_size=args.woq_group_size, scale_dtype=args.compute_dtype
         ) #default is A16W4G16
@@ -177,7 +171,7 @@ if args.benchmark:
             if user_model is None else user_model
     user_model = user_model.to(memory_format=torch.channels_last)
     if quantization_config is None:
-        quantization_config = WeightOnlyQuantConfig.from_pretrained(args.model)
+        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else {}
     if not args.disable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(

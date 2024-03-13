@@ -493,13 +493,19 @@ class PipelineConfig:
                 use_hpu_graphs = True if self.device == "hpu" else False)
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
-            WeightOnlyQuantConfig,
-            BitsAndBytesConfig
+            RtnConfig,
+            AwqConfig,
+            TeqConfig,
+            GPTQConfig,
+            AutoRoundConfig,
+            BitsAndBytesConfig,
         )
         self.optimization_config = optimization_config if optimization_config is not None else \
             MixedPrecisionConfig(dtype="float16" if self.device == "cuda" else "bfloat16")
-        assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
-            f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
-            " or BitsAndBytesConfig,got {type(self.optimization_config)}."
+        assert type(self.optimization_config) in \
+            [MixedPrecisionConfig, RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoRoundConfig, BitsAndBytesConfig], \
+            f"Expect optimization_config be an object of MixedPrecisionConfig, RtnConfig, AwqConfig, TeqConfig, " + \
+            "GPTQConfig, AutoRoundConfig" + \
+            " or BitsAndBytesConfig, got {type(self.optimization_config)}."
         self.assistant_model = assistant_model
         self.serving_config = serving_config
