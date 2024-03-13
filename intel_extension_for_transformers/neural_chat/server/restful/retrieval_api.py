@@ -51,7 +51,7 @@ def get_current_beijing_time():
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d-%H:%M:%S")
     return beijing_time
-
+ 
 
 def language_detect(text: str):
     url = "https://translation.googleapis.com/language/translate/v2/detect"
@@ -63,10 +63,10 @@ def language_detect(text: str):
         'key': api_key,
         'q': text
     }
-
+    
     response = requests.post(url, params=params)
     if response.status_code == 200:
-        res = response.json()
+        res = response.json() 
         return res["data"]["detections"][0][0]
     else:
         print("Error:", response.status_code)
@@ -81,10 +81,10 @@ def language_translate(text: str, target: str='en'):
         'q': text,
         'target': target
     }
-
+    
     response = requests.post(url, params=params)
     if response.status_code == 200:
-        res = response.json()
+        res = response.json() 
         return res["data"]["translations"][0]
     else:
         print("Error:", response.status_code)
@@ -158,12 +158,13 @@ async def retrieval_upload_link(request: Request):
         try:
             print("[askdoc - upload_link] starting to append local db...")
             instance = plugins['retrieval']["instance"]
+            print(f"[askdoc - upload_link] persist_path: {persist_path}")
             instance.append_localdb(append_path=link_list, persist_directory=persist_path)
             print(f"[askdoc - upload_link] kb appended successfully")
         except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base fails! {e}")
             return Response(content="Error occurred while uploading links.", status_code=500)
-        return {"Succeed"}
+        return {"status": True}
     # create new kb with link
     else:
         print(f"[askdoc - upload_link] create")
@@ -257,6 +258,7 @@ async def retrieval_append(request: Request,
 
         # create local upload dir
         upload_path, persist_path = create_upload_dir(knowledge_base_id, user_id)
+        print(f"[askdoc - upload_link] persist_path: {persist_path}")
         
         cur_time = get_current_beijing_time()
         logger.info(f"[askdoc - append] upload path: {upload_path}")
@@ -419,7 +421,7 @@ async def retrieval_translate(request: Request):
         translate_res = language_translate(content, target='zh-CN')['translatedText']
     else:
         translate_res = language_translate(content, target='en')['translatedText']
-
+    
     logger.info(f'[askdoc - translate] translated result: {translate_res}')
     return {"tranlated_content": translate_res}
 
@@ -536,8 +538,8 @@ async def delete_all_files():
         logger.info(f'[askdoc - delete_all] No file/link uploaded. Clear.')
         return {"status": True}
     else:
-        # delete all files
-        for filename in os.listdir(delete_path):
+        # delete all upload files
+        for filename in os.listdir(delete_path+'/upload_dir'):
             file_path = os.path.join(delete_path, filename)
             try:
                 if os.path.isfile(file_path) or os.path.islink(file_path):
@@ -549,13 +551,12 @@ async def delete_all_files():
                     status_code=500, 
                     detail=f'Failed to delete {filename}. Reason: {e}'
                 )
-        # delete delete_path folder
         try:
-            shutil.rmtree(delete_path)
+            shutil.rmtree(delete_path+'/upload_dir')
         except Exception as e:
             raise HTTPException(
                 status_code=500, 
-                detail=f'Failed to delete folder {delete_path}. Reason: {e}'
+                detail=f'Failed to delete {delete_path}/upload_dir. Reason: {e}'
             )
         # reload default kb
         origin_persist_dir = "/home/sdp/askgm_persist_new"
