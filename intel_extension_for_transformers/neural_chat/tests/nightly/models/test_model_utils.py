@@ -22,7 +22,7 @@ import os
 import shutil
 from unittest import mock
 from intel_extension_for_transformers.neural_chat.models.model_utils import load_model, MODELS
-from intel_extension_for_transformers.transformers import MixedPrecisionConfig, BitsAndBytesConfig, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig, BitsAndBytesConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TestModelUtils(unittest.TestCase):
