@@ -257,7 +257,7 @@ async def retrieval_append(request: Request,
 
         # create local upload dir
         upload_path, persist_path = create_upload_dir(knowledge_base_id, user_id)
-        
+
         cur_time = get_current_beijing_time()
         logger.info(f"[askdoc - append] upload path: {upload_path}")
 
@@ -525,7 +525,7 @@ async def verify_upload(request: Request):
             return {"is_uploaded": True}
     else:
         return JSONResponse(
-            content={"message": f"Current user {user_id} is not allowed to access /verify_upload api."}, 
+            content={"message": f"Current user {user_id} is not allowed to access /verify_upload api."},
             status_code=status.HTTP_400_BAD_REQUEST)
 
 
@@ -546,7 +546,7 @@ async def delete_all_files():
                     shutil.rmtree(file_path)
             except Exception as e:
                 raise HTTPException(
-                    status_code=500, 
+                    status_code=500,
                     detail=f'Failed to delete {filename}. Reason: {e}'
                 )
         # delete delete_path folder
@@ -554,7 +554,7 @@ async def delete_all_files():
             shutil.rmtree(delete_path)
         except Exception as e:
             raise HTTPException(
-                status_code=500, 
+                status_code=500,
                 detail=f'Failed to delete folder {delete_path}. Reason: {e}'
             )
         # reload default kb
