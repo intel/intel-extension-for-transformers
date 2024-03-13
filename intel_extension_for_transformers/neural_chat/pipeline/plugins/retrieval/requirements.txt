@@ -3,6 +3,7 @@ chromadb==0.4.15
 easyocr
 FlagEmbedding
 InstructorEmbedding
+langchain-community==0.0.27
 langchain==0.1.11
 langid
 markdown
