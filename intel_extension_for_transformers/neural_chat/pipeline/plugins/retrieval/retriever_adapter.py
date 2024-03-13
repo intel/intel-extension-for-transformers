@@ -18,7 +18,7 @@
 """The wrapper for Retriever based on langchain"""
 from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever
 from langchain_core.vectorstores import VectorStoreRetriever
-from langchain.retrievers import BM25Retriever
+from langchain_community.retrievers import BM25Retriever
 import logging
 
 logging.basicConfig(
