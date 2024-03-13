@@ -51,7 +51,7 @@ def get_current_beijing_time():
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d-%H:%M:%S")
     return beijing_time
- 
+
 
 def language_detect(text: str):
     url = "https://translation.googleapis.com/language/translate/v2/detect"
@@ -63,10 +63,10 @@ def language_detect(text: str):
         'key': api_key,
         'q': text
     }
-    
+
     response = requests.post(url, params=params)
     if response.status_code == 200:
-        res = response.json() 
+        res = response.json()
         return res["data"]["detections"][0][0]
     else:
         print("Error:", response.status_code)
@@ -81,10 +81,10 @@ def language_translate(text: str, target: str='en'):
         'q': text,
         'target': target
     }
-    
+
     response = requests.post(url, params=params)
     if response.status_code == 200:
-        res = response.json() 
+        res = response.json()
         return res["data"]["translations"][0]
     else:
         print("Error:", response.status_code)
@@ -420,7 +420,7 @@ async def retrieval_translate(request: Request):
         translate_res = language_translate(content, target='zh-CN')['translatedText']
     else:
         translate_res = language_translate(content, target='en')['translatedText']
-    
+
     logger.info(f'[askdoc - translate] translated result: {translate_res}')
     return {"tranlated_content": translate_res}
 
@@ -554,7 +554,7 @@ async def delete_all_files():
             shutil.rmtree(delete_path+'/upload_dir')
         except Exception as e:
             raise HTTPException(
-                status_code=500, 
+                status_code=500,
                 detail=f'Failed to delete {delete_path}/upload_dir. Reason: {e}'
             )
         # reload default kb
