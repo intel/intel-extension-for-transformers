@@ -18,7 +18,9 @@
 import copy
 import datasets
 import re
+import torch
 from itertools import chain
+from transformers import AutoProcessor
 from intel_extension_for_transformers.neural_chat.prompts.prompt import PromptTemplate
 
 IGNORE_INDEX = -100
@@ -400,8 +402,6 @@ class SummarizationDataPreprocess:
 
 class ImageCaptioningDataPreprocess:
     def tokenize_func(self, tokenizer, data_args, finetune_args, model_args):
-        import torch
-        from transformers import AutoProcessor
         processor = AutoProcessor.from_pretrained(model_args.model_name_or_path)
         def preprocess_function(examples):
             encodings = processor(
