@@ -246,7 +246,6 @@ class SparsityConfig(PretrainedConfig):
         )
 
 if transformers.__version__ >= "4.32.0":
-    import pdb;pdb.set_trace();
     from transformers.utils.quantization_config import QuantizationConfigMixin
     QuantizationConfig: TypeAlias = QuantizationConfigMinxin
 else:
