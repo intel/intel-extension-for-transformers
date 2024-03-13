@@ -18,7 +18,6 @@
 import copy
 import datasets
 import re
-import torch
 from itertools import chain
 from transformers import AutoProcessor
 from intel_extension_for_transformers.neural_chat.prompts.prompt import PromptTemplate
