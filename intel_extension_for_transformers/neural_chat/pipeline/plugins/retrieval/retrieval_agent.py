@@ -38,14 +38,15 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-def document_transfer(data_collection):
+def document_transfer(data_collection, min_length):
     "Transfer the raw document into langchain supported format."
     documents = []
     for data, meta in data_collection:
-        doc_id = str(uuid.uuid4())
-        metadata = {"source": meta, "identify_id":doc_id}
-        doc = Document(page_content=data, metadata=metadata)
-        documents.append(doc)
+        if len(data) > min_length:
+            doc_id = str(uuid.uuid4())
+            metadata = {"source": meta, "identify_id":doc_id}
+            doc = Document(page_content=data, metadata=metadata)
+            documents.append(doc)
     return documents
 
 def document_append_id(documents):
@@ -142,7 +143,7 @@ class Agent_QA():
         data_collection = self.document_parser.load(input=self.input_path, **kwargs)
         logging.info("The parsing for the uploaded files is finished.")
 
-        langchain_documents = document_transfer(data_collection)
+        langchain_documents = document_transfer(data_collection, min_chuck_size)
         logging.info("The format of parsed documents is transferred.")
 
         if self.vector_database == "Chroma":
