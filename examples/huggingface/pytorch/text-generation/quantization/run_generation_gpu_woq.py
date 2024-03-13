@@ -171,7 +171,7 @@ if args.benchmark:
             if user_model is None else user_model
     user_model = user_model.to(memory_format=torch.channels_last)
     if quantization_config is None:
-        quantization_config = WeightOnlyQuantConfig.from_pretrained(args.model)
+        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else {}
     if not args.disable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
