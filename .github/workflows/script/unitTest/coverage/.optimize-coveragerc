@@ -7,13 +7,12 @@ omit =
  */**/fake.py
  */intel_extension_for_transformers/transformers/llm/amp/**
  */intel_extension_for_transformers/transformers/llm/finetuning/**
- */intel_extension_for_transformers/transformers/llm/inference/**
- */intel_extension_for_transformers/transformers/llm/library/**
  */intel_extension_for_transformers/transformers/llm/operator/**
- */intel_extension_for_transformers/transformers/llm/runtime/deprecated/**
- */intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**
+ */intel_extension_for_transformers/transformers/llm/runtime/**
  */intel_extension_for_transformers/neural_chat/**
- */intel_extension_for_transformers/transformers/modeling/**
+ */intel_extension_for_transformers/haystack/**
+ */intel_extension_for_transformers/langchain/**
+ */intel_extension_for_transformers/llama_index/**
  */intel_extension_for_transformers/transformers/utils/get_throughput.py
 exclude_lines =
  pragma: no cover
