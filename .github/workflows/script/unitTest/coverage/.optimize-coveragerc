@@ -8,6 +8,9 @@ omit =
  */intel_extension_for_transformers/transformers/llm/amp/**
  */intel_extension_for_transformers/transformers/llm/finetuning/**
  */intel_extension_for_transformers/transformers/llm/operator/**
+ */intel_extension_for_transformers/transformers/llm/inference/**
+ */intel_extension_for_transformers/transformers/llm/library/**
+ */intel_extension_for_transformers/transformers/modeling/**
  */intel_extension_for_transformers/transformers/llm/runtime/**
  */intel_extension_for_transformers/neural_chat/**
  */intel_extension_for_transformers/haystack/**
