@@ -8,3 +8,4 @@ py-cpuinfo
 setuptools>=65
 setuptools_scm[toml]>=6.2
 torch==2.2.0+cpu
+modelscope
