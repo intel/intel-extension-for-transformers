@@ -24,10 +24,10 @@ from .retriever_adapter import RetrieverAdapter
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
     import generate_qa_prompt, generate_prompt, generate_qa_enterprise
 from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
-    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
+    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings  # pylint: disable=import-error
 from langchain_community.embeddings import GooglePalmEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from intel_extension_for_transformers.langchain.vectorstores import Chroma, Qdrant
+from intel_extension_for_transformers.langchain.vectorstores import Chroma, Qdrant  # pylint: disable=import-error
 import uuid
 from langchain_core.documents import Document
 import logging
