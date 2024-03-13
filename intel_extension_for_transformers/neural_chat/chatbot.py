@@ -26,15 +26,18 @@ from .errorcode import ErrorCodes
 from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
 from intel_extension_for_transformers.utils.logger import logging
 import importlib
+import sys
 
 def check_tts_dependency():
     try:
-        importlib.import_module('paddlespeech')
-        importlib.import_module('paddle')
-        importlib.import_module('soundfile')
-        importlib.import_module('pydub')
-        importlib.import_module('speechbrain')
-        importlib.import_module('librosa')
+        for module in ['soundfile', 'pydub', 'speechbrain', 'librosa', 'zhconv', 'urllib3', 'langid',
+                       'vector_quantize_pytorch', 'cn2an', 'pypinyin', 'jaconv', 'webrtcvad', 'g2p_en', 'inflect',
+                        'jieba']:
+            importlib.import_module(module)
+        if sys.platform == 'linux':
+            importlib.import_module('pyopenjtalk')
+        else:
+            importlib.import_module('openjtalk')
         return True
     except ImportError:
         return False
@@ -178,7 +181,7 @@ def build_chatbot(config: PipelineConfig=None):
         for plugin_name, plugin_value in config.plugins.items():
             enable_plugin = plugin_value.get('enable', False)
             if enable_plugin:
-                if plugin_name == "tts" or plugin_name == "tts_chinese" or plugin_name == "asr":
+                if plugin_name == "tts" or plugin_name == "tts_multilang" or plugin_name == "asr":
                     if not check_tts_dependency():
                         raise ImportError(
                             f"Unable to initialize 'tts' plugin due to missing dependency packages.\n" \
@@ -229,9 +232,9 @@ def build_chatbot(config: PipelineConfig=None):
                 if plugin_name == "tts":
                     from .pipeline.plugins.audio.tts import TextToSpeech
                     plugins[plugin_name]['class'] = TextToSpeech
-                elif plugin_name == "tts_chinese":
-                    from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-                    plugins[plugin_name]['class'] = ChineseTextToSpeech
+                elif plugin_name == "tts_multilang":
+                    from .pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
+                    plugins[plugin_name]['class'] = MultilangTextToSpeech
                 elif plugin_name == "asr":
                     from .pipeline.plugins.audio.asr import AudioSpeechRecognition
                     plugins[plugin_name]['class'] = AudioSpeechRecognition
