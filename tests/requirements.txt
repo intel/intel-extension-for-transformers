@@ -1,11 +1,11 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 accelerate
+auto-round
 bitsandbytes
 datasets==2.14.7
 einops
 evaluate
 gguf
-auto-round
 git+https://github.com/intel/neural-compressor.git
 intel-extension-for-pytorch==2.2.0
 intel-tensorflow==2.14.0
