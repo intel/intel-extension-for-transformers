@@ -247,7 +247,7 @@ class SparsityConfig(PretrainedConfig):
 
 if transformers.__version__ >= "4.32.0":
     from transformers.utils.quantization_config import QuantizationConfigMixin
-    QuantizationConfig: TypeAlias = QuantizationConfigMinxin
+    QuantizationConfig: TypeAlias = QuantizationConfigMixin
 else:
     QuantizationConfig: TypeAlias = PretrainedConfig
 from enum import Enum
