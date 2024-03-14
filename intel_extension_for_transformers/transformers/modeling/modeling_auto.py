@@ -194,8 +194,8 @@ class _BaseQBitsAutoModelClass:
             return model
 
         if kwargs.pop("use_embedding_runtime", False):
-            from intel_extension_for_transformers.transformers.llm.runtime.deprecated.compile.graph import Graph
-            from intel_extension_for_transformers.transformers.llm.runtime.deprecated.compile import compile, autocast
+            from intel_extension_for_transformers.transformers.runtime.compile.graph import Graph
+            from intel_extension_for_transformers.transformers.runtime.compile import compile, autocast
 
             cast_type = kwargs.get("cast_type", "native")
             with autocast(cast_type):

@@ -6,5 +6,5 @@ Here we introduce performance relates issues  for users who might want detailed 
 .. toctree::
    :maxdepth: 1
 
-   docs/intel_extension_for_transformers/transformers/llm/runtime/deprecated/kernels/docs/profiling.md
-   docs/intel_extension_for_transformers/transformers/llm/runtime/deprecated/kernels/docs/validated_data.md
+   docs/intel_extension_for_transformers/transformers/runtime/kernels/docs/profiling.md
+   docs/intel_extension_for_transformers/transformers/runtime/kernels/docs/validated_data.md

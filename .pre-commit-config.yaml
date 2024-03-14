@@ -54,7 +54,7 @@ repos:
               docker/third_party_programs_docker.txt|
               intel_extension_for_transformers/transformers/llm/evaluation/hf_eval/datasets/cnn_validation.json|
               examples/huggingface/pytorch/text-generation/inference/prompt.json|
-              intel_extension_for_transformers/transformers/llm/runtime/deprecated/oneDNN-THIRD-PARTY-PROGRAMS|
+              intel_extension_for_transformers/transformers/runtime/oneDNN-THIRD-PARTY-PROGRAMS|
               docker/intel-tensorflow-third-party-programs.txt|
               .github/workflows/sample_data/alpaca_data_sample_45.json|
               intel_extension_for_transformers/neural_chat/assets/docs/4th\ Generation\ Intel®\ Xeon®\ Scalable\ Processors\ Product\ Specifications.html

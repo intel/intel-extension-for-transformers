@@ -25,7 +25,7 @@ import psutil
 
 from torch import nn
 from torch.nn import functional as F
-import intel_extension_for_transformers.transformers.llm.runtime.deprecated.compile as itrex_compile
+import intel_extension_for_transformers.transformers.runtime.compile as itrex_compile
 import numpy as np
 import random
 

@@ -5,6 +5,6 @@ Transformers-accelerated Libraries (formerly known as SparseLib) is a high-perfo
 .. toctree::
    :maxdepth: 1
 
-   docs/intel_extension_for_transformers/transformers/llm/runtime/deprecated/kernels/README.md
+   docs/intel_extension_for_transformers/transformers/runtime/kernels/README.md
    kernel_perf.rst
    kernel_desc.rst

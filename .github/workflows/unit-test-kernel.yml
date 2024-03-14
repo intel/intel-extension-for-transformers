@@ -4,10 +4,10 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/transformers/llm/runtime/deprecated/kernels/**"
+      - intel_extension_for_transformers/transformers/runtime/kernels/**"
       - .github/workflows/unit-test-kernel.yml
-      - '!intel_extension_for_transformers/transformers/llm/runtime/deprecated/kernels/README.md'
-      - '!intel_extension_for_transformers/transformers/llm/runtime/deprecated/kernels/docs/**'
+      - '!intel_extension_for_transformers/transformers/runtime/kernels/README.md'
+      - '!intel_extension_for_transformers/transformers/runtime/kernels/docs/**'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled

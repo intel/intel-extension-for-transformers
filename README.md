@@ -337,7 +337,7 @@ You can access the validated models, accuracy and performance from [Release data
     <td colspan="2" align="center"><a href="docs/tutorials/README.md">Tutorials</a></td>
     <td colspan="2" align="center"><a href="https://github.com/intel/neural-speed/blob/main/docs/supported_models.md">LLM List</a></td>
     <td colspan="2" align="center"><a href="docs/examples.md">General Model List</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/transformers/llm/runtime/deprecated/docs/validated_model.md">Model Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/transformers/runtime/docs/validated_model.md">Model Performance</a></td>
   </tr>
 </tbody>
 </table>

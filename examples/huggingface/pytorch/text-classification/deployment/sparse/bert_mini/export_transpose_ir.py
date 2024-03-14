@@ -1,5 +1,5 @@
-from intel_extension_for_transformers.transformers.llm.runtime.deprecated.compile import compile
-from intel_extension_for_transformers.transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.transformers.runtime.compile import compile
+from intel_extension_for_transformers.transformers.runtime.compile.graph import Graph
 import os
 import argparse
 

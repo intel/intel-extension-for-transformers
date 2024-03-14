@@ -19,6 +19,6 @@ omit =
  */intel_extension_for_transformers/transformers/llm/finetuning/**
  */intel_extension_for_transformers/transformers/llm/inference/**
  */intel_extension_for_transformers/transformers/llm/quantization/**
- */intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**
+ */intel_extension_for_transformers/transformers/setfit/**
 exclude_lines =
  pragma: no cover

@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.transformers.runtime.compile.graph import Graph
 
 def neural_engine_init(ir_path):
     text_encoder_graph = Graph()

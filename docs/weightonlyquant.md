@@ -144,7 +144,7 @@ model.save_pretrained(saved_dir)
 loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 ```
 
-> Note: For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/transformers/llm/runtime/neural_speed/README.md#2-run-llm-with-transformer-based-api)
+> Note: For LLM runtime model loading usage, please refer to [neural_speed readme](https://github.com/intel/neural-speed/blob/main/README.md#quick-start-transformer-like-usage)
 
 ## Examples For Intel GPU
 Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  

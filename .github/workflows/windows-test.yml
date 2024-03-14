@@ -7,16 +7,16 @@ on:
       - ".github/workflows/windows-test.yml"
       - "requirements.txt"
       - "setup.py"
-      - "intel_extension_for_transformers/transformers/llm/runtime/deprecated/**"
+      - "intel_extension_for_transformers/transformers/runtime/**"
       - "intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**"
       - '!intel_extension_for_transformers/transformers/llm/library/jblas/**'
       - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/*.md'
       - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/docs/**'
       - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/scripts/**'
       - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/tests/**'
-      - "!intel_extension_for_transformers/transformers/llm/runtime/deprecated/third_party/**"
-      - "!intel_extension_for_transformers/transformers/llm/runtime/deprecated/docs/**"
-      - "!intel_extension_for_transformers/transformers/llm/runtime/deprecated/test/**"
+      - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
+      - "!intel_extension_for_transformers/transformers/runtime/docs/**"
+      - "!intel_extension_for_transformers/transformers/runtime/test/**"
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
