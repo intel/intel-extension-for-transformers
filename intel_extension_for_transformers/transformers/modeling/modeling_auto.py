@@ -212,6 +212,7 @@ class _BaseQBitsAutoModelClass:
 
         if not isinstance(config, PretrainedConfig):
             if model_hub == "modelscope":
+                import modelscope
                 config = modelscope.AutoConfig.from_pretrained(pretrained_model_name_or_path,
                                             trust_remote_code=True)
             else:
