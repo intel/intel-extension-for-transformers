@@ -891,7 +891,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
-        self.sym = not self.zero_point
+        self.sym = True if not self.zero_point else False
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """
