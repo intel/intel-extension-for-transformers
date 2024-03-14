@@ -351,7 +351,7 @@ class _BaseQBitsAutoModelClass:
                 quantization_config.post_init_runtime()
                 from neural_speed import Model
                 model = Model()
-                model.init(
+                model.init( # pylint: disable=E1123
                     pretrained_model_name_or_path,
                     weight_dtype=quantization_config.weight_dtype,
                     alg=quantization_config.scheme,
@@ -363,7 +363,7 @@ class _BaseQBitsAutoModelClass:
                     use_gptq=quantization_config.quant_method.value == "gptq" or \
                             quantization_config.quant_method.value =="autoround",
                     use_awq=quantization_config.quant_method.value == "awq",
-                    model_hub=model_hub, # pylint: disable=E1123
+                    model_hub=model_hub,
                 )
                 model.quantization_config = quantization_config
                 return model
