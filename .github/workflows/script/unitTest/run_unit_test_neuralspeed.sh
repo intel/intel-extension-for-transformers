@@ -3,13 +3,13 @@ source /intel-extension-for-transformers/.github/workflows/script/change_color.s
 test_install_backend="true"
 LOG_DIR=/intel-extension-for-transformers/log_dir
 mkdir -p ${LOG_DIR}
-WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/transformers/llm/runtime/neural_speed"
+WORKING_DIR="/intel-extension-for-transformers/tests/Nightly"
 
 # -------------------Neural Speed Test-------------------
 function neuralspeed_test() {
-    cd ${WORKING_DIR}/tests
+    cd ${WORKING_DIR}
     local ut_log_name=${LOG_DIR}/unit_test_neural_speed.log
-    find . -name "test*.py" | sed 's,\.\/,python ,g' | sed 's/$/ --verbose/' >run.sh
+    find . -name "test_neural_speed.py" | sed 's,\.\/,python ,g' | sed 's/$/ --verbose/' >run.sh
     # run UT
     $BOLD_YELLOW && echo "cat run.sh..." && $RESET
     cat run.sh | tee ${ut_log_name}

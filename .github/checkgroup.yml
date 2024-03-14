@@ -35,11 +35,9 @@ subprojects:
 
   - id: "Neural Speed Unit Test workflow"
     paths:
-      - intel_extension_for_transformers/llm/runtime/neural_speed/**
+      - intel_extension_for_transformers/transformers/**
       - .github/workflows/unit-test-neuralspeed.yml
       - ".github/workflows/script/unitTest/run_unit_test_neuraspeed.sh"
-      - "!intel_extension_for_transformers/llm/runtime/neural_speed/docs/**"
-      - "!intel_extension_for_transformers/llm/runtime/neural_speed/*.md"
     checks:
       - "neural-speed-unit-test"
 
