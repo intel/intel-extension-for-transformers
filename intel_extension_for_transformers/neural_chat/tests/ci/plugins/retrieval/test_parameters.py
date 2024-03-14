@@ -689,7 +689,7 @@ class TestEmbeddingPrecision(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./embedding_precision_bf16"
-        plugins.retrieval.args["embedding_precision"] = 'bf16'
+        plugins.retrieval.args["precision"] = 'bf16'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -704,7 +704,7 @@ class TestEmbeddingPrecision(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./embedding_precision_fp32"
-        plugins.retrieval.args["embedding_precision"] = 'fp32'
+        plugins.retrieval.args["precision"] = 'fp32'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)

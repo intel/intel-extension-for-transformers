@@ -72,7 +72,7 @@ class Agent_QA():
                  process=True,
                  append=True,
                  polish=False,
-                 embedding_precision=None,
+                 precision=None,
                  **kwargs):
 
         self.intent_detector = IntentDetector()
@@ -95,7 +95,7 @@ class Agent_QA():
             "accuracy",
             "general",
         )
-        allowed_embedding_precision: ClassVar[Collection[str]] = (
+        allowed_precision: ClassVar[Collection[str]] = (
             "fp32",
             "bf16",
         )
@@ -108,9 +108,9 @@ class Agent_QA():
             self.retrieval_type)
         assert self.mode in allowed_generation_mode, "generation mode of {} not allowed.".format( \
             self.mode)
-        assert embedding_precision is None or embedding_precision in allowed_embedding_precision, \
-            "embedding precision of '{}' is not allowed. Support {}.".format(
-                embedding_precision, allowed_embedding_precision)
+        assert precision is None or precision in allowed_precision, \
+            "embedding precision of '{}' is not aloowed. Support {}.".format(
+                precision, allowed_precision)
 
         if isinstance(input_path, str):
             if os.path.exists(input_path):
@@ -146,14 +146,14 @@ class Agent_QA():
             logging.error("Please select a proper embedding model.")
             logging.error(e)
 
-        if embedding_precision is not None:
+        if precision is not None:
             # IPEX BF16 or FP32 optimization for embedding model
             import torch
             import intel_extension_for_pytorch as ipex
-            if embedding_precision == "bf16" and CpuInfo().bf16:
+            if precision == "bf16" and CpuInfo().bf16:
                 self.embeddings.client = ipex.optimize(
                     self.embeddings.client.eval(), dtype=torch.bfloat16, inplace=True)
-            elif embedding_precision == "fp32":
+            elif precision == "fp32":
                 self.embeddings.client = ipex.optimize(
                     self.embeddings.client.eval(), dtype=torch.float32, inplace=True)
 
