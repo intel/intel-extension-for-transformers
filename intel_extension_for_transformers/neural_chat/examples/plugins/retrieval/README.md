@@ -3,7 +3,14 @@ This example demonstrates how to enhance the generation ability of your chatbot 
 # Introduction
 The popularity of applications like ChatGPT has attracted many users seeking to address everyday problems. However, some users have encountered a challenge known as "model hallucination," where LLMs generate incorrect or nonexistent information, raising concerns about content accuracy. This example introduce our solution to build a retrieval-based chatbot. Though few lines of code, our api could help the user build a local reference ddatabase to enhance the accuracy of the generation results.
 
-Before deploying this example, please follow the instructions in the [README](../../README.md) to install the necessary dependencies.
+Before deploying this example, please follow the instructions in the [README](../../../README.md#installation) to install the basic dependencies.
+
+To use retrieval, please also run below command to install necessary dependencies for RAG [here](../../../pipeline/plugins/retrieval/requirements.txt)
+
+
+```
+pip install -r ../../../pipeline/plugins/retrieval/requirements.txt
+```
 
 # Usage
 The Neural Chat API offers an easy way to create and utilize chatbot models while integrating local documents. Our API simplifies the process of automatically handling and storing local documents in a document store. The user an download the [Intel 2022 Annual Report](https://d1io3yog0oux5.cloudfront.net/_897efe2d574a132883f198f2b119aa39/intel/db/888/8941/file/412439%281%29_12_Intel_AR_WR.pdf) for a test.
