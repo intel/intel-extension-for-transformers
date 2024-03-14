@@ -212,7 +212,7 @@ class _BaseQBitsAutoModelClass:
 
         if not isinstance(config, PretrainedConfig):
             if model_hub == "modelscope":
-                import modelscope
+                import modelscope # pylint: disable=E0401
                 config = modelscope.AutoConfig.from_pretrained(pretrained_model_name_or_path,
                                             trust_remote_code=True)
             else:
@@ -363,7 +363,7 @@ class _BaseQBitsAutoModelClass:
                     use_gptq=quantization_config.quant_method.value == "gptq" or \
                             quantization_config.quant_method.value =="autoround",
                     use_awq=quantization_config.quant_method.value == "awq",
-                    model_hub=model_hub,
+                    model_hub=model_hub, # pylint: disable=E1123
                 )
                 model.quantization_config = quantization_config
                 return model
