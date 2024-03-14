@@ -42,9 +42,9 @@ To ensure a smooth experience, we've made sure this plugin is compatible with co
 | pdf  | No format required |
 
 # Usage
-The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/plugins/retrieval). The user could refer to it for a simple test. 
+Before using RAG in NeuralChat, please install the necessary dependecies in [requirements.txt](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/requirements.txt) to avoid the import errors. The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/plugins/retrieval). The user could refer to it for a simple test. 
 
-We support multiple file formats for retrieval, including unstructured file formats such as pdf, docx, html, txt, and markdown, as well as structured file formats like jsonl and xlsx. For structured file formats, they must adhere to predefined structures.
+We support multiple file formats for retrieval, including unstructured file formats such as pdf, docx, html, txt, and markdown, as well as structured file formats like jsonl/json, csv, xlsx. For structured file formats, they must adhere to predefined structures. We also support to upload the knowledge base via a http web link.
 
 In the case of jsonl files, they should be formatted as dictionaries, such as: {'content':xxx, 'link':xxx}. The support for xlsx files is specifically designed for Question-Answer (QA) tasks. Users can input QA pairs for retrieval. Therefore, the table's header should include items labeled as "Question" and "Answer". The reference files could be found [here](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/assets/docs).
 
