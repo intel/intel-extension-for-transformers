@@ -163,6 +163,33 @@ class Finetuning:
                     token=model_args.token,
                     streaming=data_args.streaming,
                 )
+        elif data_args.train_dir is not None:
+            data_files = {}
+            if data_args.train_dir is not None:
+                data_files["train"] = os.path.join(data_args.train_dir, "**")
+            if data_args.validation_dir is not None:
+                data_files["validation"] = os.path.join(data_args.validation_dir, "**")
+            raw_datasets = load_dataset(
+                "imagefolder",
+                data_files=data_files,
+                cache_dir=model_args.cache_dir,
+            )
+
+            # If no validation data is there, validation_split_percentage will be used to divide the dataset.
+            if "validation" not in raw_datasets.keys() and training_args.do_eval and \
+                data_args.validation_split_percentage > 0:
+                raw_datasets["validation"] = load_dataset(
+                    "imagefolder",
+                    data_files=data_files,
+                    split=f"train[:{data_args.validation_split_percentage}%]",
+                    cache_dir=model_args.cache_dir,
+                )
+                raw_datasets["train"] = load_dataset(
+                    "imagefolder",
+                    data_files=data_files,
+                    split=f"train[{data_args.validation_split_percentage}%:]",
+                    cache_dir=model_args.cache_dir,
+                )
         else:
             data_files = {}
             dataset_args = {}
@@ -440,7 +467,9 @@ class Finetuning:
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
-        raw_datasets, preprocess_function = preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args)
+        raw_datasets, preprocess_function = preprocess_dataset(
+            raw_datasets, tokenizer, data_args, finetune_args, model_args
+        )
         column_names = list(raw_datasets["train"].features)
 
         with training_args.main_process_first(desc="dataset map pre-processing"):

@@ -1,0 +1,15 @@
+datasets
+einops
+evaluate
+fastapi
+nltk
+peft
+pydub
+python-multipart
+rouge_score
+sentencepiece
+shortuuid
+torch==2.2.0
+transformers
+uvicorn
+yacs
