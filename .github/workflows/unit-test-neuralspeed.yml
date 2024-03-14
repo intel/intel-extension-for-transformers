@@ -4,7 +4,6 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/transformers/**
       - .github/workflows/unit-test-neuralspeed.yml
       - '.github/workflows/script/unitTest/run_unit_test_neuraspeed.sh'
   workflow_dispatch:
