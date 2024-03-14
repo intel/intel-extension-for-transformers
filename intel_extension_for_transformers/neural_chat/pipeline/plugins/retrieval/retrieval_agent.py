@@ -109,7 +109,7 @@ class Agent_QA():
         assert self.mode in allowed_generation_mode, "generation mode of {} not allowed.".format( \
             self.mode)
         assert embedding_precision is None or embedding_precision in allowed_embedding_precision, \
-            "embedding precision of '{}' is not aloowed. Support {}.".format(
+            "embedding precision of '{}' is not allowed. Support {}.".format(
                 embedding_precision, allowed_embedding_precision)
 
         if isinstance(input_path, str):
