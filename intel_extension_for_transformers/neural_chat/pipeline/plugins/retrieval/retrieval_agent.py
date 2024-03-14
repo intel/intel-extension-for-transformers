@@ -25,6 +25,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt
     import generate_qa_prompt, generate_prompt, generate_qa_enterprise
 from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
     HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
+from intel_extension_for_transformers.transformers.utils import CpuInfo
 from langchain_community.embeddings import GooglePalmEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from intel_extension_for_transformers.langchain.vectorstores import Chroma, Qdrant
@@ -71,6 +72,7 @@ class Agent_QA():
                  process=True,
                  append=True,
                  polish=False,
+                 embedding_precision=None,
                  **kwargs):
 
         self.intent_detector = IntentDetector()
@@ -93,6 +95,10 @@ class Agent_QA():
             "accuracy",
             "general",
         )
+        allowed_embedding_precision: ClassVar[Collection[str]] = (
+            "fp32",
+            "bf16",
+        )
         if polish:
             self.polisher = QueryPolisher()
         else:
@@ -102,6 +108,9 @@ class Agent_QA():
             self.retrieval_type)
         assert self.mode in allowed_generation_mode, "generation mode of {} not allowed.".format( \
             self.mode)
+        assert embedding_precision is None or embedding_precision in allowed_embedding_precision, \
+            "embedding precision of '{}' is not aloowed. Support {}.".format(
+                embedding_precision, allowed_embedding_precision)
 
         if isinstance(input_path, str):
             if os.path.exists(input_path):
@@ -136,6 +145,17 @@ class Agent_QA():
         except Exception as e:
             logging.error("Please select a proper embedding model.")
             logging.error(e)
+
+        if embedding_precision is not None:
+            # IPEX BF16 or FP32 optimization for embedding model
+            import torch
+            import intel_extension_for_pytorch as ipex
+            if embedding_precision == "bf16" and CpuInfo().bf16:
+                self.embeddings.client = ipex.optimize(
+                    self.embeddings.client.eval(), dtype=torch.bfloat16, inplace=True)
+            elif embedding_precision == "fp32":
+                self.embeddings.client = ipex.optimize(
+                    self.embeddings.client.eval(), dtype=torch.float32, inplace=True)
 
         self.document_parser = DocumentParser(max_chuck_size=max_chuck_size, min_chuck_size = min_chuck_size, \
                                               process=self.process)

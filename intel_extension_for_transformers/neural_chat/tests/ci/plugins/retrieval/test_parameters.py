@@ -669,5 +669,50 @@ class TestSimilaritySearchTypeK2(unittest.TestCase):
         plugins.retrieval.args = {}
         plugins.retrieval.enable = False
 
+class TestEmbeddingPrecision(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("./embedding_precision_bf16"):
+            shutil.rmtree("./embedding_precision_bf16", ignore_errors=True)
+        if os.path.exists("./embedding_precision_fp32"):
+            shutil.rmtree("./embedding_precision_fp32", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("./embedding_precision_bf16"):
+            shutil.rmtree("./embedding_precision_bf16", ignore_errors=True)
+        if os.path.exists("./embedding_precision_fp32"):
+            shutil.rmtree("./embedding_precision_fp32", ignore_errors=True)
+        return super().tearDown()
+
+    def test_embedding_precision_bf16(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
+        plugins.retrieval.args["persist_directory"] = "./embedding_precision_bf16"
+        plugins.retrieval.args["embedding_precision"] = 'bf16'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Tell me about Intel Xeon Platinum 8480+ Processor.")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
+
+    def test_embedding_precision_fp32(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
+        plugins.retrieval.args["persist_directory"] = "./embedding_precision_fp32"
+        plugins.retrieval.args["embedding_precision"] = 'fp32'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Tell me about Intel Xeon Platinum 8480+ Processor.")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
+
 if __name__ == '__main__':
     unittest.main()
