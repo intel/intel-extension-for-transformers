@@ -232,20 +232,13 @@ def _replace_linear(
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
                 if device == "cpu" or device == torch.device("cpu") or device == "auto":
-
-                    if not empty_weights:
-                        int_weight, scales, zeros = unpack_weight(
-                            module.qweight,
-                            module.scales,
-                            module.qzeros,
-                            quantization_config,
-                        )
-                        int_weight = int_weight.view(-1, int_weight.shape[-1])
-                    else:
-                        int_weight = module.weight
-                        int_weight = int_weight.view(int_weight.shape[-1], -1)
-                        scales = None
-                        zeros = None
+                    int_weight, scales, zeros = unpack_weight(
+                        module.qweight,
+                        module.scales,
+                        module.qzeros,
+                        quantization_config,
+                    )
+                    int_weight = int_weight.view(-1, int_weight.shape[-1])
                     model._modules[name].set_weights_bias(
                         int_weight,
                         scales,

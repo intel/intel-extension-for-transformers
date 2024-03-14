@@ -145,18 +145,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
         q_config,
         bias=None,
     ):
-        if int_weight.is_meta:
-            int_weight = torch.ones(int_weight.shape, dtype=torch.int8)
-            gptq_scales = torch.rand(
-                self.in_features // self.blocksize,
-                self.out_features,
-                dtype=torch.float16,
-            )
-            gptq_zeros = torch.ones(
-                self.in_features // self.blocksize, self.out_features, dtype=torch.int8
-            )
-            if q_config.quant_method.value == "gptq" and q_config.desc_act:
-                g_idx = torch.zeros(self.blocksize, dtype=torch.int32)
         if q_config.quant_method.value == "gptq" and q_config.desc_act:
             int_weight2 = int_weight.clone()
             group_size = q_config.group_size
@@ -275,6 +263,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if scales_dtype is None:
             assert False, "scales dtype only support fp32."
         scales = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 9)
+        if bits == 4:
+            scales = scales * 16
         zp = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 11)[0] != 0
         if zp:
             qzeros = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 10)

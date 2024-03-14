@@ -68,6 +68,7 @@ from ...llm.quantization.utils import (
     replace_linear,
 )
 from ...llm.quantization.nn.modules import QuantizedLinearQBits
+from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from transformers.configuration_utils import PretrainedConfig
 from transformers import AutoConfig
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
@@ -122,8 +123,28 @@ def recover_export_model(model, current_key_name=None):
             _ = recover_export_model(module, current_key_name)
         # Remove the last key for recursion
         current_key_name.pop(-1)
-        return model
+    return model
 
+def build_woq_model(model, quantization_config):
+    from neural_compressor.adaptor.torch_utils.util import set_module
+    for n, m in model.named_modules():
+        if 'lm_head' in n:
+            continue
+        if isinstance(m, torch.nn.Linear):
+            zp = not quantization_config.sym if hasattr(quantization_config, "sym") else True
+            zp = quantization_config.zero_point if hasattr(quantization_config, "zero_point") else True
+            new_module = WeightOnlyLinear(
+                m.in_features,
+                m.out_features,
+                quantization_config.bits,
+                quantization_config.group_size,
+                dtype='int',
+                zp=zp,
+                bias=m.bias is not None,
+                g_idx=False if hasattr(quantization_config, "decs_act") else False,
+            )
+            set_module(model, n, new_module)
+    return model
 
 def convert_model_to_public(model):
     # reorder weight and scales if they have been transposed
@@ -1125,12 +1146,7 @@ class _BaseQBitsAutoModelClass:
         else:
             model = model_class(config, *model_args, **kwargs)
 
-        model = replace_linear(
-            model,
-            quantization_config=quantization_config,
-            device=device_map,
-            empty_weights=True,
-        )
+        model = build_woq_model(model, quantization_config)
 
         if is_sharded:
             loaded_state_dict_keys = sharded_metadata["all_checkpoint_keys"]
@@ -1145,7 +1161,6 @@ class _BaseQBitsAutoModelClass:
         # restore default dtype
         if dtype_orig is not None:
             torch.set_default_dtype(dtype_orig)
-
         (
             model,
             missing_keys,
@@ -1173,6 +1188,12 @@ class _BaseQBitsAutoModelClass:
 
         # Set model in evaluation mode to deactivate DropOut modules by default
         model.eval()
+        model = replace_linear(
+            model,
+            quantization_config=quantization_config,
+            device=device_map,
+            empty_weights=True,
+        )
 
         # If it is a model with generation capabilities, attempt to load the generation config
         if model.can_generate():
