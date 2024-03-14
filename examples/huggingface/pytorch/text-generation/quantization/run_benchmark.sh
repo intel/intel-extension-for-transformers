@@ -113,39 +113,39 @@ function run_benchmark {
         model_name_or_path="mosaicml/mpt-7b-chat"
     elif [ "${topology}" = "chatglm3_6b" ]; then
         model_name_or_path="THUDM/chatglm3-6b"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
     elif [ "${topology}" = "chatglm2_6b" ]; then
         model_name_or_path="THUDM/chatglm2-6b"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
     elif [ "${topology}" = "chatglm_6b" ]; then
         model_name_or_path="THUDM/chatglm-6b"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         pip install transformers==4.33
     elif [ "${topology}" = "falcon_7b" ]; then
         model_name_or_path="tiiuae/falcon-7b-instruct"
         pip install transformers==4.33
     elif [ "${topology}" = "baichuan_7b" ]; then
         model_name_or_path="baichuan-inc/Baichuan-7B"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         pip install transformers==4.33
     elif [ "${topology}" = "baichuan_13b" ]; then
         model_name_or_path="baichuan-inc/Baichuan-13B-Base"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         extra_cmd=$extra_cmd" --_commit_hash 14d5b0e204542744900f6fb52422c6d633bdcb00"
         pip install transformers==4.33
     elif [ "${topology}" = "baichuan2_7b" ]; then
         model_name_or_path="baichuan-inc/Baichuan2-7B-Base"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         pip install transformers==4.33
     elif [ "${topology}" = "baichuan2_13b" ]; then
         model_name_or_path="baichuan-inc/Baichuan2-13B-Base"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         pip install transformers==4.33
     elif [ "${topology}" = "qwen_7b" ]; then
         model_name_or_path="Qwen/Qwen-7B"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         extra_cmd=$extra_cmd" --_commit_hash f7bc352f27bb1c02ee371a4576942a7d96c8bb97"
-	pip install transformers==4.35.2
+	      pip install transformers==4.35.2
     elif [ "${topology}" = "mistral_7b" ]; then
         model_name_or_path="Intel/neural-chat-7b-v3"
     elif [ "${topology}" = "phi_1b" ]; then
@@ -162,16 +162,15 @@ function run_benchmark {
         elif [ "${topology}" = "gpt_j_woq_bab" ]; then
             extra_cmd=$extra_cmd" --bitsandbytes"
         elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
-            extra_cmd=$extra_cmd" --load_in_4bit True"
+            extra_cmd=$extra_cmd" --load_in_4bit "
         elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
-            extra_cmd=$extra_cmd" --load_in_8bit True"
+            extra_cmd=$extra_cmd" --load_in_8bit "
         elif [ "${topology}" = "gpt_j_mp" ]; then
             extra_cmd=$extra_cmd" --mixed_precision"
         elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
             model_name_or_path="meta-llama/Llama-2-7b-hf"
-            extra_cmd=$extra_cmd" --woq --woq_weight_dtype int4_clip --woq_compute_dtype fp32"
-            extra_cmd=$extra_cmd" --woq_algo "GPTQ" --gptq_actorder --gptq_block_size 128 --gptq_pad_max_length 2048 --gptq_use_max_length"
-            pip install transformers==4.35.2
+            extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
+            extra_cmd=$extra_cmd" --woq_algo "GPTQ" --desc_act --blocksize 128 --max_input_length 2048 "
         else
             extra_cmd=$extra_cmd" --int8"
         fi

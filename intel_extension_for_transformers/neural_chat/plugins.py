@@ -24,9 +24,8 @@ class GlobalPlugins:
     def reset_plugins(self):
         self.plugins = DotDict({
             "tts": {"enable": False, "class": None, "args": {}, "instance": None},
-            "tts_chinese": {"enable": False, "class": None, "args": {}, "instance": None},
+            "tts_multilang": {"enable": False, "class": None, "args": {}, "instance": None},
             "asr": {"enable": False, "class": None, "args": {}, "instance": None},
-            "asr_chinese": {"enable": False, "class": None, "args": {}, "instance": None},
             "retrieval": {"enable": False, "class": None, "args": {}, "instance": None},
             "cache": {"enable": False, "class": None, "args": {}, "instance": None},
             "safety_checker": {"enable": False, "class": None, "args": {}, "instance": None},
@@ -71,5 +70,5 @@ def get_registered_plugins():
     return registered_plugins
 
 def get_all_plugins():
-    return ["tts", "tts_chinese", "asr", "asr_chinese", "retrieval", "cache", "safety_checker", "ner", "ner_int",
+    return ["tts", "tts_multilang", "asr", "retrieval", "cache", "safety_checker", "ner", "ner_int",
             "face_animation"]

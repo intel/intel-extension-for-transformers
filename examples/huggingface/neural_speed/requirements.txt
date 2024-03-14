@@ -7,3 +7,5 @@ gguf
 torch==2.2.0+cpu
 transformers
 intel_extension_for_pytorch==2.2.0
+tiktoken
+transformers_stream_generator

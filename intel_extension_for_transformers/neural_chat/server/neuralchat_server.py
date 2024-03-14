@@ -197,9 +197,9 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     if plugin_name == "tts":
                         from ..pipeline.plugins.audio.tts import TextToSpeech
                         plugins[plugin_name]['class'] = TextToSpeech
-                    elif plugin_name == "tts_chinese":
-                        from ..pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-                        plugins[plugin_name]['class'] = ChineseTextToSpeech
+                    elif plugin_name == "tts_multilang":
+                        from ..pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
+                        plugins[plugin_name]['class'] = MultilangTextToSpeech
                     elif plugin_name == "asr":
                         from ..pipeline.plugins.audio.asr import AudioSpeechRecognition
                         plugins[plugin_name]['class'] = AudioSpeechRecognition
@@ -248,16 +248,17 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_neural_speed=use_neural_speed,
                                                 peft_path=peft_model_path, use_deepspeed=use_deepspeed,
                                                 world_size=world_size, gguf_model_path=gguf_model_path)
-            from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
+            from intel_extension_for_transformers.transformers import RtnConfig, AwqConfig, TeqConfig, GPTQConfig, \
+            AutoRoundConfig, MixedPrecisionConfig
             if optimization_type == "weight_only":
                 if use_gptq:
-                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_gptq)
+                    optimization_config = GPTQConfig(bits=4)
                 elif use_awq:
-                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_awq)
+                    optimization_config = AwqConfig(bits=4)
                 elif use_autoround:
-                    optimization_config = WeightOnlyQuantConfig(use_gptq=use_autoround)
+                    optimization_config = AutoRoundConfig(bits=4)
                 else:
-                    optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype,
+                    optimization_config = RtnConfig(bits=4, compute_dtype=compute_dtype, weight_dtype=weight_dtype,
                                                                 use_ggml=use_ggml, use_cache=use_cached_bin)
             elif optimization_type == "mix_precision":
                 optimization_config = MixedPrecisionConfig(dtype=mix_precision_dtype)
