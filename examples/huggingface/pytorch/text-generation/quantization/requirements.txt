@@ -13,6 +13,6 @@ bitsandbytes  #baichuan
 transformers_stream_generator
 tiktoken  #qwen
 einops  #qwen
+auto-round
 git+https://github.com/intel/neural-compressor.git
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
-git+https://github.com/intel/auto-round.git@d02f94d4b085523df3b313863fb07f83b2989cce

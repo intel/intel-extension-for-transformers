@@ -22,6 +22,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Union
 from .utility import QUANT_CONFIG, SPARSITY_CONFIG, LazyImport, logger
+import transformers
 from transformers import BitsAndBytesConfig, PretrainedConfig
 
 torch = LazyImport("torch")
@@ -244,8 +245,11 @@ class SparsityConfig(PretrainedConfig):
             pretrained_model_name_or_path, _configuration_file=SPARSITY_CONFIG, **kwargs
         )
 
-
-from transformers.utils.quantization_config import QuantizationConfigMixin
+if transformers.__version__ >= "4.32.0":
+    from transformers.utils.quantization_config import QuantizationConfigMixin
+    QuantizationConfig = QuantizationConfigMixin
+else:
+    QuantizationConfig = PretrainedConfig
 from enum import Enum
 
 
@@ -259,7 +263,7 @@ class QuantizationMethod(str, Enum):
     TEQ = "teq"
 
 
-class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
+class ITREXQuantizationConfigMixin(QuantizationConfig):
     """
     Mixin class for quantization config
     """
@@ -550,6 +554,8 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
         # set tokenizer to None due to it doesn't support write to json
         if hasattr(self, "tokenizer"):
             self.tokenizer = None
+        if hasattr(self, "calib_dataloader"):
+            self.calib_dataloader = None
         with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string(use_diff=use_diff))
 
@@ -573,8 +579,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
             kwargs (`Dict[str, Any]`, *optional*):
                 Additional key word arguments passed along to the [`~utils.PushToHubMixin.push_to_hub`] method.
         """
-        # self._set_token_in_kwargs(kwargs)
-
         if os.path.isfile(save_directory):
             raise AssertionError(
                 f"Provided path ({save_directory}) should be a directory, not a file"

@@ -9,5 +9,4 @@ transformers_stream_generator
 peft
 einops
 protobuf
-git+https://github.com/intel/auto-round.git@d3bca7778441d4e97a82648ef88229ce98348e37
-
+auto-round
