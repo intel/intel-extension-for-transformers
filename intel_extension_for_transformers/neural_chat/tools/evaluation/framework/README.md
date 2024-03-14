@@ -15,7 +15,7 @@ cd tools/evaluation/framework
 pip install -r requirements.txt
 ```
 
-## 3. Evaluate Retrieval
+## 3. Evaluate RAG
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework
 python ragas_evaluation.py \
