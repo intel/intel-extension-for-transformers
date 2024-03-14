@@ -364,7 +364,6 @@ class _BaseQBitsAutoModelClass:
                             quantization_config.quant_method.value =="autoround",
                     use_awq=quantization_config.quant_method.value == "awq",
                     model_hub=model_hub,
-                    
                 )
                 model.quantization_config = quantization_config
                 return model
