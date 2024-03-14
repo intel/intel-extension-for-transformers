@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+gef94aea documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">NeuralChat Fine-tuning</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/image_to_text/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="neuralchat-fine-tuning">
+<h1>NeuralChat Fine-tuning<a class="headerlink" href="#neuralchat-fine-tuning" title="Link to this heading"></a></h1>
+<p>This example demonstrates how to finetune the pretrained generative image-to-text model on customized dataset.</p>
+</section>
+<section id="prerequisite">
+<h1>Prerequisite​<a class="headerlink" href="#prerequisite" title="Link to this heading"></a></h1>
+<section id="environment">
+<h2>1. Environment​<a class="headerlink" href="#environment" title="Link to this heading"></a></h2>
+<section id="bare-metal">
+<h3>Bare Metal<a class="headerlink" href="#bare-metal" title="Link to this heading"></a></h3>
+<p>Recommend python 3.9 or higher version.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+pip<span class="w"> </span>install<span class="w"> </span><span class="nv">transformers</span><span class="o">==</span><span class="m">4</span>.34.1
+<span class="c1"># To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.</span>
+python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">oneccl_bind_pt</span><span class="o">==</span><span class="m">2</span>.2.0<span class="w"> </span>-f<span class="w"> </span>https://developer.intel.com/ipex-whl-stable-cpu
+</pre></div>
+</div>
+<blockquote>
+<div><p><strong>Note</strong>: Suggest using transformers no higher than 4.34.1</p>
+</div></blockquote>
+</section>
+<section id="docker">
+<h3>Docker<a class="headerlink" href="#docker" title="Link to this heading"></a></h3>
+<p>Pick either one of below options to setup docker environment.</p>
+<section id="option-1-build-docker-image-from-scratch">
+<h4>Option 1 : Build Docker image from scratch<a class="headerlink" href="#option-1-build-docker-image-from-scratch" title="Link to this heading"></a></h4>
+<p>Please refer to this section : <a class="reference external" href="../../../docker/finetuning/README.html#21-build-docker-image">How to build docker images for NeuralChat FineTuning</a> to build docker image from scratch.</p>
+</section>
+<section id="option-2-pull-existing-docker-image">
+<h4>Option 2: Pull existing Docker image<a class="headerlink" href="#option-2-pull-existing-docker-image" title="Link to this heading"></a></h4>
+<p>Please follow the session <a class="reference external" href="../../../docker/finetuning/README.html#22-docker-pull-from-docker-hub">itrex docker setup</a> and use the docker pull command to pull itrex docker image.</p>
+<p>Once you have the docker image ready, please follow <a class="reference external" href="../../../docker/finetuning/README.html#3-create-docker-container">run docker image</a> session to launch a docker instance from the image.</p>
+</section>
+</section>
+</section>
+<section id="prepare-the-model">
+<h2>2. Prepare the Model<a class="headerlink" href="#prepare-the-model" title="Link to this heading"></a></h2>
+<section id="microsoft-git-base">
+<h3>microsoft/git-base<a class="headerlink" href="#microsoft-git-base" title="Link to this heading"></a></h3>
+<p>To acquire the checkpoints and tokenizer, the user can get those files from <a class="reference external" href="https://huggingface.co/microsoft/git-base">microsoft/git-base</a>.
+Users could follow below commands to get the checkpoints from github repository after the access request to the files is approved.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
+git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/microsoft/git-base
+</pre></div>
+</div>
+</section>
+</section>
+<section id="prepare-dataset">
+<h2>3. Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Link to this heading"></a></h2>
+<p>For datasets exist in the Hugging Face Hub, user can use <code class="docutils literal notranslate"><span class="pre">dataset_name</span></code> argument to pass in the needed dataset.
+For local datasets, user can follow this <a class="reference external" href="https://huggingface.co/docs/datasets/v2.18.0/en/image_dataset#image-captioning">guide</a> from datasets’ official document to create a metadata file that contain image and text pairs, than use <code class="docutils literal notranslate"><span class="pre">train_dir</span></code> and optionally <code class="docutils literal notranslate"><span class="pre">validation_dir</span></code> to pass in the path to the needed dataset.</p>
+<section id="dataset-related-arguments">
+<h3>Dataset related arguments<a class="headerlink" href="#dataset-related-arguments" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>dataset_name</strong>: The name of the dataset to use (via the datasets library).</p></li>
+<li><p><strong>dataset_config_name</strong>: The configuration name of the dataset to use (via the datasets library).</p></li>
+<li><p><strong>train_dir</strong>: A folder containing the training data.</p></li>
+<li><p><strong>validation_dir</strong>: A folder containing the validation data.</p></li>
+<li><p><strong>image_column</strong>: The column of the dataset containing an image or a list of images.</p></li>
+<li><p><strong>caption_column</strong>: The column of the dataset containing a caption or a list of captions.</p></li>
+<li><p><strong>validation_split_percentage</strong>: The percentage of the train set used as validation set in case there’s no validation split.</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="finetune">
+<h1>Finetune<a class="headerlink" href="#finetune" title="Link to this heading"></a></h1>
+<p>Use the below command line for finetuning <code class="docutils literal notranslate"><span class="pre">microsoft/git-base</span></code> model on the <code class="docutils literal notranslate"><span class="pre">gaodrew/roco-65k-256px</span></code> dataset.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;microsoft/git-base&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dataset_name<span class="w"> </span><span class="s2">&quot;gaodrew/roco-65k-256px&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./git-base_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--task<span class="w"> </span>image2text<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--full_finetune<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--bits<span class="w"> </span><span class="m">16</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x719457042830> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
