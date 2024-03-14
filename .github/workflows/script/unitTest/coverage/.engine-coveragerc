@@ -14,11 +14,8 @@ omit =
  */intel_extension_for_transformers/transformers/nas/**
  */intel_extension_for_transformers/transformers/pruner/**
  */intel_extension_for_transformers/transformers/utils/**
- */intel_extension_for_transformers/transformers/*.py
- */intel_extension_for_transformers/transformers/llm/evaluation/**
- */intel_extension_for_transformers/transformers/llm/finetuning/**
- */intel_extension_for_transformers/transformers/llm/inference/**
- */intel_extension_for_transformers/transformers/llm/quantization/**
+ */intel_extension_for_transformers/transformers/llm/**
  */intel_extension_for_transformers/transformers/setfit/**
+ */intel_extension_for_transformers/transformers/*.py
 exclude_lines =
  pragma: no cover
