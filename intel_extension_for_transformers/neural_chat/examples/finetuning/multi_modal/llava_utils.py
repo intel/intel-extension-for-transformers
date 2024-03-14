@@ -1079,4 +1079,3 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
     return dict(train_dataset=train_dataset,
                 eval_dataset=None,
                 data_collator=data_collator)
-
