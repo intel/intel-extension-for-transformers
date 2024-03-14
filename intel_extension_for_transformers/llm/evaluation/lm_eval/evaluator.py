@@ -34,7 +34,7 @@ import transformers
 MODEL_REGISTRY = {
     "hf-causal": huggingface.AutoCausalLM,
     "hf-seq2seq": huggingface.AutoSeq2SeqLM,
-    "gaudi-hf-causal": huggingface.GaudiModelAdapter,
+    "simple-hf-causal": huggingface.HFModelAdapter,
 }
 
 def itrex_bootstrap_stderr(f, xs, iters):
@@ -132,8 +132,8 @@ def evaluate(model,
             # if hpu, set user_model
             kwargs["user_model"] = user_model
             if model == "hf-causal":
-                model = "gaudi-hf-causal"
-        if model == "gaudi-hf-causal":
+                model = "simple-hf-causal"
+        if model == "simple-hf-causal":
             kwargs["warmup"] = warmup
 
         if user_tokenizer:

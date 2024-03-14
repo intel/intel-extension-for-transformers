@@ -1077,7 +1077,7 @@ def stop_sequences_criteria(
     )
 
 
-class GaudiModelAdapter(HuggingFaceAutoLM):
+class HFModelAdapter(HuggingFaceAutoLM):
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
     AUTO_PEFT_CLASS = peft.PeftModel
 

@@ -180,7 +180,7 @@ class LMEvalCallback(TrainerCallback):
                     warmup=self.warmup)
             self.warmup = False
         else:
-            results = self.lm_eval(model="gaudi-hf-causal",
+            results = self.lm_eval(model="simple-hf-causal",
                     user_model=kwargs["model"],
                     user_tokenizer=kwargs["tokenizer"],
                     warmup=False)
