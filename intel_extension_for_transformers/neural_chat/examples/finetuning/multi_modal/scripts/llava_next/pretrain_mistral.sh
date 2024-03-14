@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# python train.py \
 python3 ./gaudi_spawn.py --use_deepspeed --world_size 8 \
     train.py \
     --deepspeed scripts/zero2.json \
@@ -33,7 +32,7 @@ python3 ./gaudi_spawn.py --use_deepspeed --world_size 8 \
     --image_grid_pinpoints "[[336,336], [672,672], [336,1344], [1344,336]]" \
     --image_aspect_ratio anyres \
     --bf16 True \
-    --output_dir ./llava-v1.5-mistral-7b-pretrain \
+    --output_dir ./llava-v1.6-mistral-7b-pretrain \
     --num_train_epochs 1 \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 4 \
