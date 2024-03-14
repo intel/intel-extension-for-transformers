@@ -1,7 +1,15 @@
 # Ragas Evaluation
 
 ## 1. Introduction
-Ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. We provide a script to use Ragas based on data files.
+Ragas is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. We provide a script to use Ragas based on data files. We use four metrics: answer relevancy, faithfulness, context recall, context precision
+* **Answer relevancy**
+Answer Relevancy focuses on assessing how pertinent the generated answer is to the given prompt. A lower score is assigned to answers that are incomplete or contain redundant information and higher scores indicate better relevancy.
+* **Faithfulness**
+Faithfulness measures the factual consistency of the generated answer against the given context. It is calculated from answer and retrieved context. The answer is scaled to (0,1) range. Higher the better.
+* **Context recall**
+Context recall measures the extent to which the retrieved context aligns with the annotated answer, treated as the ground truth. It is computed based on the ground truth and the retrieved context, and the values range between 0 and 1, with higher values indicating better performance.
+* **Context precision**
+Context Precision is a metric that evaluates whether all of the ground-truth relevant items present in the contexts are ranked higher or not. Ideally all the relevant chunks must appear at the top ranks. This metric is computed using the question, ground_truth and the contexts, with values ranging between 0 and 1, where higher scores indicate better precision.
 
 ## 2. Requirements
 ```
@@ -32,7 +40,7 @@ python ragas_evaluation.py \
 - `openai_api_key`: This guide utilizes OpenAI for running some metrics, so ensure you have your OpenAI key ready and available in your environment.
 
 ## 4. Result
-The results include your input question, answer, contexts, ground_truth, as well as output answer relevancy, faithfulness, context_recall, context_precision.
+The results include your input question, answer, contexts, ground_truth, as well as output answer relevancy, faithfulness, context recall, context precision.
 ```
     question     answer   contexts ground_truth  answer_relevancy  faithfulness  context_recall  context_precision
 0  What t...  The or...  [We ai...  open s...     0.900788          0.500000           1.0             1.0
