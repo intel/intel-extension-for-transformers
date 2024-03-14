@@ -11,7 +11,6 @@ subprojects:
     checks:
       - "format-scan (pylint)"
       - "format-scan (bandit)"
-      - "format-scan (clangformat)"
       - "format-scan (cloc)"
       - "format-scan (cpplint)"
 
