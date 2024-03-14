@@ -22,6 +22,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Union
 from .utility import QUANT_CONFIG, SPARSITY_CONFIG, LazyImport, logger
+import transformers
 from transformers import BitsAndBytesConfig, PretrainedConfig
 
 torch = LazyImport("torch")
@@ -244,8 +245,11 @@ class SparsityConfig(PretrainedConfig):
             pretrained_model_name_or_path, _configuration_file=SPARSITY_CONFIG, **kwargs
         )
 
-
-from transformers.utils.quantization_config import QuantizationConfigMixin
+if transformers.__version__ >= "4.32.0":
+    from transformers.utils.quantization_config import QuantizationConfigMixin
+    QuantizationConfig = QuantizationConfigMixin
+else:
+    QuantizationConfig = PretrainedConfig
 from enum import Enum
 
 
@@ -259,7 +263,7 @@ class QuantizationMethod(str, Enum):
     TEQ = "teq"
 
 
-class ITREXQuantizationConfigMixin(QuantizationConfigMixin):
+class ITREXQuantizationConfigMixin(QuantizationConfig):
     """
     Mixin class for quantization config
     """
