@@ -41,9 +41,10 @@ If your environment requires a proxy to access the internet, export your develop
 ```bash
 export DOCKER_RUN_ENVS="-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"
 
-docker run -it --net=host --ipc=host \
+docker run -it --net=host \
+      --ipc=host \
       --name code_gen -v ./codegen.yaml:/codegen.yaml \
-      $DOCKER_RUN_ENVS \
+      ${DOCKER_RUN_ENVS} \
       intel/intel-extension-for-transformers:code-generation-cpu-1.4.0
 ```
 

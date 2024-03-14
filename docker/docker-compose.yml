@@ -17,14 +17,14 @@ services:
       http_proxy: ${http_proxy}
       https_proxy: ${https_proxy}
       no_proxy: ${no_proxy}
-    image: intel/ai-tools:itrex-devel-latest
+    image: intel/intel-extension-for-transformers:devel-1.4.0
     pull_policy: always
   prod:
     extends:
       service: devel
     build:
       target: prod
-    image: intel/ai-tools:itrex-prod-latest
+    image: intel/intel-extension-for-transformers:1.4.0
     volumes:
       - $PWD/..:/app
     working_dir: /app
