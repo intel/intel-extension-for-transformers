@@ -219,18 +219,16 @@ outputs = model.generate(inputs)
 You can also load PyTorch Model from Modelscope
 >**Note**:require modelscope
 ```python
-import sys
-from modelscope import AutoTokenizer
 from transformers import TextStreamer
-from neural_speed import Model
-
-model_name = "qwen/Qwen1.5-7B-Chat"     # modelscope model_id or local model
+from modelscope import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+model_name = "qwen/Qwen-7B"     # Modelscope model_id or local model
 prompt = "Once upon a time, there existed a little girl,"
+
+model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, model_hub="modelscope")
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
-model = Model()
-model.init(model_name, weight_dtype="int4", compute_dtype="int8", model_hub="modelscope")
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
