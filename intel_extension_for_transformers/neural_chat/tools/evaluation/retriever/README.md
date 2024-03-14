@@ -1,7 +1,11 @@
 # Retrieval Evaluation
 
 ## 1. Introduction
-We provide a script to evaluate the performance of the retrieval. We use two metrics: MRR (Mean reciprocal rank) and Hit (Hit Ratio). MRR is an internationally accepted mechanism for evaluating search algorithms. MRR emphasizes the position of ground truth in the retrieval list, the higher it is, the better. Hit emphasizes the accuracy of retrieval, that is, whether the ground truth is included in the retrieval items.
+We provide a script to evaluate the performance of the retrieval. We use two metrics: MRR (Mean reciprocal rank) and Hit (Hit Ratio). 
+* **MRR**
+MRR is an internationally accepted mechanism for evaluating search algorithms. MRR emphasizes the position of ground truth in the retrieval list, the higher it is, the better. 
+* **Hit**
+Hit emphasizes the accuracy of retrieval, that is, whether the ground truth is included in the retrieval items. The higher, the better. 
 
 ## 2. Requirements
 ```
