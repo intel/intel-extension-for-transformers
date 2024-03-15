@@ -394,15 +394,6 @@ elif not args.int8 and not args.int8_bf16_mixed:
         use_neural_speed=False,
     )
 
-# save model
-if args.output_dir:
-    tokenizer.save_pretrained(args.output_dir)
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
-        user_model.save_pretrained(args.output_dir)
-
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
@@ -530,3 +521,12 @@ if args.accuracy:
         args=args,
     )
     print(results)
+
+# save model
+if args.output_dir is not None:
+    tokenizer.save_pretrained(args.output_dir)
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision or args.woq:
+        user_model.save_pretrained(args.output_dir)

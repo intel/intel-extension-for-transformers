@@ -100,7 +100,7 @@ def recover_export_model(model, current_key_name=None):
                 scales_dtype,
                 scales,
                 zp,
-                qzeros,
+                zeros,
                 int_weight,
             ) = module.recover_qparms()
             model._modules[name] = WeightOnlyLinear(
@@ -116,7 +116,7 @@ def recover_export_model(model, current_key_name=None):
                 use_optimum_format=True,
             )
             model._modules[name].pack(
-                int_weight, scales, qzeros, module.bias, g_idx=g_idx
+                int_weight, scales, zeros, module.bias, g_idx=g_idx
             )
 
         if len(list(module.children())) > 0:  # pylint: disable=E1101
@@ -125,26 +125,37 @@ def recover_export_model(model, current_key_name=None):
         current_key_name.pop(-1)
     return model
 
+
 def build_woq_model(model, quantization_config):
     from neural_compressor.adaptor.torch_utils.util import set_module
+
     for n, m in model.named_modules():
-        if 'lm_head' in n:
+        if "lm_head" in n:
             continue
         if isinstance(m, torch.nn.Linear):
-            zp = not quantization_config.sym if hasattr(quantization_config, "sym") else True
-            zp = quantization_config.zero_point if hasattr(quantization_config, "zero_point") else True
+            zp = (
+                not quantization_config.sym
+                if hasattr(quantization_config, "sym")
+                else True
+            )
+            zp = (
+                quantization_config.zero_point
+                if hasattr(quantization_config, "zero_point")
+                else True
+            )
             new_module = WeightOnlyLinear(
                 m.in_features,
                 m.out_features,
                 quantization_config.bits,
                 quantization_config.group_size,
-                dtype='int',
+                dtype="int",
                 zp=zp,
                 bias=m.bias is not None,
                 g_idx=False if hasattr(quantization_config, "decs_act") else False,
             )
             set_module(model, n, new_module)
     return model
+
 
 def convert_model_to_public(model):
     # reorder weight and scales if they have been transposed

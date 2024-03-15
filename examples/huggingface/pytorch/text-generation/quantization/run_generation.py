@@ -418,14 +418,6 @@ elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
             _commit_hash=args._commit_hash,
         )
 
-# save model
-if args.output_dir:
-    tokenizer.save_pretrained(args.output_dir)
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
-        user_model.save_pretrained(args.output_dir)
 
 
 # int8 model loading
@@ -525,7 +517,7 @@ if args.accuracy:
     results = evaluate(
         model="hf-causal",
         model_args="pretrained="
-        + args.model
+        + "facebook/opt-125m" #args.model
         + ",tokenizer="
         + args.model
         + ",dtype=float32"
@@ -552,3 +544,12 @@ if args.accuracy:
                 "Accuracy for %s is: %s"
                 % (task_name, results["results"][task_name]["acc"])
             )
+
+# save model
+if args.output_dir is not None:
+    tokenizer.save_pretrained(args.output_dir)
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision or args.woq:
+        user_model.save_pretrained(args.output_dir)

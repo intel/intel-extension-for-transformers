@@ -170,7 +170,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
         if q_config.quant_method.value != "gptq" or (not q_config.desc_act):
             g_idx = torch.empty(0, dtype=torch.int32)
-
         packw = torch.ops.bestlaop.woq_packq(
             int_weight.contiguous(),
             gptq_scales.float().contiguous(),
@@ -192,6 +191,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             quant_dtype=self.weight_dtype,
             scale_dtype=self.scale_dtype,
         )
+
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
@@ -268,16 +268,25 @@ class QuantizedLinearQBits(torch.nn.Linear):
         zp = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 11)[0] != 0
         if zp:
             qzeros = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 10)
+            if bits == 4:
+                qzeros = qzeros // 16 + 8
         else:
             qzeros = None
-        revert_wei = torch.zeros(in_features, out_features, dtype=torch.float)
+        # workaround after backend confirm
+        if zp:
+            revert_wei = torch.zeros(out_features, in_features, dtype=torch.float)
+        else:
+            revert_wei = torch.zeros(in_features, out_features, dtype=torch.float)
 
         torch.ops.bestlaop.woq_dequantize(
             self.weight, revert_wei, zp, compute_dtype, weight_dtype, scales_dtype
         )
 
         int_weight = self.quant_weight_w_scale(
-            revert_wei.t(), scales.t(), qzeros, group_size=group_size
+            revert_wei if zp else revert_wei.t(),
+            scales.t(),
+            qzeros.to(torch.uint8).t() if qzeros is not None else None,
+            group_size=group_size,
         )
 
         scales_dtype = torch.float32 if scales_dtype in ["fp32"] else None
@@ -292,7 +301,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             scales_dtype,
             scales.t(),
             zp,
-            qzeros,
+            qzeros.t() if qzeros is not None else None,
             int_weight,
         )
 
