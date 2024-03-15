@@ -16,7 +16,6 @@
 # limitations under the License.
 
 import unittest
-from tensorflow.core.framework import node_def_pb2
 import intel_extension_for_transformers.transformers.runtime.compile.tf_utils as util
 
 
