@@ -349,7 +349,7 @@ class FinetuningArguments:
         metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},
     )
     lm_eval_tasks: Optional[List[str]] = field(
-        default_factory=lambda: ["truthfulqa_mc"],
+        default_factory=lambda: ["truthfulqa_mc", "lambada_openai"],
         metadata={"help": "tasks list for accuracy validation with EleutherAI/lm-evaluation-harness."},
     )
     qlora: bool = field(
