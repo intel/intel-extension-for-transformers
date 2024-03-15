@@ -6,6 +6,7 @@ services:
         http_proxy: ${http_proxy}
         https_proxy: ${https_proxy}
         no_proxy: ""
+        NO_PROXY: ""
         IMAGE_NAME: ubuntu
         IMAGE_TAG: 22.04
         PYTHON: python3.10

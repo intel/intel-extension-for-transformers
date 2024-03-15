@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-#
-# THIS IS A GENERATED DOCKERFILE.
-#
-# This file was assembled from multiple pieces, whose use is documented
-# throughout. Please refer to the TensorFlow dockerfiles documentation
-# for more information.
-#
+
 # ============================================================================
 # How to build: 
 #   docker build ./ -f Dockerfile -t chatbot_finetune:latest
@@ -44,7 +38,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 RUN apt update \
     && apt install -y build-essential wget numactl git openssh-server libgl1-mesa-glx libjemalloc2 google-perftools \
     && apt install -y python${PYTHON_VERSION} python3-pip \
-    && pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir --upgrade pip setuptools wheel \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -56,13 +50,16 @@ COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
-RUN pip install oneccl_bind_pt --extra-index-url  https://pytorch-extension.intel.com/release-whl/stable/cpu/us/ && \
-    cd /intel-extension-for-transformers && pip install -r requirements.txt && \
+RUN pip install --no-cache-dir oneccl_bind_pt --extra-index-url  https://pytorch-extension.intel.com/release-whl/stable/cpu/us/ && \
+    cd /intel-extension-for-transformers && pip install --no-cache-dir -r requirements.txt && \
     python setup.py install && \
-    cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
-    pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses && \
-    pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
+    cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install --no-cache-dir -r requirements.txt && \
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install --no-cache-dir -r requirements_cpu.txt && \
+    pip install --no-cache-dir astunparse \
+        ninja pyyaml mkl mkl-include \
+        setuptools cmake cffi future six \
+        requests dataclasses && \
+    pip install --no-cache-dir typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==4.21.6 tokenizers einops peft
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
@@ -78,6 +75,9 @@ RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /et
 EXPOSE ${SSHD_PORT}
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+
+RUN rm -rf /etc/ssh/ssh_host_*_key
+RUN rm -rf /etc/ssh/ssh_host_*_key.pub 
 
 CMD ["/usr/sbin/sshd", "-D"]
 
@@ -105,30 +105,30 @@ WORKDIR /intel-extension-for-transformers
 RUN cd /intel-extension-for-transformers && \
     sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
     sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
-    pip install -r requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt && \
     python setup.py install
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd optimum-habana/ && git reset --hard 0dfda27dd0351d0753c35de2abb752309e2383b4 && pip install -e . && cd ../ && \
+    cd optimum-habana/ && git reset --hard 0dfda27dd0351d0753c35de2abb752309e2383b4 && pip install --no-cache-dir -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
-    pip install -r requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt && \
     cd / && \
-    pip install peft einops datasets && pip list && \
+    pip install --no-cache-dir peft einops datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
     git checkout -b v1.13 origin/1.13.0 && \
-    pip install -e .
+    pip install --no-cache-dir -e .
 
 # Install dependency
 RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && \
     sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
     sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
-    pip install -r requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
-    pip install -r requirements_hpu.txt && \
-    pip install transformers==4.34.1 && \
-    pip install accelerate==0.24.0 && \
-    pip install datasets==2.14.7
+    pip install --no-cache-dir -r requirements_hpu.txt && \
+    pip install --no-cache-dir transformers==4.34.1 && \
+    pip install --no-cache-dir accelerate==0.24.0 && \
+    pip install --no-cache-dir datasets==2.14.7
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
@@ -160,9 +160,9 @@ COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
-RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction/requirements.txt
-RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/requirements.txt
-RUN cd /intel-extension-for-transformers && sed -i '/^torch==/d' requirements.txt && pip install -r requirements.txt && python setup.py install
+RUN pip install --no-cache-dir -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction/requirements.txt
+RUN pip install --no-cache-dir -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/requirements.txt
+RUN cd /intel-extension-for-transformers && sed -i '/^torch==/d' requirements.txt && pip install --no-cache-dir -r requirements.txt && python setup.py install
 
 WORKDIR /intel-extension-for-transformers
 
