@@ -29,6 +29,8 @@ def create_index(embeddings, use_gpu):
         co.shard = True
         co.useFloat16 = True
         index = faiss.index_cpu_to_all_gpus(index, co=co)
+    else:
+        pass
     index.add(embeddings)
     return index
 
