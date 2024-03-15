@@ -14,12 +14,7 @@ Context Precision is a metric that evaluates whether all of the ground-truth rel
 ## 2. Requirements
 ```
 git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat
-pip install -r requirements.txt
-cd pipeline/plugins/retrieval
-pip install -r requirements.txt
-cd ../../../
-cd tools/evaluation/framework
+cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework
 pip install -r requirements.txt
 ```
 
