@@ -17,14 +17,14 @@
 
 import unittest
 import numpy as np
-from tensorflow.core.framework import node_def_pb2
-from tensorflow.core.framework import attr_value_pb2
 from onnx import NodeProto
 from onnx.helper import make_attribute
 from collections import namedtuple
 from intel_extension_for_transformers.transformers.runtime.compile.graph import Graph
 from intel_extension_for_transformers.transformers.runtime.compile.ops.op import OPERATORS, Operator
 from intel_extension_for_transformers.transformers.runtime.compile.ops.tensor import Tensor
+from tensorflow.core.framework import node_def_pb2
+from tensorflow.core.framework import attr_value_pb2
 
 
 class TestOps(unittest.TestCase):
