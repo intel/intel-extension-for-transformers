@@ -124,7 +124,7 @@ For the langchain users, it can be easily imported and used by replacing the ori
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain_core.vectorstores import VectorStoreRetriever
-from intel_extension_for_transformers.langchain.vectorstores import Chroma
+from intel_extension_for_transformers.langchain_community.vectorstores import Chroma
 retriever = VectorStoreRetriever(vectorstore=Chroma(...))
 retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```
@@ -153,7 +153,7 @@ For the langchain users, it can be easily imported and used by replacing the ori
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain_core.vectorstores import VectorStoreRetriever
-from intel_extension_for_transformers.langchain.vectorstores import Qdrant
+from intel_extension_for_transformers.langchain_community.vectorstores import Qdrant
 retriever = VectorStoreRetriever(vectorstore=Qdrant(...))
 retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```
@@ -232,7 +232,7 @@ If "search_type"="mmr":
 
 This new retriever is also available for langchain users. Below is a toy example that using our `ChildParentRetriever` in the langchain framework:
 ```python
-from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever
+from intel_extension_for_transformers.langchain_community.retrievers import ChildParentRetriever
 from langchain.vectorstores import Chroma
 retriever = ChildParentRetriever(vectorstore=Chroma(documents=child_documents), parentstore=Chroma(documents=parent_documents), search_type=xxx, search_kwargs={...})
 docs=retriever.get_relevant_documents("Intel")

@@ -572,7 +572,7 @@ class Finetuning:
             if training_args.do_eval and finetune_args.do_lm_eval:
                 from .eval_utils import LMEvalCallback
                 from functools import partial
-                from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+                from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
                 lm_eval_func = partial(evaluate,
                         model="hf-causal",
                         model_args='pretrained='+model_args.model_name_or_path+\

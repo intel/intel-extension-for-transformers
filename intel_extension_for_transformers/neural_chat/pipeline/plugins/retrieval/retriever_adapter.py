@@ -16,7 +16,7 @@
 # limitations under the License.
 
 """The wrapper for Retriever based on langchain"""
-from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever  # pylint: disable=import-error
+from intel_extension_for_transformers.langchain_community.retrievers import ChildParentRetriever
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_community.retrievers import BM25Retriever
 import logging
@@ -35,7 +35,7 @@ class RetrieverAdapter():
                  reranker_model="BAAI/bge-reranker-large", top_n = 1, enable_rerank = False, **kwargs):
         self.retrieval_type = retrieval_type
         if enable_rerank:
-            from intel_extension_for_transformers.langchain.retrievers.bge_reranker import BgeReranker  # pylint: disable=import-error
+            from intel_extension_for_transformers.langchain_community.retrievers.bge_reranker import BgeReranker
             from FlagEmbedding import FlagReranker
             reranker = FlagReranker(reranker_model)
             self.reranker = BgeReranker(model = reranker, top_n=top_n)

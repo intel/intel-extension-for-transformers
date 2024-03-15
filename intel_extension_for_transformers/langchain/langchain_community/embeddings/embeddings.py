@@ -47,7 +47,7 @@ class HuggingFaceEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_core
     Example:
         .. code-block:: python
 
-            from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings
+            from intel_extension_for_transformers.langchain_community.embeddings import HuggingFaceEmbeddings
 
             model_name = "sentence-transformers/all-mpnet-base-v2"
             model_kwargs = {'device': 'cpu'}
@@ -133,7 +133,7 @@ class HuggingFaceBgeEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_c
     Example:
         .. code-block:: python
 
-            from intel_extension_for_transformers.langchain.embeddings import HuggingFaceBgeEmbeddings
+            from intel_extension_for_transformers.langchain_community.embeddings import HuggingFaceBgeEmbeddings
 
             model_name = "BAAI/bge-large-en"
             model_kwargs = {'device': 'cpu'}
@@ -217,7 +217,7 @@ class HuggingFaceInstructEmbeddings(langchain_core.pydantic_v1.BaseModel, langch
     Example:
         .. code-block:: python
 
-            from intel_extension_for_transformers.langchain.embeddings import HuggingFaceInstructEmbeddings
+            from intel_extension_for_transformers.langchain_community.embeddings import HuggingFaceInstructEmbeddings
 
             model_name = "hkunlp/instructor-large"
             model_kwargs = {'device': 'cpu'}
