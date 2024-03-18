@@ -27,7 +27,7 @@ Functions
 
 
 
-.. py:function:: document_transfer(data_collection)
+.. py:function:: document_transfer(data_collection, min_length)
 
    Transfer the raw document into langchain supported format.
 

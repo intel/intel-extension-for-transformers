@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g3775ffe documentation</title>
+  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g7c7b44b documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -118,16 +118,16 @@
 | xlsx  | [’Questions’, ‘Answers’]<br>[’question’, ‘answer’, ‘link’]<br>[’context’, ‘link’] |
 | csv  | [’question’, ‘correct_answer’] |
 | json/jsonl  | {’content’:xxx, ‘link’:xxx}|
-| txt  | / |
-| html  | / |
-| markdown  | / |
-| word  | / |
-| pdf  | / |</p>
+| txt  | No format required |
+| html  | No format required |
+| markdown  | No format required |
+| word  | No format required |
+| pdf  | No format required |</p>
 </section>
 <section id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
-<p>The most convenient way to use is this plugin is via our <code class="docutils literal notranslate"><span class="pre">build_chatbot</span></code> api as introduced in the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/plugins/retrieval">example code</a>. The user could refer to it for a simple test.</p>
-<p>We support multiple file formats for retrieval, including unstructured file formats such as pdf, docx, html, txt, and markdown, as well as structured file formats like jsonl and xlsx. For structured file formats, they must adhere to predefined structures.</p>
+<p>Before using RAG in NeuralChat, please install the necessary dependencies in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/requirements.txt">requirements.txt</a> to avoid the import errors. The most convenient way to use is this plugin is via our <code class="docutils literal notranslate"><span class="pre">build_chatbot</span></code> api as introduced in the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/plugins/retrieval">example code</a>. The user could refer to it for a simple test.</p>
+<p>We support multiple file formats for retrieval, including unstructured file formats such as pdf, docx, html, txt, and markdown, as well as structured file formats like jsonl/json, csv, xlsx. For structured file formats, they must adhere to predefined structures. We also support to upload the knowledge base via a http web link.</p>
 <p>In the case of jsonl files, they should be formatted as dictionaries, such as: {’content’:xxx, ‘link’:xxx}. The support for xlsx files is specifically designed for Question-Answer (QA) tasks. Users can input QA pairs for retrieval. Therefore, the table’s header should include items labeled as “Question” and “Answer”. The reference files could be found <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/assets/docs">here</a>.</p>
 <section id="import-the-module-and-set-the-retrieval-config">
 <h2>Import the module and set the retrieval config:<a class="headerlink" href="#import-the-module-and-set-the-retrieval-config" title="Link to this heading"></a></h2>
@@ -203,7 +203,7 @@
 <td>retrieval_type</td>
 <td>str</td>
 <td>The type of the retriever. Please check <a href="#retrievers">here</a> for more details</td>
-<td>"default", "child_parent"</td>
+<td>"default", "child_parent", "bm25"</td>
 </tr>
 <tr>
 <td>process</td>
@@ -228,6 +228,30 @@
 <td>bool</td>
 <td>Whether the new knowledge will be append to the existing knowledge base or directly load the existing knowledge base</td>
 <td>True, False</td>
+</tr>
+<tr>
+<td>polish</td>
+<td>bool</td>
+<td>Whether to polish the input query before processing</td>
+<td>True, False</td>
+</tr>
+<tr>
+<td>enable_rerank</td>
+<td>bool</td>
+<td>Whether to enable retrieval then rerank pipeline</td>
+<td>True, False</td>
+</tr>
+<tr>
+<td>reranker_model</td>
+<td>str</td>
+<td>The name of the reranker model from the Huggingface or a local path</td>
+<td>-</td>
+</tr>
+<tr>
+<td>top_n</td>
+<td>int</td>
+<td>The return number of the reranker model</td>
+<td>-</td>
 </tr>
 </tbody>
 </table><p>More retriever- and vectorstore-related parameters please check <a class="reference external" href="#langchain-extension">here</a></p>
@@ -319,17 +343,17 @@
 </div>
 <p>If “search_type”=”similarity”:</p>
 <blockquote>
-<div><p>search_kwargs={”k”=xxx}</p>
+<div><p>search_kwargs={”k”:xxx}</p>
 </div></blockquote>
 <p>“k” is the number of the returned most similar documents.</p>
 <p>If “search_type”=”mmr”:</p>
 <blockquote>
-<div><p>search_kwargs={”k”=xxx, “fetch_k”=xxx, “lamabda_mult”=xxx}</p>
+<div><p>search_kwargs={”k”:xxx, “fetch_k”:xxx, “lamabda_mult”:xxx}</p>
 </div></blockquote>
 <p>“k” is the number of the returned most similar documents. “fetch_k” is the number of Documents to fetch to pass to MMR algorithm. “Lamabda_mult” is a number between 0 and 1 that determines the degree of diversity among the results with 0 corresponding to maximum diversity and 1 to minimum diversity. Defaults to 0.5.</p>
 <p>If “search_type”=”similarity_score_threshold”:</p>
 <blockquote>
-<div><p>search_kwargs={”k”=xxx, “score_threshold”=xxx}</p>
+<div><p>search_kwargs={”k”:xxx, “score_threshold”:xxx}</p>
 </div></blockquote>
 <p>“k” is the number of the returned most similar documents. “score_threshold” is the similar score threshold for the retrieved documents.</p>
 </section>
@@ -386,7 +410,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x729a668f6ec0> 
+   <jinja2.runtime.BlockReference object at 0x7804db783130> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
