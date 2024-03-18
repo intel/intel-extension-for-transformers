@@ -21,6 +21,12 @@ from ragas.metrics import (    # pylint: disable=E0401
     context_recall,
     context_precision,
 )
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
+    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
+from langchain.embeddings import GooglePalmEmbeddings
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
 import pandas as pd
 import jsonlines
 import argparse
@@ -39,8 +45,8 @@ def load_set(file_jsonl_path, item):
             list.append(passages)
     return list
 
-def ragas(answer_file, ground_truth_file, openai_api_key):
-    os.environ["OPENAI_API_KEY"] = openai_api_key
+def ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_model):
+    
     question_list=load_set(answer_file, "question")
     answer_list=load_set(answer_file, "answer")
     contexts_list=load_set(ground_truth_file, "context")
@@ -55,7 +61,34 @@ def ragas(answer_file, ground_truth_file, openai_api_key):
 
     dataset = Dataset.from_dict(data_samples)
 
-    score = evaluate(dataset,metrics=[answer_relevancy, faithfulness, context_recall, context_precision])
+    if llm_model and embedding_model:
+        langchain_llm = HuggingFacePipeline.from_model_id(
+            model_id=llm_model,
+            task="text-generation",
+            pipeline_kwargs={"max_new_tokens": 128},
+        )
+        if "instruct" in embedding_model:
+            langchain_embeddings = HuggingFaceInstructEmbeddings(model_name=embedding_model)
+        elif "bge" in embedding_model:
+            langchain_embeddings = HuggingFaceBgeEmbeddings(
+                model_name=embedding_model,
+                encode_kwargs={'normalize_embeddings': True},
+                query_instruction="Represent this sentence for searching relevant passages:")
+        elif "Google" == embedding_model:
+            langchain_embeddings = GooglePalmEmbeddings()
+        else:
+            langchain_embeddings = HuggingFaceEmbeddings(
+                model_name=embedding_model,
+                encode_kwargs={"normalize_embeddings": True},
+            )
+
+        langchain_llm = LangchainLLMWrapper(langchain_llm)
+        langchain_embedding = LangchainEmbeddingsWrapper(langchain_embeddings)
+        score = evaluate(dataset,metrics=[answer_relevancy, faithfulness, context_recall, context_precision],llm = langchain_llm, embeddings=langchain_embedding)
+    else:
+        os.environ["OPENAI_API_KEY"] = openai_api_key
+        score = evaluate(dataset,metrics=[answer_relevancy, faithfulness, context_recall, context_precision])
+
     df=score.to_pandas()
     print(df)
 
@@ -63,14 +96,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--answer_file", type=str)
     parser.add_argument("--ground_truth_file", type=str)
-    parser.add_argument("--openai_api_key", type=str)
+    parser.add_argument("--openai_api_key", type=str)    
+    parser.add_argument("--llm_model", type=str)
+    parser.add_argument("--embedding_model", type=str)
     args = parser.parse_args()
 
     answer_file = args.answer_file
     ground_truth_file = args.ground_truth_file
-    openai_api_key = args.openai_api_key
+    openai_api_key = args.openai_api_key        
+    llm_model = args.llm_model
+    embedding_model = args.embedding_model
 
-    ragas(answer_file, ground_truth_file, openai_api_key)
+    ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_model)
 
 if __name__ == '__main__':
     main()
