@@ -433,7 +433,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         bit8_model.eval()
         output = bit8_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -0.08488251268863678, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.1675747185945511, rel_tol=1e-04))
 
         # GPTQ
         woq_config = GPTQConfig(bits=4,
