@@ -1,3 +1,5 @@
-datasets
+InstructorEmbedding
+intel-extension-for-transformers
 jsonlines
 ragas
+sentence-transformers==2.3.1
