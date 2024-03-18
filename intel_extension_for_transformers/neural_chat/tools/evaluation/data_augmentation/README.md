@@ -1,18 +1,47 @@
 # Retrieval Data Augmentation
 
 ## 1. Introduction
-In this example, we show how to do data augmentation to construct a retrieval dataset. 
+In this example, we show how to do data augmentation to construct a retrieval dataset. The data is described below.
+* **[example.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/example.jsonl)** can be used in [hard negatives mining](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/mine_hard_neg.py),  [embedding model evaluation](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/evaluate.py), [retriever evaluation](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/tools/evaluation/retriever/evaluate_retrieval.py).
+Each line is a dict like this:
+```
+{"query": str, "pos": List[str]}
+```
+`query` is the query text, and `pos` is a positive text.
 
-* **Context to Question and Mine Hard Negatives**
-The effect is to generate several specific open-ended questions based on the context of the input file provided. The questions are directly related to the context to form a query-positive pair, suitable for use in constructing a retrieval dataset. Then we sample some from the entire corpus as the negatives by mining hard negatives, which is a widely used method to improve the quality of finetuning sentence embedding models.
+* **[augmented_example.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/augmented_example.jsonl)** can be used in [embedding finetuning](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/finetune.py). 
+Each line is a dict like this:
+```
+{"query": str, "pos": List[str], "neg": List[str]}
+```
+`query` is the query text, and `pos` is a positive text, `neg` is a list of negative texts.
 
-* **Context, Question to Ground Truth**
-The effect is to generate the right answer based on the context and question provided. The answer is directly related to the context and the question, suitable for use in constructing a synthetic retrieval evaluation dataset.
+* **[candidate_context.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/candidate_context.jsonl)** can be used in [embedding model evaluation](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/evaluate.py), [retriever evaluation](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/tools/evaluation/retriever/evaluate_retrieval.py). 
+Each line is a dict like this:
+```
+{"context": List[str]}
+```
+`context` is the candidate context.
+
+* **[answer.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/answer.jsonl)** can be used in [Rag evaluation](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/tools/evaluation/framework/ragas_evaluation.py).
+Each line is a dict like this:
+```
+{"question": str, "answer": str}
+```
+`question` is the question text, `answer` is the answer text.
+
+* **[ground_truth.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl)** can be used in [Rag evaluation](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/tools/evaluation/framework/ragas_evaluation.py).
+Each line is a dict like this:
+```
+{"question": str, "context": List[str], "ground_truth": str}
+```
+`question` is the question text, `context` is the candidate context, `ground_truth` is the ground truth.
 
 ## 2. Supported Devices
 CPU, CUDA
 
-## 3. Requirements
+## 3. Installation
+Please ensure the installation of NeuralChat first by following the commands.
 ```
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat
@@ -20,13 +49,12 @@ pip install -r requirements.txt
 cd pipeline/plugins/retrieval
 pip install -r requirements.txt
 ```
-
+After that, install additional dependency according to your device.
 * **On CPU**
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation
 pip install -r requirements_cpu.txt
 ```
-
 * **On CUDA**
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation
@@ -35,6 +63,7 @@ pip install -r requirements_cuda.txt
 
 ## 4. Retrieval Dataset Construction
 ### Context to Questions and Mine Hard Negatives
+The effect is to generate several specific open-ended questions based on the context of the input file provided. The questions are directly related to the context to form a query-positive pair, suitable for use in constructing a retrieval dataset. Then we sample some from the entire corpus as the negatives by mining hard negatives, which is a widely used method to improve the quality of finetuning sentence embedding models.
 * **On CPU**
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation
@@ -58,7 +87,7 @@ python -m data_augmentation.retrieval_dataset_construction \
 - `llm_model`: The path for the LLM model.
 - `embedding_model`: The path for the text embedding model.
 - `input`: The path of the file/folder/link of the content.
-- `output`: The name of output files. The default value is 'data'. The default output files are 'data.jsonl', 'data_minedHN.jsonl', 'data_minedHN_split.jsonl'.
+- `output`: The name of output files. The default value is './data'. The default output files are 'data.jsonl', 'data_minedHN.jsonl', 'data_minedHN_split.jsonl'.
 - `temperature`: The value is used to modulate the next token probabilities, and will influence the distribution of similarity scores. The default value is 0.8.
 - `top_p`: If set to float < 1, only the smallest set of most probable tokens with probabilities that add up to top_p or higher are kept for generation. The default value is 0.9.
 - `top_k`: The number of highest probability vocabulary tokens to keep for top-k-filtering. The default value is 40.
@@ -83,6 +112,7 @@ See [augmented_example.jsonl](https://github.com/intel/intel-extension-for-trans
 
 
 ### Context, Question to Ground Truth
+The effect is to generate the right answer based on the context and question provided. The answer is directly related to the context and the question, suitable for use in constructing a synthetic retrieval evaluation dataset.
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation
 python llm_generate_truth.py \
