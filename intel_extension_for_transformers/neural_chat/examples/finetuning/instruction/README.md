@@ -11,7 +11,8 @@ This example demonstrates how to finetune the pretrained large language model (L
 |LLaMA2 series| ✅| ✅|✅| ✅
 |MPT series| ✅| ✅|✅| ✅
 |FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
-|Mixtral-8x7B | **WIP** | **WIP**| **WIP** | **WIP**|
+|Mixtral-8x7B | ✅ | ✅| N/A  | ✅|
+|Phi series | ✅ | ✅| N/A  | ✅|
 
 # Prerequisite​
 
@@ -617,6 +618,38 @@ PT_HPU_MAX_COMPOUND_OP_SIZE=10 DEEPSPEED_HPU_ZERO3_SYNC_MARK_STEP_REQUIRED=1 pyt
         --use_lazy_mode \
         --deepspeed llama2_ds_zero3_config.json \
 
+```
+
+Multi-card finetuning of [mistralai/Mixtral-8x7B-v0.1](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1) with DeepSpeed ZeRO-3 optimization and LoRA in 8 Gaudi2 card
+The following command requires Habana DeepSpeed 1.13.0 or later.
+```
+PT_HPU_MAX_COMPOUND_OP_SIZE=10 DEEPSPEED_HPU_ZERO3_SYNC_MARK_STEP_REQUIRED=1 \
+    python3 ./gaudi_spawn.py --use_deepspeed --world_size 8 \
+    finetune_clm.py \
+    --model_name_or_path "mistralai/Mixtral-8x7B-v0.1" \
+    --bf16 True \
+    --dataset_name tatsu-lab/alpaca \
+    --dataset_concatenation \
+    --per_device_train_batch_size 2 \
+    --per_device_eval_batch_size 8 \
+    --gradient_accumulation_steps 4 \
+    --do_train \
+    --learning_rate 1e-4 \
+    --num_train_epochs 3 \
+    --logging_steps 10 \
+    --save_total_limit 2 \
+    --overwrite_output_dir \
+    --log_level info \
+    --save_strategy epoch \
+    --output_dir ./mixtral_peft_finetuned_model \
+    --peft lora \
+    --lora_target_modules q_proj k_proj v_proj o_proj \
+    --lora_rank 64 \
+    --lora_alpha 16 \
+    --use_fast_tokenizer True \
+    --use_habana \
+    --use_lazy_mode \
+    --deepspeed llama2_ds_zero3_config.json
 ```
 
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.

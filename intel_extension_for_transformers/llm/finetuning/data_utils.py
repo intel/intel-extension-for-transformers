@@ -19,6 +19,7 @@ import copy
 import datasets
 import re
 from itertools import chain
+from transformers import AutoProcessor
 from intel_extension_for_transformers.neural_chat.prompts.prompt import PromptTemplate
 
 IGNORE_INDEX = -100
@@ -398,7 +399,21 @@ class SummarizationDataPreprocess:
         return preprocess_function
 
 
-def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
+class ImageCaptioningDataPreprocess:
+    def tokenize_func(self, tokenizer, data_args, finetune_args, model_args):
+        processor = AutoProcessor.from_pretrained(model_args.model_name_or_path)
+        def preprocess_function(examples):
+            encodings = processor(
+                images=examples[data_args.image_column], text=examples[data_args.caption_column],
+                padding=True, return_tensors="pt", truncation=True
+            )
+            encodings.update({"labels": encodings["input_ids"]})
+            return encodings
+
+        return preprocess_function
+
+
+def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args, model_args=None):
 
     if data_args.dataset_name == "Intel/orca_dpo_pairs":
         preprocess = IntelDpoDataPreprocess(
@@ -416,6 +431,10 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
             raw_datasets[key] = raw_datasets[key].remove_columns(columns_to_be_removed)
 
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
+
+    elif finetune_args.task == "image2text":
+        preprocess = ImageCaptioningDataPreprocess()
+        preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args, model_args)
 
     elif finetune_args.task == "chat":
         preprocess = ChatDataPreprocess(tokenizer.eos_token)

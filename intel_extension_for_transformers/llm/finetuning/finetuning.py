@@ -161,6 +161,33 @@ class Finetuning:
                     token=model_args.token,
                     streaming=data_args.streaming,
                 )
+        elif data_args.train_dir is not None:
+            data_files = {}
+            if data_args.train_dir is not None:
+                data_files["train"] = os.path.join(data_args.train_dir, "**")
+            if data_args.validation_dir is not None:
+                data_files["validation"] = os.path.join(data_args.validation_dir, "**")
+            raw_datasets = load_dataset(
+                "imagefolder",
+                data_files=data_files,
+                cache_dir=model_args.cache_dir,
+            )
+
+            # If no validation data is there, validation_split_percentage will be used to divide the dataset.
+            if "validation" not in raw_datasets.keys() and training_args.do_eval and \
+                data_args.validation_split_percentage > 0:
+                raw_datasets["validation"] = load_dataset(
+                    "imagefolder",
+                    data_files=data_files,
+                    split=f"train[:{data_args.validation_split_percentage}%]",
+                    cache_dir=model_args.cache_dir,
+                )
+                raw_datasets["train"] = load_dataset(
+                    "imagefolder",
+                    data_files=data_files,
+                    split=f"train[{data_args.validation_split_percentage}%:]",
+                    cache_dir=model_args.cache_dir,
+                )
         else:
             data_files = {}
             dataset_args = {}
@@ -437,7 +464,9 @@ class Finetuning:
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
-        raw_datasets, preprocess_function = preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args)
+        raw_datasets, preprocess_function = preprocess_dataset(
+            raw_datasets, tokenizer, data_args, finetune_args, model_args
+        )
         column_names = list(raw_datasets["train"].features)
 
         with training_args.main_process_first(desc="dataset map pre-processing"):
@@ -536,6 +565,21 @@ class Finetuning:
             if model_dtype == torch.bfloat16:
                 model = model.to(model_dtype)
 
+            lm_eval_callback = None
+            if training_args.do_eval and finetune_args.do_lm_eval:
+                from .eval_utils import LMEvalCallback
+                from functools import partial
+                from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+                lm_eval_func = partial(evaluate,
+                        model="hf-causal",
+                        model_args='pretrained='+model_args.model_name_or_path+\
+                                ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
+                        device=finetune_args.device,
+                        batch_size=training_args.per_device_eval_batch_size,
+                        tasks=finetune_args.lm_eval_tasks,
+                        limit=data_args.max_eval_samples)
+                lm_eval_callback = LMEvalCallback(lm_eval_func, device=finetune_args.device)
+
             if finetune_args.device != 'hpu':
                 # Initialize our Trainer
                 trainer = Trainer(
@@ -545,6 +589,7 @@ class Finetuning:
                     eval_dataset=eval_dataset if training_args.do_eval else None,
                     tokenizer=tokenizer,
                     data_collator=data_collator,
+                    callbacks=[lm_eval_callback] if lm_eval_callback is not None else None
                 )
             else:
                 from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611 E0401
@@ -561,6 +606,7 @@ class Finetuning:
                     eval_dataset=eval_dataset if training_args.do_eval else None,
                     tokenizer=tokenizer,
                     data_collator=data_collator,
+                    callbacks=[lm_eval_callback] if lm_eval_callback is not None else None
                 )
 
             trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)

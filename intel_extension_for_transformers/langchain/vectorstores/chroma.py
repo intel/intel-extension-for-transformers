@@ -196,7 +196,6 @@ class Chroma(Chroma_origin):
                     client_settings=client_settings,
                     client=client,
                     collection_metadata=collection_metadata,
-                    **kwargs,
                 )
                 return chroma_collection
         else:
