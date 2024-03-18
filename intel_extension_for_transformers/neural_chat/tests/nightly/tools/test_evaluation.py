@@ -23,12 +23,8 @@ from intel_extension_for_transformers.neural_chat.tools.evaluation.framework imp
 
 class TestEvaluation(unittest.TestCase):
     def setUp(self) -> None:
-        if os.path.exists("data.jsonl"):
-            os.remove("data.jsonl")
-        if os.path.exists("data_minedHN.jsonl"):
-            os.remove("data_minedHN.jsonl")
-        if os.path.exists("data_minedHN_split.jsonl"):
-            os.remove("data_minedHN_split.jsonl")
+        if os.path.exists("data"):
+            shutil.rmtree("data", ignore_errors=True)
         if os.path.exists("ground_truth.jsonl"):
             os.remove("ground_truth.jsonl")
         if os.path.exists("output"):
@@ -36,12 +32,8 @@ class TestEvaluation(unittest.TestCase):
         return super().setUp()
 
     def tearDown(self) -> None:
-        if os.path.exists("data.jsonl"):
-            os.remove("data.jsonl")
-        if os.path.exists("data_minedHN.jsonl"):
-            os.remove("data_minedHN.jsonl")
-        if os.path.exists("data_minedHN_split.jsonl"):
-            os.remove("data_minedHN_split.jsonl")
+        if os.path.exists("data"):
+            shutil.rmtree("data", ignore_errors=True)
         if os.path.exists("ground_truth.jsonl"):
             os.remove("ground_truth.jsonl")
         if os.path.exists("output"):
@@ -52,12 +44,12 @@ class TestEvaluation(unittest.TestCase):
         argv = ['--llm_model', '/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1', \
                 '--embedding_model', '/tf_dataset2/inc-ut/gte-base', \
                 '--input', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/docs/retrieve_multi_doc/', \
-                '--output', 'data', \
+                '--output', './data', \
                 '--range_for_sampling', '2-2', \
                 '--negative_number', '1']
         with patch('sys.argv', ['python retrieval_dataset_construction.py'] + argv):
             retrieval_dataset_construction.main()
-            self.assertTrue(os.path.exists("data_minedHN_split.jsonl"))
+            self.assertTrue(os.path.exists("./data/minedHN_split.jsonl"))
 
     def test_llm_generate_truth(self):
         argv = ['--llm_model', '/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1', \
