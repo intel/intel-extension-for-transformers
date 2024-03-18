@@ -118,7 +118,7 @@ class UnitTest(unittest.TestCase):
             json={**sample_link_list, "knowledge_base_id": gaudi2_kb_id},
         )
         assert response.status_code == 200
-        assert "Succeed" in response.json()
+        assert response.json()['status'] == True
 
     def test_append_existing_kb(self):
         # create oneapi knowledge base
@@ -133,11 +133,11 @@ class UnitTest(unittest.TestCase):
         with open("./gaudi2.txt", "rb") as file:
             response = client.post(
                 "/v1/askdoc/append",
-                files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
+                files={"files": ("./gaudi2.txt", file, "multipart/form-data")},
                 data={"knowledge_base_id": oneapi_kb_id},
             )
         assert response.status_code == 200
-        assert "Succeed" in response.json()
+        assert {"status": True} in response.json()
 
     def test_non_stream_chat(self):
         # create gaudi2 knowledge base
