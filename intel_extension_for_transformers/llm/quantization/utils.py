@@ -490,13 +490,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
         if config.quant_method.value not in ["awq"]:
             calib_func = None
 
-        orig_dtype = torch.float32
-        for param in model.parameters():
-            orig_dtype = param.dtype
-            if orig_dtype != torch.float32:
-                model.to(dtype=torch.float32)
-            break
-
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )
@@ -517,10 +510,9 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 inc_model.eval()
                 q_model = replace_linear(inc_model, None, None, config, device=device)
             else:
-                q_model = replace_linear(inc_model.model, None, None, config, device=device)
-
-        if orig_dtype != torch.float32:
-            q_model.to(dtype=orig_dtype)
+                q_model = replace_linear(
+                    inc_model.model, None, None, config, device=device
+                )
 
         return q_model.to(device)
 
