@@ -18,6 +18,7 @@
 from .llm_generate_raw_data import raw_data_generate
 from .mine_hard_negatives_check_similarity import mine_hard_negatives, similarity_check
 import argparse
+import os
 
 def construct_retrieval_dataset(
       llm_model,
@@ -38,9 +39,10 @@ def construct_retrieval_dataset(
       use_gpu_for_searching,
       similarity_threshold):
 
+   output_path=output+'/raw.jsonl'
    raw_data_generate(llm_model,
                      input,
-                     output,
+                     output_path,
                      temperature,
                      top_p,
                      top_k,
@@ -51,16 +53,15 @@ def construct_retrieval_dataset(
                      num_return_sequences,
                      use_cache)
 
-   output_hn_path=output+'_minedHN.jsonl'
-
+   output_hn_path=output+'/minedHN.jsonl'
    mine_hard_negatives(embedding_model,
-                       output,
+                       output_path,
                        output_hn_path,
                        range_for_sampling,
                        negative_number,
                        use_gpu_for_searching)
 
-   output_json_split_path = output+"_minedHN_split.jsonl"
+   output_json_split_path = output+"/minedHN_split.jsonl"
    similarity_check(output_hn_path,
                     output_json_split_path,
                     embedding_model,
@@ -72,7 +73,7 @@ def main():
    parser.add_argument("--llm_model", type=str)
    parser.add_argument("--embedding_model", type=str)
    parser.add_argument("--input", type=str)
-   parser.add_argument("--output", type=str, default='data')
+   parser.add_argument("--output", type=str, default='./data')
 
    parser.add_argument("--temperature", type=float, default=0.8)
    parser.add_argument("--top_p", type=float, default=0.9)
@@ -113,6 +114,19 @@ def main():
 
    similarity_threshold=args.similarity_threshold
 
+   try:
+      if os.path.exists(output) == False:
+         os.mkdir(output)
+      else:
+         if os.path.exists(output+'/raw.jsonl'):
+            os.remove(output+'/raw.jsonl')
+         if os.path.exists(output+'/minedHN.jsonl'):
+            os.remove(output+'/minedHN.jsonl')
+         if os.path.exists(output+'/minedHN_split.jsonl'):
+            os.remove(output+'/minedHN_split.jsonl')
+   except:
+      pass
+   
    construct_retrieval_dataset(
       llm_model,
       embedding_model,
