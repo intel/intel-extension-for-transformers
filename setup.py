@@ -10,6 +10,10 @@ from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 
+result = os.popen("pip install -r requirements.txt")
+print(result.read())
+
+
 def get_gpu_family():
     ''' Get gpu device family info.
 
