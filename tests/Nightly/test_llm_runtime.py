@@ -21,7 +21,7 @@ import torch
 import unittest
 
 from transformers import AutoTokenizer
-from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModel, RtnConfig
 
 def cmpData(numa, numb):
     totalErr = ((np.abs(numa - numb))**2).sum()
@@ -53,7 +53,7 @@ class TestLLMRUNTIME(unittest.TestCase):
         print(tokenizer.decode(pt_generate_ids))
 
         # check output ids
-        woq_config = WeightOnlyQuantConfig(use_quant=False)
+        woq_config = RtnConfig(use_quant=False)
         itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_neural_speed=True, trust_remote_code=True)
         itrex_generate_ids = itrex_model.generate(inputs.input_ids, do_sample=False, max_new_tokens=100)[0]
         print(tokenizer.decode(itrex_generate_ids))

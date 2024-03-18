@@ -16,7 +16,7 @@
 
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import GPTQConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 import unittest
 
@@ -32,7 +32,7 @@ class TestLlama2GPTQModel(unittest.TestCase):
         if self.device == "hpu":
             self.skipTest("GTPQ is not supported on HPU.")
         loading_config = LoadingModelConfig(use_neural_speed=True)
-        optimization_config = WeightOnlyQuantConfig(use_gptq=True)
+        optimization_config = GPTQConfig(bits=4)
         config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/Llama-2-7B-Chat-GPTQ",
                                 optimization_config=optimization_config,
                                 loading_config=loading_config)

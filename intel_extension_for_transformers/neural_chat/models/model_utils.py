@@ -52,7 +52,11 @@ from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
-    WeightOnlyQuantConfig,
+    RtnConfig,
+    AwqConfig,
+    TeqConfig,
+    GPTQConfig,
+    AutoRoundConfig,
     BitsAndBytesConfig
 )
 from intel_extension_for_transformers.neural_chat.errorcode import ErrorCodes
@@ -219,9 +223,15 @@ def max_input_len(input_text_length):
         return 512
     elif input_text_length <= 2048:
         return 2048
-    else:
-        logging.info("Max support length is 4096")
+    elif input_text_length <= 4096:
         return 4096
+    elif input_text_length <= 8192:
+        return 8192
+    elif input_text_length <= 16384:
+        return 16384
+    else:
+        logging.info("Max support length is 32K")
+        return 32768
 
 
 MODELS = {}
@@ -554,12 +564,14 @@ def load_model(
 
     load_to_meta = model_on_meta(config)
 
-    if isinstance(optimization_config, WeightOnlyQuantConfig):
+    if isinstance(optimization_config, (RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoRoundConfig)):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         if use_neural_speed:
             optimization_config.post_init_runtime()
-        else:
-            optimization_config.post_init()
+        elif device == "cpu":
+            optimization_config.post_init_cpu()
+        elif device == "xpu":
+            optimization_config.post_init_xpu()
         model = optimize_model(model_name, optimization_config, use_neural_speed)
         if hasattr(model, 'config'):
             if model.config.is_encoder_decoder:

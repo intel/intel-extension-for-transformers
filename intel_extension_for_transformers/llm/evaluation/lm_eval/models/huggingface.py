@@ -29,7 +29,7 @@ from packaging.version import Version
 from transformers import BatchEncoding
 
 from lm_eval import utils
-from lm_eval.base import BaseLM
+from lm_eval.base import BaseLM, CacheHook
 import re
 
 TokenSequence = Union[List[int], torch.LongTensor, torch.Tensor, BatchEncoding]
@@ -615,9 +615,12 @@ class AutoCausalLM(HuggingFaceAutoLM):
     def __init__(self, *args, pretrained, model_format, **kwargs):
         self.model_format = model_format
         if self.model_format == "runtime":
-            from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+            from intel_extension_for_transformers.transformers import RtnConfig, AwqConfig, GPTQConfig, AutoRoundConfig
             use_gptq = kwargs.pop("use_gptq", False)
-            self.woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_gptq=use_gptq)
+            if use_gptq:
+                self.woq_config = GPTQConfig(bits=4, compute_dtype="int8", weight_dtype="int4")
+            else:
+                self.woq_config = RtnConfig(bits=4, compute_dtype="int8", weight_dtype="int4")
         super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
 
         if self.model_format == "runtime":
@@ -1075,3 +1078,80 @@ def stop_sequences_criteria(
             ],
         ]
     )
+
+
+class HFModelAdapter(HuggingFaceAutoLM):
+    AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
+    AUTO_PEFT_CLASS = peft.PeftModel
+
+    def __init__(self, *args, user_model=None, user_tokenizer=None, **kwargs):
+        self.cache_hook = CacheHook(None)
+        self.model = user_model
+        if user_tokenizer is None:
+            self.tokenizer = self._create_auto_tokenizer(
+                    pretrained=kwargs["pretrained"],
+                    revision="main",
+                    subfolder=None,)
+        else:
+            self.tokenizer = user_tokenizer
+        self._batch_size = kwargs["batch_size"]
+        self._add_special_tokens = None
+        self.model_format = "torch"
+        self.buckets = [16, 32, 64, 128, 189, 284]
+        self._device = kwargs["device"]
+        if self._device == "hpu":
+            from optimum.habana.checkpoint_utils import model_is_optimized # pylint: disable=E0611, E0401
+            self.static_shapes = model_is_optimized(self.model.config)
+        else:
+            self.static_shapes = False
+        if kwargs["warmup"]:
+            print("lm-eval warmup for Gaudi.")
+            self.warm_up()
+
+    def warm_up(self):
+        for bucket_size in reversed(self.buckets):
+            inps = torch.ones((self._batch_size, bucket_size), dtype=torch.int64)
+            self._model_call(inps)
+            pass
+
+    @property
+    def eot_token_id(self):
+        return self.model.config.eos_token_id
+
+    @property
+    def max_length(self):
+        return self.buckets[-1]
+
+    @property
+    def max_gen_toks(self):
+        raise NotImplementedError()
+
+    @property
+    def batch_size(self):
+        return self._batch_size
+
+    @property
+    def device(self):
+        # We need to do padding ourselves, otherwise we'll end up with recompilations
+        # Returning 'cpu' to keep tensors on CPU in lm_eval code
+        return "cpu"
+
+    def _model_generate(self, context, max_length, eos_token_id):
+        raise NotImplementedError()
+
+    def find_bucket(self, length):
+        return [b for b in self.buckets if b >= length][0]
+
+    def _model_call(self, inps):
+        bs, seq_length = inps.shape
+        padding_length = 0
+        if self.static_shapes:
+            bucket_length = self.find_bucket(seq_length)
+            padding_length = bucket_length - seq_length
+            inps = F.pad(inps, (0, padding_length), value=self.model.config.pad_token_id)
+        logits = self.model(inps.to(self._device))["logits"].cpu()
+
+        if self.static_shapes and padding_length > 0:
+            logits = logits[:, :-padding_length, :]
+        logits = logits.to(torch.float32)
+        return logits
