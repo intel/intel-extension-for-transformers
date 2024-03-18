@@ -137,7 +137,7 @@ class UnitTest(unittest.TestCase):
                 data={"knowledge_base_id": oneapi_kb_id},
             )
         assert response.status_code == 200
-        assert {"status": True} in response.json()
+        assert "Succeed" in response.json()
 
     def test_non_stream_chat(self):
         # create gaudi2 knowledge base

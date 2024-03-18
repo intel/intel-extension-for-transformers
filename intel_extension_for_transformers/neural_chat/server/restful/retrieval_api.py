@@ -69,7 +69,8 @@ def language_detect(text: str):
         res = response.json()
         return res["data"]["detections"][0][0]
     else:
-        print("Error:", response.status_code)
+        print("Error status:", response.status_code)
+        print("Error content:", response.json())
         return None
 
 
@@ -87,7 +88,8 @@ def language_translate(text: str, target: str='en'):
         res = response.json()
         return res["data"]["translations"][0]
     else:
-        print("Error:", response.status_code)
+        print("Error status:", response.status_code)
+        print("Error content:", response.json())
         return None
 
 
