@@ -76,8 +76,8 @@ EXPOSE ${SSHD_PORT}
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
-RUN truncate -s 0 /etc/ssh/ssh_host_*_key*
-RUN truncate -s 0 /etc/ssh/ssh_host_*_key*.pub
+RUN truncate -s 0 /etc/ssh/ssh_host_*_key* && \
+    truncate -s 0 /etc/ssh/ssh_host_*_key*.pub
 
 CMD ["/usr/sbin/sshd", "-D"]
 

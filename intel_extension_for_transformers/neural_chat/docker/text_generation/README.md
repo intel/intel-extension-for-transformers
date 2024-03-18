@@ -18,7 +18,7 @@ export DOCKER_BUILD_ARGS="--build-arg https_proxy=$https_proxy \
        --build-arg no_proxy=$no_proxy"
 
 docker build . -f cpu/Dockerfile \
-       ${DOCKER_BUILD_ARGS}
+       ${DOCKER_BUILD_ARGS} \
        -t intel/intel-extension-for-transformers:text-generation-cpu-1.4.0       
 ```
 Or pull the docker images as follows:
