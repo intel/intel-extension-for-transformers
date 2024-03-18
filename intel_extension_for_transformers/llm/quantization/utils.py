@@ -53,6 +53,28 @@ DTYPE_BITS_MAPPING = {
 }
 
 
+def unpack_weight(qweight, scales, qzeros, q_config):
+    bits = q_config.bits
+    wf = torch.tensor(list(range(0, 32, bits)), dtype=torch.int32).unsqueeze(0)
+    zeros = torch.bitwise_right_shift(
+        torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)
+    ).to(torch.int16 if bits == 8 else torch.int8)
+    torch.bitwise_and(zeros, (2**bits) - 1, out=zeros)
+    if bits == 8:
+        zeros = zeros.to(torch.int8)
+    zeros = zeros + 1
+    zeros = zeros.reshape(scales.shape)
+
+    weight = torch.bitwise_right_shift(
+        torch.unsqueeze(qweight, 1).expand(-1, 32 // bits, -1), wf.unsqueeze(-1)
+    ).to(torch.int16 if bits == 8 else torch.int8)
+    torch.bitwise_and(weight, (2**bits) - 1, out=weight)
+
+    if bits == 8:
+        weight = weight.to(torch.int8)
+    return weight, scales, zeros
+
+
 def replace_linear(
     model,
     modules_to_not_convert=None,
@@ -215,34 +237,28 @@ def _replace_linear(
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
                 if device == "cpu" or device == torch.device("cpu") or device == "auto":
-                    if quantization_config.quant_method.value in ["gptq", "autoround"]:
-                        from .gptq_utils import unpack_weight
+                    if quantization_config.weight_dtype in \
+                                    ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int8", "int4_fullrange"]:
+                        model._modules[name].set_fp_weights_bias(
+                            module.weight.data,
+                            None if module.bias is None else module.bias.data,
+                        )
+                    else:
+                        int_weight, scales, zeros = unpack_weight(
+                            module.qweight,
+                            module.scales,
+                            module.qzeros,
+                            quantization_config,
+                        )
+                        int_weight = int_weight.view(-1, int_weight.shape[-1])
 
-                        if not empty_weights:
-                            int_weight, gptq_scales, gptq_zeros = unpack_weight(
-                                module.qweight,
-                                module.scales,
-                                module.qzeros,
-                                quantization_config,
-                            )
-                            int_weight = int_weight.view(-1, int_weight.shape[-1])
-                        else:
-                            int_weight = module.weight
-                            int_weight = int_weight.view(int_weight.shape[-1], -1)
-                            gptq_scales = None
-                            gptq_zeros = None
-                        model._modules[name].set_gptq_weights_bias(
+                        model._modules[name].set_weights_bias(
                             int_weight,
-                            gptq_scales,
-                            gptq_zeros,
+                            scales,
+                            zeros,
                             module.g_idx if hasattr(module, "g_idx") else None,
                             quantization_config,
                             bias=None if module.bias is None else module.bias.data,
-                        )
-                    else:
-                        model._modules[name].set_weights_bias(
-                            module.weight.data,
-                            None if module.bias is None else module.bias.data,
                         )
                 else:
                     if not hasattr(module, "qweight"):
@@ -415,7 +431,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     ),
                     "enable_mse_search": config.mse_range,
                 },
-                "awq_args": {},
+                "awq_args": {"folding": True},
             }
             algorithm = "AWQ"
         elif config.quant_method.value == "teq":
@@ -478,6 +494,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )
+        inc_model.eval()
 
         if device == "xpu" or device == torch.device("xpu"):
             model = inc_model.export_compressed_model(
@@ -489,7 +506,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
             q_model = replace_linear(model, None, None, config, device=device)
         else:
-            if config.quant_method in ["gptq", "autoround"]:
+            if config.weight_dtype not in ["nf4", "fp4", "int8", "int4_fullrange"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 q_model = replace_linear(inc_model, None, None, config, device=device)

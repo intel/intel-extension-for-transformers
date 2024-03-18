@@ -64,12 +64,14 @@ parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
+# ============BitsAndBytes configs==============
+parser.add_argument("--bitsandbytes", action="store_true")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
-    default="RTN",
-    choices=["RTN", "AWQ", "TEQ", "GPTQ", "AUTOROUND"],
+    default="Rtn",
+    choices=["Rtn", "Awq", "Teq", "GPTQ", "AutoRound"],
     help="Weight-only algorithm.",
 )
 parser.add_argument(
@@ -241,7 +243,7 @@ config = AutoConfig.from_pretrained(
         True
         if (
             args.sq
-            or args.woq_algo in ["AWQ", "TEQ"]
+            or args.woq_algo in ["Awq", "Teq"]
             or (args.int8 or args.int8_bf16_mixed or args.benchmark)
         )
         else False
@@ -284,17 +286,17 @@ elif args.sq:
         calib_iters=args.calib_iters,
     )
 elif args.woq:
-    if args.woq_algo == "RTN":
+    if args.woq_algo == "Rtn":
         quantization_config = RtnConfig(
             tokenizer=tokenizer,
             bits=args.bits,
-            scheme=args.scheme,
+            sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
         )
-    elif args.woq_algo == "AWQ":
+    elif args.woq_algo == "Awq":
         quantization_config = AwqConfig(
             tokenizer=tokenizer,
             dataset=args.dataset,
@@ -307,12 +309,12 @@ elif args.woq:
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
         )
-    elif args.woq_algo == "TEQ":
+    elif args.woq_algo == "Teq":
         quantization_config = TeqConfig(
             tokenizer=tokenizer,
             dataset=args.dataset,
             bits=args.bits,
-            scheme=args.scheme,
+            sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
             max_input_length=args.max_input_length,
             compute_dtype=args.compute_dtype,
@@ -338,7 +340,7 @@ elif args.woq:
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
         )
-    elif args.woq_algo == "AUTOROUND":
+    elif args.woq_algo == "AutoRound":
         quantization_config = AutoRoundConfig(
             tokenizer=tokenizer,
             dataset=args.dataset,
@@ -391,15 +393,6 @@ elif not args.int8 and not args.int8_bf16_mixed:
         _commit_hash=args._commit_hash,
         use_neural_speed=False,
     )
-
-# save model
-if args.output_dir:
-    tokenizer.save_pretrained(args.output_dir)
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
-        user_model.save_pretrained(args.output_dir)
 
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
@@ -528,3 +521,12 @@ if args.accuracy:
         args=args,
     )
     print(results)
+
+# save model
+if args.output_dir is not None:
+    tokenizer.save_pretrained(args.output_dir)
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision or args.woq:
+        user_model.save_pretrained(args.output_dir)
