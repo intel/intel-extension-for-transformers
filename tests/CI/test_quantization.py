@@ -365,7 +365,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.16387596726417542, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.07438446581363678, rel_tol=1e-04))
 
         # AWQ
         woq_config = AwqConfig(bits=4,
@@ -381,7 +381,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.1714431792497635, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.07415688782930374, rel_tol=1e-04))
 
         # TEQ
         woq_config = TeqConfig(bits=4, weight_dtype="int4_fullrange",
@@ -403,7 +403,7 @@ class TestQuantization(unittest.TestCase):
         woq_model.eval()
         output = woq_model(dummy_input)
         self.assertTrue(
-           isclose(float(output[0][0][0][0]), 0.16162332892417908, rel_tol=1e-04)
+          isclose(float(output[0][0][0][0]), 0.16162332892417908, rel_tol=1e-04)
         )
 
         # amp
@@ -427,13 +427,13 @@ class TestQuantization(unittest.TestCase):
 
         # load_in_8bit
         bit8_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-                                                     load_in_8bit=True,
-                                                     use_neural_speed=False,
-                                                     device_map="cpu"
+                                                    load_in_8bit=True,
+                                                    use_neural_speed=False,
+                                                    device_map="cpu"
                                                 )
         bit8_model.eval()
         output = bit8_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.1675747185945511, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), -0.08488251268863678, rel_tol=1e-04))
 
         # GPTQ
         woq_config = GPTQConfig(bits=4,

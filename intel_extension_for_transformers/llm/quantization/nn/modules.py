@@ -136,7 +136,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
         return out
 
-    def set_fp8_weights_bias(self, weight_data, bias=None):
+    def set_fp_weights_bias(self, weight_data, bias=None):
         if weight_data.is_meta:
             weight_data = torch.ones(weight_data.shape, dtype=torch.float)
         weight = torch.ops.bestlaop.woq_quantize(
@@ -200,6 +200,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             or (not q_config.desc_act)
         ):
             g_idx = torch.empty(0, dtype=torch.int32)
+
         packw = torch.ops.bestlaop.woq_packq(
             int_weight.contiguous(),
             gptq_scales.float().contiguous(),

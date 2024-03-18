@@ -33,9 +33,7 @@ if is_ipex_available():
     import intel_extension_for_pytorch as ipex
 
 if is_autoround_available():
-    from auto_round.export.export_to_itrex.model_wrapper import (
-        WeightOnlyLinear as auto_round_woqlinear,
-    )  # pylint: disable=E0401
+    from auto_round.export.export_to_itrex.model_wrapper import WeightOnlyLinear as auto_round_woqlinear # pylint: disable=E0401
 
 torch = LazyImport("torch")
 
@@ -57,11 +55,13 @@ DTYPE_BITS_MAPPING = {
 
 def unpack_weight(qweight, scales, qzeros, q_config):
     bits = q_config.bits
-    wf = torch.tensor([[0, 4, 8, 12, 16, 20, 24, 28]], dtype=torch.int32)
+    wf = torch.tensor(list(range(0, 32, bits)), dtype=torch.int32).unsqueeze(0)
     zeros = torch.bitwise_right_shift(
         torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)
     ).to(torch.int16 if bits == 8 else torch.int8)
     torch.bitwise_and(zeros, (2**bits) - 1, out=zeros)
+    if bits == 8:
+        zeros = zeros.to(torch.int8)
     zeros = zeros + 1
     zeros = zeros.reshape(scales.shape)
 
@@ -70,6 +70,8 @@ def unpack_weight(qweight, scales, qzeros, q_config):
     ).to(torch.int16 if bits == 8 else torch.int8)
     torch.bitwise_and(weight, (2**bits) - 1, out=weight)
 
+    if bits == 8:
+        weight = weight.to(torch.int8)
     return weight, scales, zeros
 
 
@@ -163,10 +165,8 @@ def _replace_linear(
                             scheme=quantization_config.scheme,
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
-                        from intel_extension_for_pytorch.nn.utils._quantize_convert import (
-                            WeightOnlyQuantizedLinear as ipex_linear,
-                        )  # pylint: disable=E0401
-
+                        from intel_extension_for_pytorch.nn.utils._quantize_convert \
+                            import WeightOnlyQuantizedLinear as ipex_linear  # pylint: disable=E0401
                         model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
@@ -237,8 +237,8 @@ def _replace_linear(
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
                 if device == "cpu" or device == torch.device("cpu") or device == "auto":
-                    if quantization_config.weight_dtype in ["fp8_e5m2", "fp8_e4m3"]:
-                        model._modules[name].set_fp8_weights_bias(
+                    if quantization_config.weight_dtype in ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4"]:
+                        model._modules[name].set_fp_weights_bias(
                             module.weight.data,
                             None if module.bias is None else module.bias.data,
                         )
@@ -500,6 +500,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )
+        inc_model.eval()
 
         if device == "xpu" or device == torch.device("xpu"):
             model = inc_model.export_compressed_model(
@@ -511,9 +512,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
             q_model = replace_linear(model, None, None, config, device=device)
         else:
-            inc_model = inc_model.export_compressed_model(use_optimum_format=True)
-            inc_model.eval()
-            q_model = replace_linear(inc_model, None, None, config, device=device)
+            if config.weight_dtype not in ["nf4", "fp4"]:
+                inc_model = inc_model.export_compressed_model(use_optimum_format=True)
+                inc_model.eval()
+                q_model = replace_linear(inc_model, None, None, config, device=device)
+            else:
+                q_model = replace_linear(inc_model.model, None, None, config, device=device)
 
         if orig_dtype != torch.float32:
             q_model.to(dtype=orig_dtype)

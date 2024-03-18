@@ -436,9 +436,7 @@ class _BaseQBitsAutoModelClass:
                 if quantization_config is None:
                     if use_neural_speed:
                         # use wnf4_sfp32_cfp32_g32_sym by default
-                        quantization_config = RtnConfig(
-                            compute_dtype="fp32", weight_dtype="nf4"
-                        )
+                        quantization_config = RtnConfig(compute_dtype="fp32", weight_dtype="nf4")
                     else:
                         quantization_config = RtnConfig(
                             bits=4,
@@ -546,6 +544,11 @@ class _BaseQBitsAutoModelClass:
                             "will fall to traditional load method with higher memory consumption."
                         )
                         kwargs["low_cpu_mem_usage"] = False
+                        config.torchscript = (
+                            True
+                            if quantization_config.quant_method.value in ["teq", "awq"]
+                            else False
+                        )
                         model = cls.ORIG_MODEL.from_pretrained(
                             pretrained_model_name_or_path,
                             *model_args,
@@ -555,6 +558,11 @@ class _BaseQBitsAutoModelClass:
                         model.config.update({"low_cpu_mem_usage": False})
                 else:
                     kwargs["low_cpu_mem_usage"] = True
+                    config.torchscript = (
+                        True
+                        if quantization_config.quant_method.value in ["teq", "awq"]
+                        else False
+                    )
                     model = cls.ORIG_MODEL.from_pretrained(
                         pretrained_model_name_or_path,
                         *model_args,
@@ -1161,7 +1169,7 @@ class _BaseQBitsAutoModelClass:
                 model = model_class(config, *model_args, **kwargs)
         else:
             model = model_class(config, *model_args, **kwargs)
-        if config.quantization_config["weight_dtype"] not in ["fp8_e5m2", "fp8_e4m3"]:
+        if config.quantization_config["weight_dtype"] not in ["fp8_e5m2", "fp8_e4m3", "fp4", "nf4"]:
             model = build_woq_model(model, quantization_config)
         else:
             model = replace_linear(
