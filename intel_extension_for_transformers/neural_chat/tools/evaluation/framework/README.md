@@ -12,7 +12,7 @@ Context recall measures the extent to which the retrieved context aligns with th
 Context Precision is a metric that evaluates whether all of the ground-truth relevant items present in the contexts are ranked higher or not. Ideally all the relevant chunks must appear at the top ranks. This metric is computed using the question, ground_truth and the contexts, with values ranging between 0 and 1, where higher scores indicate better precision.
 
 ## 2. Installation
-please install dependency using the following commands.
+Please install dependency using the following commands.
 ```
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework
