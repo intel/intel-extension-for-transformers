@@ -185,16 +185,16 @@ finetune_model(finetune_cfg)
 
 For detailed fine-tuning instructions, please refer to the documentation below.
 
-[NeuralChat Fine-tuning](./examples/finetuning/instruction/README.md)
+[NeuralChat Fine-tuning](../examples/finetuning/instruction/README.md)
 
-[Direct Preference Optimization](./examples/finetuning/dpo_pipeline/README.md)
+[Direct Preference Optimization](../examples/finetuning/dpo_pipeline/README.md)
 
-[Reinforcement Learning from Human Feedback](./examples/finetuning/ppo_pipeline/README.md)
+[Reinforcement Learning from Human Feedback](../examples/finetuning/ppo_pipeline/README.md)
 
-[Multi-Modal](./examples/finetuning/multi_modal/README.md)
+[Multi-Modal](../examples/finetuning/multi_modal/README.md)
 
-[How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2](./examples/finetuning/finetune_neuralchat_v3/README.md)
+[How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2](../examples/finetuning/finetune_neuralchat_v3/README.md)
 
-[Text-To-Speech (TTS) model finetuning](./examples/finetuning/tts/README.md)
+[Text-To-Speech (TTS) model finetuning](../examples/finetuning/tts/README.md)
 
-And NeuralChat also provides Docker file tailored for easy fine-tuning. Explore details in [finetuning with Docker](./docker/finetuning/README.md).
+And NeuralChat also provides Docker file tailored for easy fine-tuning. Explore details in [finetuning with Docker](../docker/finetuning/README.md).
