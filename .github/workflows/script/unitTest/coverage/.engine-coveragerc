@@ -7,7 +7,6 @@ omit =
  */intel_extension_for_transformers/neural_chat/**
  */intel_extension_for_transformers/haystack/**
  */intel_extension_for_transformers/llama_index/**
- */intel_extension_for_transformers/utils/**
  */intel_extension_for_transformers/transformers/dynamic/**
  */intel_extension_for_transformers/transformers/mixture/**
  */intel_extension_for_transformers/transformers/modeling/**

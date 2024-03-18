@@ -55,3 +55,61 @@ def is_openai_model(model_name_or_path):
 
 def is_hf_model(model_name_or_path):
     return "http" in model_name_or_path
+
+def get_device_type():
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif is_hpu_available:
+        device = "hpu"
+    elif is_ipex_available and torch.xpu.is_available():
+        device = "xpu"
+    else:
+        device = "cpu"
+    return device
+
+def supported_gpus():
+    return ['flex', 'max', 'arc']
+
+def get_gpu_family():
+    ''' Get gpu device family info.
+
+    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
+
+    Note, this function need to import intel_extension_for_pytorch
+
+
+    Additional info (common gpu name):
+      'Intel(R) Data Center GPU Flex 170'
+      'Intel(R) Data Center GPU Max 1100'
+      'Intel(R) Arc(TM) A770 Graphics'
+    '''
+
+    import intel_extension_for_pytorch as ipex
+    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
+        return 'no_gpu'
+
+    name = torch.xpu.get_device_name()
+    if 'GPU Flex' in name:
+        result = 'flex'
+    elif 'GPU Max' in name:
+        result = 'max'
+    elif 'Arc(TM)' in name:
+        result = 'arc'
+    else:
+        assert False, "Unsupported GPU device: {}".format(name)
+
+    if result not in supported_gpus():
+        assert False, "Unsupported GPU device: {}".format(name)
+    else:
+        return result
+
+_autoround_available = importlib.util.find_spec("auto_round") is not None
+_autoround_version = "N/A"
+if _autoround_available:
+    try:
+        _autoround_version = importlib_metadata.version("auto_round")
+    except importlib_metadata.PackageNotFoundError:
+        _autoround_available = False
+
+def is_autoround_available():
+    return _autoround_available

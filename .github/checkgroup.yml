@@ -19,7 +19,6 @@ subprojects:
       - intel_extension_for_transformers/transformers/**
       - requirements.txt
       - setup.py
-      - intel_extension_for_transformers/utils/**
       - intel_extension_for_transformers/transformers/llm/evaluation/**
       - intel_extension_for_transformers/transformers/llm/quantization/**
       - intel_extension_for_transformers/transformers/llm/operator/**

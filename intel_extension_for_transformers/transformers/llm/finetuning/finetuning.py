@@ -56,13 +56,11 @@ import torch
 import importlib.util
 from transformers.utils.import_utils import is_optimum_available, is_bitsandbytes_available
 from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
-# TODO (reorg folder)
 from intel_extension_for_transformers.neural_chat.config import BaseFinetuningConfig
 from transformers.integrations.deepspeed import (
     is_deepspeed_available,
 )
-from intel_extension_for_transformers.utils.device_utils import is_hpu_available
-# TODO (reorg folder)
+from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 
