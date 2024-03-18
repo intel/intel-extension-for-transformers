@@ -111,5 +111,5 @@ def raw_data_generate(model_id,
                      "query": result_str,
                      "pos": [context],
                }
-            with jsonlines.open(file_json_path+'.jsonl',"a") as file_json:
+            with jsonlines.open(file_json_path,"a") as file_json:
                   file_json.write(data)
