@@ -131,8 +131,7 @@ class TestWeightOnly(unittest.TestCase):
             output = model(activation)
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(raw_wei)
-
-            config = RtnConfig(weight_dtype="int4_fullrange", group_size=32)
+            config = RtnConfig(bits=4, weight_dtype="int4_fullrange", group_size=32)
             config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)

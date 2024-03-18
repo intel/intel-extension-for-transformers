@@ -237,7 +237,8 @@ def _replace_linear(
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
                 if device == "cpu" or device == torch.device("cpu") or device == "auto":
-                    if quantization_config.weight_dtype in ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int8"]:
+                    if quantization_config.weight_dtype in \
+                                    ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int8", "int4_fullrange"]:
                         model._modules[name].set_fp_weights_bias(
                             module.weight.data,
                             None if module.bias is None else module.bias.data,
@@ -505,7 +506,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
             q_model = replace_linear(model, None, None, config, device=device)
         else:
-            if config.weight_dtype not in ["nf4", "fp4", "int8"]:
+            if config.weight_dtype not in ["nf4", "fp4", "int8", "int4_fullrange"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 q_model = replace_linear(inc_model, None, None, config, device=device)

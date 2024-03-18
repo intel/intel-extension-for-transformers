@@ -194,7 +194,8 @@ def save_low_bit(
         )
         return
 
-    if self.quantization_config.weight_dtype not in ["fp8_e5m2", "fp8_e4m3"]:
+    if self.quantization_config.weight_dtype not in \
+                     ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int8", "int4_fullrange"]:
         convert_model_to_public(self)
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
@@ -1169,7 +1170,8 @@ class _BaseQBitsAutoModelClass:
                 model = model_class(config, *model_args, **kwargs)
         else:
             model = model_class(config, *model_args, **kwargs)
-        if config.quantization_config["weight_dtype"] not in ["fp8_e5m2", "fp8_e4m3", "fp4", "nf4", "int8"]:
+        if config.quantization_config["weight_dtype"] not in \
+                        ["fp8_e5m2", "fp8_e4m3", "fp4", "nf4", "int8", "int4_fullrange"]:
             model = build_woq_model(model, quantization_config)
         else:
             model = replace_linear(
@@ -1219,7 +1221,8 @@ class _BaseQBitsAutoModelClass:
 
         # Set model in evaluation mode to deactivate DropOut modules by default
         model.eval()
-        if config.quantization_config["weight_dtype"] not in ["fp8_e5m2", "fp8_e4m3", "int8"]:
+        if config.quantization_config["weight_dtype"] not in \
+                        ["fp8_e5m2", "fp8_e4m3", "int8", "nf4", "fp4" "int4_fullrange"]:
             model = replace_linear(
                 model,
                 quantization_config=quantization_config,
