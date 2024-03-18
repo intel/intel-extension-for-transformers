@@ -1,6 +1,7 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 accelerate
 cmake>=3.16
+fastapi
 gguf
 ninja
 optimum-intel
@@ -8,3 +9,5 @@ py-cpuinfo
 setuptools>=65
 setuptools_scm[toml]>=6.2
 torch==2.2.0+cpu
+uvicorn
+yacs
