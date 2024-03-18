@@ -91,6 +91,7 @@ def ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_m
 
     df=score.to_pandas()
     print(df)
+    return df
 
 def main():
     parser = argparse.ArgumentParser()
@@ -107,7 +108,8 @@ def main():
     llm_model = args.llm_model
     embedding_model = args.embedding_model
 
-    ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_model)
+    metrics=ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_model)
+    return metrics
 
 if __name__ == '__main__':
     main()
