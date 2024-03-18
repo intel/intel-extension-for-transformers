@@ -67,7 +67,7 @@ class ChildParentRetriever(BaseRetriever):
                 ids.append(d.metadata['identify_id'])
 
         retrieved_documents = self.parentstore.get(ids)
-        for i in range(len(retrieved_documents)):
+        for i in range(len(retrieved_documents['ids'])):
             metadata = retrieved_documents['metadatas'][i]
             context = retrieved_documents['documents'][i]
             instance = Document(page_content=context, metadata=metadata)
