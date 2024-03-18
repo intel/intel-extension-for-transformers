@@ -19,7 +19,7 @@ import unittest, os, shutil
 from unittest.mock import patch
 from intel_extension_for_transformers.neural_chat.tools.evaluation.data_augmentation import retrieval_dataset_construction, llm_generate_truth
 from intel_extension_for_transformers.neural_chat.tools.evaluation.retriever import evaluate_retrieval
-
+from intel_extension_for_transformers.neural_chat.tools.evaluation.framework import ragas_evaluation
 
 class TestEvaluation(unittest.TestCase):
     def setUp(self) -> None:
@@ -73,6 +73,15 @@ class TestEvaluation(unittest.TestCase):
                 '--embedding_model', '/tf_dataset2/inc-ut/gte-base']
         with patch('sys.argv', ['python evaluate_retrieval.py'] + argv):
             result = evaluate_retrieval.main()
+            self.assertIsNotNone(result)
+
+    def test_ragas_evaluation(self):
+        argv = ['--answer_file', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/answer.jsonl', \
+                '--ground_truth_file', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl', \
+                '--llm_model', '/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1', \
+                '--embedding_model', '/tf_dataset2/inc-ut/gte-base']
+        with patch('sys.argv', ['python ragas_evaluation.py'] + argv):
+            result = ragas_evaluation.main()
             self.assertIsNotNone(result)
 
 if __name__ == '__main__':
