@@ -11,7 +11,8 @@ Context recall measures the extent to which the retrieved context aligns with th
 * **Context precision**
 Context Precision is a metric that evaluates whether all of the ground-truth relevant items present in the contexts are ranked higher or not. Ideally all the relevant chunks must appear at the top ranks. This metric is computed using the question, ground_truth and the contexts, with values ranging between 0 and 1, where higher scores indicate better precision.
 
-## 2. Requirements
+## 2. Installation
+please install dependency using the following commands.
 ```
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework
@@ -19,6 +20,8 @@ pip install -r requirements.txt
 ```
 
 ## 3. Evaluate RAG
+* **OpenAI**
+By default, these metrics use OpenAI’s API to compute the score. If you’re using this metric, ensure that you’ve set the environment key OPENAI_API_KEY with your API key.
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework
 python ragas_evaluation.py \
@@ -26,13 +29,23 @@ python ragas_evaluation.py \
 --ground_truth_file /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl \
 --openai_api_key <your openai api key>
 ```
+* **Langchain**
+You can also try other LLMs for evaluation using Langchain.
+```
+cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework
+python ragas_evaluation.py \
+--answer_file /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/answer.jsonl \
+--ground_truth_file /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl \
+--llm_model <llm model path> \
+--embedding_model <embedding model path>
+```
 
 **Some Important Arguments**:
 - `answer_file`: The path of JSON data including question and answer, where each line is a dict like this:```{"question": str, "answer": str}```. See [answer.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/answer.jsonl) for a data file.
-
 - `ground_truth_file`: The path of JSON data including question, context, and ground_truth, where each line is a dict like this:```{"question": str, "context": List[str], "ground_truth": str}```. See [ground_truth.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl) for a data file. The `"question"` of `answer_file` and `ground_truth_file` should correspond one-to-one.
-
-- `openai_api_key`: This guide utilizes OpenAI for running some metrics, so ensure you have your OpenAI key ready and available in your environment.
+- `openai_api_key`: If you utilize OpenAI for running ragas, ensure you have your OpenAI key ready and available in your environment.
+- `llm_model`: If you utilize Langchain for running ragas, you should input the path for the LLM model.
+- `embedding_model`: If you utilize Langchain for running ragas, you should input the path for the text embedding model.
 
 ## 4. Result
 The results include your input question, answer, contexts, ground_truth, as well as output answer relevancy, faithfulness, context recall, context precision.
