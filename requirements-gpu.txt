@@ -1,9 +1,9 @@
 --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us
-intel_extension_for_pytorch
-torch
 cmake
+intel_extension_for_pytorch
 ninja
 py-cpuinfo
 setuptools>=65
 setuptools_scm[toml]>=6.2
+torch
 
