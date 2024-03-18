@@ -126,7 +126,7 @@ def main():
             os.remove(output+'/minedHN_split.jsonl')
    except:
       pass
-   
+
    construct_retrieval_dataset(
       llm_model,
       embedding_model,
