@@ -10,8 +10,8 @@ from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 
-result = os.popen("pip install -r requirements.txt")
-print(result.read())
+result = subprocess.Popen("pip install -r requirements.txt", shell=True)
+result.wait()
 
 
 def get_gpu_family():
@@ -61,6 +61,9 @@ if ipex_available and (get_gpu_family() != "no_gpu"):
     SKIP_RUNTIME = True
     RUNTIME_ONLY = False
     IS_INTEL_GPU = True
+else:
+    result = subprocess.Popen("pip install -r requirements-cpu.txt", shell=True)
+    result.wait()
 
 if not SKIP_RUNTIME:
     from cmake import CMAKE_BIN_DIR
