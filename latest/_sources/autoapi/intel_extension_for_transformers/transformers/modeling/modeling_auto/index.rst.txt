@@ -6,3 +6,23 @@
 .. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_auto
 
 
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_auto.recover_export_model
+
+
+
+.. py:function:: recover_export_model(model, current_key_name=None)
+
+   Private method that wraps the recursion for module replacement.
+
+   Return optimum format model.
+
+

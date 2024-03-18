@@ -103,7 +103,7 @@ Classes
 
 
 
-.. py:class:: RtnConfig(bits: int = 4, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, mse_range: bool = False, use_double_quant=False, double_quant_scale_dtype=None, scheme: str = 'sym', use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+.. py:class:: RtnConfig(bits: int = 4, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, mse_range: bool = False, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
 
 
 
@@ -183,8 +183,7 @@ Classes
 
 
 
-   This is a wrapper class about all possible attributes and features that you can play with a model that has been
-   loaded using `auto-awq` library awq quantization relying on auto_awq backend.
+   This is a wrapper class about all possible attributes and features.
 
    :param bits: The number of bits to quantize to.
    :type bits: `int`, *optional*, defaults to 4
@@ -203,7 +202,7 @@ Classes
 
 
 
-.. py:class:: TeqConfig(bits: int = 8, tokenizer: Any = None, dataset: Optional[Union[List[str], str]] = None, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, scheme: str = 'sym', use_ggml: bool = False, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+.. py:class:: TeqConfig(bits: int = 8, tokenizer: Any = None, dataset: Optional[Union[List[str], str]] = None, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, use_ggml: bool = False, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
 
 
 
