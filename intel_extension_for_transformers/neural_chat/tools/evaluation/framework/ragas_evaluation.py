@@ -24,9 +24,9 @@ from ragas.metrics import (    # pylint: disable=E0401
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
     HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
-from langchain.embeddings import GooglePalmEmbeddings
-from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingsWrapper
+from langchain.embeddings import GooglePalmEmbeddings   # pylint: disable=E0611
+from ragas.llms import LangchainLLMWrapper   # pylint: disable=E0611
+from ragas.embeddings import LangchainEmbeddingsWrapper   # pylint: disable=E0611
 import pandas as pd
 import jsonlines
 import argparse
@@ -84,7 +84,10 @@ def ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_m
 
         langchain_llm = LangchainLLMWrapper(langchain_llm)
         langchain_embedding = LangchainEmbeddingsWrapper(langchain_embeddings)
-        score = evaluate(dataset,metrics=[answer_relevancy, faithfulness, context_recall, context_precision],llm = langchain_llm, embeddings=langchain_embedding)
+        score = evaluate(dataset,
+                         metrics=[answer_relevancy, faithfulness, context_recall, context_precision],
+                         llm = langchain_llm,    # pylint: disable=E1123
+                         embeddings=langchain_embedding)    # pylint: disable=E1123
     else:
         os.environ["OPENAI_API_KEY"] = openai_api_key
         score = evaluate(dataset,metrics=[answer_relevancy, faithfulness, context_recall, context_precision])
