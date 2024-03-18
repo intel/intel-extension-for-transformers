@@ -34,6 +34,7 @@ env:
   CONTAINER_NAME: "utTest"
   EXTRA_CONTAINER_NAME: "modelTest"
   CONTAINER_SCAN: "codeScan"
+  GOOGLE_API_KEY: $${ vars.GOOGLE_API_KEY }}
 
 jobs:
   neuralchat-unit-test:
