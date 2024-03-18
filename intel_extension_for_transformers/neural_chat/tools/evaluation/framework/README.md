@@ -1,7 +1,7 @@
 # Ragas Evaluation
 
 ## 1. Introduction
-[Ragas](https://github.com/explodinggradients/ragas) is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. We provide a script to use Ragas based on data files. We use four metrics: answer relevancy, faithfulness, context recall, context precision
+[Ragas](https://github.com/explodinggradients/ragas) is a framework that helps you evaluate your Retrieval Augmented Generation (RAG) pipelines. We provide a script to use Ragas based on data files. We use four metrics: answer relevancy, faithfulness, context recall, context precision.
 * **Answer relevancy**
 Answer Relevancy focuses on assessing how pertinent the generated answer is to the given prompt. A lower score is assigned to answers that are incomplete or contain redundant information and higher scores indicate better relevancy.
 * **Faithfulness**
@@ -21,7 +21,7 @@ pip install -r requirements.txt
 
 ## 3. Evaluate RAG
 * **OpenAI**
-By default, these metrics use OpenAI’s API to compute the score. If you’re using this metric, ensure that you’ve set the environment key OPENAI_API_KEY with your API key.
+By default, ragas use OpenAI’s API to compute the score. If you’re using this metric, ensure that you set the environment key OPENAI_API_KEY with your API key.
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework
 python ragas_evaluation.py \
