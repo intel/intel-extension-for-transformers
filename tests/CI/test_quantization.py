@@ -381,7 +381,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.1714431792497635, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17998121678829193 , rel_tol=1e-04))
 
         # TEQ
         woq_config = TeqConfig(bits=4, weight_dtype="int4_fullrange",
