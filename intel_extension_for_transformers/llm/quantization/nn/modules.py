@@ -136,6 +136,30 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
         return out
 
+    def set_fp8_weights_bias(self, weight_data, bias=None):
+        if weight_data.is_meta:
+            weight_data = torch.ones(weight_data.shape, dtype=torch.float)
+        weight = torch.ops.bestlaop.woq_quantize(
+            weight_data,
+            True,
+            self.blocksize,
+            self.compute_dtype if self.compute_dtype is not None else "fp32",
+            self.weight_dtype,
+            self.scale_dtype if self.scale_dtype is not None else "fp32",
+            False if self.scheme == "sym" else True,
+        )
+        self.weight = ParamsQBits(
+            data=weight,
+            requires_grad=False,
+            quant_state={"scheme": self.scheme},
+            blocksize=self.blocksize,
+            compress_statistics=self.compress_statistics,
+            quant_dtype=self.weight_dtype,
+            scale_dtype=self.scale_dtype,
+        )
+        if bias is not None:
+            self.bias = torch.nn.Parameter(bias, requires_grad=False)
+
     def set_weights_bias(
         self,
         int_weight,
@@ -145,7 +169,9 @@ class QuantizedLinearQBits(torch.nn.Linear):
         q_config,
         bias=None,
     ):
-        if q_config.quant_method.value == "gptq" and q_config.desc_act:
+        if q_config.quant_method.value == "gptq" and (
+            q_config.desc_act and not q_config.static_groups
+        ):
             int_weight2 = int_weight.clone()
             group_size = q_config.group_size
             group_dict = {}
@@ -168,7 +194,11 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if q_config.sym:
             gptq_zeros = torch.empty(0, dtype=torch.int8)
 
-        if q_config.quant_method.value != "gptq" or (not q_config.desc_act):
+        if (
+            q_config.quant_method.value != "gptq"
+            or q_config.static_groups
+            or (not q_config.desc_act)
+        ):
             g_idx = torch.empty(0, dtype=torch.int32)
         packw = torch.ops.bestlaop.woq_packq(
             int_weight.contiguous(),
@@ -272,18 +302,15 @@ class QuantizedLinearQBits(torch.nn.Linear):
                 qzeros = qzeros // 16 + 8
         else:
             qzeros = None
-        # workaround after backend confirm
-        if zp:
-            revert_wei = torch.zeros(out_features, in_features, dtype=torch.float)
-        else:
-            revert_wei = torch.zeros(in_features, out_features, dtype=torch.float)
+
+        revert_wei = torch.zeros(in_features, out_features, dtype=torch.float)
 
         torch.ops.bestlaop.woq_dequantize(
-            self.weight, revert_wei, zp, compute_dtype, weight_dtype, scales_dtype
+            self.weight, revert_wei, False, compute_dtype, weight_dtype, scales_dtype
         )
 
         int_weight = self.quant_weight_w_scale(
-            revert_wei if zp else revert_wei.t(),
+            revert_wei.t(),
             scales.t(),
             qzeros.to(torch.uint8).t() if qzeros is not None else None,
             group_size=group_size,

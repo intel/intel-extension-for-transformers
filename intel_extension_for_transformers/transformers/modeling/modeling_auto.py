@@ -115,6 +115,7 @@ def recover_export_model(model, current_key_name=None):
                 g_idx=desc_act,
                 use_optimum_format=True,
             )
+
             model._modules[name].pack(
                 int_weight, scales, zeros, module.bias, g_idx=g_idx
             )
@@ -151,7 +152,11 @@ def build_woq_model(model, quantization_config):
                 dtype="int",
                 zp=zp,
                 bias=m.bias is not None,
-                g_idx=False if hasattr(quantization_config, "decs_act") else False,
+                g_idx=(
+                    quantization_config.desc_act
+                    if hasattr(quantization_config, "desc_act")
+                    else False
+                ),
             )
             set_module(model, n, new_module)
     return model
@@ -189,8 +194,8 @@ def save_low_bit(
         )
         return
 
-    convert_model_to_public(self)
-
+    if self.quantization_config.weight_dtype not in ["fp8_e5m2", "fp8_e4m3"]:
+        convert_model_to_public(self)
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
     del self.save_pretrained
@@ -1156,8 +1161,15 @@ class _BaseQBitsAutoModelClass:
                 model = model_class(config, *model_args, **kwargs)
         else:
             model = model_class(config, *model_args, **kwargs)
-
-        model = build_woq_model(model, quantization_config)
+        if config.quantization_config["weight_dtype"] not in ["fp8_e5m2", "fp8_e4m3"]:
+            model = build_woq_model(model, quantization_config)
+        else:
+            model = replace_linear(
+                model,
+                quantization_config=quantization_config,
+                device=device_map,
+                empty_weights=True,
+            )
 
         if is_sharded:
             loaded_state_dict_keys = sharded_metadata["all_checkpoint_keys"]
@@ -1199,12 +1211,13 @@ class _BaseQBitsAutoModelClass:
 
         # Set model in evaluation mode to deactivate DropOut modules by default
         model.eval()
-        model = replace_linear(
-            model,
-            quantization_config=quantization_config,
-            device=device_map,
-            empty_weights=True,
-        )
+        if config.quantization_config["weight_dtype"] not in ["fp8_e5m2", "fp8_e4m3"]:
+            model = replace_linear(
+                model,
+                quantization_config=quantization_config,
+                device=device_map,
+                empty_weights=True,
+            )
 
         # If it is a model with generation capabilities, attempt to load the generation config
         if model.can_generate():

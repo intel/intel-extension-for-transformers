@@ -33,7 +33,9 @@ if is_ipex_available():
     import intel_extension_for_pytorch as ipex
 
 if is_autoround_available():
-    from auto_round.export.export_to_itrex.model_wrapper import WeightOnlyLinear as auto_round_woqlinear # pylint: disable=E0401
+    from auto_round.export.export_to_itrex.model_wrapper import (
+        WeightOnlyLinear as auto_round_woqlinear,
+    )  # pylint: disable=E0401
 
 torch = LazyImport("torch")
 
@@ -52,6 +54,7 @@ DTYPE_BITS_MAPPING = {
     "int8": 8,
 }
 
+
 def unpack_weight(qweight, scales, qzeros, q_config):
     bits = q_config.bits
     wf = torch.tensor([[0, 4, 8, 12, 16, 20, 24, 28]], dtype=torch.int32)
@@ -59,7 +62,6 @@ def unpack_weight(qweight, scales, qzeros, q_config):
         torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)
     ).to(torch.int16 if bits == 8 else torch.int8)
     torch.bitwise_and(zeros, (2**bits) - 1, out=zeros)
-
     zeros = zeros + 1
     zeros = zeros.reshape(scales.shape)
 
@@ -69,6 +71,7 @@ def unpack_weight(qweight, scales, qzeros, q_config):
     torch.bitwise_and(weight, (2**bits) - 1, out=weight)
 
     return weight, scales, zeros
+
 
 def replace_linear(
     model,
@@ -160,8 +163,10 @@ def _replace_linear(
                             scheme=quantization_config.scheme,
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
-                        from intel_extension_for_pytorch.nn.utils._quantize_convert \
-                            import WeightOnlyQuantizedLinear as ipex_linear  # pylint: disable=E0401
+                        from intel_extension_for_pytorch.nn.utils._quantize_convert import (
+                            WeightOnlyQuantizedLinear as ipex_linear,
+                        )  # pylint: disable=E0401
+
                         model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
@@ -232,21 +237,28 @@ def _replace_linear(
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
                 if device == "cpu" or device == torch.device("cpu") or device == "auto":
-                    int_weight, scales, zeros = unpack_weight(
-                        module.qweight,
-                        module.scales,
-                        module.qzeros,
-                        quantization_config,
-                    )
-                    int_weight = int_weight.view(-1, int_weight.shape[-1])
-                    model._modules[name].set_weights_bias(
-                        int_weight,
-                        scales,
-                        zeros,
-                        module.g_idx if hasattr(module, "g_idx") else None,
-                        quantization_config,
-                        bias=None if module.bias is None else module.bias.data,
-                    )
+                    if quantization_config.weight_dtype in ["fp8_e5m2", "fp8_e4m3"]:
+                        model._modules[name].set_fp8_weights_bias(
+                            module.weight.data,
+                            None if module.bias is None else module.bias.data,
+                        )
+                    else:
+                        int_weight, scales, zeros = unpack_weight(
+                            module.qweight,
+                            module.scales,
+                            module.qzeros,
+                            quantization_config,
+                        )
+                        int_weight = int_weight.view(-1, int_weight.shape[-1])
+
+                        model._modules[name].set_weights_bias(
+                            int_weight,
+                            scales,
+                            zeros,
+                            module.g_idx if hasattr(module, "g_idx") else None,
+                            quantization_config,
+                            bias=None if module.bias is None else module.bias.data,
+                        )
                 else:
                     if not hasattr(module, "qweight"):
                         n_pack = (
@@ -418,7 +430,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     ),
                     "enable_mse_search": config.mse_range,
                 },
-                "awq_args": {},
+                "awq_args": {"folding": True},
             }
             algorithm = "AWQ"
         elif config.quant_method.value == "teq":
@@ -484,6 +496,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             if orig_dtype != torch.float32:
                 model.to(dtype=torch.float32)
             break
+
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )
