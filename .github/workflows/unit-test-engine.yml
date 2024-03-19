@@ -89,7 +89,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
-          && pip install torch==2.0 --extra-index-url https://download.pytorch.org/whl/cpu
+          && pip install torch==2.0 --extra-index-url https://download.pytorch.org/whl/cpu \
           && bash install_binary.sh \
           && pip install onnx"
 
