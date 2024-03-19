@@ -335,8 +335,8 @@ Desired format:
 1. <question_1>
 2. <question_2>
 ---
-Context:
-### {context}
+### Context:
+{context}
 ---
 Generated questions:
 """
@@ -349,11 +349,11 @@ The answer must be directly related to the context and the question, suitable fo
 Desired format:
 1. <ground_truth>
 ---
-Question:
-### {question}
+### Question:
+{question}
 ---
-Context:
-### {context}
+### Context:
+{context}
 ---
 Generated ground_truth:
 """
