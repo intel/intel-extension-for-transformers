@@ -57,6 +57,7 @@ def language_detect(text: str):
     url = "https://translation.googleapis.com/language/translate/v2/detect"
     try:
         api_key = os.getenv("GOOGLE_API_KEY")
+        logger.info(f"[ language_detect ] GOOGLE_API_KEY: {api_key}")
     except Exception as e:
         logger.info(f"No GOOGLE_API_KEY found. {e}")
     params = {
@@ -77,6 +78,7 @@ def language_detect(text: str):
 def language_translate(text: str, target: str='en'):
     url = "https://translation.googleapis.com/language/translate/v2"
     api_key = os.getenv("GOOGLE_API_KEY")
+    logger.info(f"[ language_translate ] GOOGLE_API_KEY: {api_key}")
     params = {
         'key': api_key,
         'q': text,
