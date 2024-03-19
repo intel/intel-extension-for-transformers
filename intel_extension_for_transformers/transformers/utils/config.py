@@ -752,7 +752,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         **kwargs,
     ):
 
-        from intel_extension_for_transformers.llm.quantization.utils import (
+        from intel_extension_for_transformers.transformers.llm.quantization.utils import (
             convert_dtype_torch2str,
         )
 
@@ -1054,7 +1054,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         **kwargs,
     ):
 
-        from intel_extension_for_transformers.llm.quantization.utils import (
+        from intel_extension_for_transformers.transformers.llm.quantization.utils import (
             convert_dtype_torch2str,
         )
 

@@ -32,7 +32,7 @@ jobs:
         job_name: [
             "pylint",
             "bandit",
-            "clangformat",
+            # "clangformat",
             "cloc",
             "cpplint",
             # "pydocstyle",

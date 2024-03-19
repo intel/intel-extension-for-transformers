@@ -61,13 +61,13 @@ from ..utils.utility import (
     SAFE_WEIGHTS_NAME,
     SAFE_WEIGHTS_INDEX_NAME,
 )
-from ...llm.quantization.utils import (
+from ..llm.quantization.utils import (
     convert_dtype_str2torch,
     convert_dtype_torch2str,
     convert_to_quantized_model,
     replace_linear,
 )
-from ...llm.quantization.nn.modules import QuantizedLinearQBits
+from ..llm.quantization.nn.modules import QuantizedLinearQBits
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from transformers.configuration_utils import PretrainedConfig
 from transformers import AutoConfig
@@ -306,10 +306,10 @@ class _BaseQBitsAutoModelClass:
             return model
 
         if kwargs.pop("use_embedding_runtime", False):
-            from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import (
+            from intel_extension_for_transformers.transformers.runtime.compile.graph import (
                 Graph,
             )
-            from intel_extension_for_transformers.llm.runtime.deprecated.compile import (
+            from intel_extension_for_transformers.transformers.runtime.compile import (
                 compile,
                 autocast,
             )

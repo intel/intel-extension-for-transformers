@@ -19,16 +19,16 @@ import shutil
 import intel_extension_for_pytorch as ipex
 import torch.nn.functional as F
 import torch.utils.data as data
-from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
+from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.transformers import GPTQConfig, RtnConfig
 from math import isclose
 from transformers import AutoTokenizer
-from intel_extension_for_transformers.utils.utils import get_gpu_family, _ipex_available
+from intel_extension_for_transformers.neural_chat.utils.common import get_gpu_family, is_ipex_available
 from torch.utils.data import DataLoader
 
 
-if _ipex_available:
+if is_ipex_available():
     gpu_name = get_gpu_family()
 
 

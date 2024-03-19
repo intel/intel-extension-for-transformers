@@ -51,7 +51,7 @@ from intel_extension_for_transformers.transformers.pruner import (WeightPruningC
                                                                   prepare_pruning,
                                                                   model_slim,
                                                                   parse_auto_slim_config)
-from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
 
 check_min_version("4.27.0.dev0")
 logger = logging.getLogger(__name__)

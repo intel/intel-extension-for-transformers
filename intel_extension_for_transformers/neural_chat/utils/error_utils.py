@@ -16,8 +16,9 @@
 # limitations under the License.
 
 from ..errorcode import ErrorCodes
-from intel_extension_for_transformers.utils import logger
+import logging
 
+logger = logging.getLogger(__name__)
 _latest_error = None
 
 def set_latest_error(error_code):
