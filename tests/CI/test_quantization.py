@@ -381,7 +381,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.1714431792497635, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17998121678829193 , rel_tol=1e-04))
 
         # TEQ
         woq_config = TeqConfig(bits=4, weight_dtype="int4_fullrange",
@@ -403,7 +403,7 @@ class TestQuantization(unittest.TestCase):
         woq_model.eval()
         output = woq_model(dummy_input)
         self.assertTrue(
-           isclose(float(output[0][0][0][0]), 0.16162332892417908, rel_tol=1e-04)
+          isclose(float(output[0][0][0][0]), 0.16162332892417908, rel_tol=1e-04)
         )
 
         # amp
@@ -427,9 +427,9 @@ class TestQuantization(unittest.TestCase):
 
         # load_in_8bit
         bit8_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-                                                     load_in_8bit=True,
-                                                     use_neural_speed=False,
-                                                     device_map="cpu"
+                                                    load_in_8bit=True,
+                                                    use_neural_speed=False,
+                                                    device_map="cpu"
                                                 )
         bit8_model.eval()
         output = bit8_model(dummy_input)

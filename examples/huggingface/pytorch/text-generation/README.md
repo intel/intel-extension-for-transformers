@@ -143,7 +143,7 @@ Dataset: lambada-openai
 | databricks/dolly-v2-3b   | alpha 0.5 | 62.97% | 60.86% | 62.47% (w/o BF16) |
 
 
-## Purpose of the Language Models Optimization for Intel Architecture 
+## Purpose of the Language Models Optimization for Intel Architecture
 
  
 - Demonstrate the AI workloads and deep learning models Intel has optimized and validated to run on Intel hardware 
