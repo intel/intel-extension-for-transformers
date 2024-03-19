@@ -263,7 +263,7 @@ class _BaseQBitsAutoModelClass:
         "phi",
         "whisper",
     ]
-    
+
     model_type_list_for_gptq = [
         "llama",
         "gptj",
