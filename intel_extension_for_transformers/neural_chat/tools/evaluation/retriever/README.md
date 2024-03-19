@@ -2,12 +2,11 @@
 
 ## 1. Introduction
 We provide a script to evaluate the performance of the retrieval. We use two metrics: MRR (Mean reciprocal rank) and Hit (Hit Ratio). 
-* **MRR**
-MRR is an internationally accepted mechanism for evaluating search algorithms. MRR emphasizes the position of ground truth in the retrieval list, the higher it is, the better. 
-* **Hit**
-Hit emphasizes the accuracy of retrieval, that is, whether the ground truth is included in the retrieval items. The higher, the better. 
+* **MRR** is an internationally accepted mechanism for evaluating search algorithms. MRR emphasizes the position of ground truth in the retrieval list, the higher it is, the better. 
+* **Hit** emphasizes the accuracy of retrieval, that is, whether the ground truth is included in the retrieval items. The higher, the better. 
 
-## 2. Requirements
+## 2. Installation
+Please ensure the installation of requirements for NeuralChat and retrieval plugin by the following commands.
 ```
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat
@@ -17,6 +16,7 @@ pip install -r requirements.txt
 ```
 
 ## 3. Evaluate Retrieval
+You can evaluate the retrieval performance by the following commands.
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/retriever
 python evaluate_retrieval.py \
