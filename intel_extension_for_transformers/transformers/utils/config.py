@@ -745,6 +745,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         nsamples: int = 128,
         max_input_length: Optional[int] = None,
         static_groups: bool = False,
+        layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
