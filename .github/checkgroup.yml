@@ -62,6 +62,7 @@ subprojects:
       - ".github/workflows/unit-test-engine.yml"
       - "requirements.txt"
       - "setup.py"
+      - intel_extension_for_transformers/transformers/**
       - "intel_extension_for_transformers/transformers/runtime/**"
       - "!intel_extension_for_transformers/transformers/runtime/kernels/**"
       - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
