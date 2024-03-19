@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prerequisite​ &mdash; Intel® Extension for Transformers 0.1.dev1+g30d9d10 documentation</title>
+  <title>Prerequisite​ &mdash; Intel® Extension for Transformers 0.1.dev1+gfb3b41f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -119,26 +119,31 @@
 </section>
 <section id="on-xeon-spr-environment">
 <h4>On Xeon SPR Environment<a class="headerlink" href="#on-xeon-spr-environment" title="Link to this heading"></a></h4>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VER</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span>-f<span class="w"> </span>intel_extension_for_transformers/neural_chat/docker/Dockerfile<span class="w"> </span>-t<span class="w"> </span>neuralchat_finetune:latest<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>cpu
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VER</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--target<span class="w"> </span>cpu<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-t<span class="w"> </span>intel/intel-extension-for-transformers:finetuning-1.4.0<span class="w"> </span>.<span class="w"> </span>
 </pre></div>
 </div>
 </section>
 <section id="on-habana-gaudi-environment">
 <h4>On Habana Gaudi Environment<a class="headerlink" href="#on-habana-gaudi-environment" title="Link to this heading"></a></h4>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VER</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span>-f<span class="w"> </span>intel_extension_for_transformers/neural_chat/docker/Dockerfile<span class="w"> </span>-t<span class="w"> </span>neuralchat_finetune:latest<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>hpu
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VER</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--target<span class="w"> </span>hpu<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-t<span class="w"> </span>intel/intel-extension-for-transformers:finetuning-1.4.0<span class="w"> </span>.<span class="w"> </span>
 </pre></div>
 </div>
 </section>
 <section id="on-nvidia-gpu-environment">
 <h4>On Nvidia GPU Environment<a class="headerlink" href="#on-nvidia-gpu-environment" title="Link to this heading"></a></h4>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>intel_extension_for_transformers/neural_chat/docker/Dockerfile<span class="w"> </span>-t<span class="w"> </span>neuralchat_finetune:latest<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>nvgpu
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--target<span class="w"> </span>nvgpu<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-t<span class="w"> </span>intel/intel-extension-for-transformers:finetuning-1.4.0<span class="w"> </span>.<span class="w"> </span>
 </pre></div>
 </div>
 </section>
 </section>
 <section id="docker-pull-from-docker-hub">
 <h3>2.2 Docker Pull from Docker Hub<a class="headerlink" href="#docker-pull-from-docker-hub" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>pull<span class="w"> </span>intel/ai-tools:itrex-chatbot
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>pull<span class="w"> </span>intel/intel-extension-for-transformers:finetuning-1.4.0
 </pre></div>
 </div>
 </section>
@@ -146,36 +151,101 @@
 <section id="create-docker-container">
 <h2>3. Create Docker Container<a class="headerlink" href="#create-docker-container" title="Link to this heading"></a></h2>
 <p>If you have downloaded model and datasets before, just mount the <code class="docutils literal notranslate"><span class="pre">model</span> <span class="pre">files</span></code> and <code class="docutils literal notranslate"><span class="pre">alpaca_data.json</span></code> to the docker container using <code class="docutils literal notranslate"><span class="pre">'-v'</span></code>. Make sure using the <code class="docutils literal notranslate"><span class="pre">absolute</span> <span class="pre">path</span></code> for local files.</p>
-<section id="id1">
-<h3>On Xeon SPR Environment<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--disable-content-trust<span class="w"> </span>--privileged<span class="w"> </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span>--hostname<span class="o">=</span><span class="s2">&quot;chatbot-container&quot;</span><span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span>neuralchat_finetune:latest<span class="w"> </span>/bin/bash
+<p>If your environment requires a proxy to access the internet, export your development system’s proxy settings to the docker environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">DOCKER_RUN_ENVS</span><span class="o">=</span><span class="s2">&quot;-e https_proxy=</span><span class="nv">$https_proxy</span><span class="s2"> -e http_proxy=</span><span class="nv">$http_proxy</span><span class="s2"> -e no_proxy=&quot;</span>localhost,127.0.0.1<span class="s2">&quot;</span>
 </pre></div>
 </div>
-<p>If you need to set proxy settings, please add <code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">https_proxy=$https_proxy</span> <span class="pre">-e</span> <span class="pre">http_proxy=$http_proxy</span> <span class="pre">-e</span> <span class="pre">no_proxy=&quot;localhost,127.0.0.1&quot;</span></code>.</p>
+<section id="id1">
+<h3>On Xeon SPR Environment<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--disable-content-trust<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--privileged<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--hostname<span class="o">=</span><span class="s2">&quot;chatbot-container&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--network<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span><span class="si">${</span><span class="nv">DOCKER_RUN_ENVS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>intel/intel-extension-for-transformers:finetuning-1.4.0<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>/bin/bash
+</pre></div>
+</div>
 <p>If you want to use local datasets and models, use <code class="docutils literal notranslate"><span class="pre">-v</span></code> to mount files</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--disable-content-trust<span class="w"> </span>--privileged<span class="w"> </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span>--hostname<span class="o">=</span><span class="s2">&quot;chatbot-container&quot;</span><span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>-e<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">no_proxy</span><span class="o">=</span><span class="s2">&quot;localhost,127.0.0.1&quot;</span><span class="w">  </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span>-v<span class="w"> </span>/absolute/path/to/flan-t5-xl:/flan<span class="w"> </span>-v<span class="w"> </span>/absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json<span class="w"> </span>neuralchat_finetune:latest<span class="w"> </span>/bin/bash
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">MODEL_DIR</span><span class="o">=</span>&lt;absolute<span class="w"> </span>path<span class="w"> </span>to<span class="w"> </span>flan<span class="w"> </span>t5<span class="w"> </span>xl<span class="w"> </span>model<span class="w"> </span>directory&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">DATASET_FILE</span><span class="o">=</span>&lt;absolute<span class="w"> </span>path<span class="w"> </span>Alapaca<span class="w"> </span>data<span class="w"> </span>file&gt;
+docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--disable-content-trust<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--privileged<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--hostname<span class="o">=</span><span class="s2">&quot;chatbot-container&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--network<span class="o">=</span>host<span class="w"> </span><span class="si">${</span><span class="nv">DOCKER_RUN_ENVS</span><span class="si">}</span><span class="w">  </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span><span class="si">${</span><span class="nv">MODEL_DIR</span><span class="si">}</span>:/flan<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span><span class="si">${</span><span class="nv">DATASET_FILE</span><span class="si">}</span>:/dataset/alpaca_data.json<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>intel/intel-extension-for-transformers:finetuning-1.4.0<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>/bin/bash
 </pre></div>
 </div>
 </section>
 <section id="id2">
 <h3>On Habana Gaudi Environment<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--runtime<span class="o">=</span>habana<span class="w"> </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">HABANA_VISIBLE_DEVICES</span><span class="o">=</span>all<span class="w"> </span>-e<span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none<span class="w"> </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span>--cap-add<span class="o">=</span>sys_nice<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>neuralchat_finetune:latest<span class="w"> </span>/bin/bash
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--runtime<span class="o">=</span>habana<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-e<span class="w"> </span><span class="nv">HABANA_VISIBLE_DEVICES</span><span class="o">=</span>all<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-e<span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span><span class="si">${</span><span class="nv">DOCKER_RUN_ENVS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--cap-add<span class="o">=</span>sys_nice<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--net<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--ipc<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>intel/intel-extension-for-transformers:finetuning-1.4.0<span class="w"> </span>/bin/bash
 </pre></div>
 </div>
-<p>If you need to set proxy settings, please add <code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">https_proxy=$https_proxy</span> <span class="pre">-e</span> <span class="pre">http_proxy=$http_proxy</span> <span class="pre">-e</span> <span class="pre">no_proxy=&quot;localhost,127.0.0.1&quot;</span></code>.</p>
 <p>If you want to use local datasets and models, use <code class="docutils literal notranslate"><span class="pre">-v</span></code> to mount files.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--runtime<span class="o">=</span>habana<span class="w"> </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">HABANA_VISIBLE_DEVICES</span><span class="o">=</span>all<span class="w"> </span>-e<span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none<span class="w"> </span>-e<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">no_proxy</span><span class="o">=</span><span class="s2">&quot;localhost,127.0.0.1&quot;</span><span class="w"> </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w">  </span>-v<span class="w"> </span>/absolute/path/to/flan-t5-xl:/flan<span class="w"> </span>-v<span class="w"> </span>/absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json<span class="w"> </span>--cap-add<span class="o">=</span>sys_nice<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>neuralchat_finetune:latest<span class="w"> </span>/bin/bash
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">MODEL_DIR</span><span class="o">=</span>&lt;absolute<span class="w"> </span>path<span class="w"> </span>to<span class="w"> </span>flan<span class="w"> </span>t5<span class="w"> </span>xl<span class="w"> </span>model<span class="w"> </span>directory&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">DATASET_FILE</span><span class="o">=</span>&lt;absolute<span class="w"> </span>path<span class="w"> </span>Alapaca<span class="w"> </span>data<span class="w"> </span>file&gt;
+docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--runtime<span class="o">=</span>habana<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-e<span class="w"> </span><span class="nv">HABANA_VISIBLE_DEVICES</span><span class="o">=</span>all<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-e<span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span><span class="si">${</span><span class="nv">DOCKER_RUN_ENVS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span><span class="si">${</span><span class="nv">MODEL_DIR</span><span class="si">}</span>:/flan<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span><span class="si">${</span><span class="nv">DATASET_FILE</span><span class="si">}</span>:/dataset/alpaca_data.json<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--cap-add<span class="o">=</span>sys_nice<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--net<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--ipc<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>intel/intel-extension-for-transformers:finetuning-1.4.0<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>/bin/bash
 </pre></div>
 </div>
 </section>
 <section id="id3">
 <h3>On Nvidia GPU Environment<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span>-it<span class="w"> </span>--disable-content-trust<span class="w"> </span>--privileged<span class="w"> </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span>--hostname<span class="o">=</span><span class="s2">&quot;chatbot-container&quot;</span><span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span>neuralchat_finetune:latest<span class="w"> </span>/bin/bash
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-it<span class="w"> </span>--disable-content-trust<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--privileged<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--hostname<span class="o">=</span><span class="s2">&quot;chatbot-container&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--network<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span><span class="si">${</span><span class="nv">DOCKER_RUN_ENVS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>intel/intel-extension-for-transformers:finetuning-1.4.0<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>/bin/bash
 </pre></div>
 </div>
-<p>If you need to set proxy settings, please add <code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">https_proxy=$https_proxy</span> <span class="pre">-e</span> <span class="pre">http_proxy=$http_proxy</span> <span class="pre">-e</span> <span class="pre">no_proxy=&quot;localhost,127.0.0.1&quot;</span></code>.</p>
 <p>If you want to use local datasets and models, use <code class="docutils literal notranslate"><span class="pre">-v</span></code> to mount files.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span>-it<span class="w"> </span>--disable-content-trust<span class="w"> </span>--privileged<span class="w"> </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span>--hostname<span class="o">=</span><span class="s2">&quot;chatbot-container&quot;</span><span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>-e<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">no_proxy</span><span class="o">=</span><span class="s2">&quot;localhost,127.0.0.1&quot;</span><span class="w"> </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span>-v<span class="w"> </span>/absolute/path/to/flan-t5-xl:/flan<span class="w"> </span>-v<span class="w"> </span>/absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json<span class="w"> </span>neuralchat_finetune:latest<span class="w"> </span>/bin/bash
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">MODEL_DIR</span><span class="o">=</span>&lt;absolute<span class="w"> </span>path<span class="w"> </span>to<span class="w"> </span>flan<span class="w"> </span>t5<span class="w"> </span>xl<span class="w"> </span>model<span class="w"> </span>directory&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">DATASET_FILE</span><span class="o">=</span>&lt;absolute<span class="w"> </span>path<span class="w"> </span>Alapaca<span class="w"> </span>data<span class="w"> </span>file&gt;
+docker<span class="w"> </span>run<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-it<span class="w"> </span>--disable-content-trust<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--privileged<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--hostname<span class="o">=</span><span class="s2">&quot;chatbot-container&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--network<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span><span class="si">${</span><span class="nv">DOCKER_RUN_ENVS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span><span class="si">${</span><span class="nv">MODEL_DIR</span><span class="si">}</span>:/flan<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span><span class="si">${</span><span class="nv">DATASET_FILE</span><span class="si">}</span>:/dataset/alpaca_data.json<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>intel/intel-extension-for-transformers:finetuning-1.4.0<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>/bin/bash
 </pre></div>
 </div>
 </section>
@@ -454,7 +524,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x758b04a63400> 
+   <jinja2.runtime.BlockReference object at 0x7732ed1ea7d0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

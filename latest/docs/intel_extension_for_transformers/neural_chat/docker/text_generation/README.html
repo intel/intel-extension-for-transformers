@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Start NeuralChat Text Generation Service with Docker &mdash; Intel® Extension for Transformers 0.1.dev1+g30d9d10 documentation</title>
+  <title>Start NeuralChat Text Generation Service with Docker &mdash; Intel® Extension for Transformers 0.1.dev1+gfb3b41f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -98,11 +98,18 @@
 <h3>Prepare Docker Image<a class="headerlink" href="#prepare-docker-image" title="Link to this heading"></a></h3>
 <p>Use Dockerfile to build Docker image in your environment. The <code class="docutils literal notranslate"><span class="pre">Chat</span></code>, <code class="docutils literal notranslate"><span class="pre">Chat</span> <span class="pre">Q&amp;A</span></code>, and <code class="docutils literal notranslate"><span class="pre">Summary</span></code> use cases share the same Dockerfile.</p>
 <p>All you need to do is to choose the right Dockerfile according to your architecture. The following example is for CPU.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>.<span class="w"> </span>-f<span class="w"> </span>cpu/Dockerfile<span class="w"> </span>-t<span class="w"> </span>neuralchat_text_generation:latest
+<p>If your environment requires a proxy to access the internet, export your development system’s proxy settings to the docker environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">DOCKER_BUILD_ARGS</span><span class="o">=</span><span class="s2">&quot;--build-arg https_proxy=</span><span class="nv">$https_proxy</span><span class="s2"> \</span>
+<span class="s2">       --build-arg http_proxy=</span><span class="nv">$http_proxy</span><span class="s2"> \</span>
+<span class="s2">       --build-arg no_proxy=</span><span class="nv">$no_proxy</span><span class="s2">&quot;</span>
+
+docker<span class="w"> </span>build<span class="w"> </span>.<span class="w"> </span>-f<span class="w"> </span>cpu/Dockerfile<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span><span class="si">${</span><span class="nv">DOCKER_BUILD_ARGS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-t<span class="w"> </span>intel/intel-extension-for-transformers:text-generation-cpu-1.4.0<span class="w">       </span>
 </pre></div>
 </div>
-<p>If you need to set proxy settings, add <code class="docutils literal notranslate"><span class="pre">--build-arg</span> <span class="pre">https_proxy=$https_proxy</span> <span class="pre">--build-arg</span> <span class="pre">http_proxy=$http_proxy</span></code> like below.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>.<span class="w"> </span>-f<span class="w"> </span>cpu/Dockerfile<span class="w"> </span>-t<span class="w"> </span>neuralchat_text_generation:latest<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span>
+<p>Or pull the docker images as follows:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>pull<span class="w"> </span>intel/intel-extension-for-transformers:text-generation-cpu-1.4.0
 </pre></div>
 </div>
 </section>
@@ -121,10 +128,18 @@
 <section id="start-neuralchat-service">
 <h3>Start NeuralChat Service<a class="headerlink" href="#start-neuralchat-service" title="Link to this heading"></a></h3>
 <p>Use the following command to start NeuralChat Text Generation service.</p>
+<p>If your environment requires a proxy to access the internet, export your development system’s proxy settings to the docker environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">DOCKER_RUN_ENVS</span><span class="o">=</span><span class="s2">&quot;-e https_proxy=</span><span class="nv">$https_proxy</span><span class="s2"> -e http_proxy=</span><span class="nv">$http_proxy</span><span class="s2"> -e no_proxy=&quot;</span>localhost,127.0.0.1<span class="s2">&quot;</span>
+</pre></div>
+</div>
 <section id="example-of-chat-service">
 <h4>Example of <code class="docutils literal notranslate"><span class="pre">Chat</span></code> Service.<a class="headerlink" href="#example-of-chat-service" title="Link to this heading"></a></h4>
 <p>Make sure the specified <code class="docutils literal notranslate"><span class="pre">port</span></code> is available, and <code class="docutils literal notranslate"><span class="pre">device</span></code> is correctly set.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>--name<span class="w"> </span>text_gen<span class="w"> </span>-v<span class="w"> </span>./chat.yaml:/text_generation.yaml<span class="w"> </span>neuralchat_text_generation:latest
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--name<span class="w"> </span>text_gen<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>./chat.yaml:/text_generation.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span><span class="si">${</span><span class="nv">DOCKER_RUN_ENVS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>intel/intel-extension-for-transformers:text-generation-cpu-1.4.0
 </pre></div>
 </div>
 <p>The specific meaning of each parameter is explaine below:</p>
@@ -133,16 +148,17 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">--net=host</span> <span class="pre">--ipc=host</span></code>: Configure the network of docker container.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">-v</span></code>: Mount <code class="docutils literal notranslate"><span class="pre">chat.yaml</span></code> file the docker container from your local server.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--name</span> <span class="pre">text_gen</span></code>: The name of your docker container, you can set it differently as you need.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">neuralchat_text_generation:latest</span></code>: The name of the Docker image you created just now.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">intel/intel-extension-for-transformers:text-generation-cpu-1.4.0</span></code>: The name of the Docker image you created just now.</p></li>
 </ul>
-<p>If you need to set proxy settings, add <code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">https_proxy=$https_proxy</span> <span class="pre">-e</span> <span class="pre">http_proxy=$http_proxy</span> <span class="pre">-e</span> <span class="pre">no_proxy=&quot;localhost,127.0.0.1&quot;</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>--name<span class="w"> </span>text_gen<span class="w"> </span>-e<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">no_proxy</span><span class="o">=</span><span class="s2">&quot;localhost,127.0.0.1&quot;</span><span class="w"> </span>-v<span class="w"> </span>./chat.yaml:/text_generation.yaml<span class="w"> </span>neuralchat_text_generation:latest
-</pre></div>
-</div>
 </section>
 <section id="example-of-chat-q-a-service">
 <h4>Example of <code class="docutils literal notranslate"><span class="pre">Chat</span> <span class="pre">Q&amp;A</span></code> Service.<a class="headerlink" href="#example-of-chat-q-a-service" title="Link to this heading"></a></h4>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>--name<span class="w"> </span>text_gen<span class="w"> </span>-v<span class="w"> </span>./chatqna.yaml:/text_generation.yaml<span class="w"> </span>-v<span class="w"> </span>./rag_docs:/rag_docs<span class="w"> </span>neuralchat_text_generation:latest
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--name<span class="w"> </span>text_gen_qa<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>./chatqna.yaml:/text_generation.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>./rag_docs:/rag_docs<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span><span class="si">${</span><span class="nv">DOCKER_RUN_ENVS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>intel/intel-extension-for-transformers:text-generation-cpu-1.4.0
 </pre></div>
 </div>
 <p>The specific meaning of each parameter is explaine below:</p>
@@ -150,14 +166,14 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">-v</span></code>: Mount <code class="docutils literal notranslate"><span class="pre">chatqna.yaml</span></code> file into docker container from your local server.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">-v</span></code>: Mount <code class="docutils literal notranslate"><span class="pre">rag_docs</span></code> into the path written in <code class="docutils literal notranslate"><span class="pre">chatqna.yaml:</span> <span class="pre">input_path</span></code></p></li>
 </ul>
-<p>If you need to set proxy settings, add <code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">https_proxy=$https_proxy</span> <span class="pre">-e</span> <span class="pre">http_proxy=$http_proxy</span> <span class="pre">-e</span> <span class="pre">no_proxy=&quot;localhost,127.0.0.1&quot;</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>--name<span class="w"> </span>text_gen<span class="w"> </span>-v<span class="w"> </span>./chatqna.yaml:/text_generation.yaml<span class="w"> </span>-v<span class="w"> </span>./rag_docs:/rag_docs<span class="w">  </span>-e<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">no_proxy</span><span class="o">=</span><span class="s2">&quot;localhost,127.0.0.1&quot;</span><span class="w"> </span>neuralchat_text_generation:latest
-</pre></div>
-</div>
 </section>
 <section id="example-of-summary-service">
 <h4>Example of <code class="docutils literal notranslate"><span class="pre">Summary</span></code> Service.<a class="headerlink" href="#example-of-summary-service" title="Link to this heading"></a></h4>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>--name<span class="w"> </span>text_gen<span class="w"> </span>-v<span class="w"> </span>./summary.yaml:/text_generation.yaml<span class="w"> </span>-v<span class="w"> </span>./rag_docs:/rag_docs<span class="w"> </span>neuralchat_text_generation:latest
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--name<span class="w"> </span>text_gen_summary<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>./summary.yaml:/text_generation.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>-v<span class="w"> </span>./rag_docs:/rag_docs<span class="w"> </span><span class="si">${</span><span class="nv">DOCKER_RUN_ENVS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>intel-extension-for-transformers:text-generation-cpu-1.4.0
 </pre></div>
 </div>
 <p>The specific meaning of each parameter is explaine below:</p>
@@ -165,10 +181,6 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">-v</span></code>: Mount <code class="docutils literal notranslate"><span class="pre">summary.yaml</span></code> file into docker container from your local server.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">-v</span></code>: Mount <code class="docutils literal notranslate"><span class="pre">rag_docs</span></code> into the path written in <code class="docutils literal notranslate"><span class="pre">summary.yaml:</span> <span class="pre">input_path</span></code></p></li>
 </ul>
-<p>If you need to set proxy settings, add <code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">https_proxy=$https_proxy</span> <span class="pre">-e</span> <span class="pre">http_proxy=$http_proxy</span> <span class="pre">-e</span> <span class="pre">no_proxy=&quot;localhost,127.0.0.1&quot;</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>--name<span class="w"> </span>text_gen<span class="w"> </span>-e<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w"> </span>-e<span class="w"> </span><span class="nv">no_proxy</span><span class="o">=</span><span class="s2">&quot;localhost,127.0.0.1&quot;</span><span class="w"> </span>-v<span class="w"> </span>./summary.yaml:/text_generation.yaml<span class="w"> </span>-v<span class="w"> </span>./rag_docs:/rag_docs<span class="w"> </span>neuralchat_text_generation:latest
-</pre></div>
-</div>
 </section>
 </section>
 </section>
@@ -224,7 +236,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x758b04ab2ad0> 
+   <jinja2.runtime.BlockReference object at 0x7732ecf564a0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
