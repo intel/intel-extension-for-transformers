@@ -169,6 +169,12 @@ parser.add_argument(
     action="store_true",
     help="Use determined group to do quantization",
 )
+parser.add_argument(
+    "--layer_wise",
+    action="store_true",
+    help="Use layer wise to do quantization",
+)
+
 # ============AUTOROUND configs==============
 parser.add_argument(
     "--lr",
@@ -356,6 +362,7 @@ elif args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
+            layer_wise=args.layer_wise,
         )
     elif args.woq_algo == "AutoRound":
         quantization_config = AutoRoundConfig(

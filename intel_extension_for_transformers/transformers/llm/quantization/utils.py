@@ -447,6 +447,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     "use_max_length": True if config.max_input_length else False,
                     "pad_max_length": config.max_input_length,
                     "static_groups": config.static_groups,
+                    "layer_wise_quant": config.layer_wise,
                 }
             }
             algorithm = "GPTQ"

@@ -772,6 +772,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.damp_percent = damp_percent
         self.desc_act = desc_act
         self.static_groups = static_groups
+        self.layer_wise = layer_wise
         self.max_input_length = max_input_length
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
