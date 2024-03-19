@@ -189,7 +189,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
                 else:
                     g_idx = torch.empty(0, dtype=torch.int32)
             else:
-                g_idx = torch.empty(0, dtype=torch.int32)                                        
+                g_idx = torch.empty(0, dtype=torch.int32)
 
         if q_config.bits == 4:
             int_weight = (int_weight - 8) * 16
