@@ -84,7 +84,7 @@ def ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_m
 
         langchain_llm = LangchainLLMWrapper(langchain_llm)
         langchain_embedding = LangchainEmbeddingsWrapper(langchain_embeddings)
-        score = evaluate(dataset,
+        score = evaluate(dataset,    # pylint: disable=E1123
                          metrics=[answer_relevancy, faithfulness, context_recall, context_precision],
                          llm = langchain_llm,    # pylint: disable=E1123
                          embeddings=langchain_embedding)    # pylint: disable=E1123
