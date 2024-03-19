@@ -67,7 +67,7 @@ from ..llm.quantization.utils import (
     convert_to_quantized_model,
     replace_linear,
 )
-from ...llm.quantization.nn.modules import QuantizedLinearQBits
+from ..llm.quantization.nn.modules import QuantizedLinearQBits
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from transformers.configuration_utils import PretrainedConfig
 from transformers import AutoConfig

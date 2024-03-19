@@ -24,11 +24,11 @@ from intel_extension_for_transformers.transformers.modeling import AutoModelForC
 from intel_extension_for_transformers.transformers import GPTQConfig, RtnConfig
 from math import isclose
 from transformers import AutoTokenizer
-from intel_extension_for_transformers.neural_chat.utils.common import get_gpu_family, _ipex_available
+from intel_extension_for_transformers.neural_chat.utils.common import get_gpu_family, is_ipex_available
 from torch.utils.data import DataLoader
 
 
-if _ipex_available:
+if is_ipex_available:
     gpu_name = get_gpu_family()
 
 
