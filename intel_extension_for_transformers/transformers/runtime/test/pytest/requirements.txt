@@ -6,5 +6,6 @@ intel-tensorflow==2.12.0
 onnx
 onnxruntime
 onnxruntime_extensions
+peft
 torch==2.0+cpu
 transformers
