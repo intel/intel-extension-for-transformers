@@ -29,7 +29,7 @@ from neural_compressor.config import PostTrainingQuantConfig
 from intel_extension_for_transformers.neural_chat.utils.common import is_ipex_available, is_autoround_available
 from transformers import AutoTokenizer
 
-if is_ipex_available:
+if is_ipex_available():
     import intel_extension_for_pytorch as ipex
 
 if is_autoround_available():
@@ -133,7 +133,7 @@ def _replace_linear(
             or isinstance(module, WeightOnlyLinear)
             or (is_autoround_available() and isinstance(module, auto_round_woqlinear))
             or (
-                is_ipex_available
+                is_ipex_available()
                 and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear)
             )
         ) and (name not in modules_to_not_convert):

@@ -28,7 +28,7 @@ from intel_extension_for_transformers.neural_chat.utils.common import get_gpu_fa
 from torch.utils.data import DataLoader
 
 
-if is_ipex_available:
+if is_ipex_available():
     gpu_name = get_gpu_family()
 
 
