@@ -9,7 +9,7 @@ To build and run this workload inside a Docker Container, ensure you have Docker
 ```bash
 DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
 mkdir -p $DOCKER_CONFIG/cli-plugins
-curl -SL https://github.com/docker/compose/releases/download/v2.19.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
 chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
 docker compose version
 ```
@@ -23,8 +23,8 @@ docker compose build
 ```
 OR
 ```bash
-docker pull intel/ai-tools:itrex-1.3.0
-docker pull intel/ai-tools:itrex-devel-1.3.0
+docker pull intel/intel-extension-for-transformers:1.4.0
+docker pull intel/intel-extension-for-transformers:devel-1.4.0
 ```
 
 ## Use Docker Image
