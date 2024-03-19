@@ -136,7 +136,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
         return out
 
-    def set_weights_bias(self, weight_data, bias=None):
+    def set_fp_weights_bias(self, weight_data, bias=None):
         if weight_data.is_meta:
             weight_data = torch.ones(weight_data.shape, dtype=torch.float)
         weight = torch.ops.bestlaop.woq_quantize(
@@ -160,7 +160,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
-    def set_gptq_weights_bias(
+    def set_weights_bias(
         self,
         int_weight,
         gptq_scales,
@@ -169,20 +169,9 @@ class QuantizedLinearQBits(torch.nn.Linear):
         q_config,
         bias=None,
     ):
-
-        if int_weight.is_meta:
-            int_weight = torch.ones(int_weight.shape, dtype=torch.int8)
-            gptq_scales = torch.rand(
-                self.in_features // self.blocksize,
-                self.out_features,
-                dtype=torch.float16,
-            )
-            gptq_zeros = torch.ones(
-                self.in_features // self.blocksize, self.out_features, dtype=torch.int8
-            )
-            if q_config.quant_method.value != "autoround" and q_config.desc_act:
-                g_idx = torch.zeros(self.blocksize, dtype=torch.int32)
-        if q_config.quant_method.value != "autoround" and q_config.desc_act:
+        if q_config.quant_method.value == "gptq" and (
+            q_config.desc_act and not q_config.static_groups
+        ):
             int_weight2 = int_weight.clone()
             group_size = q_config.group_size
             group_dict = {}
@@ -201,10 +190,15 @@ class QuantizedLinearQBits(torch.nn.Linear):
             int_weight = (int_weight - 8) * 16
             gptq_scales = gptq_scales / 16
             gptq_zeros = (gptq_zeros - 8) * 16
+
         if q_config.sym:
             gptq_zeros = torch.empty(0, dtype=torch.int8)
 
-        if q_config.quant_method.value == "autoround" or (not q_config.desc_act):
+        if (
+            q_config.quant_method.value != "gptq"
+            or q_config.static_groups
+            or (not q_config.desc_act)
+        ):
             g_idx = torch.empty(0, dtype=torch.int32)
 
         packw = torch.ops.bestlaop.woq_packq(
@@ -228,8 +222,116 @@ class QuantizedLinearQBits(torch.nn.Linear):
             quant_dtype=self.weight_dtype,
             scale_dtype=self.scale_dtype,
         )
+
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
+
+    def quant_weight_w_scale(self, weight, scale, zp, group_size=-1):
+        """Quant and dequant tensor with group size.
+
+        Args:
+            weight: input weight
+            scale: scale
+            zp: zero point
+            group_size (int, optional): how many elements share one scale/zp. Defaults to -1.
+
+        Returns:
+            output: int weight.
+        """
+        device = weight.device
+        scale = scale.to(device)
+        if zp is not None:
+            zp = zp.to(device)
+        if group_size == -1:
+            return (
+                weight.div_(scale).round_()
+                if zp is None
+                else weight.div_(scale).add_(zp).round_()
+            )
+        int_weight = torch.zeros(weight.shape).to(device)
+        leng = weight.shape[1] // group_size
+        tail_flag = False if weight.shape[1] % group_size == 0 else True
+        for i in range(leng):
+            int_weight_tmp = weight[:, i * group_size : (i + 1) * group_size].div_(
+                scale[:, i].unsqueeze(1)
+            )
+            if zp is not None:
+                int_weight_tmp.add_(zp[:, i].unsqueeze(1))
+            int_weight[:, i * group_size : (i + 1) * group_size].copy_(
+                int_weight_tmp.round_()
+            )
+        if tail_flag:
+            int_weight_tmp = weight[:, leng * group_size :].div_(
+                scale[:, -1].unsqueeze(1)
+            )
+            if zp is not None:
+                int_weight_tmp.add_(zp[:, -1].unsqueeze(1))
+            int_weight[:, leng * group_size :].copy_(int_weight_tmp.round_())
+        return int_weight
+
+    def recover_qparms(self):
+        group_size = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 1)[0]
+        in_features = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 2)[0]
+        out_features = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 3)[0]
+        desc_act = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 4)[0] != 0
+        if desc_act:
+            g_idx = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 5)
+        else:
+            g_idx = None
+        weight_dtype_ascii = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 6)
+        weight_dtype = "".join(
+            chr(ascii_code) for ascii_code in weight_dtype_ascii.tolist()
+        )
+        bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4", "int4_fullrange"] else 8
+        compute_dtype_ascii = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 7)
+        compute_dtype = "".join(
+            chr(ascii_code) for ascii_code in compute_dtype_ascii.tolist()
+        )
+        scales_dtype_ascii = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 8)
+        scales_dtype = "".join(
+            chr(ascii_code) for ascii_code in scales_dtype_ascii.tolist()
+        )
+        if scales_dtype is None:
+            assert False, "scales dtype only support fp32."
+        scales = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 9)
+        if bits == 4:
+            scales = scales * 16
+        zp = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 11)[0] != 0
+        if zp:
+            qzeros = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 10)
+            if bits == 4:
+                qzeros = qzeros // 16 + 8
+        else:
+            qzeros = None
+
+        revert_wei = torch.zeros(in_features, out_features, dtype=torch.float)
+
+        torch.ops.bestlaop.woq_dequantize(
+            self.weight, revert_wei, False, compute_dtype, weight_dtype, scales_dtype
+        )
+
+        int_weight = self.quant_weight_w_scale(
+            revert_wei.t(),
+            scales.t(),
+            qzeros.to(torch.uint8).t() if qzeros is not None else None,
+            group_size=group_size,
+        )
+
+        scales_dtype = torch.float32 if scales_dtype in ["fp32"] else None
+        return (
+            group_size,
+            in_features,
+            out_features,
+            desc_act,
+            g_idx,
+            weight_dtype,
+            bits,
+            scales_dtype,
+            scales.t(),
+            zp,
+            qzeros.t() if qzeros is not None else None,
+            int_weight,
+        )
 
 
 class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
