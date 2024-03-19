@@ -38,6 +38,9 @@ class acquire_type(Enum):
     WEI_TYPE = 6
     CMPT_TYPE = 7
     SCALE_TYPE = 8
+    SCALE_TENSOR = 9
+    ZP_TENSOR = 10
+    IS_ASYM = 11
 
 
 @pytest.mark.parametrize("m", [256])
@@ -92,6 +95,15 @@ def test(m, k, n, weight_type, scale_type, compute_type, asym, blocksize, dump_t
     enable_act_shuffle = torch.ops.bestlaop.acquire_woq_packw_info(
         packw, acquire_type.ACT_SHUFFLE.value)[0] != 0
     assert (enable_act_shuffle)
-    acquire_g_idx = packw_wei_type = torch.ops.bestlaop.acquire_woq_packw_info(
+    acquire_g_idx = torch.ops.bestlaop.acquire_woq_packw_info(
         packw, acquire_type.G_IDX.value)
     assert (abs(acquire_g_idx-cvt_idx).max() == 0)
+    scale_tensor = torch.ops.bestlaop.acquire_woq_packw_info(
+        packw, acquire_type.SCALE_TENSOR.value)
+    assert (abs(scale-scale_tensor).max() == 0)
+    is_asym = torch.ops.bestlaop.acquire_woq_packw_info(
+        packw, acquire_type.IS_ASYM.value)[0] != 0
+    if is_asym:
+        zp_tensor = torch.ops.bestlaop.acquire_woq_packw_info(
+            packw, acquire_type.ZP_TENSOR.value)
+        assert (abs(zp-zp_tensor).max() == 0)

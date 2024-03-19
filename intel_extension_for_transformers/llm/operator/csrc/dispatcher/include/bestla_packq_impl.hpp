@@ -25,6 +25,9 @@ enum PACKW_ACQUIRE_TYPE {
   WEI_TYPE,
   CMPT_TYPE,
   SCALE_TYPE,
+  SCALE_TENSOR,
+  ZP_TENSOR,
+  IS_ASYM
 };
 
 void bestla_packq(woq_packq_param* p, woq_packq_ctx* ctx);
