@@ -41,7 +41,7 @@ Each line is a dict like this:
 CPU, CUDA
 
 ## 3. Installation
-Please ensure the installation of requirements for NeuralChat and retrieval plugin first by following the commands.
+Please ensure the installation of requirements for NeuralChat and retrieval plugin first by the following commands.
 ```
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat
