@@ -170,7 +170,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias=None,
     ):
 
-        if q_config.quant_method.value == "gptq"
+        if q_config.quant_method.value == "gptq":
             if q_config.desc_act:
                 if not q_config.static_groups:
                     int_weight2 = int_weight.clone()
