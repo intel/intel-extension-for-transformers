@@ -106,7 +106,7 @@ void bestla_2dcpy_tensor(int row, int col, int ld_src, torch::Tensor& dst, void*
   dst = torch::empty({row, col}, get_torch_dtype(dtype));
   auto dt_size = get_sizeof_bestla_dtype(dtype);
   for (int i = 0; i < row; i++) {
-    memcpy(dst.data_ptr() + i * col * dt_size, src + i * ld_src * dt_size, col * dt_size);
+    memcpy(reinterpret_cast<char*>(dst.data_ptr()) + i * col * dt_size, reinterpret_cast<char*>(src) + i * ld_src * dt_size, col * dt_size);
   }
 }
 

@@ -1,5 +1,6 @@
-transformers
-torch==2.0
 accelerate
-sentencepiece
 optimum
+peft
+sentencepiece
+torch==2.0
+transformers

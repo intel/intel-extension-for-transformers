@@ -77,6 +77,7 @@ subprojects:
       - "requirements.txt"
       - "setup.py"
       - "intel_extension_for_transformers/transformers/runtime/**"
+      - "intel_extension_for_transformers/transformers/llm/operator/**"
       - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
       - "!intel_extension_for_transformers/transformers/runtime/docs/**"
       - "!intel_extension_for_transformers/transformers/runtime/test/**"
