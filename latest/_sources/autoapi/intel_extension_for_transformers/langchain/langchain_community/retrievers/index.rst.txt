@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.langchain.langchain_community.retrievers`
+===================================================================================
+
+.. py:module:: intel_extension_for_transformers.langchain.langchain_community.retrievers
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   child_parent_retriever/index.rst
+
+

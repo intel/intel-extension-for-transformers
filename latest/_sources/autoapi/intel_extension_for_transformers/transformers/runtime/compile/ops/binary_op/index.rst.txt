@@ -1,0 +1,34 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.binary_op`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.binary_op
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.runtime.compile.ops.binary_op.BinaryOp
+
+
+
+
+.. py:class:: BinaryOp
+
+
+
+
+   The class of neural engine operator.
+
+   .. py:method:: set_attr(framework, node)
+
+      Attr initialization.
+
+
+

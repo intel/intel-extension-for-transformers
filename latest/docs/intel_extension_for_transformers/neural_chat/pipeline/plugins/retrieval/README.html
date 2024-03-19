@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g22536a4 documentation</title>
+  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+gae54f69 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -285,7 +285,7 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">langchain_community.llms.huggingface_pipeline</span> <span class="kn">import</span> <span class="n">HuggingFacePipeline</span>
 <span class="kn">from</span> <span class="nn">langchain.chains</span> <span class="kn">import</span> <span class="n">RetrievalQA</span>
 <span class="kn">from</span> <span class="nn">langchain_core.vectorstores</span> <span class="kn">import</span> <span class="n">VectorStoreRetriever</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.langchain.vectorstores</span> <span class="kn">import</span> <span class="n">Chroma</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.langchain_community.vectorstores</span> <span class="kn">import</span> <span class="n">Chroma</span>
 <span class="n">retriever</span> <span class="o">=</span> <span class="n">VectorStoreRetriever</span><span class="p">(</span><span class="n">vectorstore</span><span class="o">=</span><span class="n">Chroma</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
 <span class="n">retrievalQA</span> <span class="o">=</span> <span class="n">RetrievalQA</span><span class="o">.</span><span class="n">from_llm</span><span class="p">(</span><span class="n">llm</span><span class="o">=</span><span class="n">HuggingFacePipeline</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="n">retriever</span><span class="o">=</span><span class="n">retriever</span><span class="p">)</span>
 </pre></div>
@@ -312,7 +312,7 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">langchain_community.llms.huggingface_pipeline</span> <span class="kn">import</span> <span class="n">HuggingFacePipeline</span>
 <span class="kn">from</span> <span class="nn">langchain.chains</span> <span class="kn">import</span> <span class="n">RetrievalQA</span>
 <span class="kn">from</span> <span class="nn">langchain_core.vectorstores</span> <span class="kn">import</span> <span class="n">VectorStoreRetriever</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.langchain.vectorstores</span> <span class="kn">import</span> <span class="n">Qdrant</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.langchain_community.vectorstores</span> <span class="kn">import</span> <span class="n">Qdrant</span>
 <span class="n">retriever</span> <span class="o">=</span> <span class="n">VectorStoreRetriever</span><span class="p">(</span><span class="n">vectorstore</span><span class="o">=</span><span class="n">Qdrant</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
 <span class="n">retrievalQA</span> <span class="o">=</span> <span class="n">RetrievalQA</span><span class="o">.</span><span class="n">from_llm</span><span class="p">(</span><span class="n">llm</span><span class="o">=</span><span class="n">HuggingFacePipeline</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="n">retriever</span><span class="o">=</span><span class="n">retriever</span><span class="p">)</span>
 </pre></div>
@@ -386,7 +386,7 @@
 </div></blockquote>
 <p>“k” is the number of the returned most similar documents. “fetch_k” is the number of Documents to fetch to pass to MMR algorithm. “Lamabda_mult” is a number between 0 and 1 that determines the degree of diversity among the results with 0 corresponding to maximum diversity and 1 to minimum diversity. Defaults to 0.5.</p>
 <p>This new retriever is also available for langchain users. Below is a toy example that using our <code class="docutils literal notranslate"><span class="pre">ChildParentRetriever</span></code> in the langchain framework:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.langchain.retrievers</span> <span class="kn">import</span> <span class="n">ChildParentRetriever</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.langchain_community.retrievers</span> <span class="kn">import</span> <span class="n">ChildParentRetriever</span>
 <span class="kn">from</span> <span class="nn">langchain.vectorstores</span> <span class="kn">import</span> <span class="n">Chroma</span>
 <span class="n">retriever</span> <span class="o">=</span> <span class="n">ChildParentRetriever</span><span class="p">(</span><span class="n">vectorstore</span><span class="o">=</span><span class="n">Chroma</span><span class="p">(</span><span class="n">documents</span><span class="o">=</span><span class="n">child_documents</span><span class="p">),</span> <span class="n">parentstore</span><span class="o">=</span><span class="n">Chroma</span><span class="p">(</span><span class="n">documents</span><span class="o">=</span><span class="n">parent_documents</span><span class="p">),</span> <span class="n">search_type</span><span class="o">=</span><span class="n">xxx</span><span class="p">,</span> <span class="n">search_kwargs</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">})</span>
 <span class="n">docs</span><span class="o">=</span><span class="n">retriever</span><span class="o">.</span><span class="n">get_relevant_documents</span><span class="p">(</span><span class="s2">&quot;Intel&quot;</span><span class="p">)</span>
@@ -410,7 +410,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x78eeba1a0e80> 
+   <jinja2.runtime.BlockReference object at 0x72a1a08acc70> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

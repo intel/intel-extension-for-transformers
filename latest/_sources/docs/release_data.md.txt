@@ -30,7 +30,7 @@ Validated Model Performance
 
 
 System summary: Test by Intel on 09/19/2023. 1-node, 1x Intel(R) Xeon(R) Platinum 8480+ @3.8GHz, 56 cores/socket, HT On, Turbo On, Total Memory 256GB (16x16GB DDR5 4800 MT/s [4800 MT/s]), BIOS 3A14.TEL2P1, microcode 0x2b0001b0,
-CentOS Stream 8, gcc (GCC) 8.5.0 20210514 (Red Hat 8.5.0-10), DL Models, Frameworks/Backends: PyTorch/ONNXRT/[LLM Runtime](../intel_extension_for_transformers/llm/runtime/)/GGML, Datatype: FP32/INT8/BF16/FP8.
+CentOS Stream 8, gcc (GCC) 8.5.0 20210514 (Red Hat 8.5.0-10), DL Models, Frameworks/Backends: PyTorch/ONNXRT/[LLM Runtime](../intel_extension_for_transformers/transformers/runtime/)/GGML, Datatype: FP32/INT8/BF16/FP8.
 Using 1 socket, 56 cores/instance, 1 instance and batch size 1
 
 Performance varies by use, configuration and other factors.

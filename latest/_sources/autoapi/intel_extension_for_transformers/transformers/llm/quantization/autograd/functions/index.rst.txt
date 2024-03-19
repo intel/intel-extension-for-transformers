@@ -1,0 +1,31 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.llm.quantization.autograd.functions`
+===========================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.llm.quantization.autograd.functions
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.llm.quantization.autograd.functions.qbits_acquire_type
+
+
+
+
+.. py:class:: qbits_acquire_type
+
+
+
+
+   Generic enumeration.
+
+   Derive from this class to define new enumerations.
+
+

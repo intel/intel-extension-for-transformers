@@ -1,0 +1,61 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.llm.evaluation.lm_eval.evaluator`
+========================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.llm.evaluation.lm_eval.evaluator
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.llm.evaluation.lm_eval.evaluator.evaluate
+
+
+
+.. py:function:: evaluate(model, model_args=None, tasks=[], new_fewshot=0, batch_size=None, max_batch_size=None, device='cpu', no_cache=True, limit=None, bootstrap_iters=100000, check_integrity=False, decontamination_ngrams_path=None, write_out=False, output_base_path=None, seed=1234, user_model=None, user_tokenizer=None, warmup=False, model_format='torch')
+
+   Instantiate and evaluate a model on a list of tasks.
+
+   :param model: Union[str, LM]
+       Name of model or LM object, see lm_eval.models.get_model
+   :param model_args: Optional[str]
+       String arguments for each model class, see LM.create_from_arg_string.
+       Ignored if `model` argument is a LM object.
+   :param tasks: list[Union[str, Task]]
+       List of task names or Task objects. Task objects will be taken to have name task.
+       EVAL_HARNESS_NAME if defined and type(task).__name__ otherwise.
+   :param num_fewshot: int
+       Number of examples in few-shot context
+   :param batch_size: int, optional
+       Batch size for model
+   :param device: str, optional
+       PyTorch device (e.g. "cpu" or "cuda:0") for running models
+   :param no_cache: bool
+       Whether or not to cache
+   :param limit: int, optional
+       Limit the number of examples per task (only use this for testing)
+   :param bootstrap_iters:
+       Number of iterations for bootstrap statistics
+   :param description_dict: dict[str, str]
+       Dictionary of custom task descriptions of the form: `task_name: description`
+   :param check_integrity: bool
+       Whether to run the relevant part of the test suite for the tasks
+   :param seed: Optional
+       Set seed
+   :param user_model: Optional[Object]
+       Model object user provided.
+   :param output_dir: str
+       Save the results Path
+   :param model_format: str
+       Model format, support 'torch' and 'onnx'
+   :return
+       Dictionary of results
+
+

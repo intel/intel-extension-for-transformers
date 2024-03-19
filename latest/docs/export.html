@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Export to ONNX &mdash; Intel® Extension for Transformers 0.1.dev1+g22536a4 documentation</title>
+  <title>Export to ONNX &mdash; Intel® Extension for Transformers 0.1.dev1+gae54f69 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
@@ -63,7 +63,6 @@
 <li class="toctree-l3"><a class="reference internal" href="distillation.html">Distillation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pruning.html">Pruning</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autodistillation.html">AutoDistillation Design</a></li>
-<li class="toctree-l3"><a class="reference internal" href="data_augmentation.html">Data Augmentation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmark.html">Benchmark</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Export to ONNX</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
@@ -183,7 +182,7 @@
 </section>
 <section id="export-to-bf16-onnx-model">
 <h3>Export to BF16 ONNX Model<a class="headerlink" href="#export-to-bf16-onnx-model" title="Link to this heading"></a></h3>
-<p>If the flag: <code class="docutils literal notranslate"><span class="pre">enable_bf16</span></code> is True, you will get an ONNX model with BFloat16 weights for [’MatMul’, ‘Gemm’] node type. This FP32 + BF16 ONNX model can be accelerated by our <a class="reference external" href="../intel_extension_for_transformers/llm/runtime/deprecated/">executor</a> backend.</p>
+<p>If the flag: <code class="docutils literal notranslate"><span class="pre">enable_bf16</span></code> is True, you will get an ONNX model with BFloat16 weights for [’MatMul’, ‘Gemm’] node type. This FP32 + BF16 ONNX model can be accelerated by our <a class="reference external" href="../intel_extension_for_transformers/transformers/runtime/">executor</a> backend.</p>
 </section>
 <section id="api-usage">
 <h3>API usage<a class="headerlink" href="#api-usage" title="Link to this heading"></a></h3>
@@ -236,7 +235,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x78eed4105ed0> 
+   <jinja2.runtime.BlockReference object at 0x72a1a08af460> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

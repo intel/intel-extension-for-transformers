@@ -1,0 +1,29 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.llm.finetuning.eval_utils`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.llm.finetuning.eval_utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.llm.finetuning.eval_utils.evaluate_plus_ppl
+
+
+
+.. py:function:: evaluate_plus_ppl(self, eval_dataset: Optional[Union[torch.utils.data.Dataset, Dict[str, torch.utils.data.Dataset]]] = None, ignore_keys: Optional[List[str]] = None, metric_key_prefix: str = 'eval') -> Dict[str, float]
+
+   Copied from Trainer.evaluate:
+   https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/trainer.py#L3029
+   The only differences are:
+   - add new metric eval_ppl
+
+
