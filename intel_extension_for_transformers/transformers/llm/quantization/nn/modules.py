@@ -170,23 +170,26 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias=None,
     ):
 
-        if q_config.quant_method.value == "gptq" and q_config.desc_act:
-            if not q_config.static_groups:
-                int_weight2 = int_weight.clone()
-                group_size = q_config.group_size
-                group_dict = {}
-                for i in range(len(g_idx)):
-                    group_idx = g_idx[i].item()
-                    if group_idx not in group_dict:
-                        target_idx = group_idx * group_size
-                        group_dict[group_idx] = 0
-                    else:
-                        group_dict[group_idx] = group_dict[group_idx] + 1
-                        target_idx = group_idx * group_size + group_dict[group_idx]
-                    int_weight2[target_idx] = int_weight[i]
-                int_weight = int_weight2
+        if q_config.quant_method.value == "gptq"
+            if q_config.desc_act:
+                if not q_config.static_groups:
+                    int_weight2 = int_weight.clone()
+                    group_size = q_config.group_size
+                    group_dict = {}
+                    for i in range(len(g_idx)):
+                        group_idx = g_idx[i].item()
+                        if group_idx not in group_dict:
+                            target_idx = group_idx * group_size
+                            group_dict[group_idx] = 0
+                        else:
+                            group_dict[group_idx] = group_dict[group_idx] + 1
+                            target_idx = group_idx * group_size + group_dict[group_idx]
+                        int_weight2[target_idx] = int_weight[i]
+                    int_weight = int_weight2
+                else:
+                    g_idx = torch.empty(0, dtype=torch.int32)
             else:
-                g_idx = torch.empty(0, dtype=torch.int32)
+                g_idx = torch.empty(0, dtype=torch.int32)                                        
 
         if q_config.bits == 4:
             int_weight = (int_weight - 8) * 16
