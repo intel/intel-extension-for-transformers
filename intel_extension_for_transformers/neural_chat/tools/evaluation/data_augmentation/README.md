@@ -41,7 +41,7 @@ Each line is a dict like this:
 CPU, CUDA
 
 ## 3. Installation
-Please ensure the installation of NeuralChat first by following the commands.
+Please ensure the installation of requirements for NeuralChat and retrieval plugin first by following the commands.
 ```
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat
@@ -87,7 +87,7 @@ python -m data_augmentation.retrieval_dataset_construction \
 - `llm_model`: The path for the LLM model.
 - `embedding_model`: The path for the text embedding model.
 - `input`: The path of the file/folder/link of the content.
-- `output`: The name of output files. The default value is './data'. The default output files are 'data.jsonl', 'data_minedHN.jsonl', 'data_minedHN_split.jsonl'.
+- `output`: The path of output files. The default value is './data'. The default output files are './data/raw.jsonl', './data/minedHN.jsonl', './data/minedHN_split.jsonl'.
 - `temperature`: The value is used to modulate the next token probabilities, and will influence the distribution of similarity scores. The default value is 0.8.
 - `top_p`: If set to float < 1, only the smallest set of most probable tokens with probabilities that add up to top_p or higher are kept for generation. The default value is 0.9.
 - `top_k`: The number of highest probability vocabulary tokens to keep for top-k-filtering. The default value is 40.
@@ -103,7 +103,7 @@ python -m data_augmentation.retrieval_dataset_construction \
 - `similarity_threshold`: The cosine similarity threshold used to filter the generated queries. The default value is 0.6.
 
 **Result**:
-Three files will be generated. The default output files are `data.jsonl`, `data_minedHN.jsonl`, `data_minedHN_split.jsonl`. The third is the final output dataset, where each line is a dict like this:
+Three files will be generated. The default output files are `./data/raw.jsonl`, `./data/minedHN.jsonl`, `./data/minedHN_split.jsonl`. The third is the final output dataset, where each line is a dict like this:
 ```
 {"query": str, "pos": List[str], "neg": List[str]}
 ```
