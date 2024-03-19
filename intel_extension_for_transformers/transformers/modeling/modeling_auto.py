@@ -82,7 +82,7 @@ def recover_export_model(model, current_key_name=None):
 
     Return optimum format model.
     """
-    from ...llm.quantization.nn.modules import QuantizedLinearQBits
+    from ..llm.quantization.nn.modules import QuantizedLinearQBits
     for name, module in model.named_children():
         if current_key_name is None:
             current_key_name = []
