@@ -66,7 +66,14 @@ def unpack_weight(qweight, scales, qzeros, q_config):
         zeros = zeros.to(torch.int8 if sym else torch.uint8)
     # due to INC minus one
     zeros = zeros + 1
-    zeros = zeros.reshape(scales.shape)
+    try:
+        zeros = zeros.reshape(scales.shape)
+    except:
+        # zeros and scales have different iteam numbers.
+        # remove 1 (due to 0 + 1 in line 68)
+        zeros = zeros[zeros !=1]
+        zeros = zeros.reshape(scales.shape)
+
     # due to INC asym return torch.uint8 but backend request int8,
     # change it to int8 with offset 128
     if not sym and bits == 8:

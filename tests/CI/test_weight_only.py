@@ -29,8 +29,14 @@ from transformers import (
     Trainer
 )
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.transformers.llm.quantization.nn.modules import QuantizedLinearQBits, QuantizedLoraLinearQBits
-from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
+from intel_extension_for_transformers.transformers.llm.quantization.nn.modules import (
+    QuantizedLinearQBits,
+    QuantizedLoraLinearQBits
+)
+from intel_extension_for_transformers.transformers.llm.quantization.utils import (
+    convert_to_quantized_model,
+    replace_linear
+)
 from intel_extension_for_transformers.transformers.llm.utils.generation import _beam_search, _greedy_search
 from intel_extension_for_transformers.transformers import RtnConfig
 
@@ -99,6 +105,7 @@ class TestWeightOnly(unittest.TestCase):
         print(config)
 
     def test_int8(self):
+        import pdb;pdb.set_trace();
         raw_wei = torch.rand(2, 32, dtype=torch.float)
         compress_wei = torch.ops.bestlaop.woq_quantize(raw_wei, True, 32, "fp32", "int8", "fp32", False)
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
@@ -110,7 +117,7 @@ class TestWeightOnly(unittest.TestCase):
             activation = torch.rand(1, 32, dtype=torch.float)
             output = model(activation)
 
-            config = RtnConfig(bits=8, weight_dtype="int8", group_size=32)
+            config = RtnConfig(bits=8, weight_dtype="int8", group_size=32, sym=False)
             config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
