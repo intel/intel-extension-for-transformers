@@ -71,11 +71,6 @@ jobs:
           -v /dataset/cache/huggingface:/root/.cache/huggingface \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
-      #- name: Env build
-      #  run: |
-      #    docker exec ${{ env.CONTAINER_NAME }} \
-      #    bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
-
       - name: Binary build
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
