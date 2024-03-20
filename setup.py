@@ -65,7 +65,7 @@ else:
     result = subprocess.Popen("pip install -r requirements-cpu.txt", shell=True)
     result.wait()
 
-if not SKIP_RUNTIME:
+if not IS_INTEL_GPU:
     from cmake import CMAKE_BIN_DIR
     from cpuinfo import get_cpu_info
     cpu_flags = get_cpu_info()['flags']
@@ -284,10 +284,10 @@ if __name__ == '__main__':
     if IS_INTEL_GPU:
         ext_modules = []
     else:
-        ext_modules = [CMakeExtension(
-            "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/transformers/llm/operator/csrc', lib_only=True)]
-    if not SKIP_RUNTIME:
         check_submodules()
+        ext_modules = [CMakeExtension(
+            "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/transformers/llm/operator/csrc/')]
+    if not SKIP_RUNTIME:
         ext_modules.extend([
             CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/transformers/runtime/"),
             ])
@@ -311,7 +311,7 @@ if __name__ == '__main__':
         package_data={
             '': ["*.yaml", "*.mat"],
         },
-        cmdclass=cmdclass if not SKIP_RUNTIME else {},
+        cmdclass=cmdclass if not IS_INTEL_GPU else {},
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [

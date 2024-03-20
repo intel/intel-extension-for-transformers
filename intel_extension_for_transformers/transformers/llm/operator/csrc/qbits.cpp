@@ -25,6 +25,8 @@
 #include <torch/script.h>
 #include <torch/torch.h>
 #include <torch/types.h>
+#include <torch/extension.h>
+#include <pybind11/pybind11.h>
 
 static std::map<torch::ScalarType, dispatcher_utils::QBITS_DT> qbits_dt_map{
     {torch::kFloat32, dispatcher_utils::QBITS_FP32}, {torch::kBFloat16, dispatcher_utils::QBITS_BF16}};
@@ -147,7 +149,16 @@ static torch::Tensor qbits_dropout_fwd(torch::Tensor& output, double p) { return
 
 static void qbits_dropout_bwd(torch::Tensor& grad, torch::Tensor& scale) { dropout_bwd(grad, scale); }
 
-TORCH_LIBRARY(bestlaop, m) {
+static bool check_isa_supported(std::string isa) {
+  if (isa == "AMX") return dispatcher_utils::check_amx();
+  if (isa == "AVX512_VNNI") return dispatcher_utils::check_avx512_vnni();
+  if (isa == "AVX_VNNI") return dispatcher_utils::check_avx_vnni();
+  if (isa == "AVX512F") return dispatcher_utils::check_avx512f();
+  if (isa == "AVX2") return dispatcher_utils::check_avx2();
+  return false;
+}
+
+PYBIND11_MODULE(qbits, m) {
   m.def("woq_quantize", &woq_quantize);
   m.def("woq_linear", &woq_linear);
   m.def("woq_dequantize", &woq_dequantize);
@@ -155,9 +166,8 @@ TORCH_LIBRARY(bestlaop, m) {
   m.def("set_woq_workspace", &set_woq_workspace);
   m.def("matmul", &bestlaop_gemm);
   m.def("acquire_woq_packw_info", &acquire_woq_packw_info);
-}
-
-TORCH_LIBRARY(qbits_customop, m) {
   m.def("dropout_fwd", &qbits_dropout_fwd);
   m.def("dropout_bwd", &qbits_dropout_bwd);
+  m.def("check_isa_supported", &check_isa_supported);
+  m.def("acquire_woq_packw_info", &acquire_woq_packw_info);
 }
