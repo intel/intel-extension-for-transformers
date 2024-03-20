@@ -446,6 +446,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             algorithm = "RTN"
         elif config.quant_method.value == "awq":
             recipes = {
+                "layer_wise_quant": config.layer_wise,
                 "rtn_args": {
                     "enable_full_range": (
                         True if "fullrange" in config.weight_dtype else False
@@ -460,6 +461,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             algorithm = "TEQ"
         elif config.quant_method.value == "gptq":
             recipes = {
+                "layer_wise_quant": config.layer_wise,
                 "gptq_args": {
                     "act_order": config.desc_act,
                     "percdamp": config.damp_percent,
@@ -468,7 +470,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     "use_max_length": True if config.max_input_length else False,
                     "pad_max_length": config.max_input_length,
                     "static_groups": config.static_groups,
-                    "layer_wise_quant": config.layer_wise,
                 }
             }
             algorithm = "GPTQ"
