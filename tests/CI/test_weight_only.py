@@ -18,6 +18,7 @@ import torch
 import unittest
 import shutil
 import torch.utils.data as data
+import intel_extension_for_transformers.qbits as qbits
 from peft import (
     LoraConfig,
     TaskType,
@@ -106,9 +107,9 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_int8(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
-        compress_wei = torch.ops.bestlaop.woq_quantize(raw_wei, True, 32, "fp32", "int8", "fp32", False)
+        compress_wei = qbits.woq_quantize(raw_wei, True, 32, "fp32", "int8", "fp32", False)
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
-        torch.ops.bestlaop.woq_dequantize(compress_wei, revert_wei, True, "fp32", "int8", "fp32")
+        qbits.woq_dequantize(compress_wei, revert_wei, True, "fp32", "int8", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
@@ -126,9 +127,9 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_int4(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
-        compress_wei = torch.ops.bestlaop.woq_quantize(raw_wei, True, 32, "fp32", "int4_fullrange", "fp32", False)
+        compress_wei = qbits.woq_quantize(raw_wei, True, 32, "fp32", "int4_fullrange", "fp32", False)
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
-        torch.ops.bestlaop.woq_dequantize(compress_wei, revert_wei, True, "fp32", "int4_fullrange", "fp32")
+        qbits.woq_dequantize(compress_wei, revert_wei, True, "fp32", "int4_fullrange", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():

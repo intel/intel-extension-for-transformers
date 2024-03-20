@@ -61,16 +61,16 @@ def test(m, k, n, weight_type, scale_type, compute_type, asym, blocksize, dump_t
     cvt_idx = convert_idx(g_idx, k, blocksize)
     zp = torch.randint(-4, 4, [k//blocksize, n], dtype=torch.int8)
     scale = torch.rand(k//blocksize, n, dtype=torch.float)
-    packw = torch.ops.bestlaop.woq_packq(
+    packw = qbits.woq_packq(
         raw_s8_wei, scale, zp, g_idx, weight_type, scale_type, compute_type, asym, blocksize)
     revert_wei = torch.zeros(k, n, dtype=torch.float)
-    torch.ops.bestlaop.woq_dequantize(
+    qbits.woq_dequantize(
         packw, revert_wei, False, compute_type, weight_type, scale_type)
     ref_act = torch.rand(m, k, dtype=torch.float)
     tar_act = ref_act.clone()
     ref_act = torch.index_select(ref_act, 1, cvt_idx)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
-    torch.ops.bestlaop.woq_linear(
+    qbits.woq_linear(
         tar_act, packw, torch.empty(0), tar_dst, n, False, compute_type, weight_type, scale_type, asym)
     ref_dst = torch.matmul(ref_act, revert_wei)
     if dump_tensor:
@@ -82,28 +82,28 @@ def test(m, k, n, weight_type, scale_type, compute_type, asym, blocksize, dump_t
         assert (abs(ref_dst - tar_dst).max() < 8)
     else:
         assert (abs(ref_dst - tar_dst).max() < 10)
-    packw_size = torch.ops.bestlaop.acquire_woq_packw_info(
+    packw_size = qbits.acquire_woq_packw_info(
         packw, acquire_type.SIZE.value)[0].item()
     if packw_size != packw.size()[0]:
         assert (0)
-    packw_wei_type = torch.ops.bestlaop.acquire_woq_packw_info(
+    packw_wei_type = qbits.acquire_woq_packw_info(
         packw, acquire_type.WEI_TYPE.value)
     packw_wei_type_str = ''.join(chr(ascii_code)
                                  for ascii_code in packw_wei_type.tolist())
     if packw_wei_type_str != weight_type:
         assert (0)
-    enable_act_shuffle = torch.ops.bestlaop.acquire_woq_packw_info(
+    enable_act_shuffle = qbits.acquire_woq_packw_info(
         packw, acquire_type.ACT_SHUFFLE.value)[0] != 0
     assert (enable_act_shuffle)
-    acquire_g_idx = torch.ops.bestlaop.acquire_woq_packw_info(
+    acquire_g_idx = qbits.acquire_woq_packw_info(
         packw, acquire_type.G_IDX.value)
     assert (abs(acquire_g_idx-cvt_idx).max() == 0)
-    scale_tensor = torch.ops.bestlaop.acquire_woq_packw_info(
+    scale_tensor = qbits.acquire_woq_packw_info(
         packw, acquire_type.SCALE_TENSOR.value)
     assert (abs(scale-scale_tensor).max() == 0)
-    is_asym = torch.ops.bestlaop.acquire_woq_packw_info(
+    is_asym = qbits.acquire_woq_packw_info(
         packw, acquire_type.IS_ASYM.value)[0] != 0
     if is_asym:
-        zp_tensor = torch.ops.bestlaop.acquire_woq_packw_info(
+        zp_tensor = qbits.acquire_woq_packw_info(
             packw, acquire_type.ZP_TENSOR.value)
         assert (abs(zp-zp_tensor).max() == 0)

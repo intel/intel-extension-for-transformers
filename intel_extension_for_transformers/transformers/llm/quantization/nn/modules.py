@@ -24,16 +24,13 @@ from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
 from peft.tuners.lora import LoraLayer, LoraModel
 from peft.utils.other import transpose
 from intel_extension_for_transformers.transformers.llm.quantization.autograd import matmul_kbit
-
-torch.ops.load_library(
-    os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../../..", "libqbits.so")
-)
+import intel_extension_for_transformers.qbits as qbits
 
 
 class DropoutQBits_(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, probability):
-        mask = torch.ops.qbits_customop.dropout_fwd(input, probability)
+        mask = qbits.dropout_fwd(input, probability)
         if any(ctx.needs_input_grad[:1]):
             ctx.tensors = (mask,)
         else:
@@ -47,7 +44,7 @@ class DropoutQBits_(torch.autograd.Function):
         grad_input = None
 
         if req_grad_input:
-            grad_input = torch.ops.qbits_customop.dropout_bwd(grad_output, mask)
+            grad_input = qbits.dropout_bwd(grad_output, mask)
 
         return grad_input, None
 
@@ -139,7 +136,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
     def set_fp_weights_bias(self, weight_data, bias=None):
         if weight_data.is_meta:
             weight_data = torch.ones(weight_data.shape, dtype=torch.float)
-        weight = torch.ops.bestlaop.woq_quantize(
+        weight = qbits.woq_quantize(
             weight_data,
             True,
             self.blocksize,
@@ -202,7 +199,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if q_config.quant_method.value != "gptq":
             g_idx = torch.empty(0, dtype=torch.int32)
 
-        packw = torch.ops.bestlaop.woq_packq(
+        packw = qbits.woq_packq(
             int_weight.contiguous(),
             gptq_scales.float().contiguous(),
             gptq_zeros.contiguous(),
@@ -271,35 +268,35 @@ class QuantizedLinearQBits(torch.nn.Linear):
         return int_weight
 
     def recover_qparms(self):
-        group_size = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 1)[0]
-        in_features = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 2)[0]
-        out_features = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 3)[0]
-        desc_act = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 4)[0] != 0
+        group_size = qbits.acquire_woq_packw_info(self.weight, 1)[0]
+        in_features = qbits.acquire_woq_packw_info(self.weight, 2)[0]
+        out_features = qbits.acquire_woq_packw_info(self.weight, 3)[0]
+        desc_act = qbits.acquire_woq_packw_info(self.weight, 4)[0] != 0
         if desc_act:
-            g_idx = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 5)
+            g_idx = qbits.acquire_woq_packw_info(self.weight, 5)
         else:
             g_idx = None
-        weight_dtype_ascii = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 6)
+        weight_dtype_ascii = qbits.acquire_woq_packw_info(self.weight, 6)
         weight_dtype = "".join(
             chr(ascii_code) for ascii_code in weight_dtype_ascii.tolist()
         )
         bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4", "int4_fullrange"] else 8
-        compute_dtype_ascii = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 7)
+        compute_dtype_ascii = qbits.acquire_woq_packw_info(self.weight, 7)
         compute_dtype = "".join(
             chr(ascii_code) for ascii_code in compute_dtype_ascii.tolist()
         )
-        scales_dtype_ascii = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 8)
+        scales_dtype_ascii = qbits.acquire_woq_packw_info(self.weight, 8)
         scales_dtype = "".join(
             chr(ascii_code) for ascii_code in scales_dtype_ascii.tolist()
         )
         if scales_dtype is None:
             assert False, "scales dtype only support fp32."
-        scales = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 9)
+        scales = qbits.acquire_woq_packw_info(self.weight, 9)
         if bits == 4:
             scales = scales * 16
-        zp = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 11)[0] != 0
+        zp = qbits.acquire_woq_packw_info(self.weight, 11)[0] != 0
         if zp:
-            qzeros = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 10)
+            qzeros = qbits.acquire_woq_packw_info(self.weight, 10)
             if bits == 4:
                 qzeros = qzeros // 16 + 8
             else:
@@ -309,7 +306,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
         revert_wei = torch.zeros(in_features, out_features, dtype=torch.float)
 
-        torch.ops.bestlaop.woq_dequantize(
+        qbits.woq_dequantize(
             self.weight, revert_wei, False, compute_dtype, weight_dtype, scales_dtype
         )
 
@@ -371,7 +368,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
         self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
         qbits_customop_available = True
         try:
-            torch.ops.qbits_customop.dropout_fwd
+            qbits.dropout_fwd
         except:
             qbits_customop_available = False
         if lora_dropout > 0 and qbits_customop_available:
@@ -399,7 +396,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.in_features,
             dtype=list(self.lora_A.values())[0].weight.dtype,
         )
-        torch.ops.bestlaop.woq_dequantize(
+        qbits.woq_dequantize(
             self.weight.data,
             w_dequant,
             True,
@@ -425,7 +422,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                 else:
                     w_data += self.get_delta_weight(active_adapter)
 
-        weight = torch.ops.bestlaop.woq_quantize(
+        weight = qbits.woq_quantize(
             w_data,
             True,
             self.blocksize,
@@ -455,7 +452,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.in_features,
             dtype=list(self.lora_A.values())[0].weight.dtype,
         )
-        torch.ops.bestlaop.woq_dequantize(
+        qbits.woq_dequantize(
             self.weight.data,
             w_dequant,
             True,
@@ -470,7 +467,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             if active_adapter in self.lora_A.keys():
                 w_data -= self.get_delta_weight(active_adapter)
 
-        weight = torch.ops.bestlaop.woq_quantize(
+        weight = qbits.woq_quantize(
             w_data,
             True,
             self.blocksize,
