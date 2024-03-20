@@ -90,6 +90,7 @@ function main() {
     wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     python -m pip install --upgrade --force-reinstall torch==2.2.0
+    python -m pip install fastapi==0.103.2
     cd ${WORKING_DIR} || exit 1
     echo "test on ${test_name}"
     if [[ $test_name == "PR-test" ]]; then
