@@ -25,6 +25,7 @@ from typing import Tuple, Optional, List
 from enum import Enum
 import intel_extension_for_transformers.qbits as qbits
 
+
 class qbits_acquire_type(Enum):
     SIZE = 0
     BLOCKSIZE = 1
@@ -108,7 +109,7 @@ class MatMulKBit(torch.autograd.Function):
             qbits.woq_linear(
                 A,
                 B.data,
-                bias,
+                bias if bias is not None else torch.empty(0),
                 out,
                 out.shape[-1],
                 bias is not None,
@@ -202,7 +203,7 @@ def matmul_kbit(
             qbits.woq_linear(
                 A,
                 B.data,
-                bias,
+                bias if bias is not None else torch.empty(0),
                 out,
                 out.shape[-1],
                 bias is not None,

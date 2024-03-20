@@ -180,7 +180,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
                             group_dict[group_idx] = 0
                         else:
                             group_dict[group_idx] = group_dict[group_idx] + 1
-                            target_idx = group_idx * group_size + group_dict[group_idx]
+                            target_idx = group_idx * \
+                                group_size + group_dict[group_idx]
                         int_weight2[target_idx] = int_weight[i]
                     int_weight = int_weight2
                 else:
@@ -250,21 +251,21 @@ class QuantizedLinearQBits(torch.nn.Linear):
         leng = weight.shape[1] // group_size
         tail_flag = False if weight.shape[1] % group_size == 0 else True
         for i in range(leng):
-            int_weight_tmp = weight[:, i * group_size : (i + 1) * group_size].div_(
+            int_weight_tmp = weight[:, i * group_size: (i + 1) * group_size].div_(
                 scale[:, i].unsqueeze(1)
             )
             if zp is not None:
                 int_weight_tmp.add_(zp[:, i].unsqueeze(1))
-            int_weight[:, i * group_size : (i + 1) * group_size].copy_(
+            int_weight[:, i * group_size: (i + 1) * group_size].copy_(
                 int_weight_tmp.round_()
             )
         if tail_flag:
-            int_weight_tmp = weight[:, leng * group_size :].div_(
+            int_weight_tmp = weight[:, leng * group_size:].div_(
                 scale[:, -1].unsqueeze(1)
             )
             if zp is not None:
                 int_weight_tmp.add_(zp[:, -1].unsqueeze(1))
-            int_weight[:, leng * group_size :].copy_(int_weight_tmp.round_())
+            int_weight[:, leng * group_size:].copy_(int_weight_tmp.round_())
         return int_weight
 
     def recover_qparms(self):
@@ -280,7 +281,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
         weight_dtype = "".join(
             chr(ascii_code) for ascii_code in weight_dtype_ascii.tolist()
         )
-        bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4", "int4_fullrange"] else 8
+        bits = 4 if weight_dtype in [
+            "nf4", "int4_clip", "fp4", "int4_fullrange"] else 8
         compute_dtype_ascii = qbits.acquire_woq_packw_info(self.weight, 7)
         compute_dtype = "".join(
             chr(ascii_code) for ascii_code in compute_dtype_ascii.tolist()
@@ -359,13 +361,15 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             scheme=kwargs.get("scheme", "sym"),
             device=kwargs.get("device", None),
         )
-        LoraLayer.__init__(self, in_features=in_features, out_features=out_features)
+        LoraLayer.__init__(self, in_features=in_features,
+                           out_features=out_features)
 
         # Freezing the pre-trained weight matrix
         self.weight.requires_grad = False
 
         init_lora_weights = kwargs.pop("init_lora_weights", True)
-        self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
+        self.update_layer(adapter_name, r, lora_alpha,
+                          lora_dropout, init_lora_weights)
         qbits_customop_available = True
         try:
             qbits.dropout_fwd

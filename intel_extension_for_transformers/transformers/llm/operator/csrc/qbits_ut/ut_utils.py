@@ -22,6 +22,7 @@ import pytest
 from functools import wraps
 import intel_extension_for_transformers.qbits as qbits
 
+
 def capture_args(f):
     @wraps(f)
     def wrapper(*args, **kwargs):

@@ -55,21 +55,22 @@ SKIP_RUNTIME = check_env_flag("SKIP_RUNTIME", False)
 RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
 """ Whether to only packaging backends """
 
-ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
+ipex_available = importlib.util.find_spec(
+    "intel_extension_for_pytorch") is not None
 IS_INTEL_GPU = False
 if ipex_available and (get_gpu_family() != "no_gpu"):
     SKIP_RUNTIME = True
     RUNTIME_ONLY = False
     IS_INTEL_GPU = True
 else:
-    result = subprocess.Popen("pip install -r requirements-cpu.txt", shell=True)
+    result = subprocess.Popen(
+        "pip install -r requirements-cpu.txt", shell=True)
     result.wait()
 
 if not IS_INTEL_GPU:
     from cmake import CMAKE_BIN_DIR
     from cpuinfo import get_cpu_info
     cpu_flags = get_cpu_info()['flags']
-
 
     CMAKE_BUILD_TYPE = os.environ.get("CMAKE_BUILD_TYPE", "Release")
     """ Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release """
@@ -80,7 +81,8 @@ if not IS_INTEL_GPU:
     CMAKE_ARGS = os.environ.get("CMAKE_ARGS", "")
     """ Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge) """
 
-    CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "")
+    CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get(
+        "CMAKE_BUILD_PARALLEL_LEVEL", "")
     """ Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators """
 
     NE_WITH_AVX2 = check_env_flag("NE_WITH_AVX2", 'avx512f' not in cpu_flags)
@@ -104,7 +106,8 @@ class CMakeExtension(Extension):
         """Init a CMakeExtension object."""
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
-        self.optional = lib_only  # we only deliver shared object but not as a python extension module
+        # we only deliver shared object but not as a python extension module
+        self.optional = lib_only
 
 
 class CMakeBuild(build_ext):
@@ -289,9 +292,10 @@ if __name__ == '__main__':
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
-            CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/transformers/runtime/"),
-            ])
-    cmdclass={'build_ext': CMakeBuild}
+            CMakeExtension("intel_extension_for_transformers.neural_engine_py",
+                           "intel_extension_for_transformers/transformers/runtime/"),
+        ])
+    cmdclass = {'build_ext': CMakeBuild}
 
     setup(
         name="intel-extension-for-transformers",
