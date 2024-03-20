@@ -169,22 +169,27 @@ class QuantizedLinearQBits(torch.nn.Linear):
         q_config,
         bias=None,
     ):
-        if q_config.quant_method.value == "gptq" and (
-            q_config.desc_act and not q_config.static_groups
-        ):
-            int_weight2 = int_weight.clone()
-            group_size = q_config.group_size
-            group_dict = {}
-            for i in range(len(g_idx)):
-                group_idx = g_idx[i].item()
-                if group_idx not in group_dict:
-                    target_idx = group_idx * group_size
-                    group_dict[group_idx] = 0
+
+        if q_config.quant_method.value == "gptq":
+            if q_config.desc_act:
+                if not q_config.static_groups:
+                    int_weight2 = int_weight.clone()
+                    group_size = q_config.group_size
+                    group_dict = {}
+                    for i in range(len(g_idx)):
+                        group_idx = g_idx[i].item()
+                        if group_idx not in group_dict:
+                            target_idx = group_idx * group_size
+                            group_dict[group_idx] = 0
+                        else:
+                            group_dict[group_idx] = group_dict[group_idx] + 1
+                            target_idx = group_idx * group_size + group_dict[group_idx]
+                        int_weight2[target_idx] = int_weight[i]
+                    int_weight = int_weight2
                 else:
-                    group_dict[group_idx] = group_dict[group_idx] + 1
-                    target_idx = group_idx * group_size + group_dict[group_idx]
-                int_weight2[target_idx] = int_weight[i]
-            int_weight = int_weight2
+                    g_idx = torch.empty(0, dtype=torch.int32)
+            else:
+                g_idx = torch.empty(0, dtype=torch.int32)
 
         if q_config.bits == 4:
             int_weight = (int_weight - 8) * 16
@@ -194,11 +199,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if q_config.sym:
             gptq_zeros = torch.empty(0, dtype=torch.int8)
 
-        if (
-            q_config.quant_method.value != "gptq"
-            or q_config.static_groups
-            or (not q_config.desc_act)
-        ):
+        if q_config.quant_method.value != "gptq":
             g_idx = torch.empty(0, dtype=torch.int32)
 
         packw = torch.ops.bestlaop.woq_packq(
@@ -301,6 +302,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
             qzeros = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 10)
             if bits == 4:
                 qzeros = qzeros // 16 + 8
+            else:
+                qzeros = (qzeros.to(torch.int32) + 128).to(torch.uint8)
         else:
             qzeros = None
 

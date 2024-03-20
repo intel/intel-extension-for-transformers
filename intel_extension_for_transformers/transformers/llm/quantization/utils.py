@@ -54,24 +54,45 @@ DTYPE_BITS_MAPPING = {
 
 
 def unpack_weight(qweight, scales, qzeros, q_config):
+    sym = q_config.sym
     bits = q_config.bits
     wf = torch.tensor(list(range(0, 32, bits)), dtype=torch.int32).unsqueeze(0)
+
     zeros = torch.bitwise_right_shift(
         torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)
     ).to(torch.int16 if bits == 8 else torch.int8)
     torch.bitwise_and(zeros, (2**bits) - 1, out=zeros)
     if bits == 8:
-        zeros = zeros.to(torch.int8)
+        zeros = zeros.to(torch.int8 if sym else torch.uint8)
+    # due to INC minus one
     zeros = zeros + 1
-    zeros = zeros.reshape(scales.shape)
+    try:
+        zeros = zeros.reshape(scales.shape)
+    except:
+        # zeros and scales have different iteam numbers.
+        # remove 1 (due to 0 + 1 in line 68)
+        zeros = zeros[zeros !=1]
+        zeros = zeros.reshape(scales.shape)
+
+    # due to INC asym return torch.uint8 but backend request int8,
+    # change it to int8 with offset 128
+    if not sym and bits == 8:
+        zeros = (zeros.to(torch.int32) - 128).to(torch.int8)
 
     weight = torch.bitwise_right_shift(
         torch.unsqueeze(qweight, 1).expand(-1, 32 // bits, -1), wf.unsqueeze(-1)
     ).to(torch.int16 if bits == 8 else torch.int8)
     torch.bitwise_and(weight, (2**bits) - 1, out=weight)
-
     if bits == 8:
-        weight = weight.to(torch.int8)
+        # due to INC add shift bias for sym
+        if sym:
+            shift_bias = 2 ** (bits - 1)
+            weight -= shift_bias
+        weight = weight.to(torch.int8 if sym else torch.uint8)
+        # due to INC asym return torch.uint8 but backend request int8,
+        # change it to int8 with offset 128
+        if not sym:
+            weight = (weight.to(torch.int32) - 128). to(torch.int8)
     return weight, scales, zeros
 
 
@@ -238,7 +259,7 @@ def _replace_linear(
                     model._modules[name].requires_grad_(False)
                 if device == "cpu" or device == torch.device("cpu") or device == "auto":
                     if quantization_config.weight_dtype in \
-                                    ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int8", "int4_fullrange"]:
+                                    ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int4_fullrange"]:
                         model._modules[name].set_fp_weights_bias(
                             module.weight.data,
                             None if module.bias is None else module.bias.data,
@@ -507,7 +528,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
             q_model = replace_linear(model, None, None, config, device=device)
         else:
-            if config.weight_dtype not in ["nf4", "fp4", "int8", "int4_fullrange"]:
+            if config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 q_model = replace_linear(inc_model, None, None, config, device=device)
