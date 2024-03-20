@@ -67,7 +67,6 @@ from ..llm.quantization.utils import (
     convert_to_quantized_model,
     replace_linear,
 )
-from ..llm.quantization.nn.modules import QuantizedLinearQBits
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from transformers.configuration_utils import PretrainedConfig
 from transformers import AutoConfig
@@ -83,6 +82,7 @@ def recover_export_model(model, current_key_name=None):
 
     Return optimum format model.
     """
+    from ..llm.quantization.nn.modules import QuantizedLinearQBits
     for name, module in model.named_children():
         if current_key_name is None:
             current_key_name = []
