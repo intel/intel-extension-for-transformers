@@ -23,7 +23,7 @@ from functools import reduce
 from torch import Tensor
 from typing import Tuple, Optional, List
 from enum import Enum
-import intel_extension_for_transformers.qbits as qbits
+import intel_extension_for_transformers.qbits as qbits # pylint: disable=E0611, E0401
 
 
 class qbits_acquire_type(Enum):

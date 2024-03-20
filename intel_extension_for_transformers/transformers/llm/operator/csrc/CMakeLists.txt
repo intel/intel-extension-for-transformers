@@ -32,13 +32,10 @@ find_package(Torch REQUIRED
 PATHS ${torch_path}
 NO_DEFAULT_PATH)
 find_package(PythonLibs 3 REQUIRED)
-execute_process(COMMAND python -c "import pybind11; print(pybind11.__path__[0]+\"/share/cmake/pybind11\")"
-                OUTPUT_VARIABLE pybind11_DIR
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
-find_package(pybind11 REQUIRED)
 
 include(FindOpenMP)
 add_subdirectory(dispatcher)
+add_subdirectory(../../../runtime/third_party/pybind11 pybind11)
 
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp)
 file(GLOB qbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)

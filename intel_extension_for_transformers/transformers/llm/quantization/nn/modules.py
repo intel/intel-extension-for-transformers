@@ -24,7 +24,7 @@ from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
 from peft.tuners.lora import LoraLayer, LoraModel
 from peft.utils.other import transpose
 from intel_extension_for_transformers.transformers.llm.quantization.autograd import matmul_kbit
-import intel_extension_for_transformers.qbits as qbits
+import intel_extension_for_transformers.qbits as qbits  # pylint: disable=E0611, E0401
 
 
 class DropoutQBits_(torch.autograd.Function):
