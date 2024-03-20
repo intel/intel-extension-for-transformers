@@ -35,9 +35,15 @@ class TestEmbeddingFinetune(unittest.TestCase):
         return super().tearDown()
 
     def test_finetune(self):
+        path = \
+          "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/augmented_example.jsonl"
+        if os.path.exists(path):
+            train_data_path=path
+        else:
+            train_data_path='../tools/embedding_finetune/augmented_example.jsonl'
         argv = ['--output_dir', 'BAAI/bge-base-en-v1.5_annual', \
                 '--model_name_or_path', 'BAAI/bge-base-en-v1.5', \
-                '--train_data', '../tools/embedding_finetune/augmented_example.jsonl', \
+                '--train_data', train_data_path, \
                 '--learning_rate', '1e-5', \
                 '--num_train_epochs', '5', \
                 '--per_device_train_batch_size', '1', \
@@ -56,8 +62,14 @@ class TestEmbeddingFinetune(unittest.TestCase):
             self.assertTrue(os.path.exists("BAAI/bge-base-en-v1.5_annual"))
 
     def test_mine_hard_neg(self):
+        path = \
+          "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/example.jsonl"
+        if os.path.exists(path):
+            input_file_path=path
+        else:
+            input_file_path='../tools/embedding_finetune/example.jsonl'
         argv = ['--model_name_or_path', 'BAAI/bge-base-en-v1.5', \
-                '--input_file', '../tools/embedding_finetune/example.jsonl', \
+                '--input_file', input_file_path, \
                 '--output_file', 'augmented_example.jsonl', \
                 '--range_for_sampling', '2-10', \
                 '--negative_number', '5']
@@ -66,9 +78,21 @@ class TestEmbeddingFinetune(unittest.TestCase):
             self.assertTrue(os.path.exists("augmented_example.jsonl"))
 
     def test_evaluate(self):
+        path1 = \
+          "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/candidate_context.jsonl"
+        if os.path.exists(path):
+            index_file_jsonl_path=path1
+        else:
+            index_file_jsonl_path='../tools/embedding_finetune/candidate_context.jsonl'
+        path2 = \
+          "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/example.jsonl"
+        if os.path.exists(path2):
+            query_file_jsonl_path=path2
+        else:
+            query_file_jsonl_path='../tools/embedding_finetune/example.jsonl'
         argv = ['--model_name', 'BAAI/bge-base-en-v1.5', \
-                '--index_file_jsonl_path', '../tools/embedding_finetune/candidate_context.jsonl', \
-                '--query_file_jsonl_path', '../tools/embedding_finetune/example.jsonl']
+                '--index_file_jsonl_path', index_file_jsonl_path, \
+                '--query_file_jsonl_path', query_file_jsonl_path]
         with patch('sys.argv', ['python evaluate.py'] + argv):
             metrics=evaluate.main()
             self.assertIsNotNone(metrics)
