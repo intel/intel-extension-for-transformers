@@ -99,10 +99,10 @@ static void woq_dequantize(const torch::Tensor& compressed_weight, torch::Tensor
 }
 
 static void woq_linear(const torch::Tensor& activation, const torch::Tensor& weight, const torch::Tensor& bias,
-                       torch::Tensor& output, int64_t ldo, bool with_bias, const std::string& compute_type,
-                       const std::string& weight_type, const std::string& scale_type, bool asym) {
+                       torch::Tensor& output, const std::string& compute_type, const std::string& weight_type,
+                       const std::string& scale_type, bool asym) {
   woq::woq_config_param p;
-  torch::Tensor* rt_bias = with_bias ? const_cast<torch::Tensor*>(&bias) : &output;
+  torch::Tensor* rt_bias = bias.numel() == 0 ? &output : const_cast<torch::Tensor*>(&bias);
   woq::woq_runtime_ctx ctx{
       const_cast<torch::Tensor*>(&activation),
       const_cast<torch::Tensor*>(&weight),
@@ -110,12 +110,12 @@ static void woq_linear(const torch::Tensor& activation, const torch::Tensor& wei
       &output,
   };
   ctx.lda = static_cast<int>(activation.sizes()[1]);
-  ctx.ldo = static_cast<int>(ldo);
+  ctx.ldo = static_cast<int>(output.sizes()[1]);
   ctx.m = static_cast<int>(activation.sizes()[0]);
   ctx.k = static_cast<int>(activation.sizes()[1]);
-  ctx.n = static_cast<int>(ldo);
+  ctx.n = ctx.ldo;
   ctx.alpha = 1.f;
-  ctx.beta = with_bias ? 1.f : 0.f;
+  ctx.beta = bias.numel() != 0 ? 1.f : 0.f;
   init_woq_config_param<woq::WOQ_LINEAR>(&p, &ctx, compute_type, weight_type, scale_type, asym);
   woq::dispatch_woq_task(&p, &ctx, woq::WOQ_LINEAR);
 }

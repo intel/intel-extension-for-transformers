@@ -71,7 +71,7 @@ def test(m, k, n, weight_type, scale_type, compute_type, asym, blocksize, dump_t
     ref_act = torch.index_select(ref_act, 1, cvt_idx)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
     qbits.woq_linear(
-        tar_act, packw, torch.empty(0), tar_dst, n, False, compute_type, weight_type, scale_type, asym)
+        tar_act, packw, torch.empty(0), tar_dst, compute_type, weight_type, scale_type, asym)
     ref_dst = torch.matmul(ref_act, revert_wei)
     if dump_tensor:
         print(tar_dst)
