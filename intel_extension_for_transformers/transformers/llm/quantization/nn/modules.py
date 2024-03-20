@@ -301,6 +301,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
             qzeros = torch.ops.bestlaop.acquire_woq_packw_info(self.weight, 10)
             if bits == 4:
                 qzeros = qzeros // 16 + 8
+            else:
+                qzeros = (qzeros.to(torch.int32) + 128).to(torch.uint8)
         else:
             qzeros = None
 
