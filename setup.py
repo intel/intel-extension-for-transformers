@@ -284,10 +284,10 @@ if __name__ == '__main__':
     if IS_INTEL_GPU:
         ext_modules = []
     else:
-        check_submodules()
         ext_modules = [CMakeExtension(
             "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/transformers/llm/operator/csrc/')]
     if not SKIP_RUNTIME:
+        check_submodules()
         ext_modules.extend([
             CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/transformers/runtime/"),
             ])

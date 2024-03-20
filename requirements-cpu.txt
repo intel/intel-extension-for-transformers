@@ -2,3 +2,4 @@
 cmake
 ninja
 torch
+pybind11
