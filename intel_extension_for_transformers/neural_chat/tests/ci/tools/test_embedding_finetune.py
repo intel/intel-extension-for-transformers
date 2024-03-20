@@ -80,7 +80,7 @@ class TestEmbeddingFinetune(unittest.TestCase):
     def test_evaluate(self):
         path1 = \
           "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/candidate_context.jsonl"
-        if os.path.exists(path):
+        if os.path.exists(path1):
             index_file_jsonl_path=path1
         else:
             index_file_jsonl_path='../tools/embedding_finetune/candidate_context.jsonl'
