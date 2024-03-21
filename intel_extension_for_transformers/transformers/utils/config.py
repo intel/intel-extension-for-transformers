@@ -618,19 +618,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
 
 
 class RtnConfig(ITREXQuantizationConfigMixin):
-    """
-    This is a wrapper class about all possible attributes and features that you can play with a model that has been
-    loaded using `auto-awq` library awq quantization relying on auto_awq backend.
-
-    Args:
-        bits (`int`, *optional*, defaults to 4):
-            The number of bits to quantize to.
-        group_size (`int`, *optional*, defaults to 128):
-            The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
-        zero_point (`bool`, *optional*, defaults to `True`):
-            Whether to use zero point quantization.
-    """
-
     def __init__(
         self,
         bits: int = 4,
@@ -642,6 +629,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
         sym: bool = True,
+        layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
@@ -655,6 +643,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
         self.group_size = group_size
+        self.layer_wise = layer_wise
         self.sym = sym
         self.scheme = "sym" if self.sym else "asym"
         self.use_double_quant = use_double_quant
@@ -694,39 +683,6 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         return serializable_config_dict
 
 class GPTQConfig(ITREXQuantizationConfigMixin):
-    """
-    This is a wrapper class about all possible attributes and features that you can play with a model that has been
-    loaded using `intel_extension_for_transformers` api for gptq quantization relying on CPU device.
-
-    Args:
-        bits (`int`):
-            The number of bits to quantize to, supported numbers are (2, 3, 4, 8).
-        tokenizer (`str` or `PreTrainedTokenizerBase`, *optional*):
-            The tokenizer used to process the dataset. You can pass either:
-                - A custom tokenizer object.
-                - A string, the *model id* of a predefined tokenizer hosted inside a model repo on huggingface.co.
-                    Valid model ids can be located at the root-level, like `bert-base-uncased`, or namespaced under a
-                    user or organization name, like `dbmdz/bert-base-german-cased`.
-                - A path to a *directory* containing vocabulary files required by the tokenizer, for instance saved
-                    using the [`~PreTrainedTokenizer.save_pretrained`] method, e.g., `./my_model_directory/`.
-        dataset (`Union[List[str]]`, *optional*):
-            The dataset used for quantization. You can provide your own dataset in a list of string or just use the
-            original datasets used in GPTQ paper ['wikitext2','c4','c4-new','ptb','ptb-new']
-        group_size (`int`, *optional*, defaults to 128):
-            The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
-        damp_percent (`float`, *optional*, defaults to 0.1):
-            The percent of the average Hessian diagonal to use for dampening. Recommended value is 0.1.
-        desc_act (`bool`, *optional*, defaults to `False`):
-            Whether to quantize columns in order of decreasing activation size. Setting it to False can significantly
-            speed up inference but the perplexity may become slightly worse. Also known as act-order.
-        sym (`bool`, *optional*, defaults to `True`):
-            Whether to use symmetric quantization.
-        max_input_length (`int`, *optional*):
-            The maximum input length. This is needed to initialize a buffer that depends on the maximum expected input
-            length. It is specific to the exllama backend with act-order.
-
-    """
-
     def __init__(
         self,
         bits: int = 4,
@@ -745,6 +701,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         nsamples: int = 128,
         max_input_length: Optional[int] = None,
         static_groups: bool = False,
+        layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
@@ -772,6 +729,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.damp_percent = damp_percent
         self.desc_act = desc_act
         self.static_groups = static_groups
+        self.layer_wise = layer_wise
         self.max_input_length = max_input_length
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
@@ -840,18 +798,6 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         return serializable_config_dict
 
 class AwqConfig(ITREXQuantizationConfigMixin):
-    """
-    This is a wrapper class about all possible attributes and features.
-
-    Args:
-        bits (`int`, *optional*, defaults to 4):
-            The number of bits to quantize to.
-        group_size (`int`, *optional*, defaults to 128):
-            The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
-        zero_point (`bool`, *optional*, defaults to `True`):
-            Whether to use zero point quantization.
-    """
-
     def __init__(
         self,
         bits: int = 8,
@@ -920,19 +866,6 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         return serializable_config_dict
 
 class TeqConfig(ITREXQuantizationConfigMixin):
-    """
-    This is a wrapper class about all possible attributes and features that you can play with a model that has been
-    loaded using `auto-awq` library awq quantization relying on auto_awq backend.
-
-    Args:
-        bits (`int`, *optional*, defaults to 4):
-            The number of bits to quantize to.
-        group_size (`int`, *optional*, defaults to 128):
-            The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
-        zero_point (`bool`, *optional*, defaults to `True`):
-            Whether to use zero point quantization.
-    """
-
     def __init__(
         self,
         bits: int = 8,
@@ -996,39 +929,6 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         return serializable_config_dict
 
 class AutoRoundConfig(ITREXQuantizationConfigMixin):
-    """
-    This is a wrapper class about all possible attributes and features that you can play with a model that has been
-    loaded using `intel_extension_for_transformers` api for gptq quantization relying on CPU device.
-
-    Args:
-        bits (`int`):
-            The number of bits to quantize to, supported numbers are (2, 3, 4, 8).
-        tokenizer (`str` or `PreTrainedTokenizerBase`, *optional*):
-            The tokenizer used to process the dataset. You can pass either:
-                - A custom tokenizer object.
-                - A string, the *model id* of a predefined tokenizer hosted inside a model repo on huggingface.co.
-                    Valid model ids can be located at the root-level, like `bert-base-uncased`, or namespaced under a
-                    user or organization name, like `dbmdz/bert-base-german-cased`.
-                - A path to a *directory* containing vocabulary files required by the tokenizer, for instance saved
-                    using the [`~PreTrainedTokenizer.save_pretrained`] method, e.g., `./my_model_directory/`.
-        dataset (`Union[List[str]]`, *optional*):
-            The dataset used for quantization. You can provide your own dataset in a list of string or just use the
-            original datasets used in GPTQ paper ['wikitext2','c4','c4-new','ptb','ptb-new']
-        group_size (`int`, *optional*, defaults to 128):
-            The group size to use for quantization. Recommended value is 128 and -1 uses per-column quantization.
-        damp_percent (`float`, *optional*, defaults to 0.1):
-            The percent of the average Hessian diagonal to use for dampening. Recommended value is 0.1.
-        desc_act (`bool`, *optional*, defaults to `False`):
-            Whether to quantize columns in order of decreasing activation size. Setting it to False can significantly
-            speed up inference but the perplexity may become slightly worse. Also known as act-order.
-        sym (`bool`, *optional*, defaults to `True`):
-            Whether to use symmetric quantization.
-        max_input_length (`int`, *optional*):
-            The maximum input length. This is needed to initialize a buffer that depends on the maximum expected input
-            length. It is specific to the exllama backend with act-order.
-
-    """
-
     def __init__(
         self,
         bits: int = 8,

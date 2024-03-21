@@ -436,6 +436,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         # mapping to INC config
         if config.quant_method.value == "rtn":
             recipes = {
+                "layer_wise_quant": config.layer_wise,
                 "rtn_args": {
                     "enable_full_range": (
                         True if "fullrange" in config.weight_dtype else False
@@ -460,6 +461,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             algorithm = "TEQ"
         elif config.quant_method.value == "gptq":
             recipes = {
+                "layer_wise_quant": config.layer_wise,
                 "gptq_args": {
                     "act_order": config.desc_act,
                     "percdamp": config.damp_percent,
