@@ -110,10 +110,10 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_int8(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
-        compress_wei = qbits.woq_quantize(
+        compress_wei = qbits.quantize_to_packed_weight(
             raw_wei, True, 32, "fp32", "int8", "fp32", False)
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
-        qbits.woq_dequantize(compress_wei, revert_wei,
+        qbits.dequantize_packed_weight(compress_wei, revert_wei,
                              True, "fp32", "int8", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
@@ -132,10 +132,10 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_int4(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
-        compress_wei = qbits.woq_quantize(
+        compress_wei = qbits.quantize_to_packed_weight(
             raw_wei, True, 32, "fp32", "int4_fullrange", "fp32", False)
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
-        qbits.woq_dequantize(compress_wei, revert_wei, True,
+        qbits.dequantize_packed_weight(compress_wei, revert_wei, True,
                              "fp32", "int4_fullrange", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)

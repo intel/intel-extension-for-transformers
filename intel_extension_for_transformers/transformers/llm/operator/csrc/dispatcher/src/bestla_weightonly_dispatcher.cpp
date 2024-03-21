@@ -44,7 +44,7 @@ concept quant_PrologueA = requires {
 };
 
 template <class Launcher>
-void woq_dequantize(woq_config_param* p, woq_runtime_ctx* ctx) {
+void dequantize_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   if (dispatcher_utils::initer.verbose) dispatcher_utils::timer.start();
   using PrologueB = typename Launcher::PrologueB;
   using WType = typename Launcher::PrologueB::StorageWeight;
@@ -64,7 +64,7 @@ void woq_dequantize(woq_config_param* p, woq_runtime_ctx* ctx) {
 
 // TODO(zhe): weight+scale combination check.
 template <class Launcher>
-void woq_quantize(woq_config_param* p, woq_runtime_ctx* ctx) {
+void quantize_to_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   if (dispatcher_utils::initer.verbose) dispatcher_utils::timer.start();
   using WType = typename Launcher::PrologueB::StorageWeight;
   WType packedw(0);
@@ -227,9 +227,9 @@ template <WOQ_TASK TASK, class Launcher>
 void execute_task(woq_config_param* p, woq_runtime_ctx* ctx) {
   switch (TASK) {
     case WOQ_QUANTIZE:
-      return woq_quantize<Launcher>(p, ctx);
+      return quantize_to_packed_weight<Launcher>(p, ctx);
     case WOQ_DEQUANTIZE:
-      return woq_dequantize<Launcher>(p, ctx);
+      return dequantize_packed_weight<Launcher>(p, ctx);
     case WOQ_LINEAR:
       return woq_gemm<Launcher>(p, ctx);
   }
@@ -377,7 +377,7 @@ void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
       return parse_weight<TASK, bestla::gemm::HCoreRowNAmxbf16<64, 16>>(p, ctx);
     }
   }
-  TORCH_CHECK(false, "Qbits: parse packweight fail, NTile:", NTile, ", CType:", CType,
+  TORCH_CHECK(false, "Qbits: parse packed_weight fail, NTile:", NTile, ", CType:", CType,
               ", AMX:", dispatcher_utils::check_amx(), ", AVX512_VNNI:", dispatcher_utils::check_avx512_vnni(),
               ", AVX_VNNI:", dispatcher_utils::check_avx_vnni(), ", AVX512F:", dispatcher_utils::check_avx512f(),
               ", AVX2:", dispatcher_utils::check_avx2());

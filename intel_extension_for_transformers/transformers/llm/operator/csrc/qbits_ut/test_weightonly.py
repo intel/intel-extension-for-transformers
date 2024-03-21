@@ -58,10 +58,10 @@ def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transp
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float)
     if dump_tensor_info:
         print(raw_wei)
-    compress_wei = qbits.woq_quantize(
+    compress_wei = qbits.quantize_to_packed_weight(
         raw_wei, transpose, blocksize, compute_type, weight_type, scale_type, asym)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
-    qbits.woq_dequantize(
+    qbits.dequantize_packed_weight(
         compress_wei, revert_wei, transpose, compute_type, weight_type, scale_type)
     bias = torch.empty(0)
     if add_bias:
