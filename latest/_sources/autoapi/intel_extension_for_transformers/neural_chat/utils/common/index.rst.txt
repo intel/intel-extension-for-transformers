@@ -6,31 +6,3 @@
 .. py:module:: intel_extension_for_transformers.neural_chat.utils.common
 
 
-Module Contents
----------------
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.neural_chat.utils.common.get_gpu_family
-
-
-
-.. py:function:: get_gpu_family()
-
-   Get gpu device family info.
-
-   Return 'flex'|'max'|'arc'| 'no_gpu'| assert
-
-   Note, this function need to import intel_extension_for_pytorch
-
-
-   Additional info (common gpu name):
-     'Intel(R) Data Center GPU Flex 170'
-     'Intel(R) Data Center GPU Max 1100'
-     'Intel(R) Arc(TM) A770 Graphics'
-
-

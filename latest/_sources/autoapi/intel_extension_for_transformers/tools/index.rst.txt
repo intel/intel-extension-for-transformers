@@ -6,3 +6,12 @@
 .. py:module:: intel_extension_for_transformers.tools
 
 
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   utils/index.rst
+
+
