@@ -16,16 +16,16 @@
 # limitations under the License.
 
 from typing import ClassVar, Collection
-from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
-    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
-from langchain.embeddings import GooglePalmEmbeddings   # pylint: disable=E0611
+from intel_extension_for_transformers.langchain_community.embeddings import HuggingFaceEmbeddings, \
+    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings  # pylint: disable=E0401, E0611
+from langchain_community.embeddings import GooglePalmEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from intel_extension_for_transformers.langchain.vectorstores import Chroma, Qdrant
+from intel_extension_for_transformers.langchain_community.vectorstores import Chroma, Qdrant  # pylint: disable=E0401, E0611
 import uuid
 from langchain_core.documents import Document
-from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever
+from intel_extension_for_transformers.langchain_community.retrievers import ChildParentRetriever  # pylint: disable=E0401, E0611
 from langchain_core.vectorstores import VectorStoreRetriever
-from langchain.retrievers import BM25Retriever  # pylint: disable=E0611
+from langchain_community.retrievers import BM25Retriever
 import jsonlines
 import numpy as np
 import logging
@@ -224,7 +224,7 @@ class RetrieverAdapter():
                  reranker_model="BAAI/bge-reranker-large", top_n = 1, enable_rerank = False, **kwargs):
         self.retrieval_type = retrieval_type
         if enable_rerank:
-            from intel_extension_for_transformers.langchain.retrievers.bge_reranker import BgeReranker
+            from intel_extension_for_transformers.langchain_community.retrievers.bge_reranker import BgeReranker  # pylint: disable=E0401, E0611
             from FlagEmbedding import FlagReranker
             reranker = FlagReranker(reranker_model)
             self.reranker = BgeReranker(model = reranker, top_n=top_n)
