@@ -1,8 +1,8 @@
 # QBits
 ## Introduction
-QBits is a computing extension module introduced by ITREX to accelerate pytorch operators, especially low-bits gemm on x86 platform. QBtis based on a BLAS library named [BesTLA](https://github.com/intel/neural-speed/tree/main/bestla) which has been highly optimized in terms of thread parallelism, instruction parallelism, data parallelism, and cache reuse.  
+QBits is an extended module to accelerate low precision operators, especially low-bits gemm on x86 platform. QBits is built on top of an innovative library [BesTLA](https://github.com/intel/neural-speed/tree/main/bestla) which has been highly optimized in terms of thread parallelism, instruction parallelism, data parallelism, and cache reuse.  
 
-Users can accelerate weight-only-quantization on CPU platform via the operators provided by QBits, which already included in ITREX's woq feature, see [here](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/README.md) for more details.
+Users can accelerate the inferene of large language models (LLMs) on CPU platform via QBits operators, which has been already included in ITREX's weight-only quantization (WoQ) feature, see [here](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/README.md) for more details.
 ## Example
 ```python
 import intel_extension_for_transformers.qbits as qbits
