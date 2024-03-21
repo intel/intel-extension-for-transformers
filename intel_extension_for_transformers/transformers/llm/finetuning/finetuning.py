@@ -60,8 +60,8 @@ from intel_extension_for_transformers.neural_chat.config import BaseFinetuningCo
 from transformers.integrations.deepspeed import (
     is_deepspeed_available,
 )
-from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
-from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
+from intel_extension_for_transformers.tools.utils import is_hpu_available
+from intel_extension_for_transformers.tools.utils import get_device_type
 
 
 if is_bitsandbytes_available():
