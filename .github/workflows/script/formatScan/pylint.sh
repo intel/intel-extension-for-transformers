@@ -2,6 +2,7 @@
 
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
 cd /intel-extension-for-transformers
+pip install -U pip
 $BOLD_YELLOW && echo "---------------- git submodule update --init --recursive -------------" && $RESET
 git config --global --add safe.directory "*"
 git submodule update --init --recursive
@@ -29,7 +30,7 @@ fi
 # install packages
 pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
 pip install accelerate nlpaug nltk schema optimum-intel optimum peft
-pip install --upgrade --force-reinstall transformers
+pip install --upgrade --force-reinstall transformers==4.36.2
 
 echo "[DEBUG] list pipdeptree..."
 pip install pipdeptree

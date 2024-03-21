@@ -85,14 +85,6 @@ subprojects:
     checks:
       - "Windows-Binary-Test"
 
-  - id: "SparseLib Tests workflow"
-    paths:
-      - "intel_extension_for_transformers/transformers/runtime/kernels/**"
-      - ".github/workflows/sparse_lib_CI.yml"
-      - ".github/workflows/script/SparseLibCI"
-    checks:
-      - "sparselib"
-
   - id: "LLM Model Test workflow"
     paths:
       - ".github/workflows/llm-test.yml"
