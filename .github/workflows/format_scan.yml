@@ -66,11 +66,6 @@ jobs:
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
-      - name: Env build
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
-          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
-
       - name: Code scan check
         run: |
           docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
