@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2023 Intel Corporation
+# Copyright (c) 2024 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Utility."""
 
 import importlib
 import sys
@@ -29,6 +31,42 @@ try:
 except ImportError:
     is_hpu_available = False
 
+def supported_gpus():
+    return ['flex', 'max', 'arc']
+
+def get_gpu_family():
+    ''' Get gpu device family info.
+
+    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
+
+    Note, this function need to import intel_extension_for_pytorch
+
+
+    Additional info (common gpu name):
+      'Intel(R) Data Center GPU Flex 170'
+      'Intel(R) Data Center GPU Max 1100'
+      'Intel(R) Arc(TM) A770 Graphics'
+    '''
+
+    import intel_extension_for_pytorch as ipex
+    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
+        return 'no_gpu'
+
+    name = torch.xpu.get_device_name()
+    if 'GPU Flex' in name:
+        result = 'flex'
+    elif 'GPU Max' in name:
+        result = 'max'
+    elif 'Arc(TM)' in name:
+        result = 'arc'
+    else:
+        assert False, "Unsupported GPU device: {}".format(name)
+
+    if result not in supported_gpus():
+        assert False, "Unsupported GPU device: {}".format(name)
+    else:
+        return result
+
 _ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
 _ipex_version = "N/A"
 if _ipex_available:
@@ -40,6 +78,17 @@ if _ipex_available:
 def is_ipex_available():
     return _ipex_available
 
+_autoround_available = importlib.util.find_spec("auto_round") is not None
+_autoround_version = "N/A"
+if _autoround_available:
+    try:
+        _autoround_version = importlib_metadata.version("auto_round")
+    except importlib_metadata.PackageNotFoundError:
+        _autoround_available = False
+
+def is_autoround_available():
+    return _autoround_available
+
 def get_device_type():
     if torch.cuda.is_available():
         device = "cuda"
@@ -50,22 +99,3 @@ def get_device_type():
     else:
         device = "cpu"
     return device
-
-def is_audio_file(filename):
-    audio_extensions = ['mp3', 'wav', 'flac', 'ogg', 'aac', 'm4a']
-    file_extension = filename.split('.')[-1].lower()
-
-    if file_extension in audio_extensions:
-        return True
-    else:
-        return False
-
-def is_openai_model(model_name_or_path):
-    # Check https://platform.openai.com/docs/models/model-endpoint-compatibility
-    return any(name in model_name_or_path for name in ["gpt-4", "gpt-3.5-turbo"])
-
-def is_hf_model(model_name_or_path):
-    return "http" in model_name_or_path
-
-def supported_gpus():
-    return ['flex', 'max', 'arc']
