@@ -1,12 +1,6 @@
 name: SparseLib
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'intel_extension_for_transformers/transformers/runtime/kernels/**'
-      - '.github/workflows/sparse_lib_CI.yml'
-      - '.github/workflows/script/SparseLibCI'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
