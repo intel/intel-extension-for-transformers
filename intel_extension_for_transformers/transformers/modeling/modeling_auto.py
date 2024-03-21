@@ -337,7 +337,27 @@ class _BaseQBitsAutoModelClass:
                 return_unused_kwargs=True,
                 **kwargs,
             )
-        if hasattr(config, "quantization_config"):
+
+        if kwargs.get("use_llm_runtime", None) is not None:
+            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
+            logger.warning(
+                "use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead."
+            )
+        elif kwargs.get("use_neural_speed", None) is not None:
+            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
+        else:
+            if hasattr(config, "model_type") == False:
+                logger.error(
+                    "Can't get the model_type. Please check the correct model_type"
+                )
+                exit(0)
+
+            if config.model_type in cls.model_type_list and not use_xpu:
+                use_neural_speed = True
+            else:
+                use_neural_speed = False
+
+        if hasattr(config, "quantization_config") and not use_neural_speed:
             if config.quantization_config is None:
                 logger.warning(
                     "Quantization_config loading failed. If you want to load saved "
@@ -365,26 +385,6 @@ class _BaseQBitsAutoModelClass:
                         "Saved low bit model loading failed, please check your model."
                     )
                     exit(0)
-        if kwargs.get("use_llm_runtime", None) is not None:
-            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
-            logger.warning(
-                "use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead."
-            )
-        elif kwargs.get("use_neural_speed", None) is not None:
-            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
-        else:
-            if hasattr(config, "model_type") == False:
-                logger.error(
-                    "Can't get the model_type. Please check the correct model_type"
-                )
-                exit(0)
-
-            if config.model_type in cls.model_type_list and not use_xpu:
-                logger.info("Using Neural Speed...")
-                use_neural_speed = True
-            else:
-                logger.info("Using Pytorch...")
-                use_neural_speed = False
 
         import intel_extension_for_transformers.transformers.modeling.modeling_map
 
@@ -433,7 +433,9 @@ class _BaseQBitsAutoModelClass:
                 if quantization_config is None:
                     if use_neural_speed:
                         # use wnf4_sfp32_cfp32_g32_sym by default
-                        quantization_config = RtnConfig(compute_dtype="fp32", weight_dtype="nf4")
+                        quantization_config = RtnConfig(
+                            compute_dtype="fp32", weight_dtype="nf4"
+                        )
                     else:
                         quantization_config = RtnConfig(
                             bits=4,
@@ -498,7 +500,7 @@ class _BaseQBitsAutoModelClass:
         ):
             logger.info("Applying Weight Only Quantization.")
             if use_neural_speed:
-                logger.info("Using LLM runtime.")
+                logger.info("Using Neural Speed.")
                 quantization_config.post_init_runtime()
                 from neural_speed import Model
 
@@ -961,6 +963,7 @@ class _BaseQBitsAutoModelClass:
             kwargs["torch_dtype"] = "auto"
         config = kwargs.pop("config", None)
         quantization_config = config.quantization_config
+
         if quantization_config["quant_method"] == "rtn":
             quantization_config = RtnConfig.from_dict(quantization_config)
         elif quantization_config["quant_method"] == "awq":
@@ -971,7 +974,6 @@ class _BaseQBitsAutoModelClass:
             quantization_config = GPTQConfig.from_dict(quantization_config)
         elif quantization_config["quant_method"] == "autoround":
             quantization_config = AutoRoundConfig.from_dict(quantization_config)
-
         assert (
             quantization_config is not None
         ), "Detect this model is not a low-bit model."
@@ -1165,8 +1167,13 @@ class _BaseQBitsAutoModelClass:
                 model = model_class(config, *model_args, **kwargs)
         else:
             model = model_class(config, *model_args, **kwargs)
-        if config.quantization_config["weight_dtype"] not in \
-                        ["fp8_e5m2", "fp8_e4m3", "fp4", "nf4", "int4_fullrange"]:
+        if config.quantization_config["weight_dtype"] not in [
+            "fp8_e5m2",
+            "fp8_e4m3",
+            "fp4",
+            "nf4",
+            "int4_fullrange",
+        ]:
             model = build_woq_model(model, quantization_config)
         else:
             model = replace_linear(
@@ -1216,8 +1223,12 @@ class _BaseQBitsAutoModelClass:
 
         # Set model in evaluation mode to deactivate DropOut modules by default
         model.eval()
-        if config.quantization_config["weight_dtype"] not in \
-                        ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4" "int4_fullrange"]:
+        if config.quantization_config["weight_dtype"] not in [
+            "fp8_e5m2",
+            "fp8_e4m3",
+            "nf4",
+            "fp4" "int4_fullrange",
+        ]:
             model = replace_linear(
                 model,
                 quantization_config=quantization_config,
