@@ -30,7 +30,7 @@ def test(m, n, data_type, p,  dump_info=True):
         weight = weight.to(torch.bfloat16)
         grad = grad.to(torch.bfloat16)
     bk_grad = grad.clone()
-    mask = torch.ops.qbits_customop.dropout_fwd(weight, p)
+    mask = qbits.dropout_fwd(weight, p)
     num_zero = (m*n-torch.nonzero(mask.reshape(-1)).numel())
     dropout_p = num_zero/(m*n)
     if dump_info:
@@ -38,7 +38,7 @@ def test(m, n, data_type, p,  dump_info=True):
         print("dropout p:"+str(dropout_p))
     if not torch.allclose(torch.tensor(p), torch.tensor(dropout_p), 0.03):
         print("fail")
-    torch.ops.qbits_customop.dropout_bwd(grad, mask)
+    qbits.dropout_bwd(grad, mask)
     bk_grad = torch.mul(bk_grad, mask)
     if dump_info:
         print(grad)

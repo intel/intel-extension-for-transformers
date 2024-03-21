@@ -44,7 +44,7 @@ asym_configs = {"int8", "int4_clip", "int4_fullrange"}
 def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transpose, add_bias, src_dt, dst_dt, dump_tensor_info=True):
     if compute_type not in cmpt_configs[weight_type] or scale_type not in scale_configs[weight_type]:
         pytest.skip()
-    if asym and (weight_type not in asym_configs or compute_type == "int8" or scale_type!="fp32"):
+    if asym and (weight_type not in asym_configs or compute_type == "int8" or scale_type != "fp32"):
         pytest.skip()
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float)
@@ -58,12 +58,14 @@ def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transp
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float)
     if dump_tensor_info:
         print(raw_wei)
-    compress_wei = torch.ops.bestlaop.woq_quantize(
+    compress_wei = qbits.quantize_to_packed_weight(
         raw_wei, transpose, blocksize, compute_type, weight_type, scale_type, asym)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
-    torch.ops.bestlaop.woq_dequantize(
+    qbits.dequantize_packed_weight(
         compress_wei, revert_wei, transpose, compute_type, weight_type, scale_type)
-    bias = torch.rand(n, dtype=torch.float)*10
+    bias = torch.empty(0)
+    if add_bias:
+        bias = torch.rand(n, dtype=torch.float)*10
     if dump_tensor_info:
         print(revert_wei)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
@@ -72,8 +74,8 @@ def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transp
     if transpose:
         revert_wei = torch.transpose(revert_wei, 0, 1)
     ref_dst = torch.matmul(ref_activation, revert_wei)
-    torch.ops.bestlaop.woq_linear(
-        tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type, scale_type, asym)
+    qbits.woq_linear(
+        tar_activation, compress_wei, bias, tar_dst, compute_type, weight_type, scale_type, asym)
     if dst_dt == "bf16":
         tar_dst = tar_dst.to(torch.float)
     if add_bias:

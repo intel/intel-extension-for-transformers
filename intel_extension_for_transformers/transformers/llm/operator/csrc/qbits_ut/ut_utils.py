@@ -20,14 +20,8 @@ import inspect
 import time
 import pytest
 from functools import wraps
-import sys
+import intel_extension_for_transformers.qbits as qbits
 
-if sys.platform.startswith("linux"):
-    torch.ops.load_library("../build/libqbits.so")
-elif sys.platform.startswith("win"):
-    torch.ops.load_library("../build/qbits.dll")
-else:
-    sys.exit()
 
 def capture_args(f):
     @wraps(f)
