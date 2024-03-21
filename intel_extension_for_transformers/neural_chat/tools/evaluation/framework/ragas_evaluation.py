@@ -22,9 +22,9 @@ from ragas.metrics import (    # pylint: disable=E0401
     context_precision,
 )
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
-from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
-    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
-from langchain.embeddings import GooglePalmEmbeddings   # pylint: disable=E0611
+from intel_extension_for_transformers.langchain_community.embeddings import HuggingFaceEmbeddings, \
+    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings  # pylint: disable=E0401, E0611
+from langchain_community.embeddings import GooglePalmEmbeddings
 from ragas.llms import LangchainLLMWrapper   # pylint: disable=E0611
 from ragas.embeddings import LangchainEmbeddingsWrapper   # pylint: disable=E0611
 import pandas as pd
