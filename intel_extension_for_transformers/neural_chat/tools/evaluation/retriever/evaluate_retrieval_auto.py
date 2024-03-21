@@ -16,17 +16,18 @@
 # limitations under the License.
 
 from typing import ClassVar, Collection
-from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
-    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
-from langchain.embeddings import GooglePalmEmbeddings   # pylint: disable=E0611
+from intel_extension_for_transformers.langchain_community.embeddings import HuggingFaceEmbeddings, \
+    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings  # pylint: disable=E0401, E0611
+from langchain_community.embeddings import GooglePalmEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from intel_extension_for_transformers.langchain.vectorstores import Chroma, Qdrant
+from intel_extension_for_transformers.langchain_community.vectorstores import Chroma, Qdrant  # pylint: disable=E0401, E0611
 import uuid
 from langchain_core.documents import Document
-from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever
+from intel_extension_for_transformers.langchain_community.retrievers import ChildParentRetriever  # pylint: disable=E0401, E0611
 from langchain_core.vectorstores import VectorStoreRetriever
-from langchain.retrievers import BM25Retriever  # pylint: disable=E0611
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.query_explainer import QueryPolisher
+from langchain_community.retrievers import BM25Retriever
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.query_explainer \
+    import QueryPolisher
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 import jsonlines
 import numpy as np
@@ -126,10 +127,10 @@ class Retrieval():
                  polish=False,
                  k=1,
                  fetch_k=1,
-                 score_threshold=0.3,
-                 reranker_model= "BAAI/bge-reranker-large",
-                 top_n = 1,
-                 enable_rerank = False,
+                 score_threshold=0.3,        
+                 reranker_model= "BAAI/bge-reranker-large", 
+                 top_n = 1, 
+                 enable_rerank = False, 
                  **kwargs):
 
         self.vector_database = vector_database
@@ -142,7 +143,7 @@ class Retrieval():
         self.reranker_model= reranker_model,
         self.top_n = top_n
         self.enable_rerank=enable_rerank
-
+                                              
         self.splitter = RecursiveCharacterTextSplitter(chunk_size= kwargs['child_size'] \
                     if 'child_size' in kwargs else 512)
         allowed_retrieval_type: ClassVar[Collection[str]] = (
@@ -231,11 +232,11 @@ class Retrieval():
                     child_knowledge_base.client.close()
         elif self.retrieval_type == "bm25":
             self.docs = document_append_id(langchain_documents)
-            self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type,
-                                              docs=self.docs,
-                                              reranker_model=self.reranker_model,
-                                              top_n = self.top_n,
-                                              enable_rerank = self.enable_rerank,
+            self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, 
+                                              docs=self.docs, 
+                                              reranker_model=self.reranker_model, 
+                                              top_n = self.top_n, 
+                                              enable_rerank = self.enable_rerank, 
                                               **kwargs)
         logging.info("The retriever is successfully built.")
 
@@ -257,7 +258,7 @@ class RetrieverAdapter():
                  reranker_model="BAAI/bge-reranker-large", top_n = 1, enable_rerank = False, **kwargs):
         self.retrieval_type = retrieval_type
         if enable_rerank:
-            from intel_extension_for_transformers.langchain.retrievers.bge_reranker import BgeReranker
+            from intel_extension_for_transformers.langchain_community.retrievers.bge_reranker import BgeReranker  # pylint: disable=E0401, E0611
             from FlagEmbedding import FlagReranker
             reranker = FlagReranker(reranker_model)
             self.reranker = BgeReranker(model = reranker, top_n=top_n)
@@ -285,6 +286,10 @@ class RetrieverAdapter():
         return context
 
 def main():
+    import os, shutil
+    if os.path.exists("output"):
+        shutil.rmtree("output", ignore_errors=True)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--index_file_jsonl_path", type=str)
     parser.add_argument("--query_file_jsonl_path", type=str)
@@ -335,8 +340,8 @@ def main():
                          k=k,
                          fetch_k=fetch_k,
                          score_threshold=score_threshold,
-                         reranker_model=reranker_model,
-                         top_n = top_n,
+                         reranker_model=reranker_model, 
+                         top_n = top_n, 
                          enable_rerank = enable_rerank
                          ).pre_llm_inference_actions(model_name=llm_model, query=query)
         retrieval_results.append(context)
