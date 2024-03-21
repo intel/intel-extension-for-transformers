@@ -88,3 +88,14 @@ if _autoround_available:
 
 def is_autoround_available():
     return _autoround_available
+
+def get_device_type():
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif is_hpu_available:
+        device = "hpu"
+    elif is_ipex_available() and torch.xpu.is_available():
+        device = "xpu"
+    else:
+        device = "cpu"
+    return device
