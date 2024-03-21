@@ -372,7 +372,8 @@ class _BaseQBitsAutoModelClass:
                 exit(0)
 
             if config.model_type in cls.model_type_list and not use_xpu:
-                if isinstance(quantization_config, GPTQConfig) and config.model_type not in cls.model_type_list_for_gptq:
+                if isinstance(quantization_config,
+                              GPTQConfig) and config.model_type not in cls.model_type_list_for_gptq:
                     use_neural_speed = False
                 else:
                     use_neural_speed = True
