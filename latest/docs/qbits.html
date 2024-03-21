@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QBits &mdash; Intel® Extension for Transformers 0.1.dev1+g468d7cf documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">QBits</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/qbits.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="qbits">
+<h1>QBits<a class="headerlink" href="#qbits" title="Link to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>QBits is an extended module to accelerate low precision operators, especially low-bits gemm on x86 platform. QBits is built on top of an innovative library <a class="reference external" href="https://github.com/intel/neural-speed/tree/main/bestla">BesTLA</a> which has been highly optimized in terms of thread parallelism, instruction parallelism, data parallelism, and cache reuse.</p>
+<p>Users can accelerate the inferene of large language models (LLMs) on CPU platform via QBits operators, which has been already included in ITREX’s weight-only quantization (WoQ) feature, see <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/README.html">here</a> for more details.</p>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">intel_extension_for_transformers.qbits</span> <span class="k">as</span> <span class="nn">qbits</span>
+
+<span class="c1"># replace linear weight option1: RTN quantize</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    RTN quantize the input weight tensor.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        fp32_weight (torch.Tensor): Input fp32 weight tensor.</span>
+<span class="sd">        transpose (bool): Whether to transpose the weight tensor (required for quantize_to_packed_weight with KxN weight shape).</span>
+<span class="sd">        blocksize (int): Blocksize for weight-only quantization.</span>
+<span class="sd">        compute_type (str): Computation type (fp32/bf16/int8). fp32 will leverage AVX2/AVX512F to compute, bf16 will be AMX_BF16, int8 will be VNNI/AMX_INT8.</span>
+<span class="sd">        weight_type (str): Quantization type (int8/int4_clip/int4_fullrange/nf4/fp4_e2m1).</span>
+<span class="sd">        scale_type (str): Scale type (fp32/bf16).</span>
+<span class="sd">        asym (bool): Whether to use asymmetric quantization.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.Tensor: Quantized weight tensor.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">pack_weight</span> <span class="o">=</span> <span class="n">qbits</span><span class="o">.</span><span class="n">quantize_to_packed_weight</span><span class="p">(</span>
+        <span class="n">fp32_weight</span><span class="p">,</span> <span class="n">transpose</span><span class="p">,</span> <span class="n">blocksize</span><span class="p">,</span> <span class="n">compute_type</span><span class="p">,</span> <span class="n">weight_type</span><span class="p">,</span> <span class="n">scale_type</span><span class="p">,</span> <span class="n">asym</span><span class="p">)</span> <span class="c1"># pack_weight can use to replace linear layer weight.</span>
+
+<span class="c1"># replace linear weight option2: repack weight</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Repack quantized weight, scale, zp and gidx tensor to QBits needed format.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        qweight (torch.Tensor):  quantized weight tensor(KxN shape), dtype must be int8</span>
+<span class="sd">        scale (torch.Tensor): scale tensor, dtype must be fp32</span>
+<span class="sd">        zp (torch.Tensor): zero-point tensor, dtype must be int8</span>
+<span class="sd">        g_idx (torch.Tensor): shuffle index used by GPTQ, dtype must be int32.</span>
+<span class="sd">        blocksize (int): Blocksize for weight-only quantization.</span>
+<span class="sd">        compute_type (str): Computation type (fp32/bf16/int8). fp32 will leverage AVX2/AVX512F to compute, bf16 will be AMX_BF16, int8 will be VNNI/AMX_INT8.</span>
+<span class="sd">        weight_type (str): Quantization type (int8/int4_clip/int4_fullrange/nf4/fp4_e2m1).</span>
+<span class="sd">        scale_type (str): Scale type (fp32/bf16).</span>
+<span class="sd">        asym (bool): Whether to use asymmetric quantization.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.Tensor: Quantized weight tensor.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">pack_weight</span> <span class="o">=</span> <span class="n">qbits</span><span class="o">.</span><span class="n">repack_quantized_weight</span><span class="p">(</span>
+        <span class="n">quantized_weight</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">zp</span><span class="p">,</span> <span class="n">g_idx</span><span class="p">,</span> <span class="n">weight_type</span><span class="p">,</span> <span class="n">scale_type</span><span class="p">,</span> <span class="n">compute_type</span><span class="p">,</span> <span class="n">asym</span><span class="p">,</span> <span class="n">blocksize</span><span class="p">)</span> <span class="c1"># pack_weight can use to replace linear layer weight.</span>
+
+<span class="c1"># low-bit gemm compute</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Low-bits gemm provided by QBits.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        activation (torch.Tensor): Input activation tensor, support fp32/bf16.</span>
+<span class="sd">        pack_weight (torch.Tensor): Woq weight created by qbits.quantize_to_packed_weight</span>
+<span class="sd">        bias (torch.Tensor): Bias tensor, must be fp32, if bias is empty woq_linear will not add bias.</span>
+<span class="sd">        output (torch.Tensor): Output tensor, support fp32/bf16, shape must be MxN.</span>
+<span class="sd">        compute_type (str): Computation type (fp32/bf16/int8).fp32 will leverage AVX2/AVX512F to compute, bf16 will leverage AMX_BF16 to compute, int8 will leverage VNNI/AMX_INT8 to compute.</span>
+<span class="sd">        weight_type (str): Quantization type (int8/int4_clip/int4_fullrange/nf4/fp4_e2m1).</span>
+<span class="sd">        scale_type (str): Scale type (fp32/bf16).</span>
+<span class="sd">        asym (bool): Whether to use asymmetric quantization.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">qbits</span><span class="o">.</span><span class="n">woq_linear</span><span class="p">(</span>
+        <span class="n">activation</span><span class="p">,</span> <span class="n">pack_weight</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">add_bias</span><span class="p">,</span> <span class="n">compute_type</span><span class="p">,</span> <span class="n">weight_type</span><span class="p">,</span> <span class="n">scale_type</span><span class="p">,</span> <span class="n">asym</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>please refer <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/transformers/llm/operator/csrc/qbits_ut">here</a> for more QBits operators usage.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f771e4e81c0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
