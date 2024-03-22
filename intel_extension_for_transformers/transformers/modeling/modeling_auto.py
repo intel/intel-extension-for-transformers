@@ -75,7 +75,7 @@ from transformers.utils import is_accelerate_available, is_bitsandbytes_availabl
 from typing import Union
 
 if is_ipex_available() and get_gpu_family() == "no_gpu":
-    from ...llm.quantization.nn.modules import QuantizedLinearQBits
+    from ..llm.quantization.nn.modules import QuantizedLinearQBits
     # pylint: disable=E0401
     from intel_extension_for_pytorch.nn.utils._quantize_convert import (
         WeightOnlyQuantizedLinear,
