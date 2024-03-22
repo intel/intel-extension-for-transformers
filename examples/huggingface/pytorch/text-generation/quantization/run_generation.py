@@ -425,6 +425,21 @@ elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
             _commit_hash=args._commit_hash,
         )
 
+# save model
+if args.output_dir is not None:
+    tokenizer.save_pretrained(args.output_dir)
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision or args.woq:
+        # user_model will be changed.
+        user_model.save_pretrained(args.output_dir)
+        # loading saved woq model
+        user_model = AutoModelForCausalLM.from_pretrained(
+            args.output_dir, 
+            trust_remote_code=args.trust_remote_code,
+            use_neural_speed=args.use_neural_speed
+            )
 
 
 # int8 model loading
@@ -552,11 +567,3 @@ if args.accuracy:
                 % (task_name, results["results"][task_name]["acc"])
             )
 
-# save model
-if args.output_dir is not None:
-    tokenizer.save_pretrained(args.output_dir)
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
-        user_model.save_pretrained(args.output_dir)
