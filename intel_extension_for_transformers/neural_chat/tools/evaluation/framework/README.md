@@ -19,11 +19,11 @@ pip install -r requirements.txt
 * **OpenAI**
 By default, ragas use OpenAI’s API to compute the score. If you’re using this metric, ensure that you set the environment key OPENAI_API_KEY with your API key.
 ```
+export OPENAI_API_KEY=xxx
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework
 python ragas_evaluation.py \
 --answer_file /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/answer.jsonl \
---ground_truth_file /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl \
---openai_api_key <your openai api key>
+--ground_truth_file /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl
 ```
 * **Langchain**
 You can also try other LLMs for evaluation using Langchain.
@@ -50,4 +50,11 @@ The results include your input question, answer, contexts, ground_truth, as well
 0  What t...  The or...  [We ai...  open s...     0.900788          0.500000           1.0             1.0
 1  What a...  The co...  [Our w...  The co...     0.985826          0.250000           1.0             0.0
 ......
+```
+where your input question, answer, contexts, ground_truth in the first line are
+```
+question: What types of platforms does the organization focus on?
+answer: The organization focuses on delivering open software and hardware platforms with industry-defining standards, as well as leadership products, open and secure platforms, and resilient manufacturing.
+contexts: [We aim to deliver open software and hardware platforms with industry-defining standards.]
+ground_truth: open software and hardware platforms
 ```
