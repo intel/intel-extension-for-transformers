@@ -559,6 +559,17 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string(use_diff=use_diff))
 
+    def remove_redundant_parameters(self):
+        remove_parameters = ["calib_dataloader", "calib_dataset", "calib_func", "calib_iters", "calib_len"
+        "double_quant_scale_dtype", "use_double_quant", "mse_range", "scheme", "tokenizer", "use_ggml", 
+        "use_neural_speed", "use_quant", "layer_wise", "blocksize", "nsamples", "max_input_length", "static_groups",
+        "lr", "minmax_lr", "iters", "use_quant_input"]
+        for parameter in remove_parameters:
+            if hasattr(self, parameter):
+                delattr(self, parameter)
+        if self.quant_method.value == "awq":
+            delattr(self, "sym")
+
     def save_pretrained(
         self,
         save_directory: Union[str, os.PathLike],

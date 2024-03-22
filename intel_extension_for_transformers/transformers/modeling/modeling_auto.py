@@ -619,7 +619,7 @@ class _BaseQBitsAutoModelClass:
                 model = convert_to_quantized_model(
                     model, quantization_config, device=device_map
                 )
-                quantization_config.tokenizer = None
+                quantization_config.remove_redundant_parameters()
                 model.config.quantization_config = quantization_config
 
             # add quantization_config and save_low_bit to pretrained model dynamically
