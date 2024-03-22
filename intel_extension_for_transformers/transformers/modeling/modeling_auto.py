@@ -265,6 +265,19 @@ class _BaseQBitsAutoModelClass:
         "whisper",
     ]
 
+    model_type_list_for_gptq = [
+        "llama",
+        "gptj",
+        "mpt",
+        "falcon",
+        "chatglm2",
+        "chatglm",
+        "baichuan",
+        "mistral",
+        "qwen",
+        "phi",
+    ]
+
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
         # use for neuralspeed gguf
@@ -338,6 +351,7 @@ class _BaseQBitsAutoModelClass:
                 **kwargs,
             )
 
+        quantization_config = kwargs.pop("quantization_config", None)
         if kwargs.get("use_llm_runtime", None) is not None:
             use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
             logger.warning(
@@ -353,7 +367,11 @@ class _BaseQBitsAutoModelClass:
                 exit(0)
 
             if config.model_type in cls.model_type_list and not use_xpu:
-                use_neural_speed = True
+                if isinstance(quantization_config,
+                              GPTQConfig) and config.model_type not in cls.model_type_list_for_gptq:
+                    use_neural_speed = False
+                else:
+                    use_neural_speed = True
             else:
                 use_neural_speed = False
 
@@ -390,7 +408,6 @@ class _BaseQBitsAutoModelClass:
 
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
-        quantization_config = kwargs.pop("quantization_config", None)
 
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(

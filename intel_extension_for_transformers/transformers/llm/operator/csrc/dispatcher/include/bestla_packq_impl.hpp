@@ -30,6 +30,6 @@ enum PACKW_ACQUIRE_TYPE {
   IS_ASYM
 };
 
-void bestla_packq(woq_packq_param* p, woq_packq_ctx* ctx);
+void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx);
 torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T);
 }  // namespace woq

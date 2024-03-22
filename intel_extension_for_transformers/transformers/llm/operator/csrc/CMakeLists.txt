@@ -31,16 +31,17 @@ endif()
 find_package(Torch REQUIRED
 PATHS ${torch_path}
 NO_DEFAULT_PATH)
+find_package(PythonLibs 3 REQUIRED)
 
 include(FindOpenMP)
 add_subdirectory(dispatcher)
+add_subdirectory(../../../runtime/third_party/pybind11 pybind11)
 
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp)
 file(GLOB qbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-# Define our library target
-add_library(qbits SHARED ${qbits_src})
-# Enable C++14
-target_compile_features(qbits PRIVATE cxx_std_14)
 
 # Link against LibTorch
-target_link_libraries(qbits PRIVATE bestla_dispatcher)
+pybind11_add_module(qbits ${qbits_src})
+target_compile_features(qbits PRIVATE cxx_std_14)
+target_link_directories(qbits PRIVATE ${torch_path}/lib)
+target_link_libraries(qbits PRIVATE bestla_dispatcher torch_python)

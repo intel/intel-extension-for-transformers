@@ -3,7 +3,7 @@
 
 namespace woq {
 template <class GemmCore, BTLA_ISA ISA>
-void execute_qpack(woq_packq_param* p, woq_packq_ctx* ctx) {
+void execute_qpack(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx) {
   using proB = bestla::prologue_b::gemm::WeightKBlockNInteger<GemmCore, ISA>;
   static proB ker;
   auto qpackw = ker.createStorage(ctx->n, ctx->k, p->blocksize, wei2bestladt_map[p->weight_type],
@@ -164,7 +164,7 @@ torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T) {
   return output;
 }
 
-void bestla_packq(woq_packq_param* p, woq_packq_ctx* ctx) {
+void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx) {
   TORCH_CHECK(p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int4_fullrange",
               "Qbits: only support Integer WOQ in PACKQ");
 
