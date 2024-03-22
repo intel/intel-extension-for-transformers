@@ -302,8 +302,8 @@ def main():
     parser.add_argument("--polish", type=bool, default=False)
     parser.add_argument("--search_type", type=str, default="similarity")
     parser.add_argument("--k", type=int, default=1)
-    parser.add_argument("--fetch_k", type=int)
-    parser.add_argument("--score_threshold", type=float)
+    parser.add_argument("--fetch_k", type=int, default=5)
+    parser.add_argument("--score_threshold", type=float, default=0.3)
     parser.add_argument("--top_n", type=int, default=1)
     parser.add_argument("--enable_rerank", type=bool, default=False)
 
