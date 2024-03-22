@@ -330,7 +330,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         from datasets import load_dataset
         from torch.utils.data import DataLoader
 
-        calib_dataset = config.calib_dataset
+        calib_dataset = config.dataset
         if isinstance(calib_dataset, (str, bytes, os.PathLike)):
             calib_dataset = load_dataset(calib_dataset, split="train")
         calib_dataset = calib_dataset.shuffle(seed=42)
