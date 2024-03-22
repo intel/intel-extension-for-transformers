@@ -74,12 +74,13 @@ from transformers import AutoConfig
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 from typing import Union
 
-if is_ipex_available() and get_gpu_family() == "no_gpu":
-    from ..llm.quantization.nn.modules import QuantizedLinearQBits
+if is_ipex_available() and get_gpu_family() != "no_gpu":
     # pylint: disable=E0401
     from intel_extension_for_pytorch.nn.utils._quantize_convert import (
         WeightOnlyQuantizedLinear,
     )
+else:
+    from ..llm.quantization.nn.modules import QuantizedLinearQBits
 
 torch = LazyImport("torch")
 
