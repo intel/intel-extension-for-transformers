@@ -45,7 +45,7 @@ def load_set(file_jsonl_path, item):
             list.append(passages)
     return list
 
-def ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_model):
+def ragas(answer_file, ground_truth_file, llm_model, embedding_model):
 
     question_list=load_set(answer_file, "question")
     answer_list=load_set(answer_file, "answer")
@@ -89,7 +89,7 @@ def ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_m
                          llm = langchain_llm,    # pylint: disable=E1123
                          embeddings=langchain_embedding)    # pylint: disable=E1123
     else:
-        os.environ["OPENAI_API_KEY"] = openai_api_key
+        os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
         score = evaluate(dataset,metrics=[answer_relevancy, faithfulness, context_recall, context_precision])
 
     df=score.to_pandas()
@@ -100,18 +100,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--answer_file", type=str)
     parser.add_argument("--ground_truth_file", type=str)
-    parser.add_argument("--openai_api_key", type=str)
     parser.add_argument("--llm_model", type=str)
     parser.add_argument("--embedding_model", type=str)
     args = parser.parse_args()
 
     answer_file = args.answer_file
     ground_truth_file = args.ground_truth_file
-    openai_api_key = args.openai_api_key
     llm_model = args.llm_model
     embedding_model = args.embedding_model
 
-    metrics=ragas(answer_file, ground_truth_file, openai_api_key, llm_model, embedding_model)
+    metrics=ragas(answer_file, ground_truth_file, llm_model, embedding_model)
     return metrics
 
 if __name__ == '__main__':
