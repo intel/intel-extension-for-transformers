@@ -408,6 +408,7 @@ if args.output_dir is not None:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
     elif args.mixed_precision or args.woq:
+        # user_model will be changed.
         user_model.save_pretrained(args.output_dir)
         # loading saved woq model
         user_model = AutoModelForCausalLM.from_pretrained(
