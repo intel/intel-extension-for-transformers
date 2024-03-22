@@ -180,7 +180,7 @@ def convert_model_to_public(model):
                     module.scales.data = module.scales.t_().contiguous()
                     module.weight_transposed = False
     elif model.quantization_config.weight_dtype not in \
-        ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int8", "int4_fullrange"]:
+        ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int4_fullrange"]:
         model = recover_export_model(model)
 
 
