@@ -280,7 +280,7 @@ if args.accuracy:
             user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
     else:
         print("Disabled optimization with IPEX...")
-    import pdb;pdb.set_trace()
+
     results = evaluate(
         model="hf-causal",
         model_args='pretrained=' + "facebook/opt-125m" +',tokenizer=' + args.model + \
