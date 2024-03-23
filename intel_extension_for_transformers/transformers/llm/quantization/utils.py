@@ -189,10 +189,8 @@ def _replace_linear(
                             scheme=quantization_config.scheme,
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
-                        from intel_extension_for_pytorch.nn.utils._quantize_convert import (
-                            WeightOnlyQuantizedLinear as ipex_linear,
-                        )  # pylint: disable=E0401
-
+                        from intel_extension_for_pytorch.nn.utils._quantize_convert \
+                            import WeightOnlyQuantizedLinear as ipex_linear  # pylint: disable=E0401
                         model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
