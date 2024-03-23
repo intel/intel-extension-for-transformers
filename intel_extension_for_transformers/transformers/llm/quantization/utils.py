@@ -26,7 +26,10 @@ from neural_compressor import quantization
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from neural_compressor.utils.utility import LazyImport
 from neural_compressor.config import PostTrainingQuantConfig
-from intel_extension_for_transformers.tools.utils import is_ipex_available, is_autoround_available
+from intel_extension_for_transformers.tools.utils import (
+    is_ipex_available,
+    is_autoround_available,
+)
 from transformers import AutoTokenizer
 
 if is_ipex_available():
@@ -71,7 +74,7 @@ def unpack_weight(qweight, scales, qzeros, q_config):
     except:
         # zeros and scales have different iteam numbers.
         # remove 1 (due to 0 + 1 in line 68)
-        zeros = zeros[zeros !=1]
+        zeros = zeros[zeros != 1]
         zeros = zeros.reshape(scales.shape)
 
     # due to INC asym return torch.uint8 but backend request int8,
@@ -92,7 +95,7 @@ def unpack_weight(qweight, scales, qzeros, q_config):
         # due to INC asym return torch.uint8 but backend request int8,
         # change it to int8 with offset 128
         if not sym:
-            weight = (weight.to(torch.int32) - 128). to(torch.int8)
+            weight = (weight.to(torch.int32) - 128).to(torch.int8)
     return weight, scales, zeros
 
 
@@ -186,8 +189,10 @@ def _replace_linear(
                             scheme=quantization_config.scheme,
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
-                        from intel_extension_for_pytorch.nn.utils._quantize_convert \
-                            import WeightOnlyQuantizedLinear as ipex_linear  # pylint: disable=E0401
+                        from intel_extension_for_pytorch.nn.utils._quantize_convert import (
+                            WeightOnlyQuantizedLinear as ipex_linear,
+                        )  # pylint: disable=E0401
+
                         model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
@@ -258,8 +263,13 @@ def _replace_linear(
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
                 if device == "cpu" or device == torch.device("cpu") or device == "auto":
-                    if quantization_config.weight_dtype in \
-                                    ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int4_fullrange"]:
+                    if quantization_config.weight_dtype in [
+                        "fp8_e5m2",
+                        "fp8_e4m3",
+                        "nf4",
+                        "fp4",
+                        "int4_fullrange",
+                    ]:
                         model._modules[name].set_fp_weights_bias(
                             module.weight.data,
                             None if module.bias is None else module.bias.data,
@@ -324,13 +334,17 @@ def convert_to_quantized_model(model, config, device="cpu"):
     calib_dataloader = config.calib_dataloader
     calib_func = config.calib_func
     calib_iters = config.calib_iters
+    calib_dataset = config.dataset
     model_device = next(model.parameters()).device
 
-    if calib_dataloader is None and config.quant_method.value not in ["rtn"]:
+    if (
+        calib_dataloader is None
+        and config.quant_method.value not in ["rtn"]
+        and calib_dataset is not None
+    ):
         from datasets import load_dataset
         from torch.utils.data import DataLoader
 
-        calib_dataset = config.dataset
         if isinstance(calib_dataset, (str, bytes, os.PathLike)):
             calib_dataset = load_dataset(calib_dataset, split="train")
         calib_dataset = calib_dataset.shuffle(seed=42)
@@ -442,7 +456,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                         True if "fullrange" in config.weight_dtype else False
                     ),
                     "enable_mse_search": config.mse_range,
-                }
+                },
             }
             algorithm = "RTN"
         elif config.quant_method.value == "awq":
@@ -470,7 +484,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     "use_max_length": True if config.max_input_length else False,
                     "pad_max_length": config.max_input_length,
                     "static_groups": config.static_groups,
-                }
+                },
             }
             algorithm = "GPTQ"
         elif config.quant_method.value == "autoround":
