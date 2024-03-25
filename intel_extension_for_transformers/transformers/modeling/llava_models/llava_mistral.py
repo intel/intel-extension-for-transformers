@@ -114,6 +114,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                 )
 
         if "Gaudi" in MistralForCausalLM.__name__:
+            # pylint: disable=E1101
             return super().forward(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
