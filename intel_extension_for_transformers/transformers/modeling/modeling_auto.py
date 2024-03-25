@@ -79,8 +79,6 @@ if is_ipex_available() and get_gpu_family() != "no_gpu":
     from intel_extension_for_pytorch.nn.utils._quantize_convert import (
         WeightOnlyQuantizedLinear,
     )
-else:
-    from ..llm.quantization.nn.modules import QuantizedLinearQBits
 
 torch = LazyImport("torch")
 
@@ -91,6 +89,8 @@ def recover_export_model(model, current_key_name=None):
 
     Return optimum format model.
     """
+    from ..llm.quantization.nn.modules import QuantizedLinearQBits
+
     for name, module in model.named_children():
         if current_key_name is None:
             current_key_name = []
@@ -123,6 +123,7 @@ def recover_export_model(model, current_key_name=None):
                 g_idx=desc_act,
                 use_optimum_format=True,
             )
+
             # Setting g_idx is invalid when use_optimum_format is True, so set it again when g_idx is not None.
             # https://github.com/intel/neural-compressor/blob/v2.5.dev2/neural_compressor/adaptor/torch_utils/
             # model_wrapper.py#L343
