@@ -14,7 +14,7 @@
 
 import unittest
 from unittest.mock import patch
-from intel_extension_for_transformers.utils.llm_carbon_calc import main
+from intel_extension_for_transformers.tools.llm_carbon_calc import main
 
 
 class TestLLMCarbonCalculator(unittest.TestCase):

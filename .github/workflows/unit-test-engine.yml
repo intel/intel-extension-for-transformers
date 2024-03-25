@@ -7,11 +7,12 @@ on:
       - ".github/workflows/unit-test-engine.yml"
       - "requirements.txt"
       - "setup.py"
-      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
-      - "!intel_extension_for_transformers/llm/runtime/graph/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+      - intel_extension_for_transformers/transformers/**
+      - "intel_extension_for_transformers/transformers/runtime/**"
+      - "!intel_extension_for_transformers/transformers/runtime/kernels/**"
+      - "!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**"
+      - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
+      - "!intel_extension_for_transformers/transformers/runtime/docs/**"
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -79,15 +80,11 @@ jobs:
           -v /dataset/cache/huggingface:/root/.cache/huggingface \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
-      - name: Env build
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
-
       - name: Binary build
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
+          && pip install torch==2.0 --extra-index-url https://download.pytorch.org/whl/cpu \
           && bash install_binary.sh \
           && pip install onnx"
 

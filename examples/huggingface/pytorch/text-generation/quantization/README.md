@@ -2,9 +2,10 @@
 We provide the inference benchmarking script `run_generation.py` for large language models, The following are the models we validated, more models are working in progress.
 
 # Quantization for CPU device
+
 >**Note**: 
 > 1.  default search algorithm is beam search with num_beams = 4.
-> 2. Model type "gptj", "opt", "llama" and "falcon" will default use [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/339bd251841e153ad9c34e1033ab8b2d936a1781/docs/tutorials/llm/llm_optimize_transformers.md) to accelerate the inference, but "llama" requests transformers version lower than 4.36.0, "falcon" requests transformers version lower than 4.33.3 with use_neural_speed=False.
+> 2. Model type "gptj", "opt", "llama" and "falcon" will default use [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/339bd251841e153ad9c34e1033ab8b2d936a1781/docs/tutorials/llm/llm_optimize_transformers.md) to accelerate the inference, but "llama" requests transformers version lower than 4.36.0, "falcon" requests transformers version lower than 4.33.3 for SmoothQuant.
 ## Prerequisite​
 ### Create Environment​
 Pytorch and Intel-extension-for-pytorch version 2.1 are required, python version requests equal or higher than 3.9 due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation, the dependent packages are listed in requirements, we recommend create environment as the following steps.
@@ -21,7 +22,7 @@ pip install -r requirements.txt
 
 
 ## Run
-We provide compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, and also support `PEFT` optimized model compression, the followings are command to show how to use it.
+We provide compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `Rtn/Awq/Teq/GPTQ/AutoRound` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, and also support `PEFT` optimized model compression, the followings are command to show how to use it.
 
 ### 1. Performance
 ``` bash
@@ -108,13 +109,13 @@ python run_generation.py \
 # load_in_4bit
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
-    --load_in_4bit True \
+    --load_in_4bit \
     --accuracy \
     --tasks "lambada_openai"
 # load_in_8bit
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
-    --load_in_8bit True \
+    --load_in_8bit \
     --accuracy \
     --tasks "lambada_openai"
 # restore the model optimized with smoothquant
@@ -128,7 +129,7 @@ python run_generation.py \
 
 ```
 
-# # Weight Only Quantization for GPU device
+# Weight Only Quantization for GPU device
 >**Note**: 
 > 1.  default search algorithm is beam search with num_beams = 1.
 > 2. [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/v2.1.10%2Bxpu/docs/tutorials/llm/llm_optimize_transformers.md) Support for the optimized inference of model types "gptj," "mistral," "qwen," and "llama" to achieve high performance and accuracy. Ensure accurate inference for other model types as well.

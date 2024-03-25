@@ -33,7 +33,6 @@ from intel_extension_for_transformers.transformers.distillation import Distillat
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from intel_extension_for_transformers.transformers.utils.objectives import Objective
 from intel_extension_for_transformers.transformers.utils.utility_tf import TFDataloader
-from intel_extension_for_transformers.utils.data_augmentation import DataAugmentation
 
 from transformers import (
     AutoModelForPreTraining,
@@ -246,21 +245,6 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(tf_optimizer.input, 1)
         self.assertEqual(tf_optimizer.eval_func, None)
         self.assertEqual(tf_optimizer.train_func, None)
-
-    def test_DataAugmentation_config(self):
-        aug = DataAugmentation(augmenter_type="TextGenerationAug")
-        aug.augmenter_type = "TextGenerationAug"
-        aug.input_dataset = None
-        aug.data_config_or_task_name = None
-        aug.column_names = None
-        aug.num_samples = 100
-        aug.augmenter_arguments = None
-        self.assertEqual(aug.augmenter_type, "textgenerationaug")
-        self.assertEqual(aug.input_dataset, None)
-        self.assertEqual(aug.data_config_or_task_name, None)
-        self.assertEqual(aug.column_names, None)
-        self.assertEqual(aug.num_samples, 100)
-        self.assertEqual(aug.augmenter_arguments, None)
 
     def test_tf_dataloader(self):
         def dummy_dataset(type='list'):

@@ -137,6 +137,11 @@ parser.add_argument(
 )
 parser.add_argument("--group_size", type=int, default=32)
 parser.add_argument("--scheme", default="sym")
+parser.add_argument(
+    "--layer_wise",
+    action="store_true",
+    help="Use layer wise to do quantization",
+)
 # ============GPTQ configs==============
 parser.add_argument(
     "--desc_act",
@@ -312,6 +317,7 @@ elif args.woq:
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
+            layer_wise=args.layer_wise,
         )
     elif args.woq_algo == "Awq":
         quantization_config = AwqConfig(
@@ -356,6 +362,7 @@ elif args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
+            layer_wise=args.layer_wise,
         )
     elif args.woq_algo == "AutoRound":
         quantization_config = AutoRoundConfig(
@@ -416,15 +423,31 @@ elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
             args.model,
             trust_remote_code=args.trust_remote_code,
             _commit_hash=args._commit_hash,
+            use_neural_speed=args.use_neural_speed,
         )
 
+# save model
+if args.output_dir is not None:
+    tokenizer.save_pretrained(args.output_dir)
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision or args.woq:
+        # user_model will be changed.
+        user_model.save_pretrained(args.output_dir)
+        # loading saved woq model
+        user_model = AutoModelForCausalLM.from_pretrained(
+            args.output_dir, 
+            trust_remote_code=args.trust_remote_code,
+            use_neural_speed=args.use_neural_speed
+            )
 
 
 # int8 model loading
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
-    from intel_extension_for_transformers.llm.evaluation.models import (
+    from intel_extension_for_transformers.transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
 
@@ -511,7 +534,7 @@ if args.accuracy:
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )
-    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
 
     args._commit_hash = "main" if args._commit_hash is None else args._commit_hash
     results = evaluate(
@@ -545,11 +568,3 @@ if args.accuracy:
                 % (task_name, results["results"][task_name]["acc"])
             )
 
-# save model
-if args.output_dir is not None:
-    tokenizer.save_pretrained(args.output_dir)
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
-        user_model.save_pretrained(args.output_dir)

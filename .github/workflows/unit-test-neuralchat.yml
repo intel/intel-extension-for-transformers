@@ -9,16 +9,16 @@ on:
       - 'intel_extension_for_transformers/neural_chat/**'
       - 'requirements.txt'
       - 'setup.py'
-      - 'intel_extension_for_transformers/llm/finetuning/**'
-      - 'intel_extension_for_transformers/llm/quantization/**'
-      - 'intel_extension_for_transformers/llm/runtime/graph/**'
+      - 'intel_extension_for_transformers/transformers/llm/finetuning/**'
+      - 'intel_extension_for_transformers/transformers/llm/quantization/**'
+      - 'intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**'
       - 'intel_extension_for_transformers/transformers/**'
       - 'intel_extension_for_transformers/langchain/**'
       - '!intel_extension_for_transformers/neural_chat/docs/**'
       - '!intel_extension_for_transformers/neural_chat/examples/**'
       - '!intel_extension_for_transformers/neural_chat/assets/**'
       - '!intel_extension_for_transformers/neural_chat/README.md'
-      - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
+      - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/*.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -87,11 +87,6 @@ jobs:
           -v /dataset/tf_dataset2:/tf_dataset2 \
           -e "GOOGLE_API_KEY=${{ vars.GOOGLE_API_KEY }}" \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
-
-      - name: Env build
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
 
       - name: Binary build
         run: |

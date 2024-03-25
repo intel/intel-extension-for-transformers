@@ -109,6 +109,11 @@ parser.add_argument(
 )
 parser.add_argument("--group_size", type=int, default=32)
 parser.add_argument("--scheme", default="sym")
+parser.add_argument(
+    "--layer_wise",
+    action="store_true",
+    help="Use layer wise to do quantization",
+)
 # ============GPTQ configs==============
 parser.add_argument(
     "--desc_act",
@@ -295,6 +300,7 @@ elif args.woq:
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
+            layer_wise=args.layer_wise,
         )
     elif args.woq_algo == "Awq":
         quantization_config = AwqConfig(
@@ -339,6 +345,7 @@ elif args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
+            layer_wise=args.layer_wise,
         )
     elif args.woq_algo == "AutoRound":
         quantization_config = AutoRoundConfig(
@@ -394,10 +401,26 @@ elif not args.int8 and not args.int8_bf16_mixed:
         use_neural_speed=False,
     )
 
+# save model
+if args.output_dir is not None:
+    tokenizer.save_pretrained(args.output_dir)
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision or args.woq:
+        # user_model will be changed.
+        user_model.save_pretrained(args.output_dir)
+        # loading saved woq model
+        user_model = AutoModelForCausalLM.from_pretrained(
+            args.output_dir, 
+            trust_remote_code=args.trust_remote_code,
+            use_neural_speed=args.use_neural_speed
+            )
+
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
-    from intel_extension_for_transformers.llm.evaluation.models import (
+    from intel_extension_for_transformers.transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
 
@@ -511,7 +534,7 @@ if args.benchmark:
 
 
 if args.accuracy:
-    from intel_extension_for_transformers.llm.evaluation.bigcode_eval import evaluate
+    from intel_extension_for_transformers.transformers.llm.evaluation.bigcode_eval import evaluate
 
     results = evaluate(
         model=user_model,
@@ -521,12 +544,3 @@ if args.accuracy:
         args=args,
     )
     print(results)
-
-# save model
-if args.output_dir is not None:
-    tokenizer.save_pretrained(args.output_dir)
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
-        user_model.save_pretrained(args.output_dir)

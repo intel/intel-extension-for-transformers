@@ -3,4 +3,4 @@ Graph
 
 .. autoapisummary::
 
-   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph
+   intel_extension_for_transformers.transformers.runtime.compile.graph.graph

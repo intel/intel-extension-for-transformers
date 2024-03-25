@@ -13,7 +13,7 @@
 #  limitations under the License.
 import sys
 import argparse
-from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diff for a model")

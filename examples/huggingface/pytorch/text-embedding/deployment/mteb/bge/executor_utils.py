@@ -20,8 +20,8 @@ import numpy as np
 from tqdm import tqdm
 from datasets import load_metric
 from executor_dataloader import DataLoader
-from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
-from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.transformers.runtime.compile import compile, autocast
+from intel_extension_for_transformers.transformers.runtime.compile.graph import Graph
 import sys
 import os
 import logging

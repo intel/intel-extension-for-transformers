@@ -92,20 +92,20 @@ class UnitTest(unittest.TestCase):
         if os.path.exists("./gaudi2.txt"):
             os.remove("./gaudi2.txt")
 
-    def test_create_new_kb_with_links(self):
+    async def test_create_new_kb_with_links(self):
         # Replace this with a sample link list you want to test with
         sample_link_list = {"link_list": ["https://www.ces.tech/"]}
-        response = client.post(
+        response = await client.post(
             "/v1/askdoc/upload_link",
             json=sample_link_list,
         )
         assert response.status_code == 200
         assert "knowledge_base_id" in response.json()
 
-    def test_append_existing_kb_with_links(self):
+    async def test_append_existing_kb_with_links(self):
         # create gaudi2 knowledge base
         with open(self.gaudi2_doc, "rb") as file:
-            response = client.post(
+            response = await client.post(
                 "/v1/askdoc/create",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
             )
@@ -120,10 +120,10 @@ class UnitTest(unittest.TestCase):
         assert response.status_code == 200
         assert response.json()['status'] == True
 
-    def test_append_existing_kb(self):
+    async def test_append_existing_kb(self):
         # create oneapi knowledge base
         with open(self.oneapi_doc, "rb") as file:
-            response = client.post(
+            response = await client.post(
                 "/v1/askdoc/create",
                 files={"file": ("./oneapi.txt", file, "multipart/form-data")},
             )
@@ -139,10 +139,10 @@ class UnitTest(unittest.TestCase):
         assert response.status_code == 200
         assert "Succeed" in response.json()
 
-    def test_non_stream_chat(self):
+    async def test_non_stream_chat(self):
         # create gaudi2 knowledge base
         with open(self.gaudi2_doc, "rb") as file:
-            response = client.post(
+            response = await client.post(
                 "/v1/askdoc/create",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
             )
@@ -159,10 +159,10 @@ class UnitTest(unittest.TestCase):
         response = client.post("/v1/askdoc/chat", json=query_params)
         assert response.status_code == 200
 
-    def test_stream_chat(self):
+    async def test_stream_chat(self):
         # create gaudi2 knowledge base
         with open(self.gaudi2_doc, "rb") as file:
-            response = client.post(
+            response = await client.post(
                 "/v1/askdoc/create",
                 files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
             )
