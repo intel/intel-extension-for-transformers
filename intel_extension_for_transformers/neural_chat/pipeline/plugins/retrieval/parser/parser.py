@@ -51,7 +51,7 @@ class DocumentParser:
             self.process = kwargs['process']
         self.table_summary_model_name_or_path = kwargs['table_summary_model_name_or_path']
         self.table_summary_mode = kwargs['table_summary_mode'] if 'table_summary_mode' in kwargs else 'none'
-        
+
         if isinstance(input, str):
             if os.path.isfile(input):
                 data_collection = self.parse_document(input)

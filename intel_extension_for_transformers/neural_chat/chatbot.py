@@ -323,7 +323,7 @@ def build_chatbot(config: PipelineConfig=None):
         #         logging.error("build_chatbot: plugin init failed")
         #     return
         adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
-    
+
     if get_latest_error():
         return
     else:

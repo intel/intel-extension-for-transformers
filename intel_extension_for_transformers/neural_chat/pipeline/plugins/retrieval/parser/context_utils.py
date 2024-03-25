@@ -95,7 +95,7 @@ def read_pdf(pdf_path, table_summary_mode, table_summary_model_name_or_path):
             y_distance = 0
         y_close = y_distance < threshold
         return same_page and x_overlap and y_close, y_distance
-    
+
     raw_pdf_elements = partition_pdf(
         filename=pdf_path,
         infer_table_structure=True,
