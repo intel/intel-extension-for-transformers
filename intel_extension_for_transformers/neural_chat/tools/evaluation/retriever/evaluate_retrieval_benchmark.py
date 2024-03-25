@@ -115,7 +115,7 @@ def evaluate(preds, labels, cutoffs=[1]):
         hit_rate = hit_rate_list[i]
         metrics[f"Hit@{cutoff}"] = hit_rate
 
-    return metrics
+    return metrics["MRR@1"], metrics["Hit@1"]
 
 class Retrieval():
     def __init__(self,
@@ -346,9 +346,31 @@ def main():
                          ).pre_llm_inference_actions(model_name=llm_model, query=query)
         retrieval_results.append(context)
     ground_truths=load_list(query_file_jsonl_path, "pos")
-    metrics = evaluate(retrieval_results, ground_truths)
-    print(metrics)
-    return metrics
+    MRR, Hit = evaluate(retrieval_results, ground_truths)
+
+    file_json_path='result.jsonl'
+
+    if MRR and Hit:
+        data = {
+                "index_file_jsonl_path": args.index_file_jsonl_path,
+                "query_file_jsonl_path": args.query_file_jsonl_path,
+                "vector_database": args.vector_database,
+                "embedding_model": args.embedding_model,
+                "retrieval_type": args.retrieval_type,
+                "polish": args.polish,
+                "search_type": args.search_type,
+                "llm_model": args.llm_model,
+                "k": args.k,
+                "fetch_k": args.fetch_k,
+                "score_threshold": args.score_threshold,
+                "reranker_model": args.reranker_model,
+                "top_n": args.top_n,
+                "enable_rerank": args.enable_rerank,
+                "MRR": MRR,
+                "Hit": Hit,
+            }
+        with jsonlines.open(file_json_path,"a") as file_json:
+                file_json.write(data)
 
 if __name__ == '__main__':
     main()
