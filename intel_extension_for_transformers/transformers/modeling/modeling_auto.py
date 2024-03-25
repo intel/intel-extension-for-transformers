@@ -79,8 +79,6 @@ if is_ipex_available() and get_gpu_family() != "no_gpu":
     from intel_extension_for_pytorch.nn.utils._quantize_convert import (
         WeightOnlyQuantizedLinear,
     )
-else:
-    from ..llm.quantization.nn.modules import QuantizedLinearQBits
 
 torch = LazyImport("torch")
 
@@ -91,6 +89,8 @@ def recover_export_model(model, current_key_name=None):
 
     Return optimum format model.
     """
+    from ..llm.quantization.nn.modules import QuantizedLinearQBits
+
     for name, module in model.named_children():
         if current_key_name is None:
             current_key_name = []
@@ -124,9 +124,7 @@ def recover_export_model(model, current_key_name=None):
                 use_optimum_format=True,
             )
 
-            model._modules[name].pack(
-                int_weight, scales, zeros, module.bias, g_idx=g_idx
-            )
+            model._modules[name].pack(int_weight, scales, zeros, module.bias, g_idx=g_idx)
             if g_idx is not None:
                 model._modules[name].g_idx = g_idx
 
