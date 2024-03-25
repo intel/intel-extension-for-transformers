@@ -124,7 +124,12 @@ def recover_export_model(model, current_key_name=None):
                 use_optimum_format=True,
             )
 
-            model._modules[name].pack(int_weight, scales, zeros, module.bias, g_idx=g_idx)
+            # Setting g_idx is invalid when use_optimum_format is True, so set it again when g_idx is not None.
+            # https://github.com/intel/neural-compressor/blob/v2.5.dev2/neural_compressor/adaptor/torch_utils/
+            # model_wrapper.py#L343
+            model._modules[name].pack(
+                int_weight, scales, zeros, module.bias, g_idx=g_idx
+            )
             if g_idx is not None:
                 model._modules[name].g_idx = g_idx
 
@@ -189,6 +194,12 @@ def convert_model_to_public(model):
         model = recover_export_model(model)
 
 
+def make_contiguous(model):
+    for param in model.parameters():
+        if param.data.ndimension() > 1:
+            param.data = param.data.contiguous()
+
+
 def save_low_bit(
     self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs
 ):
@@ -207,6 +218,7 @@ def save_low_bit(
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
     del self.save_pretrained
+    make_contiguous(self)
     self.save_pretrained(
         save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
     )
@@ -416,7 +428,6 @@ class _BaseQBitsAutoModelClass:
 
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
-
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
