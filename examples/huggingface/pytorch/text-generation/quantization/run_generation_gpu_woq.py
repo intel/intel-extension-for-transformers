@@ -184,7 +184,7 @@ if args.benchmark:
             if user_model is None else user_model
     user_model = user_model.to(memory_format=torch.channels_last)
     if quantization_config is None:
-        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else {}
+        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
     if not args.disable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
@@ -273,7 +273,7 @@ if args.accuracy:
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model
     if quantization_config is None:
-        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else {}
+        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
     if not args.disable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
