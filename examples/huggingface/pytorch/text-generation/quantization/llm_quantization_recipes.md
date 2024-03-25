@@ -34,19 +34,17 @@ git clone https://github.com/intel/intel-extension-for-transformers.git
 
 # install ITREX
 cd intel-extension-for-transformers
-git checkout a4aba8ddb07c9b744b6ac106502ec059e0c47960
+git checkout 4b504618257861841ab413426ae2c8ac2eee07d4
 pip install -r requirements.txt
 pip install -v .
 
 # install requirements
 cd examples/huggingface/pytorch/text-generation/quantization
 pip install -r requirements.txt
-pip install neural-compressor==2.4.1
-pip install transformers==4.32.0
-pip install torch==2.1.1+cpu --index-url https://download.pytorch.org/whl/cpu
-pip install intel-extension-for-pytorch==2.1.100
-pip uninstall lm_eval -y
-pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
+pip install git+https://github.com/intel/neural-compressor.git@6a013c561af17bbc925e36f5a797cae55dad20e7
+pip install transformers==4.35.2
+pip install torch==2.2.0+cpu --index-url https://download.pytorch.org/whl/cpu
+pip install intel-extension-for-pytorch==2.2.0
 ```
 
 # Run Quantization and evaluate INT8 accuracy
