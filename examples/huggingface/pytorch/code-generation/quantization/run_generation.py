@@ -109,6 +109,8 @@ parser.add_argument(
 )
 parser.add_argument("--group_size", type=int, default=32)
 parser.add_argument("--scheme", default="sym")
+parser.add_argument("--load_in_4bit", action="store_true")
+parser.add_argument("--load_in_8bit", action="store_true")
 parser.add_argument(
     "--layer_wise",
     action="store_true",
