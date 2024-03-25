@@ -127,6 +127,8 @@ def recover_export_model(model, current_key_name=None):
             model._modules[name].pack(
                 int_weight, scales, zeros, module.bias, g_idx=g_idx
             )
+            if g_idx is not None:
+                model._modules[name].g_idx = g_idx
 
         if len(list(module.children())) > 0:  # pylint: disable=E1101
             _ = recover_export_model(module, current_key_name)
@@ -179,8 +181,13 @@ def convert_model_to_public(model):
                     module.qweight.data = module.qweight.t_().contiguous()
                     module.scales.data = module.scales.t_().contiguous()
                     module.weight_transposed = False
-    elif model.quantization_config.weight_dtype not in \
-        ["fp8_e5m2", "fp8_e4m3", "nf4", "fp4", "int4_fullrange"]:
+    elif model.quantization_config.weight_dtype not in [
+        "fp8_e5m2",
+        "fp8_e4m3",
+        "nf4",
+        "fp4",
+        "int4_fullrange",
+    ]:
         model = recover_export_model(model)
 
 
@@ -368,8 +375,10 @@ class _BaseQBitsAutoModelClass:
                 exit(0)
 
             if config.model_type in cls.model_type_list and not use_xpu:
-                if isinstance(quantization_config,
-                              GPTQConfig) and config.model_type not in cls.model_type_list_for_gptq:
+                if (
+                    isinstance(quantization_config, GPTQConfig)
+                    and config.model_type not in cls.model_type_list_for_gptq
+                ):
                     use_neural_speed = False
                 else:
                     use_neural_speed = True
@@ -609,7 +618,7 @@ class _BaseQBitsAutoModelClass:
                 model = convert_to_quantized_model(
                     model, quantization_config, device=device_map
                 )
-                quantization_config.tokenizer = None
+                quantization_config.remove_redundant_parameters()
                 model.config.quantization_config = quantization_config
 
             # add quantization_config and save_low_bit to pretrained model dynamically
