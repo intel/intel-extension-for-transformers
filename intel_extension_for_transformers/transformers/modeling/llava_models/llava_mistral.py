@@ -130,6 +130,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                 flash_attention_recompute=flash_attention_recompute,
             )
         else:
+            # pylint: disable=E1101
             return super().forward(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
@@ -146,6 +147,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, inputs_embeds=None, **kwargs):
         images = kwargs.pop("images", None)
         images_mask = kwargs.pop("images_mask", None)
+        # pylint: disable=E1101
         _inputs = super().prepare_inputs_for_generation(
             input_ids, past_key_values=past_key_values, inputs_embeds=inputs_embeds, **kwargs
         )
