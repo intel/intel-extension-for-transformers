@@ -321,3 +321,14 @@ def generate_sqlcoder_prompt(qurey, metadata_file):
         qurey=qurey, table_metadata_string=table_metadata_string
     )
     return prompt
+
+TABLESUMMARY_PROMPT = """
+Task: Your task is to give a concise summary of the table. \
+The summary should cover the overall table structure and all detailed information of the table. \
+The table will be given in html format. Summarize the table below.
+---
+### Table:
+{table_content}
+---
+### Generated Summary:
+"""

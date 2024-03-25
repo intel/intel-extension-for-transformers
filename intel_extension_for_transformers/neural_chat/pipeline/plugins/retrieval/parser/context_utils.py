@@ -48,8 +48,13 @@ def uni_pro(text):
     return filtered_text
 
 
-def read_pdf(pdf_path):
+def read_pdf(pdf_path, table_summary_mode, table_summary_model_name_or_path):
     """Read the pdf file."""
+    from unstructured.partition.pdf import partition_pdf
+    from unstructured.documents.elements import FigureCaption
+    from intel_extension_for_transformers.neural_chat.models.model_utils import predict
+    from intel_extension_for_transformers.neural_chat.prompts.prompt import TABLESUMMARY_PROMPT
+
     doc = fitz.open(pdf_path)
     reader = easyocr.Reader(['en'])
     result =''
@@ -77,7 +82,71 @@ def read_pdf(pdf_path):
                     else:
                         pageimg=pageimg+'.'
                 result=result+pageimg
-    return result
+
+    tables_result = []
+    def get_relation(table_coords, caption_coords, table_page_number, caption_page_number, threshold=100):
+        same_page = table_page_number == caption_page_number
+        x_overlap = (min(table_coords[2][0], caption_coords[2][0]) - max(table_coords[0][0], caption_coords[0][0])) > 0
+        if table_coords[0][1] - caption_coords[1][1] >= 0:
+            y_distance = table_coords[0][1] - caption_coords[1][1]
+        elif caption_coords[0][1] - table_coords[1][1] >= 0:
+            y_distance = caption_coords[0][1] - table_coords[1][1]
+        else:
+            y_distance = 0
+        y_close = y_distance < threshold
+        return same_page and x_overlap and y_close, y_distance
+    
+    raw_pdf_elements = partition_pdf(
+        filename=pdf_path,
+        infer_table_structure=True,
+    )
+
+    tables = [el for el in raw_pdf_elements if el.category == "Table"]
+    for table in tables:
+        table_coords = table.metadata.coordinates.points
+        content = table.metadata.text_as_html
+        table_page_number = table.metadata.page_number
+        min_distance = float('inf')
+        table_summary = None
+        if table_summary_mode == 'title':
+            for element in raw_pdf_elements:
+                if isinstance(element, FigureCaption) or element.text.startswith('Tab'):
+                    caption_page_number = element.metadata.page_number
+                    caption_coords = element.metadata.coordinates.points
+                    related, y_distance = get_relation(table_coords, caption_coords, table_page_number, caption_page_number)
+                    if related:
+                        if y_distance < min_distance:
+                            min_distance = y_distance
+                            table_summary = element.text
+            if table_summary is None:
+                parent_id = table.metadata.parent_id
+                for element in raw_pdf_elements:
+                    if element.id == parent_id:
+                        table_summary = element.text
+                        break
+        elif table_summary_mode == 'llm':
+            prompt = TABLESUMMARY_PROMPT.format(table_content=content)
+            params = {}
+            params["model_name"] = table_summary_model_name_or_path
+            params["prompt"] = prompt
+            params["temperature"] = 0.8
+            params["top_p"] = 0.9
+            params["top_k"] = 40
+            params["max_new_tokens"] = 1000
+            params["num_beams"] = 2
+            params["num_return_sequences"] = 2
+            params["use_cache"] = True
+            table_summary = predict(**params)
+            table_summary = table_summary[table_summary.find('### Generated Summary:\n'):]
+            table_summary = re.sub('### Generated Summary:\n', '', table_summary)
+        elif table_summary_mode == 'none':
+            table_summary = None
+        if table_summary is None:
+            text = f'[Table: {content}]'
+        else:
+            text = f'|Table: [Summary: {table_summary}], [Content: {content}]|'
+        tables_result.append([text, pdf_path])
+    return result, tables_result
 
 
 def read_html(html_path):
@@ -214,10 +283,11 @@ def load_structured_data(input, process, max_length, min_length):
         content = load_csv(input)
     return content
 
-def load_unstructured_data(input):
+def load_unstructured_data(input, table_summary_mode, table_summary_model_name_or_path):
     """Load unstructured context."""
+    tables = None
     if input.endswith("pdf"):
-        text = read_pdf(input)
+        text, tables = read_pdf(input, table_summary_mode, table_summary_model_name_or_path)
     elif input.endswith("docx"):
         text = read_docx(input)
     elif input.endswith("html"):
@@ -231,7 +301,7 @@ def load_unstructured_data(input):
     text = text.replace('\n\n', ' ')
     text = uni_pro(text)
     text = re.sub(r'\s+', ' ', text)
-    return text
+    return text, tables
 
 def get_chuck_data(content, max_length, min_length, input):
     """Process the context to make it maintain a suitable length for the generation."""

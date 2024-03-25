@@ -714,5 +714,86 @@ class TestEmbeddingPrecision(unittest.TestCase):
         plugins.retrieval.args = {}
         plugins.retrieval.enable = False
 
+class TestTableSummaryTitleMode(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("./table_summary_title_mode"):
+            shutil.rmtree("./table_summary_title_mode", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("./table_summary_title_mode"):
+            shutil.rmtree("./table_summary_title_mode", ignore_errors=True)
+        return super().tearDown()
+
+    def test_table_summary_title_mode(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/LLAMA2_short.pdf"
+        plugins.retrieval.args["persist_directory"] = "./table_summary_title_mode"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        plugins.retrieval.args["table_summary_mode"] = 'title'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("What is the number of training tokens for LLaMA2?")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
+
+class TestTableSummaryLLMMode(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("./table_summary_llm_mode"):
+            shutil.rmtree("./table_summary_llm_mode", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("./table_summary_llm_mode"):
+            shutil.rmtree("./table_summary_llm_mode", ignore_errors=True)
+        return super().tearDown()
+
+    def test_table_summary_llm_mode(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/LLAMA2_short.pdf"
+        plugins.retrieval.args["persist_directory"] = "./table_summary_llm_mode"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        plugins.retrieval.args["table_summary_mode"] = 'llm'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("What is the number of training tokens for LLaMA2?")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
+
+class TestTableSummaryNoneMode(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("./table_summary_none_mode"):
+            shutil.rmtree("./table_summary_none_mode", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("./table_summary_none_mode"):
+            shutil.rmtree("./table_summary_none_mode", ignore_errors=True)
+        return super().tearDown()
+
+    def test_table_summary_none_mode(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/LLAMA2_short.pdf"
+        plugins.retrieval.args["persist_directory"] = "./table_summary_none_mode"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        plugins.retrieval.args["table_summary_mode"] = 'none'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("What is the number of training tokens for LLaMA2?")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
+
 if __name__ == '__main__':
     unittest.main()
