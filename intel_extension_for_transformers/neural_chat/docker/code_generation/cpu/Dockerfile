@@ -12,15 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-#
-# THIS IS A GENERATED DOCKERFILE.
-#
-# This file was assembled from multiple pieces, whose use is documented
-# throughout. Please refer to the TensorFlow dockerfiles documentation
-# for more information.
-#
-# ============================================================================
-
 
 ## SPR environment
 ARG UBUNTU_VER=22.04
@@ -59,7 +50,7 @@ RUN pip install oneccl_bind_pt --extra-index-url  https://pytorch-extension.inte
     cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses && \
-    pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
+    pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==4.21.6  tokenizers einops peft
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
@@ -77,4 +68,3 @@ EXPOSE ${SSHD_PORT}
 
 ENTRYPOINT ["neuralchat_server"]
 CMD ["start", "--config_file", "/codegen.yaml"]
-

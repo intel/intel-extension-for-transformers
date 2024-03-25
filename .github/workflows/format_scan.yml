@@ -32,7 +32,7 @@ jobs:
         job_name: [
             "pylint",
             "bandit",
-            "clangformat",
+            # "clangformat",
             "cloc",
             "cpplint",
             # "pydocstyle",
@@ -50,7 +50,7 @@ jobs:
           fi
 
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Docker Build
         run: |
@@ -66,11 +66,6 @@ jobs:
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
-      - name: Env build
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
-          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
-
       - name: Code scan check
         run: |
           docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
@@ -78,7 +73,7 @@ jobs:
 
       - name: Publish pipeline artifact
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.job_name }}
           path: ${{ github.workspace }}/.github/workflows/script/formatScan/${{ matrix.job_name }}.*

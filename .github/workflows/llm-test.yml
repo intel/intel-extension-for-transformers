@@ -6,12 +6,12 @@ on:
     paths:
        - '.github/workflows/llm-test.yml'
        - '.github/workflows/script/models/run_llm.sh'
-       - "intel_extension_for_transformers/llm/runtime/deprecated/**"
-       - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
-       - "!intel_extension_for_transformers/llm/runtime/graph/**"
-       - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
-       - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
-       - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+       - "intel_extension_for_transformers/transformers/runtime/**"
+       - "!intel_extension_for_transformers/transformers/runtime/kernels/**"
+       - "!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**"
+       - "!intel_extension_for_transformers/transformers/runtime/test/**"
+       - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
+       - "!intel_extension_for_transformers/transformers/runtime/docs/**"
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -38,7 +38,7 @@ jobs:
             precision: "bf16,int8,fp8"
     steps:
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: "recursive"
           fetch-tags: true
@@ -53,6 +53,7 @@ jobs:
           conda activate llm-test || source activate llm-test
           pip install build --upgrade
           pip install -r requirements.txt
+          pip install torch==2.0 --extra-index-url https://download.pytorch.org/whl/cpu
           python setup.py sdist bdist_wheel
           pip install dist/intel_extension_for_transformers*.whl
           pip list
@@ -74,7 +75,7 @@ jobs:
 
 
       - name: Publish pipeline artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: llm
@@ -82,7 +83,7 @@ jobs:
           if-no-files-found: ignore # 'warn' or 'ignore' are also available, defaults to `warn`
           retention-days: 60 # 1 <= retention-days <= 90
 
-  Genreate-Report:
+  Generate-LLM-Report:
     runs-on: itrex-node-spell
     needs: [LLM-Workflow]
     steps:
@@ -95,16 +96,16 @@ jobs:
               docker exec ${{ env.EXTRA_CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download Summary Log
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: ${{ env.OUT_SCRIPT_PATH }}/generated/log
 
       - name: Download Reference Artifact
         id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v3.1.2
         with:
           workflow: llm-test.yml
           name: FinalReport
@@ -133,7 +134,7 @@ jobs:
           ghprbActualCommit: ${{ github.event.pull_request.head.sha }}
 
       - name: Publish Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: FinalReport

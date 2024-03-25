@@ -7,11 +7,12 @@ on:
       - ".github/workflows/unit-test-engine.yml"
       - "requirements.txt"
       - "setup.py"
-      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
-      - "!intel_extension_for_transformers/llm/runtime/graph/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+      - intel_extension_for_transformers/transformers/**
+      - "intel_extension_for_transformers/transformers/runtime/**"
+      - "!intel_extension_for_transformers/transformers/runtime/kernels/**"
+      - "!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**"
+      - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
+      - "!intel_extension_for_transformers/transformers/runtime/docs/**"
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -29,7 +30,7 @@ env:
   CONTAINER_SCAN: "codeScan"
 
 jobs:
-  unit-test:
+  engine-unit-test:
     runs-on: [self-hosted, linux, X64, itrex-node]
     strategy:
       matrix:
@@ -38,6 +39,7 @@ jobs:
             test_name: "PR-test"
           - test_branch: "main"
             test_name: "baseline"
+    name: engine-unit-test-${{ matrix.test_name }}
     steps:
       - name: Docker Clean Up
         run: |
@@ -54,7 +56,7 @@ jobs:
           fi
 
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: "recursive"
           ref: ${{ matrix.test_branch }}
@@ -78,15 +80,11 @@ jobs:
           -v /dataset/cache/huggingface:/root/.cache/huggingface \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
-      - name: Env build
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
-
       - name: Binary build
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
+          && pip install torch==2.0 --extra-index-url https://download.pytorch.org/whl/cpu \
           && bash install_binary.sh \
           && pip install onnx"
 
@@ -105,16 +103,16 @@ jobs:
                    mv /log_dir . "
 
       - name: Publish pipeline artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: "UnitTest${{ matrix.test_name }}"
           path: ${{ github.workspace }}/log_dir
           retention-days: 5
 
-  Genreate-Report:
+  Genreate-Engine-Report:
     runs-on: itrex-node-spell
-    needs: [unit-test]
+    needs: [engine-unit-test]
     steps:
       - name: Docker Clean Up
         run: |
@@ -125,10 +123,10 @@ jobs:
               docker exec ${{ env.CONTAINER_SCAN }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download UT PR Log
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/log_dir
 
@@ -141,7 +139,7 @@ jobs:
           /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir
 
       - name: Publish pipeline artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: Engine Unit Test

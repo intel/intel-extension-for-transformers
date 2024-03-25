@@ -1,11 +1,12 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 accelerate
+auto-gptq
+auto-round
 bitsandbytes
 datasets==2.14.7
 einops
 evaluate
 gguf
-git+https://github.com/intel/auto-round.git@d02f94d4b085523df3b313863fb07f83b2989cce
 git+https://github.com/intel/neural-compressor.git
 intel-extension-for-pytorch==2.2.0
 intel-tensorflow==2.14.0
@@ -16,6 +17,7 @@ onnx>=1.10
 onnxruntime
 optimum-intel
 peft==0.6.2
+py-cpuinfo
 sacremoses
 sentencepiece != 0.1.92
 tiktoken

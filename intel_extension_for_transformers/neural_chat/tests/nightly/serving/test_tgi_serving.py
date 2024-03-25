@@ -44,6 +44,7 @@ class TestTGI(unittest.TestCase):
             "parameters": {"max_new_tokens":10},
             "stream": False
         }
+        router.set_tgi_endpoint("/v1/tgi")
         response = client.post("/v1/tgi", json=request_data)
 
         mock_text_generation.assert_called_once_with(
@@ -67,6 +68,7 @@ class TestTGI(unittest.TestCase):
             "inputs": "Test text generation inputs.",
             "parameters": {"max_new_tokens":10}
         }
+        router.set_tgi_endpoint("/v1/tgi/generate")
         response = client.post("/v1/tgi/generate", json=request_data)
 
         mock_text_generation.assert_called_once_with(
@@ -93,6 +95,7 @@ class TestTGI(unittest.TestCase):
             "inputs": "Test text generation inputs.",
             "parameters": {"max_new_tokens":10}
         }
+        router.set_tgi_endpoint("/v1/tgi/generate_stream")
         response = client.post("/v1/tgi/generate_stream", json=request_data)
 
         self.assertEqual(response.status_code, 200)

@@ -21,7 +21,7 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_core.documents import Document
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-from intel_extension_for_transformers.langchain.vectorstores import Chroma
+from intel_extension_for_transformers.langchain_community.vectorstores import Chroma
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser
 import requests
 

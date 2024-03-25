@@ -52,7 +52,11 @@ from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
-    WeightOnlyQuantConfig,
+    RtnConfig,
+    AwqConfig,
+    TeqConfig,
+    GPTQConfig,
+    AutoRoundConfig,
     BitsAndBytesConfig
 )
 from intel_extension_for_transformers.neural_chat.errorcode import ErrorCodes
@@ -219,9 +223,15 @@ def max_input_len(input_text_length):
         return 512
     elif input_text_length <= 2048:
         return 2048
-    else:
-        logging.info("Max support length is 4096")
+    elif input_text_length <= 4096:
         return 4096
+    elif input_text_length <= 8192:
+        return 8192
+    elif input_text_length <= 16384:
+        return 16384
+    else:
+        logging.info("Max support length is 32K")
+        return 32768
 
 
 MODELS = {}
@@ -554,12 +564,14 @@ def load_model(
 
     load_to_meta = model_on_meta(config)
 
-    if isinstance(optimization_config, WeightOnlyQuantConfig):
+    if isinstance(optimization_config, (RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoRoundConfig)):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         if use_neural_speed:
             optimization_config.post_init_runtime()
-        else:
-            optimization_config.post_init()
+        elif device == "cpu":
+            optimization_config.post_init_cpu()
+        elif device == "xpu":
+            optimization_config.post_init_xpu()
         model = optimize_model(model_name, optimization_config, use_neural_speed)
         if hasattr(model, 'config'):
             if model.config.is_encoder_decoder:
@@ -670,7 +682,7 @@ def load_model(
                 assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
                 if re.search("falcon", model_name, re.IGNORECASE):
                     assert transformers.__version__ <= "4.33.3", "Please pip install transformers==4.33.3"
-                from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
+                from intel_extension_for_transformers.transformers.llm.evaluation.models import TSModelCausalLMForITREX
                 model = TSModelCausalLMForITREX.from_pretrained(
                     model_name,
                     file_name="best_model.pt"
@@ -817,7 +829,7 @@ def load_model(
                 )
                 if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                                 or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-                    from intel_extension_for_transformers.llm.utils.mpt_trace import \
+                    from intel_extension_for_transformers.transformers.llm.utils.mpt_trace import \
                         jit_trace_mpt_7b, MPTTSModelForCausalLM
 
                     model.config.use_cache = use_cache

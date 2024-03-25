@@ -10,16 +10,22 @@ Use Dockerfile to build Docker image in your environment. The `Chat`, `Chat Q&A`
 
 All you need to do is to choose the right Dockerfile according to your architecture. The following example is for CPU.
 
+If your environment requires a proxy to access the internet, export your development system's proxy settings to the docker environment:
+
 ```bash
-docker build . -f cpu/Dockerfile -t neuralchat_text_generation:latest
+export DOCKER_BUILD_ARGS="--build-arg https_proxy=$https_proxy \
+       --build-arg http_proxy=$http_proxy \
+       --build-arg no_proxy=$no_proxy"
+
+docker build . -f cpu/Dockerfile \
+       ${DOCKER_BUILD_ARGS} \
+       -t intel/intel-extension-for-transformers:text-generation-cpu-1.4.0       
 ```
-
-If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` like below.
-
+Or pull the docker images as follows:
 
 ```bash
-docker build . -f cpu/Dockerfile -t neuralchat_text_generation:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
-```  
+docker pull intel/intel-extension-for-transformers:text-generation-cpu-1.4.0
+```
 
 ### Prepare Configuration File and Documents
 Before starting NeuralChat services, you need to configure `yaml` file according to your use case. 
@@ -38,67 +44,62 @@ Remember to set `device` to `cpu`/`hpu` according to your architecture.
 ### Start NeuralChat Service
 Use the following command to start NeuralChat Text Generation service. 
 
+If your environment requires a proxy to access the internet, export your development system's proxy settings to the docker environment:
+
+```bash
+export DOCKER_RUN_ENVS="-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"
+```
 #### Example of `Chat` Service.
 
 Make sure the specified `port` is available, and `device` is correctly set.
-
 ```bash
-docker run -it --net=host --ipc=host --name text_gen -v ./chat.yaml:/text_generation.yaml neuralchat_text_generation:latest
+docker run -it --net=host --ipc=host \
+       --name text_gen \
+       -v ./chat.yaml:/text_generation.yaml \
+       ${DOCKER_RUN_ENVS} \
+       intel/intel-extension-for-transformers:text-generation-cpu-1.4.0
 ```
-
 The specific meaning of each parameter is explaine below:
 - `docker run -it`: Create a docker container and launch it interactively.
 - `--net=host --ipc=host`: Configure the network of docker container.
 - `-v`: Mount `chat.yaml` file the docker container from your local server.
 - `--name text_gen`: The name of your docker container, you can set it differently as you need.
-- `neuralchat_text_generation:latest`: The name of the Docker image you created just now.
-
-If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`.
-
-```bash
-docker run -it --net=host --ipc=host --name text_gen -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v ./chat.yaml:/text_generation.yaml neuralchat_text_generation:latest
-```
+- `intel/intel-extension-for-transformers:text-generation-cpu-1.4.0`: The name of the Docker image you created just now.
 
 #### Example of `Chat Q&A` Service.
 
 ```bash
-docker run -it --net=host --ipc=host --name text_gen -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_text_generation:latest
+docker run -it --net=host --ipc=host \
+       --name text_gen_qa \
+       -v ./chatqna.yaml:/text_generation.yaml \
+       -v ./rag_docs:/rag_docs \
+       ${DOCKER_RUN_ENVS} \
+       intel/intel-extension-for-transformers:text-generation-cpu-1.4.0
 ```
 
 The specific meaning of each parameter is explaine below:
 - `-v`: Mount `chatqna.yaml` file into docker container from your local server.
 - `-v`: Mount `rag_docs` into the path written in `chatqna.yaml: input_path`
 
-If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`.
-
-```bash
-docker run -it --net=host --ipc=host --name text_gen -v ./chatqna.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs  -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" neuralchat_text_generation:latest
-```
-
-
 #### Example of `Summary` Service.
 
 ```bash
-docker run -it --net=host --ipc=host --name text_gen -v ./summary.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_text_generation:latest
+docker run -it --net=host --ipc=host \
+       --name text_gen_summary \
+       -v ./summary.yaml:/text_generation.yaml \
+       -v ./rag_docs:/rag_docs ${DOCKER_RUN_ENVS} \
+       intel-extension-for-transformers:text-generation-cpu-1.4.0
 ```
 
 The specific meaning of each parameter is explaine below:
 - `-v`: Mount `summary.yaml` file into docker container from your local server.
 - `-v`: Mount `rag_docs` into the path written in `summary.yaml: input_path`
 
-If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`.
-
-```bash
-docker run -it --net=host --ipc=host --name text_gen -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v ./summary.yaml:/text_generation.yaml -v ./rag_docs:/rag_docs neuralchat_text_generation:latest
-```
-
-
 ## Consume the Service with Simple Test
 when `docker run` command is successfully executed, you can consume the HTTP services offered by NeuralChat. The Restful API of NeuralChat is compatible with OpenAI, so you can use the same request body as OpenAI.
 
 
 Please substitute `http://127.0.0.1` with your IP and `8000` with the port written in yaml.
-
 
 
 ### Consume `Chat` Service
@@ -109,7 +110,6 @@ curl http://127.0.0.1:8000/v1/chat/completions \
   {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}]}' \
  -H 'Content-Type: application/json'
 ```
-
 
 ### Consume `Chat Q&A` Service
 ```bash

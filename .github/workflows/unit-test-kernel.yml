@@ -4,10 +4,10 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
+      - intel_extension_for_transformers/transformers/runtime/kernels/**"
       - .github/workflows/unit-test-kernel.yml
-      - '!intel_extension_for_transformers/llm/runtime/deprecated/kernels/README.md'
-      - '!intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/**'
+      - '!intel_extension_for_transformers/transformers/runtime/kernels/README.md'
+      - '!intel_extension_for_transformers/transformers/runtime/kernels/docs/**'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -42,7 +42,7 @@ jobs:
           fi
 
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: "recursive"
           fetch-tags: true
@@ -63,11 +63,6 @@ jobs:
           -v ~/.cache/oneAPI:/cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
-      - name: Env build
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
-
       - name: Binary build
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
@@ -82,7 +77,7 @@ jobs:
           && bash run_unit_test_kernel.sh"
 
       - name: Publish pipeline artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: Kernel Unit Test

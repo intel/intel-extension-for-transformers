@@ -13,9 +13,13 @@ from transformers import AutoTokenizer, AutoConfig
 from optimum.utils import NormalizedConfigManager
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
-    WeightOnlyQuantConfig,
     SmoothQuantConfig,
     BitsAndBytesConfig,
+    RtnConfig,
+    AwqConfig,
+    TeqConfig,
+    GPTQConfig,
+    AutoRoundConfig,
 )
 from intel_extension_for_transformers.transformers import (
     AutoModelForCausalLM,
@@ -27,7 +31,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--model", nargs="?", default="bigcode/starcoderbase", const="bigcode/starcoderbase"
 )
-parser.add_argument("--trust_remote_code", default=False)
+parser.add_argument("--trust_remote_code", action="store_true")
 parser.add_argument("--_commit_hash", default=None, type=str)
 parser.add_argument("--dataset", nargs="?", default="mbpp", const="mbpp")
 parser.add_argument("--dtype", type=str, default="int8")
@@ -60,27 +64,26 @@ parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
-# ============WeightOnlyQuant configs============
+# ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
-parser.add_argument("--load_in_4bit", action="store_true")
-parser.add_argument("--load_in_8bit", action="store_true")
+# ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
-    default="RTN",
-    choices=["RTN", "AWQ", "TEQ", "GPTQ", "AUTOROUND"],
-    help="Weight-only parameter.",
+    default="Rtn",
+    choices=["Rtn", "Awq", "Teq", "GPTQ", "AutoRound"],
+    help="Weight-only algorithm.",
 )
 parser.add_argument(
-    "--woq_compute_dtype",
-    type=str,
-    default="fp32",
-    choices=["fp32", "bf16", "int8"],
+    "--bits",
+    type=int,
+    default=8,
+    choices=[4, 8],
 )
 parser.add_argument(
-    "--woq_weight_dtype",
+    "--weight_dtype",
     type=str,
-    default="int4_clip",
+    default="int8",
     choices=[
         "int8",
         "int4_clip",
@@ -93,57 +96,73 @@ parser.add_argument(
     ],
 )
 parser.add_argument(
-    "--woq_scale_dtype",
+    "--scale_dtype",
     type=str,
     default="fp32",
     choices=["fp32", "fp8"],
 )
-parser.add_argument("--woq_group_size", type=int, default=32)
-parser.add_argument("--woq_scheme", default="sym")
+parser.add_argument(
+    "--compute_dtype",
+    type=str,
+    default="fp32",
+    choices=["fp32", "bf16", "int8"],
+)
+parser.add_argument("--group_size", type=int, default=32)
+parser.add_argument("--scheme", default="sym")
+parser.add_argument(
+    "--layer_wise",
+    action="store_true",
+    help="Use layer wise to do quantization",
+)
 # ============GPTQ configs==============
 parser.add_argument(
-    "--gptq_actorder",
+    "--desc_act",
     action="store_true",
     help="Whether to apply the activation order GPTQ heuristic.",
 )
 parser.add_argument(
-    "--gptq_percdamp",
+    "--damp_percent",
     type=float,
     default=0.01,
     help="Percent of the average Hessian diagonal to use for dampening.",
 )
 parser.add_argument(
-    "--gptq_block_size",
+    "--blocksize",
     type=int,
     default=128,
     help="Block size. sub weight matrix size to run GPTQ.",
 )
 parser.add_argument(
-    "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
+    "--nsamples", type=int, default=128, help="Number of calibration data samples."
 )
 parser.add_argument(
-    "--gptq_use_max_length",
-    action="store_true",
-    help="Set all sequence length to be same length of args.gptq_pad_max_length",
-)
-parser.add_argument(
-    "--gptq_pad_max_length",
+    "--max_input_length",
     type=int,
     default=2048,
     help="Calibration dataset sequence max length, this should align with your model config",
 )
-parser.add_argument('--gptq_static_groups', action='store_true', help='Use determined group to do quantization')
+parser.add_argument(
+    "--static_groups",
+    action="store_true",
+    help="Use determined group to do quantization",
+)
 # ============AUTOROUND configs==============
 parser.add_argument(
-    "--autoround_nsamples",
-    type=int, default=512,
-    help="Number of calibration data samples.",
+    "--lr",
+    type=float,
+    default=0.0025,
+    help="learning rate, if None, it will be set to 1.0/iters automatically",
 )
 parser.add_argument(
-    "--autoround_seq_len",
-    type=int,
-    default=2048,
-    help="Calibration dataset sequence max length, this should align with your model config",
+    "--minmax_lr",
+    type=float,
+    default=0.0025,
+    help="minmax learning rate, if None,it will beset to be the same with lr",
+)
+parser.add_argument(
+    "--use_quant_input",
+    action="store_true",
+    help="whether to use the output of quantized block to tune the next block",
 )
 # ============Harness configs============
 parser.add_argument("--tasks", default=None, help="Evaluation tasks")
@@ -229,7 +248,7 @@ config = AutoConfig.from_pretrained(
         True
         if (
             args.sq
-            or args.woq_algo in ["AWQ", "TEQ"]
+            or args.woq_algo in ["Awq", "Teq"]
             or (args.int8 or args.int8_bf16_mixed or args.benchmark)
         )
         else False
@@ -272,58 +291,81 @@ elif args.sq:
         calib_iters=args.calib_iters,
     )
 elif args.woq:
-    if args.woq_algo == "GPTQ":
-        algorithm_args = {
-            "act_order": args.gptq_actorder,
-            "percdamp": args.gptq_percdamp,
-            "block_size": args.gptq_block_size,
-            "nsamples": args.gptq_nsamples,
-            "use_max_length": args.gptq_use_max_length,
-            "pad_max_length": args.gptq_pad_max_length,
-            "static_groups": args.gptq_static_groups,
-        }
-        quantization_config = WeightOnlyQuantConfig(
-            compute_dtype=args.woq_compute_dtype,
-            scale_dtype=args.woq_scale_dtype,
-            weight_dtype=args.woq_weight_dtype,
-            scheme=args.woq_scheme,
-            group_size=args.woq_group_size,
-            algorithm=args.woq_algo,
+    if args.woq_algo == "Rtn":
+        quantization_config = RtnConfig(
             tokenizer=tokenizer,
-            algorithm_args=algorithm_args,
-            calib_dataset=args.dataset
+            bits=args.bits,
+            sym=True if args.scheme == "sym" else False,
+            group_size=args.group_size,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
+            layer_wise=args.layer_wise,
         )
-    elif args.woq_algo == "AUTOROUND":
-        algorithm_args = {
-            "n_samples": args.autoround_nsamples,
-            "amp": False,
-            "seq_len": args.autoround_seq_len,
-            "iters": args.calib_iters,
-            "scale_dtype": "fp32",
-            "device": "cpu",
-            "export_args": {"format": "itrex", "inplace": False}
-        }
-        quantization_config = WeightOnlyQuantConfig(
-            compute_dtype=args.woq_compute_dtype,
-            scale_dtype=args.woq_scale_dtype,
-            weight_dtype=args.woq_weight_dtype,
-            scheme=args.woq_scheme,
-            group_size=args.woq_group_size,
-            algorithm=args.woq_algo,
+    elif args.woq_algo == "Awq":
+        quantization_config = AwqConfig(
             tokenizer=tokenizer,
-            algorithm_args=algorithm_args,
-            calib_dataset=args.dataset
+            dataset=args.dataset,
+            bits=args.bits,
+            zero_point=False if args.scheme == "sym" else True,
+            group_size=args.group_size,
+            max_input_length=args.max_input_length,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
+        )
+    elif args.woq_algo == "Teq":
+        quantization_config = TeqConfig(
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            sym=True if args.scheme == "sym" else False,
+            group_size=args.group_size,
+            max_input_length=args.max_input_length,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
+        )
+    elif args.woq_algo == "GPTQ":
+        quantization_config = GPTQConfig(
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            desc_act=args.desc_act,
+            damp_percent=args.damp_percent,
+            sym=True if args.scheme == "sym" else False,
+            blocksize=args.blocksize,
+            nsamples=args.nsamples,
+            static_groups=args.static_groups,
+            group_size=args.group_size,
+            max_input_length=args.max_input_length,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
+            layer_wise=args.layer_wise,
+        )
+    elif args.woq_algo == "AutoRound":
+        quantization_config = AutoRoundConfig(
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            sym=True if args.scheme == "sym" else False,
+            nsamples=args.nsamples,
+            group_size=args.group_size,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
+            calib_len=args.calib_len,
+            lr=args.lr,
+            minmax_lr=args.minmax_lr,
+            use_quant_input=args.use_quant_input,
         )
     else:
-        quantization_config = WeightOnlyQuantConfig(
-            weight_dtype=args.woq_weight_dtype,
-            scale_dtype=args.woq_scale_dtype,
-            group_size=args.woq_group_size,
-            scheme=args.woq_scheme,
-            algorithm=args.woq_algo,
-            tokenizer=tokenizer,
-            calib_dataset=args.dataset
-        )  # default is A32W4G32
+        assert False, "Please set the correct '--woq_algo'"
 # bitsandbytes
 elif args.bitsandbytes:
     # GPU device is need for `load_in_4bit` and `load_in_8bit`.
@@ -360,18 +402,25 @@ elif not args.int8 and not args.int8_bf16_mixed:
     )
 
 # save model
-if args.output_dir:
+if args.output_dir is not None:
     tokenizer.save_pretrained(args.output_dir)
     if args.sq:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
     elif args.mixed_precision or args.woq:
+        # user_model will be changed.
         user_model.save_pretrained(args.output_dir)
+        # loading saved woq model
+        user_model = AutoModelForCausalLM.from_pretrained(
+            args.output_dir, 
+            trust_remote_code=args.trust_remote_code,
+            use_neural_speed=args.use_neural_speed
+            )
 
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
-    from intel_extension_for_transformers.llm.evaluation.models import (
+    from intel_extension_for_transformers.transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
 
@@ -485,7 +534,7 @@ if args.benchmark:
 
 
 if args.accuracy:
-    from intel_extension_for_transformers.llm.evaluation.bigcode_eval import evaluate
+    from intel_extension_for_transformers.transformers.llm.evaluation.bigcode_eval import evaluate
 
     results = evaluate(
         model=user_model,

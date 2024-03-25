@@ -1,11 +1,13 @@
-Full Publications/Events (40)
+Full Publications/Events (42)
 ==========
 
-## 2024 (1)
+## 2024 (2)
+* Blog of Intel Developer News: [Use the neural-chat-7b Model for Advanced Fraud Detection: An AI-Driven Approach in Cybersecurity](https://www.intel.com/content/www/us/en/developer/articles/technical/bilics-approach-cybersecurity-using-neuralchat-7b.html) (March 2024)
 * CES 2024: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
 
 
-## 2023 (33)
+## 2023 (34)
+* Blog published on Hugging Face: [2023, year of open LLMs](https://huggingface.co/blog/2023-in-llms) (Dec 2023)
 * Blog published on Medium: [Connect an AI agent with your API: Intel Neural-Chat 7b LLM can replace Open AI Function Calling](https://medium.com/11tensors/connect-an-ai-agent-with-your-api-intel-neural-chat-7b-llm-can-replace-open-ai-function-calling-242d771e7c79) (Dec 2023)
 * Blog published on 360 EEA (A News Platform about AI and LLMs): [Intel neural-chat-7b-v3-1](https://360eea.com/intel-neural-chat-7b-v3-1/) (Dec 2023)
 * Apple Podcasts from Papers Read on AI: [Efficient LLM Inference on CPUs](https://podcasts.apple.com/us/podcast/efficient-llm-inference-on-cpus/id1577699357?i=1000637269932) (Dec 2023)
@@ -47,5 +49,5 @@ Full Publications/Events (40)
 * Blog published by Cohere: [Top NLP Papers—November 2022](https://txt.cohere.ai/top-nlp-papers-november-2022/) (Nov 2022)
 * Blog published by Alibaba: [Deep learning inference optimization for Address Purification](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
 
-## 2021
+## 2021 (1)
 * NeurIPS'2021: [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754) (Nov 2021)

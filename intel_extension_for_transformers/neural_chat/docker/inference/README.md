@@ -47,6 +47,8 @@ docker pull intel/ai-tools:itrex-chatbot
 
 ## 2. Create Docker Container
 
+### On Xeon SPR Environment
+
 ```bash
 docker run -it --name="chatbot" neuralchat_inference:latest /bin/bash
 ```
@@ -56,15 +58,29 @@ If you have downloaded models and dataset locally, just mount the files to the d
 If you need to set proxy settings, please add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`. 
 
 ```bash
-docker run -it --name="chatbot" -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v ${host_dir}:${mount_dir} neuralchat_inference:latest
+docker run -it --name="chatbot" -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v ${host_dir}:${mount_dir} neuralchat_inference:latest /bin/bash
 ```
 
+### On Habana Gaudi Environment
+
+```bash
+docker run -it --runtime=habana --name="chatbot" -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -v /dev/shm:/dev/shm --cap-add=sys_nice --net=host --ipc=host neuralchat_inference:latest /bin/bash
+```
+
+If you have downloaded models and dataset locally, just mount the files to the docker container using `-v`. Replce `${host_dir}` with your local directory, and `${mount_dir}` with the directory in docker container. Please make sure using the absolute path for `${host_dir}`. 
+
+If you need to set proxy settings, please add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`. 
+
+
+```bash
+docker run -it --runtime=habana --name="chatbot" -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v /dev/shm:/dev/shm  -v ${host_dir}:${mount_dir} --cap-add=sys_nice --net=host --ipc=host neuralchat_inference:latest /bin/bash
+```
 
 ## 3. Simple Test using Docker Container
 ```bash
 ## if you are already inside the container, skip this step
 docker exec -it chatbot /bin/bash
-## run finetuning unittest
+## run inference unittest
 pip install -r pipeline/plugins/audio/requirements.txt
 pip install --upgrade --force-reinstall torch==2.2.0
 cd tests/ci/api

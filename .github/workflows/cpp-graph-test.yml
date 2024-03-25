@@ -39,7 +39,7 @@ jobs:
         modelName: ${{fromJson(inputs.models || '["llama-2-7b-chat", "gptj-6b"]')}}
     steps:
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: "recursive"
           fetch-tags: true
@@ -62,7 +62,7 @@ jobs:
             ${{ env.INPUT_COMPILER_VERSION }}
         env:
           WORKSPACE: ${{ env.WORKING_DIR }}
-          GRAPH_DIR: ${{ env.WORKING_DIR }}/intel_extension_for_transformers/llm/runtime/graph
+          GRAPH_DIR: ${{ env.WORKING_DIR }}/intel_extension_for_transformers/transformers/llm/runtime/neural_speed
 
       - name: Rename summary
         run: |
@@ -70,7 +70,7 @@ jobs:
           cp cpp_graph_summary.log cpp_graph_summary_${{matrix.modelName}}.log
 
       - name: Publish pipeline artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: cpp_graph
@@ -91,10 +91,10 @@ jobs:
               docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
       - name: Checkout out Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download Summary Log
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: ${{ env.OUT_SCRIPT_PATH }}/generated/log
 
@@ -105,7 +105,7 @@ jobs:
 
       - name: Download Reference Artifact
         id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v3.1.2
         with:
           workflow: cpp-graph-test.yml
           name: FinalReport
@@ -135,7 +135,7 @@ jobs:
           ghprbActualCommit: ${{ github.event.pull_request.head.sha }}
 
       - name: Publish Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: FinalReport

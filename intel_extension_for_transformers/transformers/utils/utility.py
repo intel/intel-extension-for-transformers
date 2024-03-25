@@ -32,7 +32,7 @@ DECODER_NAME = "decoder_model.bin"
 DECODER_WITH_PAST_NAME = "decoder_with_past_model.bin"
 WEIGHTS_NAME = "pytorch_model.bin"
 WEIGHTS_INDEX_NAME = "pytorch_model.bin.index.json"
-QUANT_CONFIG = "quantization_config.json"
+QUANT_CONFIG = "quantize_config.json"
 SPARSITY_CONFIG = "sparsity_config.json"
 SAFE_WEIGHTS_NAME = "model.safetensors"
 SAFE_WEIGHTS_INDEX_NAME = "model.safetensors.index.json"
@@ -277,7 +277,8 @@ def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
     prompt = "Welcome to use Intel Extension for Transformers."
     prompt = [prompt] * batch_size
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-    if model_config.model_type in IPEX_OPT_LLM_SUPPORTED:
+    model_type = model_config.model_type.replace("_", "-")
+    if model_type in IPEX_OPT_LLM_SUPPORTED:
         past_key_values = generate_dummy_past_key_values_for_opt_llm(
                                                                     config=model_config,
                                                                     input_bs=batch_size,
@@ -287,10 +288,14 @@ def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
         past_key_values = generate_dummy_past_key_values(config=model_config, input_bs=batch_size)
 
     input_ids = input_ids[:, :512]
-    attention_mask = torch.ones(input_ids.shape)
+    if model_type in ["bloom", "qwen"]:
+        attention_mask = torch.ones(input_ids.shape[0], input_ids.shape[1] + 1)
+        attention_mask[:,0] = 0
+    else:
+        attention_mask = torch.ones(input_ids.shape)
     position_ids = torch.arange(input_ids.shape[1]).repeat(batch_size, 1)
 
-    if model_config.model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
         example_inputs = {
                     "input_ids": input_ids,
                     "attention_mask": attention_mask,
@@ -342,5 +347,6 @@ def recover_model_from_json(user_model, json_file_path, trust_remote_code=False)
 
     # pylint: disable=E0611
     from neural_compressor.utils.pytorch import recover_model_from_json as inc_recover_model_from_json
+    user_model.config.torchscript = True
     user_model = inc_recover_model_from_json(user_model, json_file_path, example_inputs)
     return user_model

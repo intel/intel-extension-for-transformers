@@ -41,7 +41,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
 
 
     @classmethod
@@ -59,7 +59,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
 
     def test_evaluate_for_CasualLM(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
         results = evaluate(
             model="hf-causal",
             model_args='pretrained="hf-internal-testing/tiny-random-gptj",tokenizer="hf-internal-testing/tiny-random-gptj",dtype=float32',
@@ -69,7 +69,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 0.6)
 
     def test_evaluate_for_Seq2SeqLM(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
         results = evaluate(
             model="hf-seq2seq",
             model_args='pretrained="hf-internal-testing/tiny-random-t5",tokenizer="hf-internal-testing/tiny-random-t5",dtype=float32',
@@ -79,7 +79,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 1.0)
 
     def test_evaluate_for_JitModel(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
         results = evaluate(
             model="hf-causal",
             model_args='pretrained="hf-internal-testing/tiny-random-gptj",tokenizer="hf-internal-testing/tiny-random-gptj",dtype=float32',
@@ -90,7 +90,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 0.6)
 
     def test_cnn_daily(self):
-        from intel_extension_for_transformers.llm.evaluation.hf_eval import summarization_evaluate
+        from intel_extension_for_transformers.transformers.llm.evaluation.hf_eval import summarization_evaluate
         model = AutoModelForCausalLM.from_pretrained("facebook/opt-125m")
         results = summarization_evaluate(
            model=model,
@@ -106,7 +106,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["rouge2"], 9.5858)
 
     def test_evaluate_for_ort_Seq2SeqLM(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
         cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation-with-past t5-past/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
@@ -150,7 +150,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 1.0)
 
     def test_evaluate_for_ort_CasualLM(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
         if Version(optimum.version.__version__) >= OPTIMUM114_VERSION:
             cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past --legacy gptj-past/'
         else:

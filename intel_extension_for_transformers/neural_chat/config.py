@@ -144,6 +144,16 @@ class DataArguments:
             "help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."
         },
     )
+    train_dir: Optional[str] = field(default=None, metadata={"help": "A folder containing the training data."})
+    validation_dir: Optional[str] = field(default=None, metadata={"help": "A folder containing the validation data."})
+    image_column: Optional[str] = field(
+        default="image",
+        metadata={"help": "The column of the dataset containing an image or a list of images."}
+    )
+    caption_column: Optional[str] = field(
+        default="text",
+        metadata={"help": "The column of the dataset containing a caption or a list of captions."}
+    )
     max_seq_length: Optional[int] = field(
         default=512,
         metadata={
@@ -248,8 +258,9 @@ class DataArguments:
         if self.streaming:
             require_version("datasets>=2.0.0", "The streaming feature requires `datasets>=2.0.0`")
 
-        if self.dataset_name is None and self.train_file is None and self.validation_file is None:
-            raise ValueError("Need either a dataset name or a training/validation file.")
+        if self.dataset_name is None and self.train_file is None and self.validation_file is None and \
+            self.train_dir is None:
+            raise ValueError("Need either a dataset name, a training/validation file or a train_dir.")
         else:
             if self.train_file is not None:
                 extension = self.train_file.split(".")[-1]
@@ -326,7 +337,7 @@ class FinetuningArguments:
     task: Optional[str] = field(
         default="completion",
         metadata={"help": "task name, different task means different data format.",
-            "choices": ["completion", "chat", "summarization", "code-generation"]
+            "choices": ["completion", "chat", "summarization", "code-generation", "image2text"]
             },
     )
     eval_ppl: bool = field(
@@ -338,7 +349,7 @@ class FinetuningArguments:
         metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},
     )
     lm_eval_tasks: Optional[List[str]] = field(
-        default_factory=lambda: ["truthfulqa_mc"],
+        default_factory=lambda: ["truthfulqa_mc", "lambada_openai"],
         metadata={"help": "tasks list for accuracy validation with EleutherAI/lm-evaluation-harness."},
     )
     qlora: bool = field(
@@ -493,13 +504,19 @@ class PipelineConfig:
                 use_hpu_graphs = True if self.device == "hpu" else False)
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
-            WeightOnlyQuantConfig,
-            BitsAndBytesConfig
+            RtnConfig,
+            AwqConfig,
+            TeqConfig,
+            GPTQConfig,
+            AutoRoundConfig,
+            BitsAndBytesConfig,
         )
         self.optimization_config = optimization_config if optimization_config is not None else \
             MixedPrecisionConfig(dtype="float16" if self.device == "cuda" else "bfloat16")
-        assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
-            f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
-            " or BitsAndBytesConfig,got {type(self.optimization_config)}."
+        assert type(self.optimization_config) in \
+            [MixedPrecisionConfig, RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoRoundConfig, BitsAndBytesConfig], \
+            f"Expect optimization_config be an object of MixedPrecisionConfig, RtnConfig, AwqConfig, TeqConfig, " + \
+            "GPTQConfig, AutoRoundConfig" + \
+            " or BitsAndBytesConfig, got {type(self.optimization_config)}."
         self.assistant_model = assistant_model
         self.serving_config = serving_config
