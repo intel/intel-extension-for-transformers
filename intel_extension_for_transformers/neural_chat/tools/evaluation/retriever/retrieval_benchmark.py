@@ -64,7 +64,6 @@ def main():
                                 print('--'*7 +'top_n',arg13)
                                 for arg14 in arg14_list:
                                     print('--'*8 +'enable_rerank',arg14)
-                                    # try:
                                     subprocess.run(['python',
                                                     script_path,
                                                     '--index_file_jsonl_path', arg1,
