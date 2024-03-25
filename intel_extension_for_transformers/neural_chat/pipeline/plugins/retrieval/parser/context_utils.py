@@ -113,7 +113,8 @@ def read_pdf(pdf_path, table_summary_mode, table_summary_model_name_or_path):
                 if isinstance(element, FigureCaption) or element.text.startswith('Tab'):
                     caption_page_number = element.metadata.page_number
                     caption_coords = element.metadata.coordinates.points
-                    related, y_distance = get_relation(table_coords, caption_coords, table_page_number, caption_page_number)
+                    related, y_distance = get_relation(table_coords, caption_coords, \
+                                                        table_page_number, caption_page_number)
                     if related:
                         if y_distance < min_distance:
                             min_distance = y_distance

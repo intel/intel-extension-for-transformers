@@ -312,16 +312,16 @@ def build_chatbot(config: PipelineConfig=None):
     if use_retrieval_plugin:
         print(f"create retrieval plugin instance...")
         print(f"plugin parameters: ", retrieval_plugin_value['args'])
-        try:
-            plugins["retrieval"]["instance"] = plugins["retrieval"]['class'](**retrieval_plugin_value['args'])
-        except Exception as e:
-            if "[Rereieval ERROR] Document format not supported" in str(e):
-                set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
-                logging.error("build_chatbot: retrieval plugin init failed")
-            else:
-                set_latest_error(ErrorCodes.ERROR_GENERIC)
-                logging.error("build_chatbot: plugin init failed")
-            return
+        # try:
+        plugins["retrieval"]["instance"] = plugins["retrieval"]['class'](**retrieval_plugin_value['args'])
+        # except Exception as e:
+        #     if "[Rereieval ERROR] Document format not supported" in str(e):
+        #         set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
+        #         logging.error("build_chatbot: retrieval plugin init failed")
+        #     else:
+        #         set_latest_error(ErrorCodes.ERROR_GENERIC)
+        #         logging.error("build_chatbot: plugin init failed")
+        #     return
         adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
     
     if get_latest_error():

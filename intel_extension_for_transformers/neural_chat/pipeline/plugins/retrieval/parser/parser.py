@@ -76,7 +76,8 @@ class DocumentParser:
         """
         if input.endswith("pdf") or input.endswith("docx") or input.endswith("html") \
            or input.endswith("txt") or input.endswith("md"):
-            content, tables = load_unstructured_data(input, self.table_summary_mode, self.table_summary_model_name_or_path)
+            content, tables = load_unstructured_data(input, self.table_summary_mode, \
+                                                     self.table_summary_model_name_or_path)
             if self.process:
                 chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
             else:
@@ -122,7 +123,9 @@ class DocumentParser:
             for filename in filenames:
                 if filename.endswith("pdf") or filename.endswith("docx") or filename.endswith("html") \
                     or filename.endswith("txt") or filename.endswith("md"):
-                    content, tables = load_unstructured_data(os.path.join(dirpath, filename), self.table_summary_mode, self.table_summary_model_name_or_path)
+                    content, tables = load_unstructured_data(os.path.join(dirpath, filename), \
+                                                             self.table_summary_mode, \
+                                                             self.table_summary_model_name_or_path)
                     if self.process:
                         chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
                     else:
