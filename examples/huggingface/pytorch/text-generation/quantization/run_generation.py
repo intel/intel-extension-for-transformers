@@ -423,6 +423,7 @@ elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
             args.model,
             trust_remote_code=args.trust_remote_code,
             _commit_hash=args._commit_hash,
+            use_neural_speed=args.use_neural_speed,
         )
 
 # save model

@@ -559,6 +559,17 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string(use_diff=use_diff))
 
+    def remove_redundant_parameters(self):
+        remove_parameters = ["calib_dataloader", "dataset", "calib_func", "calib_iters", "calib_len",
+        "double_quant_scale_dtype", "use_double_quant", "mse_range", "scheme", "tokenizer", "use_ggml",
+        "use_neural_speed", "use_quant", "layer_wise", "blocksize", "nsamples", "max_input_length", "static_groups",
+        "lr", "minmax_lr", "iters", "use_quant_input", "device"]
+        for parameter in remove_parameters:
+            if hasattr(self, parameter):
+                delattr(self, parameter)
+        if self.quant_method.value == "awq":
+            delattr(self, "sym")
+
     def save_pretrained(
         self,
         save_directory: Union[str, os.PathLike],
@@ -656,7 +667,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = None
-        self.calib_dataset = None
+        self.dataset = None
         self.calib_func = None
         self.calib_iters = None
 
@@ -687,7 +698,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self,
         bits: int = 4,
         tokenizer: Any = None,
-        dataset: Optional[Union[List[str], str]] = None,
+        dataset: str = "NeelNanda/pile-10k",
         group_size: int = 32,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
@@ -739,7 +750,6 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_dataset = kwargs.get("calib_dataset", "NeelNanda/pile-10k")
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"
@@ -802,7 +812,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self,
         bits: int = 8,
         tokenizer: Any = None,
-        dataset: Optional[Union[List[str], str]] = None,
+        dataset: str = "NeelNanda/pile-10k",
         group_size: int = 32,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
@@ -837,7 +847,6 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_dataset = kwargs.get("calib_dataset", "NeelNanda/pile-10k")
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
@@ -870,7 +879,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self,
         bits: int = 8,
         tokenizer: Any = None,
-        dataset: Optional[Union[List[str], str]] = None,
+        dataset: str = "NeelNanda/pile-10k",
         group_size: int = 32,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
@@ -902,7 +911,6 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_dataset = kwargs.get("calib_dataset", "NeelNanda/pile-10k")
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
 
@@ -934,7 +942,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         bits: int = 8,
         dtype: str = "int",
         tokenizer: Any = None,
-        dataset: Optional[Union[List[str], str]] = None,
+        dataset: str = "NeelNanda/pile-10k",
         group_size: int = 32,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
@@ -981,7 +989,6 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_dataset = kwargs.get("calib_dataset", "NeelNanda/pile-10k")
         self.calib_len = kwargs.get("calib_len", None)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)

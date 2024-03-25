@@ -23,7 +23,9 @@ from operator import mul
 from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
 from peft.tuners.lora import LoraLayer, LoraModel
 from peft.utils.other import transpose
-from intel_extension_for_transformers.transformers.llm.quantization.autograd import matmul_kbit
+from intel_extension_for_transformers.transformers.llm.quantization.autograd import (
+    matmul_kbit,
+)
 import intel_extension_for_transformers.qbits as qbits  # pylint: disable=E0611, E0401
 
 
@@ -180,15 +182,13 @@ class QuantizedLinearQBits(torch.nn.Linear):
                             group_dict[group_idx] = 0
                         else:
                             group_dict[group_idx] = group_dict[group_idx] + 1
-                            target_idx = group_idx * \
-                                group_size + group_dict[group_idx]
+                            target_idx = group_idx * group_size + group_dict[group_idx]
                         int_weight2[target_idx] = int_weight[i]
                     int_weight = int_weight2
                 else:
                     g_idx = torch.empty(0, dtype=torch.int32)
             else:
                 g_idx = torch.empty(0, dtype=torch.int32)
-
         if q_config.bits == 4:
             int_weight = (int_weight - 8) * 16
             gptq_scales = gptq_scales / 16
@@ -251,38 +251,65 @@ class QuantizedLinearQBits(torch.nn.Linear):
         leng = weight.shape[1] // group_size
         tail_flag = False if weight.shape[1] % group_size == 0 else True
         for i in range(leng):
-            int_weight_tmp = weight[:, i * group_size: (i + 1) * group_size].div_(
+            int_weight_tmp = weight[:, i * group_size : (i + 1) * group_size].div_(
                 scale[:, i].unsqueeze(1)
             )
             if zp is not None:
                 int_weight_tmp.add_(zp[:, i].unsqueeze(1))
-            int_weight[:, i * group_size: (i + 1) * group_size].copy_(
+            int_weight[:, i * group_size : (i + 1) * group_size].copy_(
                 int_weight_tmp.round_()
             )
         if tail_flag:
-            int_weight_tmp = weight[:, leng * group_size:].div_(
+            int_weight_tmp = weight[:, leng * group_size :].div_(
                 scale[:, -1].unsqueeze(1)
             )
             if zp is not None:
                 int_weight_tmp.add_(zp[:, -1].unsqueeze(1))
-            int_weight[:, leng * group_size:].copy_(int_weight_tmp.round_())
+            int_weight[:, leng * group_size :].copy_(int_weight_tmp.round_())
         return int_weight
 
     def recover_qparms(self):
+        def recover_idx(ret_idx, k, blocksize):
+            g_idx = torch.zeros(k, dtype=int)
+            value_range = (k + blocksize - 1) // blocksize
+            for i in range(value_range):
+                for j in range(blocksize):
+                    g_idx[ret_idx[i * blocksize + j]] = i
+            return g_idx
+
+        def recover_int_weight(g_idx, int_weight):
+            group_dict = {}
+            ret_idx = torch.zeros(g_idx.shape, dtype=torch.int32)
+            for i in range(len(g_idx)):
+                group_idx = g_idx[i].item()
+                if group_idx not in group_dict:
+                    target_idx = group_idx * group_size
+                    group_dict[group_idx] = 0
+                else:
+                    group_dict[group_idx] = group_dict[group_idx] + 1
+                    target_idx = group_idx * group_size + group_dict[group_idx]
+                ret_idx[i] = target_idx
+
+            int_weight2 = int_weight.clone().zero_()
+            for i in range(len(ret_idx)):
+                int_weight2[i] = int_weight[ret_idx[i]]
+            int_weight = int_weight2
+            return int_weight
+
         group_size = qbits.acquire_packed_weight_info(self.weight, 1)[0]
         in_features = qbits.acquire_packed_weight_info(self.weight, 2)[0]
         out_features = qbits.acquire_packed_weight_info(self.weight, 3)[0]
         desc_act = qbits.acquire_packed_weight_info(self.weight, 4)[0] != 0
         if desc_act:
             g_idx = qbits.acquire_packed_weight_info(self.weight, 5)
+            g_idx = recover_idx(g_idx, in_features, group_size)
         else:
             g_idx = None
         weight_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 6)
         weight_dtype = "".join(
             chr(ascii_code) for ascii_code in weight_dtype_ascii.tolist()
         )
-        bits = 4 if weight_dtype in [
-            "nf4", "int4_clip", "fp4", "int4_fullrange"] else 8
+        bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4", "int4_fullrange"] else 8
         compute_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 7)
         compute_dtype = "".join(
             chr(ascii_code) for ascii_code in compute_dtype_ascii.tolist()
@@ -318,6 +345,10 @@ class QuantizedLinearQBits(torch.nn.Linear):
             qzeros.to(torch.uint8).t() if qzeros is not None else None,
             group_size=group_size,
         )
+
+        if g_idx is not None:
+            int_weight = recover_int_weight(g_idx, int_weight.t())
+            int_weight = int_weight.t()
 
         scales_dtype = torch.float32 if scales_dtype in ["fp32"] else None
         return (
@@ -361,15 +392,13 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             scheme=kwargs.get("scheme", "sym"),
             device=kwargs.get("device", None),
         )
-        LoraLayer.__init__(self, in_features=in_features,
-                           out_features=out_features)
+        LoraLayer.__init__(self, in_features=in_features, out_features=out_features)
 
         # Freezing the pre-trained weight matrix
         self.weight.requires_grad = False
 
         init_lora_weights = kwargs.pop("init_lora_weights", True)
-        self.update_layer(adapter_name, r, lora_alpha,
-                          lora_dropout, init_lora_weights)
+        self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
         qbits_customop_available = True
         try:
             qbits.dropout_fwd
