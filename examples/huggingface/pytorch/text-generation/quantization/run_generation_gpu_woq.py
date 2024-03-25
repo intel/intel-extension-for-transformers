@@ -50,30 +50,37 @@ parser.add_argument("--save_accuracy_path", default=None,
 parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, \
                     help="tasks list for accuracy validation")
 # ============WeightOnlyQuant configs===============
+parser.add_argument("--bits", type=int, default=4, choices=[4])
 parser.add_argument("--woq", action="store_true")
 parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'GPTQ'], 
                     help="Weight-only parameter.")
-parser.add_argument("--woq_dtype", type=str, default="int4_fullrange",
+parser.add_argument("--weight_dtype", type=str, default="int4_fullrange",
                     choices=["int4_fullrange"])
-parser.add_argument("--woq_group_size", type=int, default=32)
-parser.add_argument("--woq_scheme", default="sym")
+parser.add_argument("--group_size", type=int, default=32)
+parser.add_argument("--scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--device", default="xpu")
 parser.add_argument("--compute_dtype", default="fp16")
+# ============GPTQ configs==============
 parser.add_argument(
-    "--gptq_percdamp",
+    "--desc_act",
+    action="store_true",
+    help="Whether to apply the activation order GPTQ heuristic.",
+)
+parser.add_argument(
+    "--damp_percent",
     type=float,
     default=0.01,
     help="Percent of the average Hessian diagonal to use for dampening.",
 )
 parser.add_argument(
-    "--gptq_block_size",
+    "--blocksize",
     type=int,
     default=128,
     help="Block size. sub weight matrix size to run GPTQ.",
 )
 parser.add_argument(
-    "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
+    "--nsamples", type=int, default=128, help="Number of calibration data samples."
 )
 parser.add_argument(
     "--max_input_length",
@@ -81,6 +88,12 @@ parser.add_argument(
     default=2048,
     help="Calibration dataset sequence max length, this should align with your model config",
 )
+parser.add_argument(
+    "--static_groups",
+    action="store_true",
+    help="Use determined group to do quantization",
+)
+parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 parser.add_argument("--load_in_4bit", type=bool, default=False)
@@ -118,22 +131,22 @@ if args.woq:
             dataset=args.dataset,
             bits=args.bits,
             desc_act=args.desc_act,
-            damp_percent=args.gptq_percdamp,
-            sym=True if args.woq_scheme == "sym" else False,
-            blocksize=args.gptq_block_size,
-            nsamples=args.gptq_nsamples,
+            damp_percent=args.damp_percent,
+            sym=True if args.scheme == "sym" else False,
+            blocksize=args.blocksize,
+            nsamples=args.nsamples,
             static_groups=args.static_groups,
-            group_size=args.woq_group_size,
+            group_size=args.group_size,
             max_input_length=args.max_input_length,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.compute_dtype,
-            weight_dtype=args.woq_dtype,
+            weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
         )
     else:
         quantization_config = RtnConfig(
-            compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype,
-            group_size=args.woq_group_size, scale_dtype=args.compute_dtype
+            compute_dtype=args.compute_dtype, weight_dtype=args.weight_dtype,
+            group_size=args.group_size, scale_dtype=args.compute_dtype
         ) #default is A16W4G16
 
 # get model
@@ -171,7 +184,7 @@ if args.benchmark:
             if user_model is None else user_model
     user_model = user_model.to(memory_format=torch.channels_last)
     if quantization_config is None:
-        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else {}
+        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
     if not args.disable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
@@ -260,16 +273,17 @@ if args.accuracy:
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model
     if quantization_config is None:
-        quantization_config = WeightOnlyQuantConfig.from_pretrained(args.model)
+        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
     if not args.disable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
             user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
     else:
         print("Disabled optimization with IPEX...")
+
     results = evaluate(
         model="hf-causal",
-        model_args='pretrained='+args.model+',tokenizer=' + args.model + \
+        model_args='pretrained=' + "facebook/opt-125m" +',tokenizer=' + args.model + \
             ',dtype=float32,trust_remote_code=' + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
