@@ -446,7 +446,6 @@ python run_generation.py \
     --woq \
     --woq_algo GPTQ \
     --weight_dtype int4_clip \
-    --desc_act \
     --max_input_length 2048 \
     --scheme sym \
     --group_size 32 \
