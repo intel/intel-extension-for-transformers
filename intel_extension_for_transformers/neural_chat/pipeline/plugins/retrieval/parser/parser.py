@@ -18,7 +18,7 @@
 
 import os, re
 from typing import List
-from .context_utils import load_unstructured_data, load_structured_data, get_chuck_data
+from .context_utils import load_unstructured_data, load_structured_data, get_chuck_data, clean_filename
 from .html_parser import load_html_data
 import logging
 
@@ -30,13 +30,14 @@ logging.basicConfig(
 
 
 class DocumentParser:
-    def __init__(self, max_chuck_size=512, min_chuck_size=5, process=True):
+    def __init__(self, max_chuck_size=512, min_chuck_size=5, process=True, save_path ='./generated_files/'):
         """
         Wrapper for document parsing.
         """
         self.max_chuck_size = max_chuck_size
         self.min_chuck_size = min_chuck_size
         self.process = process
+        self.save_path = save_path
 
 
     def load(self, input, **kwargs):
@@ -60,6 +61,7 @@ class DocumentParser:
         elif isinstance(input, List):
             try:
                 data_collection = self.parse_html(input)
+                
             except:
                 logging.error("The given link/str is unavailable. Please try another one!")
         else:
@@ -95,7 +97,7 @@ class DocumentParser:
         chucks = []
         for link in input:
             if re.match(r'^https?:/{2}\w.+$', link):
-                content = load_html_data(link)
+                content = load_html_data(link)          
                 if content == None:
                     continue
                 if self.process:
@@ -103,6 +105,14 @@ class DocumentParser:
                 else:
                     chuck = [[content.strip(), link]]
                 chucks += chuck
+                
+                ## Save the parsed html content into a jsonl for further process
+                file_name = clean_filename(link)+".jsonl"
+                file_path = os.path.join(self.save_path, file_name)
+                data = {'content':content, 'link':input}
+                with open(file_path, 'w') as file:
+                    json.dump(data, file)
+                file.close()
             else:
                 logging.error("The given link/str {} cannot be parsed.".format(link))
 
