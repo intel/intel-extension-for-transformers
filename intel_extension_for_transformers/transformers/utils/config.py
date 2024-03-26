@@ -940,7 +940,6 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
         bits: int = 8,
-        dtype: str = "int",
         tokenizer: Any = None,
         dataset: str = "NeelNanda/pile-10k",
         group_size: int = 32,
@@ -955,7 +954,6 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         use_quant_input: bool = True,
         nsamples: int = 128,
         iters: int = 200,
-        static_groups: bool = False,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
         llm_int8_skip_modules=None,
@@ -989,7 +987,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_len = kwargs.get("calib_len", None)
+        self.calib_len = kwargs.get("calib_len", 2048)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"
