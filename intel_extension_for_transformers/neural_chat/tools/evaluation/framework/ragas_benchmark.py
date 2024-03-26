@@ -108,7 +108,8 @@ def main():
                                                                                 '--repetition_penalty', arg19,
                                                                                 '--num_beams', arg20,
                                                                                 '--do_sample', arg21],
-                                                                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                                                                stdout=subprocess.DEVNULL, 
+                                                                                stderr=subprocess.DEVNULL)
 
     file_jsonl_path='result_ragas.jsonl'
 
@@ -129,10 +130,14 @@ def main():
             context_recall_average_list.append(context_recall_average)
             context_precision_average_list.append(context_precision_average)
 
-    answer_relevancy_average_line_number_list = [i for i, v in enumerate(answer_relevancy_average_list) if v == max(answer_relevancy_average_list)]
-    faithfulness_average_line_number_list = [i for i, v in enumerate(faithfulness_average_list) if v == max(faithfulness_average_list)]
-    context_recall_average_line_number_list = [i for i, v in enumerate(context_recall_average_list) if v == max(context_recall_average_list)]
-    context_precision_average_line_number_list = [i for i, v in enumerate(context_precision_average_list) if v == max(context_precision_average_list)]
+    answer_relevancy_average_line_number_list = [i for i, v in enumerate(answer_relevancy_average_list) \
+                                                 if v == max(answer_relevancy_average_list)]
+    faithfulness_average_line_number_list = [i for i, v in enumerate(faithfulness_average_list) \
+                                             if v == max(faithfulness_average_list)]
+    context_recall_average_line_number_list = [i for i, v in enumerate(context_recall_average_list) \
+                                               if v == max(context_recall_average_list)]
+    context_precision_average_line_number_list = [i for i, v in enumerate(context_precision_average_list) \
+                                                  if v == max(context_precision_average_list)]
 
     line=0
     with open(file_jsonl_path) as file:
