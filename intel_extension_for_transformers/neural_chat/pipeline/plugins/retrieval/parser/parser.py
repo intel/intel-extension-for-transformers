@@ -61,7 +61,7 @@ class DocumentParser:
         elif isinstance(input, List):
             try:
                 data_collection = self.parse_html(input)
-                
+
             except:
                 logging.error("The given link/str is unavailable. Please try another one!")
         else:
@@ -97,7 +97,7 @@ class DocumentParser:
         chucks = []
         for link in input:
             if re.match(r'^https?:/{2}\w.+$', link):
-                content = load_html_data(link)          
+                content = load_html_data(link)
                 if content == None:
                     continue
                 if self.process:
@@ -105,7 +105,7 @@ class DocumentParser:
                 else:
                     chuck = [[content.strip(), link]]
                 chucks += chuck
-                
+
                 ## Save the parsed html content into a jsonl for further process
                 file_name = clean_filename(link)+".jsonl"
                 file_path = os.path.join(self.save_path, file_name)
