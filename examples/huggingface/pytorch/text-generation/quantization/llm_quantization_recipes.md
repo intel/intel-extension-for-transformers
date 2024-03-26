@@ -41,7 +41,7 @@ pip install -v .
 # install requirements
 cd examples/huggingface/pytorch/text-generation/quantization
 pip install -r requirements.txt
-pip install git+https://github.com/intel/neural-compressor.git@6a013c561af17bbc925e36f5a797cae55dad20e7
+pip install neural-compressor==2.5
 pip install transformers==4.35.2
 pip install torch==2.2.0+cpu --index-url https://download.pytorch.org/whl/cpu
 pip install intel-extension-for-pytorch==2.2.0
