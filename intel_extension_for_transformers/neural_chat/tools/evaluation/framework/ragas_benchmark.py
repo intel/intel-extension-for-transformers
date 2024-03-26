@@ -108,7 +108,7 @@ def main():
                                                                                 '--repetition_penalty', arg19,
                                                                                 '--num_beams', arg20,
                                                                                 '--do_sample', arg21],
-                                                                                stdout=subprocess.DEVNULL, 
+                                                                                stdout=subprocess.DEVNULL,
                                                                                 stderr=subprocess.DEVNULL)
 
     file_jsonl_path='result_ragas.jsonl'
