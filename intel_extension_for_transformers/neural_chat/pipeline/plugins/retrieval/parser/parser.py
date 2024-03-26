@@ -49,9 +49,8 @@ class DocumentParser:
             self.min_chuck_size = kwargs['min_chuck_size']
         if 'process' in kwargs:
             self.process = kwargs['process']
-        if 'table_summary_model_name_or_path' in kwargs:
-            self.table_summary_model_name_or_path = kwargs['table_summary_model_name_or_path']
-        self.table_summary_mode = kwargs['table_summary_mode'] if 'table_summary_mode' in kwargs else 'none'
+        self.table_summary_model_name_or_path = kwargs['table_summary_model_name_or_path'] if 'table_summary_model_name_or_path' in kwargs else None
+        self.table_summary_mode = kwargs['table_summary_mode'] if 'table_summary_mode' in kwargs else None
 
         if isinstance(input, str):
             if os.path.isfile(input):

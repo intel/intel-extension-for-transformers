@@ -785,7 +785,6 @@ class TestTableSummaryNoneMode(unittest.TestCase):
         plugins.retrieval.args["input_path"] = "../assets/docs/LLAMA2_short.pdf"
         plugins.retrieval.args["persist_directory"] = "./table_summary_none_mode"
         plugins.retrieval.args["retrieval_type"] = 'default'
-        plugins.retrieval.args["table_summary_mode"] = 'none'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)

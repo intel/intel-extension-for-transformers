@@ -140,7 +140,7 @@ def read_pdf(pdf_path, table_summary_mode, table_summary_model_name_or_path):
             table_summary = predict(**params)
             table_summary = table_summary[table_summary.find('### Generated Summary:\n'):]
             table_summary = re.sub('### Generated Summary:\n', '', table_summary)
-        elif table_summary_mode == 'none':
+        elif table_summary_mode == None:
             table_summary = None
         if table_summary is None:
             text = f'[Table: {content}]'
