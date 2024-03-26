@@ -256,8 +256,9 @@ def main():
                 do_sample=do_sample)
 
     answer_file = 'result_answer.jsonl'
-    answer_relevancy_average,faithfulness_average,context_recall_average,context_precision_average=ragas(answer_file,
-                                                                                                         ground_truth_file)
+    answer_relevancy_average,faithfulness_average,context_recall_average,context_precision_average=ragas(
+        answer_file, 
+        ground_truth_file)
 
     file_json_path='result_ragas.jsonl'
 
