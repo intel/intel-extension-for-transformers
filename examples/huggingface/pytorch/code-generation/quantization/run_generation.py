@@ -24,6 +24,7 @@ from intel_extension_for_transformers.transformers import (
 from intel_extension_for_transformers.transformers import (
     AutoModelForCausalLM,
 )
+from intel_extension_for_transformers.transformers.utils import str2bool
 
 parser = argparse.ArgumentParser()
 
@@ -63,7 +64,6 @@ parser.add_argument(
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
-parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
 parser.add_argument(
     "--calib_padding", action="store_true", help="Calibration dataset do padding."
 )
