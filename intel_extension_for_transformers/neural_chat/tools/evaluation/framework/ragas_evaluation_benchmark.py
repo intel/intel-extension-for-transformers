@@ -85,10 +85,10 @@ def rag(text,
         reranker_model="BAAI/bge-reranker-large",
         llm_model='intel/neural-chat-7b-v3-1',
         temperature=0.01,
-        top_k=1, 
-        top_p=0.1, 
-        repetition_penalty=1.0, 
-        num_beams=1, 
+        top_k=1,
+        top_p=0.1,
+        repetition_penalty=1.0,
+        num_beams=1,
         do_sample=True
         ):
     plugins.retrieval.enable=True
@@ -110,16 +110,16 @@ def rag(text,
     plugins.retrieval.args["reranker_model"]=reranker_model
     config = PipelineConfig(plugins=plugins, model_name_or_path=llm_model)
     chatbot = build_chatbot(config)
-    response = chatbot.predict(text, 
-                            config=GenerationConfig(temperature=temperature, 
-                                                    top_k=top_k, 
-                                                    top_p=top_p, 
-                                                    repetition_penalty=repetition_penalty, 
-                                                    num_beams=num_beams, 
+    response = chatbot.predict(text,
+                            config=GenerationConfig(temperature=temperature,
+                                                    top_k=top_k,
+                                                    top_p=top_p,
+                                                    repetition_penalty=repetition_penalty,
+                                                    num_beams=num_beams,
                                                     do_sample=do_sample))
     return response
 
-def result_data(ground_truth_file, 
+def result_data(ground_truth_file,
                 input_path,
                 vector_database="Chroma",
                 embedding_model="BAAI/bge-large-en-v1.5",
@@ -135,18 +135,18 @@ def result_data(ground_truth_file,
                 reranker_model="BAAI/bge-reranker-large",
                 llm_model='intel/neural-chat-7b-v3-1',
                 temperature=0.01,
-                top_k=1, 
-                top_p=0.1, 
-                repetition_penalty=1.0, 
-                num_beams=1, 
+                top_k=1,
+                top_p=0.1,
+                repetition_penalty=1.0,
+                num_beams=1,
                 do_sample=True
                 ):
     question_list = load_set(ground_truth_file, "question")
-    
+
     result_answer_path='result_answer.jsonl'
     if os.path.exists("result_answer.jsonl"):
         os.remove("result_answer.jsonl")
-    
+
     if os.path.exists("output"):
         shutil.rmtree("output", ignore_errors=True)
     for question in question_list:
@@ -167,10 +167,10 @@ def result_data(ground_truth_file,
                         reranker_model,
                         llm_model,
                         temperature,
-                        top_k, 
-                        top_p, 
-                        repetition_penalty, 
-                        num_beams, 
+                        top_k,
+                        top_p,
+                        repetition_penalty,
+                        num_beams,
                         do_sample
                      )
         data = {
@@ -182,7 +182,7 @@ def result_data(ground_truth_file,
 
 def main():
     parser = argparse.ArgumentParser()
-    
+
     parser.add_argument("--ground_truth_file", type=str)
     parser.add_argument("--input_path", type=str)
 
@@ -205,11 +205,11 @@ def main():
     parser.add_argument("--top_k", type=int, default=1)
     parser.add_argument("--top_p", type=float, default=0.1)
     parser.add_argument("--repetition_penalty", type=float, default=1.0)
-    parser.add_argument("--num_beams", type=int, default=1) 
+    parser.add_argument("--num_beams", type=int, default=1)
     parser.add_argument("--do_sample", type=bool, default=True)
 
     args = parser.parse_args()
-    
+
     ground_truth_file = args.ground_truth_file
     input_path = args.input_path
     vector_database = args.vector_database
@@ -232,8 +232,8 @@ def main():
     repetition_penalty = args.repetition_penalty
     num_beams = args.num_beams
     do_sample = args.do_sample
-    
-    result_data(ground_truth_file, 
+
+    result_data(ground_truth_file,
                 input_path,
                 vector_database=vector_database,
                 embedding_model=embedding_model,
@@ -249,12 +249,12 @@ def main():
                 reranker_model=reranker_model,
                 llm_model=llm_model,
                 temperature=temperature,
-                top_k=top_k, 
-                top_p=top_p, 
-                repetition_penalty=repetition_penalty, 
-                num_beams=num_beams, 
+                top_k=top_k,
+                top_p=top_p,
+                repetition_penalty=repetition_penalty,
+                num_beams=num_beams,
                 do_sample=do_sample)
-    
+
     answer_file = 'result_answer.jsonl'
     answer_relevancy_average, faithfulness_average, context_recall_average, context_precision_average=ragas(answer_file, ground_truth_file)
 
@@ -283,9 +283,9 @@ def main():
                 "repetition_penalty": args.repetition_penalty,
                 "num_beams": args.num_beams,
                 "do_sample": args.do_sample,
-                "answer_relevancy_average": answer_relevancy_average, 
-                "faithfulness_average": faithfulness_average, 
-                "context_recall_average": context_recall_average, 
+                "answer_relevancy_average": answer_relevancy_average,
+                "faithfulness_average": faithfulness_average,
+                "context_recall_average": context_recall_average,
                 "context_precision_average": context_precision_average,
             }
         with jsonlines.open(file_json_path,"a") as file_json:
