@@ -63,6 +63,28 @@ parser.add_argument(
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
+parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
+parser.add_argument(
+    "--calib_padding", action="store_true", help="Calibration dataset do padding."
+)
+parser.add_argument(
+    "--calib_shuffle",
+    default=True,
+    type=str2bool,
+    help="Calibration dataset do shuffle.",
+)
+parser.add_argument(
+    "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
+)
+parser.add_argument(
+    "--calib_len",
+    default=512,
+    type=int,
+    help="Calibration dataset max or padding max length.",
+)
+parser.add_argument(
+    "--recipes", type=str, help="A dictionary as a string, recipes for smoothquant."
+)
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
@@ -109,6 +131,8 @@ parser.add_argument(
 )
 parser.add_argument("--group_size", type=int, default=32)
 parser.add_argument("--scheme", default="sym")
+parser.add_argument("--load_in_4bit", action="store_true")
+parser.add_argument("--load_in_8bit", action="store_true")
 parser.add_argument(
     "--layer_wise",
     action="store_true",
