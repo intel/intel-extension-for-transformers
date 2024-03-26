@@ -82,7 +82,7 @@ def main():
                                                     '--enable_rerank', arg14],
                                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    file_jsonl_path='result.jsonl'
+    file_jsonl_path='result_retrieval.jsonl'
 
     MRR_list = []
     Hit_list = []
