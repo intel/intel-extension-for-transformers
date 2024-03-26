@@ -18,8 +18,8 @@ import subprocess
 import jsonlines
 
 def main():
-    if os.path.exists("result.jsonl"):
-        os.remove("result.jsonl")
+    if os.path.exists("result_retrieval.jsonl"):
+        os.remove("result_retrieval.jsonl")
     script_path = 'evaluate_retrieval_benchmark.py'
 
     parser = argparse.ArgumentParser()
@@ -36,8 +36,8 @@ def main():
     arg2 = args.query_file_jsonl_path
     arg3 = args.vector_database
     arg4 = args.embedding_model
-    arg5 = args.retrieval_type
-    arg6 = args.llm_model
+    arg5 = args.llm_model
+    arg6 = args.reranker_model
 
     arg7_list = ['default','child_parent','bm25']
     arg8_list = ['True','False']
