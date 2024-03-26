@@ -12,15 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-#
-# THIS IS A GENERATED DOCKERFILE.
-#
-# This file was assembled from multiple pieces, whose use is documented
-# throughout. Please refer to the TensorFlow dockerfiles documentation
-# for more information.
-#
-# ============================================================================
-
 
 ## SPR environment
 ARG UBUNTU_VER=22.04
@@ -79,4 +70,3 @@ EXPOSE ${SSHD_PORT}
 
 ENTRYPOINT ["neuralchat_server"]
 CMD ["start", "--config_file", "/text_generation.yaml"]
-

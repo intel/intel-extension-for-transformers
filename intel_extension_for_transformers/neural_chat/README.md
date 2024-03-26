@@ -166,7 +166,7 @@ We introduce enhanced vector store operations, enabling users to adjust and fine
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain_core.vectorstores import VectorStoreRetriever
-from intel_extension_for_transformers.langchain.vectorstores import Chroma
+from intel_extension_for_transformers.langchain_community.vectorstores import Chroma
 retriever = VectorStoreRetriever(vectorstore=Chroma(...))
 retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```
@@ -176,7 +176,7 @@ retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retri
 We provide optimized retrievers such as `VectorStoreRetriever`, `ChildParentRetriever` to efficiently handle vectorstore operations, ensuring optimal retrieval performance.
 
 ```python
-from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever
+from intel_extension_for_transformers.langchain_community.retrievers import ChildParentRetriever
 from langchain.vectorstores import Chroma
 retriever = ChildParentRetriever(vectorstore=Chroma(documents=child_documents), parentstore=Chroma(documents=parent_documents), search_type=xxx, search_kwargs={...})
 docs=retriever.get_relevant_documents("Intel")

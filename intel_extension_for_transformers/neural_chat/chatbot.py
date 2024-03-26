@@ -16,7 +16,7 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
-from intel_extension_for_transformers.llm.quantization.optimization import Optimization
+from intel_extension_for_transformers.transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .plugins import plugins
@@ -24,9 +24,11 @@ from .utils.common import is_openai_model
 
 from .errorcode import ErrorCodes
 from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
-from intel_extension_for_transformers.utils.logger import logging
+import logging
 import importlib
 import sys
+
+logger = logging.getLogger(__name__)
 
 def check_tts_dependency():
     try:
@@ -121,7 +123,7 @@ def build_chatbot(config: PipelineConfig=None):
     if config.hf_endpoint_url:
         if not config.hf_access_token:
             set_latest_error(ErrorCodes.ERROR_HF_TOKEN_NOT_PROVIDED)
-            logging.error("build_chatbot: \
+            logger.error("build_chatbot: \
                the huggingface token must be provided to access the huggingface endpoint service.")
             return
         from .models.huggingface_model import HuggingfaceModel
@@ -172,7 +174,7 @@ def build_chatbot(config: PipelineConfig=None):
             adapter = BaseModel(config.model_name_or_path, config.task)
         else:
             set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
-            logging.error("build_chatbot: unknown model")
+            logger.error("build_chatbot: unknown model")
             return
     from .models.base_model import register_model_adapter
     register_model_adapter(adapter)
@@ -258,7 +260,7 @@ def build_chatbot(config: PipelineConfig=None):
                     plugins[plugin_name]['class'] = Image2Image
                 else:
                     set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
-                    logging.error("build_chatbot: unknown plugin")
+                    logger.error("build_chatbot: unknown plugin")
                     return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
@@ -267,13 +269,13 @@ def build_chatbot(config: PipelineConfig=None):
                 except Exception as e:
                     if "[Rereieval ERROR] Document format not supported" in str(e):
                         set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
-                        logging.error("build_chatbot: retrieval plugin init failed")
+                        logger.error("build_chatbot: retrieval plugin init failed")
                     elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
                         set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
-                        logging.error("build_chatbot: safety checker plugin init failed")
+                        logger.error("build_chatbot: safety checker plugin init failed")
                     else:
                         set_latest_error(ErrorCodes.ERROR_GENERIC)
-                        logging.error("build_chatbot: plugin init failed")
+                        logger.error("build_chatbot: plugin init failed")
                     return
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
@@ -317,22 +319,22 @@ def finetune_model(config: BaseFinetuningConfig):
     """
     clear_latest_error()
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
-    from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
+    from intel_extension_for_transformers.transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
     try:
         finetuning.finetune()
     except FileNotFoundError as e:
-        logging.error(f"Exception: {e}")
+        logger.error(f"Exception: {e}")
         if "Couldn't find a dataset script" in str(e):
             set_latest_error(ErrorCodes.ERROR_DATASET_NOT_FOUND)
     except ValueError as e:
-        logging.error(f"Exception: {e}")
+        logger.error(f"Exception: {e}")
         if "--do_eval requires a validation dataset" in str(e):
             set_latest_error(ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND)
         elif "--do_train requires a train dataset" in str(e):
             set_latest_error(ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
     except Exception as e:
-        logging.error(f"Exception: {e}")
+        logger.error(f"Exception: {e}")
         if "Permission denied" in str(e):
             set_latest_error(ErrorCodes.ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION)
         elif config.finetune_args.peft == "lora":
@@ -361,7 +363,7 @@ def optimize_model(model, config, use_neural_speed=False):
     try:
         model = optimization.optimize(model, use_neural_speed)
     except Exception as e:
-        logging.error(f"Exception: {e}")
+        logger.error(f"Exception: {e}")
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
             RtnConfig,

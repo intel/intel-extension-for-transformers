@@ -133,7 +133,7 @@ register_conv_template(
          - Please refer to the search results obtained from the local knowledge base. But be careful to not \
          incorporate the information that you think is not relevant to the question.
          - If you don't know the answer to a question, please don't share false information.\n""" ,
-        roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
+        roles=("### Question: ", "### Search Results: ", "### Chat History: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -145,7 +145,7 @@ register_conv_template(
         name="rag_without_context",
         system_message="Have a conversation with a human. " + \
             "You are required to generate suitable response to the user input.\n",
-        roles=("### Input:", "### Response:"),
+        roles=("### Input: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -157,7 +157,7 @@ register_conv_template(
         name="rag_without_context_memory",
         system_message="Have a conversation with a human. " + \
             "You are required to generate suitable response to the user input.\n",
-        roles=("### Input:", "### Chat History:", "### Response:"),
+        roles=("### Input: ", "### Chat History: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -172,7 +172,7 @@ register_conv_template(
          - Please refer to the search results obtained from the local knowledge base. But be careful to not \
          incorporate the information that you think is not relevant to the question.
          - If you don't know the answer to a question, please don't share false information.\n""",
-        roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
+        roles=("### Question: ", "### Search Results: ", "### Chat History: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
