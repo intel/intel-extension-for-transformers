@@ -1,10 +1,10 @@
 
 # Build RAG (retriveval augment generation) example with Intel® Extension for Transformers neural-chat on Intel GPU
 
-#1. Setup Environment
+# 1. Setup Environment
 
-## prereqeust
-For GPU, oneAPI 2024.0 is required
+## prerequisite
+GPU driver and oneAPI 2024.0 is required.
 
 ## 1.1 Install intel-extension-for-transformers
 
@@ -24,32 +24,18 @@ patch -p1  < requirements-gpu.patch
 pip install -r requirements-gpu.txt
 pip install -v .
 ```
-
-
 ```
 pip install accelerate
 pip install transformers_stream_generator
 
-cd ~/itrex/intel_extension_for_transformers/neural_chat
 ```
 
-To setup CPU platform go to 1.2.1
-To setup GPU platform go to 1.2.2
+## 1.2 Install neural-chat dependency
 
-### 1.2.1 CPU Platform
-`pip install -r requirements_cpu.txt`
-
-Got to 1.3
-
-### 1.2.2 Intel GPU Platform
-
-### prereqeust
-I suppose you install GPU driver and oneAPI already.
-If NOT, please setup you GPU platform and oneAPI 2024.0
-
-`pip install -r requirements_xpu.txt`
-
-Got to 1.3
+```
+cd ~/itrex/intel_extension_for_transformers/neural_chat
+pip install -r requirements_xpu.txt`
+```
 
 ## 1.3 Install retrieval dependency
 
@@ -63,13 +49,13 @@ pip install -U langchain-community
 
 ## Usage
 
-Exagmple 1. Run example
+Example 1. Run the example with RAG
 
 ```
 python retrieval.py
 ```
 
-Exagmple 2. Run example disable retrieval
+Example 2. Run the example disable RAG
 
 ```
 python retrieval.py --no-retrieval
@@ -77,9 +63,11 @@ python retrieval.py --no-retrieval
 
 # 3. Run RAG in client server mode 
 
-# 3.1 Start the service
+## 3.1 Start the service
 
+```
 python neural_ser.py
+```
 
 Here is the completely output:
 ```
@@ -143,19 +131,19 @@ INFO:     127.0.0.1:34442 - "POST /v1/models HTTP/1.1" 200 OK
 INFO:     127.0.0.1:60016 - "POST /v1/chat/completions HTTP/1.1" 200 OK
 Batches: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00,  5.41it/s]
 2024-03-18 11:44:01,205 - root - INFO - Chat with QA Agent.
-
 ```
 
-# 3.1.1 verify the connection to serivce is OK.
+Now the server is ready to provide service on 8000 port.
+Next we will start a client to connect this server 8000 port in section 3.3.
+
+### 3.1.1 Verify the connection to service is OK.
 
 
 `curl -vv -X POST http://127.0.0.1:8000/v1/chat/completions`
 
-Make sure there is no network connection and proxy setting issue 
+Make sure there is no network connection issue, no proxy setting issue.
 
-# 3.1.2 
-
-Sent a request to neural-chat server
+### 3.1.2 Sent a request to neural-chat server
 
 ```
 curl http://127.0.0.1:8000/v1/chat/completions \
@@ -169,9 +157,15 @@ curl http://127.0.0.1:8000/v1/chat/completions \
     }'
 ```
 
-# 3.2 Set up Server mode UI
+You will get answer from RAG server.
 
-Create UI conda envitonment
+## 3.2 Set up UI environment
+
+The service is ready, but we have to access it through command.
+Now we set up the user interfaces.
+
+Create conda envitonment
+
 ```
 conda create -n chatbot-ui python=3.9
 conda activate chatbot-ui
@@ -183,10 +177,47 @@ pip install gradio==3.36.0
 pip install pydantic==1.10.13
 ```
 
-# 3.3 start the web serice
+## 3.3 Start the web service
 
-In directory, `itrex/intel_extension_for_transformers/neural_chat/ui/gradio/basic`, start app.py
+### 3.3.1 Set RAG server setting
+
+edit app.pyt to set the server port:
+
+```
+cd ~/itrex/intel_extension_for_transformers/neural_chat/ui/gradio/basic
+```
+Edit `app.py` line 124-126,
+```
+124 controller_url = "http://127.0.0.1:8000"
+125 openai_api_key = "EMPTY"
+126 openai_api_base = "http://127.0.0.1:8000/v1/"
+```
+
+This is the RAG service IP_Address and port started in section 3.1. Since we access it from the same machine, set it a local IP.
+
+### 3.3.2 Set Web server port
+
+Edit `app.py` line 742-746,
+
+```
+742     demo.queue(
+743         concurrency_count=concurrency_count, status_update_rate=10, api_open=False
+744     ).launch(
+745         server_name=host, server_port=8088, share=share, max_threads=200
+746     )
+```
+
+Set the `server_port=8088`. This is the web service for the browser UI.
+
+### 3.3.3 Start the web service
 
 ```
 python app.py
 ```
+
+Check this machine IP address, we will access this machine through you web browser.
+
+`http://IP:8088`
+
+First your reqeust will be sent to the web server, then the app sent forward your request (as well as other assistant message) to your RAG service.
+after RAG repsonse are back to this app, and it feedback the response to your browser.

@@ -13,7 +13,7 @@ plugins.retrieval.enable= False if args.no_retrieval else True
 
 plugins.retrieval.args["embedding_model"]="BAAI/bge-base-en-v1.5"
 plugins.retrieval.args["input_path"]="./text/"
-plugins.retrieval.args["persist_dir"]="./output"
+plugins.retrieval.args["persist_directory"]="./output"
 plugins.retrieval.args["append"]=False
 
 config = PipelineConfig(model_name_or_path=model_path, plugins=plugins) #, optimization_config=MixedPrecisionConfig())

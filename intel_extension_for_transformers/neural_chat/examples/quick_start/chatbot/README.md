@@ -1,7 +1,7 @@
 
 # Build Your Chatbot with Intel® Extension for Transformers neural-chat
 
-#1. Setup Environment
+# 1 Setup Environment
 
 ## 1.1 Install intel-extension-for-transformers
 
@@ -23,30 +23,32 @@ git checkout v1.3.2
 cd ~/itrex/intel_extension_for_transformers/neural_chat
 ```
 
-To setup CPU platform go to 1.2.1
-To setup GPU platform go to 1.2.2
+Setup CPU platform go to [1.2.1](#121-cpu-platform)
+
+Setup GPU platform go to [1.2.2](#122-GPU-Platform)
 
 ### 1.2.1 CPU Platform
 `pip install -r requirements_cpu.txt`
 
-Got to 1.3
+Got to [Section 2](#2-Run-the-chatbot-in-command-mode).
 
-### 1.2.2 Intel GPU Platform
+### 1.2.2 GPU Platform
 
-### prereqeust
+#### prerequisite
 GPU driver and oneAPI 2024.0 is required.
 
 `pip install -r requirements_xpu.txt`
 
-# 2. Run the chatbot in command mode
+# 2 Run the chatbot in command mode
 
 ## Usage
 
 Go back to the quick_example folder and run the example
 
+```
 source /opt/intel/oneapi/setvars.sh
-
 ptyhon chatbot.py
+```
 
 ```
 /home/xiguiwang/anaconda3/envs/test/lib/python3.9/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: ''If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
@@ -70,9 +72,11 @@ Eventually, the little girl returned to her village, now a wise and compassionat
 
 # 3. Run chatbot in server mode with UI
 
-# 3.1 Start the service
+## 3.1 Start the service
 
+```
 python chatbot_server.py
+```
 
 Here is the completely output:
 ```
@@ -93,7 +97,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 ```
 
 
-# 3.1.1 verify the client connection to server is OK.
+### 3.1.1 Verify the client connection to server is OK.
 
 Open a new linux console, run following command
 
@@ -101,7 +105,7 @@ Open a new linux console, run following command
 
 Check the ouput. Make sure there is no network connection and proxy setting issue at Client side
 
-# 3.1.2 Test request command at client side
+### 3.1.2 Test request command at client side
 
 Sent a request to chatbat-server from client 
 
@@ -129,7 +133,7 @@ The message contains the LLM answer and othere information about the reqeust.
 {"id":"chatcmpl-29GVLhfoSJHeHTgqL4HgxP","object":"chat.completion","created":1710750809,"model":"Intel/neural-chat-7b-v3-1","choices":[{"index":0,"message":{"role":"assistant","content":"Intel Xeon Scalable Processors are a series of high-performance central processing units (CPUs) designed for data centers, cloud computing, and other demanding computing environments. They are part of Intel's Xeon family of processors, which are specifically tailored for server and workstation applications.\n\nThe Xeon Scalable Processors were introduced in 2017 and are based on Intel's Skylake microarchitecture. They offer significant improvements in performance, efficiency, and scalability compared to their predecessors. These processors are available in various configurations, including single-socket, dual-socket, and multi-socket systems, catering to different workloads and requirements.\n\nSome key features of Intel Xeon Scalable Processors include:\n\n1. Scalable performance: The processors can be configured to meet specific workload needs, allowing for better resource utilization and improved performance.\n\n2. High-speed memory support: They support up to 6 channels of DDR4 memory, enabling faster data transfer and improved system performance.\n\n3. Advanced security features: The processors come with built-in security features, such as Intel Software Guard Extensions (SGX), which help protect sensitive data and applications from potential threats.\n\n4. Enhanced virtualization capabilities: The Xeon Scalable Processors are designed to support multiple virtual machines, making them suitable for virtualized environments.\n\n5. Improved energy efficiency: The processors are designed to optimize power consumption, reducing operational costs and minimizing environmental impact.\n\nOverall, Intel Xeon Scalable Processors are a powerful and versatile choice for organizations seeking high-performance computing solutions in data centers, cloud environments, and other demanding applications."},"finish_reason":"stop"}],"usage":{"prompt_tokens":0,"total_tokens":0,"completion_tokens":0}}
 ```
 
-# 3.2 Set up Server mode UI
+## 3.2 Set up Server mode UI
 
 Create UI conda envitonment
 ```
@@ -143,7 +147,7 @@ pip install gradio==3.36.0
 pip install pydantic==1.10.13
 ```
 
-# 3.3 Start the web service
+## 3.3 Start the web service
 
 Set the default service port
 Edit app.py line 745, set the server port. For example we set port as 8008.
@@ -157,4 +161,20 @@ Edit app.py line 745, set the server port. For example we set port as 8008.
 ```
 
 Start the service:
-`python app.py
+`python app.py`
+
+The output is as following:
+```
+/home/xiguiwang/ws2/conda/chatbot-ui/lib/python3.9/site-packages/gradio_client/documentation.py:103: UserWarning: Could not get documentation group for <class 'gradio.mix.Parallel'>: No known documentation group for module 'gradio.mix'
+  warnings.warn(f"Could not get documentation group for {cls}: {exc}")
+/home/xiguiwang/ws2/conda/chatbot-ui/lib/python3.9/site-packages/gradio_client/documentation.py:103: UserWarning: Could not get documentation group for <class 'gradio.mix.Series'>: No known documentation group for module 'gradio.mix'
+  warnings.warn(f"Could not get documentation group for {cls}: {exc}")
+2024-03-27 11:00:24 | INFO | gradio_web_server | Models: ['Intel/neural-chat-7b-v3-1']
+2024-03-27 11:00:26 | ERROR | stderr | sys:1: GradioDeprecationWarning: The `style` method is deprecated. Please set these arguments in the constructor instead.
+2024-03-27 11:00:26 | INFO | stdout | Running on local URL:  http://0.0.0.0:8008
+2024-03-27 11:00:26 | INFO | stdout |
+2024-03-27 11:00:26 | INFO | stdout | To create a public link, set `share=True` in `launch()`.
+```
+
+The log shows the service is started on prot 8008.
+You can access chatbot through web broser on port 8008 now.

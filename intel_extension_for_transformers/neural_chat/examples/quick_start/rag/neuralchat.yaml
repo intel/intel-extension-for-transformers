@@ -63,7 +63,7 @@ retrieval:
         retrieval_type: "default"
         input_path: "./text/"
         embedding_model: "BAAI/bge-base-en-v1.5"
-        persist_dir: "./output"
+        persist_directory: "./output"
         max_length: 512
         process: false
 
