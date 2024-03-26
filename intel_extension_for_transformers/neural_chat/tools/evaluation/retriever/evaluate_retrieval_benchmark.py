@@ -348,7 +348,7 @@ def main():
     ground_truths=load_list(query_file_jsonl_path, "pos")
     MRR, Hit = evaluate(retrieval_results, ground_truths)
 
-    file_json_path='result.jsonl'
+    file_json_path='result_retrieval.jsonl'
 
     if MRR and Hit:
         data = {
