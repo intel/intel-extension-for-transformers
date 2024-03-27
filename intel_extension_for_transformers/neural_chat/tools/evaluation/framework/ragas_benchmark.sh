@@ -129,7 +129,7 @@ function run_benchmark {
         --fetch_k ${fetch_k} \
         --score_threshold ${score_threshold} \
         --top_n ${top_n} \
-        --enable_rerank ${enable_rerank} 
+        --enable_rerank ${enable_rerank} \
         --max_chuck_size ${max_chuck_size} \
         --temperature ${temperature} \
         --top_k ${top_k} \
