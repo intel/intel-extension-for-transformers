@@ -34,6 +34,7 @@ env:
   CONTAINER_NAME: "utTest"
   EXTRA_CONTAINER_NAME: "modelTest"
   CONTAINER_SCAN: "codeScan"
+  GOOGLE_API_KEY: ${{ vars.GOOGLE_API_KEY }}
 
 jobs:
   neuralchat-unit-test:
@@ -84,6 +85,7 @@ jobs:
           -v /home/itrex-docker/models:/models \
           -v /dataset/media:/media \
           -v /dataset/tf_dataset2:/tf_dataset2 \
+          -e "GOOGLE_API_KEY=${{ vars.GOOGLE_API_KEY }}" \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
       - name: Binary build
