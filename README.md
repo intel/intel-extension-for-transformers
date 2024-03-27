@@ -11,6 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
+* [2024/03] Supported LLM from [ModelScope](https://www.modelscope.cn/models) 
 * [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (e.g., PVC) and Intel Arc A-Series (e.g., ARC). Check out the [examples](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [scripts](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py).
 * [2024/01] Demonstrated **Intel Hybrid Copilot** in **CES 2024 Great Minds** Session "[Bringing the Limitless Potential of AI Everywhere](https://youtu.be/70J3uO3eLZA?t=1348)".
 * [2023/12] Supported **QLoRA on CPUs** to make fine-tuning on client CPU possible. Check out the [blog](https://medium.com/@NeuralCompressor/creating-your-own-llms-on-your-laptop-a08cc4f7c91b) and [readme](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md) for more details.
@@ -157,6 +158,13 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
                         <td>1.3.26918.50-736~22.04 </td>
                         <td>1.3.26918.50-736~22.04 </td>
                         <td>1.3.26918.50-736~22.04 </td>
+                </tr>
+                <tr>
+                        <td>NeuralSpeed</td>
+                        <td>1.0a </td>
+                        <td>1.0a </td>
+                        <td>1.0a </td>
+                        <td>1.0a </td>
                 </tr>
 	</tbody>
 </table>
