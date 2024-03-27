@@ -176,7 +176,7 @@ Classes
 
 
 
-.. py:class:: AutoRoundConfig(bits: int = 8, dtype: str = 'int', tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, lr: float = 0.0025, minmax_lr: float = 0.0025, use_quant_input: bool = True, nsamples: int = 128, iters: int = 200, static_groups: bool = False, use_ggml: bool = False, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+.. py:class:: AutoRoundConfig(bits: int = 8, tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, lr: float = 0.0025, minmax_lr: float = 0.0025, use_quant_input: bool = True, nsamples: int = 128, iters: int = 200, use_ggml: bool = False, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
 
 
 
