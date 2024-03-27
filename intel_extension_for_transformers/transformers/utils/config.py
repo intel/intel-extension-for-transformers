@@ -940,7 +940,6 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
         bits: int = 8,
-        dtype: str = "int",
         tokenizer: Any = None,
         dataset: str = "NeelNanda/pile-10k",
         group_size: int = 32,
@@ -955,7 +954,6 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         use_quant_input: bool = True,
         nsamples: int = 128,
         iters: int = 200,
-        static_groups: bool = False,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
         llm_int8_skip_modules=None,
