@@ -5,7 +5,7 @@ cmake
 datasets
 einops
 gguf
-neural-speed
+neural-speed==1.0a0
 numpy
 peft
 protobuf<3.20
