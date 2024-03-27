@@ -540,7 +540,7 @@ if args.accuracy:
     results = evaluate(
         model="hf-causal",
         model_args="pretrained="
-        + "facebook/opt-125m" #args.model
+        + args.model
         + ",tokenizer="
         + args.model
         + ",dtype=float32"

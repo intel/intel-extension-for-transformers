@@ -79,8 +79,6 @@ if is_ipex_available() and get_gpu_family() != "no_gpu":
     from intel_extension_for_pytorch.nn.utils._quantize_convert import (
         WeightOnlyQuantizedLinear,
     )
-else:
-    from ..llm.quantization.nn.modules import QuantizedLinearQBits
 
 torch = LazyImport("torch")
 
@@ -91,6 +89,8 @@ def recover_export_model(model, current_key_name=None):
 
     Return optimum format model.
     """
+    from ..llm.quantization.nn.modules import QuantizedLinearQBits
+
     for name, module in model.named_children():
         if current_key_name is None:
             current_key_name = []
@@ -124,6 +124,9 @@ def recover_export_model(model, current_key_name=None):
                 use_optimum_format=True,
             )
 
+            # Setting g_idx is invalid when use_optimum_format is True, so set it again when g_idx is not None.
+            # https://github.com/intel/neural-compressor/blob/v2.5.dev2/neural_compressor/adaptor/torch_utils/
+            # model_wrapper.py#L343
             model._modules[name].pack(
                 int_weight, scales, zeros, module.bias, g_idx=g_idx
             )
@@ -141,7 +144,7 @@ def build_woq_model(model, quantization_config):
     from neural_compressor.adaptor.torch_utils.util import set_module
 
     for n, m in model.named_modules():
-        if "lm_head" in n:
+        if "lm_head" in n or "output_layer" in n or "embed_out" in n:
             continue
         if isinstance(m, torch.nn.Linear):
             zp = (
@@ -191,6 +194,12 @@ def convert_model_to_public(model):
         model = recover_export_model(model)
 
 
+def make_contiguous(model):
+    for param in model.parameters():
+        if param.data.ndimension() > 1:
+            param.data = param.data.contiguous()
+
+
 def save_low_bit(
     self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs
 ):
@@ -209,6 +218,7 @@ def save_low_bit(
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
     del self.save_pretrained
+    make_contiguous(self)
     self.save_pretrained(
         save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
     )
@@ -418,7 +428,6 @@ class _BaseQBitsAutoModelClass:
 
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
-
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
