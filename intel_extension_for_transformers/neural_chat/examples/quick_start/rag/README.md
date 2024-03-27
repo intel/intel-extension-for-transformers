@@ -219,5 +219,5 @@ Check this machine IP address, we will access this machine through you web brows
 
 `http://IP:8088`
 
-First your reqeust will be sent to the web server, then the app sent forward your request (as well as other assistant message) to your RAG service.
-after RAG repsonse are back to this app, and it feedback the response to your browser.
+First your request will be sent to the web server, then the app sent forward your request (as well as other assistant message) to your RAG service.
+after RAG response are back to this app, and it feedback the response to your browser.

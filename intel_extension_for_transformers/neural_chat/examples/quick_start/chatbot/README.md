@@ -47,7 +47,7 @@ Go back to the quick_example folder and run the example
 
 ```
 source /opt/intel/oneapi/setvars.sh
-ptyhon chatbot.py
+python chatbot.py
 ```
 
 ```
@@ -103,7 +103,7 @@ Open a new linux console, run following command
 
 `curl -vv -X POST http://127.0.0.1:8000/v1/chat/completions`
 
-Check the ouput. Make sure there is no network connection and proxy setting issue at Client side
+Check the output. Make sure there is no network connection and proxy setting issue at Client side
 
 ### 3.1.2 Test request command at client side
 
@@ -122,13 +122,13 @@ curl http://127.0.0.1:8000/v1/chat/completions \
     }'
 ```
 
-At the server side, there is mesage:
+At the server side, there is message:
 ```
 INFO:     127.0.0.1:52532 - "POST /v1/chat/completions HTTP/1.1" 200 OK
 ```
 
 At the client side, the response are similar message as following.
-The message contains the LLM answer and othere information about the reqeust.
+The message contains the LLM answer and other information about the request.
 ```
 {"id":"chatcmpl-29GVLhfoSJHeHTgqL4HgxP","object":"chat.completion","created":1710750809,"model":"Intel/neural-chat-7b-v3-1","choices":[{"index":0,"message":{"role":"assistant","content":"Intel Xeon Scalable Processors are a series of high-performance central processing units (CPUs) designed for data centers, cloud computing, and other demanding computing environments. They are part of Intel's Xeon family of processors, which are specifically tailored for server and workstation applications.\n\nThe Xeon Scalable Processors were introduced in 2017 and are based on Intel's Skylake microarchitecture. They offer significant improvements in performance, efficiency, and scalability compared to their predecessors. These processors are available in various configurations, including single-socket, dual-socket, and multi-socket systems, catering to different workloads and requirements.\n\nSome key features of Intel Xeon Scalable Processors include:\n\n1. Scalable performance: The processors can be configured to meet specific workload needs, allowing for better resource utilization and improved performance.\n\n2. High-speed memory support: They support up to 6 channels of DDR4 memory, enabling faster data transfer and improved system performance.\n\n3. Advanced security features: The processors come with built-in security features, such as Intel Software Guard Extensions (SGX), which help protect sensitive data and applications from potential threats.\n\n4. Enhanced virtualization capabilities: The Xeon Scalable Processors are designed to support multiple virtual machines, making them suitable for virtualized environments.\n\n5. Improved energy efficiency: The processors are designed to optimize power consumption, reducing operational costs and minimizing environmental impact.\n\nOverall, Intel Xeon Scalable Processors are a powerful and versatile choice for organizations seeking high-performance computing solutions in data centers, cloud environments, and other demanding applications."},"finish_reason":"stop"}],"usage":{"prompt_tokens":0,"total_tokens":0,"completion_tokens":0}}
 ```
@@ -177,4 +177,4 @@ The output is as following:
 ```
 
 The log shows the service is started on prot 8008.
-You can access chatbot through web broser on port 8008 now.
+You can access chatbot through web browser on port 8008 now.
