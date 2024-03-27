@@ -13,8 +13,8 @@ intel-tensorflow==2.14.0
 mlflow
 neural-speed
 nlpaug==1.1.9
-onnx>=1.10
-onnxruntime
+onnx==1.15.0
+onnxruntime==1.17.1
 optimum-intel
 peft==0.6.2
 py-cpuinfo
