@@ -217,6 +217,8 @@ def get_ds_injection_policy(config):
     return policy
 
 def max_input_len(input_text_length):
+    # Temp fix until fixed
+    return 128
     if input_text_length <= 128:
         return 128
     elif input_text_length <= 512:
@@ -1042,6 +1044,9 @@ def predict_stream(**params):
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
     num_beams = int(params["num_beams"]) if "num_beams" in params else 1
+    ## Temp fix for llm v1
+    if num_beams == 0:
+        num_beams = 1
     model_name = (
         params["model_name"] if "model_name" in params else "Intel/neural-chat-7b-v3-1"
     )
@@ -1053,7 +1058,9 @@ def predict_stream(**params):
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
-    format_version = params["format_version"] if "format_version" in params else "v2"
+    ## Temp fix for llm v1
+    format_version = params["format_version"] if "format_version" in params else "v1"
+    stream = params["stream"] if "stream" in params else True
     prompt = params["prompt"]
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
@@ -1093,6 +1100,12 @@ def predict_stream(**params):
                 However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
             )
             set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+            ret = {
+                "error_code": ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH,
+                "text": ErrorCodes.error_strings[ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH]
+            }
+            if format_version == "v1-json":
+                yield json.dumps(ret).encode() + b"\0"
             return
         elif length < max_new_tokens:
             logging.error(f"This model's maximum context length is {context_len} tokens. \
@@ -1187,7 +1200,23 @@ def predict_stream(**params):
         generation_thread.start()
     elif device == "hpu":
         # Move inputs to target device(s)
-        input_tokens = prepare_inputs(input_tokens, model.device)
+        try:
+            input_tokens = prepare_inputs(input_tokens, model.device)
+        except RuntimeError as e:
+            logging.error(f"model.generate exception: {e}")
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            ret = {
+                "error_code": ErrorCodes.ERROR_MODEL_INFERENCE_FAIL,
+                "text": ErrorCodes.error_strings[ErrorCodes.ERROR_MODEL_INFERENCE_FAIL]
+            }
+            if format_version == "v1-json":
+                yield json.dumps(ret).encode() + b"\0"
+                time.sleep(0.1)
+                exit(1)
+            else:
+                # Temp fix
+                exit(1)
+                raise e
 
         # Generation configuration
         generation_config = copy.deepcopy(model.generation_config)
@@ -1235,7 +1264,15 @@ def predict_stream(**params):
             f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
         )
         set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
-        return
+        ret = {
+            "error_code": ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED,
+            "text": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED]
+        }
+        if format_version == "v1-json":
+            yield json.dumps(ret).encode() + b"\0"
+            return
+        else:
+            raise thread_exception
     output_word_len = 0
 
     generation_thread.join(0.1)
@@ -1243,16 +1280,37 @@ def predict_stream(**params):
         pass
     else:
         thread_exception = errors_queue.get()
-        raise thread_exception
+        ret = {
+            "error_code": ErrorCodes.ERROR_MODEL_INFERENCE_FAIL,
+            "text": str(thread_exception)
+        }
+        if format_version == "v1-json":
+            yield json.dumps(ret).encode() + b"\0"
+        return
     # prevent crash if no words are coming out
     first_word_output_time = datetime.now()
+    full_text = ""
     for new_text in streamer:
         if len(new_text) == 0:
             continue
         if output_word_len == 0:
             first_word_output_time = datetime.now()
         output_word_len += 1
-        yield new_text
+        if stream == False:
+            full_text += new_text
+        elif format_version == "v1-json":
+            ret = {
+                "text": new_text,
+                "error_code": 0,
+                "usage": {
+                    "prompt_tokens": input_token_len,
+                    "completion_tokens": output_word_len,
+                    "total_tokens": input_token_len + output_word_len,
+                }
+            }
+            yield json.dumps(ret).encode() + b"\0"
+        else:
+            yield new_text
 
     end_time = datetime.now()
 
@@ -1285,6 +1343,21 @@ def predict_stream(**params):
                 "msecond_per_token": msecond_per_token,
             }
             yield "END_OF_STREAM_STATS={}".format(stats)
+        elif format_version == "v1-json":
+            ret = {
+                "error_code": 0,
+                "stats": {
+                    "prompt_tokens": input_token_len,
+                    "duration": duration,
+                    "first_token_latency": first_token_latency,
+                    "msecond_per_token": msecond_per_token,
+                    "completion_tokens": output_token_len,
+                    "total_tokens": input_token_len + output_token_len,
+                },
+            }
+            if stream == False:
+                ret["text"] = full_text
+            yield json.dumps(ret).encode() + b"\0"
         else:
             stats = {
                 "input_token_len": str(input_token_len),
