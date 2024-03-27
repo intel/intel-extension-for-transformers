@@ -18,7 +18,7 @@ pip install -r requirements.txt
 ```
 
 # Run
-We provide compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, the followings are command to show how to use it.
+We provide compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `Rtn/Awq/Teq/GPTQ/AutoRound` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, the followings are command to show how to use it.
 >**Note**: 
 > Model type "llama" will default use [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/339bd251841e153ad9c34e1033ab8b2d936a1781/docs/tutorials/llm/llm_optimize_transformers.md) to accelerate the inference, but "llama" requests transformers version lower than 4.36.0, "falcon" requests transformers version lower than 4.33.3.
 
@@ -61,13 +61,13 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 # load_in_4bit
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model bigcode/starcoder \
-    --load_in_4bit True \
+    --load_in_4bit \
     --benchmark \
     --batch_size 1
 # load_in_8bit
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model bigcode/starcoder \
-    --load_in_8bit True \
+    --load_in_8bit \
     --benchmark \
     --batch_size 1
 ```
@@ -124,7 +124,7 @@ python run_generation.py \
 # load_in_4bit
 python run_generation.py \
     --model bigcode/starcoder \
-    --load_in_4bit True \
+    --load_in_4bit \
     --accuracy \
     --batch_size 20 \
     --n_samples 20 \
@@ -135,7 +135,7 @@ python run_generation.py \
 # load_in_8bit
 python run_generation.py \
     --model bigcode/starcoder \
-    --load_in_8bit True \
+    --load_in_8bit \
     --accuracy \
     --batch_size 20 \
     --n_samples 20 \

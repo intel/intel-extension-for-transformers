@@ -321,7 +321,7 @@ class TestFalseProcess(unittest.TestCase):
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.txt"
         plugins.retrieval.args["persist_directory"] = "./false_process"
         plugins.retrieval.args["retrieval_type"] = 'default'
-        plugins.retrieval.args["min_chuck_size"] = 100
+        plugins.retrieval.args["min_chuck_size"] = 10
         plugins.retrieval.args["max_chuck_size"] = 150
         plugins.retrieval.args["process"] = False
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",

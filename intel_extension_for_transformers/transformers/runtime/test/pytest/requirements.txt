@@ -1,0 +1,11 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+accelerate
+datasets
+intel-extension-for-pytorch==2.0.0
+intel-tensorflow==2.12.0
+onnx
+onnxruntime
+onnxruntime_extensions
+peft
+torch==2.0+cpu
+transformers

@@ -216,6 +216,22 @@ model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs)
 ```
 
+You can also load PyTorch Model from Modelscope
+>**Note**:require modelscope
+```python
+from transformers import TextStreamer
+from modelscope import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+model_name = "qwen/Qwen-7B"     # Modelscope model_id or local model
+prompt = "Once upon a time, there existed a little girl,"
+
+model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, model_hub="modelscope")
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+streamer = TextStreamer(tokenizer)
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+```
+
 You can also load the low-bit model quantized by GPTQ/AWQ/RTN/AutoRound algorithm.
 ```python
 from transformers import AutoTokenizer
@@ -337,7 +353,7 @@ You can access the validated models, accuracy and performance from [Release data
     <td colspan="2" align="center"><a href="docs/tutorials/README.md">Tutorials</a></td>
     <td colspan="2" align="center"><a href="https://github.com/intel/neural-speed/blob/main/docs/supported_models.md">LLM List</a></td>
     <td colspan="2" align="center"><a href="docs/examples.md">General Model List</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/validated_model.md">Model Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/transformers/runtime/docs/validated_model.md">Model Performance</a></td>
   </tr>
 </tbody>
 </table>

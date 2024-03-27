@@ -17,8 +17,8 @@
 
 import argparse
 from datasets import load_dataset
-from intel_extension_for_transformers.setfit import SetFitModel, SetFitTrainer, sample_dataset
-from intel_extension_for_transformers.setfit.utils import LOSS_NAME_TO_CLASS
+from intel_extension_for_transformers.transformers.setfit import SetFitModel, SetFitTrainer, sample_dataset
+from intel_extension_for_transformers.transformers.setfit.utils import LOSS_NAME_TO_CLASS
 
 def parse_args():
     parser = argparse.ArgumentParser()

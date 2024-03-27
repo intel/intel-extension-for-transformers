@@ -3,7 +3,7 @@ source /intel-extension-for-transformers/.github/workflows/script/change_color.s
 export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.engine-coveragerc"
 LOG_DIR=/log_dir
 mkdir -p ${LOG_DIR}
-WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/deprecated"
+WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/transformers/runtime"
 
 # get parameters
 PATTERN='[-a-zA-Z0-9_]*='
@@ -25,7 +25,7 @@ function pytest() {
 
     cd ${WORKING_DIR}/test/pytest
     engine_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
-    engine_path="${engine_path}/llm/runtime"
+    engine_path="${engine_path}/transformers/runtime"
     echo "engine path is ${engine_path}"
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${engine_path}"' --append ,g' | sed 's/$/ --verbose/' >run.sh
     coverage erase

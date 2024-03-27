@@ -37,7 +37,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p.communicate()
 
     def test_bigcode_lm_eval(self):
-        from intel_extension_for_transformers.llm.evaluation.bigcode_eval import evaluate as bigcode_evaluate
+        from intel_extension_for_transformers.transformers.llm.evaluation.bigcode_eval import evaluate as bigcode_evaluate
         starcoder_tokenizer = AutoTokenizer.from_pretrained("bigcode/tiny_starcoder_py")
         class bigcode_args:
             limit=20

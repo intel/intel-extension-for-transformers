@@ -8,14 +8,23 @@ Intel Neural Chat Code Generation Dockerfile installer for Ubuntu22.04/Habana Ga
 Use Dockerfile to build Docker image in your environment.
 
 Remember to choose Dockerfile of your framework (CPU/HPU), the following example is for CPU.
-```bash
-docker build . -f cpu/Dockerfile -t neuralchat_codegen:latest
-```
 
-If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` like below.
+If your environment requires a proxy to access the internet, export your development system's proxy settings to the docker environment:
+
 ```bash
-docker build . -f cpu/Dockerfile -t neuralchat_codegen:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
+export DOCKER_BUILD_ARGS="--build-arg https_proxy=$https_proxy \
+       --build-arg http_proxy=$http_proxy \
+       --build-arg no_proxy=$no_proxy"
+
+docker build . -f cpu/Dockerfile \
+       ${DOCKER_BUILD_ARGS} \
+      -t intel/intel-extension-for-transformers:code-generation-cpu-1.4.0
 ```  
+Or pull the docker image as follows:
+
+```bash
+docker pull intel/intel-extension-for-transformers:code-generation-cpu-1.4.0
+```
 
 ### Prepare Configuration File and Documents
 Before starting NeuralChat services, you need to configure `codegen.yaml` according to you read environment.
@@ -27,20 +36,17 @@ Specify your available host ip and port, and a code-generation model (`ise-uiuc/
 ### Start NeuralChat Service
 Use the following command to start NeuralChat CodeGen service.
 
+If your environment requires a proxy to access the internet, export your development system's proxy settings to the docker environment:
 
 ```bash
-docker run -it --net=host --ipc=host --name code_gen -v ./codegen.yaml:/codegen.yaml neuralchat_codegen:latest
+export DOCKER_RUN_ENVS="-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"
+
+docker run -it --net=host \
+      --ipc=host \
+      --name code_gen -v ./codegen.yaml:/codegen.yaml \
+      ${DOCKER_RUN_ENVS} \
+      intel/intel-extension-for-transformers:code-generation-cpu-1.4.0
 ```
-
-Make sure the specified `port` is available, and `device` is correctly set.
-
-
-If you need to set proxy settings, add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`.
-
-```bash
-docker run -it --net=host --ipc=host --name code_gen -v ./codegen.yaml:/codegen.yaml -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" neuralchat_codegen:latest
-```
-
 
 ## Consume the Service with Simple Test
 After `docker run` command is successfully executed, you can consume the HTTP services offered by NeuralChat. You can start a new terminal to enter the docker container for further jobs.

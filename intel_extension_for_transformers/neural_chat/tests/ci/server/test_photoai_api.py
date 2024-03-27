@@ -60,7 +60,7 @@ class UnitTest(unittest.TestCase):
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.get_image_root_path')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_utils.get_address_from_gps')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.process_images_in_background')
-    def test_upload_images(self, mock_func1, mock_func2, mock_func3, mock_func4, mock_db2):
+    async def test_upload_images(self, mock_func1, mock_func2, mock_func3, mock_func4, mock_db2):
         def mock_process(user_id, image_obj_list):
             print(user_id)
             print(image_obj_list)
@@ -75,7 +75,7 @@ class UnitTest(unittest.TestCase):
         data = {
             "image_list": [MOCK_IMAGE_SRC]
         }
-        response = client.post("/v1/aiphotos/uploadImages", json=data)
+        response = await client.post("/v1/aiphotos/uploadImages", json=data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('https:', response.json()[0]['img_path'])
 
@@ -84,11 +84,11 @@ class UnitTest(unittest.TestCase):
         mock_db2.return_value.transaction.assert_called_once()
 
 
-    def test_get_all_images(self, mock_func, mock_db):
+    async def test_get_all_images(self, mock_func, mock_db):
         mock_func.return_value.fetch_one.return_value = MOCK_USER_INFO
         mock_db.return_value.fetch_all.return_value = [MOCK_IMAGE_INFO]
 
-        response = client.post("/v1/aiphotos/getAllImages")
+        response = await client.post("/v1/aiphotos/getAllImages")
         self.assertEqual(response.status_code, 200)
         self.assertIn('image1.jpg', response.json()[0]['image_path'])
 
@@ -100,20 +100,20 @@ class UnitTest(unittest.TestCase):
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.get_images_by_type')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.get_face_list_by_user_id')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.get_type_obj_from_attr')
-    def test_get_type_list(self, mock_db, mock_func1, mock_func2, mock_func3, mock_func4, mock_func5, mock_func6):
+    async def test_get_type_list(self, mock_db, mock_func1, mock_func2, mock_func3, mock_func4, mock_func5, mock_func6):
         mock_func1.return_value = MOCK_TYPE_LIST['type_list']['person']
         mock_func3.return_value = ["Shanghai"]
         mock_func4.return_value = {"status": "done"}
         mock_func5.return_value = "mock"
         mock_func6.return_value = True
 
-        response = client.post("/v1/aiphotos/getTypeList")
+        response = await client.post("/v1/aiphotos/getTypeList")
         self.assertEqual(response.status_code, 200)
         self.assertIn('done', response.json()['process_status']['status'])
 
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.get_images_by_type')
-    def test_get_image_by_type(self, mock_func1, mock_func2, mock_db):
+    async def test_get_image_by_type(self, mock_func1, mock_func2, mock_db):
         mock_func1.return_value = [MOCK_IMAGE_INFO]
         mock_func2.return_value = True
 
@@ -121,13 +121,13 @@ class UnitTest(unittest.TestCase):
             "type": "address",
             "subtype": "Shanghai"
         }
-        response = client.post("/v1/aiphotos/getImageByType", json=params)
+        response = await client.post("/v1/aiphotos/getImageByType", json=params)
         self.assertEqual(response.status_code, 200)
         self.assertIn('image1.jpg', response.json()[0]['image_path'])
 
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.format_image_info')
-    def test_get_image_detail(self, mock_func1, mock_func2, mock_db):
+    async def test_get_image_detail(self, mock_func1, mock_func2, mock_db):
         mock_func1.return_value = MOCK_IMAGE_INFO
         mock_func2.return_value = True
         mock_db.return_value.fetch_one.return_value = MOCK_IMAGE_INFO
@@ -135,35 +135,35 @@ class UnitTest(unittest.TestCase):
         params = {
             "image_id": "1"
         }
-        response = client.post("/v1/aiphotos/getImageDetail", json=params)
+        response = await client.post("/v1/aiphotos/getImageDetail", json=params)
         self.assertEqual(response.status_code, 200)
         self.assertIn('image1.jpg', response.json()['image_path'])
 
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.delete_single_image')
-    def test_delete_image(self, mock_func1, mock_func2, mock_db):
+    async def test_delete_image(self, mock_func1, mock_func2, mock_db):
         mock_func1.return_value = True
         mock_func2.return_value = True
 
         params = {
             "image_id": "1"
         }
-        response = client.post("/v1/aiphotos/deleteImage", json=params)
+        response = await client.post("/v1/aiphotos/deleteImage", json=params)
         self.assertEqual(response.status_code, 200)
         self.assertIn('Succeed', response.json())
 
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.delete_user_infos')
-    def test_delete_user(self, mock_func1, mock_func2, mock_db):
+    async def test_delete_user(self, mock_func1, mock_func2, mock_db):
         mock_func1.return_value = True
         mock_func2.return_value = True
 
-        response = client.post("/v1/aiphotos/deleteUser")
+        response = await client.post("/v1/aiphotos/deleteUser")
         self.assertEqual(response.status_code, 200)
         self.assertIn('Succeed', response.json())
 
 
-    def test_update_label(self, mock_func, mock_db):
+    async def test_update_label(self, mock_func, mock_db):
         mock_func.return_value = True
         mock_db.return_value.transaction.return_value = MagicMock()
         mock_db.return_value.update.return_value = True
@@ -175,7 +175,7 @@ class UnitTest(unittest.TestCase):
                 "to": "2023-10-01"
             }]
         }
-        response = client.post("/v1/aiphotos/updateLabel", json=data)
+        response = await client.post("/v1/aiphotos/updateLabel", json=data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('Succeed', response.json())
 
@@ -184,23 +184,23 @@ class UnitTest(unittest.TestCase):
 
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.update_image_tags')
-    def test_update_tags(self, mock_func1, mock_func2, mock_db):
+    async def test_update_tags(self, mock_func1, mock_func2, mock_db):
         mock_func1.return_value = True
         mock_func2.return_value = True
 
         data = {"image_list": [MOCK_IMAGE_INFO]}
-        response = client.post("/v1/aiphotos/updateTags", json=data)
+        response = await client.post("/v1/aiphotos/updateTags", json=data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('Succeed', response.json())
 
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.update_image_attr')
-    def test_update_caption(self, mock_func1, mock_func2, mock_db):
+    async def test_update_caption(self, mock_func1, mock_func2, mock_db):
         mock_func1.return_value = True
         mock_func2.return_value = True
 
         data = {"image_list": [MOCK_IMAGE_INFO]}
-        response = client.post("/v1/aiphotos/updateCaption", json=data)
+        response = await client.post("/v1/aiphotos/updateCaption", json=data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('Succeed', response.json())
 
@@ -208,7 +208,7 @@ class UnitTest(unittest.TestCase):
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.get_image_list_by_ner_query')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.plugins')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.PhotoAIAPIRouter.get_chatbot')
-    def test_chat_with_image(self, mock_func1, mock_func2, mock_func3, mock_func4, mock_db):
+    async def test_chat_with_image(self, mock_func1, mock_func2, mock_func3, mock_func4, mock_db):
         mock_chatbot = MagicMock()
         mock_chatbot.predict.return_value = 'hi, how can I help you?'
         mock_func1.return_value = mock_chatbot
@@ -219,7 +219,7 @@ class UnitTest(unittest.TestCase):
         mock_func4.return_value = True
 
         data = {"query": "hello"}
-        response = client.post("/v1/aiphotos/chatWithImage", json=data)
+        response = await client.post("/v1/aiphotos/chatWithImage", json=data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('image1.jpg', response.json()[0]['image_path'])
 
@@ -227,7 +227,7 @@ class UnitTest(unittest.TestCase):
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.stable_defusion_func')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.image_to_byte64')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_api.get_image_root_path')
-    def test_image_to_image(self, mock_func1, mock_func2, mock_func3, mock_func4, mock_db):
+    async def test_image_to_image(self, mock_func1, mock_func2, mock_func3, mock_func4, mock_db):
         mock_func1.return_value = "./test_image_root_path"
         mock_img_b64 = MagicMock()
         mock_img_b64.decode.return_value = "mock base64 string"
@@ -239,7 +239,7 @@ class UnitTest(unittest.TestCase):
             "query": "hello",
             "ImageList": [{"imgId": 1, "imgSrc": "https://mock/image/src.jpg"}]
         }
-        response = client.post("/v1/aiphotos/image2Image", json=data)
+        response = await client.post("/v1/aiphotos/image2Image", json=data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('mock image string', response.json()[0]['imgSrc'])
 

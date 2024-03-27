@@ -23,12 +23,12 @@ from .parser.parser import DocumentParser
 from .retriever_adapter import RetrieverAdapter
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
     import generate_qa_prompt, generate_prompt, generate_qa_enterprise
-from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
-    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
+from intel_extension_for_transformers.langchain_community.embeddings import HuggingFaceEmbeddings, \
+    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings  # pylint: disable=E0401, E0611
 from intel_extension_for_transformers.transformers.utils import CpuInfo
 from langchain_community.embeddings import GooglePalmEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from intel_extension_for_transformers.langchain.vectorstores import Chroma, Qdrant
+from intel_extension_for_transformers.langchain_community.vectorstores import Chroma, Qdrant  # pylint: disable=E0401, E0611
 import uuid
 from langchain_core.documents import Document
 import logging
@@ -39,14 +39,15 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-def document_transfer(data_collection):
+def document_transfer(data_collection, min_length):
     "Transfer the raw document into langchain supported format."
     documents = []
     for data, meta in data_collection:
-        doc_id = str(uuid.uuid4())
-        metadata = {"source": meta, "identify_id":doc_id}
-        doc = Document(page_content=data, metadata=metadata)
-        documents.append(doc)
+        if len(data) > min_length:
+            doc_id = str(uuid.uuid4())
+            metadata = {"source": meta, "identify_id":doc_id}
+            doc = Document(page_content=data, metadata=metadata)
+            documents.append(doc)
     return documents
 
 def document_append_id(documents):
@@ -84,6 +85,7 @@ class Agent_QA():
         self.mode = mode
         self.process = process
         self.retriever = None
+        self.min_chuck_size = min_chuck_size
         self.splitter = RecursiveCharacterTextSplitter(chunk_size= kwargs['child_size'] \
                     if 'child_size' in kwargs else 512)
         allowed_retrieval_type: ClassVar[Collection[str]] = (
@@ -162,7 +164,7 @@ class Agent_QA():
         data_collection = self.document_parser.load(input=self.input_path, **kwargs)
         logging.info("The parsing for the uploaded files is finished.")
 
-        langchain_documents = document_transfer(data_collection)
+        langchain_documents = document_transfer(data_collection, self.min_chuck_size)
         logging.info("The format of parsed documents is transferred.")
 
         if self.vector_database == "Chroma":
@@ -235,7 +237,7 @@ class Agent_QA():
         Create a new knowledge base based on the uploaded files.
         """
         data_collection = self.document_parser.load(input=input_path, **kwargs)
-        langchain_documents = document_transfer(data_collection)
+        langchain_documents = document_transfer(data_collection, self.min_chuck_size)
 
         if self.retrieval_type == 'default':
             knowledge_base = self.database.from_documents(documents=langchain_documents, \
@@ -261,7 +263,7 @@ class Agent_QA():
         "Append the knowledge instances into a given knowledge base."
 
         data_collection = self.document_parser.load(input=append_path, **kwargs)
-        langchain_documents = document_transfer(data_collection)
+        langchain_documents = document_transfer(data_collection, self.min_chuck_size)
 
         if self.retrieval_type == 'default':
             knowledge_base = self.database.from_documents(documents=langchain_documents, \

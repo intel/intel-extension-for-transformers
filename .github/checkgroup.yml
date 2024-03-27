@@ -11,7 +11,6 @@ subprojects:
     checks:
       - "format-scan (pylint)"
       - "format-scan (bandit)"
-      - "format-scan (clangformat)"
       - "format-scan (cloc)"
       - "format-scan (cpplint)"
 
@@ -20,15 +19,12 @@ subprojects:
       - intel_extension_for_transformers/transformers/**
       - requirements.txt
       - setup.py
-      - intel_extension_for_transformers/utils/**
-      - intel_extension_for_transformers/llm/evaluation/**
-      - intel_extension_for_transformers/llm/quantization/**
-      - intel_extension_for_transformers/llm/runtime/graph/**
-      - intel_extension_for_transformers/llm/operator/**
+      - intel_extension_for_transformers/transformers/llm/evaluation/**
+      - intel_extension_for_transformers/transformers/llm/quantization/**
+      - intel_extension_for_transformers/transformers/llm/operator/**
       - tests/**
       - .github/workflows/unit-test-optimize.yml
       - ".github/workflows/script/unitTest/run_unit_test_optimize.sh"
-      - "!intel_extension_for_transformers/llm/runtime/graph/*.md"
     checks:
       - "optimize-unit-test-baseline"
       - "optimize-unit-test-PR-test"
@@ -36,11 +32,8 @@ subprojects:
 
   - id: "Neural Speed Unit Test workflow"
     paths:
-      - intel_extension_for_transformers/llm/runtime/neural_speed/**
       - .github/workflows/unit-test-neuralspeed.yml
       - ".github/workflows/script/unitTest/run_unit_test_neuraspeed.sh"
-      - "!intel_extension_for_transformers/llm/runtime/neural_speed/docs/**"
-      - "!intel_extension_for_transformers/llm/runtime/neural_speed/*.md"
     checks:
       - "neural-speed-unit-test"
 
@@ -51,16 +44,14 @@ subprojects:
       - "intel_extension_for_transformers/neural_chat/**"
       - "requirements.txt"
       - "setup.py"
-      - "intel_extension_for_transformers/llm/finetuning/**"
-      - "intel_extension_for_transformers/llm/quantization/**"
-      - "intel_extension_for_transformers/llm/runtime/graph/**"
+      - "intel_extension_for_transformers/transformers/llm/finetuning/**"
+      - "intel_extension_for_transformers/transformers/llm/quantization/**"
       - "intel_extension_for_transformers/transformers/**"
       - "intel_extension_for_transformers/langchain/**"
       - "!intel_extension_for_transformers/neural_chat/docs/**"
       - "!intel_extension_for_transformers/neural_chat/examples/**"
       - "!intel_extension_for_transformers/neural_chat/assets/**"
       - "!intel_extension_for_transformers/neural_chat/README.md"
-      - "!intel_extension_for_transformers/llm/runtime/graph/*.md"
     checks:
       - "neuralchat-unit-test-baseline"
       - "neuralchat-unit-test-PR-test"
@@ -71,11 +62,11 @@ subprojects:
       - ".github/workflows/unit-test-engine.yml"
       - "requirements.txt"
       - "setup.py"
-      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
-      - "!intel_extension_for_transformers/llm/runtime/graph/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+      - intel_extension_for_transformers/transformers/**
+      - "intel_extension_for_transformers/transformers/runtime/**"
+      - "!intel_extension_for_transformers/transformers/runtime/kernels/**"
+      - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
+      - "!intel_extension_for_transformers/transformers/runtime/docs/**"
     checks:
       - "engine-unit-test-baseline"
       - "engine-unit-test-PR-test"
@@ -86,37 +77,23 @@ subprojects:
       - ".github/workflows/windows-test.yml"
       - "requirements.txt"
       - "setup.py"
-      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
-      - "intel_extension_for_transformers/llm/runtime/graph/**"
-      - "!intel_extension_for_transformers/llm/library/jblas/**"
-      - "!intel_extension_for_transformers/llm/runtime/graph/*.md"
-      - "!intel_extension_for_transformers/llm/runtime/graph/docs/**"
-      - "!intel_extension_for_transformers/llm/runtime/graph/scripts/**"
-      - "!intel_extension_for_transformers/llm/runtime/graph/tests/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
+      - "intel_extension_for_transformers/transformers/runtime/**"
+      - "intel_extension_for_transformers/transformers/llm/operator/**"
+      - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
+      - "!intel_extension_for_transformers/transformers/runtime/docs/**"
+      - "!intel_extension_for_transformers/transformers/runtime/test/**"
     checks:
       - "Windows-Binary-Test"
-
-  - id: "SparseLib Tests workflow"
-    paths:
-      - "intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
-      - ".github/workflows/sparse_lib_CI.yml"
-      - ".github/workflows/script/SparseLibCI"
-    checks:
-      - "sparselib"
 
   - id: "LLM Model Test workflow"
     paths:
       - ".github/workflows/llm-test.yml"
       - ".github/workflows/script/models/run_llm.sh"
-      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
-      - "!intel_extension_for_transformers/llm/runtime/graph/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+      - "intel_extension_for_transformers/transformers/runtime/**"
+      - "!intel_extension_for_transformers/transformers/runtime/kernels/**"
+      - "!intel_extension_for_transformers/transformers/runtime/test/**"
+      - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
+      - "!intel_extension_for_transformers/transformers/runtime/docs/**"
     checks:
       - "LLM-Workflow (gpt-j-6b, engine, latency, bf16,int8,fp8)"
       - "Generate-LLM-Report"
@@ -133,8 +110,8 @@ subprojects:
       - ".github/workflows/script/chatbot/**"
       - ".github/workflows/sample_data/**"
       - "intel_extension_for_transformers/neural_chat/**"
-      - "intel_extension_for_transformers/llm/finetuning/**"
-      - "intel_extension_for_transformers/llm/quantization/**"
+      - "intel_extension_for_transformers/transformers/llm/finetuning/**"
+      - "intel_extension_for_transformers/transformers/llm/quantization/**"
       - "intel_extension_for_transformers/transformers/**"
       - "workflows/chatbot/inference/**"
       - "workflows/chatbot/fine_tuning/**"

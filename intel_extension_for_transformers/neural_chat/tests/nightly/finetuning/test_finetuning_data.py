@@ -20,7 +20,7 @@ import unittest
 
 from transformers import AutoTokenizer
 from datasets import load_dataset, Dataset, DatasetDict
-import intel_extension_for_transformers.llm.finetuning.data_utils as data_utils
+import intel_extension_for_transformers.transformers.llm.finetuning.data_utils as data_utils
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
