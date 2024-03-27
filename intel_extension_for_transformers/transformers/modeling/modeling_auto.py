@@ -144,7 +144,7 @@ def build_woq_model(model, quantization_config):
     from neural_compressor.adaptor.torch_utils.util import set_module
 
     for n, m in model.named_modules():
-        if "lm_head" in n:
+        if "lm_head" in n or "output_layer" in n or "embed_out" in n:
             continue
         if isinstance(m, torch.nn.Linear):
             zp = (
@@ -367,7 +367,7 @@ class _BaseQBitsAutoModelClass:
 
         if not isinstance(config, PretrainedConfig):
             if model_hub == "modelscope":
-                import modelscope
+                import modelscope # pylint: disable=E0401
                 config = modelscope.AutoConfig.from_pretrained(pretrained_model_name_or_path,
                                             trust_remote_code=True)
             else:
@@ -376,16 +376,6 @@ class _BaseQBitsAutoModelClass:
                     return_unused_kwargs=True,
                     **kwargs,
 
-            )
-        if hasattr(config, "quantization_config"):
-            if config.quantization_config is None:
-                logger.warning("Quantization_config loading failed. If you want to load saved "
-                               "low bit model, please check your quantizate_config.json.")
-            else:
-                config, _ = AutoConfig.from_pretrained(
-                    pretrained_model_name_or_path,
-                    return_unused_kwargs=True,
-                    **kwargs,
             )
 
         quantization_config = kwargs.pop("quantization_config", None)
