@@ -6,3 +6,26 @@
 .. py:module:: intel_extension_for_transformers.transformers.modeling.llava_models.llava_arch
 
 
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.llava_models.llava_arch.unpad_image
+
+
+
+.. py:function:: unpad_image(tensor, original_size)
+
+   Unpads a PyTorch tensor of a padded and resized image.
+   Args:
+   tensor (torch.Tensor): The image tensor, assumed to be in CxHxW format.
+   original_size (tuple): The original size of the image (height, width).
+   Returns:
+   torch.Tensor: The unpadded image tensor.
+
+

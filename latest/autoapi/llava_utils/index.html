@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>llava_utils &mdash; Intel® Extension for Transformers 0.1.dev1+gf4bc228 documentation</title>
+  <title>llava_utils &mdash; Intel® Extension for Transformers 0.1.dev1+gfeff1ec documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
@@ -112,20 +112,90 @@
 <h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#llava_utils.safe_save_model_for_hf_trainer" title="llava_utils.safe_save_model_for_hf_trainer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">safe_save_model_for_hf_trainer</span></code></a>(trainer, output_dir)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#llava_utils.resize_and_pad_image" title="llava_utils.resize_and_pad_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resize_and_pad_image</span></code></a>(image, target_resolution)</p></td>
+<td><p>Resize and pad an image to a target resolution while maintaining aspect ratio.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#llava_utils.divide_to_patches" title="llava_utils.divide_to_patches"><code class="xref py py-obj docutils literal notranslate"><span class="pre">divide_to_patches</span></code></a>(image, patch_size)</p></td>
+<td><p>Divides an image into patches of a specified size.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#llava_utils.process_anyres_image" title="llava_utils.process_anyres_image"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_anyres_image</span></code></a>(image, processor, grid_pinpoints)</p></td>
+<td><p>Process an image with variable resolutions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#llava_utils.safe_save_model_for_hf_trainer" title="llava_utils.safe_save_model_for_hf_trainer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">safe_save_model_for_hf_trainer</span></code></a>(trainer, output_dir)</p></td>
 <td><p>Collects the state dict and dump to disk.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#llava_utils.smart_tokenizer_and_embedding_resize" title="llava_utils.smart_tokenizer_and_embedding_resize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">smart_tokenizer_and_embedding_resize</span></code></a>(...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#llava_utils.smart_tokenizer_and_embedding_resize" title="llava_utils.smart_tokenizer_and_embedding_resize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">smart_tokenizer_and_embedding_resize</span></code></a>(...)</p></td>
 <td><p>Resize tokenizer and embedding.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#llava_utils.preprocess" title="llava_utils.preprocess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preprocess</span></code></a>(→ Dict)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#llava_utils.preprocess" title="llava_utils.preprocess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preprocess</span></code></a>(→ Dict)</p></td>
 <td><p>Given a list of sources, each is a conversation list. This transform:</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#llava_utils.make_supervised_data_module" title="llava_utils.make_supervised_data_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_supervised_data_module</span></code></a>(→ Dict)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#llava_utils.make_supervised_data_module" title="llava_utils.make_supervised_data_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_supervised_data_module</span></code></a>(→ Dict)</p></td>
 <td><p>Make dataset and collator for supervised fine-tuning.</p></td>
 </tr>
 </tbody>
 </table>
+<dl class="py function">
+<dt class="sig sig-object py" id="llava_utils.resize_and_pad_image">
+<span class="sig-prename descclassname"><span class="pre">llava_utils.</span></span><span class="sig-name descname"><span class="pre">resize_and_pad_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_resolution</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/llava_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#llava_utils.resize_and_pad_image" title="Link to this definition"></a></dt>
+<dd><p>Resize and pad an image to a target resolution while maintaining aspect ratio.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>image</strong> (<em>PIL.Image.Image</em>) – The input image.</p></li>
+<li><p><strong>target_resolution</strong> (<em>tuple</em>) – The target resolution (width, height) of the image.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The resized and padded image.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>PIL.Image.Image</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="llava_utils.divide_to_patches">
+<span class="sig-prename descclassname"><span class="pre">llava_utils.</span></span><span class="sig-name descname"><span class="pre">divide_to_patches</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_size</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/llava_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#llava_utils.divide_to_patches" title="Link to this definition"></a></dt>
+<dd><p>Divides an image into patches of a specified size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>image</strong> (<em>PIL.Image.Image</em>) – The input image.</p></li>
+<li><p><strong>patch_size</strong> (<em>int</em>) – The size of each patch.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of PIL.Image.Image objects representing the patches.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="llava_utils.process_anyres_image">
+<span class="sig-prename descclassname"><span class="pre">llava_utils.</span></span><span class="sig-name descname"><span class="pre">process_anyres_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_pinpoints</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/llava_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#llava_utils.process_anyres_image" title="Link to this definition"></a></dt>
+<dd><p>Process an image with variable resolutions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>image</strong> (<em>PIL.Image.Image</em>) – The input image to be processed.</p></li>
+<li><p><strong>processor</strong> – The image processor object.</p></li>
+<li><p><strong>grid_pinpoints</strong> (<em>str</em>) – A string representation of a list of possible resolutions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tensor containing the processed image patches.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="llava_utils.safe_save_model_for_hf_trainer">
 <span class="sig-prename descclassname"><span class="pre">llava_utils.</span></span><span class="sig-name descname"><span class="pre">safe_save_model_for_hf_trainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.Trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/llava_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#llava_utils.safe_save_model_for_hf_trainer" title="Link to this definition"></a></dt>
@@ -198,7 +268,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f6d67cddf30> 
+   <jinja2.runtime.BlockReference object at 0x7f8f925f9120> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -25,11 +25,54 @@ Functions
 
 .. autoapisummary::
 
+   llava_utils.resize_and_pad_image
+   llava_utils.divide_to_patches
+   llava_utils.process_anyres_image
    llava_utils.safe_save_model_for_hf_trainer
    llava_utils.smart_tokenizer_and_embedding_resize
    llava_utils.preprocess
    llava_utils.make_supervised_data_module
 
+
+
+.. py:function:: resize_and_pad_image(image, target_resolution)
+
+   Resize and pad an image to a target resolution while maintaining aspect ratio.
+
+   :param image: The input image.
+   :type image: PIL.Image.Image
+   :param target_resolution: The target resolution (width, height) of the image.
+   :type target_resolution: tuple
+
+   :returns: The resized and padded image.
+   :rtype: PIL.Image.Image
+
+
+.. py:function:: divide_to_patches(image, patch_size)
+
+   Divides an image into patches of a specified size.
+
+   :param image: The input image.
+   :type image: PIL.Image.Image
+   :param patch_size: The size of each patch.
+   :type patch_size: int
+
+   :returns: A list of PIL.Image.Image objects representing the patches.
+   :rtype: list
+
+
+.. py:function:: process_anyres_image(image, processor, grid_pinpoints)
+
+   Process an image with variable resolutions.
+
+   :param image: The input image to be processed.
+   :type image: PIL.Image.Image
+   :param processor: The image processor object.
+   :param grid_pinpoints: A string representation of a list of possible resolutions.
+   :type grid_pinpoints: str
+
+   :returns: A tensor containing the processed image patches.
+   :rtype: torch.Tensor
 
 
 .. py:function:: safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: str)

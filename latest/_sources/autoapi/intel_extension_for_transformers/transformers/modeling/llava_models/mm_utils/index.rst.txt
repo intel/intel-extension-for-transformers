@@ -1,0 +1,53 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.modeling.llava_models.mm_utils`
+======================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.llava_models.mm_utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.llava_models.mm_utils.select_best_resolution
+   intel_extension_for_transformers.transformers.modeling.llava_models.mm_utils.get_anyres_image_grid_shape
+
+
+
+.. py:function:: select_best_resolution(original_size, possible_resolutions)
+
+   Selects the best resolution from a list of possible resolutions based on the original size.
+
+   :param original_size: The original size of the image in the format (width, height).
+   :type original_size: tuple
+   :param possible_resolutions: A list of possible resolutions in the format [(width1, height1),
+   :type possible_resolutions: list
+   :param (width2:
+   :param height2):
+   :param ...].:
+
+   :returns: The best fit resolution in the format (width, height).
+   :rtype: tuple
+
+
+.. py:function:: get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size)
+
+   Calculate the shape of the image patch grid after the preprocessing for images of any resolution.
+
+   :param image_size: The size of the input image in the format (width, height).
+   :type image_size: tuple
+   :param grid_pinpoints: A string representation of a list of possible resolutions.
+   :type grid_pinpoints: str
+   :param patch_size: The size of each image patch.
+   :type patch_size: int
+
+   :returns: The shape of the image patch grid in the format (width, height).
+   :rtype: tuple
+
+
