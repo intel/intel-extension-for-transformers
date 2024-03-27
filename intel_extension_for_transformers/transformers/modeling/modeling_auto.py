@@ -144,7 +144,7 @@ def build_woq_model(model, quantization_config):
     from neural_compressor.adaptor.torch_utils.util import set_module
 
     for n, m in model.named_modules():
-        if "lm_head" in n:
+        if "lm_head" in n or "output_layer" in n or "embed_out" in n:
             continue
         if isinstance(m, torch.nn.Linear):
             zp = (
