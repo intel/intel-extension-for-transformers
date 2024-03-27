@@ -1,0 +1,17 @@
+diff --git a/requirements-gpu.txt b/requirements-gpu.txt
+index 9dcce32ae6d..935ed7efad5 100644
+--- a/requirements-gpu.txt
++++ b/requirements-gpu.txt
+@@ -2,10 +2,10 @@
+ accelerate
+ cmake
+ datasets
+-intel_extension_for_pytorch==2.0.110+xpu
++intel_extension_for_pytorch==2.1.10+xpu
+ ninja
+ py-cpuinfo
+ setuptools>=65
+ setuptools_scm[toml]>=6.2
+ texttable
+-torch==2.0.1a0
++torch==2.1.0a0
