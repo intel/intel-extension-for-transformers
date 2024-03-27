@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`neural_ser`
+====================
+
+.. py:module:: neural_ser
+
+
