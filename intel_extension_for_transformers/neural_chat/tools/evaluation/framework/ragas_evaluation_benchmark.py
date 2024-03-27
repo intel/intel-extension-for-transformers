@@ -290,6 +290,7 @@ def main():
                 "context_recall_average": context_recall_average,
                 "context_precision_average": context_precision_average,
             }
+        print(data)
         with jsonlines.open(file_json_path,"a") as file_json:
                 file_json.write(data)
 
