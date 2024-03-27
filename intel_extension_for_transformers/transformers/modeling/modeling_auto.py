@@ -377,16 +377,6 @@ class _BaseQBitsAutoModelClass:
                     **kwargs,
 
             )
-        if hasattr(config, "quantization_config"):
-            if config.quantization_config is None:
-                logger.warning("Quantization_config loading failed. If you want to load saved "
-                               "low bit model, please check your quantizate_config.json.")
-            else:
-                config, _ = AutoConfig.from_pretrained(
-                    pretrained_model_name_or_path,
-                    return_unused_kwargs=True,
-                    **kwargs,
-            )
 
         quantization_config = kwargs.pop("quantization_config", None)
         if kwargs.get("use_llm_runtime", None) is not None:
