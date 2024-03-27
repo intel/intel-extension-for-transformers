@@ -3,3 +3,4 @@ torch >= 1.10
 transformers
 wandb
 accelerate
+schema
