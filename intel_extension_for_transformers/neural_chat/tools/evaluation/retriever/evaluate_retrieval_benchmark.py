@@ -369,6 +369,7 @@ def main():
                 "MRR": MRR,
                 "Hit": Hit,
             }
+        print(data)
         with jsonlines.open(file_json_path,"a") as file_json:
                 file_json.write(data)
 
