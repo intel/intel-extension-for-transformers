@@ -21,6 +21,7 @@ from typing import List
 from .context_utils import load_unstructured_data, load_structured_data, get_chuck_data, clean_filename
 from .html_parser import load_html_data
 import logging
+import json
 
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
