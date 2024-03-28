@@ -114,6 +114,7 @@ parser.add_argument(
     default="int8",
     choices=[
         "int8",
+        "int4",
         "int4_clip",
         "int4_fullrange",
         "fp4_e2m1_bnb",
