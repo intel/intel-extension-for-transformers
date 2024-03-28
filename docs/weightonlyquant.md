@@ -17,7 +17,7 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 | Support Device |  Rtn  |  Awq  |  Teq |  GPTQ  | AutoRound |
 |:--------------:|:----------:|:----------:|:----------:|:----:|:----:|
 |     Intel CPU        |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |
-|     Intel GPU        |  &#10004;  |  stay tuned  |  stay tuned  |  &#10004  |  &#10004  |
+|     Intel GPU        |  &#10004;  |  stay tuned  |  stay tuned  |  &#10004;  |  &#10004;  |
 
 **RTN**[[1\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.md#1)(&#9733;&#9733;&#9733;):   Rounding to Nearest (RTN) is an intuitively simple method that rounds values to the nearest integer. It boasts simplicity, requiring no additional datasets, and offers fast quantization. Besides, it could be easily applied in other datatype like NF4(non-uniform). Typically, it performs well on configurations such as W4G32 or W8, but worse than advanced algorithms at lower precision level.
 
