@@ -281,6 +281,8 @@ class _BaseQBitsAutoModelClass:
         "qwen",
         "phi",
         "whisper",
+        "qwen2",
+        "gemma",
     ]
 
     model_type_list_for_gptq = [
@@ -361,12 +363,19 @@ class _BaseQBitsAutoModelClass:
         )
 
         config = kwargs.pop("config", None)
+        model_hub = kwargs.pop("model_hub", "huggingface")
 
         if not isinstance(config, PretrainedConfig):
-            config, _ = AutoConfig.from_pretrained(
-                pretrained_model_name_or_path,
-                return_unused_kwargs=True,
-                **kwargs,
+            if model_hub == "modelscope":
+                import modelscope # pylint: disable=E0401
+                config = modelscope.AutoConfig.from_pretrained(pretrained_model_name_or_path,
+                                            trust_remote_code=True)
+            else:
+                config, _ = AutoConfig.from_pretrained(
+                    pretrained_model_name_or_path,
+                    return_unused_kwargs=True,
+                    **kwargs,
+
             )
 
         quantization_config = kwargs.pop("quantization_config", None)
@@ -541,7 +550,7 @@ class _BaseQBitsAutoModelClass:
                 from neural_speed import Model
 
                 model = Model()
-                model.init(
+                model.init( # pylint: disable=E1123
                     pretrained_model_name_or_path,
                     weight_dtype=quantization_config.weight_dtype,
                     alg=quantization_config.scheme,
@@ -557,6 +566,7 @@ class _BaseQBitsAutoModelClass:
                     use_gptq=quantization_config.quant_method.value == "gptq"
                     or quantization_config.quant_method.value == "autoround",
                     use_awq=quantization_config.quant_method.value == "awq",
+                    model_hub=model_hub,
                 )
                 model.quantization_config = quantization_config
                 return model
