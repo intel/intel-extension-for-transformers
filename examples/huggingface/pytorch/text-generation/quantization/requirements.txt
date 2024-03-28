@@ -7,6 +7,7 @@ sentencepiece != 0.1.92
 torch==2.2.0+cpu
 transformers
 intel_extension_for_pytorch==2.2.0
+neural-speed
 git+https://github.com/huggingface/optimum.git@e38d40ad220a180213f99b1d93d0407a826c326d
 optimum-intel
 bitsandbytes  #baichuan

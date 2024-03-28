@@ -10,6 +10,7 @@ transformers >= 4.35.0
 tiktoken #code_gen
 neural-compressor
 intel_extension_for_pytorch==2.2.0
+neural-speed
 optimum-intel
 auto-round
 git+https://github.com/bigcode-project/bigcode-evaluation-harness@00967d12093ef614de7bdad0772aed8e4118f1fd
