@@ -248,7 +248,7 @@ def main():
     ground_truth_file = args.ground_truth_file
     input_path = args.input_path
     use_openai_key = args.use_openai_key
-    
+
     vector_database = args.vector_database
     embedding_model = args.embedding_model
     retrieval_type = args.retrieval_type
@@ -297,7 +297,7 @@ def main():
     answer_relevancy_average,faithfulness_average,context_recall_average,context_precision_average=ragas(
         answer_file,
         ground_truth_file,
-        llm_model, 
+        llm_model,
         embedding_model,
         use_openai_key)
 
