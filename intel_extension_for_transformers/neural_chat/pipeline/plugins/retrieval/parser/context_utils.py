@@ -265,7 +265,7 @@ def get_tables_result(pdf_path, table_summary_mode, table_summary_model_name_or_
     from unstructured.documents.elements import FigureCaption
     from intel_extension_for_transformers.neural_chat.models.model_utils import predict
     from intel_extension_for_transformers.neural_chat.prompts.prompt import TABLESUMMARY_PROMPT
- 
+
     tables_result = []
     raw_pdf_elements = partition_pdf(
         filename=pdf_path,
@@ -318,8 +318,8 @@ def get_tables_result(pdf_path, table_summary_mode, table_summary_model_name_or_
             text = f'|Table: [Summary: {table_summary}], [Content: {content}]|'
         tables_result.append([text, pdf_path])
     return tables_result
- 
- 
+
+
 def get_relation(table_coords, caption_coords, table_page_number, caption_page_number, threshold=100):
     """Get the relation of a pair of table and caption"""
     same_page = table_page_number == caption_page_number
