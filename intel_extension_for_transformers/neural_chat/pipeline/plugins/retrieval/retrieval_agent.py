@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import os
-from typing import Dict, List, Any, ClassVar, Collection
+from typing import List, ClassVar, Collection
 from .detector.intent_detection import IntentDetector
 from .detector.query_explainer import QueryPolisher
 from .parser.parser import DocumentParser
@@ -158,7 +158,6 @@ class Agent_QA():
             elif precision == "fp32":
                 self.embeddings.client = ipex.optimize(
                     self.embeddings.client.eval(), dtype=torch.float32, inplace=True)
-
         self.document_parser = DocumentParser(max_chuck_size=max_chuck_size, min_chuck_size = min_chuck_size, \
                                               process=self.process)
         data_collection = self.document_parser.load(input=self.input_path, **kwargs)
@@ -258,6 +257,10 @@ class Agent_QA():
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, docs=self.docs, **kwargs)
         logging.info("The retriever is successfully built.")
 
+        # return link contents
+        if isinstance(input_path, List):
+            return data_collection
+
 
     def append_localdb(self, append_path, **kwargs):
         "Append the knowledge instances into a given knowledge base."
@@ -284,6 +287,10 @@ class Agent_QA():
             self.docs = self.docs.extend(new_docs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, docs=self.docs, **kwargs)
         logging.info("The retriever is successfully built.")
+
+        # return link contents
+        if isinstance(append_path, List):
+            return data_collection
 
 
 
