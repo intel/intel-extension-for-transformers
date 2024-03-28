@@ -121,16 +121,6 @@ def check_path(path: str):
             return False
 
 
-plugin_args = {
-    'input_path': '/home/sdp/letong/itrex_askgm_stable/intel_extension_for_transformers/neural_chat/examples/deployment/rag/retrieval_docs/default/upload_dir',
-    'persist_directory': '/home/sdp/letong/itrex_askgm_stable/intel_extension_for_transformers/neural_chat/examples/deployment/rag/retrieval_docs/default/persist_dir',
-    'response_template': 'We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com.',
-    'append': True,
-    'search_type': 'similarity_score_threshold',
-    'search_kwargs': {'k': 2, 'score_threshold': 0.7}
-}
-
-
 def remove_folder_with_ignore(folder_path: str, except_patterns=None):
     """
     Remove the specific folder, and ignore some files/folders
@@ -660,11 +650,11 @@ async def delete_single_file(request: Request):
 
 
 @router.post("/v1/askdoc/get_file_structure")
-async def delete_single_file(request: Request):
+async def rag_get_file_structure(request: Request):
     params = await request.json()
     knowledge_base_id = params['knowledge_base_id']
     user_id = request.client.host
-    logger.info(f'[askdoc - append] user id is: {user_id}')
+    logger.info(f'[askdoc - get_file_structure] user id is: {user_id}')
 
     path_prefix = get_path_prefix(knowledge_base_id, user_id)
     upload_dir = path_prefix + '/upload_dir'
