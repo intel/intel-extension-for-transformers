@@ -147,13 +147,13 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 > Note: For LLM runtime model loading usage, please refer to [neural_speed readme](https://github.com/intel/neural-speed/blob/main/README.md#quick-start-transformer-like-usage)
 
 ## Examples For Intel GPU
-Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  
-We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.  
+Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC, ARC and MTL) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "main".  
+We support experimental woq inference on intel GPU(PVC, ARC and MTL) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.  
 Here are the example codes.
 
 #### Prepare Dependency Packages
 1. Install Oneapi Package  
-Weight-only quantization ops only exist in "dev/QLLM" branch on the intel-extension-for-pytorch. It needs to be compiled with the Oneapi DPCPP compiler. Please follow [the link](https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html) to install the OneAPI to "/opt/intel folder".
+Weight-only quantization ops only exist in "main" branch on the intel-extension-for-pytorch. It needs to be compiled with the Oneapi DPCPP compiler. Please follow [the link](https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html) to install the OneAPI to "/opt/intel folder".
 
 2. Build and Install PyTorch and Intel-extension-for-pytorch
 ```python
