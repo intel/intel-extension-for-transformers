@@ -11,6 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
+* [2024/03] Achieved a 1.8x performance improvement in GPT-J inference on the 5th Gen Xeon MLPerf v4.0 submission compared to v3.1. [News](https://www.intel.com/content/www/us/en/newsroom/news/new-gaudi-2-xeon-performance-ai-inference.html#gs.71ti1m), [Results](https://mlcommons.org/2024/03/mlperf-inference-v4/). 
 * [2024/03] Supported LLM from [ModelScope](https://www.modelscope.cn/models) 
 * [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (e.g., PVC) and Intel Arc A-Series (e.g., ARC). Check out the [examples](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [scripts](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py).
 * [2024/01] Demonstrated **Intel Hybrid Copilot** in **CES 2024 Great Minds** Session "[Bringing the Limitless Potential of AI Everywhere](https://youtu.be/70J3uO3eLZA?t=1348)".
