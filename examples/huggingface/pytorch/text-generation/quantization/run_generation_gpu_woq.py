@@ -52,8 +52,8 @@ parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, 
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--bits", type=int, default=4, choices=[4])
 parser.add_argument("--woq", action="store_true")
-parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'GPTQ'], 
-                    help="Weight-only parameter.")
+parser.add_argument("--woq_algo", default="Rtn", choices=['Rtn', 'GPTQ'], 
+                    help="Weight-only algorithm.")
 parser.add_argument("--weight_dtype", type=str, default="int4_fullrange",
                     choices=["int4_fullrange"])
 parser.add_argument("--group_size", type=int, default=32)
@@ -94,8 +94,6 @@ parser.add_argument(
     help="Use determined group to do quantization",
 )
 parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
-# ============BitsAndBytes configs==============
-parser.add_argument("--bitsandbytes", action="store_true")
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
 # =======================================
