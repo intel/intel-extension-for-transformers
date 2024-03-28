@@ -122,11 +122,11 @@ def check_path(path: str):
 
 
 plugin_args = {
-    'input_path': '/home/sdp/letong/itrex_askgm_stable/intel_extension_for_transformers/neural_chat/examples/deployment/rag/retrieval_docs/default/upload_dir', 
-    'persist_directory': '/home/sdp/letong/itrex_askgm_stable/intel_extension_for_transformers/neural_chat/examples/deployment/rag/retrieval_docs/default/persist_dir', 
-    'response_template': 'We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com.', 
-    'append': True, 
-    'search_type': 'similarity_score_threshold', 
+    'input_path': '/home/sdp/letong/itrex_askgm_stable/intel_extension_for_transformers/neural_chat/examples/deployment/rag/retrieval_docs/default/upload_dir',
+    'persist_directory': '/home/sdp/letong/itrex_askgm_stable/intel_extension_for_transformers/neural_chat/examples/deployment/rag/retrieval_docs/default/persist_dir',
+    'response_template': 'We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com.',
+    'append': True,
+    'search_type': 'similarity_score_threshold',
     'search_kwargs': {'k': 2, 'score_threshold': 0.7}
 }
 
@@ -134,7 +134,7 @@ plugin_args = {
 def remove_folder_with_ignore(folder_path: str, except_patterns=None):
     """
     Remove the specific folder, and ignore some files/folders
-    
+
     :param folder_path: file path to delete
     :param except_patterns: files/folder name to ignore
     """
@@ -180,7 +180,7 @@ def get_file_structure(root_path: str, parent_path: str="") -> List[Dict[str, Un
         if any(pattern in file_path for pattern in EXCEPT_PATTERNS):
             continue
         p = Path(file_path)
-        # appen file into result
+        # append file into result
         if p.is_file():
             file_dict = {
                 "name": path,
@@ -199,7 +199,7 @@ def get_file_structure(root_path: str, parent_path: str="") -> List[Dict[str, Un
                 "parent": ""
             }
             result.append(folder_dict)
-    
+
     return result
 
 
