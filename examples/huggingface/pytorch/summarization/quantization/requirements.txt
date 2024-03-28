@@ -7,3 +7,4 @@ py7zr
 torch==2.2.0
 transformers
 protobuf
+schema

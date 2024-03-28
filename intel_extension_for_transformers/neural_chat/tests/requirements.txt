@@ -40,7 +40,7 @@ langid
 librosa
 markdown
 neural-compressor
-neural_speed
+neural_speed==1.0a0
 num2words
 numba
 numpy==1.23.5

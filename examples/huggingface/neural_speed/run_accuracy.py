@@ -31,6 +31,7 @@ if __name__ == "__main__":
         results = evaluate(
             model="hf-causal",
             model_args=model_args,
+            batch_size=args.batch_size,
             tasks=[f"{args.tasks}"],
             model_format=f"{args.model_format}"
         )
