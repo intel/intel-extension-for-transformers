@@ -39,8 +39,8 @@ def get_gpu_family():
         return 'max'
     if 'Arc(TM)' in name:
         return 'arc'
-    assert False, "Unsupported GPU device: {}".format(name)
 
+    return 'mtl'
 
 def check_env_flag(name: str, default: bool = False) -> bool:
     if default:  # if a flag meant to be true if not set / mal-formatted

@@ -106,9 +106,11 @@ user_model = None
 # tokenizer
 if config.model_type == "llama":
    from transformers import LlamaTokenizer
-   tokenizer = LlamaTokenizer.from_pretrained(args.model)
+   #tokenizer = LlamaTokenizer.from_pretrained(args.model)
+   tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", trust_remote_code=True, token="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")
 else:
-   tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+   #tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+   tokenizer = AutoTokenizer.from_pretrained("/home/gta/Qwen-7B-Chat", trust_remote_code=True, token="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")
 
 quantization_config = None
 if args.woq:
