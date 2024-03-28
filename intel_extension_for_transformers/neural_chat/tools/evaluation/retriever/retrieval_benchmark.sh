@@ -1,17 +1,3 @@
-# Copyright (c) 2024 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 set -x
 
 function main {
@@ -24,13 +10,11 @@ function main {
 # init params
 function init_params {
   retrieval_type='default'
-  polish=False
   search_type="similarity"
   k=1
   fetch_k=5
   score_threshold=0.3
   top_n=1
-  enable_rerank=False
 
   for var in "$@"
   do
@@ -86,6 +70,17 @@ function init_params {
 # run_benchmark
 function run_benchmark {
 
+    if [[ ${polish} == True ]]; then
+        polish="--polish"
+    else
+        polish=""
+    fi
+    if [[ ${enable_rerank} == True ]]; then
+        enable_rerank="--enable_rerank"
+    else
+         enable_rerank=""
+    fi
+
     python -u ./evaluate_retrieval_benchmark.py \
         --index_file_jsonl_path ${index_file_jsonl_path} \
         --query_file_jsonl_path ${query_file_jsonl_path} \
@@ -94,13 +89,13 @@ function run_benchmark {
         --llm_model ${llm_model} \
         --reranker_model ${reranker_model} \
         --retrieval_type ${retrieval_type} \
-        --polish ${polish} \
+        ${polish} \
         --search_type ${search_type} \
         --k ${k} \
         --fetch_k ${fetch_k} \
         --score_threshold ${score_threshold} \
         --top_n ${top_n} \
-        --enable_rerank ${enable_rerank} 
+        ${enable_rerank} \
 
 }
 
