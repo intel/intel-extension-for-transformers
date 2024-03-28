@@ -118,7 +118,7 @@ class UnitTest(unittest.TestCase):
             json={**sample_link_list, "knowledge_base_id": gaudi2_kb_id},
         )
         assert response.status_code == 200
-        assert "Succeed" in response.json()
+        assert response.json()['status'] == True
 
     async def test_append_existing_kb(self):
         # create oneapi knowledge base
@@ -133,7 +133,7 @@ class UnitTest(unittest.TestCase):
         with open("./gaudi2.txt", "rb") as file:
             response = client.post(
                 "/v1/askdoc/append",
-                files={"file": ("./gaudi2.txt", file, "multipart/form-data")},
+                files={"files": ("./gaudi2.txt", file, "multipart/form-data")},
                 data={"knowledge_base_id": oneapi_kb_id},
             )
         assert response.status_code == 200
@@ -151,7 +151,6 @@ class UnitTest(unittest.TestCase):
         gaudi2_kb_id = response.json()["knowledge_base_id"]
         query_params = {
             "query": "How about the benchmark test of Habana Gaudi2?",
-            "translated": "How about the benchmark test of Habana Gaudi2?",
             "knowledge_base_id": gaudi2_kb_id,
             "stream": False,
             "max_new_tokens": 64,
@@ -172,7 +171,6 @@ class UnitTest(unittest.TestCase):
         gaudi2_kb_id = response.json()["knowledge_base_id"]
         query_params = {
             "query": "How about the benchmark test of Habana Gaudi2?",
-            "translated": "How about the benchmark test of Habana Gaudi2?",
             "knowledge_base_id": gaudi2_kb_id,
             "stream": True,
             "max_new_tokens": 64,

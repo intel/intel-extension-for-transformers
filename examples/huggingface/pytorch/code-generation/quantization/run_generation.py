@@ -24,6 +24,7 @@ from intel_extension_for_transformers.transformers import (
 from intel_extension_for_transformers.transformers import (
     AutoModelForCausalLM,
 )
+from intel_extension_for_transformers.transformers.utils import str2bool
 
 parser = argparse.ArgumentParser()
 
@@ -63,6 +64,27 @@ parser.add_argument(
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
+parser.add_argument(
+    "--calib_padding", action="store_true", help="Calibration dataset do padding."
+)
+parser.add_argument(
+    "--calib_shuffle",
+    default=True,
+    type=str2bool,
+    help="Calibration dataset do shuffle.",
+)
+parser.add_argument(
+    "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
+)
+parser.add_argument(
+    "--calib_len",
+    default=512,
+    type=int,
+    help="Calibration dataset max or padding max length.",
+)
+parser.add_argument(
+    "--recipes", type=str, help="A dictionary as a string, recipes for smoothquant."
+)
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
@@ -109,6 +131,8 @@ parser.add_argument(
 )
 parser.add_argument("--group_size", type=int, default=32)
 parser.add_argument("--scheme", default="sym")
+parser.add_argument("--load_in_4bit", action="store_true")
+parser.add_argument("--load_in_8bit", action="store_true")
 parser.add_argument(
     "--layer_wise",
     action="store_true",
@@ -401,6 +425,22 @@ elif not args.int8 and not args.int8_bf16_mixed:
         use_neural_speed=False,
     )
 
+# save model
+if args.output_dir is not None:
+    tokenizer.save_pretrained(args.output_dir)
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision or args.woq:
+        # user_model will be changed.
+        user_model.save_pretrained(args.output_dir)
+        # loading saved woq model
+        user_model = AutoModelForCausalLM.from_pretrained(
+            args.output_dir, 
+            trust_remote_code=args.trust_remote_code,
+            use_neural_speed=args.use_neural_speed
+            )
+
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
@@ -528,12 +568,3 @@ if args.accuracy:
         args=args,
     )
     print(results)
-
-# save model
-if args.output_dir is not None:
-    tokenizer.save_pretrained(args.output_dir)
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
-        user_model.save_pretrained(args.output_dir)

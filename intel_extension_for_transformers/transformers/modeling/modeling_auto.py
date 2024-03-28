@@ -67,11 +67,18 @@ from ..llm.quantization.utils import (
     convert_to_quantized_model,
     replace_linear,
 )
+from ...tools.utils import get_gpu_family, is_ipex_available
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from transformers.configuration_utils import PretrainedConfig
 from transformers import AutoConfig
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 from typing import Union
+
+if is_ipex_available() and get_gpu_family() != "no_gpu":
+    # pylint: disable=E0401
+    from intel_extension_for_pytorch.nn.utils._quantize_convert import (
+        WeightOnlyQuantizedLinear,
+    )
 
 torch = LazyImport("torch")
 
@@ -117,9 +124,14 @@ def recover_export_model(model, current_key_name=None):
                 use_optimum_format=True,
             )
 
+            # Setting g_idx is invalid when use_optimum_format is True, so set it again when g_idx is not None.
+            # https://github.com/intel/neural-compressor/blob/v2.5.dev2/neural_compressor/adaptor/torch_utils/
+            # model_wrapper.py#L343
             model._modules[name].pack(
                 int_weight, scales, zeros, module.bias, g_idx=g_idx
             )
+            if g_idx is not None:
+                model._modules[name].g_idx = g_idx
 
         if len(list(module.children())) > 0:  # pylint: disable=E1101
             _ = recover_export_model(module, current_key_name)
@@ -132,7 +144,7 @@ def build_woq_model(model, quantization_config):
     from neural_compressor.adaptor.torch_utils.util import set_module
 
     for n, m in model.named_modules():
-        if "lm_head" in n:
+        if "lm_head" in n or "output_layer" in n or "embed_out" in n:
             continue
         if isinstance(m, torch.nn.Linear):
             zp = (
@@ -165,20 +177,27 @@ def build_woq_model(model, quantization_config):
 
 def convert_model_to_public(model):
     # reorder weight and scales if they have been transposed
-    if model.quantization_config.device == "xpu":
-        # pylint: disable=E0401
-        from intel_extension_for_pytorch.nn.utils._quantize_convert import (
-            WeightOnlyQuantizedLinear,
-        )
-
+    if model.device == "xpu":
         for name, module in model.named_modules():
             if isinstance(module, WeightOnlyQuantizedLinear):
                 if module.weight_transposed:
                     module.qweight.data = module.qweight.t_().contiguous()
                     module.scales.data = module.scales.t_().contiguous()
                     module.weight_transposed = False
-    else:
+    elif model.quantization_config.weight_dtype not in [
+        "fp8_e5m2",
+        "fp8_e4m3",
+        "nf4",
+        "fp4",
+        "int4_fullrange",
+    ]:
         model = recover_export_model(model)
+
+
+def make_contiguous(model):
+    for param in model.parameters():
+        if param.data.ndimension() > 1:
+            param.data = param.data.contiguous()
 
 
 def save_low_bit(
@@ -195,17 +214,11 @@ def save_low_bit(
         )
         return
 
-    if self.quantization_config.weight_dtype not in [
-        "fp8_e5m2",
-        "fp8_e4m3",
-        "nf4",
-        "fp4",
-        "int4_fullrange",
-    ]:
-        convert_model_to_public(self)
+    convert_model_to_public(self)
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
     del self.save_pretrained
+    make_contiguous(self)
     self.save_pretrained(
         save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
     )
@@ -268,6 +281,8 @@ class _BaseQBitsAutoModelClass:
         "qwen",
         "phi",
         "whisper",
+        "qwen2",
+        "gemma",
     ]
 
     model_type_list_for_gptq = [
@@ -348,12 +363,19 @@ class _BaseQBitsAutoModelClass:
         )
 
         config = kwargs.pop("config", None)
+        model_hub = kwargs.pop("model_hub", "huggingface")
 
         if not isinstance(config, PretrainedConfig):
-            config, _ = AutoConfig.from_pretrained(
-                pretrained_model_name_or_path,
-                return_unused_kwargs=True,
-                **kwargs,
+            if model_hub == "modelscope":
+                import modelscope # pylint: disable=E0401
+                config = modelscope.AutoConfig.from_pretrained(pretrained_model_name_or_path,
+                                            trust_remote_code=True)
+            else:
+                config, _ = AutoConfig.from_pretrained(
+                    pretrained_model_name_or_path,
+                    return_unused_kwargs=True,
+                    **kwargs,
+
             )
 
         quantization_config = kwargs.pop("quantization_config", None)
@@ -372,8 +394,10 @@ class _BaseQBitsAutoModelClass:
                 exit(0)
 
             if config.model_type in cls.model_type_list and not use_xpu:
-                if isinstance(quantization_config,
-                              GPTQConfig) and config.model_type not in cls.model_type_list_for_gptq:
+                if (
+                    isinstance(quantization_config, GPTQConfig)
+                    and config.model_type not in cls.model_type_list_for_gptq
+                ):
                     use_neural_speed = False
                 else:
                     use_neural_speed = True
@@ -391,11 +415,6 @@ class _BaseQBitsAutoModelClass:
                     "quantization_config: {}".format(config.quantization_config)
                 )
                 try:
-                    kwargs["device_map"] = (
-                        config.quantization_config["device"]
-                        if "device" in config.quantization_config.keys()
-                        else "auto"
-                    )
                     model = cls.load_low_bit(
                         pretrained_model_name_or_path,
                         *model_args,
@@ -418,7 +437,6 @@ class _BaseQBitsAutoModelClass:
 
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
-
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
@@ -532,7 +550,7 @@ class _BaseQBitsAutoModelClass:
                 from neural_speed import Model
 
                 model = Model()
-                model.init(
+                model.init( # pylint: disable=E1123
                     pretrained_model_name_or_path,
                     weight_dtype=quantization_config.weight_dtype,
                     alg=quantization_config.scheme,
@@ -548,6 +566,7 @@ class _BaseQBitsAutoModelClass:
                     use_gptq=quantization_config.quant_method.value == "gptq"
                     or quantization_config.quant_method.value == "autoround",
                     use_awq=quantization_config.quant_method.value == "awq",
+                    model_hub=model_hub,
                 )
                 model.quantization_config = quantization_config
                 return model
@@ -598,7 +617,6 @@ class _BaseQBitsAutoModelClass:
                     model.config.update({"low_cpu_mem_usage": True})
                 model.eval()
 
-                quantization_config.update(**{"device": "cpu"})
                 if use_xpu:
                     import intel_extension_for_pytorch
 
@@ -619,7 +637,7 @@ class _BaseQBitsAutoModelClass:
                 model = convert_to_quantized_model(
                     model, quantization_config, device=device_map
                 )
-                quantization_config.tokenizer = None
+                quantization_config.remove_redundant_parameters()
                 model.config.quantization_config = quantization_config
 
             # add quantization_config and save_low_bit to pretrained model dynamically

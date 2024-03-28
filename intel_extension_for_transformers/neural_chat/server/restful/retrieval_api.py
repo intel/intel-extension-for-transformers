@@ -32,7 +32,7 @@ from ...config import GenerationConfig
 from ...cli.log import logger
 from ...server.restful.request import RetrievalRequest, FeedbackRequest
 from ...server.restful.response import RetrievalResponse
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...plugins import plugins
 from ...pipeline.plugins.retrieval.parser.context_utils import clean_filename
@@ -58,7 +58,8 @@ def get_current_beijing_time():
 def language_detect(text: str):
     url = "https://translation.googleapis.com/language/translate/v2/detect"
     try:
-        api_key = os.getenv("GOOGLE_API_KEY", "AIzaSyD4m9izGcZnv55l27ZvlymdmNsGK7ri_Gg")
+        api_key = os.getenv("GOOGLE_API_KEY")
+        logger.info(f"[ language_detect ] GOOGLE_API_KEY: {api_key}")
     except Exception as e:
         logger.info(f"No GOOGLE_API_KEY found. {e}")
     params = {
@@ -78,7 +79,8 @@ def language_detect(text: str):
 
 def language_translate(text: str, target: str='en'):
     url = "https://translation.googleapis.com/language/translate/v2"
-    api_key = os.getenv("GOOGLE_API_KEY", "AIzaSyD4m9izGcZnv55l27ZvlymdmNsGK7ri_Gg")
+    api_key = os.getenv("GOOGLE_API_KEY")
+    logger.info(f"[ language_translate ] GOOGLE_API_KEY: {api_key}")
     params = {
         'key': api_key,
         'q': text,

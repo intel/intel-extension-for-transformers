@@ -73,7 +73,7 @@ class M(torch.nn.Module):
         return self.linear(x)
 
 
-@unittest.skipIf(not _ipex_available or gpu_name == "no_gpu",
+@unittest.skipIf(not is_ipex_available() or gpu_name == "no_gpu",
     "There is no Intel GPU in this machine, skip this test!")
 class TestArcWeightOnly(unittest.TestCase):
 

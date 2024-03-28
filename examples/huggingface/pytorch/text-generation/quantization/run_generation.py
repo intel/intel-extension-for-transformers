@@ -423,8 +423,24 @@ elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
             args.model,
             trust_remote_code=args.trust_remote_code,
             _commit_hash=args._commit_hash,
+            use_neural_speed=args.use_neural_speed,
         )
 
+# save model
+if args.output_dir is not None:
+    tokenizer.save_pretrained(args.output_dir)
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision or args.woq:
+        # user_model will be changed.
+        user_model.save_pretrained(args.output_dir)
+        # loading saved woq model
+        user_model = AutoModelForCausalLM.from_pretrained(
+            args.output_dir, 
+            trust_remote_code=args.trust_remote_code,
+            use_neural_speed=args.use_neural_speed
+            )
 
 
 # int8 model loading
@@ -524,7 +540,7 @@ if args.accuracy:
     results = evaluate(
         model="hf-causal",
         model_args="pretrained="
-        + "facebook/opt-125m" #args.model
+        + args.model
         + ",tokenizer="
         + args.model
         + ",dtype=float32"
@@ -552,11 +568,3 @@ if args.accuracy:
                 % (task_name, results["results"][task_name]["acc"])
             )
 
-# save model
-if args.output_dir is not None:
-    tokenizer.save_pretrained(args.output_dir)
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
-        user_model.save_pretrained(args.output_dir)
