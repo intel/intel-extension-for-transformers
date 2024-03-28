@@ -21,6 +21,12 @@ from ragas.metrics import (    # pylint: disable=E0401
     context_recall,
     context_precision,
 )
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from intel_extension_for_transformers.langchain_community.embeddings import HuggingFaceEmbeddings, \
+    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings  # pylint: disable=E0401, E0611
+from langchain_community.embeddings import GooglePalmEmbeddings
+from ragas.llms import LangchainLLMWrapper   # pylint: disable=E0611
+from ragas.embeddings import LangchainEmbeddingsWrapper   # pylint: disable=E0611
 import pandas as pd
 import jsonlines
 import argparse
@@ -42,7 +48,7 @@ def load_set(file_jsonl_path, item):
             list.append(passages)
     return list
 
-def ragas(answer_file, ground_truth_file):
+def ragas(answer_file, ground_truth_file, llm_model, embedding_model, use_openai_key):
 
     question_list=load_set(answer_file, "question")
     answer_list=load_set(answer_file, "answer")
@@ -58,8 +64,36 @@ def ragas(answer_file, ground_truth_file):
 
     dataset = Dataset.from_dict(data_samples)
 
-    os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-    score = evaluate(dataset,metrics=[answer_relevancy, faithfulness, context_recall, context_precision])
+    if use_openai_key:
+        os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+        score = evaluate(dataset,metrics=[answer_relevancy, faithfulness, context_recall, context_precision])
+    else:
+        langchain_llm = HuggingFacePipeline.from_model_id(
+            model_id=llm_model,
+            task="text-generation",
+            pipeline_kwargs={"max_new_tokens": 128},
+        )
+        if "instruct" in embedding_model:
+            langchain_embeddings = HuggingFaceInstructEmbeddings(model_name=embedding_model)
+        elif "bge" in embedding_model:
+            langchain_embeddings = HuggingFaceBgeEmbeddings(
+                model_name=embedding_model,
+                encode_kwargs={'normalize_embeddings': True},
+                query_instruction="Represent this sentence for searching relevant passages:")
+        elif "Google" == embedding_model:
+            langchain_embeddings = GooglePalmEmbeddings()
+        else:
+            langchain_embeddings = HuggingFaceEmbeddings(
+                model_name=embedding_model,
+                encode_kwargs={"normalize_embeddings": True},
+            )
+
+        langchain_llm = LangchainLLMWrapper(langchain_llm)
+        langchain_embedding = LangchainEmbeddingsWrapper(langchain_embeddings)
+        score = evaluate(dataset,    # pylint: disable=E1123
+                         metrics=[answer_relevancy, faithfulness, context_recall, context_precision],
+                         llm = langchain_llm,    # pylint: disable=E1123
+                         embeddings=langchain_embedding)    # pylint: disable=E1123
 
     df=score.to_pandas()
     answer_relevancy_average=df['answer_relevancy'][:].mean()
@@ -185,6 +219,7 @@ def main():
 
     parser.add_argument("--ground_truth_file", type=str)
     parser.add_argument("--input_path", type=str)
+    parser.add_argument("--use_openai_key", default=False, action='store_true')
 
     parser.add_argument("--vector_database", type=str, default="Chroma")
     parser.add_argument("--embedding_model", type=str, default="BAAI/bge-large-en-v1.5")
@@ -192,13 +227,13 @@ def main():
     parser.add_argument("--reranker_model", type=str, default="BAAI/bge-reranker-large")
 
     parser.add_argument("--retrieval_type", type=str, default='default')
-    parser.add_argument("--polish", type=bool, default=False)
+    parser.add_argument("--polish", default=False, action='store_true')
     parser.add_argument("--search_type", type=str, default="similarity")
     parser.add_argument("--k", type=int, default=1)
     parser.add_argument("--fetch_k", type=int, default=5)
     parser.add_argument("--score_threshold", type=float, default=0.3)
     parser.add_argument("--top_n", type=int, default=1)
-    parser.add_argument("--enable_rerank", type=bool, default=False)
+    parser.add_argument("--enable_rerank", default=False, action='store_true')
 
     parser.add_argument("--max_chuck_size", type=int, default=256)
     parser.add_argument("--temperature", type=float, default=0.01)
@@ -206,12 +241,14 @@ def main():
     parser.add_argument("--top_p", type=float, default=0.1)
     parser.add_argument("--repetition_penalty", type=float, default=1.0)
     parser.add_argument("--num_beams", type=int, default=1)
-    parser.add_argument("--do_sample", type=bool, default=True)
+    parser.add_argument("--do_sample", default=False, action='store_true')
 
     args = parser.parse_args()
 
     ground_truth_file = args.ground_truth_file
     input_path = args.input_path
+    use_openai_key = args.use_openai_key
+    
     vector_database = args.vector_database
     embedding_model = args.embedding_model
     retrieval_type = args.retrieval_type
@@ -232,6 +269,7 @@ def main():
     repetition_penalty = args.repetition_penalty
     num_beams = args.num_beams
     do_sample = args.do_sample
+
 
     result_data(ground_truth_file,
                 input_path,
@@ -258,7 +296,10 @@ def main():
     answer_file = 'result_answer.jsonl'
     answer_relevancy_average,faithfulness_average,context_recall_average,context_precision_average=ragas(
         answer_file,
-        ground_truth_file)
+        ground_truth_file,
+        llm_model, 
+        embedding_model,
+        use_openai_key)
 
     file_json_path='result_ragas.jsonl'
 
@@ -266,6 +307,7 @@ def main():
         data = {
                 "ground_truth_file": args.ground_truth_file,
                 "input_path": args.input_path,
+                "use_openai_key": args.use_openai_key,
                 "vector_database": args.vector_database,
                 "embedding_model": args.embedding_model,
                 "retrieval_type": args.retrieval_type,
