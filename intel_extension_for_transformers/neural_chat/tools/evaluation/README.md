@@ -1,7 +1,7 @@
 # Retrieval and Rag Benchmark
 
 ## 1. Introduction
-We provide scripts of the benchmark of Retrieval and Rag. For data augmentation, please goto [Retrieval Data Augmentation](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation)
+We provide scripts of the benchmark of Retrieval and Rag. For data augmentation, please go to [Retrieval Data Augmentation](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation).
 
 ## 2. Retrieval Benchmark
 ### Installation
