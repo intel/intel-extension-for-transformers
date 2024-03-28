@@ -1163,7 +1163,7 @@ def predict_stream(**params):
                                 interactive=False if "magicoder" in model_name.lower() else True,
                                 do_sample=do_sample,
                                 num_beams=num_beams,
-                                n_keep=2 if "chatglm" in model_name.lower() else 1,
+                                n_keep=2 if "chatglm" in model_name.lower() else 1
                             )
                         else:
                             with context:
