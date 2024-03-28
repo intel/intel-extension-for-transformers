@@ -61,7 +61,7 @@ python retrieval_superbenchmark.py \
 --reranker_model <reranker model name or path>
 ```
 
-This will run benckmark multiple times based on the following different parameter values and output the parameter values that achieve the maximum MRR and Hit.
+This will run benchmark multiple times based on the following different parameter values and output the parameter values that achieve the maximum MRR and Hit.
 
 **Adjustable Parameters**:
 - `retrieval_type`: ['default','child_parent','bm25']
@@ -167,7 +167,7 @@ python ragas_benchmark.py \
 --reranker_model <reranker model name or path>
 ```
 
-This will run benckmark multiple times based on the following different parameter values and output the parameter values that achieve the maximum Average Answer Relevancy, Average Faithfulness, Average Context Recall, Average Context Precision.
+This will run benchmark multiple times based on the following different parameter values and output the parameter values that achieve the maximum Average Answer Relevancy, Average Faithfulness, Average Context Recall, Average Context Precision.
 
 **Adjustable Parameters**:
 - `retrieval_type`: ['default','child_parent','bm25']
