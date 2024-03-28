@@ -15,6 +15,7 @@
 """Parse and Evalate"""
 import os
 import json
+import shlex
 from argparse import ArgumentParser
 
 from utils.data_utils import save_json, CAT_SHORT2LONG
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     if args.subject[0] == 'ALL':
         args.subject = CAT_SHORT2LONG.keys()
 
-    ex_output_path = os.path.join(args.path)
+    ex_output_path = os.path.join(shlex.quote(args.path))
 
     all_results = {}
     for cat_short in args.subject:
