@@ -220,12 +220,12 @@ if args.benchmark:
                 output = user_model.generate(
                     input_ids, max_new_tokens=int(args.max_new_tokens), **generate_kwargs
                 )
+                if args.device == "xpu":
+                    torch.xpu.synchronize()
                 toc = time.time()
                 gen_ids = output[0] if args.profile_token_latency else output
                 gen_text = tokenizer.batch_decode(
                     gen_ids, skip_special_tokens=True)
-                if args.device == "xpu":
-                    torch.xpu.synchronize()
             if args.do_profiling and i >= num_warmup and (i == num_warmup or i == num_iter + num_warmup - 1):
                 print(f"Save pt for iter {i}")
                 torch.save(prof.key_averages().table(
