@@ -1,0 +1,2 @@
+faiss-gpu
+modelscope
