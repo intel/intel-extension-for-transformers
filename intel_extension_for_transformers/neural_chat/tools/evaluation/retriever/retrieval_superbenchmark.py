@@ -1,17 +1,3 @@
-# Copyright (c) 2024 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import argparse
 import os
 import subprocess
@@ -20,7 +6,7 @@ import jsonlines
 def main():
     if os.path.exists("result_retrieval.jsonl"):
         os.remove("result_retrieval.jsonl")
-    script_path = 'evaluate_retrieval_benchmark.py'
+    script_path = 'retrieval_benchmark.sh'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--index_file_jsonl_path", type=str)
@@ -64,22 +50,23 @@ def main():
                                 print('--'*7 +'top_n',arg13)
                                 for arg14 in arg14_list:
                                     print('--'*8 +'enable_rerank',arg14)
-                                    subprocess.run(['python',
-                                                    script_path,
-                                                    '--index_file_jsonl_path', arg1,
-                                                    '--query_file_jsonl_path', arg2,
-                                                    '--vector_database', arg3,
-                                                    '--embedding_model', arg4,
-                                                    '--llm_model', arg5,
-                                                    '--reranker_model', arg6,
-                                                    '--retrieval_type', arg7,
-                                                    '--polish', arg8,
-                                                    '--search_type', arg9,
-                                                    '--k', arg10,
-                                                    '--fetch_k', arg11,
-                                                    '--score_threshold', arg12,
-                                                    '--top_n', arg13,
-                                                    '--enable_rerank', arg14],
+                                    # try:
+                                    subprocess.run(['bash', 
+                                                    script_path, 
+                                                    '--index_file_jsonl_path='+arg1, 
+                                                    '--query_file_jsonl_path='+arg2, 
+                                                    '--vector_database='+arg3,  
+                                                    '--embedding_model='+arg4, 
+                                                    '--llm_model='+arg5, 
+                                                    '--reranker_model='+arg6, 
+                                                    '--retrieval_type='+arg7,  
+                                                    '--polish='+arg8, 
+                                                    '--search_type='+arg9, 
+                                                    '--k='+arg10, 
+                                                    '--fetch_k='+arg11, 
+                                                    '--score_threshold='+arg12, 
+                                                    '--top_n='+arg13,
+                                                    '--enable_rerank='+arg14],
                                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     file_jsonl_path='result_retrieval.jsonl'
