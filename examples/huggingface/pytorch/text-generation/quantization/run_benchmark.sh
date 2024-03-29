@@ -176,37 +176,42 @@ function run_benchmark {
             extra_cmd=$extra_cmd" --woq_algo "GPTQ" --desc_act --blocksize 128 --max_input_length 2048 "
             extra_cmd=$extra_cmd" --trust_remote_code"
         elif [ "${topology}" = "mistral_7b_int4_autoround" ]; then
-            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-            extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
-            extra_cmd=$extra_cmd" --woq_algo "AutoRound" --desc_act --blocksize 128 --max_input_length 2048 "
-            extra_cmd=$extra_cmd" --trust_remote_code"
-            if [[ $backend == "neuralspeed" ]]; then
-                extra_cmd=$extra_cmd" --use_neural_speed"
-            fi
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="Intel/Mistral-7B-v0.1-int4-inc"
+            else
+                model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+                extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
+                extra_cmd=$extra_cmd" --woq_algo "AutoRound" --desc_act --blocksize 128 --max_input_length 2048 "
+                extra_cmd=$extra_cmd" --trust_remote_code"
             fi
-        elif [ "${topology}" = "mistral_7b_int4_rtn" ]; then
-            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-            extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
-            extra_cmd=$extra_cmd" --woq_algo "Rtn" --desc_act --blocksize 128 --max_input_length 2048 "
-            extra_cmd=$extra_cmd" --trust_remote_code"
             if [[ $backend == "neuralspeed" ]]; then
                 extra_cmd=$extra_cmd" --use_neural_speed"
             fi
+            
+        elif [ "${topology}" = "mistral_7b_int4_rtn" ]; then
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="mistralai/Mistral-7B-v0.1"
+            else
+                model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+                extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
+                extra_cmd=$extra_cmd" --woq_algo "Rtn" --desc_act --blocksize 128 --max_input_length 2048 "
+                extra_cmd=$extra_cmd" --trust_remote_code"
             fi
-        elif [ "${topology}" = "mistral_7b_int4_gptq" ]; then
-            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-            extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
-            extra_cmd=$extra_cmd" --woq_algo "Rtn" --desc_act --blocksize 128 --max_input_length 2048 "
-            extra_cmd=$extra_cmd" --trust_remote_code"
             if [[ $backend == "neuralspeed" ]]; then
                 extra_cmd=$extra_cmd" --use_neural_speed"
             fi
+            
+        elif [ "${topology}" = "mistral_7b_int4_gptq" ]; then
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="TheBloke/Mistral-7B-Instruct-v0.1-GPTQ"
+            else
+                model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+                extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
+                extra_cmd=$extra_cmd" --woq_algo "GPTQ" --desc_act --blocksize 128 --max_input_length 2048 "
+                extra_cmd=$extra_cmd" --trust_remote_code"
+            fi
+            if [[ $backend == "neuralspeed" ]]; then
+                extra_cmd=$extra_cmd" --use_neural_speed"
             fi
         else
             extra_cmd=$extra_cmd" --int8"
