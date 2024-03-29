@@ -264,7 +264,7 @@ def get_tables_result(pdf_path, table_strategy, table_summary_model_name_or_path
     """Extract tables information from pdf file."""
     if table_strategy == 'fast':
         return None
-    
+
     from unstructured.partition.pdf import partition_pdf
     from unstructured.documents.elements import FigureCaption
     from intel_extension_for_transformers.neural_chat.models.model_utils import predict
