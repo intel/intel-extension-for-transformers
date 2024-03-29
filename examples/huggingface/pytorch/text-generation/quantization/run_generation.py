@@ -199,7 +199,7 @@ parser.add_argument("--bitsandbytes", action="store_true")
 parser.add_argument("--load_in_4bit", action="store_true")
 parser.add_argument("--load_in_8bit", action="store_true")
 parser.add_argument("--_commit_hash", default=None, type=str)
-parser.add_argument("--trust_remote_code", default=True)
+parser.add_argument("--trust_remote_code", action="store_true")
 parser.add_argument("--use_neural_speed", action="store_true")
 # =======================================
 args = parser.parse_args()

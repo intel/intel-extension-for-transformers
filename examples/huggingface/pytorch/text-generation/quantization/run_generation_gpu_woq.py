@@ -16,7 +16,7 @@ parser.add_argument(
     "--model", nargs="?", default="Qwen/Qwen-7B-Chat", const="Qwen/Qwen-7B-Chat"
 )
 parser.add_argument("--revision", default=None, type=str)
-parser.add_argument("--trust_remote_code", default=True)
+parser.add_argument("--trust_remote_code", action="store_true")
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
