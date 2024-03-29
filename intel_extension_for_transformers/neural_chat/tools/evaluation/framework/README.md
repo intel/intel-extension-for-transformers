@@ -32,16 +32,15 @@ cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat
 python ragas_evaluation.py \
 --answer_file /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/answer.jsonl \
 --ground_truth_file /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl \
---llm_model <llm model path> \
---embedding_model <embedding model path>
+--llm_model <llm model name or path> \
+--embedding_model <embedding model name or path>
 ```
 
 **Some Important Arguments**:
 - `answer_file`: The path of JSON data including question and answer, where each line is a dict like this:```{"question": str, "answer": str}```. See [answer.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/answer.jsonl) for a data file.
 - `ground_truth_file`: The path of JSON data including question, context, and ground_truth, where each line is a dict like this:```{"question": str, "context": List[str], "ground_truth": str}```. See [ground_truth.jsonl](https://github.com/intel/intel-extension-for-transformers/blob/master/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl) for a data file. The `"question"` of `answer_file` and `ground_truth_file` should correspond one-to-one.
-- `openai_api_key`: If you utilize OpenAI for running ragas, ensure you have your OpenAI key ready and available in your environment.
-- `llm_model`: If you utilize Langchain for running ragas, you should input the path for the LLM model.
-- `embedding_model`: If you utilize Langchain for running ragas, you should input the path for the text embedding model. You can use "BAAI/bge-base-en-v1.5", "BAAI/bge-large-en-v1.5", "thenlper/gte-large", "infgrad/stella-base-en-v2", "thenlper/gte-base", "intfloat/e5-large-v2", "hkunlp/instructor-xl", and "hkunlp/instructor-large".
+- `llm_model`: If you utilize Langchain for running ragas, you should input the name or path for the LLM model.
+- `embedding_model`: If you utilize Langchain for running ragas, you should input the name or path for the text embedding model. You can use "BAAI/bge-base-en-v1.5", "BAAI/bge-large-en-v1.5", "thenlper/gte-large", "infgrad/stella-base-en-v2", "thenlper/gte-base", "intfloat/e5-large-v2", "hkunlp/instructor-xl", and "hkunlp/instructor-large".
 
 ## 4. Result
 The results include your input question, answer, contexts, ground_truth, as well as output answer relevancy, faithfulness, context recall, context precision.
