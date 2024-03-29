@@ -51,7 +51,7 @@ def uni_pro(text):
 def read_pdf(pdf_path, table_strategy, table_summary_model_name_or_path):
     """Read the pdf file."""
     doc = fitz.open(pdf_path)
-    reader = easyocr.Reader(['en'])
+    reader = easyocr.Reader(['en'], gpu=False)
     result =''
     for i in range(doc.page_count):
         page = doc.load_page(i)
@@ -259,6 +259,7 @@ def get_chuck_data(content, max_length, min_length, input):
     return paragraphs
 
 
+
 def get_tables_result(pdf_path, table_strategy, table_summary_model_name_or_path):
     """Extract tables information from pdf file."""
     if table_strategy == 'fast':
@@ -335,3 +336,24 @@ def get_relation(table_coords, caption_coords, table_page_number, caption_page_n
         y_distance = 0
     y_close = y_distance < threshold
     return same_page and x_overlap and y_close, y_distance
+
+def clean_filename(url):
+    # Characters to be removed or replaced
+    invalid_chars = {
+        "/": "_",
+        "\\": "_",
+        ":": "_",
+        "*": "_",
+        "?": "_",
+        "\"": "_",
+        "<": "_",
+        ">": "_",
+        "|": "_",
+        " ": "_",
+        ".": "_",
+        "=": "_",
+    }
+    for char, replacement in invalid_chars.items():
+        url = url.replace(char, replacement)
+
+    return url

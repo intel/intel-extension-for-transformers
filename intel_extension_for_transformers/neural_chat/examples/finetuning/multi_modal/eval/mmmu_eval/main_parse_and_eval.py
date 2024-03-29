@@ -15,6 +15,7 @@
 """Parse and Evalate"""
 import os
 import json
+import shlex
 from argparse import ArgumentParser
 
 from utils.data_utils import save_json, CAT_SHORT2LONG
@@ -32,15 +33,15 @@ if __name__ == '__main__':
     if args.subject[0] == 'ALL':
         args.subject = CAT_SHORT2LONG.keys()
 
-    ex_output_path = os.path.join(args.path)
+    ex_output_path = os.path.join(shlex.quote(args.path))
 
     all_results = {}
     for cat_short in args.subject:
         category = CAT_SHORT2LONG[cat_short]
         print("Evaluating: {}".format(category))
-        if category not in os.listdir(ex_output_path):
+        if os.path.exists(ex_output_path) and category not in os.listdir(ex_output_path):
             print("Skipping {} for not found".format(category))
-        else:
+        elif os.path.exists(ex_output_path):
             cat_folder_path = os.path.join(ex_output_path, category)
             cat_outputs = json.load(open(os.path.join(cat_folder_path, 'output.json')))
             # Evaluation
