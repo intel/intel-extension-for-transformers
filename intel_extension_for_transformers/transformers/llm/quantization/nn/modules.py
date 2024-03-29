@@ -17,7 +17,7 @@
 
 import math
 import torch
-from ..utils import DTYPE_BITS_MAPPING
+from ..utils import DTYPE_BITS_MAPPING, convert_dtype_str2torch
 from functools import reduce
 from operator import mul
 from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
@@ -128,7 +128,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         # so it needn't to transpose in optimized operator.
         self.use_optimum_format = use_optimum_format
         if self.use_optimum_format:
-            self.scale_dtype = torch.float16
+            self.scale_dtype = "fp16"
             self.compression_dtype = torch.int32
         else:
             self.compression_dtype = compression_dtype
@@ -457,7 +457,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             zp = torch.zeros_like(scale, dtype=torch.uint8) + shift_bias
         if bias is not None:
             assert hasattr(self, "bias"), "bias is not set when initializing."
-            self.bias = bias.type(self.scale_dtype).to(self.device)
+            self.bias = bias.type(convert_dtype_str2torch(self.scale_dtype)).to(self.device)
         if g_idx is not None:
             assert hasattr(self, "g_idx"), "g_idx is not set when initializing."
             self.g_idx = g_idx.type(torch.int32).to(self.device)
@@ -466,7 +466,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
                 self.g_idx = invperm // self.groupsize
                 self.g_idx = self.g_idx.type(torch.int32).to(self.device)
         # assert scale.shape == self.scales.shape, "Scale shape is mismatched."
-        self.scales = scale.type(self.scale_dtype).to(self.device)
+        self.scales = scale.type(convert_dtype_str2torch(self.scale_dtype)).to(self.device)
         if not self.use_optimum_format and self.compression_dim == 0:
             int_weight = int_weight.t_().contiguous()
             self.qweight = self.qweight.t_().contiguous()
