@@ -6,3 +6,43 @@
 .. py:module:: intel_extension_for_transformers.neural_chat.server.restful.retrieval_api
 
 
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.remove_folder_with_ignore
+   intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.delete_all_files
+   intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.delete_single_file
+
+
+
+.. py:function:: remove_folder_with_ignore(folder_path: str, except_patterns=None)
+
+   Remove the specific folder, and ignore some files/folders
+
+   :param folder_path: file path to delete
+   :param except_patterns: files/folder name to ignore
+
+
+.. py:function:: delete_all_files()
+   :async:
+
+   Delete all files and knowledge bases of current user.
+   Re-create retriever using default plugin configs.
+
+
+.. py:function:: delete_single_file(request: fastapi.Request)
+   :async:
+
+   Delete file according to `del_path` and `knowledge_base_id`.
+   `del_path`:
+       - specific file path(e.g. /path/to/file.txt)
+       - folder path(e.g. /path/to/folder)
+       - "all_files": delete all files of this knowledge base
+
+
