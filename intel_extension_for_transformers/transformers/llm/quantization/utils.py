@@ -179,6 +179,15 @@ def _replace_linear(
                             QuantizedLinearQBits,
                         )  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
 
+                        use_optimum_format = getattr(module, "use_optimum_format", False) or \
+                            quantization_config.weight_dtype not in [
+                                "fp8_e5m2",
+                                "fp8_e4m3",
+                                "fp4",
+                                "nf4",
+                                "int4_fullrange",
+                            ]
+
                         model._modules[name] = QuantizedLinearQBits(
                             in_features,
                             out_features,
@@ -189,6 +198,10 @@ def _replace_linear(
                             scale_dtype=quantization_config.scale_dtype,
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme,
+                            compression_dtype=getattr(module, "compression_dtype", torch.int32),
+                            compression_dim=getattr(module, "compression_dim", 1),
+                            device=device,
+                            use_optimum_format=use_optimum_format,
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
                         from intel_extension_for_pytorch.nn.utils._quantize_convert \
@@ -203,31 +216,13 @@ def _replace_linear(
                             scale_dtype=quantization_config.scale_dtype,
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme,
-                            compression_dtype=(
-                                module.compression_dtype
-                                if hasattr(module, "compression_dtype")
-                                else torch.int8
-                            ),
-                            compression_dim=(
-                                module.compression_dim
-                                if hasattr(module, "compression_dim")
-                                else 0
-                            ),
+                            compression_dtype=getattr(module, "compression_dtype", torch.int8),
+                            compression_dim=getattr(module, "compression_dim", 0),
                             device=device,
-                            use_optimum_format=(
-                                module.use_optimum_format
-                                if hasattr(module, "use_optimum_format")
-                                else False
-                            ),
+                            use_optimum_format=getattr(module, "use_optimum_format", True),
                         )
                         if quantization_config.quant_method.value == "gptq":
-                            g_idx = (
-                                module.g_idx
-                                if hasattr(module, "g_idx")
-                                else torch.zeros(in_features, dtype=torch.int32).to(
-                                    device
-                                )
-                            )
+                            g_idx = getattr(module, "g_idx", torch.zeros(in_features, dtype=torch.int32).to(device))
                         else:
                             g_idx = None
                         model._modules[name].set_scales_zps_gidx(

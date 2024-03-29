@@ -71,6 +71,7 @@ from ...tools.utils import get_gpu_family, is_ipex_available
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from transformers.configuration_utils import PretrainedConfig
 from transformers import AutoConfig
+from transformers.modeling_utils import load_state_dict
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 from typing import Union
 
@@ -1193,17 +1194,22 @@ class _BaseQBitsAutoModelClass:
                         False
                     ), f'`torch_dtype` can be either `torch.dtype` or `"auto"`, but received {torch_dtype}'
             dtype_orig = model_class._set_default_torch_dtype(torch_dtype)
+        if quantization_config.compute_dtype is None:
+            quantization_config.compute_dtype = \
+                convert_dtype_torch2str(torch_dtype) if torch_dtype is not None else "fp32"
+        if quantization_config.scale_dtype is None:
+            quantization_config.scale_dtype = "fp16"
+        if quantization_config.weight_dtype is None:
+            quantization_config.weight_dtype = "int4_clip"
 
         # Pretrained Model
         init_contexts = [no_init_weights(_enable=_fast_init)]
         init_contexts.append(init_empty_weights())
 
-        if low_cpu_mem_usage:
-            with ContextManagers(init_contexts):
-                model = model_class(config, *model_args, **kwargs)
-        else:
+        with ContextManagers(init_contexts):
             model = model_class(config, *model_args, **kwargs)
-        if config.quantization_config["weight_dtype"] not in [
+
+        if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
             "fp4",
@@ -1215,19 +1221,16 @@ class _BaseQBitsAutoModelClass:
             model = replace_linear(
                 model,
                 quantization_config=quantization_config,
-                device=device_map,
+                device="cpu" if device_map == "auto" else device_map,
                 empty_weights=True,
             )
 
         if is_sharded:
             loaded_state_dict_keys = sharded_metadata["all_checkpoint_keys"]
         else:
-            with open(
-                os.path.join(pretrained_model_name_or_path, "all_checkpoint_keys.json"),
-                "r",
-            ) as json_file:
-                loaded_data = json.load(json_file)
-            loaded_state_dict_keys = loaded_data["all_checkpoint_keys"]
+            # Time to load the checkpoint
+            state_dict = load_state_dict(resolved_archive_file)
+            loaded_state_dict_keys = list(state_dict.keys())
 
         # restore default dtype
         if dtype_orig is not None:
@@ -1259,17 +1262,17 @@ class _BaseQBitsAutoModelClass:
 
         # Set model in evaluation mode to deactivate DropOut modules by default
         model.eval()
-        if config.quantization_config["weight_dtype"] not in [
+        if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
             "nf4",
-            "fp4" "int4_fullrange",
+            "fp4",
+            "int4_fullrange",
         ]:
             model = replace_linear(
                 model,
                 quantization_config=quantization_config,
-                device=device_map,
-                empty_weights=True,
+                device="cpu" if device_map == "auto" else device_map,
             )
 
         # If it is a model with generation capabilities, attempt to load the generation config

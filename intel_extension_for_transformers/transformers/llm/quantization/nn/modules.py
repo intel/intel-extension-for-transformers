@@ -15,9 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import os
+import math
 import torch
+from ..utils import DTYPE_BITS_MAPPING
 from functools import reduce
 from operator import mul
 from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
@@ -100,14 +100,42 @@ class QuantizedLinearQBits(torch.nn.Linear):
         blocksize=32,
         scheme="sym",
         device=None,
+        double_quant_scale_dtype=None,
+        compression_dtype=torch.int32,
+        compression_dim=1,
+        use_optimum_format=False,
     ):
         super().__init__(input_features, output_features, bias, device)
+        self.device = device
         self.compute_dtype = compute_dtype
         self.compress_statistics = compress_statistics
         self.blocksize = blocksize
         self.scheme = scheme
         self.weight_dtype = weight_dtype
+        self.bits = DTYPE_BITS_MAPPING[weight_dtype]
         self.scale_dtype = scale_dtype
+        self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.compression_dim = compression_dim
+        assert compression_dtype in [
+            torch.int8,
+            torch.int16,
+            torch.int32,
+            torch.int64,
+        ], "Only support torch.int8|16|32|64 as compressed dtype."
+        self.compression_dtype = compression_dtype
+        self.n_pack = self.compression_dtype.itemsize * 8 // self.bits
+        # `use_optimum_format` is for GPTQ model, if it is True, it's weight is k x n,
+        # so it needn't to transpose in optimized operator.
+        self.use_optimum_format = use_optimum_format
+        if self.use_optimum_format:
+            self.scale_dtype = torch.float16
+            self.compression_dtype = torch.int32
+        else:
+            self.compression_dtype = compression_dtype
+
+        # self.register_buffer("qzeros", None)
+        # self.register_buffer("scales", None)
+        # self.register_buffer("g_idx", None)
 
     def forward(self, x: torch.Tensor):
         # weights are cast automatically as Int8Params, but the bias has to be cast manually
@@ -365,6 +393,123 @@ class QuantizedLinearQBits(torch.nn.Linear):
             qzeros.t() if qzeros is not None else None,
             int_weight,
         )
+
+    def pack(self, int_weight, scale, zp, bias, g_idx=None):
+        if self.use_optimum_format:
+        #     self.scales = self.scales.t_().contiguous()
+        #     self.qzeros = self.qzeros.t_().contiguous()
+            self.qweight = ParamsQBits(
+                torch.zeros((self.out_features, math.ceil(self.in_features / self.n_pack)),
+                            dtype=self.compression_dtype,
+                            device=self.device),
+                requires_grad=False,
+                quant_state={"scheme": self.scheme},
+                blocksize=self.blocksize,
+                compress_statistics=self.compress_statistics,
+                quant_dtype=self.weight_dtype,
+                scale_dtype=self.scale_dtype,
+            )
+            self.qzeros = torch.zeros(
+                (math.ceil(self.out_features / self.n_pack), math.ceil(self.in_features / self.blocksize)),
+                dtype=self.compression_dtype,
+                device=self.device
+            )
+        elif self.compression_dim == 0:
+            self.qweight = ParamsQBits(
+                torch.zeros((math.ceil(self.out_features / self.n_pack), self.in_features),
+                            dtype=self.compression_dtype,
+                            device=self.device),
+                requires_grad=False,
+                quant_state={"scheme": self.scheme},
+                blocksize=self.blocksize,
+                compress_statistics=self.compress_statistics,
+                quant_dtype=self.weight_dtype,
+                scale_dtype=self.scale_dtype,
+            )
+            self.qzeros = torch.zeros(
+                (math.ceil(self.out_features / self.n_pack), math.ceil(self.in_features / self.blocksize)),
+                dtype=self.compression_dtype,
+                device=self.device
+            )
+        else:
+            self.qweight = ParamsQBits(
+                torch.zeros((self.out_features, math.ceil(self.in_features / self.n_pack)),
+                            dtype=self.compression_dtype,
+                            device=self.device),
+                requires_grad=False,
+                quant_state={"scheme": self.scheme},
+                blocksize=self.blocksize,
+                compress_statistics=self.compress_statistics,
+                quant_dtype=self.weight_dtype,
+                scale_dtype=self.scale_dtype,
+            )
+            self.qzeros = torch.zeros(
+                (self.out_features, math.ceil(self.in_features / self.blocksize / self.n_pack)),
+                dtype=self.compression_dtype,
+                device=self.device
+            )
+        int_weight = int_weight.to(self.device)
+        if self.use_optimum_format and zp is None:
+            # to avoid overflow
+            int_weight = int_weight.type(torch.int32)
+            shift_bias = 2**(self.bits - 1)
+            int_weight += shift_bias
+            zp = torch.zeros_like(scale, dtype=torch.uint8) + shift_bias
+        if bias is not None:
+            assert hasattr(self, "bias"), "bias is not set when initializing."
+            self.bias = bias.type(self.scale_dtype).to(self.device)
+        if g_idx is not None:
+            assert hasattr(self, "g_idx"), "g_idx is not set when initializing."
+            self.g_idx = g_idx.type(torch.int32).to(self.device)
+            if self.use_optimum_format:
+                invperm = torch.argsort(self.g_idx)
+                self.g_idx = invperm // self.groupsize
+                self.g_idx = self.g_idx.type(torch.int32).to(self.device)
+        # assert scale.shape == self.scales.shape, "Scale shape is mismatched."
+        self.scales = scale.type(self.scale_dtype).to(self.device)
+        if not self.use_optimum_format and self.compression_dim == 0:
+            int_weight = int_weight.t_().contiguous()
+            self.qweight = self.qweight.t_().contiguous()
+        origin_shape = int_weight.shape
+        target_shape = self.qweight.shape
+        assert origin_shape[0] == target_shape[0], "output channels mismatch, please check."
+        mask = torch.tensor(2**self.bits - 1, dtype=self.compression_dtype).to(self.device)
+
+        # pack weight
+        for j in range(target_shape[1]):
+            start = self.n_pack * j
+            end = self.n_pack * (j + 1)
+            tmp = int_weight[:, start:end].type(self.compression_dtype)
+            for e in range(tmp.shape[1]):
+                tmp[:, e] &= mask
+                tmp[:, e] = tmp[:, e] << (self.bits * e)
+                self.qweight[:, j] |= tmp[:, e]
+        if not self.use_optimum_format and self.compression_dim == 0:
+            self.qweight = self.qweight.t_().contiguous()
+
+        if zp is not None:
+            zp = zp.to(self.device)
+            if self.use_optimum_format:
+                zp -= 1
+            if self.use_optimum_format or self.compression_dim == 0:
+                zp = zp.t_().contiguous()
+                self.qzeros = self.qzeros.t_().contiguous()
+            assert hasattr(self, "qzeros"), "zp is not set when initializing."
+            target_shape = self.qzeros.shape
+            for j in range(target_shape[1]):
+                start = self.n_pack * j
+                end = self.n_pack * (j + 1)
+                tmp = zp[:, start:end].type(self.compression_dtype)
+                for e in range(tmp.shape[1]):
+                    tmp[:, e] &= mask
+                    tmp[:, e] = tmp[:, e] << (self.bits * e)
+                    self.qzeros[:, j] |= tmp[:, e]
+            if self.use_optimum_format or self.compression_dim == 0:
+                self.qzeros = self.qzeros.t_().contiguous()
+        if self.use_optimum_format:
+            self.scales.data = self.scales.t_().contiguous()
+            self.qweight.data = self.qweight.t_().contiguous()
+            self.qzeros.data = self.qzeros.t_().contiguous()
 
 
 class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
