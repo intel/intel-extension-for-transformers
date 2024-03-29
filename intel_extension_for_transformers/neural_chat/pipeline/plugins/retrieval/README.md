@@ -92,7 +92,7 @@ Below are the description for the available parameters in `agent_QA`,
 | enable_rerank   | bool | Whether to enable retrieval then rerank pipeline |True, False|
 | reranker_model   | str | The name of the reranker model from the Huggingface or a local path |-|
 | top_n   | int | The return number of the reranker model |-|
-| table_summary_mode | str | Utilize the table's title as its summarization or employ a LLM for table summarization, so that achieve better table retrieval performance|"title","llm"|
+| table_strategy | str | The strategies to understand tables for table retrieval. As the setting progresses from "fast" to "hq" to "llm," the focus shifts towards deeper table understanding at the expense of processing speed |"fast", "hq", "llm"|
 
 More retriever- and vectorstore-related parameters please check [here](#langchain-extension)
 

@@ -51,7 +51,7 @@ class DocumentParser:
             self.process = kwargs['process']
         self.table_summary_model_name_or_path = kwargs['table_summary_model_name_or_path'] \
              if 'table_summary_model_name_or_path' in kwargs else None
-        self.table_summary_mode = kwargs['table_summary_mode'] if 'table_summary_mode' in kwargs else None
+        self.table_strategy = kwargs['table_strategy'] if 'table_strategy' in kwargs else 'fast'
 
         if isinstance(input, str):
             if os.path.isfile(input):
@@ -77,7 +77,7 @@ class DocumentParser:
         """
         if input.endswith("pdf") or input.endswith("docx") or input.endswith("html") \
            or input.endswith("txt") or input.endswith("md"):
-            content, tables = load_unstructured_data(input, self.table_summary_mode, \
+            content, tables = load_unstructured_data(input, self.table_strategy, \
                                                      self.table_summary_model_name_or_path)
             if self.process:
                 chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
@@ -125,7 +125,7 @@ class DocumentParser:
                 if filename.endswith("pdf") or filename.endswith("docx") or filename.endswith("html") \
                     or filename.endswith("txt") or filename.endswith("md"):
                     content, tables = load_unstructured_data(os.path.join(dirpath, filename), \
-                                                             self.table_summary_mode, \
+                                                             self.table_strategy, \
                                                              self.table_summary_model_name_or_path)
                     if self.process:
                         chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)

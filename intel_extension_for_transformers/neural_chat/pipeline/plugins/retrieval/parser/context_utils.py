@@ -48,7 +48,7 @@ def uni_pro(text):
     return filtered_text
 
 
-def read_pdf(pdf_path, table_summary_mode, table_summary_model_name_or_path):
+def read_pdf(pdf_path, table_strategy, table_summary_model_name_or_path):
     """Read the pdf file."""
     doc = fitz.open(pdf_path)
     reader = easyocr.Reader(['en'])
@@ -77,7 +77,7 @@ def read_pdf(pdf_path, table_summary_mode, table_summary_model_name_or_path):
                     else:
                         pageimg=pageimg+'.'
                 result=result+pageimg
-    tables_result = get_tables_result(pdf_path, table_summary_mode, table_summary_model_name_or_path)
+    tables_result = get_tables_result(pdf_path, table_strategy, table_summary_model_name_or_path)
     return result, tables_result
 
 
@@ -215,11 +215,11 @@ def load_structured_data(input, process, max_length, min_length):
         content = load_csv(input)
     return content
 
-def load_unstructured_data(input, table_summary_mode, table_summary_model_name_or_path):
+def load_unstructured_data(input, table_strategy, table_summary_model_name_or_path):
     """Load unstructured context."""
     tables = None
     if input.endswith("pdf"):
-        text, tables = read_pdf(input, table_summary_mode, table_summary_model_name_or_path)
+        text, tables = read_pdf(input, table_strategy, table_summary_model_name_or_path)
     elif input.endswith("docx"):
         text = read_docx(input)
     elif input.endswith("html"):
@@ -259,8 +259,11 @@ def get_chuck_data(content, max_length, min_length, input):
     return paragraphs
 
 
-def get_tables_result(pdf_path, table_summary_mode, table_summary_model_name_or_path):
+def get_tables_result(pdf_path, table_strategy, table_summary_model_name_or_path):
     """Extract tables information from pdf file."""
+    if table_strategy == 'fast':
+        return None
+    
     from unstructured.partition.pdf import partition_pdf
     from unstructured.documents.elements import FigureCaption
     from intel_extension_for_transformers.neural_chat.models.model_utils import predict
@@ -278,7 +281,7 @@ def get_tables_result(pdf_path, table_summary_mode, table_summary_model_name_or_
         table_page_number = table.metadata.page_number
         min_distance = float('inf')
         table_summary = None
-        if table_summary_mode == 'title':
+        if table_strategy == 'hq':
             for element in raw_pdf_elements:
                 if isinstance(element, FigureCaption) or element.text.startswith('Tab'):
                     caption_page_number = element.metadata.page_number
@@ -295,7 +298,7 @@ def get_tables_result(pdf_path, table_summary_mode, table_summary_model_name_or_
                     if element.id == parent_id:
                         table_summary = element.text
                         break
-        elif table_summary_mode == 'llm':
+        elif table_strategy == 'llm':
             prompt = TABLESUMMARY_PROMPT.format(table_content=content)
             params = {}
             params["model_name"] = table_summary_model_name_or_path
@@ -310,7 +313,7 @@ def get_tables_result(pdf_path, table_summary_mode, table_summary_model_name_or_
             table_summary = predict(**params)
             table_summary = table_summary[table_summary.find('### Generated Summary:\n'):]
             table_summary = re.sub('### Generated Summary:\n', '', table_summary)
-        elif table_summary_mode == None:
+        elif table_strategy == None:
             table_summary = None
         if table_summary is None:
             text = f'[Table: {content}]'
