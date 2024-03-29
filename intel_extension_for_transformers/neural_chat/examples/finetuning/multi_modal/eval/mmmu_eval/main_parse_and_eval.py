@@ -39,9 +39,9 @@ if __name__ == '__main__':
     for cat_short in args.subject:
         category = CAT_SHORT2LONG[cat_short]
         print("Evaluating: {}".format(category))
-        if category not in os.listdir(ex_output_path):
+        if os.path.exists(ex_output_path) and category not in os.listdir(ex_output_path):
             print("Skipping {} for not found".format(category))
-        else:
+        elif os.path.exists(ex_output_path):
             cat_folder_path = os.path.join(ex_output_path, category)
             cat_outputs = json.load(open(os.path.join(cat_folder_path, 'output.json')))
             # Evaluation
