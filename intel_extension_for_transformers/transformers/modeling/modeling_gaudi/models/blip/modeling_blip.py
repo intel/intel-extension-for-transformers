@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import Optional
 
 import torch
@@ -72,7 +86,7 @@ def gaudi_BlipForQuestionAnswering_generate(
     Copied from BlipForQuestionAnswering.generate: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip.py#L1236
     The only differences are:
         - wrap hpu graph for each part
-        - torch.full add dtype=torch.int64, or else the default type is torch.float32. lead to coredump in embeding layer
+        - torch.full add dtype=torch.int64, or else the default type is torch.float32. lead to coredump in embedding layer
     """
     if generate_kwargs.get("hpu_graphs", True):
         from habana_frameworks.torch.hpu import wrap_in_hpu_graph

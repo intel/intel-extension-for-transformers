@@ -204,7 +204,7 @@ class GaudiGenerationMixin(GenerationMixin):
             if isinstance(decoder_start_token_id, list):
                 if len(decoder_start_token_id) != batch_size:
                     raise ValueError(
-                        f"`decoder_start_token_id` expcted to have length {batch_size} but got {len(decoder_start_token_id)}"
+                        f"`decoder_start_token_id` expected to have length {batch_size} but got {len(decoder_start_token_id)}"
                     )
                 decoder_input_ids_start = torch.tensor(decoder_start_token_id, dtype=torch.long, device=device)
                 decoder_input_ids_start = decoder_input_ids_start.view(-1, 1)
@@ -321,7 +321,7 @@ class GaudiGenerationMixin(GenerationMixin):
                     model_kwargs["attention_mask"], (0, pad_amount), value=0
                 )
             else:
-                assert False, "Not tested for cases where attn_mask isnt passed"
+                assert False, "Not tested for cases where attn_mask isn't passed"
             if reduce_recompile and params["passnum"] == 0:
                 position_ids_cpu = model_kwargs["attention_mask"].long().cumsum(-1) - 1
                 position_ids_cpu.masked_fill_(model_kwargs["attention_mask"] == 0, 1)
@@ -435,7 +435,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 generating before other GPUs. Otherwise it'll be set to `False`.
             assistant_model (`PreTrainedModel`, *optional*):
                 An assistant model that can be used to accelerate generation. The assistant model must have the exact
-                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistent model
+                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistant model
                 is much faster than running generation with the model you're calling generate from. As such, the
                 assistant model should be much smaller.
             streamer (`BaseStreamer`, *optional*):
@@ -451,7 +451,7 @@ class GaudiGenerationMixin(GenerationMixin):
             hpu_graphs (`bool`, *optional*, defaults to `False`):
                 Whether to use HPU graphs for inference.
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             kwargs (`Dict[str, Any]`, *optional*):
@@ -1181,7 +1181,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -1294,7 +1294,7 @@ class GaudiGenerationMixin(GenerationMixin):
             ignore_eos (`bool`, *optional*, defaults to `False`):
                 Whether to ignore finished sequences (faster in lazy mode and with HPU graphs) or not (eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -1643,7 +1643,7 @@ class GaudiGenerationMixin(GenerationMixin):
             ignore_eos (`bool`, *optional*, defaults to `False`):
                 Whether to ignore finished sequences (faster in lazy mode and with HPU graphs) or not (eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -1976,7 +1976,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2564,7 +2564,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2710,7 +2710,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2857,7 +2857,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -3209,7 +3209,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 more information, the documentation of [`CandidateGenerator`] should be read. Only one of `assistant_model` or `candidate_generator` should be passed as input to this function.
             assistant_model (`PreTrainedModel`, *optional*):
                 An assistant model that can be used to accelerate generation. The assistant model must have the exact
-                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistent model
+                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistant model
                 is much faster than running generation with the model you're calling generate from. As such, the
                 assistant model should be much smaller.
             do_sample (`bool`, *optional*, defaults to `False`):
@@ -3246,7 +3246,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             streamer (`BaseStreamer`, *optional*):

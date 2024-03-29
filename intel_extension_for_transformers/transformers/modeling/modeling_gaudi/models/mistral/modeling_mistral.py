@@ -138,7 +138,7 @@ class GaudiMistralAttention(MistralAttention):
             self.past_value = torch.empty(kv_shape, dtype=dtype, device=device)
 
     def update_sincos_cache(self, seq_len):
-        # Call rotary emb forward() to update cos/sin cache when infering more than self.max_position_embeddings
+        # Call rotary emb forward() to update cos/sin cache when inferring more than self.max_position_embeddings
         # This helps in avoiding creation of these caches during actual model forward pass and
         # reduce memory consumption and improve performance.
         if seq_len > self.max_position_embeddings:
