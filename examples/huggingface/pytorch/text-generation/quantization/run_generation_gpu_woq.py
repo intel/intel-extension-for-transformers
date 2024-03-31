@@ -16,7 +16,7 @@ parser.add_argument(
     "--model", nargs="?", default="Qwen/Qwen-7B-Chat", const="Qwen/Qwen-7B-Chat"
 )
 parser.add_argument("--revision", default=None, type=str)
-parser.add_argument("--trust_remote_code", default=True)
+parser.add_argument("--trust_remote_code", action="store_true")
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
@@ -52,7 +52,7 @@ parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, 
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--bits", type=int, default=4, choices=[4])
 parser.add_argument("--woq", action="store_true")
-parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'GPTQ', 'AutoRound'], 
+parser.add_argument("--woq_algo", default="Rtn", choices=['Rtn', 'GPTQ', 'AutoRound'], 
                     help="Weight-only parameter.")
 parser.add_argument("--weight_dtype", type=str, default="int4_fullrange",
                     choices=["int4_fullrange"])

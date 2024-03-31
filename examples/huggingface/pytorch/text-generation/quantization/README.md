@@ -176,7 +176,7 @@ python run_generation_gpu_woq.py \
 # First step: Quantize and save model
 python run_generation_gpu_woq.py \
     --model EleutherAI/gpt-j-6b \
-    --woq \ # default quantize method is RTN
+    --woq \ # default quantize method is Rtn
     --output_dir "saved_dir"
 
 # Second step: Load model and inference
