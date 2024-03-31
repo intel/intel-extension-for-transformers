@@ -51,6 +51,7 @@ from ..utils import (
     LazyImport,
 )
 from ..utils.utility import (
+    CpuInfo,
     generate_dummy_past_key_values,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
@@ -67,7 +68,8 @@ from ..llm.quantization.utils import (
     replace_linear,
 )
 from ...tools.utils import get_gpu_family, is_ipex_available
-from huggingface_hub  import hf_hub_download
+from accelerate import init_empty_weights
+from huggingface_hub import hf_hub_download
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from threading import Thread
 from transformers.configuration_utils import PretrainedConfig
@@ -156,31 +158,19 @@ def build_woq_model(model, quantization_config):
         if "lm_head" in n or "output_layer" in n or "embed_out" in n:
             continue
         if isinstance(m, torch.nn.Linear):
-            zp = (
-                not quantization_config.sym
-                if hasattr(quantization_config, "sym")
-                else True
-            )
-            zp = (
-                quantization_config.zero_point
-                if hasattr(quantization_config, "zero_point")
-                else True
-            )
-            new_module = WeightOnlyLinear(
-                m.in_features,
-                m.out_features,
-                quantization_config.bits,
-                quantization_config.group_size,
-                dtype="int",
-                zp=zp,
-                bias=m.bias is not None,
-                g_idx=(
-                    quantization_config.desc_act
-                    if hasattr(quantization_config, "desc_act")
-                    else False
-                ),
-                use_optimum_format=True,
-            )
+            zp = getattr(quantization_config, "zero_point", not getattr(quantization_config, "sym", False))
+            with init_empty_weights():
+                new_module = WeightOnlyLinear(
+                    m.in_features,
+                    m.out_features,
+                    quantization_config.bits,
+                    quantization_config.group_size,
+                    dtype="int",
+                    zp=zp,
+                    bias=m.bias is not None,
+                    g_idx=True,
+                    use_optimum_format=True,
+                )
             set_module(model, n, new_module)
     return model
 
@@ -364,12 +354,8 @@ class _BaseQBitsAutoModelClass:
             return model
 
         device_map = kwargs.get("device_map", "cpu")
-        use_cpu = (
-            True if device_map == torch.device("cpu") or device_map == "cpu" else False
-        )
-        use_xpu = (
-            True if device_map == torch.device("xpu") or device_map == "xpu" else False
-        )
+        use_cpu = True if device_map == torch.device("cpu") or device_map == "cpu" else False
+        use_xpu = True if device_map == torch.device("xpu") or device_map == "xpu" else False
 
         config = kwargs.pop("config", None)
         model_hub = kwargs.pop("model_hub", "huggingface")
@@ -493,7 +479,9 @@ class _BaseQBitsAutoModelClass:
                     else:
                         quantization_config = RtnConfig(
                             bits=4,
-                            compute_dtype=convert_dtype_torch2str(torch_dtype),
+                            compute_dtype=torch.float32 if
+                            (use_cpu and not CpuInfo().bf16
+                             and torch_dtype == torch.bfloat16) else convert_dtype_torch2str(torch_dtype),
                             weight_dtype="nf4" if use_cpu else "int4_fullrange",
                         )
                 else:
@@ -507,12 +495,14 @@ class _BaseQBitsAutoModelClass:
                 if quantization_config is None:
                     if use_neural_speed:
                         quantization_config = RtnConfig(
-                            compute_dtype="bf16", weight_dtype="int8"
+                            compute_dtype="bf16" if CpuInfo().bf16 else "fp32", weight_dtype="int8"
                         )
                     else:
                         quantization_config = RtnConfig(
                             bits=8,
-                            compute_dtype=convert_dtype_torch2str(torch_dtype),
+                            compute_dtype=torch.float32 if
+                            (use_cpu and not CpuInfo().bf16
+                             and torch_dtype == torch.bfloat16) else convert_dtype_torch2str(torch_dtype),
                             weight_dtype="int8",
                         )
                 else:
@@ -1008,6 +998,9 @@ class _BaseQBitsAutoModelClass:
         if use_safetensors is None and not is_safetensors_available():
             use_safetensors = False
 
+        use_cpu = True if device_map == torch.device("cpu") or device_map == "cpu" else False
+        use_xpu = True if device_map == torch.device("xpu") or device_map == "xpu" else False
+
         user_agent = {
             "file_type": "model",
             "framework": "pytorch",
@@ -1317,8 +1310,21 @@ class _BaseQBitsAutoModelClass:
                     ), f'`torch_dtype` can be either `torch.dtype` or `"auto"`, but received {torch_dtype}'
             dtype_orig = model_class._set_default_torch_dtype(torch_dtype)
         if quantization_config.compute_dtype is None:
-            quantization_config.compute_dtype = \
-                convert_dtype_torch2str(torch_dtype) if torch_dtype is not None else "fp32"
+            if use_xpu:
+                quantization_config.compute_dtype = \
+                    "fp16" if (torch_dtype is None or
+                               torch_dtype == torch.bfloat16) \
+                    else convert_dtype_torch2str(torch_dtype)
+            else:
+                quantization_config.compute_dtype = \
+                    "fp32" if (torch_dtype is None or
+                               (not CpuInfo().bf16 and torch_dtype == torch.bfloat16) or
+                               (torch_dtype == torch.float16)) \
+                    else convert_dtype_torch2str(torch_dtype)
+        else:
+            if ((not CpuInfo().bf16 and quantization_config.compute_dtype == "bf16")
+                    or (use_cpu and quantization_config.compute_dtype == "fp16")):
+                quantization_config.compute_dtype = "fp32"
         if quantization_config.scale_dtype is None:
             quantization_config.scale_dtype = "fp16"
         if quantization_config.weight_dtype is None:
@@ -1396,6 +1402,9 @@ class _BaseQBitsAutoModelClass:
                 device="cpu" if device_map == "auto" else device_map,
                 empty_weights=True,
             )
+
+        if (use_cpu and torch_dtype == torch.float16) or ((use_xpu or not CpuInfo().bf16) and torch_dtype == torch.bfloat16):
+            model.to(dtype=torch.float32)
 
         # If it is a model with generation capabilities, attempt to load the generation config
         if model.can_generate():
