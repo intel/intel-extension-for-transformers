@@ -437,7 +437,7 @@ if args.output_dir is not None:
         user_model.save_pretrained(args.output_dir)
         # loading saved woq model
         user_model = AutoModelForCausalLM.from_pretrained(
-            args.output_dir, 
+            args.output_dir,
             trust_remote_code=args.trust_remote_code,
             use_neural_speed=args.use_neural_speed
             )
@@ -528,26 +528,15 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    user_model = (
-        user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
-    )
-    args.model = (
-        peft_config.base_model_name_or_path if args.peft_model_id else args.model
-    )
+    user_model = (user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model)
+    args.model = (peft_config.base_model_name_or_path if args.peft_model_id else args.model)
     from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
 
     args._commit_hash = "main" if args._commit_hash is None else args._commit_hash
     results = evaluate(
         model="hf-causal",
-        model_args="pretrained="
-        + args.model
-        + ",tokenizer="
-        + args.model
-        + ",dtype=float32"
-        + ",_commit_hash="
-        + args._commit_hash
-        + ",trust_remote_code="
-        + str(args.trust_remote_code),
+        model_args="tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + args._commit_hash +
+        ",trust_remote_code=" + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
@@ -558,13 +547,6 @@ if args.accuracy:
             f.write(dumped)
     for task_name in args.tasks:
         if task_name == "wikitext":
-            print(
-                "Accuracy for %s is: %s"
-                % (task_name, results["results"][task_name]["word_perplexity"])
-            )
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
         else:
-            print(
-                "Accuracy for %s is: %s"
-                % (task_name, results["results"][task_name]["acc"])
-            )
-
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
