@@ -628,6 +628,82 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         )
 
 
+class FP8Config(ITREXQuantizationConfigMixin):
+    """
+    This is a wrapper class about all possible attributes and features that you can play with a model that has been
+    loaded using `auto-awq` library awq quantization relying on auto_awq backend.
+
+    Args:
+        precision (`str`, *optional*, defaults to fp8_e4m3):
+            The data type of weight and activation.
+        approach (`str`, *optional*, defaults to static):
+            The approach for quantization.
+    """
+
+    def __init__(
+        self,
+        precision: str = "fp8_e4m3",
+        approach: str = "static",
+        **kwargs,
+    ):
+        self.precision = precision
+        self.approach = approach
+        self.device = kwargs.get("device", "hpu")
+        self.calib_dataloader = kwargs.get("calib_dataloader", None)
+        self.calib_dataset = kwargs.get("calib_dataset", "NeelNanda/pile-10k")
+        self.calib_func = kwargs.get("calib_func", None)
+        self.calib_padding = kwargs.get("calib_padding", False)
+        self.calib_len = kwargs.get("calib_len", 64)
+        self.calib_shuffle = kwargs.get("calib_shuffle", True)
+        self.calib_iters = kwargs.get("calib_iters", 100)
+        self.skip_lm_head = kwargs.get("skip_lm_head", False)
+        self.tokenizer = kwargs.get("tokenizer", None)
+        self.post_init_fp8()
+
+    def post_init_fp8(self):
+        r"""
+        Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
+        """
+        if self.precision is not None and self.precision not in ["fp8_e5m2", "fp8_e4m3"]:
+            raise ValueError("precision must be in ['fp8_e5m2', 'fp8_e4m3'].")
+        elif self.precision is None:
+            self.precision = "fp8_e4m3"
+
+        if self.approach is None:
+            self.approach = "static"
+        elif self.approach not in ["static", "dynamic"]:
+            raise ValueError(
+                f"Only support 'static' and 'dynamic' approach but found {self.approach}"
+            )
+
+        if self.device is not None and self.device not in ["hpu", torch.device("hpu")]:
+            raise ValueError(f"Only support hpu device but found {self.device}")
+        elif self.device is None:
+            self.device = "hpu"
+
+    def to_diff_dict(self) -> Dict[str, Any]:
+        """
+        Removes all attributes from config which correspond to the default config attributes for better readability and
+        serializes to a Python dictionary.
+
+        Returns:
+            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
+        """
+        config_dict = self.to_dict()
+
+        # get the default config dict
+        default_config_dict = FP8Config().to_dict()
+
+        serializable_config_dict = {}
+
+        # only serialize values that differ from the default config
+        for key, value in config_dict.items():
+            if value != default_config_dict[key]:
+                serializable_config_dict[key] = value
+
+        return serializable_config_dict
+
+
 class RtnConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,

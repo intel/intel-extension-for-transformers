@@ -42,6 +42,7 @@ from ..utils import (
     BitsAndBytesConfig,
     MixedPrecisionConfig,
     SmoothQuantConfig,
+    FP8Config,
     RtnConfig,
     AwqConfig,
     TeqConfig,
@@ -69,6 +70,8 @@ from ..llm.quantization.utils import (
 )
 from ...tools.utils import get_gpu_family, is_ipex_available
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
+from neural_compressor.torch.quantization import quantize
+from neural_compressor.torch.quantization import FP8Config as INCFP8Config
 from transformers.configuration_utils import PretrainedConfig
 from transformers import AutoConfig
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
@@ -361,6 +364,9 @@ class _BaseQBitsAutoModelClass:
         use_xpu = (
             True if device_map == torch.device("xpu") or device_map == "xpu" else False
         )
+        use_hpu = (
+            True if device_map == torch.device("hpu") or device_map == "hpu" else False
+        )
 
         config = kwargs.pop("config", None)
         model_hub = kwargs.pop("model_hub", "huggingface")
@@ -380,12 +386,12 @@ class _BaseQBitsAutoModelClass:
 
         quantization_config = kwargs.pop("quantization_config", None)
         if kwargs.get("use_llm_runtime", None) is not None:
-            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
+            use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu and not use_hpu
             logger.warning(
                 "use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead."
             )
         elif kwargs.get("use_neural_speed", None) is not None:
-            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu
+            use_neural_speed = kwargs.pop("use_neural_speed", True) and not use_xpu and not use_hpu
         else:
             if hasattr(config, "model_type") == False:
                 logger.error(
@@ -393,7 +399,7 @@ class _BaseQBitsAutoModelClass:
                 )
                 exit(0)
 
-            if config.model_type in cls.model_type_list and not use_xpu:
+            if config.model_type in cls.model_type_list and not use_xpu and not use_hpu:
                 if (
                     isinstance(quantization_config, GPTQConfig)
                     and config.model_type not in cls.model_type_list_for_gptq
@@ -452,6 +458,7 @@ class _BaseQBitsAutoModelClass:
                 and is_bitsandbytes_available()
                 and not use_cpu
                 and not use_xpu
+                and not use_hpu
             ):
                 model = cls.ORIG_MODEL.from_pretrained(
                     pretrained_model_name_or_path,
@@ -646,6 +653,68 @@ class _BaseQBitsAutoModelClass:
 
             model.save_pretrained = types.MethodType(save_low_bit, model)
             logger.info("WeightOnlyQuant done.")
+        elif isinstance(quantization_config, FP8Config) and use_hpu:
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path,
+                *model_args,
+                config=config,
+            )
+            if quantization_config.approach == "dynamic":
+                from neural_compressor.torch.algorithms.habana_fp8 import quantize_dynamic
+                model = quantize_dynamic(model, quantization_config.precision, inplace=True)
+            elif quantization_config.approach == "static":
+                qconfig = INCFP8Config(w_dtype=quantization_config.precision, act_dtype=quantization_config.precision, approach="static")
+                if quantization_config.skip_lm_head:
+                    fp32_config = INCFP8Config(w_dtype="fp32", act_dtype="fp32")
+                    qconfig.set_local("lm_head", fp32_config)
+
+                # calibration function
+                calib_func = quantization_config.calib_func
+                tokenizer = quantization_config.tokenizer
+                if calib_func is None:
+                    if quantization_config.tokenizer is None:
+                        logger.error(
+                            "Please provide the tokenizer or provide calib_func directly,"
+                            + " the following is how to get tokenizer. \n"
+                            + " from transformer import AutoTokenizer \n"
+                            + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
+                        )
+                        exit(0)
+
+                    calib_dataset = quantization_config.calib_dataset
+                    calib_shuffle = quantization_config.calib_shuffle
+                    calib_iters = quantization_config.calib_iters
+                    calib_padding = quantization_config.calib_padding
+                    calib_len = quantization_config.calib_len
+
+                    # dataset
+                    from datasets import load_dataset
+                    calib_dataset = load_dataset(calib_dataset, split="train").select(range(100))
+                    if calib_shuffle:
+                        calib_dataset = calib_dataset.shuffle(seed=42)
+                    calib_data = []
+                    for examples in calib_dataset:
+                        calib_data.append(
+                            tokenizer(
+                                examples["text"],
+                                return_tensors="pt",
+                                max_length=calib_len,
+                                padding="max_length",
+                                truncation=True
+                            )
+                        )
+
+                    def calib_func(model):
+                        for i, calib_input in enumerate(calib_data):
+                            if i >= calib_iters:
+                                break
+                            model(
+                                input_ids=calib_input["input_ids"].to('hpu'),
+                                attention_mask=calib_input["attention_mask"].to('hpu'),
+                            )
+                    calib_func = calib_func
+                model = quantize(model, qconfig, calib_func, inplace=True)
+                logger.info("FP8 Quantization done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
             try:
                 import intel_extension_for_pytorch as ipex
