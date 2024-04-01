@@ -44,6 +44,8 @@ bash retrieval_benchmark.sh \
 
 **Result**:
 The result will include all parameter values and MRR (Mean reciprocal rank) and Hit (Hit Ratio) values.
+|  Parameter & Result  | Value  |
+|  :----:  | :----:  |
 | 'index_file_jsonl_path'  | '/path/to/candidate_context.jsonl' |
 | 'query_file_jsonl_path'  | '/path/to/example.jsonl' |
 | 'vector_database'  | 'Chroma'|
