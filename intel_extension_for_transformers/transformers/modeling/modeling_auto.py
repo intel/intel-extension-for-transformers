@@ -1314,7 +1314,7 @@ class _BaseQBitsAutoModelClass:
 
         with ContextManagers(init_contexts):
             model = model_class(config, *model_args, **kwargs)
-        import pdb;pdb.set_trace();
+
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
