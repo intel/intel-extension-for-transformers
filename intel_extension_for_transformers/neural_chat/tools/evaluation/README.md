@@ -109,6 +109,7 @@ This will run benchmark multiple times based on the following different paramete
 | 'MRR' | 0.7 |
 | 'Hit' | 0.7 |
 ......
+
 ***max_Hit***:
 |  Parameter & Result  | Value  |
 |  :----:  | :----:  |
@@ -289,6 +290,7 @@ This will run benchmark multiple times based on the following different paramete
 | "context_recall_average" | 1.0 |
 | "context_precision_average" | 0.49999999995 |
 ...
+
 ***max_faithfulness_average***:
 |  Parameter & Result  | Value  |
 |  :----:  | :----:  |
@@ -318,6 +320,7 @@ This will run benchmark multiple times based on the following different paramete
 | "context_recall_average" | 1.0 |
 | "context_precision_average" | 0.49999999995 |
 ...
+
 ***max_context_recall_average***:
 |  Parameter & Result  | Value  |
 |  :----:  | :----:  |
@@ -347,6 +350,7 @@ This will run benchmark multiple times based on the following different paramete
 | "context_recall_average" | 1.0 |
 | "context_precision_average" | 0.49999999995 |
 ...
+
 ***max_context_precision_average***:
 |  Parameter & Result  | Value  |
 |  :----:  | :----:  |
