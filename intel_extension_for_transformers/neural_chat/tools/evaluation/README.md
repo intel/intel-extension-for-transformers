@@ -108,7 +108,8 @@ This will run benchmark multiple times based on the following different paramete
 | 'enable_rerank' | True |
 | 'MRR' | 0.7 |
 | 'Hit' | 0.7 |
-......
+
+...
 
 ***max_Hit***:
 |  Parameter & Result  | Value  |
@@ -129,6 +130,7 @@ This will run benchmark multiple times based on the following different paramete
 | 'enable_rerank' | True |
 | 'MRR' | 0.7 |
 | 'Hit' | 0.7 |
+
 ...
 
 ## 3. Rag Benchmark
@@ -289,6 +291,7 @@ This will run benchmark multiple times based on the following different paramete
 | "faithfulness_average" | 0.5083333333333333 |
 | "context_recall_average" | 1.0 |
 | "context_precision_average" | 0.49999999995 |
+
 ...
 
 ***max_faithfulness_average***:
@@ -319,6 +322,7 @@ This will run benchmark multiple times based on the following different paramete
 | "faithfulness_average" | 0.675 |
 | "context_recall_average" | 1.0 |
 | "context_precision_average" | 0.49999999995 |
+
 ...
 
 ***max_context_recall_average***:
@@ -349,6 +353,7 @@ This will run benchmark multiple times based on the following different paramete
 | "faithfulness_average" | 0.675 |
 | "context_recall_average" | 1.0 |
 | "context_precision_average" | 0.49999999995 |
+
 ...
 
 ***max_context_precision_average***:
@@ -379,4 +384,5 @@ This will run benchmark multiple times based on the following different paramete
 | "faithfulness_average" | 0.6666666666666667 |
 | "context_recall_average" | 1.0 |
 | "context_precision_average" | 0.49999999995 |
+
 ...
