@@ -1,6 +1,6 @@
 This README serves as a guide to set up the backend for a code generation chatbot utilizing the NeuralChat framework. You can deploy this code generation chatbot across various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU, and Client GPU.
 
-This code generation chatbot demonstrates how to deploy it specifically on Intel XEON processors. To run the 34b or 70b level LLM model, we require implementing model parallelism using multi-node strategy.
+This code generation chatbot demonstrates how to deploy it specifically on Intel XEON processors using DeepSpeed. To run the 34b or 70b level LLM model, we require implementing model parallelism using multi-node strategy.
 
 
 # Setup Conda

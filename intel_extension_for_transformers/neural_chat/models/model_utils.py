@@ -300,6 +300,27 @@ def init_deepspeed_inference(model, model_name_or_path, peft_path, use_hpu_graph
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     return model.module
 
+def tpp_dist_inference_init():
+    import os
+
+    global my_rank
+    global my_size
+    if int(os.environ.get("PMI_SIZE", "0")) > 1:
+        try:
+            import oneccl_bindings_for_pytorch
+        except:
+            print(
+                "CCL backend requested but import oneccl_bindings_for_pytorch failed"
+            )
+            raise
+
+        os.environ["RANK"] = os.environ.get("PMI_RANK", "0")
+        os.environ["WORLD_SIZE"] = os.environ.get("PMI_SIZE", "1")
+        torch.distributed.init_process_group(backend="ccl")
+        my_rank = torch.distributed.get_rank()
+        my_size = torch.distributed.get_world_size()
+        logging.info(f"My rank: {my_rank} size: {my_size}")
+
 
 def peft_model(model_name, peft_model, model_dtype, hf_access_token=None):
     import importlib.util
@@ -411,6 +432,7 @@ def load_model(
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
+    use_tpp=False,
     optimization_config=None,
     hf_access_token=None,
     use_neural_speed=False,
@@ -840,6 +862,33 @@ def load_model(
                     model = MPTTSModelForCausalLM(
                         model, config, use_cache=use_cache, model_dtype=torch.bfloat16
                     )
+                if use_tpp:
+                    tpp_dist_inference_init()
+                    if model.config.architectures[0] == "GPTJForCausalLM":
+                        from tpp_pytorch_extension.llm.fused_gptj_infer import OptimizeModelForGPTJ
+                        OptimizeModelForGPTJ(
+                            model, dtype=tpp_dtype, device=device, weight_dtype=weight_dtype
+                        )
+                    elif model.config.architectures[0] == "OPTForCausalLM":
+                        from tpp_pytorch_extension.llm.fused_opt_infer import OptimizeModelForOPT
+                        OptimizeModelForOPT(
+                            model, dtype=tpp_dtype, device=device, weight_dtype=weight_dtype
+                        )
+                    elif model.config.architectures[0] == "LLaMAForCausalLM":
+                        from tpp_pytorch_extension.llm.fused_llama_infer import OptimizeModelForLlama
+                        OptimizeModelForLlama(
+                            model, dtype=tpp_dtype, device=device, weight_dtype=weight_dtype
+                        )
+                    elif model.config.architectures[0] == "LlamaForCausalLM":
+                        from tpp_pytorch_extension.llm.fused_llama_infer import OptimizeModelForLlama
+                        OptimizeModelForLlama(
+                            model, dtype=tpp_dtype, device=device, weight_dtype=weight_dtype
+                        )
+                    else:
+                        logging.error(type(model.config.architectures), model.config.architectures)
+                        logging.error("Model type not supported by TPP")
+                        set_latest_error(ErrorCodes.ERROR_GENERIC)
+                        return
         elif device in ["cuda", "xpu"]:
             if hasattr(model, "device") and model.device.type != device:
                 try:

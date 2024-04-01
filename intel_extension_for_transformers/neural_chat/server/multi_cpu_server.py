@@ -200,6 +200,10 @@ def parse_args():
         help="bfloat16, float32 or float16",
     )
     parser.add_argument(
+        "--use_deepspeed", action='store_true', default=False,)
+    parser.add_argument(
+        "--use_tpp", action='store_true', default=False,)
+    parser.add_argument(
         "--return_stats", action='store_true', default=False,)
     args = parser.parse_args()
     return args
@@ -235,7 +239,8 @@ def construct_chatbot(args):
             ipex_int8=args.ipex_int8,
             use_cache=args.use_kv_cache,
             peft_path=args.peft_model_path,
-            use_deepspeed=False,
+            use_deepspeed=args.use_deepspeed,
+            use_tpp=args.use_tpp,
         ),
         optimization_config=MixedPrecisionConfig(dtype=args.dtype)
     )
