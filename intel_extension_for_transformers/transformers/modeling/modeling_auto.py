@@ -1382,7 +1382,8 @@ class _BaseQBitsAutoModelClass:
                 empty_weights=True,
             )
 
-        if (use_cpu and torch_dtype == torch.float16) or ((use_xpu or not CpuInfo().bf16) and torch_dtype == torch.bfloat16):
+        if (not use_xpu and torch_dtype == torch.float16) or ((not use_xpu or not CpuInfo().bf16)
+                                                              and torch_dtype == torch.bfloat16):
             model.to(dtype=torch.float32)
 
         # If it is a model with generation capabilities, attempt to load the generation config
