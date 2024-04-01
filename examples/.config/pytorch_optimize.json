@@ -1750,15 +1750,7 @@
   },
   "mistral_7b_gptq_neuralspeed_hf": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
-    "tune":{
-      "cmd": "bash run_tuning.sh",
-      "params": {
-        "topology": "mistral_7b_int4_gptq",
-        "task": "generation",
-        "backend": "neuralspeed",
-        "output_model": "saved_results"
-      }
-    },
+    "tune":{},
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
@@ -1776,14 +1768,7 @@
   },
   "mistral_7b_autoround_hf": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
-    "tune":{
-      "cmd": "bash run_tuning.sh",
-      "params": {
-        "topology": "mistral_7b_int4_autoround",
-        "task": "generation",
-        "output_model": "saved_results"
-      }
-    },
+    "tune":{},
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
@@ -1800,14 +1785,7 @@
   },
   "mistral_7b_gptq_hf": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
-    "tune":{
-      "cmd": "bash run_tuning.sh",
-      "params": {
-        "topology": "mistral_7b_int4_gptq",
-        "task": "generation",
-        "output_model": "saved_results"
-      }
-    },
+    "tune":{},
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
