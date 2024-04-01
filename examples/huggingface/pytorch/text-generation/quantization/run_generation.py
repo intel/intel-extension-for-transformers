@@ -142,6 +142,7 @@ parser.add_argument(
     action="store_true",
     help="Use layer wise to do quantization",
 )
+parser.add_argument("--woq_loading", action="store_true")
 # ============GPTQ configs==============
 parser.add_argument(
     "--desc_act",
@@ -442,8 +443,7 @@ if args.output_dir is not None:
             use_neural_speed=args.use_neural_speed
             )
 
-
-# int8 model loading
+# SQ W8A8 model loading
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
@@ -468,7 +468,13 @@ if args.int8 or args.int8_bf16_mixed:
             file_name="best_model.pt",
             trust_remote_code=args.trust_remote_code,
         )
-
+# WOQ model loading
+if args.woq_loading:
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.output_dir,
+        trust_remote_code=args.trust_remote_code,
+        use_neural_speed=args.use_neural_speed
+        )  
 
 if args.benchmark:
     user_model = (
