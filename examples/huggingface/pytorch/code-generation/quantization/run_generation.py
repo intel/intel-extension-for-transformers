@@ -34,6 +34,7 @@ parser.add_argument(
 )
 parser.add_argument("--trust_remote_code", action="store_true")
 parser.add_argument("--_commit_hash", default=None, type=str)
+parser.add_argument("--use_neural_speed", action="store_true")
 parser.add_argument("--dataset", nargs="?", default="mbpp", const="mbpp")
 parser.add_argument("--dtype", type=str, default="int8")
 parser.add_argument(
