@@ -73,7 +73,7 @@ class DocumentParser:
         Parse the uploaded file.
         """
         if input.endswith("pdf") or input.endswith("docx") or input.endswith("html") \
-           or input.endswith("txt") or input.endswith("md"):
+           or input.endswith("txt") or input.endswith("md") or input.endswith("pptx"):
             content = load_unstructured_data(input)
             if self.process:
                 chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)

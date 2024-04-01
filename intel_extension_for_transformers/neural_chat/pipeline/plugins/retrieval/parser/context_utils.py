@@ -19,6 +19,7 @@ import unicodedata
 import pandas as pd
 import re, json
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
+from langchain_community.document_loaders import UnstructuredPowerPointLoader
 from docx import Document as DDocument
 from bs4 import BeautifulSoup
 import fitz
@@ -109,6 +110,14 @@ def read_md(md_path):
     """Read docx file."""
     loader = UnstructuredMarkdownLoader(md_path)
     text = loader.load()[0].page_content
+    return text
+
+
+def read_pptx(pptx_path):
+    """Read pptx file."""
+    loader = UnstructuredPowerPointLoader(pptx_path)
+    text = loader.load()[0].page_content
+    print(text)
     return text
 
 
@@ -226,6 +235,8 @@ def load_unstructured_data(input):
         text = read_txt(input)
     elif input.endswith("md"):
         text = read_md(input)
+    elif input.endswith("pptx"):
+        text = read_pptx(input)
 
     text = text.replace('\n', ' ')
     text = text.replace('\n\n', ' ')
