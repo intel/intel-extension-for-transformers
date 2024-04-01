@@ -188,6 +188,15 @@ def _replace_linear(
                             QuantizedLinearQBits,
                         )  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
 
+                        use_optimum_format = getattr(module, "use_optimum_format", False) or \
+                            quantization_config.weight_dtype not in [
+                                "fp8_e5m2",
+                                "fp8_e4m3",
+                                "fp4",
+                                "nf4",
+                                "int4_fullrange",
+                            ]
+
                         model._modules[name] = QuantizedLinearQBits(
                             in_features,
                             out_features,
