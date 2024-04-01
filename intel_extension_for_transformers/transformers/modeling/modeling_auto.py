@@ -714,7 +714,7 @@ class _BaseQBitsAutoModelClass:
                             )
                     calib_func = calib_func
                 model = quantize(model, qconfig, calib_func, inplace=True)
-                logger.info("FP8 Quantization done.")
+            logger.info("FP8 Quantization done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
             try:
                 import intel_extension_for_pytorch as ipex
