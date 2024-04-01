@@ -1268,7 +1268,6 @@ class _BaseQBitsAutoModelClass:
         #    - we assume all floating dtype weights are of the same dtype
         # we also may have config.torch_dtype available, but we won't rely on it till v5
         dtype_orig = None
-
         if torch_dtype is not None:
             if isinstance(torch_dtype, str):
                 if torch_dtype == "auto":
@@ -1376,7 +1375,7 @@ class _BaseQBitsAutoModelClass:
             "int4_fullrange",
         ]:
             model = replace_linear(
-                model,
+                model.float(),
                 quantization_config=quantization_config,
                 device="cpu" if device_map == "auto" else device_map,
                 empty_weights=True,
