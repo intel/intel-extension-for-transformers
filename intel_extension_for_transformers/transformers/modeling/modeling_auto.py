@@ -1304,7 +1304,7 @@ class _BaseQBitsAutoModelClass:
                     or (use_cpu and quantization_config.compute_dtype == "fp16")):
                 quantization_config.compute_dtype = "fp32"
         if quantization_config.scale_dtype is None:
-            quantization_config.scale_dtype = "fp16"
+            quantization_config.scale_dtype = "fp32"
         if quantization_config.weight_dtype is None:
             quantization_config.weight_dtype = "int4_clip"
 
@@ -1314,7 +1314,7 @@ class _BaseQBitsAutoModelClass:
 
         with ContextManagers(init_contexts):
             model = model_class(config, *model_args, **kwargs)
-
+        import pdb;pdb.set_trace();
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
