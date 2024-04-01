@@ -44,9 +44,22 @@ bash retrieval_benchmark.sh \
 
 **Result**:
 The result will include all parameter values and MRR (Mean reciprocal rank) and Hit (Hit Ratio) values.
-```
-{'index_file_jsonl_path': '/path/to/candidate_context.jsonl', 'query_file_jsonl_path': '/path/to/example.jsonl', 'vector_database': 'Chroma', 'embedding_model': '/path/to/bge-large-en-v1.5', 'retrieval_type': 'default', 'polish': False, 'search_type': 'similarity', 'llm_model': '/path/to/neural-chat-7b-v3-1/', 'k': 1, 'fetch_k': 5, 'score_threshold': 0.3, 'reranker_model': '/path/to/bge-reranker-large', 'top_n': 1, 'enable_rerank': False, 'MRR': 0.8, 'Hit': 0.8}
-```
+| 'index_file_jsonl_path'  | '/path/to/candidate_context.jsonl' |
+| 'query_file_jsonl_path'  | '/path/to/example.jsonl' |
+| 'vector_database'  | 'Chroma'|
+| 'embedding_model' | '/path/to/bge-large-en-v1.5' |
+| 'retrieval_type' | 'default' |
+| 'polish' | False |
+| 'search_type' | 'similarity' |
+| 'llm_model' | '/path/to/neural-chat-7b-v3-1/' |
+| 'k' | 1 |
+| 'fetch_k' | 5 |
+| 'score_threshold' | 0.3 |
+| 'reranker_model' | '/path/to/bge-reranker-large' |
+| 'top_n' | 1 |
+| 'enable_rerank' | False |
+| 'MRR' | 0.8 |
+| 'Hit' | 0.8 |
 
 ### SuperBenchmark
 You can run retrieval superbenchmark by the following commands.
