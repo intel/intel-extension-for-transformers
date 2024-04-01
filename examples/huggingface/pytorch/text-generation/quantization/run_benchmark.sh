@@ -143,7 +143,7 @@ function run_benchmark {
     elif [ "${topology}" = "baichuan2_13b" ]; then
         model_name_or_path="baichuan-inc/Baichuan2-13B-Base"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        pip install transformers==4.33
+        pip install transformers==4.35.2
     elif [ "${topology}" = "qwen_7b" ]; then
         model_name_or_path="Qwen/Qwen-7B"
         extra_cmd=$extra_cmd" --trust_remote_code"

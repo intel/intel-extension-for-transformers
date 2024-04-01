@@ -174,7 +174,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        pip install transformers==4.33
+        pip install transformers==4.35.2
     elif [ "${topology}" = "qwen_7b" ]; then
         alpha=0.9
         model_name_or_path="Qwen/Qwen-7B"

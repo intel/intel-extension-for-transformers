@@ -15,9 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import math
 import torch
-from ..utils import DTYPE_BITS_MAPPING, convert_dtype_str2torch
+from ..utils import DTYPE_BITS_MAPPING
 from functools import reduce
 from operator import mul
 from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
@@ -132,10 +131,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
             self.compression_dtype = torch.int32
         else:
             self.compression_dtype = compression_dtype
-
-        # self.register_buffer("qzeros", None)
-        # self.register_buffer("scales", None)
-        # self.register_buffer("g_idx", None)
 
     def forward(self, x: torch.Tensor):
         # weights are cast automatically as Int8Params, but the bias has to be cast manually

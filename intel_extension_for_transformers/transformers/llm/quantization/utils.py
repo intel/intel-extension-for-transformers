@@ -20,6 +20,7 @@ import logging
 import gc
 import math
 import os
+from ...utils import CpuInfo
 from accelerate import init_empty_weights
 from datasets import load_dataset
 from neural_compressor import quantization
@@ -153,6 +154,14 @@ def _replace_linear(
             current_key_name = []
         current_key_name.append(name)
         is_removed = False
+        use_optimum_format = getattr(module, "use_optimum_format", False) or \
+            quantization_config.weight_dtype not in [
+                "fp8_e5m2",
+                "fp8_e4m3",
+                "fp4",
+                "nf4",
+                "int4_fullrange",
+            ]
 
         if (
             isinstance(module, torch.nn.Linear)
@@ -219,7 +228,7 @@ def _replace_linear(
                             compression_dtype=getattr(module, "compression_dtype", torch.int8),
                             compression_dim=getattr(module, "compression_dim", 0),
                             device=device,
-                            use_optimum_format=getattr(module, "use_optimum_format", True),
+                            use_optimum_format=getattr(module, "use_optimum_format", False),
                         )
                         if quantization_config.quant_method.value == "gptq":
                             g_idx = getattr(module, "g_idx", torch.zeros(in_features, dtype=torch.int32).to(device))
@@ -549,6 +558,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
             )
 
             q_model = replace_linear(model, None, None, config, device=device)
+            if CpuInfo().bf16:
+                q_model.to(torch.float16)
         else:
             if config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
