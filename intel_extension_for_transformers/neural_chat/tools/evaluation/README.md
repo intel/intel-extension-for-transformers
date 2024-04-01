@@ -89,12 +89,46 @@ This will run benchmark multiple times based on the following different paramete
 - `enable_rerank`: [True, False]
 
 **Result**:
-```
-max_MRR {'index_file_jsonl_path': '/path/to/candidate_context.jsonl', 'query_file_jsonl_path': '/path/to/example.jsonl', 'vector_database': 'Chroma', 'embedding_model': '/path/to/bge-large-en-v1.5', 'retrieval_type': 'default', 'polish': True, 'search_type': 'similarity', 'llm_model': '/path/to/neural-chat-7b-v3-1/', 'k': 1, 'fetch_k': 5, 'score_threshold': 0.3, 'reranker_model': '/path/to/bge-reranker-large', 'top_n': 1, 'enable_rerank': True, 'MRR': 0.7, 'Hit': 0.7}
+max_MRR 
+|  Parameter & Result  | Value  |
+|  :----:  | :----:  |
+| 'index_file_jsonl_path'  | '/path/to/candidate_context.jsonl' |
+| 'query_file_jsonl_path'  | '/path/to/example.jsonl' |
+| 'vector_database'  | 'Chroma'|
+| 'embedding_model' | '/path/to/bge-large-en-v1.5' |
+| 'retrieval_type' | 'default' |
+| 'polish' | True |
+| 'search_type' | 'similarity' |
+| 'llm_model' | '/path/to/neural-chat-7b-v3-1/' |
+| 'k' | 1 |
+| 'fetch_k' | 5 |
+| 'score_threshold' | 0.3 |
+| 'reranker_model' | '/path/to/bge-reranker-large' |
+| 'top_n' | 1 |
+| 'enable_rerank' | True |
+| 'MRR' | 0.7 |
+| 'Hit' | 0.7 |
 ...
-max_Hit {'index_file_jsonl_path': '/path/to/candidate_context.jsonl', 'query_file_jsonl_path': '/path/to/example.jsonl', 'vector_database': 'Chroma', 'embedding_model': '/path/to/bge-large-en-v1.5', 'retrieval_type': 'default', 'polish': True, 'search_type': 'similarity', 'llm_model': '/path/to/neural-chat-7b-v3-1/', 'k': 1, 'fetch_k': 20, 'score_threshold': 0.3, 'reranker_model': '/path/to/bge-reranker-large', 'top_n': 3, 'enable_rerank': True, 'MRR': 0.7, 'Hit': 0.7}
+max_Hit
+|  Parameter & Result  | Value  |
+|  :----:  | :----:  |
+| 'index_file_jsonl_path'  | '/path/to/candidate_context.jsonl' |
+| 'query_file_jsonl_path'  | '/path/to/example.jsonl' |
+| 'vector_database'  | 'Chroma'|
+| 'embedding_model' | '/path/to/bge-large-en-v1.5' |
+| 'retrieval_type' | 'default' |
+| 'polish' | True |
+| 'search_type' | 'similarity' |
+| 'llm_model' | '/path/to/neural-chat-7b-v3-1/' |
+| 'k' | 1 |
+| 'fetch_k' | 20 |
+| 'score_threshold' | 0.3 |
+| 'reranker_model' | '/path/to/bge-reranker-large' |
+| 'top_n' | 3 |
+| 'enable_rerank' | True |
+| 'MRR' | 0.7 |
+| 'Hit' | 0.7 |
 ...
-```
 
 ## 3. Rag Benchmark
 ### Installation
@@ -151,9 +185,35 @@ bash ragas_benchmark.sh \
 
 **Result**:
 The result will include all parameter values and values of Average Answer Relevancy, Average Faithfulness, Average Context Recall, Average Context Precision.
-```
-{"ground_truth_file": "ground_truth.jsonl", "input_path": "data.txt", "vector_database": "Chroma", "embedding_model": "/path/to/bge-large-en-v1.5", "retrieval_type": "default", "polish": true, "search_type": "similarity", "llm_model": "/path/to/neural-chat-7b-v3-1/", "k": 1, "fetch_k": 5, "score_threshold": 0.3, "reranker_model": "/path/to/bge-reranker-large", "top_n": 1, "enable_rerank": true, "max_chuck_size": 256, "temperature": 0.01, "top_k": 1, "top_p": 0.1, "repetition_penalty": 1.0, "num_beams": 1, "do_sample": true, "answer_relevancy_average": 0.937748267362332, "faithfulness_average": 0.5833333333333333, "context_recall_average": 1.0, "context_precision_average": 0.49999999995}
-```
+
+|  Parameter & Result  | Value  |
+|  :----:  | :----:  |
+| "ground_truth_file"  | "ground_truth.jsonl" |
+| "input_path" | "data.txt" |
+| "vector_database"  | "Chroma" |
+| "embedding_model" | "/path/to/bge-large-en-v1.5" |
+| "retrieval_type" | "default" |
+| "polish" | True |
+| "search_type" | "similarity" |
+| "llm_model" | "/path/to/neural-chat-7b-v3-1/" |
+| "k" | 1 |
+| "fetch_k" | 5 |
+| "score_threshold" | 0.3 |
+| "reranker_model" | "/path/to/bge-reranker-large" |
+| "top_n" | 1 |
+| "enable_rerank" | True |
+| "max_chuck_size" | 256 |
+| "temperature" | 0.01 |
+| "top_k" | 1 |
+| "top_p" | 0.1 |
+| "repetition_penalty" | 1.0 |
+| "num_beams" | 1 |
+| "do_sample" | True |
+| "answer_relevancy_average" | 0.937748267362332 |
+| "faithfulness_average" | 0.5833333333333333 |
+| "context_recall_average" | 1.0 |
+| "context_precision_average" | 0.49999999995 |
+
 
 ### SuperBenchmark
 You can run rag superbenchmark by the following commands.
@@ -202,13 +262,119 @@ This will run benchmark multiple times based on the following different paramete
 - `do_sample`: [True, False]
 
 **Result**:
-```
-max_answer_relevancy_average {'ground_truth_file': 'ground_truth.jsonl', 'input_path': 'data.txt', 'vector_database': 'Chroma', 'embedding_model': '/path/to/bge-large-en-v1.5', 'retrieval_type': 'default', 'polish': True, 'search_type': 'similarity', 'llm_model': '/path/to/neural-chat-7b-v3-1', 'k': 1, 'fetch_k': 5, 'score_threshold': 0.3, 'reranker_model': '/path/to/bge-reranker-large', 'top_n': 1, 'enable_rerank': True, 'max_chuck_size': 256, 'temperature': 0.01, 'top_k': 1, 'top_p': 0.1, 'repetition_penalty': 1.0, 'num_beams': 20, 'do_sample': True, 'answer_relevancy_average': 0.9533325665270252, 'faithfulness_average': 0.5083333333333333, 'context_recall_average': 1.0, 'context_precision_average': 0.49999999995}
+max_answer_relevancy_average
+|  Parameter & Result  | Value  |
+|  :----:  | :----:  |
+| "ground_truth_file"  | "ground_truth.jsonl" |
+| "input_path" | "data.txt" |
+| "vector_database"  | "Chroma" |
+| "embedding_model" | "/path/to/bge-large-en-v1.5" |
+| "retrieval_type" | "default" |
+| "polish" | True |
+| "search_type" | "similarity" |
+| "llm_model" | "/path/to/neural-chat-7b-v3-1/" |
+| "k" | 1 |
+| "fetch_k" | 5 |
+| "score_threshold" | 0.3 |
+| "reranker_model" | "/path/to/bge-reranker-large" |
+| "top_n" | 1 |
+| "enable_rerank" | True |
+| "max_chuck_size" | 256 |
+| "temperature" | 0.01 |
+| "top_k" | 1 |
+| "top_p" | 0.1 |
+| "repetition_penalty" | 1.0 |
+| "num_beams" | 20 |
+| "do_sample" | True |
+| "answer_relevancy_average" | 0.9533325665270252 |
+| "faithfulness_average" | 0.5083333333333333 |
+| "context_recall_average" | 1.0 |
+| "context_precision_average" | 0.49999999995 |
 ...
-max_faithfulness_average {'ground_truth_file': 'ground_truth.jsonl', 'input_path': 'data.txt', 'vector_database': 'Chroma', 'embedding_model': '/path/to/bge-large-en-v1.5', 'retrieval_type': 'default', 'polish': True, 'search_type': 'similarity', 'llm_model': '/path/to/neural-chat-7b-v3-1', 'k': 1, 'fetch_k': 5, 'score_threshold': 0.3, 'reranker_model': '/path/to/bge-reranker-large', 'top_n': 1, 'enable_rerank': True, 'max_chuck_size': 256, 'temperature': 0.01, 'top_k': 1, 'top_p': 0.1, 'repetition_penalty': 1.0, 'num_beams': 1, 'do_sample': True, 'answer_relevancy_average': 0.9354267206448277, 'faithfulness_average': 0.675, 'context_recall_average': 1.0, 'context_precision_average': 0.49999999995}
+max_faithfulness_average
+|  Parameter & Result  | Value  |
+|  :----:  | :----:  |
+| "ground_truth_file"  | "ground_truth.jsonl" |
+| "input_path" | "data.txt" |
+| "vector_database"  | "Chroma" |
+| "embedding_model" | "/path/to/bge-large-en-v1.5" |
+| "retrieval_type" | "default" |
+| "polish" | True |
+| "search_type" | "similarity" |
+| "llm_model" | "/path/to/neural-chat-7b-v3-1/" |
+| "k" | 1 |
+| "fetch_k" | 5 |
+| "score_threshold" | 0.3 |
+| "reranker_model" | "/path/to/bge-reranker-large" |
+| "top_n" | 1 |
+| "enable_rerank" | True |
+| "max_chuck_size" | 256 |
+| "temperature" | 0.01 |
+| "top_k" | 1 |
+| "top_p" | 0.1 |
+| "repetition_penalty" | 1.0 |
+| "num_beams" | 1 |
+| "do_sample" | True |
+| "answer_relevancy_average" | 0.9354267206448277 |
+| "faithfulness_average" | 0.675 |
+| "context_recall_average" | 1.0 |
+| "context_precision_average" | 0.49999999995 |
 ...
-max_context_recall_average {'ground_truth_file': 'ground_truth.jsonl', 'input_path': 'data.txt', 'vector_database': 'Chroma', 'embedding_model': '/path/to/bge-large-en-v1.5', 'retrieval_type': 'default', 'polish': True, 'search_type': 'similarity', 'llm_model': '/path/to/neural-chat-7b-v3-1', 'k': 1, 'fetch_k': 5, 'score_threshold': 0.3, 'reranker_model': '/path/to/bge-reranker-large', 'top_n': 1, 'enable_rerank': True, 'max_chuck_size': 256, 'temperature': 0.01, 'top_k': 1, 'top_p': 0.1, 'repetition_penalty': 1.0, 'num_beams': 1, 'do_sample': True, 'answer_relevancy_average': 0.9354267206448277, 'faithfulness_average': 0.675, 'context_recall_average': 1.0, 'context_precision_average': 0.49999999995}
+max_context_recall_average
+|  Parameter & Result  | Value  |
+|  :----:  | :----:  |
+| "ground_truth_file"  | "ground_truth.jsonl" |
+| "input_path" | "data.txt" |
+| "vector_database"  | "Chroma" |
+| "embedding_model" | "/path/to/bge-large-en-v1.5" |
+| "retrieval_type" | "default" |
+| "polish" | True |
+| "search_type" | "similarity" |
+| "llm_model" | "/path/to/neural-chat-7b-v3-1/" |
+| "k" | 1 |
+| "fetch_k" | 5 |
+| "score_threshold" | 0.3 |
+| "reranker_model" | "/path/to/bge-reranker-large" |
+| "top_n" | 1 |
+| "enable_rerank" | True |
+| "max_chuck_size" | 256 |
+| "temperature" | 0.01 |
+| "top_k" | 1 |
+| "top_p" | 0.1 |
+| "repetition_penalty" | 1.0 |
+| "num_beams" | 1 |
+| "do_sample" | True |
+| "answer_relevancy_average" | 0.9354267206448277 |
+| "faithfulness_average" | 0.675 |
+| "context_recall_average" | 1.0 |
+| "context_precision_average" | 0.49999999995 |
 ...
-max_context_precision_average {'ground_truth_file': 'ground_truth.jsonl', 'input_path': 'data.txt', 'vector_database': 'Chroma', 'embedding_model': '/path/to/bge-large-en-v1.5', 'retrieval_type': 'default', 'polish': True, 'search_type': 'similarity', 'llm_model': '/path/to/neural-chat-7b-v3-1', 'k': 1, 'fetch_k': 5, 'score_threshold': 0.3, 'reranker_model': '/path/to/bge-reranker-large', 'top_n': 1, 'enable_rerank': True, 'max_chuck_size': 256, 'temperature': 0.01, 'top_k': 1, 'top_p': 0.1, 'repetition_penalty': 1.1, 'num_beams': 1, 'do_sample': True, 'answer_relevancy_average': 0.7429146997306499, 'faithfulness_average': 0.6666666666666667, 'context_recall_average': 1.0, 'context_precision_average': 0.49999999995}
+max_context_precision_average
+|  Parameter & Result  | Value  |
+|  :----:  | :----:  |
+| "ground_truth_file"  | "ground_truth.jsonl" |
+| "input_path" | "data.txt" |
+| "vector_database"  | "Chroma" |
+| "embedding_model" | "/path/to/bge-large-en-v1.5" |
+| "retrieval_type" | "default" |
+| "polish" | True |
+| "search_type" | "similarity" |
+| "llm_model" | "/path/to/neural-chat-7b-v3-1/" |
+| "k" | 1 |
+| "fetch_k" | 5 |
+| "score_threshold" | 0.3 |
+| "reranker_model" | "/path/to/bge-reranker-large" |
+| "top_n" | 1 |
+| "enable_rerank" | True |
+| "max_chuck_size" | 256 |
+| "temperature" | 0.01 |
+| "top_k" | 1 |
+| "top_p" | 0.1 |
+| "repetition_penalty" | 1.1 |
+| "num_beams" | 1 |
+| "do_sample" | True |
+| "answer_relevancy_average" | 0.7429146997306499 |
+| "faithfulness_average" | 0.6666666666666667 |
+| "context_recall_average" | 1.0 |
+| "context_precision_average" | 0.49999999995 |
 ...
-```
