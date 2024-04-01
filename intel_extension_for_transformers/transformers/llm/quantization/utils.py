@@ -558,8 +558,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
             )
 
             q_model = replace_linear(model, None, None, config, device=device)
-            if CpuInfo().bf16:
-                q_model.to(torch.float16)
         else:
             if config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)

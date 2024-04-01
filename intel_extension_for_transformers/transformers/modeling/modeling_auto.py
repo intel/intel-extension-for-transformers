@@ -1382,7 +1382,7 @@ class _BaseQBitsAutoModelClass:
                 empty_weights=True,
             )
 
-        if (not use_xpu and torch_dtype == torch.float16) or ((not use_xpu or not CpuInfo().bf16)
+        if (not use_xpu and torch_dtype == torch.float16) or (not use_xpu and not CpuInfo().bf16
                                                               and torch_dtype == torch.bfloat16):
             model.to(dtype=torch.float32)
 
