@@ -493,7 +493,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
             with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
                 worker_ports = [router.port + i + 1 for i in range(router.world_size)]
                 executor.map(generate_stream, worker_ports)
-            
+
             while not responses:
                 pass
             def generate():
@@ -518,7 +518,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
                     responses.append(chat_completion_response)
                 except requests.exceptions.RequestException as e:
                     print(f"Error sending/receiving on port {port}: {e}")
-            
+
             with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
                 worker_ports = [router.port + i + 1 for i in range(router.world_size)]
                 executor.map(send_request, worker_ports)
@@ -609,7 +609,7 @@ async def create_completion(request: CompletionRequest):
             with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
                 worker_ports = [router.port + i + 1 for i in range(router.world_size)]
                 executor.map(generate_stream, worker_ports)
-            
+
             while not responses:
                 pass
             def generate():
@@ -634,7 +634,7 @@ async def create_completion(request: CompletionRequest):
                     responses.append(chat_completion_response)
                 except requests.exceptions.RequestException as e:
                     print(f"Error sending/receiving on port {port}: {e}")
-            
+
             with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
                 worker_ports = [router.port + i + 1 for i in range(router.world_size)]
                 executor.map(send_request, worker_ports)
