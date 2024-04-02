@@ -110,7 +110,7 @@ if config.model_type == "llama":
    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", trust_remote_code=True, token="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")
 else:
    #tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
-   tokenizer = AutoTokenizer.from_pretrained("/home/gta/Qwen-7B-Chat", trust_remote_code=True, token="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")
+   tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-7B-Chat", trust_remote_code=True, token="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")
 
 quantization_config = None
 if args.woq:
@@ -210,7 +210,7 @@ if args.benchmark:
                     input_ids, max_new_tokens=int(args.max_new_tokens), **generate_kwargs
                 )
                 toc = time.time()
-                gen_ids = output[0] if args.profile_token_latency else output
+                gen_ids = output[0] #if args.profile_token_latency else output
                 gen_text = tokenizer.batch_decode(
                     gen_ids, skip_special_tokens=True)
                 if args.device == "xpu":
@@ -219,8 +219,8 @@ if args.benchmark:
                 print(f"Save pt for iter {i}")
                 torch.save(prof.key_averages().table(
                     sort_by="self_xpu_time_total"), f"./profile_{i}.pt")
-                # torch.save(prof.table(sort_by="id", row_limit=-1),
-                #            './profile_id.pt')
+                torch.save(prof.table(sort_by="id", row_limit=-1),
+                           './profile_id.pt')
                 # torch.save(prof.key_averages(
                 #     group_by_input_shape=True).table(), "./profile_detail.pt")
                 prof.export_chrome_trace(f"./trace_{i}.json")
