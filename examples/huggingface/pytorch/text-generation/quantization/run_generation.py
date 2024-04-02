@@ -552,12 +552,7 @@ if args.accuracy:
             eval_args += ",use_gptq=True"
     results = evaluate(
         model="hf-causal",
-<<<<<<< HEAD
-        model_args="pretrained=" + argrs.model + ",tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + args._commit_hash +
-        ",trust_remote_code=" + str(args.trust_remote_code),
-=======
         model_args=eval_args,
->>>>>>> 2c7866ea509 (add hf model id support)
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
