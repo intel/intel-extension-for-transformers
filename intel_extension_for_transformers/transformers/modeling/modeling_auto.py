@@ -52,11 +52,11 @@ from ..utils import (
     LazyImport,
 )
 from ..utils.utility import (
+    CpuInfo,
     generate_dummy_past_key_values,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
     IPEX_OPT_LLM_SUPPORTED,
-    QUANT_CONFIG,
     WEIGHTS_NAME,
     WEIGHTS_INDEX_NAME,
     SAFE_WEIGHTS_NAME,
@@ -69,12 +69,22 @@ from ..llm.quantization.utils import (
     replace_linear,
 )
 from ...tools.utils import get_gpu_family, is_ipex_available
+from accelerate import init_empty_weights
+from huggingface_hub import hf_hub_download
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from neural_compressor.torch.quantization import quantize
 from neural_compressor.torch.quantization import FP8Config as INCFP8Config
+from threading import Thread
 from transformers.configuration_utils import PretrainedConfig
 from transformers import AutoConfig
-from transformers.utils import is_accelerate_available, is_bitsandbytes_available
+from transformers.modeling_utils import load_state_dict
+from transformers.utils import (
+    is_accelerate_available,
+    is_bitsandbytes_available,
+    is_safetensors_available,
+    has_file,
+)
+
 from typing import Union
 
 if is_ipex_available() and get_gpu_family() != "no_gpu":
@@ -150,30 +160,19 @@ def build_woq_model(model, quantization_config):
         if "lm_head" in n or "output_layer" in n or "embed_out" in n:
             continue
         if isinstance(m, torch.nn.Linear):
-            zp = (
-                not quantization_config.sym
-                if hasattr(quantization_config, "sym")
-                else True
-            )
-            zp = (
-                quantization_config.zero_point
-                if hasattr(quantization_config, "zero_point")
-                else True
-            )
-            new_module = WeightOnlyLinear(
-                m.in_features,
-                m.out_features,
-                quantization_config.bits,
-                quantization_config.group_size,
-                dtype="int",
-                zp=zp,
-                bias=m.bias is not None,
-                g_idx=(
-                    quantization_config.desc_act
-                    if hasattr(quantization_config, "desc_act")
-                    else False
-                ),
-            )
+            zp = getattr(quantization_config, "zero_point", not getattr(quantization_config, "sym", False))
+            with init_empty_weights():
+                new_module = WeightOnlyLinear(
+                    m.in_features,
+                    m.out_features,
+                    quantization_config.bits,
+                    quantization_config.group_size,
+                    dtype="int",
+                    zp=zp,
+                    bias=m.bias is not None,
+                    g_idx=True,
+                    use_optimum_format=True,
+                )
             set_module(model, n, new_module)
     return model
 
@@ -307,7 +306,6 @@ class _BaseQBitsAutoModelClass:
         model_file = kwargs.pop("model_file", None)
         if model_file is not None:
             from neural_speed import Model
-            from huggingface_hub import hf_hub_download
 
             logger.info("Using Neural Speed to load the GGUF model...")
 
@@ -358,15 +356,9 @@ class _BaseQBitsAutoModelClass:
             return model
 
         device_map = kwargs.get("device_map", "cpu")
-        use_cpu = (
-            True if device_map == torch.device("cpu") or device_map == "cpu" else False
-        )
-        use_xpu = (
-            True if device_map == torch.device("xpu") or device_map == "xpu" else False
-        )
-        use_hpu = (
-            True if device_map == torch.device("hpu") or device_map == "hpu" else False
-        )
+        use_cpu = True if device_map == torch.device("cpu") or device_map == "cpu" else False
+        use_xpu = True if device_map == torch.device("xpu") or device_map == "xpu" else False
+        use_xpu = True if device_map == torch.device("hpu") or device_map == "hpu" else False
 
         config = kwargs.pop("config", None)
         model_hub = kwargs.pop("model_hub", "huggingface")
@@ -382,7 +374,7 @@ class _BaseQBitsAutoModelClass:
                     return_unused_kwargs=True,
                     **kwargs,
 
-            )
+                )
 
         quantization_config = kwargs.pop("quantization_config", None)
         if kwargs.get("use_llm_runtime", None) is not None:
@@ -491,7 +483,9 @@ class _BaseQBitsAutoModelClass:
                     else:
                         quantization_config = RtnConfig(
                             bits=4,
-                            compute_dtype=convert_dtype_torch2str(torch_dtype),
+                            compute_dtype=torch.float32 if
+                            (use_cpu and not CpuInfo().bf16
+                             and torch_dtype == torch.bfloat16) else convert_dtype_torch2str(torch_dtype),
                             weight_dtype="nf4" if use_cpu else "int4_fullrange",
                         )
                 else:
@@ -505,12 +499,14 @@ class _BaseQBitsAutoModelClass:
                 if quantization_config is None:
                     if use_neural_speed:
                         quantization_config = RtnConfig(
-                            compute_dtype="bf16", weight_dtype="int8"
+                            compute_dtype="bf16" if CpuInfo().bf16 else "fp32", weight_dtype="int8"
                         )
                     else:
                         quantization_config = RtnConfig(
                             bits=8,
-                            compute_dtype=convert_dtype_torch2str(torch_dtype),
+                            compute_dtype=torch.float32 if
+                            (use_cpu and not CpuInfo().bf16
+                             and torch_dtype == torch.bfloat16) else convert_dtype_torch2str(torch_dtype),
                             weight_dtype="int8",
                         )
                 else:
@@ -1040,7 +1036,6 @@ class _BaseQBitsAutoModelClass:
         from transformers.generation.configuration_utils import GenerationConfig
         from transformers.models.auto.auto_factory import _get_model_class
         from accelerate.big_modeling import init_empty_weights
-        import copy
 
         # Autofactory
         kwargs_orig = copy.deepcopy(kwargs)
@@ -1064,6 +1059,13 @@ class _BaseQBitsAutoModelClass:
         commit_hash = kwargs.pop("_commit_hash", None)
         _fast_init = kwargs.get("_fast_init", True)
         device_map = kwargs.pop("device_map", "auto")
+        use_safetensors = kwargs.get("use_safetensors", None)
+
+        if use_safetensors is None and not is_safetensors_available():
+            use_safetensors = False
+
+        use_cpu = True if device_map == torch.device("cpu") or device_map == "cpu" else False
+        use_xpu = True if device_map == torch.device("xpu") or device_map == "xpu" else False
 
         user_agent = {
             "file_type": "model",
@@ -1114,10 +1116,6 @@ class _BaseQBitsAutoModelClass:
                 commit_hash = extract_commit_hash(resolved_config_file, commit_hash)
             else:
                 commit_hash = getattr(config, "_commit_hash", None)
-
-        low_cpu_mem_usage = (
-            hasattr(config, "low_cpu_mem_usage") and config.low_cpu_mem_usage
-        )
 
         has_remote_code = (
             hasattr(config, "auto_map") and cls.ORIG_MODEL.__name__ in config.auto_map
@@ -1211,12 +1209,96 @@ class _BaseQBitsAutoModelClass:
                 filename = pretrained_model_name_or_path
                 resolved_archive_file = download_url(pretrained_model_name_or_path)
             else:
-                raise EnvironmentError(
-                    f"Can't load the model for '{pretrained_model_name_or_path}'. If you were trying to load it"
-                    " from 'https://huggingface.co/models', make sure you don't have a local directory with the"
-                    f" same name. Otherwise, make sure '{pretrained_model_name_or_path}' is the correct path to a"
-                    f" directory containing a file named {_add_variant(WEIGHTS_NAME, variant)}"
-                )
+                if use_safetensors is not False:
+                    filename = _add_variant(SAFE_WEIGHTS_NAME, variant)
+                else:
+                    filename = _add_variant(WEIGHTS_NAME, variant)
+                try:
+                    # Load from URL or cache if already cached
+                    cached_file_kwargs = {
+                        "cache_dir": cache_dir,
+                        "force_download": force_download,
+                        "proxies": proxies,
+                        "resume_download": resume_download,
+                        "local_files_only": local_files_only,
+                        "token": token,
+                        "user_agent": user_agent,
+                        "revision": revision,
+                        "subfolder": subfolder,
+                        "_raise_exceptions_for_gated_repo": False,
+                        "_raise_exceptions_for_missing_entries": False,
+                        "_commit_hash": commit_hash,
+                    }
+                    resolved_archive_file = cached_file(pretrained_model_name_or_path, filename, **cached_file_kwargs)
+
+                    # Since we set _raise_exceptions_for_missing_entries=False, we don't get an exception but a None
+                    # result when internet is up, the repo and revision exist, but the file does not.
+                    if resolved_archive_file is None and filename == _add_variant(SAFE_WEIGHTS_NAME, variant):
+                        # Maybe the checkpoint is sharded, we try to grab the index name in this case.
+                        resolved_archive_file = cached_file(
+                            pretrained_model_name_or_path,
+                            _add_variant(SAFE_WEIGHTS_INDEX_NAME, variant),
+                            **cached_file_kwargs,
+                        )
+                        if resolved_archive_file is not None:
+                            is_sharded = True
+                        elif use_safetensors:
+                            raise EnvironmentError(
+                                f"{pretrained_model_name_or_path} does not appear to have a file named"
+                                f" {_add_variant(SAFE_WEIGHTS_NAME, variant)} or "
+                                f"{_add_variant(SAFE_WEIGHTS_INDEX_NAME, variant)} "
+                                "and thus cannot be loaded with `safetensors`. Please make sure that the model has "
+                                "been saved with `safe_serialization=True` or do not set `use_safetensors=True`."
+                            )
+                        else:
+                            # This repo has no safetensors file of any kind, we switch to PyTorch.
+                            filename = _add_variant(WEIGHTS_NAME, variant)
+                            resolved_archive_file = cached_file(
+                                pretrained_model_name_or_path, filename, **cached_file_kwargs
+                            )
+                    if resolved_archive_file is None and filename == _add_variant(WEIGHTS_NAME, variant):
+                        # Maybe the checkpoint is sharded, we try to grab the index name in this case.
+                        resolved_archive_file = cached_file(
+                            pretrained_model_name_or_path,
+                            _add_variant(WEIGHTS_INDEX_NAME, variant),
+                            **cached_file_kwargs,
+                        )
+                        if resolved_archive_file is not None:
+                            is_sharded = True
+
+                    if resolved_archive_file is None:
+                        # Otherwise, maybe there is a TF or Flax model file.  We try those to give a helpful error
+                        # message.
+                        has_file_kwargs = {
+                            "revision": revision,
+                            "proxies": proxies,
+                            "token": token,
+                        }
+                        if variant is not None and has_file(
+                            pretrained_model_name_or_path, WEIGHTS_NAME, **has_file_kwargs
+                        ):
+                            raise EnvironmentError(
+                                f"{pretrained_model_name_or_path} does not appear to have a file named"
+                                f" {_add_variant(WEIGHTS_NAME, variant)} but there is a file without the variant"
+                                f" {variant}. Use `variant=None` to load this model from those weights."
+                            )
+                        else:
+                            raise EnvironmentError(
+                                f"{pretrained_model_name_or_path} does not appear to have a file named"
+                                f" {_add_variant(WEIGHTS_NAME, variant)}."
+                            )
+                except EnvironmentError:
+                    # Raise any environment error raise by `cached_file`. It will have a helpful error message adapted
+                    # to the original exception.
+                    raise
+                except Exception as e:
+                    # For any other exception, we throw a generic error.
+                    raise EnvironmentError(
+                        f"Can't load the model for '{pretrained_model_name_or_path}'. If you were trying to load it"
+                        " from 'https://huggingface.co/models', make sure you don't have a local directory with the"
+                        f" same name. Otherwise, make sure '{pretrained_model_name_or_path}' is the correct path to a"
+                        f" directory containing a file named {_add_variant(WEIGHTS_NAME, variant)}."
+                    ) from e
 
             if is_local:
                 logger.info(f"loading weights file {archive_file}")
@@ -1253,7 +1335,6 @@ class _BaseQBitsAutoModelClass:
         #    - we assume all floating dtype weights are of the same dtype
         # we also may have config.torch_dtype available, but we won't rely on it till v5
         dtype_orig = None
-
         if torch_dtype is not None:
             if isinstance(torch_dtype, str):
                 if torch_dtype == "auto":
@@ -1272,17 +1353,35 @@ class _BaseQBitsAutoModelClass:
                         False
                     ), f'`torch_dtype` can be either `torch.dtype` or `"auto"`, but received {torch_dtype}'
             dtype_orig = model_class._set_default_torch_dtype(torch_dtype)
+        if quantization_config.compute_dtype is None:
+            if use_xpu:
+                quantization_config.compute_dtype = \
+                    "fp16" if (torch_dtype is None or
+                               torch_dtype == torch.bfloat16) \
+                    else convert_dtype_torch2str(torch_dtype)
+            else:
+                quantization_config.compute_dtype = \
+                    "fp32" if (torch_dtype is None or
+                               (not CpuInfo().bf16 and torch_dtype == torch.bfloat16) or
+                               (torch_dtype == torch.float16)) \
+                    else convert_dtype_torch2str(torch_dtype)
+        else:
+            if ((not CpuInfo().bf16 and quantization_config.compute_dtype == "bf16")
+                    or (use_cpu and quantization_config.compute_dtype == "fp16")):
+                quantization_config.compute_dtype = "fp32"
+        if quantization_config.scale_dtype is None:
+            quantization_config.scale_dtype = "fp32"
+        if quantization_config.weight_dtype is None:
+            quantization_config.weight_dtype = "int4_clip"
 
         # Pretrained Model
         init_contexts = [no_init_weights(_enable=_fast_init)]
         init_contexts.append(init_empty_weights())
 
-        if low_cpu_mem_usage:
-            with ContextManagers(init_contexts):
-                model = model_class(config, *model_args, **kwargs)
-        else:
+        with ContextManagers(init_contexts):
             model = model_class(config, *model_args, **kwargs)
-        if config.quantization_config["weight_dtype"] not in [
+
+        if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
             "fp4",
@@ -1294,19 +1393,16 @@ class _BaseQBitsAutoModelClass:
             model = replace_linear(
                 model,
                 quantization_config=quantization_config,
-                device=device_map,
+                device="cpu" if device_map == "auto" else device_map,
                 empty_weights=True,
             )
 
         if is_sharded:
             loaded_state_dict_keys = sharded_metadata["all_checkpoint_keys"]
         else:
-            with open(
-                os.path.join(pretrained_model_name_or_path, "all_checkpoint_keys.json"),
-                "r",
-            ) as json_file:
-                loaded_data = json.load(json_file)
-            loaded_state_dict_keys = loaded_data["all_checkpoint_keys"]
+            # Time to load the checkpoint
+            state_dict = load_state_dict(resolved_archive_file)
+            loaded_state_dict_keys = list(state_dict.keys())
 
         # restore default dtype
         if dtype_orig is not None:
@@ -1326,7 +1422,7 @@ class _BaseQBitsAutoModelClass:
             pretrained_model_name_or_path,
             sharded_metadata=sharded_metadata,
             _fast_init=_fast_init,
-            low_cpu_mem_usage=low_cpu_mem_usage,
+            low_cpu_mem_usage=True,
             offload_folder=offload_folder,
             offload_state_dict=offload_state_dict,
             dtype=torch_dtype,
@@ -1338,18 +1434,23 @@ class _BaseQBitsAutoModelClass:
 
         # Set model in evaluation mode to deactivate DropOut modules by default
         model.eval()
-        if config.quantization_config["weight_dtype"] not in [
+        if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
             "nf4",
-            "fp4" "int4_fullrange",
+            "fp4",
+            "int4_fullrange",
         ]:
             model = replace_linear(
-                model,
+                model.float(),
                 quantization_config=quantization_config,
-                device=device_map,
+                device="cpu" if device_map == "auto" else device_map,
                 empty_weights=True,
             )
+
+        if (not use_xpu and torch_dtype == torch.float16) or (not use_xpu and not CpuInfo().bf16
+                                                              and torch_dtype == torch.bfloat16):
+            model.to(dtype=torch.float32)
 
         # If it is a model with generation capabilities, attempt to load the generation config
         if model.can_generate():
