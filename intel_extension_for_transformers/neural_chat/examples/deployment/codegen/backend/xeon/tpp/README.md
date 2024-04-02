@@ -24,11 +24,12 @@ sudo apt install numactl
 
 # Install Python Dependencies
 
-Install Intel(R) Tensor Processing Primitives extension for PyTorch from source code
+Install Intel(R) Tensor Processing Primitives extension for PyTorch from source code.
 
 ```shell
 # Install from source code
 git clone https://github.com/libxsmm/tpp-pytorch-extension.git
+git checkout feature_mxfp4_poc
 cd tpp-pytorch-extension/
 git submodule update --init
 python setup.py install
@@ -56,6 +57,12 @@ Install neuralchat dependencies:
 ```bash
 pip install -r ../../../requirements.txt
 pip install transformers==4.31.0 # need to downgrade transformers to 4.31.0 for LLAMA
+```
+
+Currently there are some issues when using BF16, so we need to enable MXFP4 by the below commands:
+```bash
+export TPP_CACHE_REMAPPED_WEIGHTS=0 
+export USE_MXFP4=1
 ```
 
 # Configure Multi-node
