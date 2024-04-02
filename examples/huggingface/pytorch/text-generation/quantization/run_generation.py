@@ -543,7 +543,13 @@ if args.accuracy:
     eval_args = "pretrained=" + args.model + ",tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + \
                 args._commit_hash + ",trust_remote_code=" + str(args.trust_remote_code)
     if args.use_neural_speed:
-        eval_args += ",use_gptq=True"
+        q_conf = user_model.config.quantization_config
+        if isinstance(q_conf, dict):
+            q_algo = q_conf.get("quant_method", None)
+        else:
+            q_algo = q_conf.quant_method.value
+        if q_algo.upper() in ["AWQ", "GPTQ", "AUTOROUND"]:
+            eval_args += ",use_gptq=True"
     results = evaluate(
         model="hf-causal",
 <<<<<<< HEAD
