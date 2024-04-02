@@ -15,16 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from asyncore import write
-import os
 import random
-import re
-import time
 import numpy as np
-import json
 
 import lm_eval
-from lm_eval.base import LM, CachingLM
 from lm_eval.tasks import get_task_dict
 from lm_eval.utils import run_task_tests
 from lm_eval.evaluator import evaluate as evaluate_func
@@ -37,6 +31,7 @@ MODEL_REGISTRY = {
     "simple-hf-causal": huggingface.HFModelAdapter,
 }
 
+
 def itrex_bootstrap_stderr(f, xs, iters):
     from lm_eval.metrics import _bootstrap_internal, sample_stddev
     res = []
@@ -47,11 +42,14 @@ def itrex_bootstrap_stderr(f, xs, iters):
         res.extend(bootstrap)
     return sample_stddev(res)
 
+
 # to avoid out-of-memory caused by Popen for large language models.
 lm_eval.metrics.bootstrap_stderr = itrex_bootstrap_stderr
 
+
 def get_model(model_name):
     return MODEL_REGISTRY[model_name]
+
 
 def evaluate(model,
              model_args=None,
@@ -71,8 +69,7 @@ def evaluate(model,
              user_model=None,
              user_tokenizer=None,
              warmup=False,
-             model_format='torch'
-            ):
+             model_format='torch'):
     """Instantiate and evaluate a model on a list of tasks.
 
     :param model: Union[str, LM]
@@ -119,14 +116,16 @@ def evaluate(model,
     if isinstance(model, str):
         if model_args is None:
             model_args = ""
-        kwargs =  {
-                "batch_size": batch_size,
-                "max_batch_size": max_batch_size,
-                "device": device,
-                "model_format": model_format
-            }
+        kwargs = {
+            "batch_size": batch_size,
+            "max_batch_size": max_batch_size,
+            "device": device,
+            "model_format": model_format
+        }
         if user_model:
             kwargs["init_empty_weights"] = True
+            if "pretrained" not in model_args:
+                model_args = "pretrained='Muennighoff/tiny-random-bert'," + model_args
 
         if device == "hpu":
             # if hpu, set user_model
@@ -139,11 +138,9 @@ def evaluate(model,
         if user_tokenizer:
             kwargs["user_tokenizer"] = user_tokenizer
 
-        lm = get_model(model).create_from_arg_string(
-            model_args, kwargs
-        )
+        lm = get_model(model).create_from_arg_string(model_args, kwargs)
     elif isinstance(model, transformers.PreTrainedModel):
-        lm = get_model("hf-causal")(    # pylint: disable=E1125
+        lm = get_model("hf-causal")(  # pylint: disable=E1125
             pretrained=model,
             batch_size=batch_size,
             max_batch_size=max_batch_size,
@@ -156,11 +153,8 @@ def evaluate(model,
     if not no_cache:
         lm = lm_eval.base.CachingLM(
             lm,
-            "lm_cache/"
-            + (model if isinstance(model, str) else model.model.config._name_or_path)
-            + "_"
-            + model_args.replace("=", "-").replace(",", "_").replace("/", "-")
-            + ".db",
+            "lm_cache/" + (model if isinstance(model, str) else model.model.config._name_or_path) + "_" +
+            model_args.replace("=", "-").replace(",", "_").replace("/", "-") + ".db",
         )
 
     task_dict = get_task_dict(tasks)
@@ -171,16 +165,14 @@ def evaluate(model,
     if user_model:
         lm.model = user_model
 
-    results = evaluate_func(
-        lm=lm,
-        task_dict=task_dict,
-        num_fewshot=new_fewshot,
-        limit=limit,
-        bootstrap_iters=bootstrap_iters,
-        decontamination_ngrams_path=decontamination_ngrams_path,
-        write_out=write_out,
-        output_base_path=output_base_path
-    )
+    results = evaluate_func(lm=lm,
+                            task_dict=task_dict,
+                            num_fewshot=new_fewshot,
+                            limit=limit,
+                            bootstrap_iters=bootstrap_iters,
+                            decontamination_ngrams_path=decontamination_ngrams_path,
+                            write_out=write_out,
+                            output_base_path=output_base_path)
 
     print(make_table(results))
     return results

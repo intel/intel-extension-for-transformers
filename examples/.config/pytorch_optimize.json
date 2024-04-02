@@ -1576,6 +1576,230 @@
       }
     }
   },
+  "mistral_7b_autoround_neuralspeed": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_int4_autoround",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_autoround",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_gptq_neuralspeed": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_int4_gptq",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_gptq",
+        "task": "generation",
+        "mode": "benchmark",
+        "backend": "neuralspeed",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  
+  "mistral_7b_rtn_neuralspeed": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_int4_rtn",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_rtn",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_autoround": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_int4_autoround",
+        "task": "generation",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_autoround",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_gptq": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_int4_gptq",
+        "task": "generation",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_gptq",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  
+  "mistral_7b_rtn": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_int4_rtn",
+        "task": "generation",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_rtn",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_autoround_neuralspeed_hf": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_int4_autoround",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_autoround",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "model_source": "huggingface"
+      }
+    }
+  },
+  "mistral_7b_gptq_neuralspeed_hf": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{},
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_gptq",
+        "task": "generation",
+        "mode": "benchmark",
+        "backend": "neuralspeed",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "model_source": "huggingface"
+      }
+    }
+  },
+  "mistral_7b_autoround_hf": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{},
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_autoround",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "model_source": "huggingface"
+      }
+    }
+  },
+  "mistral_7b_gptq_hf": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{},
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_int4_gptq",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "model_source": "huggingface"
+      }
+    }
+  },
   "dolly_v2_3b_gen_ipex_static": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "tune":{

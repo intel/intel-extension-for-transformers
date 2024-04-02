@@ -7,7 +7,7 @@ from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.llm.utils.generation import _beam_search, _greedy_search
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig, GPTQConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, AutoRoundConfig, RtnConfig, GPTQConfig
 from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_dtype_str2torch
 from transformers.utils import check_min_version
 
@@ -52,8 +52,8 @@ parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, 
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--bits", type=int, default=4, choices=[4])
 parser.add_argument("--woq", action="store_true")
-parser.add_argument("--woq_algo", default="Rtn", choices=['Rtn', 'GPTQ'], 
-                    help="Weight-only algorithm.")
+parser.add_argument("--woq_algo", default="Rtn", choices=['Rtn', 'GPTQ', 'AutoRound'], 
+                    help="Weight-only parameter.")
 parser.add_argument("--weight_dtype", type=str, default="int4_fullrange",
                     choices=["int4_fullrange"])
 parser.add_argument("--group_size", type=int, default=32)
@@ -61,6 +61,9 @@ parser.add_argument("--scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--device", default="xpu")
 parser.add_argument("--compute_dtype", default="fp16")
+parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
+parser.add_argument("--load_in_4bit", type=bool, default=False)
+parser.add_argument("--load_in_8bit", type=bool, default=False)
 # ============GPTQ configs==============
 parser.add_argument(
     "--desc_act",
@@ -93,9 +96,13 @@ parser.add_argument(
     action="store_true",
     help="Use determined group to do quantization",
 )
-parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
-parser.add_argument("--load_in_4bit", type=bool, default=False)
-parser.add_argument("--load_in_8bit", type=bool, default=False)
+# ============AutoRound==================
+parser.add_argument(
+    "--calib_len",
+    default=2048,
+    type=int,
+    help="Calibration dataset max or padding max length for AutoRound.",
+)
 # =======================================
 args = parser.parse_args()
 torch_dtype = convert_dtype_str2torch(args.compute_dtype)
@@ -123,7 +130,7 @@ else:
 
 quantization_config = None
 if args.woq:
-    if args.woq_algo == "GPTQ":
+    if args.woq_algo.lower() == "gptq":
         quantization_config = GPTQConfig(
             tokenizer=tokenizer,
             dataset=args.dataset,
@@ -141,7 +148,22 @@ if args.woq:
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
         )
-    else:
+    elif args.woq_algo.lower() == "autoround":
+        quantization_config = AutoRoundConfig(
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            sym=True if args.scheme == "sym" else False,
+            group_size=args.group_size,
+            max_input_length=args.max_input_length,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.compute_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
+            calib_len=args.calib_len,
+            nsamples=args.nsamples,
+        )
+    elif args.woq_algo.lower() == "rtn":
         quantization_config = RtnConfig(
             compute_dtype=args.compute_dtype, weight_dtype=args.weight_dtype,
             group_size=args.group_size, scale_dtype=args.compute_dtype
@@ -281,7 +303,7 @@ if args.accuracy:
 
     results = evaluate(
         model="hf-causal",
-        model_args='pretrained=' + "facebook/opt-125m" +',tokenizer=' + args.model + \
+        model_args='tokenizer=' + args.model + \
             ',dtype=float32,trust_remote_code=' + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
