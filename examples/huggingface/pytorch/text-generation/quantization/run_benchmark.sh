@@ -106,7 +106,7 @@ function run_benchmark {
         model_name_or_path="bigscience/bloomz-3b"
     elif [ "${topology}" = "llama_7b" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-chat-hf"
-    elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
+    elif [ "${topology}" = "llama2_7b_gptq" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-hf"
     elif [ "${topology}" = "llama_13b" ]; then
         model_name_or_path="meta-llama/Llama-2-13b-chat-hf"
@@ -157,11 +157,11 @@ function run_benchmark {
     elif [ "${topology}" = "phi_1_5b" ]; then
         model_name_or_path="susnato/phi-1_5_dev"
 	    pip install transformers==4.36.1
-    elif [ "${topology}" = "llama2_7b_int4_gptq" ] && [ "$model_source" != "huggingface" ]; then
+    elif [ "${topology}" = "llama2_7b_gptq" ] && [ "$model_source" != "huggingface" ]; then
         model_name_or_path="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
-    elif [ "${topology}" = "mistral_7b_int4_autoround" ] && [ "$model_source" != "huggingface" ]; then
+    elif [ "${topology}" = "mistral_7b_autoround" ] && [ "$model_source" != "huggingface" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-    elif [ "${topology}" = "mistral_7b_int4_rtn" ] && [ "$model_source" != "huggingface" ]; then
+    elif [ "${topology}" = "mistral_7b_rtn" ] && [ "$model_source" != "huggingface" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
     fi
 
@@ -176,7 +176,7 @@ function run_benchmark {
             extra_cmd=$extra_cmd" --load_in_8bit "
         elif [ "${topology}" = "gpt_j_mp" ]; then
             extra_cmd=$extra_cmd" --mixed_precision"
-        elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
+        elif [ "${topology}" = "llama2_7b_gptq" ]; then
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="TheBloke/Llama-2-7B-Chat-GPTQ"
             else
@@ -184,34 +184,23 @@ function run_benchmark {
                 extra_cmd=$extra_cmd" --trust_remote_code"
                 extra_cmd=$extra_cmd" --woq_loading"
             fi
-            if [[ $backend == "neuralspeed" ]]; then
-                extra_cmd=$extra_cmd" --use_neural_speed"
-            fi
-        elif [ "${topology}" = "mistral_7b_int4_autoround" ]; then
+        elif [ "${topology}" = "mistral_7b_autoround" ]; then
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="Intel/Mistral-7B-v0.1-int4-inc"
             else
                 model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
                 extra_cmd=$extra_cmd" --trust_remote_code"
                 extra_cmd=$extra_cmd" --woq_loading"
-            fi
-            if [[ $backend == "neuralspeed" ]]; then
-                extra_cmd=$extra_cmd" --use_neural_speed"
-            fi
-            
-        elif [ "${topology}" = "mistral_7b_int4_rtn" ]; then
+            fi            
+        elif [ "${topology}" = "mistral_7b_rtn" ]; then
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="mistralai/Mistral-7B-v0.1"
             else
                 model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
                 extra_cmd=$extra_cmd" --trust_remote_code"
                 extra_cmd=$extra_cmd" --woq_loading"
-            fi
-            if [[ $backend == "neuralspeed" ]]; then
-                extra_cmd=$extra_cmd" --use_neural_speed"
-            fi
-            
-        elif [ "${topology}" = "mistral_7b_int4_gptq" ]; then
+            fi            
+        elif [ "${topology}" = "mistral_7b_gptq" ]; then
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="TheBloke/Mistral-7B-Instruct-v0.1-GPTQ"
             else
@@ -219,14 +208,13 @@ function run_benchmark {
                 extra_cmd=$extra_cmd" --trust_remote_code"
                 extra_cmd=$extra_cmd" --woq_loading"
             fi
-            if [[ $backend == "neuralspeed" ]]; then
-                extra_cmd=$extra_cmd" --use_neural_speed"
-            fi
         else
             extra_cmd=$extra_cmd" --int8"
         fi
     fi
-
+    if [[ $backend == "neuralspeed" ]]; then
+        extra_cmd=$extra_cmd" --use_neural_speed"
+    fi
     echo $extra_cmd
 
     if [ "${script}" == "run_generation.py" ];then

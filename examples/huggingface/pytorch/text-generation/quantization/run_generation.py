@@ -541,7 +541,7 @@ if args.accuracy:
     args._commit_hash = "main" if args._commit_hash is None else args._commit_hash
     results = evaluate(
         model="hf-causal",
-        model_args="tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + args._commit_hash +
+        model_args="pretrained=" + argrs.model + ",tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + args._commit_hash +
         ",trust_remote_code=" + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
