@@ -225,9 +225,8 @@ def clear_history(request: gr.Request):
 
 def add_text(state, text, request: gr.Request):
     logger.info(f"add_text. ip: {request.client.host}. len: {len(text)}")
-
     if state is None:
-        state = get_conv_template("neural-chat-7b-v2")
+        state = get_conv_template("raw") #neural-chat-7b-v2")
 
     if len(text) <= 0:
         state.skip_next = True
@@ -302,7 +301,7 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
             model_name = "llama-2"
         elif "chatglm"  in model_name:
             model_name = model_name.split('-')[0]
-        new_state = get_conv_template(model_name.split('/')[-1])
+        new_state = get_conv_template("raw") #model_name.split('/')[-1])
         #new_state.conv_id = uuid.uuid4().hex
         #new_state.model_name = state.model_name or model_selector
         new_state.append_message(new_state.roles[0], state.messages[-2][1])
@@ -742,5 +741,5 @@ if __name__ == "__main__":
     demo.queue(
         concurrency_count=concurrency_count, status_update_rate=10, api_open=False
     ).launch(
-        server_name=host, server_port=80, share=share, max_threads=200
+        server_name=host, server_port=8008, share=share, max_threads=200
     )

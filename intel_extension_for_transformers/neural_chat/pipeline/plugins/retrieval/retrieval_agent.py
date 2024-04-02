@@ -86,6 +86,10 @@ class Agent_QA():
         self.process = process
         self.retriever = None
         self.min_chuck_size = min_chuck_size
+        print("#######################################################")
+        print("response_template", response_template)
+        print( vector_database, retrieval_type, mode, process, min_chuck_size)
+        print("#######################################################")
         self.splitter = RecursiveCharacterTextSplitter(chunk_size= kwargs['child_size'] \
                     if 'child_size' in kwargs else 512)
         allowed_retrieval_type: ClassVar[Collection[str]] = (
@@ -165,6 +169,9 @@ class Agent_QA():
         logging.info("The parsing for the uploaded files is finished.")
 
         langchain_documents = document_transfer(data_collection, self.min_chuck_size)
+        print("*********************langchain_documents start: ****************")
+        #print("langchain_documents:", langchain_documents)
+        print("*********************langchain_documents end: ****************")
         logging.info("The format of parsed documents is transferred.")
 
         if self.vector_database == "Chroma":
@@ -297,6 +304,8 @@ class Agent_QA():
 
         try:
             intent = self.intent_detector.intent_detection(model_name, query)
+            print("********************* intent ****************")
+            print(intent)
         except Exception as e:
             logging.info(f"intent detection failed, {e}")
             raise Exception("[Rereieval ERROR] intent detection failed!")
@@ -314,6 +323,7 @@ class Agent_QA():
                 if len(context) == 0:
                     return "Response with template.", links
                 prompt = generate_qa_enterprise(query, context)
+                print("prompt", prompt)
         elif self.mode == "general":
         # For general setting, will return top-k documents.
             if 'qa' not in intent.lower() and context == '':
@@ -325,6 +335,7 @@ class Agent_QA():
                 if len(context) == 0:
                     return "Response with template.", links
                 prompt = generate_qa_prompt(query, context)
+                print("prompt", prompt)
         else:
             logging.error("The selected generation mode is invalid!")
         return prompt, links

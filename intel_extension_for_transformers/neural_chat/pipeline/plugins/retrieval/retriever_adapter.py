@@ -57,9 +57,15 @@ class RetrieverAdapter():
         context = ''
         links = []
         retrieved_documents = self.retriever.get_relevant_documents(query)
+        print(retrieved_documents)
         if self.reranker is not None:
             retrieved_documents = self.reranker.compress_documents(documents = retrieved_documents, query = query)
+        print("********************rerank********************")
+        print(retrieved_documents)
         for doc in retrieved_documents:
             context = context + doc.page_content + " "
             links.append(doc.metadata['source'])
+        print("********************context********************")
+        print(context)
+        #import pdb; pdb.set_trace()
         return context.strip(), links
