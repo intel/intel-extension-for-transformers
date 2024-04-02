@@ -34,6 +34,9 @@ from intel_extension_for_transformers.neural_chat.cli.log import logger
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
+
+import torch
+
 app = FastAPI(title="NeuralChat SPR Serving Process", description="Serving", version="0.0.1")
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
@@ -266,7 +269,7 @@ def construct_chatbot(args):
 def warmup(chatbot, local_rank, gen_config):
     # warmup, the first time inference take longer because of graph compilation
     for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
-        if local_rank in [-1, 0]:
+        if local_rank in [1, 0]:
             print(new_text, end="", flush=True)
     print("\n"*3)
 
@@ -306,6 +309,9 @@ if __name__ == "__main__":
     set_seed(args.seed)
 
     chatbot, gen_config = construct_chatbot(args)
+
+    args.local_rank = torch.distributed.get_rank()
+    print("local rank is ", args.local_rank)
     warmup(chatbot, args.local_rank, gen_config)
 
     process_port = args.port + args.local_rank + 1

@@ -298,7 +298,7 @@ for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config
         print(new_text, end="", flush=True)
 print("\n"*3)
 
-@app.post("/v1/code_generation")
+@app.post("/v1/chat_completions")
 async def chat_completion_endpoint(request: ChatCompletionRequest):
     ret = check_completion_request(request)
     if ret is not None:
