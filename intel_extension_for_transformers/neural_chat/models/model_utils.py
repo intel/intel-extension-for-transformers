@@ -840,15 +840,16 @@ def load_model(
 
         if device == "cpu":
             if torch_dtype == torch.bfloat16 and not ipex_int8:
-                # import intel_extension_for_pytorch as intel_ipex
+                import intel_extension_for_pytorch as intel_ipex
 
-                # model = intel_ipex.optimize(
-                #     model.eval(),
-                #     dtype=torch_dtype,
-                #     inplace=True,
-                #     level="O1",
-                #     auto_kernel_selection=True,
-                # )
+                if not use_tpp:
+                    model = intel_ipex.optimize(
+                        model.eval(),
+                        dtype=torch_dtype,
+                        inplace=True,
+                        level="O1",
+                        auto_kernel_selection=True,
+                    )
                 if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                                 or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
                     from intel_extension_for_transformers.transformers.llm.utils.mpt_trace import \
