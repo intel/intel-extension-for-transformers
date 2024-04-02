@@ -101,11 +101,11 @@ repos:
             --comment-style=<!--| |-->,
           ]
 
-  # - repo: https://github.com/asottile/yesqa
-  #   rev: v1.5.0
-  #   hooks:
-  #     - id: yesqa
-  #       name: Unused noqa
+  - repo: https://github.com/asottile/yesqa
+    rev: v1.5.0
+    hooks:
+      - id: yesqa
+        name: Unused noqa
 
   # - repo: https://github.com/pycqa/isort
   #   rev: 5.13.2
