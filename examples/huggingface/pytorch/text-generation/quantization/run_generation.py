@@ -478,7 +478,7 @@ if args.woq_loading:
 
 if args.benchmark:
     user_model = (
-        user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
+        user_model.eval() if (not (args.int8 or args.int8_bf16_mixed) and hasattr(user_model, "eval")) else user_model
     )
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
@@ -534,18 +534,28 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    user_model = (user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model)
+    user_model = (user_model.eval() if (not (args.int8 or args.int8_bf16_mixed) and hasattr(user_model, "eval")) \
+                  else user_model)
     args.model = (peft_config.base_model_name_or_path if args.peft_model_id else args.model)
     from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
 
     args._commit_hash = "main" if args._commit_hash is None else args._commit_hash
+    eval_args = "tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + args._commit_hash + \
+                ",trust_remote_code=" + str(args.trust_remote_code)
+    if args.use_neural_speed:
+        eval_args += ",use_gptq=True"
     results = evaluate(
         model="hf-causal",
+<<<<<<< HEAD
         model_args="pretrained=" + argrs.model + ",tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + args._commit_hash +
         ",trust_remote_code=" + str(args.trust_remote_code),
+=======
+        model_args=eval_args,
+>>>>>>> 2c7866ea509 (add hf model id support)
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
+        model_format="neural_speed" if args.use_neural_speed else "torch"
     )
     dumped = json.dumps(results, indent=2)
     if args.save_accuracy_path:

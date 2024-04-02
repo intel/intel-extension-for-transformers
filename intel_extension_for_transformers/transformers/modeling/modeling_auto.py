@@ -398,12 +398,29 @@ class _BaseQBitsAutoModelClass:
             else:
                 use_neural_speed = False
 
-        if hasattr(config, "quantization_config") and not use_neural_speed:
+        if hasattr(config, "quantization_config"):
             if config.quantization_config is None:
                 logger.warning(
                     "Quantization_config loading failed. If you want to load saved "
                     "low bit model, please check your quantizate_config.json."
                 )
+            elif use_neural_speed:
+                if not os.path.exists(pretrained_model_name_or_path):
+                    from huggingface_hub import snapshot_download
+                    pretrained_model_name_or_path = snapshot_download(repo_id=pretrained_model_name_or_path,
+                                                        allow_patterns=["*.pt", "*.safetensors", "*.json", ".model"],
+                                                    )
+                if quantization_config is None:
+                    ConfigInit = {"rtn": RtnConfig,
+                                "awq": AwqConfig,
+                                "teq": TeqConfig,
+                                "gptq": GPTQConfig,
+                                "autoround": AutoRoundConfig,
+                                }
+                    quantization_config = config.quantization_config
+                    assert quantization_config.get("quant_method", None) in ConfigInit, \
+                        "Detect this model is not a low-bit model."
+                    quantization_config = ConfigInit[quantization_config["quant_method"]].from_dict(quantization_config)
             else:
                 logger.info(
                     "quantization_config: {}".format(config.quantization_config)
