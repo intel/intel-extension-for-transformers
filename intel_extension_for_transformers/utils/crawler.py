@@ -32,6 +32,8 @@ class Crawler:
         if pool:
             assert isinstance(pool, (str, list, tuple)), 'url pool should be str, list or tuple'
         self.pool = pool
+        if isinstance(pool, str):
+            self.pool = [pool]
         self.headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -51,7 +53,7 @@ class Crawler:
         sublinks = []
         for links in soup.find_all('a'):
             link = str(links.get('href'))
-            if link.startswith('#') or link is None or link == 'None':
+            if link.startswith('#') or link is None or link == 'None' or link.startswith('@'):
                 continue
             suffix = link.split('/')[-1]
             if '.' in suffix and suffix.split('.')[-1] not in ['html', 'htmld']:
@@ -104,7 +106,9 @@ class Crawler:
             work(sub_url, soup)
         return sublinks
 
-    def crawl(self, pool, work=None, max_depth=10, workers=10):
+    def crawl(self, pool=None, work=None, max_depth=10, workers=10):
+        if pool is None:
+            pool = self.pool
         url_pool = set()
         for url in pool:
             base_url = self.get_base_url(url)
@@ -515,8 +519,14 @@ if __name__ == '__main__':
     # url = 'https://www.linkedin.com/in/wei-li-sf/'
     # c = LinkedinCrawler(url)
     # c.start()
-    data = get_content_from_url('https://www.ces.tech/', sublink=True, workers=10)
-    print(data)
-   
+    # data = get_content_from_url('https://www.ces.tech/', sublink=True, workers=10)
+    # print(data)
+    
+    def tmp_work(sub_link, soup):
+        with open('sub_link.txt', 'a') as f:
+            f.write(sub_link + '\n')
+
+    crawler = Crawler("https://blog.langchain.dev")
+    s = crawler.crawl(work=tmp_work)
 
 
