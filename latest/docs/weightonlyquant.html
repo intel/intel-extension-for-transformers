@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+gab2fd05 documentation</title>
+  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g7084e7f documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
@@ -127,8 +127,8 @@
 <td style="text-align: center;">&#10004;</td>
 <td style="text-align: center;">stay tuned</td>
 <td style="text-align: center;">stay tuned</td>
-<td style="text-align: center;">stay tuned</td>
-<td style="text-align: center;">stay tuned</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">&#10004;</td>
 </tr>
 </tbody>
 </table><p><strong>RTN</strong>[<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.html#1">1]</a>(★★★):   Rounding to Nearest (RTN) is an intuitively simple method that rounds values to the nearest integer. It boasts simplicity, requiring no additional datasets, and offers fast quantization. Besides, it could be easily applied in other datatype like NF4(non-uniform). Typically, it performs well on configurations such as W4G32 or W8, but worse than advanced algorithms at lower precision level.</p>
@@ -248,7 +248,9 @@ print<span class="o">(</span>gen_text<span class="o">)</span>
 </section>
 <section id="examples-for-intel-gpu">
 <h2>Examples For Intel GPU<a class="headerlink" href="#examples-for-intel-gpu" title="Link to this heading"></a></h2>
-<p>Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with <a class="reference external" href="https://github.com/intel/intel-extension-for-pytorch">Intel-extension-for-pytorch</a>. Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: “dev/QLLM”.<br />We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.<br />Here are the example codes.</p>
+<p>Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with <a class="reference external" href="https://github.com/intel/intel-extension-for-pytorch">Intel-extension-for-pytorch</a>. Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: “dev/QLLM”.</p>
+<p>Now 4-bit/8-bit inference with <code class="docutils literal notranslate"><span class="pre">RtnConfig</span></code>, <code class="docutils literal notranslate"><span class="pre">AwqConfig</span></code>, <code class="docutils literal notranslate"><span class="pre">GPTQConfig</span></code>, <code class="docutils literal notranslate"><span class="pre">AutoRoundConfig</span></code> are support on intel GPU device.</p>
+<p>We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.<br />Here are the example codes.</p>
 <section id="prepare-dependency-packages">
 <h3>Prepare Dependency Packages<a class="headerlink" href="#prepare-dependency-packages" title="Link to this heading"></a></h3>
 <ol class="simple">
@@ -361,7 +363,7 @@ pip install intel-extension-for-transformers
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9ae26a23e0> 
+   <jinja2.runtime.BlockReference object at 0x7fd3f9befd90> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

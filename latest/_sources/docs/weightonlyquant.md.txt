@@ -17,7 +17,7 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 | Support Device |  Rtn  |  Awq  |  Teq |  GPTQ  | AutoRound |
 |:--------------:|:----------:|:----------:|:----------:|:----:|:----:|
 |     Intel CPU        |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |
-|     Intel GPU        |  &#10004;  |  stay tuned  |  stay tuned  |  stay tuned  |  stay tuned  |
+|     Intel GPU        |  &#10004;  |  stay tuned  |  stay tuned  |  &#10004;  |  &#10004;  |
 
 **RTN**[[1\]](https://github.com/intel/intel-extension-for-transformers/blob/548c13ed2e19cde91729530ca26c3b875c1b3d10/docs/weightonlyquant.html#1)(&#9733;&#9733;&#9733;):   Rounding to Nearest (RTN) is an intuitively simple method that rounds values to the nearest integer. It boasts simplicity, requiring no additional datasets, and offers fast quantization. Besides, it could be easily applied in other datatype like NF4(non-uniform). Typically, it performs well on configurations such as W4G32 or W8, but worse than advanced algorithms at lower precision level.
 
@@ -147,7 +147,10 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 > Note: For LLM runtime model loading usage, please refer to [neural_speed readme](https://github.com/intel/neural-speed/blob/main/README.html#quick-start-transformer-like-usage)
 
 ## Examples For Intel GPU
-Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  
+Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".
+
+Now 4-bit/8-bit inference with `RtnConfig`, `AwqConfig`, `GPTQConfig`, `AutoRoundConfig` are support on intel GPU device.
+
 We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.  
 Here are the example codes.
 
