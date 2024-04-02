@@ -840,15 +840,15 @@ def load_model(
 
         if device == "cpu":
             if torch_dtype == torch.bfloat16 and not ipex_int8:
-                import intel_extension_for_pytorch as intel_ipex
+                # import intel_extension_for_pytorch as intel_ipex
 
-                model = intel_ipex.optimize(
-                    model.eval(),
-                    dtype=torch_dtype,
-                    inplace=True,
-                    level="O1",
-                    auto_kernel_selection=True,
-                )
+                # model = intel_ipex.optimize(
+                #     model.eval(),
+                #     dtype=torch_dtype,
+                #     inplace=True,
+                #     level="O1",
+                #     auto_kernel_selection=True,
+                # )
                 if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                                 or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
                     from intel_extension_for_transformers.transformers.llm.utils.mpt_trace import \
@@ -867,22 +867,17 @@ def load_model(
                     if model.config.architectures[0] == "GPTJForCausalLM":
                         from tpp_pytorch_extension.llm.fused_gptj_infer import OptimizeModelForGPTJ
                         OptimizeModelForGPTJ(
-                            model, dtype=tpp_dtype, device=device, weight_dtype=weight_dtype
+                            model, dtype=torch_dtype, device=device, weight_dtype=None
                         )
                     elif model.config.architectures[0] == "OPTForCausalLM":
                         from tpp_pytorch_extension.llm.fused_opt_infer import OptimizeModelForOPT
                         OptimizeModelForOPT(
-                            model, dtype=tpp_dtype, device=device, weight_dtype=weight_dtype
-                        )
-                    elif model.config.architectures[0] == "LLaMAForCausalLM":
-                        from tpp_pytorch_extension.llm.fused_llama_infer import OptimizeModelForLlama
-                        OptimizeModelForLlama(
-                            model, dtype=tpp_dtype, device=device, weight_dtype=weight_dtype
+                            model, dtype=torch_dtype, device=device, weight_dtype=None
                         )
                     elif model.config.architectures[0] == "LlamaForCausalLM":
                         from tpp_pytorch_extension.llm.fused_llama_infer import OptimizeModelForLlama
                         OptimizeModelForLlama(
-                            model, dtype=tpp_dtype, device=device, weight_dtype=weight_dtype
+                            model, dtype=torch_dtype, device=device, weight_dtype=None
                         )
                     else:
                         logging.error(type(model.config.architectures), model.config.architectures)

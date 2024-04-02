@@ -348,12 +348,12 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                         ppn = len(nodes)
                         np = list(nodes.values())[0]
                         launch_str = f"run_dist_ht.sh -np {np} -ppn {ppn} python -u {multi_cpu_server_file}"
-                        command_list = f"{launch_str} --base_model_path {model_name_or_path} --use-tpp"
+                        command_list = f"{launch_str} --base_model_path {model_name_or_path} --use_tpp"
                     # single node multi-sockets
                     else:
                         np = list(nodes.values())[0]
                         launch_str = f"run_dist_numa.sh -np {np} python -u {multi_cpu_server_file}"
-                        command_list = f"{launch_str} --base_model_path {model_name_or_path} --use-tpp"
+                        command_list = f"{launch_str} --base_model_path {model_name_or_path} --use_tpp"
                     try:
                         print(f"{self.__class__.__name__} init(): command = {command_list}")
                         sys.stdout.flush()
@@ -377,9 +377,11 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     endpoint = tgi_endpoint
                 else:
                     endpoint = f"http://0.0.0.0:{tgi_port}/"
-                api_router = setup_router(api_list, self.chatbot, True, use_deepspeed or use_tpp, world_size, host, port, endpoint)
+                api_router = setup_router(api_list, self.chatbot, True,
+                                          use_deepspeed or use_tpp, world_size, host, port, endpoint)
             else:
-                api_router = setup_router(api_list, self.chatbot, True, use_deepspeed or use_tpp, world_size, host, port)
+                api_router = setup_router(api_list, self.chatbot, True,
+                                          use_deepspeed or use_tpp, world_size, host, port)
             app.include_router(api_router)
             return True
 
