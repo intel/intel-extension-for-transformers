@@ -117,7 +117,6 @@ def read_pptx(pptx_path):
     """Read pptx file."""
     loader = UnstructuredPowerPointLoader(pptx_path)
     text = loader.load()[0].page_content
-    print(text)
     return text
 
 

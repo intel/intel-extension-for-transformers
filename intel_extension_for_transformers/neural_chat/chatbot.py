@@ -264,19 +264,19 @@ def build_chatbot(config: PipelineConfig=None):
                     return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
-                try:
-                    plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
-                except Exception as e:
-                    if "[Rereieval ERROR] Document format not supported" in str(e):
-                        set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
-                        logger.error("build_chatbot: retrieval plugin init failed")
-                    elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
-                        set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
-                        logger.error("build_chatbot: safety checker plugin init failed")
-                    else:
-                        set_latest_error(ErrorCodes.ERROR_GENERIC)
-                        logger.error("build_chatbot: plugin init failed")
-                    return
+                # try:
+                plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
+                # except Exception as e:
+                #     if "[Rereieval ERROR] Document format not supported" in str(e):
+                #         set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
+                #         logger.error("build_chatbot: retrieval plugin init failed")
+                #     elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
+                #         set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
+                #         logger.error("build_chatbot: safety checker plugin init failed")
+                #     else:
+                #         set_latest_error(ErrorCodes.ERROR_GENERIC)
+                #         logger.error("build_chatbot: plugin init failed")
+                #     return
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
     parameters = {}
