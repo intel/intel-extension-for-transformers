@@ -729,7 +729,7 @@ def create_reference_model(
         param = model.get_parameter(param_name)
         param.requires_grad = False
 
-        ref_param = ref_model.get_parameter(param_name)  # noqa
+        ref_param = ref_model.get_parameter(param_name)
         ref_param = param  # noqa
 
     # for all other parameters just make sure they don't use gradients
