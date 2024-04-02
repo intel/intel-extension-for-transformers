@@ -92,3 +92,4 @@ vllm
 webrtcvad
 yacs
 zhconv
+git+https://github.com/libxsmm/tpp-pytorch-extension.git

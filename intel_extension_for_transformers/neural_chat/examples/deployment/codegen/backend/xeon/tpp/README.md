@@ -29,8 +29,8 @@ Install Intel(R) Tensor Processing Primitives extension for PyTorch from source 
 ```shell
 # Install from source code
 git clone https://github.com/libxsmm/tpp-pytorch-extension.git
-git checkout feature_mxfp4_poc
 cd tpp-pytorch-extension/
+git checkout feature_mxfp4_poc
 git submodule update --init
 python setup.py install
 ```
@@ -39,6 +39,8 @@ Install Intel MPI:
 ```shell
 wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/749f02a5-acb8-4bbb-91db-501ff80d3f56/l_mpi_oneapi_p_2021.12.0.538_offline.sh
 bash l_mpi_oneapi_p_2021.12.0.538_offline.sh
+torch_ccl_path=$(python -c "import torch; import oneccl_bindings_for_pytorch; import os;  print(os.path.abspath(os.path.dirname(oneccl_bindings_for_pytorch.__file__)))" 2> /dev/null)
+source $torch_ccl_path/env/setvars.sh
 ```
 
 Install OneCCL for multi-node model

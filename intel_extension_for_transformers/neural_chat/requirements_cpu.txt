@@ -25,3 +25,4 @@ torchaudio==2.2.0
 transformers>=4.35.2
 uvicorn
 yacs
+git+https://github.com/libxsmm/tpp-pytorch-extension.git
