@@ -540,8 +540,8 @@ if args.accuracy:
     from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
 
     args._commit_hash = "main" if args._commit_hash is None else args._commit_hash
-    eval_args = "tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + args._commit_hash + \
-                ",trust_remote_code=" + str(args.trust_remote_code)
+    eval_args = "pretrained=" + args.model + ",tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + \
+                args._commit_hash + ",trust_remote_code=" + str(args.trust_remote_code)
     if args.use_neural_speed:
         eval_args += ",use_gptq=True"
     results = evaluate(
