@@ -555,6 +555,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 compression_dim=0,
                 use_optimum_format=False,
                 scale_dtype=convert_dtype_str2torch(config.scale_dtype),
+                device="xpu",
             )
 
             q_model = replace_linear(model, None, None, config, device=device)
