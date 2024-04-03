@@ -39,6 +39,8 @@ def get_gpu_family():
         return 'max'
     if 'Arc(TM)' in name:
         return 'arc'
+    if '0x7d55' in name or '0x7dd5' in name or '0x7d45' in name:
+        return 'mtl'
     assert False, "Unsupported GPU device: {}".format(name)
 
 
