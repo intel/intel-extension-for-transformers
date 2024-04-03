@@ -573,11 +573,7 @@ class _BaseQBitsAutoModelClass:
                     scale_dtype=quantization_config.scale_dtype,
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
-                    use_quant=(
-                        quantization_config.use_quant
-                        if hasattr(quantization_config, "use_quant")
-                        else False
-                    ),
+                    use_quant=True,
                     use_gptq=quantization_config.quant_method.value == "gptq"
                     or quantization_config.quant_method.value == "autoround",
                     use_awq=quantization_config.quant_method.value == "awq",
