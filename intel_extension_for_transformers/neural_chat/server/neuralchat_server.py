@@ -350,14 +350,14 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                         world_size = np
                         launch_str = f"run_dist_ht.sh -np {np} -ppn {ppn} python -u {multi_cpu_server_file}"
                         command_list = f"{launch_str} --base_model_path {model_name_or_path} --use_tpp \
-                            --host {host} --port {port}"
+                            --host {host} --port {port} --return_stats"
                     # single node multi-sockets
                     else:
                         np = list(nodes.values())[0]
                         world_size = np
                         launch_str = f"run_dist_numa.sh -np {np} python -u {multi_cpu_server_file}"
                         command_list = f"{launch_str} --base_model_path {model_name_or_path} --use_tpp \
-                            --host {host} --port {port}"
+                            --host {host} --port {port} --return_stats"
                     try:
                         print(f"{self.__class__.__name__} init(): command = {command_list}")
                         sys.stdout.flush()

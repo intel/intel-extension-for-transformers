@@ -7,7 +7,7 @@ This code generation chatbot demonstrates how to deploy it specifically on Intel
 
 First, you need to install and configure the Conda environment:
 
-```shell
+```bash
 # Download and install Miniconda
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash `Miniconda*.sh`
@@ -22,11 +22,40 @@ Next, install the numactl library:
 sudo apt install numactl
 ```
 
-# Install Python Dependencies
+# Install ITREX
+
+```bash
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd ./intel-extension-for-transformers/
+pip install -r requirements.txt
+pip install -e .
+```
+
+# Install NeuralChat Python Dependencies
+
+Install neuralchat dependencies:
+
+```bash
+pip install -r ../../../../../../requirements_cpu.txt
+pip install -r  ../../../../../../pipeline/plugins/retrieval/requirements.txt
+pip uninstall torch torchvision torchaudio intel-extension-for-pytorch -y
+python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+python -m pip install intel-extension-for-pytorch
+python -m pip install oneccl_bind_pt --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
+pip install transformers==4.31.0 # need to downgrade transformers to 4.31.0 for LLAMA
+```
+
+Install Intel MPI:
+```bash
+wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/749f02a5-acb8-4bbb-91db-501ff80d3f56/l_mpi_oneapi_p_2021.12.0.538.sh
+bash l_mpi_oneapi_p_2021.12.0.538.sh
+torch_ccl_path=$(python -c "import torch; import oneccl_bindings_for_pytorch; import os;  print(os.path.abspath(os.path.dirname(oneccl_bindings_for_pytorch.__file__)))" 2> /dev/null)
+source $torch_ccl_path/env/setvars.sh
+```
 
 Install Intel(R) Tensor Processing Primitives extension for PyTorch from source code.
 
-```shell
+```bash
 # Install from source code
 git clone https://github.com/libxsmm/tpp-pytorch-extension.git
 cd tpp-pytorch-extension/
@@ -35,46 +64,32 @@ git submodule update --init
 python setup.py install
 ```
 
-Install Intel MPI:
-```shell
-wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/749f02a5-acb8-4bbb-91db-501ff80d3f56/l_mpi_oneapi_p_2021.12.0.538_offline.sh
-bash l_mpi_oneapi_p_2021.12.0.538_offline.sh
-torch_ccl_path=$(python -c "import torch; import oneccl_bindings_for_pytorch; import os;  print(os.path.abspath(os.path.dirname(oneccl_bindings_for_pytorch.__file__)))" 2> /dev/null)
-source $torch_ccl_path/env/setvars.sh
-```
-
-Install OneCCL for multi-node model
-```shell
-# Specify the torch-ccl version according to your torch version (v2.1.0 in this example)
-# Check out the corresponding version here: https://github.com/intel/torch-ccl/
-git clone -b ccl_torch2.1.0+cpu https://github.com/intel/torch-ccl.git torch-ccl-2.2.0
-cd torch-ccl-2.2.0
-git submodule sync
-git submodule update --init --recursive
-python setup.py install
-```
-
-Install neuralchat dependencies:
-
-```bash
-pip install -r ../../../requirements.txt
-pip install transformers==4.31.0 # need to downgrade transformers to 4.31.0 for LLAMA
-```
-
 Currently there are some issues when using BF16, so we need to enable MXFP4 by the below commands:
 ```bash
 export TPP_CACHE_REMAPPED_WEIGHTS=0 
 export USE_MXFP4=1
 ```
 
-# Configure Multi-node
+# Configure Multi-Sockets
+To use the multi-socket model parallelism with Xeon servers, you need to configure a hostfile first.
+
+Here is a example using 6 sockets on GNR server.
+
+## Modify hostfile
+```bash
+vim ../../../../../../server/config/hostfile
+    localhost slots=6
+```
+
+
+# Configure Multi-Nodes
 To use the multi-node model parallelism with Xeon servers, you need to configure a hostfile first and make sure ssh is able between your servers.
 
 For example, you have two servers which have the IP of `192.168.1.1` and `192.168.1.2`, and each of it has 4 CPUs.
 
 ## Modify hostfile
-```shell
-vim ../../../server/config/hostfile
+```bash
+vim ../../../../../../server/config/hostfile
     192.168.1.1 slots=4
     192.168.1.2 slots=4
 ```
@@ -106,13 +121,13 @@ If your servers are not available with SSH, follow the instructions below.
     ```
 
 If you cannot SSH to your local server via IP, configure it with localhost as below.
-```shell
+```bash
 cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 chmod 700 ~/.ssh
 chmod 600 ~/.ssh/authorized_keys
 ```
 Then modify hostfile as below.
-```shell
+```bash
 localhost slots=4
 192.168.1.2 slots=4
 ```

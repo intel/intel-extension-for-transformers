@@ -866,16 +866,19 @@ def load_model(
                 if use_tpp:
                     tpp_dist_inference_init()
                     if model.config.architectures[0] == "GPTJForCausalLM":
+                        # pylint: disable=E0401
                         from tpp_pytorch_extension.llm.fused_gptj_infer import OptimizeModelForGPTJ
                         OptimizeModelForGPTJ(
                             model, dtype=torch_dtype, device=device, weight_dtype=None
                         )
                     elif model.config.architectures[0] == "OPTForCausalLM":
+                        # pylint: disable=E0401
                         from tpp_pytorch_extension.llm.fused_opt_infer import OptimizeModelForOPT
                         OptimizeModelForOPT(
                             model, dtype=torch_dtype, device=device, weight_dtype=None
                         )
                     elif model.config.architectures[0] == "LlamaForCausalLM":
+                        # pylint: disable=E0401
                         from tpp_pytorch_extension.llm.fused_llama_infer import OptimizeModelForLlama
                         OptimizeModelForLlama(
                             model, dtype=torch_dtype, device=device, weight_dtype=None
@@ -1330,6 +1333,13 @@ def predict_stream(**params):
                 "msecond_per_token": msecond_per_token,
             }
             yield "END_OF_STREAM_STATS={}".format(stats)
+        elif format_version == "v2":
+            stats = {
+                "first_token_latency": str(first_token_latency) + " ms",
+                "msecond_per_token": str(msecond_per_token) + " ms",
+            }
+            for key, value in stats.items():
+                yield "{}:{}".format(key, value)
         else:
             stats = {
                 "input_token_len": str(input_token_len),

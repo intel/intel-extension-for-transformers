@@ -102,7 +102,7 @@ def parse_args():
     parser.add_argument(
         "--max_new_tokens",
         type=int,
-        default=128,
+        default=512,
         help="The maximum number of new tokens to generate.",
     )
     parser.add_argument(
@@ -208,6 +208,12 @@ def parse_args():
         "--use_tpp", action='store_true', default=False,)
     parser.add_argument(
         "--return_stats", action='store_true', default=False,)
+    parser.add_argument(
+        "--format_version",
+        type=str,
+        default="v2",
+        help="the version of return stats format",
+    )
     args = parser.parse_args()
     return args
 
@@ -261,7 +267,9 @@ def construct_chatbot(args):
         use_hpu_graphs=args.use_hpu_graphs,
         use_cache=args.use_kv_cache,
         num_return_sequences=args.num_return_sequences,
-        ipex_int8=args.ipex_int8
+        ipex_int8=args.ipex_int8,
+        return_stats=args.return_stats,
+        format_version=args.format_version
     )
     return chatbot, gen_config
 
