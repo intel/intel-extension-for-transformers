@@ -20,13 +20,14 @@ import io
 import os
 import re
 import csv
+import json
 import shutil
 import datetime
 import requests
 from pathlib import Path
 from datetime import timedelta, timezone
-from typing import Optional, Dict, List
-from fastapi import APIRouter, UploadFile, File, Request, Response, Form, status, HTTPException
+from typing import Optional, Dict, List, Union
+from fastapi import APIRouter, UploadFile, File, Request, Response, Form, HTTPException
 from ...config import GenerationConfig
 from ...cli.log import logger
 from ...server.restful.request import RetrievalRequest, FeedbackRequest
@@ -34,6 +35,7 @@ from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse, JSONResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...plugins import plugins
+from ...pipeline.plugins.retrieval.parser.context_utils import clean_filename
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -95,24 +97,114 @@ def language_translate(text: str, target: str='en'):
         return None
 
 
-def create_upload_dir(knowledge_base_id: str, user_id: str):
+def get_path_prefix(knowledge_base_id: str, user_id: str):
     if knowledge_base_id == 'default':
         path_prefix = RETRIEVAL_FILE_PATH + 'default'
     else:
         path_prefix = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id
-    upload_path = path_prefix + '/upload_dir'
-    persist_path = path_prefix + '/persist_dir'
-    if ( not os.path.exists(upload_path) ) or ( not os.path.exists(persist_path) ):
-        if knowledge_base_id == 'default':
-            os.makedirs(Path(path_prefix), exist_ok=True)
-            os.makedirs(Path(path_prefix) / 'upload_dir', exist_ok=True)
-            os.makedirs(Path(path_prefix) / 'persist_dir', exist_ok=True)
-            logger.info(f"Default kb {path_prefix} does not exist, create.")
+
+    return path_prefix
+
+
+def check_path(path: str):
+    new_path = Path(path)
+    if new_path.exists():
+        logger.info(f"Path {path} exists.")
+        return True
+    else:
+        try:
+            new_path.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Path {path} created now.")
+            return True
+        except Exception as e:
+            logger.info(f"fail to mkdir: {e}")
+            return False
+
+
+def remove_folder_with_ignore(folder_path: str, except_patterns=None):
+    """
+    Remove the specific folder, and ignore some files/folders
+
+    :param folder_path: file path to delete
+    :param except_patterns: files/folder name to ignore
+    """
+    if except_patterns is None:
+        except_patterns = []
+    print(f"except patterns: {except_patterns}")
+    for root, dirs, files in os.walk(folder_path, topdown=False):
+        for name in files:
+            # delete files except ones that match patterns
+            file_path = os.path.join(root, name)
+            if any(pattern in file_path for pattern in except_patterns):
+                continue
+            os.remove(file_path)
+
+        # delete empty folder
+        for name in dirs:
+            dir_path = os.path.join(root, name)
+            # delete folders except ones that match patterns
+            if any(pattern in dir_path for pattern in except_patterns):
+                continue
+            if not os.listdir(dir_path):
+                os.rmdir(dir_path)
+
+
+async def save_file_to_local_disk(save_path: str, file):
+    with save_path.open("wb") as fout:
+        try:
+            content = await file.read()
+            fout.write(content)
+        except Exception as e:
+            logger.info(f"[ save_file_to_local_disk ] write file failed. Exception: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f'Write file {save_path} failed. Exception: {e}'
+            )
+
+
+def get_file_structure(root_path: str, parent_path: str="") -> List[Dict[str, Union[str, List]]]:
+    result = []
+    for path in os.listdir(root_path):
+        complete_path = parent_path + '/' + path if parent_path else path
+        file_path = root_path+'/'+path
+        if any(pattern in file_path for pattern in EXCEPT_PATTERNS):
+            continue
+        p = Path(file_path)
+        # append file into result
+        if p.is_file():
+            file_dict = {
+                "name": path,
+                "id": complete_path,
+                "type": "File",
+                "parent": ""
+            }
+            result.append(file_dict)
         else:
-            logger.info(f"kbid [{knowledge_base_id}] does not exist for user {user_id}")
-            raise Exception(f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
-                Please check kb_id and save path again.")
-    return upload_path, persist_path
+            # append folder and inner files/folders into result using recursive function
+            folder_dict = {
+                "name": path,
+                "id": complete_path,
+                "type": "Directory",
+                "children": get_file_structure(file_path, complete_path),
+                "parent": ""
+            }
+            result.append(folder_dict)
+
+    return result
+
+
+def save_link_content(link_list: List, link_content: List, upload_path):
+    file_names = []
+    for link, content in zip(link_list, link_content):
+        logger.info(f"= save link = link: {link}, content: {content}")
+        file_name = clean_filename(link)+".jsonl"
+        file_path = os.path.join(upload_path, file_name)
+        file_content = content[0]
+        data = {'content':file_content, 'link':link}
+        with open(file_path, 'w') as file:
+            json.dump(data, file)
+        file_names.append(file_name)
+    return file_names
 
 
 class RetrievalAPIRouter(APIRouter):
@@ -135,13 +227,13 @@ class RetrievalAPIRouter(APIRouter):
 
     def handle_retrieval_request(self, request: RetrievalRequest) -> RetrievalResponse:
         bot = self.get_chatbot()
-        # TODO: NeuralChatBot.retrieve_model()
         result = bot.predict(request)
         return RetrievalResponse(content=result)
 
 
 router = RetrievalAPIRouter()
-RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./photoai_retrieval_docs")+'/'
+RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./retrieval_docs")+'/'
+EXCEPT_PATTERNS = ["/xuhui_doc", "default/persist_dir"]
 
 
 @router.post("/v1/askdoc/upload_link")
@@ -157,14 +249,19 @@ async def retrieval_upload_link(request: Request):
     if 'knowledge_base_id' in params.keys():
         print(f"[askdoc - upload_link] append")
         knowledge_base_id = params['knowledge_base_id']
-        upload_path, persist_path = create_upload_dir(knowledge_base_id, user_id)
+        path_prefix = get_path_prefix(knowledge_base_id, user_id)
+        persist_path = path_prefix + '/persist_dir'
+        upload_path = path_prefix + '/upload_dir'
+        assert check_path(persist_path) == True
 
         try:
             print("[askdoc - upload_link] starting to append local db...")
             instance = plugins['retrieval']["instance"]
             print(f"[askdoc - upload_link] persist_path: {persist_path}")
-            instance.append_localdb(append_path=link_list, persist_directory=persist_path)
+            link_content = instance.append_localdb(append_path=link_list, persist_directory=persist_path)
             print(f"[askdoc - upload_link] kb appended successfully")
+            file_names = save_link_content(link_list, link_content, upload_path)
+            print(f"[askdoc - upload_link] link content saved to local path: {file_names}")
         except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base fails! {e}")
             return Response(content="Error occurred while uploading links.", status_code=500)
@@ -174,115 +271,77 @@ async def retrieval_upload_link(request: Request):
         print(f"[askdoc - upload_link] create")
         import uuid
         kb_id = f"kb_{str(uuid.uuid1())[:8]}"
-        path_prefix = RETRIEVAL_FILE_PATH
-
+        path_prefix = get_path_prefix(knowledge_base_id, user_id)
+        user_upload_dir = path_prefix + "/upload_dir"
+        user_persist_dir = path_prefix + "/persist_dir"
         # create new upload path dir
-        cur_path = Path(path_prefix) / f"{user_id}-{kb_id}"
-        os.makedirs(path_prefix, exist_ok=True)
-        cur_path.mkdir(parents=True, exist_ok=True)
-
-        user_upload_dir = Path(path_prefix) / f"{user_id}-{kb_id}/upload_dir"
-        user_persist_dir = Path(path_prefix) / f"{user_id}-{kb_id}/persist_dir"
-        user_upload_dir.mkdir(parents=True, exist_ok=True)
-        user_persist_dir.mkdir(parents=True, exist_ok=True)
+        assert check_path(user_upload_dir) == True
+        assert check_path(user_persist_dir) == True
         logger.info(f"[askdoc - upload_link] upload path: {user_upload_dir}")
 
         try:
             # get retrieval instance and reload db with new knowledge base
             logger.info("[askdoc - upload_link] starting to create local db...")
             instance = plugins['retrieval']["instance"]
-            instance.create(input_path=link_list, persist_directory=str(user_persist_dir))
+            link_content = instance.create(input_path=link_list, persist_directory=str(user_persist_dir))
             logger.info(f"[askdoc - upload_link] kb created successfully")
+            file_names = save_link_content(link_list, link_content, upload_path)
+            print(f"[askdoc - upload_link] link content saved to local path: {file_names}")
         except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base fails! {e}")
             return "Error occurred while uploading files."
         return {"knowledge_base_id": kb_id}
 
 
-@router.post("/v1/askdoc/create")
-async def retrieval_create(request: Request,
-                           file: UploadFile = File(...)):
-    global plugins
-    filename = file.filename
-    if '/' in filename:
-        filename = filename.split('/')[-1]
-    logger.info(f"[askdoc - create] received file: {filename}")
-
-    user_id = request.client.host
-    logger.info(f'[askdoc - create] user id is: {user_id}')
-
-    import uuid
-    kb_id = f"kb_{str(uuid.uuid1())[:8]}"
-    path_prefix = RETRIEVAL_FILE_PATH
-
-    cur_path = Path(path_prefix) / f"{user_id}-{kb_id}"
-    os.makedirs(path_prefix, exist_ok=True)
-    cur_path.mkdir(parents=True, exist_ok=True)
-
-    user_upload_dir = Path(path_prefix) / f"{user_id}-{kb_id}/upload_dir"
-    user_persist_dir = Path(path_prefix) / f"{user_id}-{kb_id}/persist_dir"
-    user_upload_dir.mkdir(parents=True, exist_ok=True)
-    user_persist_dir.mkdir(parents=True, exist_ok=True)
-    cur_time = get_current_beijing_time()
-    logger.info(f"[askdoc - create] upload path: {user_upload_dir}")
-
-    # save file to local path
-    save_file_name = str(user_upload_dir) + '/' + cur_time + '-' + filename
-    with open(save_file_name, 'wb') as fout:
-        content = await file.read()
-        fout.write(content)
-    logger.info(f"[askdoc - create] file saved to local path: {save_file_name}")
-
-    try:
-        # get retrieval instance and reload db with new knowledge base
-        logger.info("[askdoc - create] starting to create local db...")
-        instance = plugins['retrieval']["instance"]
-        instance.create(input_path=str(user_upload_dir), persist_directory=str(user_persist_dir))
-        logger.info(f"[askdoc - create] kb created successfully")
-    except Exception as e:  # pragma: no cover
-        logger.info(f"[askdoc - create] create knowledge base failed! {e}")
-        return "Error occurred while uploading files."
-    return {"knowledge_base_id": kb_id}
-
-
-@router.post("/v1/askdoc/append")
-async def retrieval_append(request: Request,
+@router.post("/v1/askdoc/upload_files")
+async def retrieval_add_files(request: Request,
                            files: List[UploadFile] = File(...),
-                        #    file: UploadFile = File(...),
+                           file_paths: List[str] = Form(...),
                            knowledge_base_id: str = Form(...)):
     global plugins
-    for file in files:
+    if knowledge_base_id == 'null':
+        import uuid
+        kb_id = f"kb_{str(uuid.uuid1())[:8]}"
+        logger.info(f"[askdoc - upload_files] create new kb: {kb_id}")
+    else:
+        kb_id = knowledge_base_id
+
+    for file_path, file in zip(file_paths, files):
         filename = file.filename
         if '/' in filename:
             filename = filename.split('/')[-1]
-        logger.info(f"[askdoc - append] received file: {filename}, kb_id: {knowledge_base_id}")
-
+        logger.info(f"[askdoc - upload_files] received file: {filename}, kb_id: {kb_id}")
         user_id = request.client.host
-        logger.info(f'[askdoc - append] user id is: {user_id}')
+        logger.info(f'[askdoc - upload_files] user id: {user_id}')
 
-        # create local upload dir
-        upload_path, persist_path = create_upload_dir(knowledge_base_id, user_id)
-        print(f"[askdoc - upload_link] persist_path: {persist_path}")
-        cur_time = get_current_beijing_time()
-        logger.info(f"[askdoc - append] upload path: {upload_path}")
+        path_prefix = get_path_prefix(kb_id, user_id)
+        upload_path = path_prefix + '/upload_dir'
+        persist_path = path_prefix + '/persist_dir'
+        save_path = Path(upload_path) / file_path
+        save_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # save file to local path
-        save_file_name = upload_path + '/' + cur_time + '-' + filename
-        with open(save_file_name, 'wb') as fout:
-            content = await file.read()
-            fout.write(content)
-        logger.info(f"[askdoc - append] file saved to local path: {save_file_name}")
+        # save file content to local disk
+        await save_file_to_local_disk(save_path, file)
+        logger.info(f"[askdoc - upload_files] file saved to path: {save_path}")
 
+        # append to retieval kb
         try:
-            # get retrieval instance and reload db with new knowledge base
-            logger.info("[askdoc - append] starting to append to local db...")
+            # instance = plugins['retrieval']["instance"]
+            # instance.create(input_path=upload_dir, persist_directory=persist_dir)
             instance = plugins['retrieval']["instance"]
-            instance.append_localdb(append_path=save_file_name, persist_directory=persist_path)
-            logger.info(f"[askdoc - append] new file successfully appended to kb")
+            if knowledge_base_id == 'null':
+                instance.create(input_path=str(save_path), persist_directory=persist_path)
+            else:
+                instance.append_localdb(append_path=str(save_path), persist_directory=persist_path)
+            logger.info(f"[askdoc - upload_files] new file {save_path} successfully appended to kb")
         except Exception as e:  # pragma: no cover
-            logger.info(f"[askdoc - append] create knowledge base fails! {e}")
+            logger.info(f"[askdoc - upload_files] create knowledge base fails! {e}")
             return "Error occurred while uploading files."
-    return "Succeed"
+
+    if knowledge_base_id == 'null':
+        return {"knowledge_base_id": kb_id}
+    else:
+        return "Succeed"
 
 
 @router.post("/v1/askdoc/chat")
@@ -514,57 +573,127 @@ def get_feedback_from_db():
             headers={"Content-Disposition": f"attachment;filename=feedback{cur_time_str}.csv"})
 
 
-@router.post("/v1/askdoc/verify_upload")
-async def verify_upload(request: Request):
-    params = await request.json()
-    user_id = params['user_id']
-    logger.info(f'[askdoc - verify_upload] current user: {user_id}')
-
-    if user_id == "admin":
-        upload_path = RETRIEVAL_FILE_PATH + 'default/upload_dir'
-        if not os.path.exists(upload_path):
-            logger.info(f'[askdoc - verify_upload] currently NOT uploaded')
-            return {"is_uploaded": False}
-        else:
-            logger.info(f'[askdoc - verify_upload] currently ALREADY uploaded')
-            return {"is_uploaded": True}
-    else:
-        return JSONResponse(
-            content={"message": f"Current user {user_id} is not allowed to access /verify_upload api."},
-            status_code=status.HTTP_400_BAD_REQUEST)
-
-
 @router.delete("/v1/askdoc/delete_all")
 async def delete_all_files():
-    delete_path = RETRIEVAL_FILE_PATH + 'default'
+    """
+        Delete all files and knowledge bases of current user.
+        Re-create retriever using default plugin configs.
+    """
+    delete_path = RETRIEVAL_FILE_PATH
     if not os.path.exists(delete_path):
         logger.info(f'[askdoc - delete_all] No file/link uploaded. Clear.')
-        return {"status": True}
     else:
-        # delete all upload files
-        for filename in os.listdir(delete_path+'/upload_dir'):
-            file_path = os.path.join(delete_path, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f'Failed to delete {filename}. Reason: {e}'
-                )
+        # delete folder and files
         try:
-            shutil.rmtree(delete_path+'/upload_dir')
+            remove_folder_with_ignore(delete_path, except_patterns=EXCEPT_PATTERNS)
         except Exception as e:
             raise HTTPException(
                 status_code=500,
-                detail=f'Failed to delete {delete_path}/upload_dir. Reason: {e}'
+                detail=f'Failed to delete {delete_path}. Exception: {e}'
             )
-        # reload default kb
-        origin_persist_dir = "/home/sdp/askgm_persist_new"
-        instance = plugins['retrieval']["instance"]
-        instance.reload_localdb(local_persist_dir = origin_persist_dir)
-        print(f"[askdoc - delete_all] Original kb loaded from: {origin_persist_dir}")
 
+    return {"status": True}
+
+
+@router.delete("/v1/askdoc/delete_file")
+async def delete_single_file(request: Request):
+    """
+        Delete file according to `del_path` and `knowledge_base_id`.
+        `del_path`:
+            - specific file path(e.g. /path/to/file.txt)
+            - folder path(e.g. /path/to/folder)
+            - "all_files": delete all files of this knowledge base
+    """
+    params = await request.json()
+    del_path = params['del_path']
+    knowledge_base_id = params['knowledge_base_id']
+    user_id = request.client.host
+    logger.info(f'[askdoc - delete_file] user id is: {user_id}')
+
+    path_prefix = get_path_prefix(knowledge_base_id, user_id)
+
+    # delete all uploaded files of kb and persist file of vector db
+    if del_path == 'all_files':
+        logger.info(f"[askdoc - delete_file] delete all files and persist files of kb {knowledge_base_id}")
+        remove_folder_with_ignore(path_prefix, except_patterns=EXCEPT_PATTERNS)
+        logger.info(f"[askdoc - delete_file] successfully delete kb {knowledge_base_id}")
         return {"status": True}
+
+    delete_path = Path(path_prefix) / "upload_dir" / del_path
+    logger.info(f'[askdoc - delete_file] delete_path: {delete_path}')
+
+    # partially delete files/folders from the kb
+    if delete_path.exists():
+        # delete file
+        if delete_path.is_file():
+            try:
+                delete_path.unlink()
+            except Exception as e:
+                logger.info(f"[askdoc - delete_file] fail to delete file {delete_path}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f'Failed to delete file {delete_path}. Exception: {e}'
+                )
+        # delete folder
+        else:
+            try:
+                shutil.rmtree(delete_path)
+            except Exception as e:
+                logger.info(f"[askdoc - delete_file] fail to delete folder {delete_path}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f'Failed to delete folder {delete_path}. Exception: {e}'
+                )
+        return {"status": True}
+    else:
+        raise HTTPException(status_code=404, detail="File/folder not found. Please check del_path.")
+
+
+@router.post("/v1/askdoc/get_file_structure")
+async def rag_get_file_structure(request: Request):
+    params = await request.json()
+    knowledge_base_id = params['knowledge_base_id']
+    user_id = request.client.host
+    logger.info(f'[askdoc - get_file_structure] user id is: {user_id}')
+
+    path_prefix = get_path_prefix(knowledge_base_id, user_id)
+    upload_dir = path_prefix + '/upload_dir'
+
+    if not Path(upload_dir).exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f'Knowledge base {knowledge_base_id} does not exists. Please check again'
+        )
+
+    file_content = get_file_structure(upload_dir)
+    return file_content
+
+
+@router.post("/v1/askdoc/recreate_kb")
+async def recreate_kb(request: Request):
+    params = await request.json()
+    knowledge_base_id = params['knowledge_base_id']
+    user_id = request.client.host
+    logger.info(f'[askdoc - recreate_kb] user id is: {user_id}')
+    path_prefix = get_path_prefix(knowledge_base_id, user_id)
+    upload_dir = path_prefix + '/upload_dir'
+    persist_dir = path_prefix + '/persist_dir'
+
+    # clear persist_dir
+    if Path(persist_dir).exists():
+        logger.info(f"[askdoc - recreate_kb] deleting persist_dir: {persist_dir}")
+        shutil.rmtree(persist_dir)
+        # remove_folder_with_ignore(persist_dir)
+        logger.info(f"[askdoc - recreate_kb] persist_dir cleared.")
+    # create kb
+    try:
+        logger.info(f"[askdoc - recreate_kb] loading kb with: {upload_dir}")
+        instance = plugins['retrieval']["instance"]
+        instance.create(input_path=upload_dir, persist_directory=persist_dir)
+    except Exception as e:
+        logger.info(f"[askdoc - recreate_kb] create kb failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f'Failed to create kb. Exception: {e}'
+        )
+    return {"status": True}
