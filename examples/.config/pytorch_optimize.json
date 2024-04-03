@@ -1389,7 +1389,7 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "llama2_7b_int4_gptq",
+        "topology": "llama2_7b_gptq",
         "task": "generation",
         "output_model": "saved_results"
       }
@@ -1397,7 +1397,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "llama2_7b_int4_gptq",
+        "topology": "llama2_7b_gptq",
         "task": "generation",
         "mode": "benchmark",
         "batch_size": "112",
@@ -1581,7 +1581,7 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "mistral_7b_int4_autoround",
+        "topology": "mistral_7b_autoround",
         "task": "generation",
         "backend": "neuralspeed",
         "output_model": "saved_results"
@@ -1590,14 +1590,15 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_autoround",
+        "topology": "mistral_7b_autoround",
         "task": "generation",
         "backend": "neuralspeed",
         "mode": "benchmark",
         "batch_size": "112",
         "iters": "100",
         "int8": "false",
-        "config": "saved_results"
+        "config": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     }
   },
@@ -1606,16 +1607,17 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "mistral_7b_int4_gptq",
+        "topology": "mistral_7b_gptq",
         "task": "generation",
         "backend": "neuralspeed",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_gptq",
+        "topology": "mistral_7b_gptq",
         "task": "generation",
         "mode": "benchmark",
         "backend": "neuralspeed",
@@ -1632,16 +1634,17 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "mistral_7b_int4_rtn",
+        "topology": "mistral_7b_rtn",
         "task": "generation",
         "backend": "neuralspeed",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_rtn",
+        "topology": "mistral_7b_rtn",
         "task": "generation",
         "backend": "neuralspeed",
         "mode": "benchmark",
@@ -1657,15 +1660,16 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "mistral_7b_int4_autoround",
+        "topology": "mistral_7b_autoround",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_autoround",
+        "topology": "mistral_7b_autoround",
         "task": "generation",
         "mode": "benchmark",
         "batch_size": "112",
@@ -1680,15 +1684,16 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "mistral_7b_int4_gptq",
+        "topology": "mistral_7b_gptq",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_gptq",
+        "topology": "mistral_7b_gptq",
         "task": "generation",
         "mode": "benchmark",
         "batch_size": "112",
@@ -1704,15 +1709,16 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "mistral_7b_int4_rtn",
+        "topology": "mistral_7b_rtn",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_rtn",
+        "topology": "mistral_7b_rtn",
         "task": "generation",
         "mode": "benchmark",
         "batch_size": "112",
@@ -1724,19 +1730,11 @@
   },
   "mistral_7b_autoround_neuralspeed_hf": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
-    "tune":{
-      "cmd": "bash run_tuning.sh",
-      "params": {
-        "topology": "mistral_7b_int4_autoround",
-        "task": "generation",
-        "backend": "neuralspeed",
-        "output_model": "saved_results"
-      }
-    },
+    "tune":{},
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_autoround",
+        "topology": "mistral_7b_autoround",
         "task": "generation",
         "backend": "neuralspeed",
         "mode": "benchmark",
@@ -1754,7 +1752,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_gptq",
+        "topology": "mistral_7b_gptq",
         "task": "generation",
         "mode": "benchmark",
         "backend": "neuralspeed",
@@ -1772,7 +1770,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_autoround",
+        "topology": "mistral_7b_autoround",
         "task": "generation",
         "mode": "benchmark",
         "batch_size": "112",
@@ -1789,7 +1787,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "mistral_7b_int4_gptq",
+        "topology": "mistral_7b_gptq",
         "task": "generation",
         "mode": "benchmark",
         "batch_size": "112",

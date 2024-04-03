@@ -19,6 +19,7 @@ function init_params {
   approach="PostTrainingStatic"
   script="run_generation.py"
   alpha=0.5
+  weight_dtype="int4_clip"
   for var in "$@"
   do
     case $var in
@@ -40,8 +41,8 @@ function init_params {
        --approach=*)
            approach=$(echo $var |cut -f2 -d=)
        ;;
-       --backend=*)
-           backend=$(echo $var |cut -f2 -d=)
+       --weight_dtype=*)
+           weight_dtype=$(echo $var |cut -f2 -d=)
        ;;
       *)
           echo "Error: No such parameter: ${var}"
@@ -203,39 +204,34 @@ function run_tuning {
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
 	    pip install transformers==4.36.1
-    elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
+    elif [ "${topology}" = "llama2_7b_gptq" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-hf"
-        extra_cmd=$extra_cmd" --woq --bits 4 --weight_dtype int4_clip --compute_dtype fp32 --scheme asym "
+        extra_cmd=$extra_cmd" --woq --bits 4 --compute_dtype fp32 --scheme asym "
         extra_cmd=$extra_cmd" --woq_algo "GPTQ" --desc_act --blocksize 128 --max_input_length 2048 "
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
-    elif [ "${topology}" = "mistral_7b_int4_autoround" ]; then
+        extra_cmd=$extra_cmd" --weight_dtype ${weight_dtype}"
+    elif [ "${topology}" = "mistral_7b_autoround" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-        extra_cmd=$extra_cmd" --woq --weight_dtype int4_clip --bits 4 --compute_dtype fp32 --scheme asym "
+        extra_cmd=$extra_cmd" --woq --bits 4 --compute_dtype fp32 --scheme asym "
         extra_cmd=$extra_cmd" --woq_algo "AutoRound" --desc_act --blocksize 128 --max_input_length 2048 "
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        if [[ $backend == "neuralspeed" ]]; then
-            extra_cmd=$extra_cmd" --use_neural_speed"
-        fi
-    elif [ "${topology}" = "mistral_7b_int4_rtn" ]; then
+        extra_cmd=$extra_cmd" --weight_dtype ${weight_dtype}"
+    elif [ "${topology}" = "mistral_7b_rtn" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-        extra_cmd=$extra_cmd" --woq --weight_dtype int4_clip --bits 4 -compute_dtype fp32 --scheme asym "
+        extra_cmd=$extra_cmd" --woq --bits 4 -compute_dtype fp32 --scheme asym "
         extra_cmd=$extra_cmd" --woq_algo "Rtn" --desc_act --blocksize 128 --max_input_length 2048 "
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        if [[ $backend == "neuralspeed" ]]; then
-            extra_cmd=$extra_cmd" --use_neural_speed"
-        fi
-    elif [ "${topology}" = "mistral_7b_int4_gptq" ]; then
+        extra_cmd=$extra_cmd" --weight_dtype ${weight_dtype}"
+    elif [ "${topology}" = "mistral_7b_gptq" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-        extra_cmd=$extra_cmd" --woq --weight_dtype int4_clip --bits 4 --compute_dtype fp32 --scheme asym "
+        extra_cmd=$extra_cmd" --woq --bits 4 --compute_dtype fp32 --scheme asym "
         extra_cmd=$extra_cmd" --woq_algo "GPTQ" --desc_act --blocksize 128 --max_input_length 2048 "
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        if [[ $backend == "neuralspeed" ]]; then
-            extra_cmd=$extra_cmd" --use_neural_speed"
-        fi
+        extra_cmd=$extra_cmd" --weight_dtype ${weight_dtype}"
     fi
 
     if [ ${script} = "run_generation.py" ];then
