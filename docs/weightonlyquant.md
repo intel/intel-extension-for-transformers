@@ -157,7 +157,7 @@ Here are the example codes.
 
 #### Prepare Dependency Packages
 1. Install Oneapi Package  
-The Oneapi DPCPP compiler is needed to compile intel-extension-for-pytorch. Please follow [the link](https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html) to install the OneAPI to "/opt/intel folder".
+The Oneapi DPCPP compiler is required to compile intel-extension-for-pytorch. Please follow [the link](https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html) to install the OneAPI to "/opt/intel folder".
 
 2. Build and Install PyTorch and Intel-extension-for-pytorch
 ```python
@@ -169,7 +169,7 @@ source /opt/intel/oneapi/setvars.sh
 git clone https://github.com/intel/intel-extension-for-pytorch.git ipex-gpu
 cd ipex-gpu
 git submodule update --init --recursive
-export USE_AOT_DEVLIST='pvc,ats-m150,7d55'
+export USE_AOT_DEVLIST='pvc,ats-m150'  # Comment this line if you are compiling for MTL
 export BUILD_WITH_CPU=OFF
 
 pip install -r requirements.txt
