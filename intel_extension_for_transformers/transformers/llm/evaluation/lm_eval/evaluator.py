@@ -124,8 +124,6 @@ def evaluate(model,
         }
         if user_model:
             kwargs["init_empty_weights"] = True
-            if "pretrained" not in model_args:
-                model_args = "pretrained='Muennighoff/tiny-random-bert'," + model_args
 
         if device == "hpu":
             # if hpu, set user_model
