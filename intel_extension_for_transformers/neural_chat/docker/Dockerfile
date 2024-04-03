@@ -57,7 +57,7 @@ RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* &&
 WORKDIR /intel-extension-for-transformers
 
 RUN pip install oneccl_bind_pt --extra-index-url  https://pytorch-extension.intel.com/release-whl/stable/cpu/us/ && \
-    cd /intel-extension-for-transformers && pip install -r requirements.txt && \
+    cd /intel-extension-for-transformers && pip install schema==0.7.5 numpy==1.26.4 && \
     python setup.py install && \
     cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
@@ -105,7 +105,7 @@ WORKDIR /intel-extension-for-transformers
 RUN cd /intel-extension-for-transformers && \
     sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
     sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
-    pip install -r requirements.txt && \
+    pip install schema==0.7.5 numpy==1.26.4 && \
     python setup.py install
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
