@@ -103,6 +103,23 @@ parser.add_argument(
     type=int,
     help="Calibration dataset max or padding max length for AutoRound.",
 )
+parser.add_argument(
+    "--lr",
+    type=float,
+    default=0.0025,
+    help="learning rate, if None, it will be set to 1.0/iters automatically",
+)
+parser.add_argument(
+    "--minmax_lr",
+    type=float,
+    default=0.0025,
+    help="minmax learning rate, if None,it will beset to be the same with lr",
+)
+parser.add_argument(
+    "--use_quant_input",
+    action="store_true",
+    help="whether to use the output of quantized block to tune the next block",
+)
 # =======================================
 args = parser.parse_args()
 torch_dtype = convert_dtype_str2torch(args.compute_dtype)
@@ -162,6 +179,9 @@ if args.woq:
             calib_iters=args.calib_iters,
             calib_len=args.calib_len,
             nsamples=args.nsamples,
+            lr=args.lr,
+            minmax_lr=args.minmax_lr,
+            use_quant_input=args.use_quant_input,
         )
     elif args.woq_algo.lower() == "rtn":
         quantization_config = RtnConfig(
