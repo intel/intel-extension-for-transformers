@@ -131,7 +131,7 @@
 	</p>
 	<Tabs
 		style="full"
-		defaultClass="flex rounded-lg divide-x rtl:divide-x-reverse divide-gray-200 shadow dark:divide-gray-700 foucs:ring-0"
+		defaultClass="flex rounded-lg divide-x rtl:divide-x-reverse divide-gray-200 shadow dark:divide-gray-700 focus:ring-0"
 	>
 		<TabItem class="w-full" open>
 			<span slot="title">Upload File</span>

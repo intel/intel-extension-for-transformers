@@ -187,7 +187,7 @@
 			class="fixed relative flex w-full flex-col items-center justify-between bg-white p-2 pb-0"
 		>
 			<div class="relative my-4 flex w-full flex-row justify-center">
-				<div class="foucs:border-none relative w-full">
+				<div class="focus:border-none relative w-full">
 					<input
 						class="text-md block w-full border-0 border-b-2 border-gray-300 px-1 py-4
 						text-gray-900 focus:border-gray-300 focus:ring-0 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
