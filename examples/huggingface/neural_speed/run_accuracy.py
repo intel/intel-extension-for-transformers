@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diff for a model")
     parser.add_argument('--model_name', type=str, default="~/Llama-2-7b-chat-hf", help="path to model")
     parser.add_argument('--tasks', type=str, default="lambada_openai")
-    parser.add_argument('--model_format', type=str, default="runtime")
+    parser.add_argument('--model_format', type=str, default="neural_speed")
     parser.add_argument('--use_gptq', action='store_true')
     parser.add_argument('--batch_size', type=int, default=1)
     args = parser.parse_args()
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True'
     if args.use_gptq:
         model_args += ",use_gptq=True"
-    if args.model_format == "runtime":
+    if args.model_format == "neural_speed":
         results = evaluate(
             model="hf-causal",
             model_args=model_args,

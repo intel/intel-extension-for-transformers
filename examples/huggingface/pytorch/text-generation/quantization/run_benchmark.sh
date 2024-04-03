@@ -163,6 +163,8 @@ function run_benchmark {
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
     elif [ "${topology}" = "mistral_7b_rtn" ] && [ "$model_source" != "huggingface" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+    elif [ "${topology}" = "mistral_7b_gptq" ] && [ "$model_source" != "huggingface" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
     fi
 
     if [[ ${int8} == "true" ]]; then
