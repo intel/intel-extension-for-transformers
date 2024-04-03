@@ -1365,7 +1365,6 @@
         "topology": "gpt_j",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1530,7 +1529,6 @@
         "topology": "llama_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1557,7 +1555,6 @@
         "topology": "llama_13b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1583,7 +1580,6 @@
       "params": {
         "topology": "mistral_7b_autoround",
         "task": "generation",
-        "backend": "neuralspeed",
         "output_model": "saved_results"
       }
     },
@@ -1609,7 +1605,6 @@
       "params": {
         "topology": "mistral_7b_gptq",
         "task": "generation",
-        "backend": "neuralspeed",
         "output_model": "saved_results",
         "weight_dtype": "int4_clip"
       }
@@ -1636,7 +1631,6 @@
       "params": {
         "topology": "mistral_7b_rtn",
         "task": "generation",
-        "backend": "neuralspeed",
         "output_model": "saved_results",
         "weight_dtype": "int4_clip"
       }
@@ -1806,7 +1800,6 @@
         "topology": "dolly_v2_3b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1833,7 +1826,6 @@
         "topology": "mpt_7b_chat",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1860,7 +1852,6 @@
         "topology": "bloom_7b1",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1885,7 +1876,6 @@
         "topology": "bloom_1b7",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1910,7 +1900,6 @@
         "topology": "opt_1.3b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1937,7 +1926,6 @@
         "topology": "opt_2.7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1964,7 +1952,6 @@
         "topology": "opt_6.7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1991,7 +1978,6 @@
         "topology": "chatglm3_6b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2018,7 +2004,6 @@
         "topology": "chatglm2_6b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2045,7 +2030,6 @@
         "topology": "chatglm_6b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2072,7 +2056,6 @@
         "topology": "falcon_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2099,7 +2082,6 @@
         "topology": "baichuan_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2126,7 +2108,6 @@
         "topology": "baichuan2_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2153,7 +2134,6 @@
         "topology": "baichuan_13b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2180,7 +2160,6 @@
         "topology": "baichuan2_13b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2207,7 +2186,6 @@
         "topology": "qwen_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2226,7 +2204,7 @@
       }
     }
   },
-  "mistral_7b_gen_ipex_static": {
+  "neural-chat-7b-v3_gen_ipex_static": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
@@ -2234,7 +2212,6 @@
         "topology": "mistral_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2261,7 +2238,6 @@
         "topology": "phi_1b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2288,7 +2264,6 @@
         "topology": "phi_1_5b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
