@@ -1591,7 +1591,7 @@
         "task": "generation",
         "backend": "neuralspeed",
         "mode": "benchmark",
-        "batch_size": "112",
+        "batch_size": "10",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1616,7 +1616,7 @@
         "task": "generation",
         "mode": "benchmark",
         "backend": "neuralspeed",
-        "batch_size": "112",
+        "batch_size": "10",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1642,7 +1642,7 @@
         "task": "generation",
         "backend": "neuralspeed",
         "mode": "benchmark",
-        "batch_size": "112",
+        "batch_size": "10",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
