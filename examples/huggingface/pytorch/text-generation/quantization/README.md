@@ -142,8 +142,11 @@ Intel-extension-for-pytorch dependencies are in oneapi package, before install i
 ### Create Environment​
 Pytorch and Intel-extension-for-pytorch version for intel GPU > 2.1 are required, python version requests equal or higher than 3.9 due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation, the dependent packages are listed in requirements_GPU.txt, we recommend create environment as the following steps. For Intel-exension-for-pytorch, we should install from source code now, and Intel-extension-for-pytorch will add weight-only quantization in the next version.
 
+>**Note**: please install transformers==4.35.2.
+
 ```bash
 pip install -r requirements_GPU.txt
+pip install transformers==4.35.2
 source /opt/intel/oneapi/setvars.sh
 git clone https://github.com/intel/intel-extension-for-pytorch.git ipex-gpu
 cd ipex-gpu
