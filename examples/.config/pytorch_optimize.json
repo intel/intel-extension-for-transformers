@@ -1580,7 +1580,8 @@
       "params": {
         "topology": "mistral_7b_autoround",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
@@ -1593,8 +1594,7 @@
         "batch_size": "112",
         "iters": "100",
         "int8": "false",
-        "config": "saved_results",
-        "weight_dtype": "int4_clip"
+        "config": "saved_results"
       }
     }
   },
