@@ -18,16 +18,7 @@
 # Kill the exist and re-run
 ps -ef |grep 'run_code_gen' |awk '{print $2}' |xargs kill -9
 
-# KMP
-export KMP_BLOCKTIME=1
-export KMP_SETTINGS=1
-export KMP_AFFINITY=granularity=fine,compact,1,0
+export TPP_CACHE_REMAPPED_WEIGHTS=0 
+export USE_MXFP4=1
 
-# OMP
-export OMP_NUM_THREADS=48
-export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
-
-# tc malloc
-export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
-
-numactl -l -C 0-47 python -m run_code_gen 2>&1 | tee run.log
+python -m run_code_gen 2>&1 | tee run.log
