@@ -250,7 +250,10 @@ else:
 args.model = args.peft_model_id if args.peft_model_id is not None else args.model
 
 # Generation
-generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
+if args.use_neural_speed:
+    generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=1)
+else:
+    generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 
 # mp/sq/woq/bitsandbytes config setting
 quantization_config = None
@@ -478,10 +481,9 @@ if args.woq_loading:
 
 if args.benchmark:
     user_model = (
-        user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
+        user_model.eval() if (not (args.int8 or args.int8_bf16_mixed) and hasattr(user_model, "eval")) else user_model
     )
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
-
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
     print("---- Prompt size:", input_size)
 
@@ -521,7 +523,7 @@ if args.benchmark:
             toc = time.time()
             # please check the gen_ids if include input_ids.
             input_tokens_num = input_ids.numel()
-            output_tokens_num = gen_ids.numel() - input_tokens_num
+            output_tokens_num = torch.tensor(gen_ids).numel() - input_tokens_num
             print(gen_text, flush=True)
             if i >= num_warmup:
                 total_time += toc - tic
@@ -534,18 +536,30 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    user_model = (user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model)
+    user_model = (user_model.eval() if (not (args.int8 or args.int8_bf16_mixed) and hasattr(user_model, "eval")) \
+                  else user_model)
     args.model = (peft_config.base_model_name_or_path if args.peft_model_id else args.model)
     from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
-
+    pretrained = ',pretrained=' + args.model
     args._commit_hash = "main" if args._commit_hash is None else args._commit_hash
+    eval_args = "tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + \
+                args._commit_hash + ",trust_remote_code=" + str(args.trust_remote_code)
+    if args.use_neural_speed:
+        eval_args += pretrained
+        q_conf = user_model.config.quantization_config
+        if isinstance(q_conf, dict):
+            q_algo = q_conf.get("quant_method", None)
+        else:
+            q_algo = q_conf.quant_method.value
+        if q_algo.upper() in ["AWQ", "GPTQ", "AUTOROUND"]:
+            eval_args += ",use_gptq=True"
     results = evaluate(
         model="hf-causal",
-        model_args="pretrained=" + args.model + ",tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + args._commit_hash +
-        ",trust_remote_code=" + str(args.trust_remote_code),
+        model_args=eval_args,
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
+        model_format="neural_speed" if args.use_neural_speed else "torch",
     )
     dumped = json.dumps(results, indent=2)
     if args.save_accuracy_path:

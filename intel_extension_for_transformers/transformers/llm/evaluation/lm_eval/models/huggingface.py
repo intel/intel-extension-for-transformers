@@ -465,7 +465,7 @@ class HuggingFaceAutoLM(BaseLM):
         """
         if self._add_special_tokens is not None:
             return self._add_special_tokens
-        elif self.model_format == "runtime":
+        elif self.model_format == "neural_speed":
             return True
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM:
             return False
@@ -614,7 +614,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
     def __init__(self, *args, pretrained, model_format, **kwargs):
         self.model_format = model_format
-        if self.model_format == "runtime":
+        if self.model_format == "neural_speed":
             from intel_extension_for_transformers.transformers import RtnConfig, AwqConfig, GPTQConfig, AutoRoundConfig
             use_gptq = kwargs.pop("use_gptq", False)
             if use_gptq:
@@ -623,11 +623,11 @@ class AutoCausalLM(HuggingFaceAutoLM):
                 self.woq_config = RtnConfig(bits=4, compute_dtype="int8", weight_dtype="int4")
         super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
 
-        if self.model_format == "runtime":
+        if self.model_format == "neural_speed":
             from transformers import AutoTokenizer, TextStreamer
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
             self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=self.woq_config,
-                                                        trust_remote_code=kwargs.get("trust_remote_code", False))
+                                        use_neural_speed=True, trust_remote_code=kwargs.get("trust_remote_code", False))
 
         if self.model_format == "onnx":
             if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
@@ -758,7 +758,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
             input_bs, input_len = inputs.shape
             bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
             inputs = torch.cat((bos, inputs), 1)
-        if self.model_format == "runtime":
+        if self.model_format == "neural_speed":
             out = self.runtime_model(inputs, reinit=True, logits_all=True, ignore_padding=True)
             output = {"logits": torch.from_numpy(out)}
         elif self.model_format != "onnx":
