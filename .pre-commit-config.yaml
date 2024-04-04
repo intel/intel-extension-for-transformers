@@ -20,6 +20,10 @@ repos:
               examples/.+
           )$
       - id: check-json
+          (?x)^(
+              intel_extension_for_transformers/neural_chat/ui/customized/chatbot/tsconfig.json|
+              intel_extension_for_transformers/neural_chat/ui/customized/chatbot_side_by_side/tsconfig.json
+          )$
       - id: check-yaml
         exclude: |
           (?x)^(

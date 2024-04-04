@@ -2,8 +2,7 @@
 
 ### 📸 Project Screenshots
 
-![project-screenshot](https://i.imgur.com/DJXLtuj.png)
-![project-screenshot](https://i.imgur.com/5aYUtmq.png)
+![project-screenshot](https://i.imgur.com/keyisq7.png)
 
 
 
