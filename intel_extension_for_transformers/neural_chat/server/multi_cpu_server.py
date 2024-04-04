@@ -35,8 +35,6 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
-import torch
-
 app = FastAPI(title="NeuralChat SPR Serving Process", description="Serving", version="0.0.1")
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
@@ -318,6 +316,7 @@ if __name__ == "__main__":
 
     chatbot, gen_config = construct_chatbot(args)
 
+    import torch
     args.local_rank = torch.distributed.get_rank()
     print("local rank is ", args.local_rank)
     warmup(chatbot, args.local_rank, gen_config)

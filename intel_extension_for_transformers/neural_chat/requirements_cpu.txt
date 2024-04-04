@@ -4,7 +4,6 @@ evaluate
 fastapi
 fschat==0.2.32
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
-git+https://github.com/libxsmm/tpp-pytorch-extension.git
 huggingface_hub
 intel_extension_for_pytorch==2.2.0
 neural-compressor

@@ -22,7 +22,6 @@ fschat==0.2.35
 g2p_en
 gfpgan
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
-git+https://github.com/libxsmm/tpp-pytorch-extension.git
 gptcache
 huggingface_hub
 imageio==2.19.3

@@ -303,11 +303,9 @@ def init_deepspeed_inference(model, model_name_or_path, peft_path, use_hpu_graph
 def tpp_dist_inference_init():
     import os
 
-    global my_rank
-    global my_size
     if int(os.environ.get("PMI_SIZE", "0")) > 1:
         try:
-            import oneccl_bindings_for_pytorch
+            import oneccl_bindings_for_pytorch # pylint: disable=E0401
         except:
             print(
                 "CCL backend requested but import oneccl_bindings_for_pytorch failed"
