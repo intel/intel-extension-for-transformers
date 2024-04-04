@@ -220,7 +220,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --weight_dtype ${weight_dtype}"
     elif [ "${topology}" = "mistral_7b_rtn" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-        extra_cmd=$extra_cmd" --woq --bits 4 -compute_dtype fp32 --scheme asym "
+        extra_cmd=$extra_cmd" --woq --bits 4 --compute_dtype fp32 --scheme asym "
         extra_cmd=$extra_cmd" --woq_algo "Rtn" --desc_act --blocksize 128 --max_input_length 2048 "
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
