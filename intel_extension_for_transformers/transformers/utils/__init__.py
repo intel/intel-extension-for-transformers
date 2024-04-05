@@ -21,6 +21,7 @@ from .config import (
     MixedPrecisionConfig,
     BitsAndBytesConfig,
     SmoothQuantConfig,
+    FP8Config,
     SparsityConfig,
     RtnConfig,
     AwqConfig,

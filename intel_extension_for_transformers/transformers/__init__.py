@@ -44,6 +44,7 @@ from .utils import (
     MixedPrecisionConfig,
     BitsAndBytesConfig,
     SmoothQuantConfig,
+    FP8Config,
     RtnConfig,
     AwqConfig,
     TeqConfig,
