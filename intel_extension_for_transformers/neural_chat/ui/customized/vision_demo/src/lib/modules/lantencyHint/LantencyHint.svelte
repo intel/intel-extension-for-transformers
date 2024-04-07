@@ -4,7 +4,7 @@
 		cardContents,
 	} from "$lib/shared/constant/constants";
 	import { latencyWritable } from "$lib/shared/stores/common/Store";
-	import IntelFooterLogo from "$lib/assets/svg/intelFooterLogo.svg";
+	import IntelFooterLogo from "$lib/assets/png/intelFooterLogo.png";
 
 	const {
 		cardClass,
