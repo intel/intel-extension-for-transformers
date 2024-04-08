@@ -18,7 +18,5 @@
 # Kill the exist and re-run
 ps -ef |grep 'run_code_gen' |awk '{print $2}' |xargs kill -9
 
-export TPP_CACHE_REMAPPED_WEIGHTS=0 
-export USE_MXFP4=1
-
-python -m run_code_gen 2>&1 | tee run.log
+source env.sh
+nohup python -m run_code_gen 2>&1 &

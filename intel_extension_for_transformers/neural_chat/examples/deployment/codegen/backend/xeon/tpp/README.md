@@ -10,8 +10,10 @@ First, you need to install and configure the Conda environment:
 ```bash
 # Download and install Miniconda
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash `Miniconda*.sh`
+bash Miniconda*.sh
 source ~/.bashrc
+conda create -n demo python=3.9
+conda activate demo
 ```
 
 # Install numactl
@@ -66,32 +68,33 @@ python setup.py install
 
 Currently there are some issues when using BF16, so we need to enable MXFP4 by the below commands:
 ```bash
-export TPP_CACHE_REMAPPED_WEIGHTS=0 
+export TPP_CACHE_REMAPPED_WEIGHTS=0
 export USE_MXFP4=1
+export KV_CACHE_INC_SIZE=512
 ```
 
-# Configure Multi-Sockets
+# Configure Multi-NumaNodes
 To use the multi-socket model parallelism with Xeon servers, you need to configure a hostfile first.
 
-Here is a example using 6 sockets on GNR server.
+Here is a example using 3 numa nodes on singe socket on GNR server.
 
 ## Modify hostfile
 ```bash
 vim ../../../../../../server/config/hostfile
-    localhost slots=6
+    localhost slots=3
 ```
 
 
 # Configure Multi-Nodes
 To use the multi-node model parallelism with Xeon servers, you need to configure a hostfile first and make sure ssh is able between your servers.
 
-For example, you have two servers which have the IP of `192.168.1.1` and `192.168.1.2`, and each of it has 4 CPUs.
+For example, you have two servers which have the IP of `192.168.1.1` and `192.168.1.2`, and each of it has 3 numa nodes on singe socket.
 
 ## Modify hostfile
 ```bash
 vim ../../../../../../server/config/hostfile
-    192.168.1.1 slots=4
-    192.168.1.2 slots=4
+    192.168.1.1 slots=3
+    192.168.1.2 slots=3
 ```
 
 ## Configure SSH between Servers
@@ -128,8 +131,8 @@ chmod 600 ~/.ssh/authorized_keys
 ```
 Then modify hostfile as below.
 ```bash
-localhost slots=4
-192.168.1.2 slots=4
+localhost slots=3
+192.168.1.2 slots=3
 ```
 
 # Configure the codegen.yaml
@@ -142,8 +145,7 @@ You can customize the configuration file 'codegen.yaml' to match your environmen
 | port                | 8000                                   |
 | model_name_or_path  | "Phind/Phind-CodeLlama-34B-v2"        |
 | device              | "cpu"                                  |
-| use_deepspeed       | true                                  |
-| world_size          | 8                                      |
+| use_tpp             | true                                  |
 | tasks_list          | ['codegen']                           |
 
 
@@ -153,5 +155,5 @@ Before running the code-generating chatbot server, make sure you have already de
 To start the code-generating chatbot server, use the following command:
 
 ```shell
-nohup python run_code_gen.py &
+bash run.sh
 ```

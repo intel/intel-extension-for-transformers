@@ -886,6 +886,9 @@ def load_model(
                         logging.error("Model type not supported by TPP")
                         set_latest_error(ErrorCodes.ERROR_GENERIC)
                         return
+                    from tpp_pytorch_extension.llm.llm_common import (
+                            jit_trace_model, optimize_for_first_token,)
+                    model = jit_trace_model(model, tokenizer, 1, indirect_kv=True, enable_profile=False, only_last_logit=True)
         elif device in ["cuda", "xpu"]:
             if hasattr(model, "device") and model.device.type != device:
                 try:
@@ -1333,13 +1336,6 @@ def predict_stream(**params):
             yield "END_OF_STREAM_STATS={}".format(stats)
         elif format_version == "v2":
             stats = {
-                "first_token_latency": str(first_token_latency) + " ms",
-                "msecond_per_token": str(msecond_per_token) + " ms",
-            }
-            for key, value in stats.items():
-                yield "{}:{}".format(key, value)
-        else:
-            stats = {
                 "input_token_len": str(input_token_len),
                 "output_token_len": str(output_token_len),
                 "duration": str(duration) + " ms",
@@ -1350,6 +1346,12 @@ def predict_stream(**params):
             yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
             for key, value in stats.items():
                 yield "| {:<22} | {:<27} |\n".format(key, value)
+        else:
+            stats = {
+                "msecond_per_token": str(msecond_per_token) + " ms",
+            }
+            for key, value in stats.items():
+                yield "{}:{}".format(key, value)
 
 
 def predict(**params):

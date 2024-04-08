@@ -209,7 +209,7 @@ def parse_args():
     parser.add_argument(
         "--format_version",
         type=str,
-        default="v2",
+        default="v3",
         help="the version of return stats format",
     )
     args = parser.parse_args()
