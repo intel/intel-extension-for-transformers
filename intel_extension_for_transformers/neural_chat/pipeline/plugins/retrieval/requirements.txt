@@ -14,6 +14,6 @@ qdrant-client
 rank_bm25
 scikit-learn
 sentence-transformers==2.3.1
-unstructured[all-docs]
 torch==2.2.0
 torchaudio==2.2.0
+unstructured[all-docs]
