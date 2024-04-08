@@ -48,25 +48,13 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
     def test_evaluate_for_CasualLM(self):
         cmd = "python  __main__.py --model hf --model_args 'pretrained=hf-internal-testing/tiny-random-gptj,dtype=float32' --tasks piqa --device cpu --batch_size 1 --limit 5"
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         output, error = p.communicate()
         print("Results output:", output.decode())
 
     def test_evaluate_for_Seq2SeqLM(self):
         cmd = "python  __main__.py --model hf --model_args 'pretrained=hf-internal-testing/tiny-random-t5,dtype=float32' --tasks piqa --device cpu --batch_size 1 --limit 5"
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         output, error = p.communicate()
         print("Results output:", output.decode())
 
@@ -95,22 +83,10 @@ class TestLmEvaluationHarness(unittest.TestCase):
         )
 
         cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation-with-past t5-past/"
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
         cmd = "python __main__.py --model hf --model_args pretrained=./t5-past,dtype=float32,model_format=onnx --tasks piqa --device cpu --batch_size 1 --limit 5"
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         output, error = p.communicate()
         print("Results output:", output.decode())
 
@@ -131,22 +107,10 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
         # test evaluate encoder_model + decoder_model
         cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation t5/"
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
         cmd = "python __main__.py --model hf --model_args pretrained=./t5,dtype=float32,model_format=onnx --tasks piqa --device cpu --batch_size 1 --limit 5"
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         output, error = p.communicate()
         print("Results output:", output.decode())
 
@@ -156,24 +120,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
             cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past --legacy gptj-past/"
         else:
             cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/"
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
 
         # test evaluate decoder_model_merged
         cmd = "python  __main__.py --model hf --model_args pretrained=gptj-past,dtype=float32,model_format=onnx --tasks piqa --device cpu --batch_size 1 --limit 5"
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         output, error = p.communicate()
         print("Results output:", output.decode())
 
@@ -197,21 +149,9 @@ class TestLmEvaluationHarness(unittest.TestCase):
             cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation --legacy gptj/"
         else:
             cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation gptj/"
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
-        p = subprocess.Popen(
-            cmd,
-            preexec_fn=os.setsid,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         cmd = "python  __main__.py --model hf --model_args 'pretrained=gptj,dtype=float32,model_format=onnx' --tasks piqa --device cpu --batch_size 1 --limit 5"
         output, error = p.communicate()
         print("Results output:", output.decode())
