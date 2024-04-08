@@ -95,13 +95,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         if os.path.exists(merged_model_path):
             os.remove(merged_model_path)
             cmd = "python __main__.py --model hf --model_args pretrained=./t5-past,dtype=float32,model_format=onnx --tasks piqa --device cpu --batch_size 1 --limit 5"
-            p = subprocess.Popen(
-                cmd,
-                preexec_fn=os.setsid,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=True,
-            )  # nosec
+            p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
             output, error = p.communicate()
             print("Results output:", output.decode())
 
@@ -133,13 +127,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         merged_model_path = "./gptj-past/decoder_model_merged.onnx"
         if os.path.exists(merged_model_path):
             os.remove(merged_model_path)
-            p = subprocess.Popen(
-                cmd,
-                preexec_fn=os.setsid,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=True,
-            )  # nosec
+            p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
             cmd = "python  __main__.py --model hf --model_args pretrained=gptj-past,dtype=float32,model_format=onnx --tasks piqa --device cpu --batch_size 1 --limit 5"
             output, error = p.communicate()
             print("Results output:", output.decode())
@@ -159,21 +147,9 @@ class TestLmEvaluationHarness(unittest.TestCase):
         # test evaluate model exported with optimum >= 1.14.0
         if Version(optimum.version.__version__) >= OPTIMUM114_VERSION:
             cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/"
-            p = subprocess.Popen(
-                cmd,
-                preexec_fn=os.setsid,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=True,
-            )  # nosec
+            p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
             p.communicate()
-            p = subprocess.Popen(
-                cmd,
-                preexec_fn=os.setsid,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=True,
-            )  # nosec
+            p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
             cmd = "python  __main__.py --model hf --model_args 'pretrained=gptj-past,dtype=float32,model_format=onnx' --tasks piqa --device cpu --batch_size 1 --limit 5"
             output, error = p.communicate()
             print("Results output:", output.decode())
