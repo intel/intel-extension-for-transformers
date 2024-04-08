@@ -16,5 +16,5 @@ einops  #qwen
 git+https://github.com/intel/neural-speed.git@v1.0.1.dev0
 auto-round
 git+https://github.com/intel/neural-compressor.git
-git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
+lm-eval
 huggingface_hub

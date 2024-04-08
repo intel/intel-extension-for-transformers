@@ -1041,10 +1041,12 @@ class _BaseQBitsAutoModelClass:
         token = kwargs.get("token", None)
         from_pipeline = kwargs.get("_from_pipeline", None)
         from_auto_class = kwargs.get("_from_auto", False)
-        revision = kwargs.get("revision", "main")
+        revision = kwargs.pop("revision", "main")
         commit_hash = kwargs.pop("_commit_hash", None)
         _fast_init = kwargs.get("_fast_init", True)
         device_map = kwargs.pop("device_map", "auto")
+        # lm-eval device map is dictionary
+        device_map = device_map[""] if isinstance(device_map, dict) and "" in device_map else device_map
         use_safetensors = kwargs.get("use_safetensors", None)
 
         if use_safetensors is None and not is_safetensors_available():
@@ -1327,6 +1329,7 @@ class _BaseQBitsAutoModelClass:
                     if (
                         hasattr(config, "torch_dtype")
                         and config.torch_dtype is not None
+                        and config.torch_dtype != "auto"
                     ):
                         torch_dtype = config.torch_dtype
                     else:
@@ -1338,6 +1341,7 @@ class _BaseQBitsAutoModelClass:
                     assert (
                         False
                     ), f'`torch_dtype` can be either `torch.dtype` or `"auto"`, but received {torch_dtype}'
+
             dtype_orig = model_class._set_default_torch_dtype(torch_dtype)
         if quantization_config.compute_dtype is None:
             if use_xpu:
