@@ -514,6 +514,7 @@ def load_model(
         else:
             config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                                 if (re.search("chatglm", model_name, re.IGNORECASE) or \
+                                                re.search("baichuan", model_name, re.IGNORECASE) or \
                                                 re.search("qwen", model_name, re.IGNORECASE) or \
                                                 re.search("deci", model_name, re.IGNORECASE)) else False)
     except ValueError as e:
@@ -548,6 +549,7 @@ def load_model(
                     or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
                 use_auth_token=hf_access_token,
                 trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                        re.search("baichuan", model_name, re.IGNORECASE) or \
                     re.search("chatglm", model_name, re.IGNORECASE) or gguf_model_path) else False,
             )
     except EnvironmentError as e:

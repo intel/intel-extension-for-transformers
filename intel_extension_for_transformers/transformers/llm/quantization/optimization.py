@@ -64,7 +64,7 @@ class Optimization:
             or re.search("magicoder", model_name, re.IGNORECASE)
             or re.search("solar", model_name, re.IGNORECASE)
             or re.search("qwen", model_name, re.IGNORECASE)
-            ot re.search("baichuan", model_name, re.IGNORECASE)
+            or re.search("baichuan", model_name, re.IGNORECASE)
         ):
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
             optimized_model = AutoModelForCausalLM.from_pretrained(
