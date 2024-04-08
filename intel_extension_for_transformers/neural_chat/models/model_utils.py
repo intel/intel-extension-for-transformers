@@ -578,6 +578,12 @@ def load_model(
                 tokenizer.padding_side = "left"
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
+        if re.search("qwen", model.config.architectures[0], re.IGNORECASE):
+            tokenizer.pad_token = '<|extra_0|>'
+            model.config.pad_token_id = tokenizer.pad_token_id
+            model.generation_config.pad_token_id = tokenizer.pad_token_id
+            from .qwen_model import prepare_inputs_for_generation
+            model.prepare_inputs_for_generation = prepare_inputs_for_generation
         MODELS[model_name]["model"] = model
         MODELS[model_name]["tokenizer"] = tokenizer
         logging.info("Optimized Model loaded.")
