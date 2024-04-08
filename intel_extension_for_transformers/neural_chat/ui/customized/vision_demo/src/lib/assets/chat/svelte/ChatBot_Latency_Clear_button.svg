@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288.35 137.63">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #fff;
+        font-family: IntelOneDisplay-Light, 'IntelOne Display';
+        font-size: 47.68px;
+        font-weight: 300;
+      }
+
+      .cls-2 {
+        fill: none;
+        stroke: #00c7fd;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 3px;
+      }
+    </style>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <path class="cls-2" d="M279.45,1.5H8.9C4.81,1.5,1.5,4.81,1.5,8.9v126.34c0,.83,1.05,1.21,1.57.56l19.62-24.24.23-.27h256.52c4.08,0,7.4-3.31,7.4-7.4V8.9c0-4.08-3.31-7.4-7.4-7.4Z"/>
+      <text class="cls-1" transform="translate(65.6 70.6)"><tspan x="0" y="0">CLEAR</tspan></text>
+    </g>
+  </g>
+</svg>
