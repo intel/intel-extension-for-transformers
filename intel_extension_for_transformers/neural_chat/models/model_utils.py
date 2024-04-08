@@ -514,6 +514,7 @@ def load_model(
         else:
             config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                                 if (re.search("chatglm", model_name, re.IGNORECASE) or \
+                                                re.search("baichuan", model_name, re.IGNORECASE) or \
                                                 re.search("qwen", model_name, re.IGNORECASE) or \
                                                 re.search("deci", model_name, re.IGNORECASE)) else False)
     except ValueError as e:
@@ -548,6 +549,7 @@ def load_model(
                     or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
                 use_auth_token=hf_access_token,
                 trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                        re.search("baichuan", model_name, re.IGNORECASE) or \
                     re.search("chatglm", model_name, re.IGNORECASE) or gguf_model_path) else False,
             )
     except EnvironmentError as e:
@@ -578,6 +580,12 @@ def load_model(
                 tokenizer.padding_side = "left"
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
+        if re.search("qwen", model.config.architectures[0], re.IGNORECASE):
+            tokenizer.pad_token = '<|extra_0|>'
+            model.config.pad_token_id = tokenizer.pad_token_id
+            model.generation_config.pad_token_id = tokenizer.pad_token_id
+            from .qwen_model import prepare_inputs_for_generation
+            model.prepare_inputs_for_generation = prepare_inputs_for_generation
         MODELS[model_name]["model"] = model
         MODELS[model_name]["tokenizer"] = tokenizer
         logging.info("Optimized Model loaded.")
