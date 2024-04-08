@@ -14,3 +14,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from . import (
+    huggingface,
+)
+
+
+# TODO: implement __all__
+
+
+try:
+    # enable hf hub transfer if available
+    import hf_transfer  # type: ignore # noqa
+    import huggingface_hub.constants  # type: ignore
+
+    huggingface_hub.constants.HF_HUB_ENABLE_HF_TRANSFER = True
+except ImportError:
+    pass
