@@ -76,7 +76,7 @@ export KV_CACHE_INC_SIZE=512
 # Configure Multi-NumaNodes
 To use the multi-socket model parallelism with Xeon servers, you need to configure a hostfile first.
 
-Here is a example using 3 numa nodes on singe socket on GNR server.
+Here is a example using 3 numa nodes on single socket on GNR server.
 
 ## Modify hostfile
 ```bash
@@ -88,7 +88,7 @@ vim ../../../../../../server/config/hostfile
 # Configure Multi-Nodes
 To use the multi-node model parallelism with Xeon servers, you need to configure a hostfile first and make sure ssh is able between your servers.
 
-For example, you have two servers which have the IP of `192.168.1.1` and `192.168.1.2`, and each of it has 3 numa nodes on singe socket.
+For example, you have two servers which have the IP of `192.168.1.1` and `192.168.1.2`, and each of it has 3 numa nodes on single socket.
 
 ## Modify hostfile
 ```bash
