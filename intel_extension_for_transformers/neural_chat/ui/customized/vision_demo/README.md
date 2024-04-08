@@ -31,4 +31,4 @@ Here're some of the project's features:
     ```
 4. Execute `npm install` to install the corresponding dependencies.
 
-5. Execute `npm run dev` in both environments
+5. Execute `npm run dev` in both environment.

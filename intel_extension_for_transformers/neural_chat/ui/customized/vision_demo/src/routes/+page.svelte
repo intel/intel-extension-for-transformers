@@ -222,7 +222,7 @@
 							type="button"
 							on:click={() => handelClearHistory()}
 						>
-							<img class="w-20" src={Clear} alt="Your SVG" />
+							<img class="ml-[0.3rem] w-[6rem]" src={Clear} alt="Your SVG" />
 						</button>
 					</div>
 				</div>

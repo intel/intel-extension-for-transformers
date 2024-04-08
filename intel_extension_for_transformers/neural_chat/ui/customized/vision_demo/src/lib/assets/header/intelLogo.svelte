@@ -16,7 +16,7 @@
 
 <svg
 aria-hidden="true"
-class="intel-brand-logo w-[3.4rem] h-[3.4rem]"
+class="intel-brand-logo w-[3.5rem] h-[3.5rem]"
 viewBox="0 0 103 42"
 >
 <g fill-rule="evenodd" transform="translate(.363 .363)">
