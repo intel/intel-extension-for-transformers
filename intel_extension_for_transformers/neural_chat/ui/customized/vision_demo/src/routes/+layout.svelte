@@ -18,7 +18,7 @@
 	<div class="flex h-full flex-col custom-background">
 	  <Header />
 	  <slot />
-	  <!-- <Footer /> -->
+	  <Footer />
 	</div>
   </Notifications>
   

@@ -26,7 +26,7 @@
 			<p
 				class={msg.role === 0
 					? "max-w-[60vw]  items-center  whitespace-pre-line break-keep text-[1rem] font-light leading-5 leading-relaxed sm:max-w-[50rem]"
-					: " max-w-[60vw]  items-center whitespace-pre-line break-keep text-[1rem] leading-5 leading-relaxed sm:max-w-[50rem]"}
+					: "font-intel-medium max-w-[60vw]  items-center whitespace-pre-line break-keep text-[1rem] leading-5 leading-relaxed sm:max-w-[50rem]"}
 			>
 				{@html msg.content}
 			</p>
