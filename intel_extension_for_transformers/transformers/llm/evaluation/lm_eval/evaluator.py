@@ -81,7 +81,7 @@ def simple_evaluate(
         String or dict arguments for each model class, see LM.create_from_arg_string and LM.create_from_arg_object.
         Ignored if `model` argument is a LM object.
     :param tasks: list[Union[str, dict, Task]]
-        List of task names or Task objects. Task objects will be taken to have name task.EVAL_HARNESS_NAME 
+        List of task names or Task objects. Task objects will be taken to have name task.EVAL_HARNESS_NAME
         if defined and type(task).__name__ otherwise.
     :param num_fewshot: int
         Number of examples in few-shot context

@@ -4,9 +4,9 @@ einops
 evaluate
 fastapi
 fschat==0.2.35
-lm-eval
 huggingface_hub
 intel-extension-for-transformers
+lm-eval
 neural-compressor
 numpy==1.23.5
 optimum
