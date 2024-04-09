@@ -87,8 +87,7 @@ def _get_accelerate_args(
 
 
 class HFLM(TemplateLM):
-    """
-    An abstracted Huggingface model class. Enables usage with both models of
+    """An abstracted Huggingface model class. Enables usage with both models of
     `intel_extension_for_transformers.transformers.AutoModelForCausalLM` and
     `intel_extension_for_transformers.transformers.AutoModelForSeq2SeqLM` classes.
 
@@ -422,8 +421,8 @@ class HFLM(TemplateLM):
         backend: Optional[Literal["default", "causal", "seq2seq"]] = "default",
         trust_remote_code: Optional[bool] = False,
     ) -> None:
-        """
-        Helper method during initialization.
+        """Helper method during initialization.
+
         Determines the backend ("causal" (decoder-only) or "seq2seq" (encoder-decoder))
         model type to be used.
         """
@@ -498,8 +497,7 @@ class HFLM(TemplateLM):
         autogptq: Optional[Union[bool, str]] = False,
         **kwargs,
     ) -> None:
-        """
-        Initializes an HF or HF-compatible PreTrainedModel from scratch
+        """Initializes an HF or HF-compatible PreTrainedModel from scratch
         inside HFLM, using the kwargs passed into self.__init__().
 
         Also handles functionality such as AutoGPTQ usage and PEFT wrapping.
@@ -805,8 +803,7 @@ class HFLM(TemplateLM):
         trust_remote_code: Optional[bool] = False,
         use_fast_tokenizer: Optional[bool] = True,
     ) -> None:
-        """
-        Helper method during initialization.
+        """Helper method during initialization.
 
         Create a tokenizer object corresponding to the correct
         tokenizer for value of `pretrained`, or use the pre-initialized tokenizer passed.
@@ -872,7 +869,7 @@ class HFLM(TemplateLM):
             for _ in range(5):
                 out = F.log_softmax(
                     self._model_call(test_batch, **call_kwargs), dim=-1
-                )  # noqa: F841
+                )
 
             return batch_size
 
@@ -900,7 +897,7 @@ class HFLM(TemplateLM):
     def tok_encode(
         self, string: str, left_truncate_len=None, add_special_tokens=None
     ) -> List[int]:
-        """ """
+        """"""
         if add_special_tokens is None:
             if self.model_format == "neural_speed":
                 add_special_tokens = True
@@ -1164,7 +1161,7 @@ class HFLM(TemplateLM):
         res = []
 
         def _collate(req: Tuple[Tuple[str, str], List[int], List[int]]):
-            """Defines the key for the sorted method"""
+            """Defines the key for the sorted method."""
             # the negative sign on len(toks) sorts descending - this has a few advantages:
             # - time estimates will always be over not underestimates, which is more useful for planning
             # - to know the size of a batch when going through the list, you know the first one is always the batch
@@ -1176,7 +1173,7 @@ class HFLM(TemplateLM):
             return -len(toks), tuple(toks)
 
         def _lookup_one_token_cont(req: Tuple[Tuple[str, str], List[int], List[int]]):
-            """Defines the key to group and lookup one-token continuations"""
+            """Defines the key to group and lookup one-token continuations."""
             # Use with group_by="contexts" (optional)"
             # allows for the creation of a lookup, so we can reuse logits in case of one-token continuations.
             # speeds up some multiple-choice tasks proportionally to the number of choices.
@@ -1377,7 +1374,7 @@ class HFLM(TemplateLM):
         res = []
 
         def _collate(req: Tuple[str, dict]):
-            """Defines the key for the sorted method"""
+            """Defines the key for the sorted method."""
             # the negative sign on len(toks) sorts descending - this has a few advantages:
             # - time estimates will always be over not underestimates, which is more useful for planning
             # - to know the size of a batch when going through the list, you know the first one is always the batch
