@@ -8,11 +8,10 @@ from io import open
 from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
-from intel_extension_for_transformers.tools.utils import get_gpu_family
 
 result = subprocess.Popen("pip install -r requirements.txt", shell=True)
 result.wait()
-
+from intel_extension_for_transformers.tools.utils import get_gpu_family
 
 def check_env_flag(name: str, default: bool = False) -> bool:
     if default:  # if a flag meant to be true if not set / mal-formatted
