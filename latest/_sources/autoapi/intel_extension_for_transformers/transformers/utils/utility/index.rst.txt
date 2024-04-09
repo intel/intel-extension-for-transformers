@@ -52,7 +52,6 @@ Functions
    Generate the dummy example inputs.
 
 
-
 .. py:function:: recover_model_from_json(user_model, json_file_path, trust_remote_code=False)
 
    Recover ipex model from JSON file.

@@ -24,67 +24,67 @@ Classes
 .. py:class:: Task
 
 
-   task class
+   Task class.
 
    .. py:method:: done()
 
-      function
+      function.
 
 
    .. py:method:: wait_for_done()
 
-      function
+      function.
 
 
    .. py:method:: set_prompt(prompt)
 
-      function
+      function.
 
 
    .. py:method:: set_steps(num_inference_steps)
 
-      function
+      function.
 
 
    .. py:method:: set_task_type(task_type)
 
-      set task type
+      Set task type.
 
 
    .. py:method:: set_start_time(time)
 
-      set_start_time for time-out
+      set_start_time for time-out.
 
 
 
 .. py:class:: TaskQueue
 
 
-   TaskQueue
+   TaskQueue.
 
    .. py:method:: push(task)
 
-      function
+      function.
 
 
    .. py:method:: pop()
 
-      function
+      function.
 
 
    .. py:method:: batch_pop(batch_size)
 
-      function
+      function.
 
 
    .. py:method:: empty()
 
-      function
+      function.
 
 
    .. py:method:: join()
 
-      function
+      function.
 
 
 

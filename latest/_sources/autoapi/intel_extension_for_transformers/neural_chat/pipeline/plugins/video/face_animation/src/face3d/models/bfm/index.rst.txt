@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   This script defines the parametric 3d face model for Deep3DFaceRecon_pytorch
+   This script defines the parametric 3d face model for Deep3DFaceRecon_pytorch.
 
 
 

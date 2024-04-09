@@ -44,7 +44,7 @@ Functions
 
 .. py:function:: convert_to_scalar(stats)
 
-   Converts the stats from a flattened dict to single scalar dicts
+   Converts the stats from a flattened dict to single scalar dicts.
 
 
 .. py:function:: stack_dicts(stats_dicts)
@@ -99,6 +99,6 @@ Functions
 .. py:class:: LengthSampler(min_value, max_value)
 
 
-   Samples a length
+   Samples a length.
 
 

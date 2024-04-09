@@ -68,7 +68,6 @@ Classes
       Compute the DPO loss for a batch of policy and reference model log probabilities.
 
 
-
    .. py:method:: dpo_forward(model: torch.nn.Module, batch: Dict[str, Union[List, torch.LongTensor]]) -> Tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]
 
       Run the given model on the given batch of inputs, concatenating the chosen and rejected inputs together.
@@ -95,7 +94,6 @@ Classes
 
 
 
-   Initialize habana
-
+   Initialize habana.
 
 

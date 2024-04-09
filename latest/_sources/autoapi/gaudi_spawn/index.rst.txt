@@ -37,6 +37,7 @@ Functions
 .. py:function:: parse_args()
 
    Helper function parsing the command line options.
+
    @retval ArgumentParser
 
 

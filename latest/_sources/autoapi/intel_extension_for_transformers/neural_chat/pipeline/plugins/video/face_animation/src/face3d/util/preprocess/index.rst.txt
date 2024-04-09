@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   This script contains the image preprocessing code for Deep3DFaceRecon_pytorch
+   This script contains the image preprocessing code for Deep3DFaceRecon_pytorch.
 
 
 

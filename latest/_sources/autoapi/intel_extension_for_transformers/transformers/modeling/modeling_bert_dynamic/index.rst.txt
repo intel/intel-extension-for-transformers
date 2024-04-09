@@ -332,7 +332,8 @@ Functions
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, past_key_values: Optional[List[torch.FloatTensor]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.BaseModelOutputWithPoolingAndCrossAttentions]
 
-      encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
+      encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`,
+      *optional*):
           Sequence of hidden-states at the output of the last layer of the encoder. Used in the cross-attention if
           the model is configured as a decoder.
       encoder_attention_mask (`torch.FloatTensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -359,7 +360,7 @@ Functions
 
 
 
-   Bert for pretrained model
+   Bert for pretrained model.
 
    .. py:method:: get_output_embeddings()
 
@@ -373,7 +374,7 @@ Functions
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, next_sentence_label: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], BertForPreTrainingOutput]
 
-          labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+      Labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
               Labels for computing the masked language modeling loss. Indices should be in `[-100, 0, ...,
               config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are ignored (masked),
               the loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`
@@ -425,7 +426,8 @@ Functions
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, past_key_values: Optional[List[torch.Tensor]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.CausalLMOutputWithCrossAttentions]
 
-      encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
+      encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`,
+      *optional*):
           Sequence of hidden-states at the output of the last layer of the encoder. Used in the cross-attention if
           the model is configured as a decoder.
       encoder_attention_mask (`torch.FloatTensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -475,10 +477,11 @@ Functions
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.MaskedLMOutput]
 
-      labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
-          Labels for computing the masked language modeling loss. Indices should be in `[-100, 0, ...,
-          config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are ignored (masked), the
-          loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`
+      Labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+
+      Labels for computing the masked language modeling loss. Indices should be in `[-100, 0, ...,
+      config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are ignored (masked), the
+      loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`
 
 
    .. py:method:: prepare_inputs_for_generation(input_ids, attention_mask=None, **model_kwargs)
@@ -496,7 +499,7 @@ Functions
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, **kwargs) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.NextSentencePredictorOutput]
 
-      labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+      Labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
           Labels for computing the next sequence prediction (classification) loss. Input should be a sequence pair
           (see `input_ids` docstring). Indices should be in `[0, 1]`:
 
@@ -534,10 +537,11 @@ Functions
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.SequenceClassifierOutput]
 
-      labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-          Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
-          config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
-          `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+      Labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+
+      Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+      config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+      `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
 
 
 
@@ -550,10 +554,11 @@ Functions
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.MultipleChoiceModelOutput]
 
-      labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-          Labels for computing the multiple choice classification loss. Indices should be in `[0, ...,
-          num_choices-1]` where `num_choices` is the size of the second dimension of the input tensors. (See
-          `input_ids` above)
+      Labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+
+      Labels for computing the multiple choice classification loss. Indices should be in `[0, ...,
+      num_choices-1]` where `num_choices` is the size of the second dimension of the input tensors. (See
+      `input_ids` above)
 
 
 
@@ -566,8 +571,9 @@ Functions
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.TokenClassifierOutput]
 
-      labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
-          Labels for computing the token classification loss. Indices should be in `[0, ..., config.num_labels - 1]`.
+      Labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+
+      Labels for computing the token classification loss. Indices should be in `[0, ..., config.num_labels - 1]`.
 
 
 
@@ -581,7 +587,8 @@ Functions
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, start_positions: Optional[torch.Tensor] = None, end_positions: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=False) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.QuestionAnsweringModelOutput]
 
       start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-          Labels for position (index) of the start of the labelled span for computing the token classification loss.
+
+      Labels for position (index) of the start of the labelled span for computing the token classification loss.
           Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
           are not taken into account for computing the loss.
       end_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):

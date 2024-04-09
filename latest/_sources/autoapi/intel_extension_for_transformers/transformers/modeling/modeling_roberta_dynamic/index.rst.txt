@@ -226,7 +226,6 @@ Functions
 
    .. _*Attention is all you need*: https://arxiv.org/abs/1706.03762
 
-
    .. py:method:: get_input_embeddings()
 
       Getter of input embeddings.
@@ -479,7 +478,6 @@ Functions
 
    Position numbers begin at padding_idx+1. Padding symbols are ignored.
    This is modified from fairseq's `utils.make_positions`.
-
 
 
 .. py:function:: expand_gather(input, dim, index)

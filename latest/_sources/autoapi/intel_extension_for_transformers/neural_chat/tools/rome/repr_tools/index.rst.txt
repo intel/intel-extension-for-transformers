@@ -6,7 +6,9 @@
 .. autoapi-nested-parse::
 
    Contains utilities for extracting token representations and indices
-   from string templates. Used in computing the left and right vectors for ROME.
+   from string templates.
+
+   Used in computing the left and right vectors for ROME.
 
 
 
@@ -28,7 +30,9 @@ Functions
 .. py:function:: get_reprs_at_word_tokens(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, context_templates: List[str], words: List[str], layer: int, module_template: str, subtoken: str, track: Optional[Literal[in, out, both]] = 'in', batch_first: Optional[bool] = True) -> torch.Tensor
 
    Retrieves the last token representation of `word` in `context_template`
-   when `word` is substituted into `context_template`. See `get_last_word_idx_in_template`
+   when `word` is substituted into `context_template`.
+
+   See `get_last_word_idx_in_template`
    for more details.
 
 

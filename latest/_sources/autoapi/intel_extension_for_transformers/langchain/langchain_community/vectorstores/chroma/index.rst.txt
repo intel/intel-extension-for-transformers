@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   The wrapper for Chroma retriever based on langchain
+   The wrapper for Chroma retriever based on langchain.
 
 
 

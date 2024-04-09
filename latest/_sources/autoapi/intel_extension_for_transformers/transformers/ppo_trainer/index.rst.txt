@@ -31,7 +31,9 @@ Functions
 
 .. py:function:: get_global_statistics(accelerator, xs: torch.Tensor, mask=None, device='cpu') -> Tuple[float, float, int]
 
-   Computes element-wise mean and variance of the tensor across processes. Reference:
+   Computes element-wise mean and variance of the tensor across processes.
+
+   Reference:
    https://github.com/OpenLMLab/MOSS-RLHF/blob/40b91eb2f2b71b16919addede0341d2bef70825d/utils.py#L57C1-L73C75
 
 
@@ -208,7 +210,7 @@ Functions
 
    .. py:method:: train_minibatch(old_logprobs: torch.FloatTensor, values: torch.FloatTensor, logprobs: torch.FloatTensor, logits: torch.FloatTensor, vpreds: torch.FloatTensor, mask: torch.LongTensor, advantages: torch.FloatTensor, returns: torch.FloatTensor)
 
-      Train one PPO minibatch
+      Train one PPO minibatch.
 
       :param logprobs: Log probabilities of the model, shape [batch_size, response_length]
       :type logprobs: `torch.FloatTensor`
@@ -258,7 +260,6 @@ Functions
    .. py:method:: record_step_stats(kl_coef: float, **data)
 
       Record training step statistics.
-
 
       :param kl_coef: KL coefficient
       :type kl_coef: `float`

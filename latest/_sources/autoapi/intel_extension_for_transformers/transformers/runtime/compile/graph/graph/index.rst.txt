@@ -31,12 +31,12 @@ Classes
 
    .. py:method:: add_config_item(key, val)
 
-      Add a pair into framework_modeling_config
+      Add a pair into framework_modeling_config.
 
 
    .. py:method:: inquire_config_item(key)
 
-      Get a pair from framework_modeling_config
+      Get a pair from framework_modeling_config.
 
 
    .. py:method:: insert_nodes(index, nodes)

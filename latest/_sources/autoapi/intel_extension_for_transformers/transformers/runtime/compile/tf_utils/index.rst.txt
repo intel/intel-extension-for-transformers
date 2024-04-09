@@ -93,5 +93,5 @@ Attributes
 
 .. py:data:: TF_DTYPE_ID
 
-   Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function
+   Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function.
 

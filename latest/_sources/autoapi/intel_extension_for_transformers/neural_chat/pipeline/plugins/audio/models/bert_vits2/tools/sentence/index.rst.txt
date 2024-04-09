@@ -21,6 +21,6 @@ Functions
 
 .. py:function:: check_is_none(item) -> bool
 
-   none -> True, not none -> False
+   None -> True, not none -> False.
 
 

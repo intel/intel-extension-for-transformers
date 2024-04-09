@@ -69,7 +69,7 @@ Classes
 
    .. py:method:: test_is_supported_onnx_graph()
 
-      test is_supported_onnx_graph
+      Test is_supported_onnx_graph.
 
 
 

@@ -27,7 +27,7 @@ Functions
 
 .. py:function:: refactor_batch_size(value, batch_size, old_batch_size=-1)
 
-   return batched data from value.
+   Return batched data from value.
 
    :param value: input data.
    :type value: torch.Tensor
@@ -42,7 +42,7 @@ Functions
 
 .. py:function:: get_example_inputs(dataloader, batch_size=1)
 
-   return batched data from dataloader.
+   Return batched data from dataloader.
 
    :param dataloader: dataloader.
    :param batch_size: batch size. Defaults to 1.
@@ -54,7 +54,7 @@ Functions
 
 .. py:function:: preprocess_model(model, example_inputs, config, additional_cmd)
 
-   convert model to torchscript and generate mode.
+   Convert model to torchscript and generate mode.
 
    :param model: original model.
    :type model: torch.nn.Module
@@ -72,7 +72,7 @@ Functions
 
 .. py:function:: benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=None)
 
-   function for benchmarking model.
+   Function for benchmarking model.
 
    :param model_name_or_path: model_name_or_path.
    :type model_name_or_path: str, torch.nn.Module or torch.jit.ScriptModule

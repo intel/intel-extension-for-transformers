@@ -27,6 +27,7 @@ Classes
 
 
    Causal language modeling.
+
    You can find a set of supported models in the HF documentation:
    https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForCausalLM
 
@@ -37,6 +38,7 @@ Classes
 
 
    Seq2Seq language modeling.
+
    You can find a set of supported models in the following documentation:
    https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForSeq2SeqLM
 

@@ -118,7 +118,9 @@ Functions
 .. py:function:: recursive_copy(x, clone=None, detach=None, retain_grad=None)
 
    Copies a reference to a tensor, or an object that contains tensors,
-   optionally detaching and cloning the tensor(s).  If retain_grad is
+   optionally detaching and cloning the tensor(s).
+
+   If retain_grad is
    true, the original tensors are marked to have grads retained.
 
 
@@ -139,7 +141,9 @@ Functions
 .. py:function:: hierarchical_subsequence(sequential, first, last, after, upto, share_weights=False, depth=0)
 
    Recursive helper for subsequence() to support descent into dotted
-   layer names.  In this helper, first, last, after, and upto are
+   layer names.
+
+   In this helper, first, last, after, and upto are
    arrays of names resulting from splitting on dots.  Can only
    descend into nested Sequentials.
 
@@ -170,6 +174,7 @@ Functions
    Invokes a function with only the arguments that it
    is written to accept, giving priority to arguments
    that match by-name, using the following rules.
+
    (1) arguments with matching names are passed by name.
    (2) remaining non-name-matched args are passed by order.
    (3) extra caller arguments that the function cannot

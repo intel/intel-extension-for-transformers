@@ -23,7 +23,7 @@ Functions
 .. py:function:: pattern_match(patterns, source_list)
 
    Returns a list containing all values of the source_list that
-   match at least one of the patterns
+   match at least one of the patterns.
 
 
 .. py:function:: evaluate(model, tokenizer, tasks, batch_size, args)

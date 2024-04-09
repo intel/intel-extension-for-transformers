@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>model &mdash; Intel® Extension for Transformers 0.1.dev1+ga00a6f2 documentation</title>
+  <title>model &mdash; Intel® Extension for Transformers 0.1.dev1+gd1fdcdd documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
@@ -97,14 +97,15 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#model.TritonPythonModel" title="model.TritonPythonModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TritonPythonModel</span></code></a></p></td>
-<td><p>Your Python model must use the same class name. Every Python model</p></td>
+<td><p>Your Python model must use the same class name.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="model.TritonPythonModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">TritonPythonModel</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model.TritonPythonModel" title="Link to this definition"></a></dt>
-<dd><p>Your Python model must use the same class name. Every Python model
+<dd><p>Your Python model must use the same class name.</p>
+<p>Every Python model
 that is created must have “TritonPythonModel” as the class name.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="model.TritonPythonModel.initialize">
@@ -135,7 +136,7 @@ for this model. Depending on the batching configuration (e.g. Dynamic
 Batching) used, <cite>requests</cite> may contain multiple requests. Every
 Python model, must create one pb_utils.InferenceResponse for every
 pb_utils.InferenceRequest in <cite>requests</cite>. If there is an error, you can
-set the error argument when creating a pb_utils.InferenceResponse</p>
+set the error argument when creating a pb_utils.InferenceResponse.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>requests</strong> (<em>list</em>) – A list of pb_utils.InferenceRequest</p>
@@ -153,8 +154,8 @@ be the same as <cite>requests</cite></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="model.TritonPythonModel.finalize">
 <span class="sig-name descname"><span class="pre">finalize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#model.TritonPythonModel.finalize" title="Link to this definition"></a></dt>
-<dd><p><cite>finalize</cite> is called only once when the model is being unloaded.
-Implementing <cite>finalize</cite> function is OPTIONAL. This function allows
+<dd><p><cite>finalize</cite> is called only once when the model is being unloaded.</p>
+<p>Implementing <cite>finalize</cite> function is OPTIONAL. This function allows
 the model to perform any necessary clean ups before exit.</p>
 </dd></dl>
 
@@ -178,7 +179,7 @@ the model to perform any necessary clean ups before exit.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fe93c060160> 
+   <jinja2.runtime.BlockReference object at 0x7f6f24833130> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

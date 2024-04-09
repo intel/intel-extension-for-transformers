@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.tools.rome.repr_tools &mdash; Intel® Extension for Transformers 0.1.dev1+ga00a6f2 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.tools.rome.repr_tools &mdash; Intel® Extension for Transformers 0.1.dev1+gd1fdcdd documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -91,7 +91,8 @@
   <section id="module-intel_extension_for_transformers.neural_chat.tools.rome.repr_tools">
 <span id="intel-extension-for-transformers-neural-chat-tools-rome-repr-tools"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.tools.rome.repr_tools" title="intel_extension_for_transformers.neural_chat.tools.rome.repr_tools"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.repr_tools</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.tools.rome.repr_tools" title="Link to this heading"></a></h1>
 <p>Contains utilities for extracting token representations and indices
-from string templates. Used in computing the left and right vectors for ROME.</p>
+from string templates.</p>
+<p>Used in computing the left and right vectors for ROME.</p>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
 <section id="functions">
@@ -113,7 +114,8 @@ from string templates. Used in computing the left and right vectors for ROME.</p
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.repr_tools.get_reprs_at_word_tokens">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.repr_tools.</span></span><span class="sig-name descname"><span class="pre">get_reprs_at_word_tokens</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">model:</span> <span class="pre">transformers.PreTrainedModel,</span> <span class="pre">tokenizer:</span> <span class="pre">transformers.PreTrainedTokenizer,</span> <span class="pre">context_templates:</span> <span class="pre">List[str],</span> <span class="pre">words:</span> <span class="pre">List[str],</span> <span class="pre">layer:</span> <span class="pre">int,</span> <span class="pre">module_template:</span> <span class="pre">str,</span> <span class="pre">subtoken:</span> <span class="pre">str,</span> <span class="pre">track:</span> <span class="pre">Optional[Literal[in,</span> <span class="pre">out,</span> <span class="pre">both]]</span> <span class="pre">=</span> <span class="pre">'in',</span> <span class="pre">batch_first:</span> <span class="pre">Optional[bool]</span> <span class="pre">=</span> <span class="pre">True</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/repr_tools.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.repr_tools.get_reprs_at_word_tokens" title="Link to this definition"></a></dt>
 <dd><p>Retrieves the last token representation of <cite>word</cite> in <cite>context_template</cite>
-when <cite>word</cite> is substituted into <cite>context_template</cite>. See <cite>get_last_word_idx_in_template</cite>
+when <cite>word</cite> is substituted into <cite>context_template</cite>.</p>
+<p>See <cite>get_last_word_idx_in_template</cite>
 for more details.</p>
 </dd></dl>
 
@@ -151,7 +153,7 @@ at each index in <cite>idxs</cite>.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fe93f3a2dd0> 
+   <jinja2.runtime.BlockReference object at 0x7f6f2865fee0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

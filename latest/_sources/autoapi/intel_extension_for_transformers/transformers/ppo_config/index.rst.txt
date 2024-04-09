@@ -22,18 +22,18 @@ Classes
 .. py:class:: PPOConfig
 
 
-   Configuration class for PPOTrainer
+   Configuration class for PPOTrainer.
 
    .. py:attribute:: exp_name
       :type: str
 
-      the name of this experiment (by default is the file name without the extension name)
+      The name of this experiment (by default is the file name without the extension name)
 
    .. py:attribute:: seed
       :type: int
       :value: 0
 
-      Seed value for random generations
+      Seed value for random generations.
 
    .. py:attribute:: log_with
       :type: Optional[Literal[wandb, tensorboard]]
@@ -67,12 +67,13 @@ Classes
       :type: bool
       :value: True
 
-      Remove unused columns from the dataset if `datasets.Dataset` is used
+      Remove unused columns from the dataset if `datasets.Dataset` is used.
 
    .. py:attribute:: tracker_kwargs
       :type: JSONDict
 
       {"entity":
+
       "my_wandb_entity", "name": "my_exp_name"}}'
 
       :type: Keyword arguments for the tracker (e.g. python ppo.py --ppo_config.tracker_kwargs='{"wandb"
@@ -80,7 +81,7 @@ Classes
    .. py:attribute:: accelerator_kwargs
       :type: JSONDict
 
-      Keyword arguments for the accelerator
+      Keyword arguments for the accelerator.
 
    .. py:attribute:: project_kwargs
       :type: JSONDict
@@ -91,7 +92,7 @@ Classes
       :type: str
       :value: 'trl'
 
-      Name of project to use for tracking
+      Name of project to use for tracking.
 
    .. py:attribute:: push_to_hub_if_best_kwargs
       :type: JSONDict
@@ -102,19 +103,19 @@ Classes
       :type: int
       :value: 20000
 
-      Number of training steps
+      Number of training steps.
 
    .. py:attribute:: learning_rate
       :type: float
       :value: 1e-05
 
-      Adam learning rate
+      Adam learning rate.
 
    .. py:attribute:: adap_kl_ctrl
       :type: bool
       :value: True
 
-      Use adaptive KL control, otherwise linear
+      Use adaptive KL control, otherwise linear.
 
    .. py:attribute:: init_kl_coef
       :type: Optional[float]
@@ -137,89 +138,89 @@ Classes
       :type: Optional[float]
       :value: 6
 
-      Target KL value for adaptive KL control
+      Target KL value for adaptive KL control.
 
    .. py:attribute:: horizon
       :type: Optional[float]
       :value: 10000
 
-      Horizon for adaptive KL control
+      Horizon for adaptive KL control.
 
    .. py:attribute:: gamma
       :type: float
       :value: 1
 
-      Gamma parameter for advantage calculation
+      Gamma parameter for advantage calculation.
 
    .. py:attribute:: lam
       :type: float
       :value: 0.95
 
-      Lambda parameter for advantage calculation
+      Lambda parameter for advantage calculation.
 
    .. py:attribute:: cliprange
       :type: float
       :value: 0.2
 
-      Range for clipping in PPO policy gradient loss
+      Range for clipping in PPO policy gradient loss.
 
    .. py:attribute:: cliprange_value
       :type: float
       :value: 0.2
 
-      Range for clipping values in loss calculation
+      Range for clipping values in loss calculation.
 
    .. py:attribute:: vf_coef
       :type: float
       :value: 0.1
 
-      Scaling factor for value loss
+      Scaling factor for value loss.
 
    .. py:attribute:: batch_size
       :type: int
       :value: 256
 
-      Number of samples per optimisation step
+      Number of samples per optimisation step.
 
    .. py:attribute:: mini_batch_size
       :type: int
       :value: 1
 
-      Number of samples optimized in each mini batch
+      Number of samples optimized in each mini batch.
 
    .. py:attribute:: gradient_accumulation_steps
       :type: int
       :value: 1
 
-      The number of gradient accumulation steps
+      The number of gradient accumulation steps.
 
    .. py:attribute:: world_size
       :type: tyro.conf.Suppress[int]
 
-      The world size for distributed training
+      The world size for distributed training.
 
    .. py:attribute:: ppo_epochs
       :type: int
       :value: 4
 
-      Number of optimisation epochs per batch of samples
+      Number of optimisation epochs per batch of samples.
 
    .. py:attribute:: max_grad_norm
       :type: Optional[float]
 
-      Maximum gradient norm for gradient clipping
+      Maximum gradient norm for gradient clipping.
 
    .. py:attribute:: optimize_device_cache
       :type: Optional[bool]
       :value: False
 
-      Optimize device cache for slightly more memory-efficient training
+      Optimize device cache for slightly more memory-efficient training.
 
    .. py:attribute:: early_stopping
       :type: bool
       :value: False
 
-      Whether to stop the PPO optimization loop early is the KL too high
+      Whether to stop the PPO optimization loop early is the KL too high.
 
    .. py:attribute:: target_kl
       :type: float
@@ -231,36 +232,38 @@ Classes
       :type: int
       :value: 1
 
-      Number of steps between comparison of the current reward with the best seen so far
+      Number of steps between comparison of the current reward with the best seen so far.
 
    .. py:attribute:: ratio_threshold
       :type: float
       :value: 10.0
 
-      Skip mini-batches with high PPO ratios that can cause loss spikes
+      Skip mini-batches with high PPO ratios that can cause loss spikes.
 
    .. py:attribute:: use_score_scaling
       :type: bool
       :value: False
 
-      Use score scaling
+      Use score scaling.
 
    .. py:attribute:: use_score_norm
       :type: bool
       :value: False
 
-      Use score normalization. Only applicable if use_score_scaling is True
+      Use score normalization.
+
+      Only applicable if use_score_scaling is True
 
    .. py:attribute:: score_clip
       :type: Optional[float]
 
-      Score clipping
+      Score clipping.
 
    .. py:attribute:: whiten_rewards
       :type: bool
       :value: False
 
-      Whiten the rewards before compute advantages
+      Whiten the rewards before compute advantages.
 
    .. py:attribute:: is_encoder_decoder
       :type: Optional[tyro.conf.Suppress[bool]]
@@ -301,18 +304,24 @@ Classes
       :type: bool
       :value: False
 
-      Use habana. Only applicable if use_habana is True
+      Use habana.
+
+      Only applicable if use_habana is True
 
    .. py:attribute:: pad_for_acceleration
       :type: bool
       :value: False
 
-      Use pad_for_acceleration. Only applicable if pad_for_acceleration is True
+      Use pad_for_acceleration.
+
+      Only applicable if pad_for_acceleration is True
 
    .. py:attribute:: pad_max_len
       :type: int
       :value: 0
 
-      Use pad_for_acceleration. Only applicable if pad_for_acceleration is True
+      Use pad_for_acceleration.
+
+      Only applicable if pad_for_acceleration is True
 
 

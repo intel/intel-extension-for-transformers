@@ -25,11 +25,13 @@ Classes
 
 
 
-   Detecting canonical keypoints. Return keypoint position and jacobian near each keypoint.
+   Detecting canonical keypoints.
+
+   Return keypoint position and jacobian near each keypoint.
 
    .. py:method:: gaussian2kp(heatmap)
 
-      Extract the mean from a heatmap
+      Extract the mean from a heatmap.
 
 
 

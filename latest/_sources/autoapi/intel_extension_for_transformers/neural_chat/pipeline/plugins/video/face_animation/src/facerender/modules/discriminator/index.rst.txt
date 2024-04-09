@@ -34,7 +34,7 @@ Classes
 
 
 
-   Discriminator similar to Pix2Pix
+   Discriminator similar to Pix2Pix.
 
 
 .. py:class:: MultiScaleDiscriminator(scales=(), **kwargs)
@@ -42,6 +42,6 @@ Classes
 
 
 
-   Multi-scale (scale) discriminator
+   Multi-scale (scale) discriminator.
 
 

@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   Parse and Evalate
+   Parse and Evalate.
 
 
 

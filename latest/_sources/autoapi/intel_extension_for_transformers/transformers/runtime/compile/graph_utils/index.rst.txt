@@ -346,7 +346,6 @@ Functions
    fusion is too complicated, you had better decompose it.
 
 
-
 .. py:function:: list2str(src_perm)
 
    Convert the shape list to str for emitting yaml.

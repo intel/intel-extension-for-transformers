@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   This script contains basic utilities for Deep3DFaceRecon_pytorch
+   This script contains basic utilities for Deep3DFaceRecon_pytorch.
 
 
 
@@ -26,7 +26,7 @@ Functions
 
 .. py:function:: mkdirs(paths)
 
-   create empty directories if they don't exist
+   Create empty directories if they don't exist.
 
    :param paths:
    :type paths: str list
@@ -34,7 +34,7 @@ Functions
 
 .. py:function:: mkdir(path)
 
-   create a single empty directory if it didn't exist
+   Create a single empty directory if it didn't exist.
 
    :param path:
    :type path: str

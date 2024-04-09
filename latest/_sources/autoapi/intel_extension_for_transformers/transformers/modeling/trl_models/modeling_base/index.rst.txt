@@ -60,7 +60,6 @@ Functions
       `transformers.PreTrainedModel` class are passed along this method and filtered
       out from the `kwargs` argument.
 
-
       :param pretrained_model_name_or_path: The path to the pretrained model or its name.
       :type pretrained_model_name_or_path: `str` or `transformers.PreTrainedModel`
       :param \*model_args: Additional positional arguments passed along to the underlying model's
@@ -113,14 +112,18 @@ Functions
    .. py:method:: post_init(*args, **kwargs)
       :abstractmethod:
 
-      Post initialization method. This method is called after the model is
+      Post initialization method.
+
+      This method is called after the model is
       instantiated and loaded from a checkpoint. It can be used to perform
       additional operations such as loading the state_dict.
 
 
    .. py:method:: add_and_load_reward_modeling_adapter(adapter_model_id, adapter_name='reward_model_adapter', token=None)
 
-      Add and load a reward modeling adapter. This method can only be used if the
+      Add and load a reward modeling adapter.
+
+      This method can only be used if the
       model is a `PeftModel` and if you have initialized the model with the `reward_modeling_adapter_id`
       argument, pointing to the id of the reward modeling adapter. The latest needs also to contain the
       score head in order to produce the reward.
@@ -128,7 +131,9 @@ Functions
 
    .. py:method:: compute_reward_score(input_ids, attention_mask=None, ppo_adapter_name='default', **kwargs)
 
-      Computes the reward score for a given input. The method has first to enable the adapter
+      Computes the reward score for a given input.
+
+      The method has first to enable the adapter
       and then compute the reward score. After that the model disables the reward modeling
       adapter and enables the default ppo adapter again.
 

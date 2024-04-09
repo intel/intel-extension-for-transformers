@@ -60,6 +60,7 @@ Classes
       :type: Optional[str]
 
       Path to store models.
+
       Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.
 
    .. py:attribute:: model_kwargs
@@ -136,6 +137,7 @@ Classes
       :type: Optional[str]
 
       Path to store models.
+
       Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.
 
    .. py:attribute:: model_kwargs
@@ -212,6 +214,7 @@ Classes
       :type: Optional[str]
 
       Path to store models.
+
       Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.
 
    .. py:attribute:: model_kwargs

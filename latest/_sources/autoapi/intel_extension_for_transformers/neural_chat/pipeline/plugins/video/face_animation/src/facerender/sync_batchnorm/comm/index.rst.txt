@@ -26,7 +26,9 @@ Classes
 
 
 
-   A thread-safe future implementation. Used only as one-to-one pipe.
+   A thread-safe future implementation.
+
+   Used only as one-to-one pipe.
 
 
 .. py:class:: SlavePipe
@@ -60,7 +62,6 @@ Classes
       Returns: a `SlavePipe` object which can be used to communicate with the master device.
 
 
-
    .. py:method:: run_master(master_msg)
 
       Main entry for the master device in each forward pass.
@@ -73,7 +74,6 @@ Classes
       :param see `_SynchronizedBatchNorm` for an example.:
 
       Returns: the message to be sent back to the master device.
-
 
 
 

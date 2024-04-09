@@ -201,7 +201,7 @@ Functions
 
 
 
-   config parser.
+   Config parser.
 
    :param approach: The approach of the NAS.
    :param search_algorithm: The search algorithm for NAS procedure.
@@ -231,7 +231,7 @@ Functions
 .. py:class:: PrunerV2(target_sparsity=None, pruning_type=None, pattern=None, op_names=None, excluded_op_names=None, start_step=None, end_step=None, pruning_scope=None, pruning_frequency=None, min_sparsity_ratio_per_op=None, max_sparsity_ratio_per_op=None, sparsity_decay_type=None, pruning_op_types=None, reg_type=None, criterion_reduce_type=None, parameters=None, resume_from_pruned_checkpoint=None)
 
 
-   similar to torch optimizer's interface
+   Similar to torch optimizer's interface.
 
 
 .. py:class:: WeightPruningConfig(pruning_configs=[{}], target_sparsity=0.9, pruning_type='snip_momentum', pattern='4x1', op_names=[], excluded_op_names=[], start_step=0, end_step=0, pruning_scope='global', pruning_frequency=1, min_sparsity_ratio_per_op=0.0, max_sparsity_ratio_per_op=0.98, sparsity_decay_type='exp', pruning_op_types=['Conv', 'Linear'], **kwargs)

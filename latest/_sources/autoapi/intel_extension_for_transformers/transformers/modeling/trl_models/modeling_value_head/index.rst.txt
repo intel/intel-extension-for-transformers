@@ -58,7 +58,6 @@ Classes
                default strategy.
                - **"normal"** -- Initializes the weights of the `ValueHead` with a normal distribution.
 
-
    .. py:method:: forward(input_ids=None, past_key_values=None, attention_mask=None, **kwargs)
 
       Applies a forward pass to the wrapped model and returns the logits of the value head.
@@ -90,14 +89,18 @@ Classes
 
    .. py:method:: state_dict(*args, **kwargs)
 
-      Returns the state dictionary of the model. We add the state dictionary of the value head
+      Returns the state dictionary of the model.
+
+      We add the state dictionary of the value head
       to the state dictionary of the wrapped model by prepending the key with `v_head.`.
 
 
    .. py:method:: post_init(state_dict)
 
       We add the state dictionary of the value head to the state dictionary of the wrapped model
-      by prepending the key with `v_head.`. This function removes the `v_head.` prefix from the
+      by prepending the key with `v_head.`.
+
+      This function removes the `v_head.` prefix from the
       keys of the value head state dictionary.
 
 
@@ -121,13 +124,17 @@ Classes
    .. py:method:: post_init(state_dict)
 
       We add the state dictionary of the value head to the state dictionary of the wrapped model
-      by prepending the key with `v_head.`. This function removes the `v_head.` prefix from the
+      by prepending the key with `v_head.`.
+
+      This function removes the `v_head.` prefix from the
       keys of the value head state dictionary.
 
 
    .. py:method:: state_dict(*args, **kwargs)
 
-      Returns the state dictionary of the model. We add the state dictionary of the value head
+      Returns the state dictionary of the model.
+
+      We add the state dictionary of the value head
       to the state dictionary of the wrapped model by prepending the key with `v_head.`.
 
 

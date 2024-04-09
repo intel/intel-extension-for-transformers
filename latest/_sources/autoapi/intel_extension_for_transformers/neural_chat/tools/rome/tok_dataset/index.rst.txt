@@ -36,7 +36,9 @@ Functions
 
 
    Converts a dataset of text samples into a dataset of token sequences,
-   as converted by a supplied tokenizer. The tokens come along with position
+   as converted by a supplied tokenizer.
+
+   The tokens come along with position
    ids and attention masks, they can be supplied directly to the model.
 
 
@@ -48,7 +50,9 @@ Functions
 .. py:function:: length_collation(token_size)
 
    Sorts a batch of sequences and breaks it up into subbatches
-   of same-sized sequences, padding as needed.  Each batch
+   of same-sized sequences, padding as needed.
+
+   Each batch
    has no more than token_size total tokens (or a single
    sequence, if the sequence happens to be larger).
 

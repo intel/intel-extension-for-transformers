@@ -97,7 +97,6 @@ Classes
 
       Python API for calling the chatbot executor.
       
-      
 
    .. py:method:: execute(argv: List[str]) -> bool
 

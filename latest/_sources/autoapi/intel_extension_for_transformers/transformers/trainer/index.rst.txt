@@ -376,7 +376,7 @@ Classes
 
    .. py:method:: benchmark(model_name_or_path=None, backend: str = 'torch', batch_size: int = 8, cores_per_instance: int = 4, num_of_instance: int = -1, torchscript: bool = False, generate: bool = False, **kwargs)
 
-      get performance of model
+      Get performance of model.
 
       :param backend: Defaults to "torch".
       :type backend: str, optional

@@ -23,7 +23,7 @@ Functions
 
 .. py:function:: remove_folder_with_ignore(folder_path: str, except_patterns=None)
 
-   Remove the specific folder, and ignore some files/folders
+   Remove the specific folder, and ignore some files/folders.
 
    :param folder_path: file path to delete
    :param except_patterns: files/folder name to ignore
@@ -33,6 +33,7 @@ Functions
    :async:
 
    Delete all files and knowledge bases of current user.
+
    Re-create retriever using default plugin configs.
 
 
@@ -40,6 +41,7 @@ Functions
    :async:
 
    Delete file according to `del_path` and `knowledge_base_id`.
+
    `del_path`:
        - specific file path(e.g. /path/to/file.txt)
        - folder path(e.g. /path/to/folder)

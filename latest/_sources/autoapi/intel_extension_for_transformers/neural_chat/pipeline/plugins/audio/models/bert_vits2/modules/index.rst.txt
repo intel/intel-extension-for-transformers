@@ -24,6 +24,6 @@ Classes
 
 
 
-   Dialted and Depth-Separable Convolution
+   Dialted and Depth-Separable Convolution.
 
 

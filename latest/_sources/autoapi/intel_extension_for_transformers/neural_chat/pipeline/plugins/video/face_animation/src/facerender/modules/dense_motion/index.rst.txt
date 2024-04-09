@@ -24,6 +24,6 @@ Classes
 
 
 
-   Module that predicting a dense motion from sparse motion representation given by kp_source and kp_driving
+   Module that predicting a dense motion from sparse motion representation given by kp_source and kp_driving.
 
 

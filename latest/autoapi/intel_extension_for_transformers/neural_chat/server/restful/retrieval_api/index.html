@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.server.restful.retrieval_api &mdash; Intel® Extension for Transformers 0.1.dev1+ga00a6f2 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.server.restful.retrieval_api &mdash; Intel® Extension for Transformers 0.1.dev1+gd1fdcdd documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -97,7 +97,7 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.remove_folder_with_ignore" title="intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.remove_folder_with_ignore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_folder_with_ignore</span></code></a>(folder_path[, except_patterns])</p></td>
-<td><p>Remove the specific folder, and ignore some files/folders</p></td>
+<td><p>Remove the specific folder, and ignore some files/folders.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.delete_all_files" title="intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.delete_all_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">delete_all_files</span></code></a>()</p></td>
 <td><p>Delete all files and knowledge bases of current user.</p></td>
@@ -110,7 +110,7 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.remove_folder_with_ignore">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.</span></span><span class="sig-name descname"><span class="pre">remove_folder_with_ignore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">except_patterns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.remove_folder_with_ignore" title="Link to this definition"></a></dt>
-<dd><p>Remove the specific folder, and ignore some files/folders</p>
+<dd><p>Remove the specific folder, and ignore some files/folders.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -124,22 +124,22 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.delete_all_files">
 <em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.</span></span><span class="sig-name descname"><span class="pre">delete_all_files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.delete_all_files" title="Link to this definition"></a></dt>
-<dd><p>Delete all files and knowledge bases of current user.
-Re-create retriever using default plugin configs.</p>
+<dd><p>Delete all files and knowledge bases of current user.</p>
+<p>Re-create retriever using default plugin configs.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.delete_single_file">
 <em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.</span></span><span class="sig-name descname"><span class="pre">delete_single_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">fastapi.Request</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.delete_single_file" title="Link to this definition"></a></dt>
-<dd><p>Delete file according to <cite>del_path</cite> and <cite>knowledge_base_id</cite>.
-<cite>del_path</cite>:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Delete file according to <cite>del_path</cite> and <cite>knowledge_base_id</cite>.</p>
+<dl class="simple">
+<dt><cite>del_path</cite>:</dt><dd><ul class="simple">
 <li><p>specific file path(e.g. /path/to/file.txt)</p></li>
 <li><p>folder path(e.g. /path/to/folder)</p></li>
 <li><p>“all_files”: delete all files of this knowledge base</p></li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -160,7 +160,7 @@ Re-create retriever using default plugin configs.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fe926bbcca0> 
+   <jinja2.runtime.BlockReference object at 0x7f6f0efbe1a0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

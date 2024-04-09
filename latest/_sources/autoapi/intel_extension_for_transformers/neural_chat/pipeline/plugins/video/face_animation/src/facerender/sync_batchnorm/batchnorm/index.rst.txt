@@ -87,7 +87,7 @@ Classes
 
 
    Applies Batch Normalization over a 4d input that is seen as a mini-batch
-   of 3d inputs
+   of 3d inputs.
 
    .. math::
 
@@ -147,7 +147,7 @@ Classes
 
 
    Applies Batch Normalization over a 5d input that is seen as a mini-batch
-   of 4d inputs
+   of 4d inputs.
 
    .. math::
 

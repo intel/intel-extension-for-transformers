@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   Response Parsing and Evaluation for various models
+   Response Parsing and Evaluation for various models.
 
 
 
@@ -33,6 +33,7 @@ Functions
 .. py:function:: parse_multi_choice_response(response, all_choices, index2ans)
 
    Parse the prediction from the generated response.
+
    Return the predicted index e.g., A, B, C, D.
 
 
@@ -54,6 +55,7 @@ Functions
 .. py:function:: parse_open_response(response)
 
    Parse the prediction from the generated response.
+
    Return a list of predicted strings or numbers.
 
 
@@ -64,7 +66,7 @@ Functions
 
 .. py:function:: eval_open(gold_i, pred_i)
 
-   Evaluate an open question instance
+   Evaluate an open question instance.
 
 
 .. py:function:: evaluate(samples)
@@ -74,6 +76,6 @@ Functions
 
 .. py:function:: calculate_ins_level_acc(results: Dict)
 
-   Calculate the instruction level accuracy for given Subject results
+   Calculate the instruction level accuracy for given Subject results.
 
 

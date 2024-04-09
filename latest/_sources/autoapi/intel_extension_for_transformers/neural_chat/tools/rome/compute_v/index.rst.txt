@@ -24,6 +24,7 @@ Functions
 .. py:function:: compute_v(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, request: Dict, hparams: intel_extension_for_transformers.neural_chat.tools.rome.rome_hparams.ROMEHyperParams, layer: int, left_vector: torch.Tensor, context_templates: List[str], batch_first: Optional[bool] = True) -> torch.Tensor
 
    Computes the value (right) vector for the rank-1 update.
+
    Runs a simple optimization procedure.
 
 

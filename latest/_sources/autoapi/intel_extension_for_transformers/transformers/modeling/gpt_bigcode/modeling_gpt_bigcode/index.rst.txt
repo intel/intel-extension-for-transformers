@@ -54,10 +54,11 @@ Classes
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.CausalLMOutputWithCrossAttentions]
 
-      labels (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
-          Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
-          `labels = input_ids` Indices are selected in `[-100, 0, ..., config.vocab_size]` All labels set to `-100`
-          are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
+      Labels (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
+
+      Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
+      `labels = input_ids` Indices are selected in `[-100, 0, ..., config.vocab_size]` All labels set to `-100`
+      are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
 
 
 
@@ -71,10 +72,11 @@ Classes
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.SequenceClassifierOutputWithPast]
 
-      labels (`torch.Tensor` of shape `(batch_size,)`, *optional*):
-          Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
-          config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
-          `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+      Labels (`torch.Tensor` of shape `(batch_size,)`, *optional*):
+
+      Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+      config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+      `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
 
 
 
@@ -88,10 +90,11 @@ Classes
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.TokenClassifierOutput]
 
-      labels (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
-          Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
-          config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
-          `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+      Labels (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
+
+      Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+      config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+      `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
 
 
 

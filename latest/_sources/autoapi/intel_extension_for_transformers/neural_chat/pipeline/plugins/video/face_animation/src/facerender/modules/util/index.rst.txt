@@ -41,7 +41,7 @@ Functions
 
 .. py:function:: kp2gaussian(kp, spatial_size, kp_variance)
 
-   Transform a keypoint into gaussian like representation
+   Transform a keypoint into gaussian like representation.
 
 
 .. py:function:: make_coordinate_grid_2d(spatial_size, type)
@@ -110,7 +110,7 @@ Functions
 
 
 
-   Hourglass Encoder
+   Hourglass Encoder.
 
 
 .. py:class:: Decoder(block_expansion, in_features, num_blocks=3, max_features=256)
@@ -118,7 +118,7 @@ Functions
 
 
 
-   Hourglass Decoder
+   Hourglass Decoder.
 
 
 .. py:class:: Hourglass(block_expansion, in_features, num_blocks=3, max_features=256)

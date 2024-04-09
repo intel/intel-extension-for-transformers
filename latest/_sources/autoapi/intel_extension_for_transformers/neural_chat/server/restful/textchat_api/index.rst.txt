@@ -38,7 +38,9 @@ Functions
 .. py:function:: show_available_models()
    :async:
 
-   Show available models. Right now we only have one model.
+   Show available models.
+
+   Right now we only have one model.
 
 
 .. py:function:: health() -> fastapi.responses.Response

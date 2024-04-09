@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   The wrapper for Child-Parent retriever based on langchain
+   The wrapper for Child-Parent retriever based on langchain.
 
 
 

@@ -42,6 +42,6 @@ Functions
 .. py:class:: ScriptArguments
 
 
-   The name of the Casual LM model we wish to fine with PPO
+   The name of the Casual LM model we wish to fine with PPO.
 
 

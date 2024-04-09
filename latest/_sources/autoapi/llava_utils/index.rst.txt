@@ -89,7 +89,9 @@ Functions
 
 .. py:function:: preprocess(sources: Sequence[str], tokenizer: transformers.PreTrainedTokenizer, conversation_template, has_image: bool = False) -> Dict
 
-       Given a list of sources, each is a conversation list. This transform:
+   Given a list of sources, each is a conversation list.
+
+       This transform:
        1. Add signal '### ' at the beginning each sentence, with end signal '
    ';
        2. Concatenate conversations together;

@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   The wrapper for Retriever based on langchain
+   The wrapper for Retriever based on langchain.
 
 
 

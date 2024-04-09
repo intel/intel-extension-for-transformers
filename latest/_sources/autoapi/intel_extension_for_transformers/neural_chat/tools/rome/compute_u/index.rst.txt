@@ -23,6 +23,7 @@ Functions
 .. py:function:: get_inv_cov(model: transformers.PreTrainedModel, tok: transformers.PreTrainedTokenizer, layer_name: str, mom2_dataset: str, mom2_n_samples: str, mom2_dtype: str) -> torch.Tensor
 
    Retrieves covariance statistics, then computes the algebraic inverse.
+
    Caches result for future use.
 
 

@@ -156,6 +156,7 @@ Functions
    .. py:method:: add(x, *args, **kwargs)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -208,6 +209,7 @@ Functions
    .. py:method:: add(a)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -235,11 +237,12 @@ Functions
 
 
 
-   Running average of the norm of input vectors
+   Running average of the norm of input vectors.
 
    .. py:method:: add(a)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -250,12 +253,15 @@ Functions
 
 
 
-   Running computation of mean and variance. Use this when you just need
+   Running computation of mean and variance.
+
+   Use this when you just need
    basic stats without covariance.
 
    .. py:method:: add(a)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -292,6 +298,7 @@ Functions
    .. py:method:: add(a)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -319,13 +326,16 @@ Functions
 
 
 
-   Running computation. Use this when the entire non-centered 2nd-moment
+   Running computation.
+
+   Use this when the entire non-centered 2nd-moment
    'covariance-like' matrix is needed, and when the whole matrix fits
    in the GPU.
 
    .. py:method:: add(a)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -353,12 +363,15 @@ Functions
 
 
 
-   Running bincount.  The counted array should be an integer type with
+   Running bincount.
+
+   The counted array should be an integer type with
    non-negative integers.
 
    .. py:method:: add(a, size=None)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -396,6 +409,7 @@ Functions
    .. py:method:: add(a, b)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -428,6 +442,7 @@ Functions
    .. py:method:: add(a)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -460,6 +475,7 @@ Functions
    .. py:method:: add(a, b)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -512,6 +528,7 @@ Functions
    .. py:method:: add(incoming)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -538,7 +555,9 @@ Functions
 
 .. py:function:: sample_portion(vec, p=0.5)
 
-   Subsamples a fraction (given by p) of the given batch.  Used by
+   Subsamples a fraction (given by p) of the given batch.
+
+   Used by
    Quantile when the data gets very very large.
 
 
@@ -555,6 +574,7 @@ Functions
    .. py:method:: add(data, index=None)
 
       Adds a batch of data to be considered for the running top k.
+
       The zeroth dimension enumerates the observations.  All other
       dimensions enumerate different features.
 
@@ -576,6 +596,7 @@ Functions
    .. py:method:: add(d)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -617,6 +638,7 @@ Functions
    .. py:method:: add(d, *args, **kwargs)
 
       Observes a batch of samples to be incorporated into the statistic.
+
       Dimension 0 should be the batch dimension, and dimension 1 should
       be the feature dimension of the pytorch tensor x.
 
@@ -659,12 +681,14 @@ Functions
 .. py:function:: box_numpy_null(d)
 
    Replaces None with null_numpy_value, leaving non-None values unchanged.
+
    Recursively descends into a dictionary replacing None values.
 
 
 .. py:function:: unbox_numpy_null(d)
 
    Reverses box_numpy_null, replacing null_numpy_value with None.
+
    Recursively descends into a dictionary replacing None values.
 
 
@@ -689,6 +713,7 @@ Functions
 
 
    Represents a fixed sequence of data set indices.
+
    Subsets can be created by specifying a subset of output indexes.
 
    .. py:method:: dereference(indices)
@@ -704,6 +729,7 @@ Functions
 
 
    Samples a fixed number of samples from the dataset, deterministically.
+
    :param data_source:
    :param :
    :param sample_size:

@@ -32,6 +32,7 @@ Classes
    .. py:method:: set_attr(framework, node)
 
       Extract the node attr from onnxruntime.
+
       "aten::rsub(Tensor self, Tensor other, *, Scalar alpha) -> Tensor",
       "aten::rsub(Tensor self, Scalar other, Scalar alpha) -> Tensor"};
 

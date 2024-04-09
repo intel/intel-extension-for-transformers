@@ -33,6 +33,6 @@ Functions
 
 .. py:function:: neural_engine_bin()
 
-   Entry point for C++ interface
+   Entry point for C++ interface.
 
 
