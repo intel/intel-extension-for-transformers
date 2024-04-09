@@ -2,10 +2,10 @@
 
 ### 📸 Project Screenshots
 
-![project-screenshot](https://imgur.com.htmlk4b8F.png)
-![project-screenshot](https://imgur.com/hzh6Aog.png)
-![project-screenshot](https://imgur.com/JZ6b2yF.png)
-![project-screenshot](https://imgur.com/KFV4UPD.png)
+![project-screenshot](https://imgur.com/oe4K7vJ.png)
+![project-screenshot](https://imgur.com/eRGckmF.png)
+![project-screenshot](https://imgur.com/tnkcGvL.png)
+![project-screenshot](https://imgur.com/pynXLpu.png)
 
 
 
