@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """This module provides a ChatGPT-compatible Restful API for chat completion.
 
 Usage:
@@ -68,7 +67,7 @@ async def show_available_models():
 
 @app.post("/v1/chat/completions")
 async def create_chat_completion(request: ChatCompletionRequest):
-    """Creates a completion for the chat message"""
+    """Creates a completion for the chat message."""
     payload, skip_echo_len = generate_payload(
         request.model,
         request.messages,

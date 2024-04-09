@@ -14,7 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Pipeline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline"""
+"""Pipeline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline."""
 
 import inspect
 from typing import Callable, List, Optional, Union
@@ -66,8 +66,7 @@ def preprocess(image):
 
 
 class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
-    r"""
-    Pipeline for pixel-level image editing by following text instructions. Based on Stable Diffusion.
+    r"""Pipeline for pixel-level image editing by following text instructions. Based on Stable Diffusion.
 
     This model inherits from [`DiffusionPipeline`]. Check the superclass documentation for the generic methods the
     library implements for all the pipelines (such as downloading or saving, running on a particular device, etc.)
@@ -157,8 +156,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         callback_steps: Optional[int] = 1,
         engine_graph: Optional[list] = [],
     ):
-        r"""
-        Function invoked when calling the pipeline for generation.
+        r"""Function invoked when calling the pipeline for generation.
 
         Args:
              prompt (`str` or `List[str]`, *optional*):
@@ -403,8 +401,9 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
     # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.
     # StableDiffusionPipeline.enable_sequential_cpu_offload
     def enable_sequential_cpu_offload(self, gpu_id=0):
-        r"""
-        Offloads all models to CPU using accelerate, significantly reducing memory usage. When called, unet,
+        r"""Offloads all models to CPU using accelerate, significantly reducing memory usage.
+
+        When called, unet,
         text_encoder, vae and safety checker have their state dicts saved to CPU and then are moved to a
         `torch.device('meta') and loaded to GPU only when their specific submodule has its `forward` method called.
         """
@@ -425,8 +424,9 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
     # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.
     # StableDiffusionPipeline._execution_device
     def _execution_device(self):
-        r"""
-        Returns the device on which the pipeline's models will be executed. After calling
+        r"""Returns the device on which the pipeline's models will be executed.
+
+        After calling
         `pipeline.enable_sequential_cpu_offload()` the execution device can only be inferred from Accelerate's module
         hooks.
         """
@@ -452,8 +452,7 @@ class StableDiffusionInstructPix2PixPipeline(DiffusionPipeline):
         prompt_embeds: Optional[torch.FloatTensor] = None,
         negative_prompt_embeds: Optional[torch.FloatTensor] = None,
     ):
-        r"""
-        Encodes the prompt into text encoder hidden states.
+        r"""Encodes the prompt into text encoder hidden states.
 
         Args:
              prompt (`str` or `List[str]`, *optional*):

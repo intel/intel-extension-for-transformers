@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Utils for data load, save, and process (e.g., prompt construction)"""
 
 import os
@@ -70,10 +69,8 @@ def save_json(filename, ds):
 
 
 def get_multi_choice_info(options):
-    """
-    Given the list of options for multiple choice question
-    Return the index2ans and all_choices
-    """
+    """Given the list of options for multiple choice question
+    Return the index2ans and all_choices."""
 
     start_chr = 'A'
     all_choices = []
@@ -120,8 +117,7 @@ def save_json(filename, ds):
         json.dump(ds, f, indent=4)
 
 def save_jsonl(filename, data):
-    """
-    Save a dictionary of data to a JSON Lines file with the filename as key and caption as value.
+    """Save a dictionary of data to a JSON Lines file with the filename as key and caption as value.
 
     Args:
         filename (str): The path to the file where the data should be saved.

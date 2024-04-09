@@ -144,8 +144,7 @@ def _replace_linear(
     device="cpu",
     empty_weights=False,
 ):
-    """
-    Private method that wraps the recursion for module replacement.
+    """Private method that wraps the recursion for module replacement.
 
     Returns the converted model and a boolean that indicates if the conversion has been successfully or not.
     """
@@ -424,10 +423,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
     if calib_func is None and config.quant_method.value == "awq":
 
         def default_calib_func(model):
-            """
-            This is the default calibration function, the dataset is NeelNanda/pile-10k,
-            the default calib_iters is 100.
-            """
+            """This is the default calibration function, the dataset is NeelNanda/pile-10k,
+            the default calib_iters is 100."""
             for i, (input_ids) in enumerate(calib_dataloader):
                 if i >= calib_iters:
                     break

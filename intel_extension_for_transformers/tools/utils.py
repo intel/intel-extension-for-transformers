@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Utility."""
 
 import importlib
@@ -35,7 +34,7 @@ def supported_gpus():
     return ['flex', 'max', 'arc']
 
 def get_gpu_family():
-    ''' Get gpu device family info.
+    """Get gpu device family info.
 
     Return 'flex'|'max'|'arc'| 'no_gpu'| assert
 
@@ -46,7 +45,7 @@ def get_gpu_family():
       'Intel(R) Data Center GPU Flex 170'
       'Intel(R) Data Center GPU Max 1100'
       'Intel(R) Arc(TM) A770 Graphics'
-    '''
+    """
 
     import intel_extension_for_pytorch as ipex
     if not (hasattr(torch, "xpu") and torch.xpu.is_available()):

@@ -38,7 +38,7 @@ from .utils.reduce_noise import NoiseReducer
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TextToSpeech():
-    """Convert text to speech with a driven speaker embedding
+    """Convert text to speech with a driven speaker embedding.
 
     1) Default voice (Original model + Proved good default speaker embedding from trained dataset)
     2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)

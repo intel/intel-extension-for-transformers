@@ -33,7 +33,7 @@ class TestIsSupportedOnnxGraph(unittest.TestCase):
         pass
 
     def test_is_supported_onnx_graph(self):
-        '''test is_supported_onnx_graph'''
+        """Test is_supported_onnx_graph."""
         # create onnx matmul + bias graph
         # input and output
         a = helper.make_tensor_value_info('a', TensorProto.FLOAT, [10, 10])
@@ -49,8 +49,7 @@ class TestIsSupportedOnnxGraph(unittest.TestCase):
         # test API
         is_supported = is_supported_onnx_graph(graph)
         self.assertEqual(is_supported, True)
-
-        '''test is_supported_onnx_node'''
+        """Test is_supported_onnx_node."""
         ops_type = ["Add", "Softmax", "Slice", "ReduceMean", "Reshape",
                     "Concat", "Gather", "QuantizeLinear", "Transpose", "MatMul",
                     "Sqrt", "Unsqueeze", "Shape", "Erf", "Pow", "DequantizeLinear",

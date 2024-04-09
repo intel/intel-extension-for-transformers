@@ -31,10 +31,8 @@ logging.basicConfig(
 )
 
 class NamedEntityRecognition():
-    """
-        NER class to inference with fp32 or bf16 llm models
-        Set bf16=True if you want to inference with bf16 model.
-    """
+    """NER class to inference with fp32 or bf16 llm models
+        Set bf16=True if you want to inference with bf16 model."""
 
     def __init__(self, spacy_model="en_core_web_lg") -> None:
         # initialize tokenizer and models

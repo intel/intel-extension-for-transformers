@@ -60,7 +60,7 @@ def _cache_data_converter(cache_data):
     # if kwargs.get("stream", False):
     #     return _construct_stream_resp_from_cache(cache_data)
     return _construct_resp_from_cache(cache_data)
-    """For cache results, do nothing"""
+    """For cache results, do nothing."""
     # return cache_data
 
 def _construct_resp_from_cache(return_message):
@@ -81,25 +81,25 @@ def _construct_resp_from_cache(return_message):
 def _update_cache_callback_none(
     llm_data, update_cache_func, *args, **kwargs  # pylint: disable=W0613
 ) -> None:
-    """When updating cached data, do nothing, because currently only cached queries are processed"""
+    """When updating cached data, do nothing, because currently only cached queries are processed."""
     return None
 
 
 def _llm_handle_none(*llm_args, **llm_kwargs) -> None:  # pylint: disable=W0613
-    """Do nothing on a cache miss"""
+    """Do nothing on a cache miss."""
     return None
 
 
 def _update_cache_callback(
     llm_data, update_cache_func, *args, **kwargs
 ):  # pylint: disable=W0613
-    """Save the `llm_data` to cache storage"""
+    """Save the `llm_data` to cache storage."""
     update_cache_func(llm_data)
 
 
 def put(prompt: str, data: Any, **kwargs) -> None:
-    """put api, put qa pair information to GPTCache
-    Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache
+    """Put api, put qa pair information to GPTCache
+    Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache.
 
     :param prompt: the cache data key, usually question text
     :type prompt: str
@@ -131,8 +131,8 @@ def put(prompt: str, data: Any, **kwargs) -> None:
 
 
 def get(prompt: str, **kwargs) -> Any:
-    """get api, get the cache data according to the `prompt`
-    Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache
+    """Get api, get the cache data according to the `prompt`
+    Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache.
 
     :param prompt: the cache data key, usually question text
     :type prompt: str
@@ -169,7 +169,7 @@ def init_similar_cache(
     post_func: Callable = temperature_softmax,
     config: Config = Config(),
 ):
-    """Provide a quick way to initialize cache for api service
+    """Provide a quick way to initialize cache for api service.
 
     :param data_dir: cache data storage directory
     :type data_dir: str

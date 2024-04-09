@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Manually register workers.
+"""Manually register workers.
 
 Usage:
 python3 -m register_worker --controller http://localhost:21001 --worker-name http://localhost:21002

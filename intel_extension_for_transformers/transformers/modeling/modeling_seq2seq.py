@@ -332,8 +332,7 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
 
 
 class INCEncoder(torch.nn.Module):
-    """
-    Encoder model for inference.
+    """Encoder model for inference.
 
     Arguments:
         model (PyTorch model or neural-compressor model):
@@ -385,8 +384,7 @@ class INCEncoder(torch.nn.Module):
 
 
 class INCDecoder(torch.nn.Module):
-    """
-    Decoder model for inference.
+    """Decoder model for inference.
 
     Arguments:
         model (PyTorch model or neural-compressor model):

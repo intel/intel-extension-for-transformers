@@ -43,15 +43,13 @@ JSONDict = Annotated[
 
 @dataclass
 class PPOConfig:
-    """
-    Configuration class for PPOTrainer
-    """
+    """Configuration class for PPOTrainer."""
 
     # common parameters
     exp_name: str = os.path.basename(sys.argv[0])[: -len(".py")]
-    """the name of this experiment (by default is the file name without the extension name)"""
+    """The name of this experiment (by default is the file name without the extension name)"""
     seed: int = 0
-    """Seed value for random generations"""
+    """Seed value for random generations."""
     log_with: Optional[Literal["wandb", "tensorboard"]] = None
     """Log with either 'wandb' or 'tensorboard', check  https://huggingface.co/docs/accelerate/usage_guides/tracking
     for more details"""
@@ -64,75 +62,80 @@ class PPOConfig:
     reward_model: Optional[str] = None
     """The reward model to use - used only for tracking purposes"""
     remove_unused_columns: bool = True
-    """Remove unused columns from the dataset if `datasets.Dataset` is used"""
+    """Remove unused columns from the dataset if `datasets.Dataset` is used."""
     tracker_kwargs: JSONDict = field(default_factory=dict)
     """Keyword arguments for the tracker (e.g. python ppo.py --ppo_config.tracker_kwargs='{"wandb": {"entity":
-    "my_wandb_entity", "name": "my_exp_name"}}'"""
+
+    "my_wandb_entity", "name": "my_exp_name"}}'
+    """
     accelerator_kwargs: JSONDict = field(default_factory=dict)
-    """Keyword arguments for the accelerator"""
+    """Keyword arguments for the accelerator."""
     project_kwargs: JSONDict = field(default_factory=dict)
     """Keyword arguments for the accelerator project config (e.g. `logging_dir`)"""
     tracker_project_name: str = "trl"
-    """Name of project to use for tracking"""
+    """Name of project to use for tracking."""
     push_to_hub_if_best_kwargs: JSONDict = field(default_factory=dict)
     """Keyword arguments for pushing model to the hub during training (e.g. repo_id)"""
 
     # hyperparameters
     steps: int = 20000
-    """Number of training steps"""
+    """Number of training steps."""
     learning_rate: float = 1e-5
-    """Adam learning rate"""
+    """Adam learning rate."""
     adap_kl_ctrl: bool = True
-    """Use adaptive KL control, otherwise linear"""
+    """Use adaptive KL control, otherwise linear."""
     init_kl_coef: Optional[float] = 0.2
     """Initial KL penalty coefficient (used for adaptive and linear control)"""
     kl_penalty: Literal["kl", "abs", "mse", "full"] = "kl"
     """kl penalty options: 'kl': model_logp - ref_logp,  'abs': abs(kl),  'mse': mean squared error mse(kl) and 'full':
     the actual kl for all tokens in the distribution"""
     target: Optional[float] = 6
-    """Target KL value for adaptive KL control"""
+    """Target KL value for adaptive KL control."""
     horizon: Optional[float] = 10000
-    """Horizon for adaptive KL control"""
+    """Horizon for adaptive KL control."""
     gamma: float = 1
-    """Gamma parameter for advantage calculation"""
+    """Gamma parameter for advantage calculation."""
     lam: float = 0.95
-    """Lambda parameter for advantage calculation"""
+    """Lambda parameter for advantage calculation."""
     cliprange: float = 0.2
-    """Range for clipping in PPO policy gradient loss"""
+    """Range for clipping in PPO policy gradient loss."""
     cliprange_value: float = 0.2
-    """Range for clipping values in loss calculation"""
+    """Range for clipping values in loss calculation."""
     vf_coef: float = 0.1
-    """Scaling factor for value loss"""
+    """Scaling factor for value loss."""
     batch_size: int = 256
-    """Number of samples per optimisation step"""
+    """Number of samples per optimisation step."""
     mini_batch_size: int = 1
-    """Number of samples optimized in each mini batch"""
+    """Number of samples optimized in each mini batch."""
     gradient_accumulation_steps: int = 1
-    """The number of gradient accumulation steps"""
+    """The number of gradient accumulation steps."""
     world_size: tyro.conf.Suppress[int] = None
-    """The world size for distributed training"""
+    """The world size for distributed training."""
     ppo_epochs: int = 4
-    """Number of optimisation epochs per batch of samples"""
+    """Number of optimisation epochs per batch of samples."""
     max_grad_norm: Optional[float] = None
-    """Maximum gradient norm for gradient clipping"""
+    """Maximum gradient norm for gradient clipping."""
     optimize_device_cache: Optional[bool] = False
-    """Optimize device cache for slightly more memory-efficient training"""
+    """Optimize device cache for slightly more memory-efficient training."""
     early_stopping: bool = False
-    """Whether to stop the PPO optimization loop early is the KL too high"""
+    """Whether to stop the PPO optimization loop early is the KL too high."""
     target_kl: float = 1
     """Stop early if we exceed this value by over 50%"""
     compare_steps: int = 1
-    """Number of steps between comparison of the current reward with the best seen so far"""
+    """Number of steps between comparison of the current reward with the best seen so far."""
     ratio_threshold: float = 10.0
-    """Skip mini-batches with high PPO ratios that can cause loss spikes"""
+    """Skip mini-batches with high PPO ratios that can cause loss spikes."""
     use_score_scaling: bool = False
-    """Use score scaling"""
+    """Use score scaling."""
     use_score_norm: bool = False
-    """Use score normalization. Only applicable if use_score_scaling is True"""
+    """Use score normalization.
+
+    Only applicable if use_score_scaling is True
+    """
     score_clip: Optional[float] = None
-    """Score clipping"""
+    """Score clipping."""
     whiten_rewards: bool = False
-    """Whiten the rewards before compute advantages"""
+    """Whiten the rewards before compute advantages."""
 
     # computed hyperparameters at runtime; we use `tyro.conf.Suppress` to hide them from the help text
     is_encoder_decoder: Optional[tyro.conf.Suppress[bool]] = None
@@ -147,11 +150,20 @@ class PPOConfig:
     """TO BE FILLED In RUNTIME: the effective `batch_size` across all processes"""
 
     use_habana: bool = False
-    """Use habana. Only applicable if use_habana is True"""
+    """Use habana.
+
+    Only applicable if use_habana is True
+    """
     pad_for_acceleration: bool = False
-    """Use pad_for_acceleration. Only applicable if pad_for_acceleration is True"""
+    """Use pad_for_acceleration.
+
+    Only applicable if pad_for_acceleration is True
+    """
     pad_max_len: int = 0
-    """Use pad_for_acceleration. Only applicable if pad_for_acceleration is True"""
+    """Use pad_for_acceleration.
+
+    Only applicable if pad_for_acceleration is True
+    """
     pad_max_input_len: int = 0
 
     def __post_init__(self):

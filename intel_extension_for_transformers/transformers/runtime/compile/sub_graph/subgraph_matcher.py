@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine subgraph matcher file."""
 
 import copy
@@ -84,7 +83,6 @@ pattern_default_setting = {
     'OperatorAdaptor': True,
     'ConvReshape': True,
     'MultiHeadAttention': True,
-
     'GroupNorm': True,
 
     # QAT Quantization
@@ -109,7 +107,6 @@ pattern_default_setting = {
     'AttentionBlock_QKVPreReshape': False,
     'AttentionBlock_AttentionMaskAddReshape': False,
     'AttentionBlock_ConstantOfShapeWithMul': False,
-
     'Transformer2Dmodel_GetSampleBatch': False,
     'Transformer2Dmodel_SampleSlice': False,
     'Transformer2Dmodel_EncoderHiddenStatesReshape': False,
@@ -150,7 +147,6 @@ pattern_default_setting = {
     'RemoveSlice': True,
     'RemoveRange': True,
     'RemoveLastView': True,
-
     'MatMulWithTransposeScaleAdd': True,
     'EmbeddingsTo2DBeforeInnerProduct': True,
     'QuantGatherToBF16': False,
