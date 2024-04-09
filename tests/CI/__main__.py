@@ -70,9 +70,7 @@ def _int_or_none_list_arg_type(max_len: int, value: str, split_char: str = ","):
 
 
 def check_argument_types(parser: argparse.ArgumentParser):
-    """
-    Check to make sure all CLI args are typed, raises error if not
-    """
+    """Check to make sure all CLI args are typed, raises error if not."""
     for action in parser._actions:
         if action.dest != "help" and not action.const:
             if action.type is None:
