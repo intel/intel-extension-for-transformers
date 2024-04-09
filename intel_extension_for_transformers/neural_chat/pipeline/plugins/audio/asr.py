@@ -66,7 +66,7 @@ class AudioSpeechRecognition():
         return f"{audio_file_name}.mp3"
 
     def audio2text(self, audio_path):
-        """Convert audio to text
+        """Convert audio to text.
 
         audio_path: the path to the input audio, e.g. ~/xxx.mp3
         """

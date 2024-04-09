@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" PyTorch DeBERTa model for SWEET."""
+"""PyTorch DeBERTa model for SWEET."""
 
 import math
 from collections.abc import Sequence
@@ -77,8 +77,7 @@ class ContextPooler(nn.Module):
 
 
 class XSoftmax(torch.autograd.Function):
-    """
-    Masked Softmax which is optimized for saving memory
+    """Masked Softmax which is optimized for saving memory.
 
     Args:
         input (`torch.tensor`): The input tensor that will apply softmax.
@@ -102,7 +101,8 @@ class XSoftmax(torch.autograd.Function):
     >>> dim = -1
 
     >>> y = XSoftmax.apply(x, mask, dim)
-    ```"""
+    ```
+    """
 
     @staticmethod
     def forward(self, input, mask, dim):
@@ -189,8 +189,7 @@ class XDropout(torch.autograd.Function):
 
 
 class StableDropout(nn.Module):
-    """
-    Optimized dropout module for stabilizing the training
+    """Optimized dropout module for stabilizing the training.
 
     Args:
         drop_prob (float): the dropout probabilities
@@ -203,8 +202,7 @@ class StableDropout(nn.Module):
         self.context_stack = None
 
     def forward(self, x):
-        """
-        Call the module
+        """Call the module.
 
         Args:
             x (`torch.tensor`): The input tensor to apply dropout
@@ -373,7 +371,7 @@ class DebertaLayer(nn.Module):
 
 
 class DebertaEncoder(nn.Module):
-    """Modified BertEncoder with relative position bias support"""
+    """Modified BertEncoder with relative position bias support."""
 
     def __init__(self, config):
         super().__init__()
@@ -486,8 +484,7 @@ class DebertaEncoder(nn.Module):
 
 
 def build_relative_position(query_size, key_size, device):
-    """
-    Build relative position according to the query and key
+    """Build relative position according to the query and key.
 
     We assume the absolute position of query \\(P_q\\) is range from (0, query_size) and the absolute position of key
     \\(P_k\\) is range from (0, key_size), The relative positions from query to key is \\(R_{q \\rightarrow k} = P_q -
@@ -499,7 +496,6 @@ def build_relative_position(query_size, key_size, device):
 
     Return:
         `torch.LongTensor`: A tensor with shape [1, query_size, key_size]
-
     """
 
     q_ids = torch.arange(query_size, dtype=torch.long, device=device)
@@ -526,14 +522,12 @@ def pos_dynamic_expand(pos_index, p2c_att, key_layer):
 
 
 class DisentangledSelfAttention(nn.Module):
-    """
-    Disentangled self-attention module
+    """Disentangled self-attention module.
 
     Parameters:
         config (`str`):
             A model config class instance with the configuration to build a new model. The schema is similar to
             *BertConfig*, for more details, please refer [`DebertaConfig`]
-
     """
 
     def __init__(self, config):
@@ -585,8 +579,7 @@ class DisentangledSelfAttention(nn.Module):
             relative_pos=None,
             rel_embeddings=None,
     ):
-        """
-        Call the module
+        """Call the module.
 
         Args:
             hidden_states (`torch.FloatTensor`):
@@ -611,8 +604,6 @@ class DisentangledSelfAttention(nn.Module):
             rel_embeddings (`torch.FloatTensor`):
                 The embedding of relative distances. It's a tensor of shape [\\(2 \\times
                 \\text{max_relative_positions}\\), *hidden_size*].
-
-
         """
         if query_states is None:
             qp = self.in_proj(hidden_states)  # .split(self.all_head_size, dim=-1)
@@ -794,10 +785,8 @@ class DebertaEmbeddings(nn.Module):
 
 
 class DebertaPreTrainedModel(PreTrainedModel):
-    """
-    An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
-    models.
-    """
+    """An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+    models."""
 
     config_class = DebertaConfig
     base_model_prefix = "deberta"
@@ -906,8 +895,9 @@ class DebertaModel(DebertaPreTrainedModel):
         self.embeddings.word_embeddings = new_embeddings
 
     def _prune_heads(self, heads_to_prune):
-        """
-        Prunes heads of the model. heads_to_prune: dict of {layer_num: list of heads to prune in this layer} See base
+        """Prunes heads of the model.
+
+        heads_to_prune: dict of {layer_num: list of heads to prune in this layer} See base
         class PreTrainedModel
         """
         raise NotImplementedError("The prune function is not implemented in DeBERTa model.")
@@ -1045,11 +1035,11 @@ class DebertaForMaskedLM(DebertaPreTrainedModel):
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
     ) -> Union[Tuple, MaskedLMOutput]:
-        r"""
-        labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
-            Labels for computing the masked language modeling loss. Indices should be in `[-100, 0, ...,
-            config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are ignored (masked), the
-            loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`
+        r"""Labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+
+        Labels for computing the masked language modeling loss. Indices should be in `[-100, 0, ...,
+        config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are ignored (masked), the
+        loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`
         """
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
@@ -1242,11 +1232,11 @@ class DebertaForSequenceClassification(DebertaPreTrainedModel):
             return_dict: Optional[bool] = None,
             exit_threshold=None,
     ) -> Union[Tuple, SequenceClassifierOutput]:
-        r"""
-        labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-            Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
-            config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
-            `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+        r"""Labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+
+        Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+        config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+        `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         hidden_state = None
@@ -1381,9 +1371,9 @@ class DebertaForTokenClassification(DebertaPreTrainedModel):
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
     ) -> Union[Tuple, TokenClassifierOutput]:
-        r"""
-        labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
-            Labels for computing the token classification loss. Indices should be in `[0, ..., config.num_labels - 1]`.
+        r"""Labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+
+        Labels for computing the token classification loss. Indices should be in `[0, ..., config.num_labels - 1]`.
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
@@ -1457,9 +1447,9 @@ class DebertaForQuestionAnswering(DebertaPreTrainedModel):
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
     ) -> Union[Tuple, QuestionAnsweringModelOutput]:
-        r"""
-        start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-            Labels for position (index) of the start of the labelled span for computing the token classification loss.
+        r"""start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+
+        Labels for position (index) of the start of the labelled span for computing the token classification loss.
             Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
             are not taken into account for computing the loss.
         end_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):

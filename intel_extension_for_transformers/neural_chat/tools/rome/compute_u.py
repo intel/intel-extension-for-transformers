@@ -34,8 +34,8 @@ def get_inv_cov(
     mom2_n_samples: str,
     mom2_dtype: str,
 ) -> torch.Tensor:
-    """
-    Retrieves covariance statistics, then computes the algebraic inverse.
+    """Retrieves covariance statistics, then computes the algebraic inverse.
+
     Caches result for future use.
     """
 
@@ -75,9 +75,7 @@ def compute_u(
     context_templates: List[str],
     batch_first: Optional[bool] = True
 ) -> torch.Tensor:
-    r"""
-    Computes the right vector used in constructing the rank-1 update matrix.
-    """
+    r"""Computes the right vector used in constructing the rank-1 update matrix."""
 
     print("Computing left vector (u)...")
 

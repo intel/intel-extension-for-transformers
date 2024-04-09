@@ -53,9 +53,7 @@ class RetrievalTypeOptions(Enum):
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
-    """
+    """Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch."""
 
     model_name_or_path: Optional[str] = field(
         default=None,
@@ -121,9 +119,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    """
-    Arguments pertaining to what data we are going to input our model for training and eval.
-    """
+    """Arguments pertaining to what data we are going to input our model for training and eval."""
 
     dataset_name: Optional[str] = field(
         default=None,
@@ -272,9 +268,7 @@ class DataArguments:
 
 @dataclass
 class FinetuningArguments:
-    """
-    Arguments of finetune we are going to apply on the model.
-    """
+    """Arguments of finetune we are going to apply on the model."""
 
     lora_rank: int = field(
         default=8,

@@ -93,9 +93,7 @@ class ROMEHyperParams:
                 ln_f_module="model.norm"
             ))
         elif name == "llama-13b":
-            r"""
-            Supports LLaMA-13B, LLaMA-2-13B, Baichuan-13B...
-            """
+            r"""Supports LLaMA-13B, LLaMA-2-13B, Baichuan-13B..."""
             data.update(dict(
                 layers=[10],
                 v_loss_layer=39,

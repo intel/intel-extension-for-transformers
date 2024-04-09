@@ -1,0 +1,147 @@
+/* Write your global styles here, in PostCSS syntax */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* app.postcss */
+
+html {
+  font-size: 16px;
+}
+
+
+@media screen and (min-width: 576px) and (max-width: 1440px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+@media screen and (min-width: 1441px) {
+  html {
+    font-size: 23px;
+  }
+}
+
+
+html, body {
+    height: 100%;
+}
+
+    :global(.svlr-contents) {
+        height: 100%;
+    }
+
+    .row::-webkit-scrollbar {
+		display: none;
+	}
+
+.row {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.row::-webkit-scrollbar {
+  display: none; /* WebKit browsers */
+}
+
+.btn {
+	@apply flex-nowrap;
+}
+a.btn {
+	@apply no-underline;
+}
+.input {
+	@apply text-base;
+}
+
+.bg-dark-blue {
+	background-color: #004a86;
+}
+
+.bg-light-blue {
+	background-color: #0068b5;
+}
+
+.bg-turquoise {
+	background-color: #00a3f6;
+}
+
+.bg-header {
+	background-color: #ffffff;
+}
+
+.bg-button {
+	background-color: #0068b5;
+}
+
+.bg-title {
+	background-color: #f7f7f7;
+}
+
+.text-header {
+	color: #0068b5;
+}
+
+.text-button {
+	color: #252e47;
+}
+
+.text-title-color {
+	color: rgb(38,38,38);
+}
+
+@font-face {
+    font-family: 'Intel One Light';
+    src: url('lib/assets/fonts/intelone-display-font-family-webfonts-woff/intelone-display-light.woff') format('truetype');
+    /* 可以根据实际情况调整字体文件路径和格式 */
+}
+
+.font-intel-light {
+    font-family: 'Intel One Light', sans-serif;
+    /* Intel One Light font */
+}
+
+@font-face {
+    font-family: 'Intel One Medium';
+    src: url('lib/assets/fonts/intelone-display-font-family-webfonts-woff/intelone-display-medium.woff') format('truetype');
+    /* 可以根据实际情况调整字体文件路径和格式 */
+}
+
+.font-intel-medium {
+    font-family: 'Intel One Medium', sans-serif;
+    /* Intel One Medium font */
+}
+
+
+
+.font-intel {
+	font-family: "intel-clear","tahoma",Helvetica,"helvetica",Arial,sans-serif;
+}
+
+.font-title-intel {
+	font-family: "intel-one","intel-clear",Helvetica,Arial,sans-serif;
+}
+
+.bg-footer {
+	background-color: #e7e7e7;
+}
+
+.bg-light-green {
+	background-color: #d7f3a1;
+}
+
+.bg-purple {
+	background-color: #653171;
+}
+
+.bg-dark-blue {
+	background-color: #224678;
+}
+
+.border-input-color {
+	border-color: #605e5c;
+}
+
+.w-12\/12 {
+	width: 100%
+}

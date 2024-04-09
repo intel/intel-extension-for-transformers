@@ -72,9 +72,7 @@ def build_logger(logger_name, logger_filename):
 
 
 class StreamToLogger(object):
-    """
-    Fake file-like stream object that redirects writes to a logger instance.
-    """
+    """Fake file-like stream object that redirects writes to a logger instance."""
     def __init__(self, logger, log_level=logging.INFO):
         self.terminal = sys.stdout
         self.logger = logger
@@ -107,18 +105,14 @@ class StreamToLogger(object):
 
 
 def disable_torch_init():
-    """
-    Disable the redundant torch default initialization to accelerate model creation.
-    """
+    """Disable the redundant torch default initialization to accelerate model creation."""
     import torch
     setattr(torch.nn.Linear, "reset_parameters", lambda self: None)
     setattr(torch.nn.LayerNorm, "reset_parameters", lambda self: None)
 
 
 def violates_moderation(text):
-    """
-    Check whether the text violates OpenAI moderation API.
-    """
+    """Check whether the text violates OpenAI moderation API."""
     url = "https://api.openai.com/v1/moderations"
     headers = {"Content-Type": "application/json",
                "Authorization": "Bearer " + os.environ["OPENAI_API_KEY"]}

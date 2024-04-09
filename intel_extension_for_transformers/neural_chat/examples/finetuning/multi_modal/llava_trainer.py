@@ -52,9 +52,7 @@ def get_mm_adapter_state_maybe_zero_3(named_params, keys_to_match):
 
 
 def split_to_even_chunks(indices, lengths, num_chunks):
-    """
-    Split a list of indices into `chunks` chunks of roughly equal lengths.
-    """
+    """Split a list of indices into `chunks` chunks of roughly equal lengths."""
 
     if len(indices) % num_chunks != 0:
         return [indices[i::num_chunks] for i in range(num_chunks)]
@@ -114,10 +112,8 @@ def get_length_grouped_indices(lengths, batch_size, world_size, generator=None, 
 
 
 class LengthGroupedSampler(Sampler):
-    r"""
-    Sampler that samples indices in a way that groups together features of the dataset of roughly the same length while
-    keeping a bit of randomness.
-    """
+    r"""Sampler that samples indices in a way that groups together features of the dataset of roughly the same length while
+    keeping a bit of randomness."""
 
     def __init__(
         self,
@@ -167,8 +163,7 @@ class LLaVATrainer(Trainer):
             return super()._get_train_sampler()
 
     def create_optimizer(self):
-        """
-        Setup the optimizer.
+        """Setup the optimizer.
 
         We provide a reasonable default that works well. If you want to use something else, you can pass a tuple in the
         Trainer's init through `optimizers`, or subclass and override this method in a subclass.
@@ -311,8 +306,7 @@ if is_hpu_available:
                 return super()._get_train_sampler()
 
         def create_optimizer(self):
-            """
-            Setup the optimizer.
+            """Setup the optimizer.
 
             We provide a reasonable default that works well. If you want to use something else, you can pass a tuple in the
             Trainer's init through `optimizers`, or subclass and override this method in a subclass.

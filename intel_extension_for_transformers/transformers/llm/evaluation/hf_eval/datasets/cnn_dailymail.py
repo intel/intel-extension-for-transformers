@@ -145,7 +145,7 @@ class CNNDAILYMAIL(object):
         self.calib = calib
 
     def load_dataset(self):
-        """Loads dataset"""
+        """Loads dataset."""
         with open(self.data_path, "r") as fid:
             list_data_dict = json.load(fid)
         if self.num_samples is not None:
@@ -167,7 +167,7 @@ class CNNDAILYMAIL(object):
         self.targets = targets
 
     def load_tokenizer(self):
-        """Returns the tokenizer"""
+        """Returns the tokenizer."""
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_path,
             model_max_length=2048,

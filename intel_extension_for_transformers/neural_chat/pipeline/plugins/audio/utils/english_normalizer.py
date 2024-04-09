@@ -77,7 +77,7 @@ class EnglishNormalizer:
         return " ".join(results)
 
     def correct_number(self, text):
-        """Ignore the year or other exception right now"""
+        """Ignore the year or other exception right now."""
         words = text.split()
         results = []
         prepositions_year = ["in", "on"]

@@ -37,7 +37,7 @@ class OptimzedTransformer(sentence_transformers.models.Transformer):
         super().__init__(*args, **kwargs)
 
     def _load_model(self, model_name_or_path, config, cache_dir, **model_args):
-        """Loads the transformer model"""
+        """Loads the transformer model."""
         self.auto_model = OptimizedModel.from_pretrained(model_name_or_path,
                                                             config=config,
                                                             cache_dir=cache_dir,
@@ -46,7 +46,7 @@ class OptimzedTransformer(sentence_transformers.models.Transformer):
             setattr(self.auto_model, "config", config)
 
     def forward(self, features):
-        """Returns token_embeddings, cls_token"""
+        """Returns token_embeddings, cls_token."""
         trans_features = {"input_ids": features["input_ids"], "attention_mask": features["attention_mask"]}
         if "token_type_ids" in features:
             trans_features["token_type_ids"] = features["token_type_ids"]
@@ -85,9 +85,7 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
             cache_folder: Optional[str],
             revision: Optional[str] = None,
             trust_remote_code: bool = False):
-        """
-        Creates a simple Transformer + Mean Pooling model and returns the modules
-        """
+        """Creates a simple Transformer + Mean Pooling model and returns the modules."""
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
         transformer_model = OptimzedTransformer(
@@ -109,9 +107,7 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
             cache_folder: Optional[str],
             revision: Optional[str] = None,
             trust_remote_code: bool = False):
-        """
-        Loads a full sentence-transformers model
-        """
+        """Loads a full sentence-transformers model."""
         # Check if the config_sentence_transformers.json file exists (exists since v2 of the framework)
         config_sentence_transformers_json_path = sentence_transformers.util.load_file_path(
             model_name_or_path,

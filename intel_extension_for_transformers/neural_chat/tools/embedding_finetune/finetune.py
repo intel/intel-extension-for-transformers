@@ -35,9 +35,7 @@ from sentence_transformers import SentenceTransformer, models
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
-    """
+    """Arguments pertaining to which model/config/tokenizer we are going to fine-tune from."""
     model_name_or_path: str
     config_name: Optional[str] = None
     tokenizer_name: Optional[str] = None
@@ -115,9 +113,9 @@ class TrainDatasetForEmbedding(Dataset):
 
 @dataclass
 class EmbedCollator(DataCollatorWithPadding):
-    """
-    Wrapper that does conversion from List[Tuple[encode_qry, encode_psg]] to List[qry], List[psg]
+    """Wrapper that does conversion from List[Tuple[encode_qry, encode_psg]] to List[qry], List[psg]
     and pass batch separately to the actual collator.
+
     Abstract out data detail for the model.
     """
     query_max_len: int = 32
@@ -314,8 +312,7 @@ class BiTrainer(Trainer):
                                                 normalized=self.args.normalized)
 
     def compute_loss(self, model, inputs, return_outputs=False):
-        """
-        How the loss is computed by Trainer. By default, all models return the loss in the first element.
+        """How the loss is computed by Trainer. By default, all models return the loss in the first element.
 
         Subclass and override for custom behavior.
         """

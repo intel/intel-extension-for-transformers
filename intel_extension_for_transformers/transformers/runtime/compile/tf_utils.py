@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine tensorflow utils."""
 
 import numpy as np
@@ -58,7 +57,6 @@ def graph_node_names_details(nodes):
 
     Returns:
         node_names_details: the graph node info dict
-
     """
     # nodes = model.graph_def.node
     # some node may have several output edges
@@ -205,8 +203,7 @@ TF_DTYPE_ID = {3: 'int32',
                1: 'fp32',
                9: 'int64',
                7: 'string', }
-
-"""Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function"""
+"""Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function."""
 MULTI_OUTPUT_OP = {'Unpack': -1,
                    'IteratorGetNext': -1,
                    }

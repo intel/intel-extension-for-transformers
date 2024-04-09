@@ -1,3 +1,19 @@
+<!--
+  Copyright (c) 2024 Intel Corporation
+ 
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
 <svg class="p-0" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 101 104" xmlns:xlink="http://www.w3.org/1999/xlink" stroke="currentColor" fill="#ccc">
 <g><path d="M 26.5,24.5 C 28.5,24.5 30.5,24.5 32.5,24.5C 32.5,26.5 32.5,28.5 32.5,30.5C 30.5,30.5 28.5,30.5 26.5,30.5C 26.5,28.5 26.5,26.5 26.5,24.5 Z"/></g>
 <g><path d="M 69.5,25.5 C 71.1667,25.5 72.8333,25.5 74.5,25.5C 74.5,27.1667 74.5,28.8333 74.5,30.5C 72.8333,30.5 71.1667,30.5 69.5,30.5C 69.5,28.8333 69.5,27.1667 69.5,25.5 Z"/></g>

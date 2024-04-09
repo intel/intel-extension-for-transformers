@@ -26,9 +26,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_an
 
 
 class DenseMotionNetwork(nn.Module):
-    """
-    Module that predicting a dense motion from sparse motion representation given by kp_source and kp_driving
-    """
+    """Module that predicting a dense motion from sparse motion representation given by kp_source and kp_driving."""
 
     def __init__(
         self,

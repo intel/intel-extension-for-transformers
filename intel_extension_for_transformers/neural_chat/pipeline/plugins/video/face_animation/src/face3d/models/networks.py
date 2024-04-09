@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""This script defines deep neural networks for Deep3DFaceRecon_pytorch
-"""
+"""This script defines deep neural networks for Deep3DFaceRecon_pytorch."""
 
 import os
 from torch.optim import lr_scheduler
@@ -48,7 +46,7 @@ def filter_state_dict(state_dict, remove_name="fc"):
 
 
 def get_scheduler(optimizer, opt):
-    """Return a learning rate scheduler
+    """Return a learning rate scheduler.
 
     Parameters:
         optimizer          -- the optimizer of the network
@@ -150,7 +148,7 @@ model_urls = {
 
 
 def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
-    """3x3 convolution with padding"""
+    """3x3 convolution with padding."""
     return nn.Conv2d(
         in_planes,
         out_planes,
@@ -164,7 +162,7 @@ def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, d
 
 
 def conv1x1(in_planes: int, out_planes: int, stride: int = 1, bias: bool = False) -> nn.Conv2d:
-    """1x1 convolution"""
+    """1x1 convolution."""
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=bias)
 
 

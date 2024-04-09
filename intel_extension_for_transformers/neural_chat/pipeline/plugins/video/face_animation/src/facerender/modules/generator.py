@@ -25,9 +25,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_an
 
 
 class OcclusionAwareGenerator(nn.Module):
-    """
-    Generator follows NVIDIA architecture.
-    """
+    """Generator follows NVIDIA architecture."""
 
     def __init__(
         self,

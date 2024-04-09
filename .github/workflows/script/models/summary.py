@@ -47,7 +47,7 @@ def main():
 
 
 def parse_tuning_log(line, url_dict):
-    """Parsing {Framework}-{Model}-tune.log to get tuning result"""
+    """Parsing {Framework}-{Model}-tune.log to get tuning result."""
     result = line.split(";")
     OS, Platform, Framework, Version, Model, Strategy, Tune_time, Tuning_trials, URL, __ = result
     file_name = f"{Framework}-{Model}-tune.log"
@@ -57,7 +57,7 @@ def parse_tuning_log(line, url_dict):
 
 
 def parse_summary_log(line, url_dict):
-    """Parse {Framework}-{Model}-tune.log to get benchmarking accuracy result"""
+    """Parse {Framework}-{Model}-tune.log to get benchmarking accuracy result."""
     result = line.split(";")
     OS, Platform, Framework, Version, Precision, Model, Mode, Type, BS, Value, Url = result
     file_name = f"{Framework}-{Model}-tune.log"
