@@ -19,6 +19,7 @@
 import importlib
 import sys
 import torch
+import warnings
 if sys.version_info < (3, 8):
     import importlib_metadata
 else:
@@ -52,19 +53,15 @@ def get_gpu_family():
         return 'no_gpu'
 
     name = torch.xpu.get_device_name()
-    if 'GPU Flex' in name:
-        result = 'flex'
-    elif 'GPU Max' in name:
-        result = 'max'
-    elif 'Arc(TM)' in name:
-        result = 'arc'
+    if torch.xpu.has_xmx() and torch.xpu.has_2d_block_array():
+        return "PVC"
+    elif torch.xpu.has_xmx() and not torch.xpu.has_2d_block_array():
+        return "ARC"
+    elif not torch.xpu.has_xmx() and not torch.xpu.has_2d_block_array():
+        return "MTL"
     else:
-        assert False, "Unsupported GPU device: {}".format(name)
-
-    if result not in supported_gpus():
-        assert False, "Unsupported GPU device: {}".format(name)
-    else:
-        return result
+        warnings.warn("Unverified GPU device: {}".format(name))
+        return name
 
 _ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
 _ipex_version = "N/A"
