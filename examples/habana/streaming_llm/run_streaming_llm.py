@@ -105,19 +105,23 @@ def main():
         model = GaudiLlamaForCausalLM.from_pretrained(
             args.model_name_or_path,
             trust_remote_code=bool(args.trust_remote_code),
-            torch_dtype=torch.float16,
+            torch_dtype=torch.bfloat16,
             device_map="auto",
         )
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path,
+                                                  trust_remote_code=bool(args.trust_remote_code))
     else:
         model = GaudiLlamaForCausalLM.from_pretrained(
             args.model_name_or_path,
             trust_remote_code=bool(args.trust_remote_code),
-            torch_dtype=torch.float16,
+            torch_dtype=torch.bfloat16,
             device_map="auto",
             token=args.hf_token,
         )
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path,
+                                                  token=args.hf_token,
+                                                  trust_remote_code=bool(args.trust_remote_code))
     model.eval().to("hpu")
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=bool(args.trust_remote_code))
     tokenizer.pad_token_id = tokenizer.eos_token_id
 
     # Set up the dataset
