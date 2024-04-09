@@ -751,11 +751,11 @@ class HFLM(TemplateLM):
                         use_io_binding=False,
                     )
             else:
-                dtype = (
-                    "float32"
-                    if dtype == "auto" and "use_neural_speed" in model_kwargs
-                    else dtype
-                )
+                if self.model_format == "neural_speed":
+                    model_kwargs["use_neural_speed"] = True
+                else:
+                    model_kwargs["use_neural_speed"] = False
+                dtype = "float32" if dtype == "auto" else dtype
                 self._model = self.AUTO_MODEL_CLASS.from_pretrained(
                     pretrained,
                     revision=revision,
