@@ -19,6 +19,7 @@ import itertools
 import logging
 import random
 import time
+import os
 from collections import defaultdict
 from typing import TYPE_CHECKING, List, Optional, Union
 
@@ -40,6 +41,7 @@ from lm_eval.evaluator_utils import (
 from lm_eval.logging_utils import add_env_info, get_git_commit_hash
 from lm_eval.tasks import TaskManager, get_task_dict
 from lm_eval.utils import eval_logger, positional_deprecated, simple_parse_args_string
+from lm_eval import utils
 
 
 if TYPE_CHECKING:
@@ -165,13 +167,37 @@ def simple_evaluate(
         )
         if gen_kwargs == "":
             gen_kwargs = None
+    # for ipex smoothquant, the quantized model is torchscript mode.
+    model_args_dict = utils.simple_parse_args_string(model_args)
+    if "torchscript" in model_args_dict:
+        import intel_extension_for_pytorch as ipex
+        from intel_extension_for_transformers.transformers.llm.evaluation.models import (
+            TSModelCausalLMForITREX,
+        )
+        if "restore" in model_args_dict:
+            from intel_extension_for_transformers.transformers.utils.utility import (
+                recover_model_from_json,
+            )
+            fp32_model_name_or_path = model_args_dict["fp32_model_name_or_path"]
+            torchscript_model = recover_model_from_json(
+                fp32_model_name_or_path,
+                os.path.join(model_args_dict["pretrained"], "best_configure.json"),
+                trust_remote_code=model_args_dict["trust_remote_code"] if "trust_remote_code" in model_args
+                    else False,
+            )
+        else:
+            torchscript_model = TSModelCausalLMForITREX.from_pretrained(
+                model_args_dict["pretrained"],
+                file_name="best_model.pt",
+                trust_remote_code=model_args_dict["trust_remote_code"] if "trust_remote_code" in model_args
+                                    else False,
+            )
 
     if isinstance(model, str):
         if model_args is None:
             model_args = ""
         # replace HFLM.
         from .models.huggingface import HFLM
-
         lm_eval.api.registry.MODEL_REGISTRY["hf-auto"] = HFLM
         lm_eval.api.registry.MODEL_REGISTRY["hf"] = HFLM
         lm_eval.api.registry.MODEL_REGISTRY["huggingface"] = HFLM
@@ -198,7 +224,8 @@ def simple_evaluate(
         if not isinstance(model, lm_eval.api.model.LM):
             raise TypeError
         lm = model
-
+    if lm.config.torchscript == True:
+        lm._model = torchscript_model
     if use_cache is not None:
         eval_logger.info(f"Using cache at {use_cache + '_rank' + str(lm.rank) + '.db'}")
         lm = lm_eval.api.model.CachingLM(
