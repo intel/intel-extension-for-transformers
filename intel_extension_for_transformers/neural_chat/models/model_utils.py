@@ -883,9 +883,9 @@ def load_model(
                         logging.error("Model type not supported by TPP")
                         set_latest_error(ErrorCodes.ERROR_GENERIC)
                         return
-                    from tpp_pytorch_extension.llm.llm_common import (
-                            jit_trace_model, optimize_for_first_token,)
-                    model = jit_trace_model(model, tokenizer, 1, indirect_kv=True, enable_profile=False, only_last_logit=True)
+                    from tpp_pytorch_extension.llm.llm_common import jit_trace_model # pylint: disable=E0401
+                    model = jit_trace_model(model, tokenizer, 1, indirect_kv=True,
+                                            enable_profile=False, only_last_logit=True)
         elif device in ["cuda", "xpu"]:
             if hasattr(model, "device") and model.device.type != device:
                 try:
