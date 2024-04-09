@@ -133,6 +133,8 @@ python run_generation.py \
 >**Note**: 
 > 1.  default search algorithm is beam search with num_beams = 1.
 > 2. [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/v2.1.10%2Bxpu/docs/tutorials/llm/llm_optimize_transformers.md) Support for the optimized inference of model types "gptj," "mistral," "qwen," and "llama" to achieve high performance and accuracy. Ensure accurate inference for other model types as well.
+> 3. We provide compression technologies `WeightOnlyQuant` with `Rtn/GPTQ/AutoRound` algorithms and `load_in_4bit` and `load_in_8bit` work on intel GPU device.
+
 ## Prerequisite​
 ### Dependencies
 Intel-extension-for-pytorch dependencies are in oneapi package, before install intel-extension-for-pytorch, we should install oneapi first. Please refer to [Installation Guide](https://intel.github.io/intel-extension-for-pytorch/index.html#installation?platform=gpu&version=v2.1.10%2Bxpu) to install the OneAPI to "/opt/intel folder".
@@ -140,8 +142,11 @@ Intel-extension-for-pytorch dependencies are in oneapi package, before install i
 ### Create Environment​
 Pytorch and Intel-extension-for-pytorch version for intel GPU > 2.1 are required, python version requests equal or higher than 3.9 due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation, the dependent packages are listed in requirements_GPU.txt, we recommend create environment as the following steps. For Intel-exension-for-pytorch, we should install from source code now, and Intel-extension-for-pytorch will add weight-only quantization in the next version.
 
+>**Note**: please install transformers==4.35.2.
+
 ```bash
 pip install -r requirements_GPU.txt
+pip install transformers==4.35.2
 source /opt/intel/oneapi/setvars.sh
 git clone https://github.com/intel/intel-extension-for-pytorch.git ipex-gpu
 cd ipex-gpu
