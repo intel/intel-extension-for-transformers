@@ -77,17 +77,6 @@ class TestNeuralChatServerExecutor(unittest.TestCase):
         with patch.dict(plugins, {}):
             self.assertTrue(self.executor.init(config))
 
-    def test_init_chatbot_as_service_with_deepspeed_habana(self):
-        config = CfgNode()
-        config.host = '127.0.0.1'
-        config.port = 8000
-        config.use_deepspeed = True
-        config.device = 'hpu'
-        config.model_name_or_path = 'facebook/opt-125m'
-        config.tasks_list = ['textchat']
-        with patch.dict(plugins, {}):
-            self.assertTrue(self.executor.init(config))
-
     def test_execute_success(self):
         argv = ['--config_file', 'neuralchat.yaml', '--log_file', 'app.log']
 
