@@ -38,7 +38,10 @@ import torch
 from datasets import load_dataset
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models import GaudiLlamaForCausalLM
+from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import adapt_transformers_to_gaudi
 
+# Tweak generation so that it runs faster on Gaudi
+adapt_transformers_to_gaudi()
 
 def create_prompts(samples: Dict[str, List[Any]]) -> Dict[str, Any]:
     return {"prompt": [prompt for prompts in samples["prompt"] for prompt in prompts]}
@@ -79,6 +82,7 @@ def main():
     parser = argparse.ArgumentParser()
     # Model args
     parser.add_argument("--model_name_or_path", type=str, default="meta-llama/Llama-2-7b-chat-hf")
+    parser.add_argument("--hf_token", type=str, default="")
     parser.add_argument("--trust_remote_code", action="store_true")
 
     # Dataset args, not recommended to change:
@@ -97,13 +101,22 @@ def main():
     args = parser.parse_args()
 
     # Initialize the model
-    model = GaudiLlamaForCausalLM.from_pretrained(
-        args.model_name_or_path,
-        trust_remote_code=bool(args.trust_remote_code),
-        torch_dtype=torch.float16,
-        device_map="auto",
-    )
-    model.eval()
+    if args.hf_token == "":
+        model = GaudiLlamaForCausalLM.from_pretrained(
+            args.model_name_or_path,
+            trust_remote_code=bool(args.trust_remote_code),
+            torch_dtype=torch.float16,
+            device_map="auto",
+        )
+    else:
+        model = GaudiLlamaForCausalLM.from_pretrained(
+            args.model_name_or_path,
+            trust_remote_code=bool(args.trust_remote_code),
+            torch_dtype=torch.float16,
+            device_map="auto",
+            token=args.hf_token,
+        )
+    model.eval().to("hpu")
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=bool(args.trust_remote_code))
     tokenizer.pad_token_id = tokenizer.eos_token_id
 
