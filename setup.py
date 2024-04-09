@@ -8,40 +8,10 @@ from io import open
 from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
-
+from intel_extension_for_transformers.tools.utils import get_gpu_family
 
 result = subprocess.Popen("pip install -r requirements.txt", shell=True)
 result.wait()
-
-
-def get_gpu_family():
-    """Get gpu device family info.
-
-    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
-
-    Note, this function need to import intel_extension_for_pytorch
-
-    Additional info (common gpu name):
-      'Intel(R) Data Center GPU Flex 170'
-      'Intel(R) Data Center GPU Max 1100'
-      'Intel(R) Arc(TM) A770 Graphics'
-    """
-
-    import torch
-    import intel_extension_for_pytorch as ipex
-    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
-        return 'no_gpu'
-
-    name = torch.xpu.get_device_name()
-    if 'GPU Flex' in name:
-        return 'flex'
-    if 'GPU Max' in name:
-        return 'max'
-    if 'Arc(TM)' in name:
-        return 'arc'
-    if '0x7d55' in name or '0x7dd5' in name or '0x7d45' in name:
-        return 'mtl'
-    assert False, "Unsupported GPU device: {}".format(name)
 
 
 def check_env_flag(name: str, default: bool = False) -> bool:
