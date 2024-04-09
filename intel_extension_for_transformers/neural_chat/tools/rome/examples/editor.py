@@ -23,8 +23,7 @@ from intel_extension_for_transformers.neural_chat.models.model_utils import MODE
 from intel_extension_for_transformers.neural_chat.tools.rome import ROMEHyperParams, apply_rome_to_model
 
 def print_head(x, pad=3):
-    r"""
-    Prints a string with # box for emphasis.
+    r"""Prints a string with # box for emphasis.
 
     Example:
 
@@ -48,8 +47,7 @@ def print_head(x, pad=3):
 def test_rome(
     data: str, model: str, config: str, checkpointing: Optional[bool] = False, seed: Optional[int] = 99
 ) -> None:
-    r"""
-    Edits a pre-trained model using model-editing algorithms.
+    r"""Edits a pre-trained model using model-editing algorithms.
 
     Args:
         data (`str`):

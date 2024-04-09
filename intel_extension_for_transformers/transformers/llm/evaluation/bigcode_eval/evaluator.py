@@ -32,7 +32,7 @@ from bigcode_eval.tasks import ALL_TASKS  # pylint: disable=E0611, E0401
 
 def pattern_match(patterns, source_list):
     """Returns a list containing all values of the source_list that
-    match at least one of the patterns"""
+    match at least one of the patterns."""
     task_names = set()
     for pattern in patterns:
         for matching in fnmatch.filter(source_list, pattern):

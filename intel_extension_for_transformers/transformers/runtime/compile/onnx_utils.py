@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine onnx utils."""
 
 import sys
@@ -83,7 +82,6 @@ def graph_node_names_details(model):
 
     Returns:
         node_names_details: the graph node info dict
-
     """
     node_details = namedtuple('node_details', ['node', 'outputs'])
     node_names_details = {}
@@ -255,8 +253,7 @@ def onnx_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
     op_type = node.op_type
     input_tensors = []
     output_tensors = []
-
-    """Input_tensors
+    """Input_tensors.
 
     Note:
         each input_tensor has its own source op, but same dest op

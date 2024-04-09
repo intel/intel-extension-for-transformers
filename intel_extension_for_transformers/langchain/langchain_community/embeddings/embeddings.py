@@ -64,7 +64,9 @@ class HuggingFaceEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_core
     """Model name to use."""
     cache_folder: Optional[str] = None
     """Path to store models.
-    Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable."""
+
+    Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.
+    """
     model_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass to the model."""
     encode_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
@@ -150,7 +152,9 @@ class HuggingFaceBgeEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_c
     """Model name to use."""
     cache_folder: Optional[str] = None
     """Path to store models.
-    Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable."""
+
+    Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.
+    """
     model_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass to the model."""
     encode_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
@@ -234,7 +238,9 @@ class HuggingFaceInstructEmbeddings(langchain_core.pydantic_v1.BaseModel, langch
     """Model name to use."""
     cache_folder: Optional[str] = None
     """Path to store models.
-    Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable."""
+
+    Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.
+    """
     model_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass to the model."""
     encode_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)

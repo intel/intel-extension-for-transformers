@@ -97,8 +97,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         decoder_with_past_file_name: Optional[str] = DECODER_WITH_PAST_NAME,
         **kwargs,
     ):
-        """
-        Saves the model so that it can be re-loaded using the
+        """Saves the model so that it can be re-loaded using the
         [`from_pretrained`] class method.
 
         Arguments:
@@ -165,8 +164,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         torch_dtype: Optional[Union[str, "torch.dtype"]] = None,
         **kwargs,
     ):
-        """
-        Loads a model and its configuration file from a directory or the HF Hub.
+        """Loads a model and its configuration file from a directory or the HF Hub.
 
         Arguments:
             model_id (`str` or `Path`):
@@ -340,8 +338,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         torch_dtype: Optional[Union[str, "torch.dtype"]] = None,
         **kwargs,
     ):
-        """
-        Export a vanilla Transformers model into an JIT model.
+        """Export a vanilla Transformers model into an JIT model.
 
         Arguments:
             model_id (`str` or `Path`):
@@ -477,15 +474,11 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
 
     @classmethod
     def _auto_model_to_task(cls, auto_model_class):
-        """
-        Get the task corresponding to a class (for example AutoModelForXXX in transformers).
-        """
+        """Get the task corresponding to a class (for example AutoModelForXXX in transformers)."""
         return cls._AUTOMODELS_TO_TASKS[auto_model_class.__name__]
 
     def can_generate(self) -> bool:
-        """
-        Returns whether this model can generate sequences with `.generate()`.
-        """
+        """Returns whether this model can generate sequences with `.generate()`."""
         if isinstance(self, GenerationMixin):
             return True
         return False

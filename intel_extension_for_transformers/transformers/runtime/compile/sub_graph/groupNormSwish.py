@@ -23,8 +23,8 @@ from .. import logger
 
 @pattern_registry(pattern_type='GroupNormSwish')
 class GroupNormSwish(Pattern):
-    """
-    The input channels are separated into num_groups groups, each containing num_channels /
+    """The input channels are separated into num_groups groups, each containing num_channels /
+
     num_groups channels. Each group is calculated like:
     y = (x - E(X)) / (Var(x) + epsilon) * gamma + beta
     More info can see: https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html

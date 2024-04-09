@@ -348,9 +348,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
     def __call__(self,
                  config_file: str="./conf/neuralchat.yaml",
                  log_file: str="./log/neuralchat.log"):
-        """
-        Python API to call an executor.
-        """
+        """Python API to call an executor."""
         config = get_config(config_file)
         if self.init(config):
             logging.basicConfig(filename=log_file, level=logging.INFO)

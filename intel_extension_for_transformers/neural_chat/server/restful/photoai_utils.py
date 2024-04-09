@@ -27,16 +27,12 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 
 
 def latitude_and_longitude_convert_to_decimal_system(*arg):
-    """
-    Convert latitude&longitude into decimal system
-    """
+    """Convert latitude&longitude into decimal system."""
     return float(arg[0]) + ((float(arg[1]) + (float(arg[2].split('/')[0]) / float(arg[2].split('/')[-1]) / 60)) / 60)
 
 
 def find_GPS_image(pic_path):
-    """
-    generate GPS and timestamp from image
-    """
+    """Generate GPS and timestamp from image."""
     GPS = {}
     date = ''
     with open(pic_path, 'rb') as f:

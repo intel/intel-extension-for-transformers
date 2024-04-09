@@ -189,7 +189,7 @@ def load_xlsx(input):
     return all_data
 
 def load_csv(input):
-    """ Load the csv file."""
+    """Load the csv file."""
     df = pd.read_csv(input)
     all_data = []
     documents = []

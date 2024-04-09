@@ -100,7 +100,7 @@ def correct_abbreviation(text):
     return " ".join(results)
 
 def correct_number(text):
-    """Ignore the year or other exception right now"""
+    """Ignore the year or other exception right now."""
     words = text.split()
     results = []
     for idx, word in enumerate(words):

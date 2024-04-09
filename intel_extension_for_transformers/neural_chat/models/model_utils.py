@@ -88,9 +88,7 @@ class StopOnTokens(StoppingCriteria):
         return False
 
 def get_repo_root(model_name_or_path, local_rank=-1, token=None):
-    """
-    Downloads the specified model checkpoint and returns the repository where it was downloaded.
-    """
+    """Downloads the specified model checkpoint and returns the repository where it was downloaded."""
     if Path(model_name_or_path).is_dir():
         # If it is a local model, no need to download anything
         return model_name_or_path
@@ -130,9 +128,7 @@ def get_repo_root(model_name_or_path, local_rank=-1, token=None):
 
 
 def get_checkpoint_files(model_name_or_path, local_rank, token=None):
-    """
-    Gets the list of files for the specified model checkpoint.
-    """
+    """Gets the list of files for the specified model checkpoint."""
     cached_repo_dir = get_repo_root(model_name_or_path, local_rank, token)
 
     # Extensions: .bin | .pt
@@ -142,9 +138,7 @@ def get_checkpoint_files(model_name_or_path, local_rank, token=None):
 
 
 def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, token=None):
-    """
-    Dumps metadata into a JSON file for DeepSpeed-inference.
-    """
+    """Dumps metadata into a JSON file for DeepSpeed-inference."""
     checkpoint_files = get_checkpoint_files(model_name_or_path, local_rank, token)
     if local_rank == 0 and len(checkpoint_files) != 0:
         data = {"type": "ds_model", "checkpoints": checkpoint_files, "version": 1.0}
@@ -154,9 +148,7 @@ def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, tok
 
 
 def model_on_meta(config):
-    """
-    Checks if load the model to meta.
-    """
+    """Checks if load the model to meta."""
     return config.model_type in ["bloom", "llama"]
 
 
@@ -173,10 +165,8 @@ def get_optimized_model_name(config):
 
 
 def model_is_optimized(config):
-    """
-    Checks if the given config belongs to a model in optimum/habana/transformers/models, which has a
-    new input token_idx.
-    """
+    """Checks if the given config belongs to a model in optimum/habana/transformers/models, which has a
+    new input token_idx."""
     return get_optimized_model_name(config) is not None
 
 
@@ -419,8 +409,7 @@ def load_model(
     vllm_engine_params=None,
     gguf_model_path=None,
 ):
-    """
-    Load the model and initialize the tokenizer.
+    """Load the model and initialize the tokenizer.
 
     Args:
         model_name (str): The name of the model.
@@ -1003,8 +992,7 @@ def get_context_length(config):
 
 output_token_len = 0
 def predict_stream(**params):
-    """
-    Generates streaming text based on the given parameters and prompt.
+    """Generates streaming text based on the given parameters and prompt.
 
     Args:
         params (dict): A dictionary containing the parameters for text generation.
@@ -1308,8 +1296,7 @@ def predict_stream(**params):
 
 
 def predict(**params):
-    """
-    Generates streaming text based on the given parameters and prompt.
+    """Generates streaming text based on the given parameters and prompt.
 
     Args:
         params (dict): A dictionary containing the parameters for text generation.

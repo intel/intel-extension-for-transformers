@@ -15,7 +15,7 @@ result.wait()
 
 
 def get_gpu_family():
-    ''' Get gpu device family info.
+    """Get gpu device family info.
 
     Return 'flex'|'max'|'arc'| 'no_gpu'| assert
 
@@ -25,7 +25,7 @@ def get_gpu_family():
       'Intel(R) Data Center GPU Flex 170'
       'Intel(R) Data Center GPU Max 1100'
       'Intel(R) Arc(TM) A770 Graphics'
-    '''
+    """
 
     import torch
     import intel_extension_for_pytorch as ipex
@@ -50,10 +50,10 @@ def check_env_flag(name: str, default: bool = False) -> bool:
 
 
 SKIP_RUNTIME = check_env_flag("SKIP_RUNTIME", False)
-""" Whether to only packaging optimization """
+"""Whether to only packaging optimization."""
 
 RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
-""" Whether to only packaging backends """
+"""Whether to only packaging backends."""
 
 ipex_available = importlib.util.find_spec(
     "intel_extension_for_pytorch") is not None
@@ -73,20 +73,20 @@ if not IS_INTEL_GPU:
     cpu_flags = get_cpu_info()['flags']
 
     CMAKE_BUILD_TYPE = os.environ.get("CMAKE_BUILD_TYPE", "Release")
-    """ Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release """
+    """Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release."""
 
     CMAKE_GENERATOR = os.environ.get("CMAKE_GENERATOR", "Ninja")
-    """ The CMake generator to be used; default to Ninja """
+    """The CMake generator to be used; default to Ninja."""
 
     CMAKE_ARGS = os.environ.get("CMAKE_ARGS", "")
-    """ Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge) """
+    """Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge)"""
 
     CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get(
         "CMAKE_BUILD_PARALLEL_LEVEL", "")
-    """ Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators """
+    """Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators."""
 
     NE_WITH_AVX2 = check_env_flag("NE_WITH_AVX2", 'avx512f' not in cpu_flags)
-    """ Whether to limit the max ISA used to AVX2; otherwise AVX512 will be used; set to ON/OFF """
+    """Whether to limit the max ISA used to AVX2; otherwise AVX512 will be used; set to ON/OFF."""
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
@@ -127,7 +127,7 @@ class CMakeBuild(build_ext):
 
     @staticmethod
     def _get_files(scope: str, repo: str):
-        ''' Equivalent of `git ls-files --recurse-submodules -- $scope` for git-v1.x '''
+        """Equivalent of `git ls-files --recurse-submodules -- $scope` for git-v1.x."""
         files = [os.path.join(repo, f) for f in subprocess.check_output(
                 ["git", "ls-files", "--", scope], cwd=repo
         ).decode("utf-8").splitlines()]
@@ -139,7 +139,10 @@ class CMakeBuild(build_ext):
         return files
 
     def get_source_files(self):
-        """ The primary purpose of this function is to help populating the `sdist` with all the files necessary to build the distribution. -- setuptools doc"""
+        """The primary purpose of this function is to help populating the `sdist` with all the files necessary to build the distribution.
+
+        -- setuptools doc
+        """
         files = super().get_source_files()
         if not os.path.isdir(os.path.join(cwd, ".git")):
             return files

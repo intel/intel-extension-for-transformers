@@ -53,9 +53,7 @@ def layer_stats(
     batch_tokens=None,
     progress=tqdm,
 ):
-    """
-    Function to load or compute cached stats.
-    """
+    """Function to load or compute cached stats."""
 
     def get_ds():
         raw_ds = load_dataset(

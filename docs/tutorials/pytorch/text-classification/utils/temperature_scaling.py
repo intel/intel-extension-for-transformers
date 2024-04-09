@@ -33,12 +33,12 @@ from torch.nn import functional as F
 
 
 class ModelWithTemperature(nn.Module):
-    """
-    A thin decorator, which wraps a model with temperature scaling
+    """A thin decorator, which wraps a model with temperature scaling
     model (nn.Module):
-        A classification neural network
-        NB: Output of the neural network should be the classification logits,
-            NOT the softmax (or log softmax)!
+
+    A classification neural network
+    NB: Output of the neural network should be the classification logits,
+        NOT the softmax (or log softmax)!
     """
 
     def __init__(self, model):
@@ -51,17 +51,15 @@ class ModelWithTemperature(nn.Module):
         return self.temperature_scale(logits)
 
     def temperature_scale(self, logits):
-        """
-        Perform temperature scaling on logits
-        """
+        """Perform temperature scaling on logits."""
         # Expand temperature to match the size of logits
         temperature = self.temperature.unsqueeze(1).expand(logits.size(0), logits.size(1))
         return logits / temperature
 
 
 def set_temperature(model, n_layers, data_iterator=None, cuda_device=0, is_sst=False):
-    """
-    Tune the tempearature of the model (using the validation set).
+    """Tune the tempearature of the model (using the validation set).
+
     We're going to set it to optimize NLL.
     valid_loader (DataLoader): validation set loader
     """
@@ -249,8 +247,7 @@ class Optimizable_optimizer(Optimizer):
 
 
 class _ECELoss(nn.Module):
-    """
-    Calculates the Expected Calibration Error of a model.
+    """Calculates the Expected Calibration Error of a model.
     (This isn't necessary for temperature scaling, just a cool metric).
 
     The input to this loss is the logits of a model, NOT the softmax scores.
@@ -269,9 +266,7 @@ class _ECELoss(nn.Module):
     """
 
     def __init__(self, n_bins=15):
-        """
-        n_bins (int): number of confidence interval bins
-        """
+        """n_bins (int): number of confidence interval bins."""
         super(_ECELoss, self).__init__()
         bin_boundaries = torch.linspace(0, 1, n_bins + 1)
         self.bin_lowers = bin_boundaries[:-1]

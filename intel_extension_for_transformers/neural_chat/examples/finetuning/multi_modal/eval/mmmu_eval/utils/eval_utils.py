@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Response Parsing and Evaluation for various models"""
+"""Response Parsing and Evaluation for various models."""
 from typing import Dict
 
 import re
@@ -22,8 +21,8 @@ import numpy as np
 
 # ----------- Process Multi-choice -------------
 def parse_multi_choice_response(response, all_choices, index2ans):
-    """
-    Parse the prediction from the generated response.
+    """Parse the prediction from the generated response.
+
     Return the predicted index e.g., A, B, C, D.
     """
     for char in [',', '.', '!', '?', ';', ':', "'"]:
@@ -77,9 +76,7 @@ def parse_multi_choice_response(response, all_choices, index2ans):
 
 # ----------- Process Open -------------
 def check_is_number(string):
-    """
-    Check if the given string a number.
-    """
+    """Check if the given string a number."""
     try:
         float(string.replace(',', ''))
         return True
@@ -88,9 +85,7 @@ def check_is_number(string):
         return False
 
 def normalize_str(string):
-    """
-    Normalize the str to lower case and make them float numbers if possible.
-    """
+    """Normalize the str to lower case and make them float numbers if possible."""
     # check if characters in the string
 
     # if number, numerize it.
@@ -112,9 +107,7 @@ def normalize_str(string):
         return [string]
 
 def extract_numbers(string):
-    """
-    Exact all forms of numbers from a string with regex.
-    """
+    """Exact all forms of numbers from a string with regex."""
     # Pattern for numbers with commas
     pattern_commas = r'-?\b\d{1,3}(?:,\d{3})+\b'
     # Pattern for scientific notation
@@ -134,8 +127,8 @@ def extract_numbers(string):
     return all_numbers
 
 def parse_open_response(response):
-    """
-    Parse the prediction from the generated response.
+    """Parse the prediction from the generated response.
+
     Return a list of predicted strings or numbers.
     """
     # content = content.strip("\n").strip(".").strip(" ")
@@ -187,9 +180,7 @@ def parse_open_response(response):
 # ----------- Evaluation -------------
 
 def eval_multi_choice(gold_i, pred_i):
-    """
-    Evaluate a multiple choice instance.
-    """
+    """Evaluate a multiple choice instance."""
     correct = False
     # only they are exactly the same, we consider it as correct
     if isinstance(gold_i, list):
@@ -203,9 +194,7 @@ def eval_multi_choice(gold_i, pred_i):
     return correct
 
 def eval_open(gold_i, pred_i):
-    """
-    Evaluate an open question instance
-    """
+    """Evaluate an open question instance."""
     correct = False
     if isinstance(gold_i, list):
         # use float to avoid trivial matches
@@ -231,9 +220,7 @@ def eval_open(gold_i, pred_i):
 
 # ----------- Batch Evaluation -------------
 def evaluate(samples):
-    """
-    Batch evaluation for multiple choice and open questions.
-    """
+    """Batch evaluation for multiple choice and open questions."""
     pred_correct = 0
     judge_dict = dict()
     for sample in samples:
@@ -258,7 +245,7 @@ def evaluate(samples):
 
 # ----------- Calculate Accuracy -------------
 def calculate_ins_level_acc(results: Dict):
-    """Calculate the instruction level accuracy for given Subject results"""
+    """Calculate the instruction level accuracy for given Subject results."""
     acc = 0
     ins_num = 0
     for cat_results in results.values():

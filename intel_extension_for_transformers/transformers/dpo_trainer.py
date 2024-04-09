@@ -142,8 +142,7 @@ class DPOTrainer(Trainer):
         reference_chosen_logps: torch.FloatTensor,
         reference_rejected_logps: torch.FloatTensor,
     ) -> Tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]:
-        """Compute the DPO loss for a batch of policy and reference model log probabilities.
-        """
+        """Compute the DPO loss for a batch of policy and reference model log probabilities."""
         pi_logratios = policy_chosen_logps - policy_rejected_logps
         ref_logratios = reference_chosen_logps - reference_rejected_logps
 
@@ -283,8 +282,7 @@ class DPOTrainer(Trainer):
             self._stored_metrics[train_eval][key].append(value)
 
     def log(self, logs: Dict[str, float]) -> None:
-        """
-        Log `logs` on the various objects watching training, including stored metrics.
+        """Log `logs` on the various objects watching training, including stored metrics.
 
         Args:
             logs (`Dict[str, float]`):
@@ -304,8 +302,7 @@ if is_hpu_available: # pragma: no cover
     # pylint: disable=E0611
     from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0401
     class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):
-        r"""Initialize habana
-        """
+        r"""Initialize habana."""
 
         def __init__(
             self,

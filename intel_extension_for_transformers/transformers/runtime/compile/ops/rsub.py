@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine operator mapping file."""
 
 from .op import Operator, operator_registry
@@ -30,6 +29,7 @@ class Rsub(Operator):
 
     def set_attr(self, framework, node):
         """Extract the node attr from onnxruntime.
+
         "aten::rsub(Tensor self, Tensor other, *, Scalar alpha) -> Tensor",
         "aten::rsub(Tensor self, Scalar other, Scalar alpha) -> Tensor"};
         """

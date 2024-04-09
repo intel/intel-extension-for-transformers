@@ -19,7 +19,6 @@
 # Length-Adaptive Transformer
 # Copyright (c) 2020-present NAVER Corp.
 # Apache License v2.0
-
 """Utils for drop and restore function."""
 
 from dataclasses import dataclass, field

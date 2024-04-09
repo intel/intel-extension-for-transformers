@@ -43,6 +43,7 @@ def text_to_sequence(text, language):
 
 def cleaned_text_to_sequence(cleaned_text, tones, language):
     """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
+
     Args:
       text: string to convert to a sequence
     Returns:

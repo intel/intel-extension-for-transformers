@@ -16,8 +16,7 @@ import ast
 
 
 def select_best_resolution(original_size, possible_resolutions):
-    """
-    Selects the best resolution from a list of possible resolutions based on the original size.
+    """Selects the best resolution from a list of possible resolutions based on the original size.
 
     Args:
         original_size (tuple): The original size of the image in the format (width, height).
@@ -49,8 +48,7 @@ def select_best_resolution(original_size, possible_resolutions):
 
 
 def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
-    """
-    Calculate the shape of the image patch grid after the preprocessing for images of any resolution.
+    """Calculate the shape of the image patch grid after the preprocessing for images of any resolution.
 
     Args:
         image_size (tuple): The size of the input image in the format (width, height).

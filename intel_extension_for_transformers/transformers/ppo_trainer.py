@@ -73,8 +73,9 @@ logger = logging.getLogger(__name__)
 def get_global_statistics(
     accelerator, xs: torch.Tensor, mask=None, device="cpu"
 ) -> Tuple[float, float, int]: # pragma: no cover
-    """
-    Computes element-wise mean and variance of the tensor across processes. Reference:
+    """Computes element-wise mean and variance of the tensor across processes.
+
+    Reference:
     https://github.com/OpenLMLab/MOSS-RLHF/blob/40b91eb2f2b71b16919addede0341d2bef70825d/utils.py#L57C1-L73C75
     """
     if accelerator.device.type != "hpu":
@@ -97,8 +98,9 @@ def get_global_statistics(
 
 class RunningMoments:
     def __init__(self, accelerator):
-        """
-        Calculates the running mean and standard deviation of a data stream. Reference:
+        """Calculates the running mean and standard deviation of a data stream.
+
+        Reference:
         https://github.com/OpenLMLab/MOSS-RLHF/blob/40b91eb2f2b71b16919addede0341d2bef70825d/utils.py#L75
         """
         self.mean = 0
@@ -109,9 +111,7 @@ class RunningMoments:
 
     @torch.no_grad()
     def update(self, xs: torch.Tensor) -> Tuple[float, float]:
-        """
-        Updates running moments from batch's moments computed across ranks
-        """
+        """Updates running moments from batch's moments computed across ranks."""
         if self.accelerator.use_distributed:  # pragma: no cover
             xs_mean, xs_var, xs_count = get_global_statistics(self.accelerator, xs)
         else:
@@ -275,8 +275,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         num_shared_layers: Optional[int] = None,
         lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
     ):
-        """
-        Initialize PPOTrainer.
+        """Initialize PPOTrainer.
 
         Args:
             config (`PPOConfig`):
@@ -522,8 +521,7 @@ class PPOTrainer(PyTorchModelHubMixin):
             self.htcore = htcore
 
     def _filter_kwargs(self, kwargs, target_func):
-        """
-        filter the keyword arguments that are supported by the target function.
+        """Filter the keyword arguments that are supported by the target function.
 
         Args:
             kwargs (dict):
@@ -540,8 +538,7 @@ class PPOTrainer(PyTorchModelHubMixin):
     def prepare_dataloader(
         self, dataset: Union[torch.utils.data.Dataset, Dataset], data_collator=None
     ):
-        """
-        Prepare the dataloader for training.
+        """Prepare the dataloader for training.
 
         Args:
             dataset (Union[`torch.utils.data.Dataset`, `datasets.Dataset`]):
@@ -603,8 +600,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         generate_ref_response: bool = False,
         **generation_kwargs,
     ):
-        """
-        Generate response with the model given the query tensor.
+        """Generate response with the model given the query tensor.
         call the `generate` method of the model.
 
         Args:
@@ -762,8 +758,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         scores: List[torch.FloatTensor],
         masks: Optional[List[torch.LongTensor]] = None,
     ):
-        """
-        Check if the input data is valid for training.
+        """Check if the input data is valid for training.
 
         Args:
             batch_size (int):
@@ -825,8 +820,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         scores: List[torch.FloatTensor],
         response_masks: Optional[List[torch.LongTensor]] = None,
     ):
-        """
-        Run a PPO optimisation step given a list of queries, model responses, and rewards.
+        """Run a PPO optimisation step given a list of queries, model responses, and rewards.
 
         Args:
             queries (List[`torch.LongTensor`]):
@@ -1111,8 +1105,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         return stats
 
     def _early_stop(self, policykl):
-        r"""
-        Handles the early stopping logic. If the policy KL is greater than the target KL, then the gradient is zeroed
+        r"""Handles the early stopping logic. If the policy KL is greater than the target KL, then the gradient is zeroed
         and the optimization step is skipped.
         This also handles the multi-gpu case where the policy KL is averaged across all processes.
 
@@ -1146,8 +1139,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         return early_stop
 
     def gather_stats(self, stats): # pragma: no cover
-        """
-        Gather stats from all processes. Useful in the context of distributed training.
+        """Gather stats from all processes. Useful in the context of distributed training.
 
         Args:
             stats (dict[str, Any]):
@@ -1254,8 +1246,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         return_logits: bool = False,
         response_masks: Optional[torch.Tensor] = None,
     ):
-        """
-        Calculate model outputs in multiple batches.
+        """Calculate model outputs in multiple batches.
 
         Args:
             queries (`torch.LongTensor`):
@@ -1353,8 +1344,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         advantages: torch.FloatTensor,
         returns: torch.FloatTensor,
     ):
-        """
-        Train one PPO minibatch
+        """Train one PPO minibatch.
 
         Args:
             logprobs (`torch.FloatTensor`):
@@ -1398,8 +1388,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         ref_logprobs: torch.FloatTensor,
         masks: torch.LongTensor,
     ):
-        """
-        Compute per token rewards from scores and KL-penalty.
+        """Compute per token rewards from scores and KL-penalty.
 
         Args:
             scores (`torch.FloatTensor`):
@@ -1484,8 +1473,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         advantages: torch.FloatTensor,
         returns: torch.FloatTensor,
     ):
-        """
-        Calculate policy and value losses.
+        """Calculate policy and value losses.
 
         Args:
             old_logprobs (`torch.FloatTensor`):
@@ -1567,9 +1555,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         return pg_loss, self.config.vf_coef * vf_loss, flatten_dict(stats)
 
     def record_step_stats(self, kl_coef: float, **data):
-        """
-        Record training step statistics.
-
+        """Record training step statistics.
 
         Args:
             kl_coef (`float`):
@@ -1647,8 +1633,7 @@ class PPOTrainer(PyTorchModelHubMixin):
         rewards: List[torch.FloatTensor],
         columns_to_log: List[str] = ["query", "response"],
     ):
-        """
-        A function that logs all the training stats. Call it at the end of each epoch.
+        """A function that logs all the training stats. Call it at the end of each epoch.
 
         Args:
             stats (dict[str, Any]):
