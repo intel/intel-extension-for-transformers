@@ -81,7 +81,8 @@ def simple_evaluate(
         String or dict arguments for each model class, see LM.create_from_arg_string and LM.create_from_arg_object.
         Ignored if `model` argument is a LM object.
     :param tasks: list[Union[str, dict, Task]]
-        List of task names or Task objects. Task objects will be taken to have name task.EVAL_HARNESS_NAME if defined and type(task).__name__ otherwise.
+        List of task names or Task objects. Task objects will be taken to have name task.EVAL_HARNESS_NAME 
+        if defined and type(task).__name__ otherwise.
     :param num_fewshot: int
         Number of examples in few-shot context
     :param batch_size: int or str, optional
@@ -99,7 +100,8 @@ def simple_evaluate(
     :param delete_requests_cache: bool, optional
         Deletes all of the request cache if set to `True`. `None` if not desired.
     :param limit: int or float, optional
-        Limit the number of examples per task (only use this for testing), If <1, limit is a percentage of the total number of examples.
+        Limit the number of examples per task (only use this for testing), If <1,
+        limit is a percentage of the total number of examples.
     :param bootstrap_iters:
         Number of iterations for bootstrap statistics
     :param check_integrity: bool
@@ -237,7 +239,8 @@ def simple_evaluate(
         if num_fewshot is not None:
             if (default_num_fewshot := task_obj.get_config("num_fewshot")) == 0:
                 eval_logger.info(
-                    f"num_fewshot has been set to 0 for {task_name} in its config. Manual configuration will be ignored."
+                    f"num_fewshot has been set to 0 for {task_name} in its config." + \
+                    "Manual configuration will be ignored."
                 )
             else:
                 eval_logger.warning(
@@ -534,8 +537,10 @@ def evaluate(
                             lm_eval.api.metrics.pooled_sample_stderr(stderrs, sizes)
                         )
                         # TODO: allow GroupConfigs to choose which variance formula is used, for back-compatibility
-                        # To use the old (likely incorrect) variance formula, comment out the above and uncomment this line:
-                        # results[group][stderr] = lm_eval.api.metrics.combined_sample_stderr(stderrs, sizes, metrics=metrics)
+                        # To use the old (likely incorrect) variance formula,
+                        # comment out the above and uncomment this line:
+                        # results[group][stderr] = \
+                        # lm_eval.api.metrics.combined_sample_stderr(stderrs, sizes, metrics=metrics)
 
                     results[group]["samples"] = sum(sizes)
 

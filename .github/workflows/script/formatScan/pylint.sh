@@ -28,7 +28,7 @@ else
     echo "Not found requirements.txt file."
 fi
 # install packages
-pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
+pip install lm-eval
 pip install accelerate nlpaug nltk schema optimum-intel optimum peft
 pip install --upgrade --force-reinstall transformers==4.36.2
 
