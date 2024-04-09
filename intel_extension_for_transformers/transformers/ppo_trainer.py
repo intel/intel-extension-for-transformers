@@ -1105,8 +1105,8 @@ class PPOTrainer(PyTorchModelHubMixin):
         return stats
 
     def _early_stop(self, policykl):
-        r"""Handles the early stopping logic. If the policy KL is greater than the target KL, then the gradient is zeroed
-        and the optimization step is skipped.
+        r"""Handles the early stopping logic. If the policy KL is greater than the target KL,
+        then the gradient is zeroed and the optimization step is skipped.
         This also handles the multi-gpu case where the policy KL is averaged across all processes.
 
         Args:

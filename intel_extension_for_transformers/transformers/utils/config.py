@@ -164,8 +164,8 @@ class SparsityConfig(PretrainedConfig):
         return json.dumps(config_dict, indent=2, sort_keys=True) + "\n"
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes for better
+        readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -666,8 +666,8 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = None
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -777,8 +777,8 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             raise ValueError("damp_percent must between 0 and 1.")
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -843,8 +843,8 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.sym = True if not self.zero_point else False
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -904,8 +904,8 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = kwargs.get("calib_iters", 100)
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -997,8 +997,8 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
             self.double_quant_scale_dtype = double_quant_scale_dtype
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
