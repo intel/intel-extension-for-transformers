@@ -21,7 +21,6 @@ FlagEmbedding
 fschat==0.2.35
 g2p_en
 gfpgan
-lm-eval
 gptcache
 huggingface_hub
 imageio==2.19.3
@@ -38,6 +37,7 @@ langchain==0.1.11
 langchain-community==0.0.27
 langid
 librosa
+lm-eval
 markdown
 neural-compressor
 neural_speed==1.0a0

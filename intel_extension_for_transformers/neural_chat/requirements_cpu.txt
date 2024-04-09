@@ -4,9 +4,9 @@ einops
 evaluate
 fastapi
 fschat==0.2.32
-lm-eval
 huggingface_hub
 intel_extension_for_pytorch==2.2.0
+lm-eval
 neural-compressor
 neural_speed==1.0a0
 numpy==1.23.5
