@@ -52,6 +52,7 @@ from lm_eval.models.utils import (
 from intel_extension_for_transformers.transformers import (
     AutoModelForCausalLM,
     AutoModelForSeq2SeqLM,
+    AutoModel,
 )
 from packaging.version import Version
 
@@ -59,6 +60,7 @@ eval_logger = utils.eval_logger
 import transformers
 transformers.AutoModelForCausalLM = AutoModelForCausalLM
 transformers.AutoModelForSeq2SeqLM = AutoModelForSeq2SeqLM
+transformers.AutoModel = AutoModel
 
 
 def _get_accelerate_args(
@@ -554,7 +556,10 @@ class HFLM(TemplateLM):
                     AutoRoundConfig,
                 )
 
-                use_gptq = model_kwargs.pop("use_gptq", False)
+                if self.config.quantization_config["quant_method"] in ["awq", "gptq", "autoround"]:
+                    use_gptq = True
+                else:
+                    use_gptq = False
                 if use_gptq:
                     woq_config = GPTQConfig(
                         bits=4, compute_dtype="int8", weight_dtype="int4"
@@ -749,18 +754,18 @@ class HFLM(TemplateLM):
                         use_io_binding=False,
                     )
             else:
-                if self.model_format == "neural_speed":
-                    model_kwargs["use_neural_speed"] = True
+                dtype = "float32" if dtype == "auto" else dtype
+                if self.config.torchscript == True:
+                    self._model = None
                 else:
                     model_kwargs["use_neural_speed"] = False
-                dtype = "float32" if dtype == "auto" else dtype
-                self._model = self.AUTO_MODEL_CLASS.from_pretrained(
-                    pretrained,
-                    revision=revision,
-                    torch_dtype=get_dtype(dtype),
-                    trust_remote_code=trust_remote_code,
-                    **model_kwargs,
-                )
+                    self._model = self.AUTO_MODEL_CLASS.from_pretrained(
+                        pretrained,
+                        revision=revision,
+                        torch_dtype=get_dtype(dtype),
+                        trust_remote_code=trust_remote_code,
+                        **model_kwargs,
+                    )
         else:
             try:
                 from auto_gptq import AutoGPTQForCausalLM

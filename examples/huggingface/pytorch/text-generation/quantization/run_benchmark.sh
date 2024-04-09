@@ -70,6 +70,8 @@ function run_benchmark {
 
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy "
+        script="__main__.py"
+        model_args=''
         extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks}"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
@@ -189,33 +191,48 @@ function run_benchmark {
         elif [ "${topology}" = "mistral_7b_autoround" ]; then
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="Intel/Mistral-7B-v0.1-int4-inc"
+                model_args=$model_args" pretrained="
+                model_args=$model_args"Intel/Mistral-7B-v0.1-int4-inc"
             else
-                model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-                extra_cmd=$extra_cmd" --trust_remote_code"
-                extra_cmd=$extra_cmd" --woq_loading"
+                model_name_or_path=tuned_checkpoint
+                model_args=$model_args" pretrained="
+                model_args=$model_args$tuned_checkpoint
+                model_args=$model_args",trust_remote_code=True"
+                if [[ ${mode} == "benchmark" ]]; then
+                    extra_cmd=$extra_cmd" --trust_remote_code"
+                fi
             fi            
         elif [ "${topology}" = "mistral_7b_rtn" ]; then
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="mistralai/Mistral-7B-v0.1"
             else
-                model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+                model_name_or_path=trust_remote_code
                 extra_cmd=$extra_cmd" --trust_remote_code"
-                extra_cmd=$extra_cmd" --woq_loading"
             fi            
         elif [ "${topology}" = "mistral_7b_gptq" ]; then
             if [[ "$model_source" == "huggingface" ]]; then
                 model_name_or_path="TheBloke/Mistral-7B-Instruct-v0.1-GPTQ"
+                model_args=$model_args" pretrained="
+                model_args=$model_args"TheBloke/Mistral-7B-Instruct-v0.1-GPTQ"
             else
-                model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-                extra_cmd=$extra_cmd" --trust_remote_code"
-                extra_cmd=$extra_cmd" --woq_loading"
+                model_name_or_path=tuned_checkpoint
+                model_args=$model_args" pretrained="
+                model_args=$model_args$tuned_checkpoint
+                model_args=$model_args",trust_remote_code=True"
+                if [[ ${mode} == "benchmark" ]]; then
+                    extra_cmd=$extra_cmd" --trust_remote_code"
+                fi
+
             fi
         else
             extra_cmd=$extra_cmd" --int8"
         fi
     fi
     if [[ $backend == "neuralspeed" ]]; then
-        extra_cmd=$extra_cmd" --use_neural_speed"
+        model_args=$model_args",model_format=neural_speed"
+        if [[ ${mode} == "benchmark" ]]; then
+            extra_cmd=$extra_cmd" --use_neural_speed"
+        fi
     fi
     echo $extra_cmd
 
@@ -225,6 +242,13 @@ function run_benchmark {
             --output_dir ${tuned_checkpoint} \
             --batch_size ${batch_size} \
             ${mode_cmd} \
+            ${extra_cmd}
+    elif [ "${script}" == "__main__.py" ];then
+        python -u ./${script} \
+            --model hf \
+            --model_args ${model_args} \
+            --batch_size ${batch_size} \
+            --device cpu \
             ${extra_cmd}
     else
         echo "Error: Please provide the correct script."
