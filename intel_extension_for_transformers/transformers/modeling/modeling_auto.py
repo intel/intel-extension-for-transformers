@@ -358,6 +358,7 @@ class _BaseQBitsAutoModelClass:
         config = kwargs.pop("config", None)
         model_hub = kwargs.pop("model_hub", "huggingface")
 
+        quantization_config = kwargs.pop("quantization_config", None)
         if not isinstance(config, PretrainedConfig):
             if model_hub == "modelscope":
                 import modelscope # pylint: disable=E0401
@@ -371,7 +372,6 @@ class _BaseQBitsAutoModelClass:
 
                 )
 
-        quantization_config = kwargs.pop("quantization_config", None)
         if kwargs.get("use_llm_runtime", None) is not None:
             use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
             logger.warning(
