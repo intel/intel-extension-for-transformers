@@ -570,15 +570,16 @@ class Finetuning:
             if training_args.do_eval and finetune_args.do_lm_eval:
                 from .eval_utils import LMEvalCallback
                 from functools import partial
-                from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
-                lm_eval_func = partial(evaluate,
-                        model="hf-causal",
-                        model_args='pretrained='+model_args.model_name_or_path+\
-                                ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
-                        device=finetune_args.device,
-                        batch_size=training_args.per_device_eval_batch_size,
-                        tasks=finetune_args.lm_eval_tasks,
-                        limit=data_args.max_eval_samples)
+                from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+                eval_args = LMEvalParser(model = "hf", 
+                                    model_args='pretrained='+model_args.model_name_or_path+\
+                                        ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
+                                    device = finetune_args.device,
+                                    tasks = finetune_args.lm_eval_tasks,
+                                    batch_size = training_args.per_device_eval_batch_size,
+                                    limit = data_args.max_eval_samples)
+                results = evaluate(eval_args)
+                lm_eval_func = partial(evaluate, args=eval_args)
                 lm_eval_callback = LMEvalCallback(lm_eval_func, device=finetune_args.device)
 
             if finetune_args.device != 'hpu':
@@ -669,19 +670,19 @@ class Finetuning:
         elif finetune_args.do_lm_eval and finetune_args.task != "summarization":
             unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
-            from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
+            from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
-                        results = evaluate(
-                                model="hf-causal",
-                                model_args='pretrained='+model_args.model_name_or_path+\
-                                        ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
-                                user_model=unwrapped_model,
-                                device=unwrapped_model.device.type,
-                                batch_size=training_args.per_device_eval_batch_size,
-                                tasks=finetune_args.lm_eval_tasks,
-                                limit=data_args.max_eval_samples)
+                        eval_args = LMEvalParser(model = "hf", 
+                                            model_args='pretrained='+model_args.model_name_or_path+\
+                                                ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
+                                            user_model=unwrapped_model,
+                                            device = finetune_args.device,
+                                            tasks = finetune_args.lm_eval_tasks,
+                                            batch_size = training_args.per_device_eval_batch_size,
+                                            limit = data_args.max_eval_samples)
+                        results = evaluate(eval_args)
                         self.logger.info(results)
 
         if finetune_args.task == "summarization":
