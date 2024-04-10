@@ -26,52 +26,60 @@ export KMP_AFFINITY=granularity=fine,compact,1,0
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 # fp32
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_sq.py \
     --model <MODEL_NAME_OR_PATH> \
     --batch_size 1 \
     --benchmark
 
 # quant and do benchmark.
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_sq.py \
     --model <MODEL_NAME_OR_PATH> \
     --sq \
+    --output_dir <WOQ_MODEL_SAVE_PATH> \ # Default is "./saved_results."
+    --int8 \
+    --batch_size 1 \
+    --benchmark
+# load SQ model quantied by itrex and do benchmark.
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_sq.py \
+    --model <WOQ_MODEL_SAVE_PATH> \
+    --int8 \
     --batch_size 1 \
     --benchmark
 ```
 #### Accuracy
 ```shell
 # fp32
-python __main__.py \
+python run_generation_sq.py \
     --model <MODEL_NAME_OR_PATH> \
     --tasks lambada_openai,piqa,hellaswag \  # notice: no space.
     --device cpu \
     --batch_size 56
 
 # quant and do accuracy.
-python run_generation.py \
+python run_generation_sq.py \
     --model <MODEL_NAME_OR_PATH> \
     --sq \
-    --woq_algo <ALGORITHM_NAME> \  # Default is "Rtn", "Awq", "Teq", "GPTQ", "AutoRound" are provided.
-    --output_dir <WOQ_MODEL_SAVE_PATH>,torchscript=True \
+    --output_dir <WOQ_MODEL_SAVE_PATH> \ # Default is "./saved_results."
+    --int8 \
     --accuracy \
     --batch_size 56 
 
-# load WOQ model quantied by itrex and do benchmark.
-python __main__.py \
-    --model hf \
-    --model_args pretrained=<WOQ_MODEL_SAVE_PATH>,torchscript=True \
-    --tasks lambada_openai,piqa \
-    --device cpu \
-    --batch_size 56
+# load SQ model quantied by itrex and do benchmark.
+python run_generation_sq.py \
+    --model <WOQ_MODEL_SAVE_PATH> \
+    --sq \
+    --int8 \
+    --accuracy \
+    --batch_size 56 
 
-# load WOQ model quantied configure.json and do benchmark.
-python __main__.py \
-    --model hf \
-    --model_args pretrained=<WOQ_MODEL_SAVE_PATH>,torchscript=True,fp32_model_name_or_path=<MODEL_NAME_OR_PATH>,restore=True \
-    --tasks lambada_openai,piqa \
-    --device cpu \
-    --batch_size 56
-```
+# load SQ model quantied configure.json and do benchmark.
+python run_generation_sq.py \
+    --model <WOQ_MODEL_SAVE_PATH> \
+    --sq \
+    --int8 \
+    --restore \
+    --accuracy \
+    --batch_size 56 
 
 ## Weight Only Quantization
 ## Prerequisite​
@@ -99,13 +107,13 @@ export KMP_AFFINITY=granularity=fine,compact,1,0
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 # fp32
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generate_cpu_woq.py  \
     --model <MODEL_NAME_OR_PATH> \
     --batch_size 1 \
     --benchmark
 
 # quant and do benchmark.
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generate_cpu_woq.py  \
     --model <MODEL_NAME_OR_PATH> \
     --woq \
     --woq_algo <ALGORITHM_NAME> \  # Default is "Rtn", "Awq", "Teq", "GPTQ", "AutoRound" are provided.
@@ -114,79 +122,82 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --benchmark
 
 # load WOQ model quantied by itrex and do benchmark.
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generate_cpu_woq.py  \
     --model <WOQ_MODEL_SAVE_PATH> \
     --benchmark
 
 # load WOQ model quantied by itrex and do benchmark with neuralspeed.
 # only support quantized with algorithm "Awq", "GPTQ", "AutoRound"
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> run_generate_cpu_woq.py \
     --model <WOQ_MODEL_SAVE_PATH> \
     --use_neural_speed \
     --benchmark
 
 # load WOQ model from Huggingface and do benchmark.
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generate_cpu_woq.py \
     --model <MODEL_NAME_OR_PATH> \
     --benchmark
 
 # load WOQ model from Huggingface and do benchmark with neuralspeed.
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generate_cpu_woq.py \
     --model <MODEL_NAME_OR_PATH> \
     --use_neural_speed \
     --benchmark
 ```
 #### Accuracy
-The accuracy script `__main.py__.py` is based from [lm_evaluation_harness](https://github.com/EleutherAI/lm-evaluation-harness/blob/v0.4.2/lm_eval/__main__.py).
+The accuracy validation is based from [lm_evaluation_harness](https://github.com/EleutherAI/lm-evaluation-harness/blob/v0.4.2/lm_eval/__main__.py).
 ```shell
 # fp32
-python __main__.py \
+python run_generate_cpu_woq.py \
     --model <MODEL_NAME_OR_PATH> \
+    --accuracy \
     --tasks lambada_openai,piqa,hellaswag \  # notice: no space.
     --device cpu \
     --batch_size 56
 
 # quant and do accuracy.
-python run_generation.py \
+python run_generate_cpu_woq.py \
     --model <MODEL_NAME_OR_PATH> \
     --woq \
     --woq_algo <ALGORITHM_NAME> \  # Default is "Rtn", "Awq", "Teq", "GPTQ", "AutoRound" are provided.
     --output_dir <WOQ_MODEL_SAVE_PATH> \
     --accuracy \
+    --tasks lambada_openai,piqa,hellaswag \  # notice: no space.
     --batch_size 56 
 
 # load WOQ model quantied by itrex and do benchmark.
-python __main__.py \
-    --model hf \
-    --model_args pretrained=<WOQ_MODEL_SAVE_PATH> \
-    --tasks lambada_openai,piqa \
-    --device cpu \
-    --batch_size 56
+python run_generate_cpu_woq.py \
+    --model <WOQ_MODEL_SAVE_PATH> \
+    --accuracy \
+    --tasks lambada_openai,piqa,hellaswag \  # notice: no space.
+    --batch_size 56 
 
 # load WOQ model quantied by itrex and do benchmark with neuralspeed.
 # only support quantized with algorithm "Awq", "GPTQ", "AutoRound"
-python __main__.py \
-    --model hf \
-    --model_args pretrained=<WOQ_MODEL_SAVE_PATH>,model_format=neural_speed,use_gptq=True \
-    --tasks lambada_openai,piqa \
+python run_generate_cpu_woq.py \
+    --model <WOQ_MODEL_SAVE_PATH> \
+    --accuracy \
+    --tasks lambada_openai,piqa,hellaswag \  # notice: no space.
     --device cpu \
     --batch_size 56
+    --use_neural_speed
 
 # load WOQ model from Huggingface and do benchmark.
-python __main__.py \
-    --model hf \
-    --model_args pretrained=<MODEL_NAME_OR_PATH> \
-    --tasks lambada_openai,piqa \
+python run_generate_cpu_woq.py \
+    --model <MODEL_NAME_OR_PATH> \
+    --accuracy \
+    --tasks lambada_openai,piqa,hellaswag \  # notice: no space.
     --device cpu \
     --batch_size 56
 
 # load WOQ model from Huggingface and do benchmark with neuralspeed.
-python __main__.py \
-    --model hf \
-    --model_args pretrained=<MODEL_NAME_OR_PATH>,model_format=neural_speed,use_gptq=True \
-    --tasks lambada_openai,piqa \
+python run_generate_cpu_woq.py \
+    --model <MODEL_NAME_OR_PATH> \
+    --accuracy \
+    --tasks lambada_openai,piqa,hellaswag \  # notice: no space.
     --device cpu \
-    --batch_size 56
+    --batch_size 56 \
+    --use_neural_speed
 ```
 
 # Quantization for GPU device

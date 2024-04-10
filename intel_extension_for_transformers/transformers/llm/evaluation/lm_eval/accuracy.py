@@ -40,7 +40,9 @@ import numpy as np
 
 from lm_eval import utils
 from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluator
-from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval.evaluator import request_caching_arg_to_dict
+from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval.evaluator import(
+    request_caching_arg_to_dict
+)
 from lm_eval.logging_utils import WandbLogger
 from lm_eval.tasks import TaskManager
 from lm_eval.utils import make_table, simple_parse_args_string
@@ -149,7 +151,9 @@ def setup_parser() -> argparse.ArgumentParser:
         default=None,
         type=str,
         metavar="DIR|DIR/file.json",
-        help="The path to the output file where the result metrics will be saved. If the path is a directory and log_samples is true, the results will be saved in the directory. Else the parent directory will be used.",
+        help="The path to the output file where the result metrics will be saved. " + \
+            "If the path is a directory and log_samples is true, the results will be saved in the directory." + \
+            " Else the parent directory will be used.",
     )
     parser.add_argument(
         "--limit",
@@ -192,7 +196,8 @@ def setup_parser() -> argparse.ArgumentParser:
         "-s",
         action="store_true",
         default=False,
-        help="If True, write out all model outputs and documents for per-sample measurement and post-hoc analysis. Use with --output_path.",
+        help="If True, write out all model outputs and documents for per-sample measurement and post-hoc analysis."+ \
+        " Use with --output_path.",
     )
     parser.add_argument(
         "--show_config",
@@ -222,7 +227,8 @@ def setup_parser() -> argparse.ArgumentParser:
         type=str.upper,
         default="INFO",
         metavar="CRITICAL|ERROR|WARNING|INFO|DEBUG",
-        help="Controls the reported logging error level. Set to DEBUG when testing + adding new task configurations for comprehensive log output.",
+        help="Controls the reported logging error level." + \
+        "Set to DEBUG when testing + adding new task configurations for comprehensive log output.",
     )
     parser.add_argument(
         "--wandb_args",
@@ -245,8 +251,10 @@ def setup_parser() -> argparse.ArgumentParser:
             "Set seed for python's random, numpy and torch.\n"
             "Accepts a comma-separated list of 3 values for python's random, numpy, and torch seeds, respectively, "
             "or a single integer to set the same seed for all three.\n"
-            "The values are either an integer or 'None' to not set the seed. Default is `0,1234,1234` (for backward compatibility).\n"
-            "E.g. `--seed 0,None,8` sets `random.seed(0)` and `torch.manual_seed(8)`. Here numpy's seed is not set since the second value is `None`.\n"
+            "The values are either an integer or 'None' to not set the seed. " + \
+            "Default is `0,1234,1234` (for backward compatibility).\n"
+            "E.g. `--seed 0,None,8` sets `random.seed(0)` and `torch.manual_seed(8)`." + \
+            "Here numpy's seed is not set since the second value is `None`.\n"
             "E.g, `--seed 42` sets all three seeds to 42."
         ),
     )
@@ -330,7 +338,8 @@ def cli_evaluate(args) -> None:
                     f"{utils.SPACING}Try `lm-eval --tasks list` for list of available tasks",
                 )
                 raise ValueError(
-                    f"Tasks not found: {missing}. Try `lm-eval --tasks list` for list of available tasks, or '--verbosity DEBUG' to troubleshoot task registration issues."
+                    f"Tasks not found: {missing}. Try `lm-eval --tasks list` for list of available tasks," + \
+                    " or '--verbosity DEBUG' to troubleshoot task registration issues."
                 )
 
     if args.output_path:
@@ -430,7 +439,8 @@ def cli_evaluate(args) -> None:
                     filename.write_text(samples_dumped, encoding="utf-8")
 
         print(
-            f"{args.model} ({args.model_args}), gen_kwargs: ({args.gen_kwargs}), limit: {args.limit}, num_fewshot: {args.num_fewshot}, "
+            f"{args.model} ({args.model_args})," 
+            f" gen_kwargs: ({args.gen_kwargs}), limit: {args.limit}, num_fewshot: {args.num_fewshot}, "
             f"batch_size: {args.batch_size}{f' ({batch_sizes})' if batch_sizes else ''}"
         )
         print(make_table(results))

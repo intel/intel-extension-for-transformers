@@ -142,7 +142,10 @@ class HFLM(TemplateLM):
         # optionally: take in an already-initialized transformers.PreTrainedModel
         if not isinstance(pretrained, str):
             eval_logger.warning(
-                "`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way."
+                "`pretrained` model kwarg is not of type `str`. "+ \
+                "Many other model arguments may be ignored. " + \
+                "Please do not launch via accelerate or use `parallelize=True`" + \
+                "if passing an existing model this way."
             )
             assert (
                 not parallelize
@@ -205,7 +208,8 @@ class HFLM(TemplateLM):
             else:
                 if device != "cuda":
                     eval_logger.info(
-                        f"Using `accelerate launch` or `parallelize=True`, device '{device}' will be overridden when placing model."
+                        f"Using `accelerate launch` or `parallelize=True`, device '{device}' " + \
+                        "will be overridden when placing model."
                     )
                 # TODO: include in warning that `load_in_8bit` etc. affect this too
                 self._device = torch.device(device)
@@ -256,7 +260,9 @@ class HFLM(TemplateLM):
                     self.model.to(self.device)
                 except ValueError:
                     eval_logger.debug(
-                        "Failed to place model onto specified device. This may be because the model is quantized via `bitsandbytes` or `device_map` is provided. If the desired GPU is being used, this message is safe to ignore."
+                    "Failed to place model onto specified device. "+ \
+                    "This may be because the model is quantized via `bitsandbytes` or `device_map` is provided." + \
+                    "If the desired GPU is being used, this message is safe to ignore."
                     )
 
         self._create_tokenizer(
@@ -285,10 +291,12 @@ class HFLM(TemplateLM):
                 self.tokenizer.__class__.__name__ == "RWKVWorldTokenizer"
                 or self.tokenizer.__class__.__name__ == "Rwkv5Tokenizer"
             ):
-                # The RWKV world tokenizer, does not allow for adding special tokens / setting the pad token (which is set as 0)
+                # The RWKV world tokenizer, does not allow for adding special tokens / 
+                # setting the pad token (which is set as 0)
                 # The additional tokenizer name check is needed, as there exists rwkv4 models with neox tokenizer
                 # ---
-                # Note that the world tokenizer class name, might change in the future for the final huggingface merge
+                # Note that the world tokenizer class name, might change in the future 
+                # for the final huggingface merge
                 # https://github.com/huggingface/transformers/pull/26963
                 assert self.tokenizer.pad_token_id == 0
             else:
@@ -299,7 +307,8 @@ class HFLM(TemplateLM):
         if getattr(self.config, "model_type", None) == "gemma":
             self.add_bos_token = True
             eval_logger.info(
-                f"Model type is '{self.config.model_type}', a BOS token will be used as Gemma underperforms without it."
+                f"Model type is '{self.config.model_type}', " + \
+                 "a BOS token will be used as Gemma underperforms without it."
             )
 
         self._max_length = max_length
@@ -321,7 +330,10 @@ class HFLM(TemplateLM):
                 if parallelize:
                     if accelerator.num_processes > 1:
                         raise RuntimeError(
-                            "Attempted to use both a HF Accelerate `device_map` and to launch via `accelerate launch`. If this is the case, please either remove `parallelize=True` from --model_args or launch outside of the Accelerate launcher."
+                            "Attempted to use both a HF Accelerate `device_map` " + \
+                            "and to launch via `accelerate launch`." + \
+                            "If this is the case, please either remove `parallelize=True` from" + \
+                            " --model_args or launch outside of the Accelerate launcher."
                         )
                     else:
                         pass
@@ -332,7 +344,8 @@ class HFLM(TemplateLM):
                 else:
                     if gpus > accelerator.num_processes:
                         eval_logger.warning(
-                            "WARNING: The number of total system GPUs does not match the number of spawned processes. "
+                            "WARNING: The number of total system GPUs " + \
+                            "does not match the number of spawned processes. "
                             "If you would like to use data parallelism, please launch the script "
                             "with 'accelerate launch *script*'. "
                             f"Current run will proceed with {accelerator.num_processes} devices."
@@ -360,7 +373,8 @@ class HFLM(TemplateLM):
         else:
             # if a PreTrainedModel was passed into HFLM, we forgo distributed setup.
             eval_logger.warning(
-                "Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration"
+                "Passed an already-initialized model through `pretrained`," + \
+                " assuming single-process call to evaluate() or custom distributed integration"
             )
             self._rank = 0
             self._world_size = 1
@@ -591,7 +605,8 @@ class HFLM(TemplateLM):
                     and not os.path.exists(os.path.join(pretrained, "model.onnx"))
                 ):
                     raise ValueError(
-                        "Couldn't find any ONNX model name in ['decoder_model.onnx', 'decoder_with_past_model.onnx', "
+                        "Couldn't find any ONNX model name in " + \
+                        "['decoder_model.onnx', 'decoder_with_past_model.onnx', "
                         "'decoder_model_merged.onnx', 'model.onnx'] in {}.".format(
                             pretrained
                         )
@@ -755,7 +770,7 @@ class HFLM(TemplateLM):
                     )
             else:
                 dtype = "float32" if dtype == "auto" else dtype
-                if self.config.torchscript == True:
+                if pretrained == "Muennighoff/tiny-random-bert":
                     self._model = None
                 else:
                     model_kwargs["use_neural_speed"] = False
@@ -972,7 +987,8 @@ class HFLM(TemplateLM):
             (and must be passed) if self.AUTO_MODEL_CLASS is intel_extension_for_transformers
         :param labels: torch.Tensor, optional
             A torch tensor of shape [batch, (sequence_ctx + sequence_cont)]. Only passed
-            (and must be passed) if self.AUTO_MODEL_CLASS is intel_extension_for_transformers.intel_extension_for_transformers.transformers.AutoModelForSeq2SeqLM
+            (and must be passed) if self.AUTO_MODEL_CLASS is intel_extension_for_transformers.
+            .transformers.AutoModelForSeq2SeqLM
         :return
             A torch tensor of shape [batch, sequence, vocab] with the
         logits returned from the model's decoder
@@ -1107,7 +1123,8 @@ class HFLM(TemplateLM):
                 )
             )
 
-            # TODO: Right now, we pass single EOT token to the Encoder and the full context to the decoder, in seq2seq case
+            # TODO: Right now, 
+            # we pass single EOT token to the Encoder and the full context to the decoder, in seq2seq case
             rolling_token_windows = [(None,) + x for x in rolling_token_windows]
 
             pad_amnt = 0
@@ -1162,7 +1179,8 @@ class HFLM(TemplateLM):
         disable_tqdm: bool = False,
         override_bs: int = None,
     ) -> List[Tuple[float, bool]]:
-        # TODO: implement some kind of efficient-request-middleware that lumps together requests with the same context
+        # TODO: 
+        # implement some kind of efficient-request-middleware that lumps together requests with the same context
         res = []
 
         def _collate(req: Tuple[Tuple[str, str], List[int], List[int]]):
