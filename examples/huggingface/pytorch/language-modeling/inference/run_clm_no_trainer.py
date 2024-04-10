@@ -83,23 +83,21 @@ pred = last_token_logits.argmax(dim=-1)
 if args.accuracy:
     user_model.eval()
     def eval_func(user_model):
-        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
-        results = evaluate(
-            model="hf-causal",
-            model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import,LMEvalParser
+        eval_args = LMEvalParser(
+            model="hf",
             user_model=user_model,
+            tokenizer=tokenizer,
+            device="cpu",
             batch_size=args.batch_size,
             tasks=args.tasks,
         )
-        dumped = json.dumps(results, indent=2)
-        if args.save_accuracy_path:
-            with open(args.save_accuracy_path, "w") as f:
-                f.write(dumped)
+        results = evaluate(eval_args)
         for task_name in args.tasks:
             if task_name == "wikitext":
                 print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
             else:
-                print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
+                print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc,none"]))
 
     with torch.no_grad(), torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
         eval_func(user_model)

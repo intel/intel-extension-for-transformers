@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 @positional_deprecated
 def simple_evaluate(
     model,
-    model_args: Optional[Union[str, dict]] = None,
+    model_args: Optional[Union[str, dict,object]] = None,
     tasks: Optional[List[Union[str, dict, object]]] = None,
     num_fewshot: Optional[int] = None,
     batch_size: Optional[int] = None,
@@ -74,6 +74,8 @@ def simple_evaluate(
     random_seed: int = 0,
     numpy_random_seed: int = 1234,
     torch_random_seed: int = 1234,
+    user_model: Optional[object] = None,
+    tokenizer: Optional[object] = None,
 ):
     """Instantiate and evaluate a model on a list of tasks.
 
@@ -168,30 +170,30 @@ def simple_evaluate(
         if gen_kwargs == "":
             gen_kwargs = None
     # for ipex smoothquant, the quantized model is torchscript mode.
-    model_args_dict = utils.simple_parse_args_string(model_args)
-    if "torchscript" in model_args_dict:
-        import intel_extension_for_pytorch as ipex
-        from intel_extension_for_transformers.transformers.llm.evaluation.models import (
-            TSModelCausalLMForITREX,
-        )
-        if "restore" in model_args_dict:
-            from intel_extension_for_transformers.transformers.utils.utility import (
-                recover_model_from_json,
-            )
-            fp32_model_name_or_path = model_args_dict["fp32_model_name_or_path"]
-            torchscript_model = recover_model_from_json(
-                fp32_model_name_or_path,
-                os.path.join(model_args_dict["pretrained"], "best_configure.json"),
-                trust_remote_code=model_args_dict["trust_remote_code"] if "trust_remote_code" in model_args
-                    else False,
-            )
-        else:
-            torchscript_model = TSModelCausalLMForITREX.from_pretrained(
-                model_args_dict["pretrained"],
-                file_name="best_model.pt",
-                trust_remote_code=model_args_dict["trust_remote_code"] if "trust_remote_code" in model_args
-                                    else False,
-            )
+    # model_args_dict = utils.simple_parse_args_string(model_args)
+    # if "torchscript" in model_args_dict:
+    #     import intel_extension_for_pytorch as ipex
+    #     from intel_extension_for_transformers.transformers.llm.evaluation.models import (
+    #         TSModelCausalLMForITREX,
+    #     )
+    #     if "restore" in model_args_dict:
+    #         from intel_extension_for_transformers.transformers.utils.utility import (
+    #             recover_model_from_json,
+    #         )
+    #         fp32_model_name_or_path = model_args_dict["fp32_model_name_or_path"]
+    #         torchscript_model = recover_model_from_json(
+    #             fp32_model_name_or_path,
+    #             os.path.join(model_args_dict["pretrained"], "best_configure.json"),
+    #             trust_remote_code=model_args_dict["trust_remote_code"] if "trust_remote_code" in model_args
+    #                 else False,
+    #         )
+    #     else:
+    #         torchscript_model = TSModelCausalLMForITREX.from_pretrained(
+    #             model_args_dict["pretrained"],
+    #             file_name="best_model.pt",
+    #             trust_remote_code=model_args_dict["trust_remote_code"] if "trust_remote_code" in model_args
+    #                                 else False,
+    #         )
 
     if isinstance(model, str):
         if model_args is None:
@@ -201,7 +203,23 @@ def simple_evaluate(
         lm_eval.api.registry.MODEL_REGISTRY["hf-auto"] = HFLM
         lm_eval.api.registry.MODEL_REGISTRY["hf"] = HFLM
         lm_eval.api.registry.MODEL_REGISTRY["huggingface"] = HFLM
-        if isinstance(model_args, dict):
+
+        if user_model is not None:
+            # use tiny model to built lm.
+            lm = lm_eval.api.registry.get_model(model).create_from_arg_string(
+                "pretrained=Muennighoff/tiny-random-bert",
+                {
+                    "batch_size": batch_size,
+                    "max_batch_size": max_batch_size,
+                    "device": device,
+                },
+            )
+            lm._model = user_model
+            if tokenizer is not None:
+                lm.tokenizer = tokenizer
+            else:
+                assert False, "Please provide tokenizer in evaluation function"
+        elif isinstance(model_args, dict):
             lm = lm_eval.api.registry.get_model(model).create_from_arg_obj(
                 model_args,
                 {
@@ -210,7 +228,6 @@ def simple_evaluate(
                     "device": device,
                 },
             )
-
         else:
             lm = lm_eval.api.registry.get_model(model).create_from_arg_string(
                 model_args,
@@ -224,8 +241,7 @@ def simple_evaluate(
         if not isinstance(model, lm_eval.api.model.LM):
             raise TypeError
         lm = model
-    if lm.config.torchscript == True:
-        lm._model = torchscript_model
+
     if use_cache is not None:
         eval_logger.info(f"Using cache at {use_cache + '_rank' + str(lm.rank) + '.db'}")
         lm = lm_eval.api.model.CachingLM(

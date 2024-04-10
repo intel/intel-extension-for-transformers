@@ -626,7 +626,7 @@ class HFLM(TemplateLM):
                         ]
                         use_cache = len(key_value_input_names) > 0
 
-                        self.model = ORTModelForCausalLM(
+                        self._model = ORTModelForCausalLM(
                             session,  # pylint: disable=E1120
                             model_config,
                             use_cache=True if use_cache else False,
@@ -1009,7 +1009,7 @@ class HFLM(TemplateLM):
                     output = torch.from_numpy(out)
                 elif self.model_format == "onnx":
                     inputs_names = [
-                        inps.name for input in self.model.model.get_inputs()
+                        input.name for input in self.model.model.get_inputs()
                     ]
                     if "position_ids" in inputs_names:
                         # model is exported with optimum >= 1.14.0 with new input 'position_ids'

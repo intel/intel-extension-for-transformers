@@ -308,7 +308,6 @@ if args.benchmark:
 
 
 if args.accuracy:
-    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model
@@ -320,22 +319,16 @@ if args.accuracy:
             user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
     else:
         print("Disabled optimization with IPEX...")
-
-    results = evaluate(
-        model="hf-causal",
-        model_args='tokenizer=' + args.model + \
-            ',dtype=float32,trust_remote_code=' + str(args.trust_remote_code),
-        user_model=user_model,
-        batch_size=args.batch_size,
-        tasks=args.tasks,
-        device=args.device
-    )
-    dumped = json.dumps(results, indent=2)
-    if args.save_accuracy_path:
-        with open(args.save_accuracy_path, "w") as f:
-            f.write(dumped)
+    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+    args = LMEvalParser(model = "hf", 
+                        tokenizer = tokenizer,
+                        user_model = user_model,
+                        tasks = args.tasks,,
+                        device = args.device,
+                        batch_size = args.batch_size)
+    results = evaluate(args)
     for task_name in args.tasks:
         if task_name == "wikitext":
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
         else:
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc,none"]))
