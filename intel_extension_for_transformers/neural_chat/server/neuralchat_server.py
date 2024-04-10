@@ -71,6 +71,22 @@ def get_config(config_file: str):
 
     return config
 
+def parse_hostfile(hostfile):
+    nodes = {}
+    with open(hostfile, 'r') as f:
+        for line in f:
+            node_info = line.strip().split()
+            if node_info:
+                node_address = node_info[0]
+                slots_info = [i.split('=') for i in node_info[1:]]
+                num_sockets = 0
+                for key, value in slots_info:
+                    if key == 'slots':
+                        num_sockets = int(value)
+                        break
+                nodes[node_address] = num_sockets
+    return nodes
+
 @cli_server_register(name='neuralchat_server.start', description='Start the service')
 class NeuralChatServerExecutor(BaseCommandExecutor):
     def __init__(self):
@@ -103,6 +119,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         host = config.get("host", "0.0.0.0")
         port = config.get("port", "80")
         use_deepspeed = config.get("use_deepspeed", False)
+        use_tpp = config.get("use_tpp", False)
         world_size = config.get("world_size", 1)
         master_port = config.get("master_port", 29500)
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
@@ -247,7 +264,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
             loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_neural_speed=use_neural_speed,
                                                 peft_path=peft_model_path, use_deepspeed=use_deepspeed,
-                                                world_size=world_size, gguf_model_path=gguf_model_path)
+                                                use_tpp=use_tpp, world_size=world_size,
+                                                gguf_model_path=gguf_model_path)
             from intel_extension_for_transformers.transformers import RtnConfig, AwqConfig, TeqConfig, GPTQConfig, \
             AutoRoundConfig, MixedPrecisionConfig
             if optimization_type == "weight_only":
@@ -319,6 +337,40 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     except Exception as exc:
                         raise RuntimeError(f"Error in {self.__class__.__name__} init()") from exc
                     self.chatbot = None
+            if use_tpp:
+                if device == "cpu":
+                    multi_cpu_server_file = os.path.abspath(
+                        os.path.join(os.path.dirname(__file__), './multi_cpu_server.py'))
+                    nodes = parse_hostfile(os.path.abspath(
+                        os.path.join(os.path.dirname(__file__), "./config/hostfile")))
+                    # multi-nodes
+                    if len(nodes) > 1:
+                        ppn = len(nodes)
+                        np = list(nodes.values())[0]
+                        world_size = np
+                        launch_str = f"run_dist_ht.sh -np {np} -ppn {ppn} python -u {multi_cpu_server_file}"
+                        command_list = f"{launch_str} --base_model_path {model_name_or_path} --use_tpp \
+                            --host {host} --port {port} --return_stats"
+                    # single node multi-sockets
+                    else:
+                        np = list(nodes.values())[0]
+                        world_size = np
+                        launch_str = f"run_dist_numa.sh -np {np} python -u {multi_cpu_server_file}"
+                        command_list = f"{launch_str} --base_model_path {model_name_or_path} --use_tpp \
+                            --host {host} --port {port} --return_stats"
+                    try:
+                        print(f"{self.__class__.__name__} init(): command = {command_list}")
+                        sys.stdout.flush()
+                        sys.stderr.flush()
+                        subprocess.Popen(command_list, shell=True, executable="/bin/bash")   # nosec
+                        logger.info("waiting for server to start...")
+                        time.sleep(30)
+                    except Exception as exc:
+                        raise RuntimeError(f"Error in {self.__class__.__name__} init()") from exc
+                    self.chatbot = None
+                else:
+                    raise RuntimeError(f"Error in {self.__class__.__name__} init(): \
+                        The device {device} is not supported for TPP.")
             else:
                 pipeline_config = PipelineConfig(**params)
                 self.chatbot = build_chatbot(pipeline_config)
@@ -329,9 +381,11 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     endpoint = tgi_endpoint
                 else:
                     endpoint = f"http://0.0.0.0:{tgi_port}/"
-                api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port, endpoint)
+                api_router = setup_router(api_list, self.chatbot, True,
+                                          use_deepspeed or use_tpp, world_size, host, port, endpoint)
             else:
-                api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port)
+                api_router = setup_router(api_list, self.chatbot, True,
+                                          use_deepspeed or use_tpp, world_size, host, port)
             app.include_router(api_router)
             return True
 

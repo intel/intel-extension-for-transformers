@@ -290,6 +290,25 @@ def init_deepspeed_inference(model, model_name_or_path, peft_path, use_hpu_graph
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     return model.module
 
+def tpp_dist_inference_init():
+    import os
+
+    if int(os.environ.get("PMI_SIZE", "0")) > 1:
+        try:
+            import oneccl_bindings_for_pytorch # pylint: disable=E0401
+        except:
+            print(
+                "CCL backend requested but import oneccl_bindings_for_pytorch failed"
+            )
+            raise
+
+        os.environ["RANK"] = os.environ.get("PMI_RANK", "0")
+        os.environ["WORLD_SIZE"] = os.environ.get("PMI_SIZE", "1")
+        torch.distributed.init_process_group(backend="ccl")
+        my_rank = torch.distributed.get_rank()
+        my_size = torch.distributed.get_world_size()
+        logging.info(f"My rank: {my_rank} size: {my_size}")
+
 
 def peft_model(model_name, peft_model, model_dtype, hf_access_token=None):
     import importlib.util
@@ -401,6 +420,7 @@ def load_model(
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
+    use_tpp=False,
     optimization_config=None,
     hf_access_token=None,
     use_neural_speed=False,
@@ -817,13 +837,14 @@ def load_model(
             if torch_dtype == torch.bfloat16 and not ipex_int8:
                 import intel_extension_for_pytorch as intel_ipex
 
-                model = intel_ipex.optimize(
-                    model.eval(),
-                    dtype=torch_dtype,
-                    inplace=True,
-                    level="O1",
-                    auto_kernel_selection=True,
-                )
+                if not use_tpp:
+                    model = intel_ipex.optimize(
+                        model.eval(),
+                        dtype=torch_dtype,
+                        inplace=True,
+                        level="O1",
+                        auto_kernel_selection=True,
+                    )
                 if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                                 or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
                     from intel_extension_for_transformers.transformers.llm.utils.mpt_trace import \
@@ -837,6 +858,34 @@ def load_model(
                     model = MPTTSModelForCausalLM(
                         model, config, use_cache=use_cache, model_dtype=torch.bfloat16
                     )
+                if use_tpp:
+                    tpp_dist_inference_init()
+                    if model.config.architectures[0] == "GPTJForCausalLM":
+                        # pylint: disable=E0401
+                        from tpp_pytorch_extension.llm.fused_gptj_infer import OptimizeModelForGPTJ
+                        OptimizeModelForGPTJ(
+                            model, dtype=torch_dtype, device=device, weight_dtype=None
+                        )
+                    elif model.config.architectures[0] == "OPTForCausalLM":
+                        # pylint: disable=E0401
+                        from tpp_pytorch_extension.llm.fused_opt_infer import OptimizeModelForOPT
+                        OptimizeModelForOPT(
+                            model, dtype=torch_dtype, device=device, weight_dtype=None
+                        )
+                    elif model.config.architectures[0] == "LlamaForCausalLM":
+                        # pylint: disable=E0401
+                        from tpp_pytorch_extension.llm.fused_llama_infer import OptimizeModelForLlama
+                        OptimizeModelForLlama(
+                            model, dtype=torch_dtype, device=device, weight_dtype=None
+                        )
+                    else:
+                        logging.error(type(model.config.architectures), model.config.architectures)
+                        logging.error("Model type not supported by TPP")
+                        set_latest_error(ErrorCodes.ERROR_GENERIC)
+                        return
+                    from tpp_pytorch_extension.llm.llm_common import jit_trace_model # pylint: disable=E0401
+                    model = jit_trace_model(model, tokenizer, 1, indirect_kv=True,
+                                            enable_profile=False, only_last_logit=True)
         elif device in ["cuda", "xpu"]:
             if hasattr(model, "device") and model.device.type != device:
                 try:
@@ -1281,7 +1330,7 @@ def predict_stream(**params):
                 "msecond_per_token": msecond_per_token,
             }
             yield "END_OF_STREAM_STATS={}".format(stats)
-        else:
+        elif format_version == "v2":
             stats = {
                 "input_token_len": str(input_token_len),
                 "output_token_len": str(output_token_len),
@@ -1293,6 +1342,12 @@ def predict_stream(**params):
             yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
             for key, value in stats.items():
                 yield "| {:<22} | {:<27} |\n".format(key, value)
+        else:
+            stats = {
+                "msecond_per_token": str(msecond_per_token) + " ms",
+            }
+            for key, value in stats.items():
+                yield "{}:{}".format(key, value)
 
 
 def predict(**params):

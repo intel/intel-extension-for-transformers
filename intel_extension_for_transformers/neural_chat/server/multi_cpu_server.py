@@ -34,6 +34,7 @@ from intel_extension_for_transformers.neural_chat.cli.log import logger
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
+
 app = FastAPI(title="NeuralChat SPR Serving Process", description="Serving", version="0.0.1")
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
@@ -99,7 +100,7 @@ def parse_args():
     parser.add_argument(
         "--max_new_tokens",
         type=int,
-        default=128,
+        default=512,
         help="The maximum number of new tokens to generate.",
     )
     parser.add_argument(
@@ -200,7 +201,17 @@ def parse_args():
         help="bfloat16, float32 or float16",
     )
     parser.add_argument(
+        "--use_deepspeed", action='store_true', default=False,)
+    parser.add_argument(
+        "--use_tpp", action='store_true', default=False,)
+    parser.add_argument(
         "--return_stats", action='store_true', default=False,)
+    parser.add_argument(
+        "--format_version",
+        type=str,
+        default="v3",
+        help="the version of return stats format",
+    )
     args = parser.parse_args()
     return args
 
@@ -235,7 +246,8 @@ def construct_chatbot(args):
             ipex_int8=args.ipex_int8,
             use_cache=args.use_kv_cache,
             peft_path=args.peft_model_path,
-            use_deepspeed=False,
+            use_deepspeed=args.use_deepspeed,
+            use_tpp=args.use_tpp,
         ),
         optimization_config=MixedPrecisionConfig(dtype=args.dtype)
     )
@@ -253,7 +265,9 @@ def construct_chatbot(args):
         use_hpu_graphs=args.use_hpu_graphs,
         use_cache=args.use_kv_cache,
         num_return_sequences=args.num_return_sequences,
-        ipex_int8=args.ipex_int8
+        ipex_int8=args.ipex_int8,
+        return_stats=args.return_stats,
+        format_version=args.format_version
     )
     return chatbot, gen_config
 
@@ -261,7 +275,7 @@ def construct_chatbot(args):
 def warmup(chatbot, local_rank, gen_config):
     # warmup, the first time inference take longer because of graph compilation
     for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
-        if local_rank in [-1, 0]:
+        if local_rank in [1, 0]:
             print(new_text, end="", flush=True)
     print("\n"*3)
 
@@ -301,6 +315,10 @@ if __name__ == "__main__":
     set_seed(args.seed)
 
     chatbot, gen_config = construct_chatbot(args)
+
+    import torch
+    args.local_rank = torch.distributed.get_rank()
+    print("local rank is ", args.local_rank)
     warmup(chatbot, args.local_rank, gen_config)
 
     process_port = args.port + args.local_rank + 1

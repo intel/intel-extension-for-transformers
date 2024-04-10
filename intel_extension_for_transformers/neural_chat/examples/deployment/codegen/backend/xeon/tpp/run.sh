@@ -15,17 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is the parameter configuration file for NeuralChat Serving.
+# Kill the exist and re-run
+ps -ef |grep 'run_code_gen' |awk '{print $2}' |xargs kill -9
 
-#################################################################################
-#                             SERVER SETTING                                    #
-#################################################################################
-host: 0.0.0.0
-port: 8000
-
-model_name_or_path: "Phind/Phind-CodeLlama-34B-v2"
-device: "cpu"
-
-
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']
-tasks_list: ['codegen']
+source env.sh
+nohup python -m run_code_gen 2>&1 &

@@ -107,7 +107,7 @@ def parse_args():
     parser.add_argument(
         "--max_new_tokens",
         type=int,
-        default=128,
+        default=512,
         help="The maximum number of new tokens to generate.",
     )
     parser.add_argument(
@@ -209,6 +209,12 @@ def parse_args():
     )
     parser.add_argument(
         "--return_stats", action='store_true', default=False,)
+    parser.add_argument(
+        "--format_version",
+        type=str,
+        default="v2",
+        help="the version of return stats format",
+    )
     args = parser.parse_args()
     return args
 
@@ -281,7 +287,9 @@ gen_config = GenerationConfig(
     use_hpu_graphs=args.use_hpu_graphs,
     use_cache=args.use_kv_cache,
     num_return_sequences=args.num_return_sequences,
-    ipex_int8=args.ipex_int8
+    ipex_int8=args.ipex_int8,
+    return_stats=args.return_stats,
+    format_version=args.format_version
 )
 
 if args.habana:
@@ -298,7 +306,7 @@ for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config
         print(new_text, end="", flush=True)
 print("\n"*3)
 
-@app.post("/v1/code_generation")
+@app.post("/v1/chat_completions")
 async def chat_completion_endpoint(request: ChatCompletionRequest):
     ret = check_completion_request(request)
     if ret is not None:
