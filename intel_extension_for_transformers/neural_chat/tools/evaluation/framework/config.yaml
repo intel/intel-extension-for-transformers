@@ -1,0 +1,22 @@
+ground_truth_file: /home/itrex/manxin/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl
+input_path: /home/itrex/manxin/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/data.txt
+use_openai_key: false
+vector_database: Chroma
+embedding_model: facebook/opt-125m
+llm_model: facebook/opt-125m
+reranker_model: facebook/opt-125m 
+retrieval_type: [default]
+polish: [true]
+search_type: [similarity, mmr]
+k: [1]
+fetch_k: [5]
+score_threshold: [0.3]
+top_n: [1]
+enable_rerank: [true]
+max_chuck_size: [256]
+temperature: [0.01]
+top_k: [1, 3, 5]
+top_p: [0.1]
+repetition_penalty: [1.0]
+num_beams: [1]
+do_sample: [true] 
