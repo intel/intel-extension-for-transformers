@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extract Tables From PDF File &mdash; Intel® Extension for Transformers 0.1.dev1+g991c6ed documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Extract Tables From PDF File</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/plugins/table_extraction/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="extract-tables-from-pdf-file">
+<h1>Extract Tables From PDF File<a class="headerlink" href="#extract-tables-from-pdf-file" title="Link to this heading"></a></h1>
+<p>We leveraged <a class="reference external" href="https://github.com/microsoft/table-transformer">table-transformer</a> for tables extraction and adapted the multi-page table solution of <a class="reference external" href="https://github.com/aws-samples/amazon-textract-response-parser">Amazon Textract response parser</a> library to table-transformer for handling multi-page table.</p>
+<section id="prepare-environment">
+<h2>Prepare Environment<a class="headerlink" href="#prepare-environment" title="Link to this heading"></a></h2>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="o">-</span><span class="n">r</span><span class="w"> </span><span class="n">requirements</span><span class="p">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<p>Note that additional language library of tesseract is needed for handling language other than English, for example, for Simplified Chinese, below library is needed.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">apt</span><span class="o">-</span><span class="n">get</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="n">tesseract</span><span class="o">-</span><span class="n">ocr</span><span class="o">-</span><span class="n">chi</span><span class="o">-</span><span class="n">sim</span>
+</pre></div>
+</div>
+</section>
+<section id="prepare-models">
+<h2>Prepare Models<a class="headerlink" href="#prepare-models" title="Link to this heading"></a></h2>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">git</span><span class="w"> </span><span class="n">clone</span><span class="w"> </span><span class="n">https</span><span class="o">:</span><span class="c1">//huggingface.co/bsmock/tatr-pubtables1m-v1.0</span>
+<span class="n">git</span><span class="w"> </span><span class="n">clone</span><span class="w"> </span><span class="n">https</span><span class="o">:</span><span class="c1">//huggingface.co/bsmock/TATR-v1.1-All</span>
+</pre></div>
+</div>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="run-the-table-extraction-script">
+<h3>Run the table extraction script<a class="headerlink" href="#run-the-table-extraction-script" title="Link to this heading"></a></h3>
+<p>For local pdf file, run below command:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">extract_tables</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">pdf_file</span><span class="w"> </span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">pdf_file</span><span class="w"> </span><span class="o">--</span><span class="n">structure_model_path</span><span class="w"> </span><span class="n">TATR</span><span class="o">-</span><span class="n">v1</span><span class="mf">.1</span><span class="o">-</span><span class="n">All</span><span class="o">/</span><span class="n">TATR</span><span class="o">-</span><span class="n">v1</span><span class="mf">.1</span><span class="o">-</span><span class="n">All</span><span class="o">-</span><span class="n">msft</span><span class="p">.</span><span class="n">pth</span><span class="w">  </span><span class="o">--</span><span class="n">detection_model_path</span><span class="w"> </span><span class="n">tatr</span><span class="o">-</span><span class="n">pubtables1m</span><span class="o">-</span><span class="n">v1</span><span class="mf">.0</span><span class="o">/</span><span class="n">pubtables1m_detection_detr_r18</span><span class="p">.</span><span class="n">pth</span><span class="w">  </span><span class="o">-</span><span class="n">c</span>
+</pre></div>
+</div>
+<p>For url of pdf file, run below command:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">extract_tables</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">pdf_file</span><span class="w"> </span><span class="n">url_of_pdf</span><span class="w"> </span><span class="o">--</span><span class="n">structure_model_path</span><span class="w"> </span><span class="n">TATR</span><span class="o">-</span><span class="n">v1</span><span class="mf">.1</span><span class="o">-</span><span class="n">All</span><span class="o">/</span><span class="n">TATR</span><span class="o">-</span><span class="n">v1</span><span class="mf">.1</span><span class="o">-</span><span class="n">All</span><span class="o">-</span><span class="n">msft</span><span class="p">.</span><span class="n">pth</span><span class="w">  </span><span class="o">--</span><span class="n">detection_model_path</span><span class="w"> </span><span class="n">tatr</span><span class="o">-</span><span class="n">pubtables1m</span><span class="o">-</span><span class="n">v1</span><span class="mf">.0</span><span class="o">/</span><span class="n">pubtables1m_detection_detr_r18</span><span class="p">.</span><span class="n">pth</span><span class="w">  </span><span class="o">-</span><span class="n">c</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="acknowledgements">
+<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Link to this heading"></a></h2>
+<p>This example is mostly adapted from <a class="reference external" href="https://github.com/microsoft/table-transformer">table-transformer</a>. We thank the related authors for their great work!</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f4d10bbbca0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

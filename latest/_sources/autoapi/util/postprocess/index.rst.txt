@@ -1,0 +1,249 @@
+:py:mod:`util.postprocess`
+==========================
+
+.. py:module:: util.postprocess
+
+.. autoapi-nested-parse::
+
+   Copyright (C) 2021 Microsoft Corporation.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   util.postprocess.apply_threshold
+   util.postprocess.apply_class_thresholds
+   util.postprocess.iou
+   util.postprocess.iob
+   util.postprocess.objects_to_cells
+   util.postprocess.objects_to_table_structures
+   util.postprocess.refine_rows
+   util.postprocess.refine_columns
+   util.postprocess.nms_by_containment
+   util.postprocess.slot_into_containers
+   util.postprocess.sort_objects_by_score
+   util.postprocess.remove_objects_without_content
+   util.postprocess.extract_text_inside_bbox
+   util.postprocess.get_bbox_span_subset
+   util.postprocess.overlaps
+   util.postprocess.extract_text_from_spans
+   util.postprocess.sort_objects_left_to_right
+   util.postprocess.sort_objects_top_to_bottom
+   util.postprocess.align_columns
+   util.postprocess.align_rows
+   util.postprocess.refine_table_structures
+   util.postprocess.nms
+   util.postprocess.align_headers
+   util.postprocess.align_supercells
+   util.postprocess.nms_supercells
+   util.postprocess.header_supercell_tree
+   util.postprocess.table_structure_to_cells
+   util.postprocess.remove_supercell_overlap
+
+
+
+.. py:function:: apply_threshold(objects, threshold)
+
+   Filter out objects below a certain score.
+
+
+.. py:function:: apply_class_thresholds(bboxes, labels, scores, class_names, class_thresholds)
+
+   Filter out bounding boxes whose confidence is below the confidence threshold for
+   its associated class label.
+
+
+.. py:function:: iou(bbox1, bbox2)
+
+   Compute the intersection-over-union of two bounding boxes.
+
+
+.. py:function:: iob(bbox1, bbox2)
+
+   Compute the intersection area over box area, for bbox1.
+
+
+.. py:function:: objects_to_cells(table, objects_in_table, tokens_in_table, class_map, class_thresholds)
+
+   Process the bounding boxes produced by the table structure recognition model
+   and the token/word/span bounding boxes into table cells.
+
+   Also return a confidence score based on how well the text was able to be
+   uniquely slotted into the cells detected by the table model.
+
+
+.. py:function:: objects_to_table_structures(table_object, objects_in_table, tokens_in_table, class_names, class_thresholds)
+
+   Process the bounding boxes produced by the table structure recognition model into
+   a *consistent* set of table structures (rows, columns, supercells, headers).
+
+   This entails resolving conflicts/overlaps, and ensuring the boxes meet certain alignment
+   conditions (for example: rows should all have the same width, etc.).
+
+
+.. py:function:: refine_rows(rows, tokens, score_threshold)
+
+   Apply operations to the detected rows, such as
+   thresholding, NMS, and alignment.
+
+
+.. py:function:: refine_columns(columns, tokens, score_threshold)
+
+   Apply operations to the detected columns, such as
+   thresholding, NMS, and alignment.
+
+
+.. py:function:: nms_by_containment(container_objects, package_objects, overlap_threshold=0.5)
+
+   Non-maxima suppression (NMS) of objects based on shared containment of other objects.
+
+
+.. py:function:: slot_into_containers(container_objects, package_objects, overlap_threshold=0.5, unique_assignment=True, forced_assignment=False)
+
+   Slot a collection of objects into the container they occupy most (the container which holds the largest fraction of the object).
+
+
+.. py:function:: sort_objects_by_score(objects, reverse=True)
+
+   Put any set of objects in order from high score to low score.
+
+
+.. py:function:: remove_objects_without_content(page_spans, objects)
+
+   Remove any objects (these can be rows, columns, supercells, etc.) that don't
+   have any text associated with them.
+
+
+.. py:function:: extract_text_inside_bbox(spans, bbox)
+
+   Extract the text inside a bounding box.
+
+
+.. py:function:: get_bbox_span_subset(spans, bbox, threshold=0.5)
+
+   Reduce the set of spans to those that fall within a bounding box.
+
+   threshold: the fraction of the span that must overlap with the bbox.
+
+
+.. py:function:: overlaps(bbox1, bbox2, threshold=0.5)
+
+   Test if more than "threshold" fraction of bbox1 overlaps with bbox2.
+
+
+.. py:function:: extract_text_from_spans(spans, join_with_space=True, remove_integer_superscripts=True)
+
+   Convert a collection of page tokens/words/spans into a single text string.
+
+
+.. py:function:: sort_objects_left_to_right(objs)
+
+   Put the objects in order from left to right.
+
+
+.. py:function:: sort_objects_top_to_bottom(objs)
+
+   Put the objects in order from top to bottom.
+
+
+.. py:function:: align_columns(columns, bbox)
+
+   For every column, align the top and bottom boundaries to the final
+   table bounding box.
+
+
+.. py:function:: align_rows(rows, bbox)
+
+   For every row, align the left and right boundaries to the final
+   table bounding box.
+
+
+.. py:function:: refine_table_structures(table_bbox, table_structures, page_spans, class_thresholds)
+
+   Apply operations to the detected table structure objects such as
+   thresholding, NMS, and alignment.
+
+
+.. py:function:: nms(objects, match_criteria='object2_overlap', match_threshold=0.05, keep_higher=True)
+
+   A customizable version of non-maxima suppression (NMS).
+
+   Default behavior: If a lower-confidence object overlaps more than 5% of its area
+   with a higher-confidence object, remove the lower-confidence object.
+
+   objects: set of dicts; each object dict must have a 'bbox' and a 'score' field
+   match_criteria: how to measure how much two objects "overlap"
+   match_threshold: the cutoff for determining that overlap requires suppression of one object
+   keep_higher: if True, keep the object with the higher metric; otherwise, keep the lower
+
+
+.. py:function:: align_headers(headers, rows)
+
+   Adjust the header boundary to be the convex hull of the rows it intersects
+   at least 50% of the height of.
+
+   For now, we are not supporting tables with multiple headers, so we need to
+   eliminate anything besides the top-most header.
+
+
+.. py:function:: align_supercells(supercells, rows, columns)
+
+   For each supercell, align it to the rows it intersects 50% of the height of,
+   and the columns it intersects 50% of the width of.
+
+   Eliminate supercells for which there are no rows and columns it intersects 50% with.
+
+
+.. py:function:: nms_supercells(supercells)
+
+   A NMS scheme for supercells that first attempts to shrink supercells to
+   resolve overlap.
+
+   If two supercells overlap the same (sub)cell, shrink the lower confidence
+   supercell to resolve the overlap. If shrunk supercell is empty, remove it.
+
+
+.. py:function:: header_supercell_tree(supercells)
+
+   Make sure no supercell in the header is below more than one supercell in any row above it.
+
+   The cells in the header form a tree, but a supercell with more than one supercell in a row
+   above it means that some cell has more than one parent, which is not allowed. Eliminate
+   any supercell that would cause this to be violated.
+
+
+.. py:function:: table_structure_to_cells(table_structures, table_spans, table_bbox)
+
+   Assuming the row, column, supercell, and header bounding boxes have
+   been refined into a set of consistent table structures, process these
+   table structures into table cells.
+
+   This is a universal representation
+   format for the table, which can later be exported to Pandas or CSV formats.
+   Classify the cells as header/access cells or data cells
+   based on if they intersect with the header bounding box.
+
+
+.. py:function:: remove_supercell_overlap(supercell1, supercell2)
+
+   This function resolves overlap between supercells (supercells must be
+   disjoint) by iteratively shrinking supercells by the fewest grid cells
+   necessary to resolve the overlap.
+
+   Example:
+   If two supercells overlap at grid cell (R, C), and supercell #1 is less
+   confident than supercell #2, we eliminate either row R from supercell #1
+   or column C from supercell #1 by comparing the number of columns in row R
+   versus the number of rows in column C. If the number of columns in row R
+   is less than the number of rows in column C, we eliminate row R from
+   supercell #1. This resolves the overlap by removing fewer grid cells from
+   supercell #1 than if we eliminated column C from it.
+
+
