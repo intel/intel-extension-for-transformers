@@ -291,11 +291,11 @@ class HFLM(TemplateLM):
                 self.tokenizer.__class__.__name__ == "RWKVWorldTokenizer"
                 or self.tokenizer.__class__.__name__ == "Rwkv5Tokenizer"
             ):
-                # The RWKV world tokenizer, does not allow for adding special tokens / 
+                # The RWKV world tokenizer, does not allow for adding special tokens /
                 # setting the pad token (which is set as 0)
                 # The additional tokenizer name check is needed, as there exists rwkv4 models with neox tokenizer
                 # ---
-                # Note that the world tokenizer class name, might change in the future 
+                # Note that the world tokenizer class name, might change in the future
                 # for the final huggingface merge
                 # https://github.com/huggingface/transformers/pull/26963
                 assert self.tokenizer.pad_token_id == 0
@@ -1123,7 +1123,7 @@ class HFLM(TemplateLM):
                 )
             )
 
-            # TODO: Right now, 
+            # TODO: Right now,
             # we pass single EOT token to the Encoder and the full context to the decoder, in seq2seq case
             rolling_token_windows = [(None,) + x for x in rolling_token_windows]
 
@@ -1179,7 +1179,7 @@ class HFLM(TemplateLM):
         disable_tqdm: bool = False,
         override_bs: int = None,
     ) -> List[Tuple[float, bool]]:
-        # TODO: 
+        # TODO:
         # implement some kind of efficient-request-middleware that lumps together requests with the same context
         res = []
 

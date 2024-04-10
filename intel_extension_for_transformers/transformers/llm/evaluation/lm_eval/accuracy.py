@@ -439,7 +439,7 @@ def cli_evaluate(args) -> None:
                     filename.write_text(samples_dumped, encoding="utf-8")
 
         print(
-            f"{args.model} ({args.model_args})," 
+            f"{args.model} ({args.model_args}),"
             f" gen_kwargs: ({args.gen_kwargs}), limit: {args.limit}, num_fewshot: {args.num_fewshot}, "
             f"batch_size: {args.batch_size}{f' ({batch_sizes})' if batch_sizes else ''}"
         )
