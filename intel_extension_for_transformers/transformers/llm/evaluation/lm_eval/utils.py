@@ -13,7 +13,7 @@
 # limitations under the License.
 
 class LMEvalParser:
-    def __init__(self, 
+    def __init__(self,
                  model="hf",
                  tasks="lambada_openai",
                  model_args="",

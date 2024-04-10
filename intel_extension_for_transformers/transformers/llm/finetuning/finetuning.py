@@ -571,7 +571,7 @@ class Finetuning:
                 from .eval_utils import LMEvalCallback
                 from functools import partial
                 from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-                eval_args = LMEvalParser(model = "hf", 
+                eval_args = LMEvalParser(model = "hf",
                                     model_args='pretrained='+model_args.model_name_or_path+\
                                         ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
                                     device = finetune_args.device,
@@ -674,7 +674,7 @@ class Finetuning:
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
-                        eval_args = LMEvalParser(model = "hf", 
+                        eval_args = LMEvalParser(model = "hf",
                                             model_args='pretrained='+model_args.model_name_or_path+\
                                                 ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
                                             user_model=unwrapped_model,

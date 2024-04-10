@@ -388,7 +388,7 @@ def cli_evaluate(args) -> None:
         torch_random_seed=args.seed[2],
         user_model=args.user_model, # to validate the model in memory,
         tokenizer=args.tokenizer, # to use tokenizer in mem,
-        **request_caching_args, 
+        **request_caching_args,
     )
 
     if results is not None:
@@ -442,4 +442,3 @@ def cli_evaluate(args) -> None:
             wandb_logger.run.finish()
 
     return results
-
