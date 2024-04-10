@@ -1,7 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-"""
-DETR model and criterion classes.
-"""
+"""DETR model and criterion classes."""
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -19,9 +17,10 @@ from .transformer import build_transformer
 
 
 class DETR(nn.Module):
-    """ This is the DETR module that performs object detection """
+    """This is the DETR module that performs object detection."""
     def __init__(self, backbone, transformer, num_classes, num_queries, aux_loss=False):
-        """ Initializes the model.
+        """Initializes the model.
+
         Parameters:
             backbone: torch module of the backbone to be used. See backbone.py
             transformer: torch module of the transformer architecture. See transformer.py
@@ -42,19 +41,20 @@ class DETR(nn.Module):
         self.aux_loss = aux_loss
 
     def forward(self, samples: NestedTensor):
-        """ The forward expects a NestedTensor, which consists of:
-               - samples.tensor: batched images, of shape [batch_size x 3 x H x W]
-               - samples.mask: a binary mask of shape [batch_size x H x W], containing 1 on padded pixels
+        """The forward expects a NestedTensor, which consists of:
 
-            It returns a dict with the following elements:
-               - "pred_logits": the classification logits (including no-object) for all queries.
-                                Shape= [batch_size x num_queries x (num_classes + 1)]
-               - "pred_boxes": The normalized boxes coordinates for all queries, represented as
-                               (center_x, center_y, height, width). These values are normalized in [0, 1],
-                               relative to the size of each individual image (disregarding possible padding).
-                               See PostProcess for information on how to retrieve the unnormalized bounding box.
-               - "aux_outputs": Optional, only returned when auxiliary losses are activated. It is a list of
-                                dictionaries containing the two above keys for each decoder layer.
+           - samples.tensor: batched images, of shape [batch_size x 3 x H x W]
+           - samples.mask: a binary mask of shape [batch_size x H x W], containing 1 on padded pixels
+
+        It returns a dict with the following elements:
+           - "pred_logits": the classification logits (including no-object) for all queries.
+                            Shape= [batch_size x num_queries x (num_classes + 1)]
+           - "pred_boxes": The normalized boxes coordinates for all queries, represented as
+                           (center_x, center_y, height, width). These values are normalized in [0, 1],
+                           relative to the size of each individual image (disregarding possible padding).
+                           See PostProcess for information on how to retrieve the unnormalized bounding box.
+           - "aux_outputs": Optional, only returned when auxiliary losses are activated. It is a list of
+                            dictionaries containing the two above keys for each decoder layer.
         """
         if isinstance(samples, (list, torch.Tensor)):
             samples = nested_tensor_from_tensor_list(samples)
@@ -81,13 +81,15 @@ class DETR(nn.Module):
 
 
 class SetCriterion(nn.Module):
-    """ This class computes the loss for DETR.
+    """This class computes the loss for DETR.
+
     The process happens in two steps:
         1) we compute hungarian assignment between ground truth boxes and the outputs of the model
         2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
     def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses, emphasized_weights={}):
-        """ Create the criterion.
+        """Create the criterion.
+
         Parameters:
             num_classes: number of object categories, omitting the special no-object category
             matcher: module able to compute a matching between targets and proposals
@@ -109,8 +111,7 @@ class SetCriterion(nn.Module):
 
     def loss_labels(self, outputs, targets, indices, num_boxes, log=True):
         """Classification loss (Negative Log Likelihood)
-        targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
-        """
+        targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]"""
         assert 'pred_logits' in outputs
         src_logits = outputs['pred_logits']
 
@@ -130,8 +131,10 @@ class SetCriterion(nn.Module):
 
     @torch.no_grad()
     def loss_cardinality(self, outputs, targets, indices, num_boxes):
-        """ Compute the cardinality error, ie the absolute error in the number of predicted non-empty boxes
-        This is not really a loss, it is intended for logging purposes only. It doesn't propagate gradients
+        """Compute the cardinality error, ie the absolute error in the number of predicted non-empty boxes
+        This is not really a loss, it is intended for logging purposes only.
+
+        It doesn't propagate gradients
         """
         pred_logits = outputs['pred_logits']
         device = pred_logits.device
@@ -145,8 +148,7 @@ class SetCriterion(nn.Module):
     def loss_boxes(self, outputs, targets, indices, num_boxes):
         """Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
            targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
-           The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
-        """
+           The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size."""
         assert 'pred_boxes' in outputs
         idx = self._get_src_permutation_idx(indices)
         src_boxes = outputs['pred_boxes'][idx]
@@ -215,7 +217,8 @@ class SetCriterion(nn.Module):
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
 
     def forward(self, outputs, targets):
-        """ This performs the loss computation.
+        """This performs the loss computation.
+
         Parameters:
              outputs: dict of tensors, see the output specification of the model for the format
              targets: list of dicts, such that len(targets) == batch_size.
@@ -258,7 +261,7 @@ class SetCriterion(nn.Module):
 
 
 class PostProcess(nn.Module):
-    """ This module converts the model's output into the format expected by the coco api"""
+    """This module converts the model's output into the format expected by the coco api."""
     @torch.no_grad()
     def forward(self, outputs, target_sizes):
         """ Perform the computation
@@ -289,7 +292,7 @@ class PostProcess(nn.Module):
 
 
 class MLP(nn.Module):
-    """ Very simple multi-layer perceptron (also called FFN)"""
+    """Very simple multi-layer perceptron (also called FFN)"""
 
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super().__init__()

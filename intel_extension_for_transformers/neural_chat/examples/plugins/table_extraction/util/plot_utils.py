@@ -11,10 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Plotting utilities to visualize training logs.
-"""
+"""Plotting utilities to visualize training logs."""
 import torch
 import pandas as pd
 import numpy as np
@@ -25,8 +22,7 @@ from pathlib import Path, PurePath
 
 
 def plot_logs(logs, fields=('class_error', 'loss_bbox_unscaled', 'mAP'), ewm_col=0, log_name='log.txt'):
-    '''
-    Function to plot specific fields from training log(s). Plots both training and test results.
+    """Function to plot specific fields from training log(s). Plots both training and test results.
 
     :: Inputs - logs = list containing Path objects, each pointing to individual dir with a log file
               - fields = which results to plot from each log file - plots both training and test for each field.
@@ -35,8 +31,7 @@ def plot_logs(logs, fields=('class_error', 'loss_bbox_unscaled', 'mAP'), ewm_col
 
     :: Outputs - matplotlib plots of results in fields, color coded for each log file.
                - solid lines are training results, dashed lines are test results.
-
-    '''
+    """
     func_name = "plot_utils.py::plot_logs"
 
     # verify logs is a list of Paths (list[Paths]) or single Pathlib object Path,

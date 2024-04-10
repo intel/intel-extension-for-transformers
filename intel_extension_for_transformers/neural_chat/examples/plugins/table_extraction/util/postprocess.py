@@ -1,23 +1,17 @@
-"""
-Copyright (C) 2021 Microsoft Corporation
-"""
+"""Copyright (C) 2021 Microsoft Corporation."""
 from collections import defaultdict
 
 from fitz import Rect
 
 
 def apply_threshold(objects, threshold):
-    """
-    Filter out objects below a certain score.
-    """
+    """Filter out objects below a certain score."""
     return [obj for obj in objects if obj['score'] >= threshold]
 
 
 def apply_class_thresholds(bboxes, labels, scores, class_names, class_thresholds):
-    """
-    Filter out bounding boxes whose confidence is below the confidence threshold for
-    its associated class label.
-    """
+    """Filter out bounding boxes whose confidence is below the confidence threshold for
+    its associated class label."""
     # Apply class-specific thresholds
     indices_above_threshold = [idx for idx, (score, label) in enumerate(zip(scores, labels))
                                     if score >= class_thresholds[
@@ -32,9 +26,7 @@ def apply_class_thresholds(bboxes, labels, scores, class_names, class_thresholds
 
 
 def iou(bbox1, bbox2):
-    """
-    Compute the intersection-over-union of two bounding boxes.
-    """
+    """Compute the intersection-over-union of two bounding boxes."""
     intersection = Rect(bbox1).intersect(bbox2)
     union = Rect(bbox1).include_rect(bbox2)
 
@@ -46,9 +38,7 @@ def iou(bbox1, bbox2):
 
 
 def iob(bbox1, bbox2):
-    """
-    Compute the intersection area over box area, for bbox1.
-    """
+    """Compute the intersection area over box area, for bbox1."""
     intersection = Rect(bbox1).intersect(bbox2)
 
     bbox1_area = Rect(bbox1).get_area()
@@ -59,8 +49,7 @@ def iob(bbox1, bbox2):
 
 
 def objects_to_cells(table, objects_in_table, tokens_in_table, class_map, class_thresholds):
-    """
-    Process the bounding boxes produced by the table structure recognition model
+    """Process the bounding boxes produced by the table structure recognition model
     and the token/word/span bounding boxes into table cells.
 
     Also return a confidence score based on how well the text was able to be
@@ -81,9 +70,9 @@ def objects_to_cells(table, objects_in_table, tokens_in_table, class_map, class_
 
 
 def objects_to_table_structures(table_object, objects_in_table, tokens_in_table, class_names, class_thresholds):
-    """
-    Process the bounding boxes produced by the table structure recognition model into
+    """Process the bounding boxes produced by the table structure recognition model into
     a *consistent* set of table structures (rows, columns, supercells, headers).
+
     This entails resolving conflicts/overlaps, and ensuring the boxes meet certain alignment
     conditions (for example: rows should all have the same width, etc.).
     """
@@ -145,10 +134,8 @@ def objects_to_table_structures(table_object, objects_in_table, tokens_in_table,
 
 
 def refine_rows(rows, tokens, score_threshold):
-    """
-    Apply operations to the detected rows, such as
-    thresholding, NMS, and alignment.
-    """
+    """Apply operations to the detected rows, such as
+    thresholding, NMS, and alignment."""
 
     if len(tokens) > 0:
         rows = nms_by_containment(rows, tokens, overlap_threshold=0.5)
@@ -163,10 +150,8 @@ def refine_rows(rows, tokens, score_threshold):
 
 
 def refine_columns(columns, tokens, score_threshold):
-    """
-    Apply operations to the detected columns, such as
-    thresholding, NMS, and alignment.
-    """
+    """Apply operations to the detected columns, such as
+    thresholding, NMS, and alignment."""
 
     if len(tokens) > 0:
         columns = nms_by_containment(columns, tokens, overlap_threshold=0.5)
@@ -181,9 +166,7 @@ def refine_columns(columns, tokens, score_threshold):
 
 
 def nms_by_containment(container_objects, package_objects, overlap_threshold=0.5):
-    """
-    Non-maxima suppression (NMS) of objects based on shared containment of other objects.
-    """
+    """Non-maxima suppression (NMS) of objects based on shared containment of other objects."""
     container_objects = sort_objects_by_score(container_objects)
     num_objects = len(container_objects)
     suppression = [False for obj in container_objects]
@@ -207,9 +190,7 @@ def nms_by_containment(container_objects, package_objects, overlap_threshold=0.5
 
 def slot_into_containers(container_objects, package_objects, overlap_threshold=0.5,
                          unique_assignment=True, forced_assignment=False):
-    """
-    Slot a collection of objects into the container they occupy most (the container which holds the largest fraction of the object).
-    """
+    """Slot a collection of objects into the container they occupy most (the container which holds the largest fraction of the object)."""
     best_match_scores = []
 
     container_assignments = [[] for container in container_objects]
@@ -249,9 +230,7 @@ def slot_into_containers(container_objects, package_objects, overlap_threshold=0
 
 
 def sort_objects_by_score(objects, reverse=True):
-    """
-    Put any set of objects in order from high score to low score.
-    """
+    """Put any set of objects in order from high score to low score."""
     if reverse:
         sign = -1
     else:
@@ -260,10 +239,8 @@ def sort_objects_by_score(objects, reverse=True):
 
 
 def remove_objects_without_content(page_spans, objects):
-    """
-    Remove any objects (these can be rows, columns, supercells, etc.) that don't
-    have any text associated with them.
-    """
+    """Remove any objects (these can be rows, columns, supercells, etc.) that don't
+    have any text associated with them."""
     for obj in objects[:]:
         object_text, _ = extract_text_inside_bbox(page_spans, obj['bbox'])
         if len(object_text.strip()) == 0:
@@ -271,9 +248,7 @@ def remove_objects_without_content(page_spans, objects):
 
 
 def extract_text_inside_bbox(spans, bbox):
-    """
-    Extract the text inside a bounding box.
-    """
+    """Extract the text inside a bounding box."""
     bbox_spans = get_bbox_span_subset(spans, bbox)
     bbox_text = extract_text_from_spans(bbox_spans, remove_integer_superscripts=True)
 
@@ -281,8 +256,7 @@ def extract_text_inside_bbox(spans, bbox):
 
 
 def get_bbox_span_subset(spans, bbox, threshold=0.5):
-    """
-    Reduce the set of spans to those that fall within a bounding box.
+    """Reduce the set of spans to those that fall within a bounding box.
 
     threshold: the fraction of the span that must overlap with the bbox.
     """
@@ -294,9 +268,7 @@ def get_bbox_span_subset(spans, bbox, threshold=0.5):
 
 
 def overlaps(bbox1, bbox2, threshold=0.5):
-    """
-    Test if more than "threshold" fraction of bbox1 overlaps with bbox2.
-    """
+    """Test if more than "threshold" fraction of bbox1 overlaps with bbox2."""
     rect1 = Rect(list(bbox1))
     area1 = rect1.get_area()
     if area1 == 0:
@@ -305,9 +277,7 @@ def overlaps(bbox1, bbox2, threshold=0.5):
 
 
 def extract_text_from_spans(spans, join_with_space=True, remove_integer_superscripts=True):
-    """
-    Convert a collection of page tokens/words/spans into a single text string.
-    """
+    """Convert a collection of page tokens/words/spans into a single text string."""
 
     if join_with_space:
         join_char = " "
@@ -356,24 +326,18 @@ def extract_text_from_spans(spans, join_with_space=True, remove_integer_superscr
 
 
 def sort_objects_left_to_right(objs):
-    """
-    Put the objects in order from left to right.
-    """
+    """Put the objects in order from left to right."""
     return sorted(objs, key=lambda k: k['bbox'][0] + k['bbox'][2])
 
 
 def sort_objects_top_to_bottom(objs):
-    """
-    Put the objects in order from top to bottom.
-    """
+    """Put the objects in order from top to bottom."""
     return sorted(objs, key=lambda k: k['bbox'][1] + k['bbox'][3])
 
 
 def align_columns(columns, bbox):
-    """
-    For every column, align the top and bottom boundaries to the final
-    table bounding box.
-    """
+    """For every column, align the top and bottom boundaries to the final
+    table bounding box."""
     try:
         for column in columns:
             column['bbox'][1] = bbox[1]
@@ -386,10 +350,8 @@ def align_columns(columns, bbox):
 
 
 def align_rows(rows, bbox):
-    """
-    For every row, align the left and right boundaries to the final
-    table bounding box.
-    """
+    """For every row, align the left and right boundaries to the final
+    table bounding box."""
     try:
         for row in rows:
             row['bbox'][0] = bbox[0]
@@ -402,10 +364,8 @@ def align_rows(rows, bbox):
 
 
 def refine_table_structures(table_bbox, table_structures, page_spans, class_thresholds):
-    """
-    Apply operations to the detected table structure objects such as
-    thresholding, NMS, and alignment.
-    """
+    """Apply operations to the detected table structure objects such as
+    thresholding, NMS, and alignment."""
     rows = table_structures["rows"]
     columns = table_structures['columns']
 
@@ -441,8 +401,7 @@ def refine_table_structures(table_bbox, table_structures, page_spans, class_thre
 
 
 def nms(objects, match_criteria="object2_overlap", match_threshold=0.05, keep_higher=True):
-    """
-    A customizable version of non-maxima suppression (NMS).
+    """A customizable version of non-maxima suppression (NMS).
 
     Default behavior: If a lower-confidence object overlaps more than 5% of its area
     with a higher-confidence object, remove the lower-confidence object.
@@ -486,8 +445,7 @@ def nms(objects, match_criteria="object2_overlap", match_threshold=0.05, keep_hi
 
 
 def align_headers(headers, rows):
-    """
-    Adjust the header boundary to be the convex hull of the rows it intersects
+    """Adjust the header boundary to be the convex hull of the rows it intersects
     at least 50% of the height of.
 
     For now, we are not supporting tables with multiple headers, so we need to
@@ -536,9 +494,9 @@ def align_headers(headers, rows):
 
 
 def align_supercells(supercells, rows, columns):
-    """
-    For each supercell, align it to the rows it intersects 50% of the height of,
+    """For each supercell, align it to the rows it intersects 50% of the height of,
     and the columns it intersects 50% of the width of.
+
     Eliminate supercells for which there are no rows and columns it intersects 50% with.
     """
     aligned_supercells = []
@@ -640,9 +598,9 @@ def align_supercells(supercells, rows, columns):
 
 
 def nms_supercells(supercells):
-    """
-    A NMS scheme for supercells that first attempts to shrink supercells to
+    """A NMS scheme for supercells that first attempts to shrink supercells to
     resolve overlap.
+
     If two supercells overlap the same (sub)cell, shrink the lower confidence
     supercell to resolve the overlap. If shrunk supercell is empty, remove it.
     """
@@ -664,8 +622,8 @@ def nms_supercells(supercells):
 
 
 def header_supercell_tree(supercells):
-    """
-    Make sure no supercell in the header is below more than one supercell in any row above it.
+    """Make sure no supercell in the header is below more than one supercell in any row above it.
+
     The cells in the header form a tree, but a supercell with more than one supercell in a row
     above it means that some cell has more than one parent, which is not allowed. Eliminate
     any supercell that would cause this to be violated.
@@ -690,10 +648,11 @@ def header_supercell_tree(supercells):
 
 
 def table_structure_to_cells(table_structures, table_spans, table_bbox):
-    """
-    Assuming the row, column, supercell, and header bounding boxes have
+    """Assuming the row, column, supercell, and header bounding boxes have
     been refined into a set of consistent table structures, process these
-    table structures into table cells. This is a universal representation
+    table structures into table cells.
+
+    This is a universal representation
     format for the table, which can later be exported to Pandas or CSV formats.
     Classify the cells as header/access cells or data cells
     based on if they intersect with the header bounding box.
@@ -844,10 +803,10 @@ def table_structure_to_cells(table_structures, table_spans, table_bbox):
 
 
 def remove_supercell_overlap(supercell1, supercell2):
-    """
-    This function resolves overlap between supercells (supercells must be
+    """This function resolves overlap between supercells (supercells must be
     disjoint) by iteratively shrinking supercells by the fewest grid cells
     necessary to resolve the overlap.
+
     Example:
     If two supercells overlap at grid cell (R, C), and supercell #1 is less
     confident than supercell #2, we eliminate either row R from supercell #1

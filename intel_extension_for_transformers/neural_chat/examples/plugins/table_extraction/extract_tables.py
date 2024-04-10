@@ -60,8 +60,8 @@ structure_transform = transforms.Compose([
 ])
 
 def get_model(args, device):
-    """
-    Loads DETR model on to the device specified.
+    """Loads DETR model on to the device specified.
+
     If a load path is specified, the state dict is updated accordingly.
     """
     model, criterion, postprocessors = build_model(args)
@@ -162,9 +162,7 @@ def rescale_bboxes(out_bbox, size):
 
 
 def iob(bbox1, bbox2):
-    """
-    Compute the intersection area over box area, for bbox1.
-    """
+    """Compute the intersection area over box area, for bbox1."""
     intersection = Rect(bbox1).intersect(bbox2)
 
     bbox1_area = Rect(bbox1).get_area()
@@ -175,8 +173,7 @@ def iob(bbox1, bbox2):
 
 
 def align_headers(headers, rows):
-    """
-    Adjust the header boundary to be the convex hull of the rows it intersects
+    """Adjust the header boundary to be the convex hull of the rows it intersects
     at least 50% of the height of.
 
     For now, we are not supporting tables with multiple headers, so we need to
@@ -225,10 +222,8 @@ def align_headers(headers, rows):
 
 
 def refine_table_structure(table_structure, class_thresholds):
-    """
-    Apply operations to the detected table structure objects such as
-    thresholding, NMS, and alignment.
-    """
+    """Apply operations to the detected table structure objects such as
+    thresholding, NMS, and alignment."""
     rows = table_structure["rows"]
     columns = table_structure['columns']
 
@@ -278,10 +273,8 @@ def outputs_to_objects(outputs, img_size, class_idx2name):
     return objects
 
 def objects_to_crops(img, tokens, objects, class_thresholds, padding=10):
-    """
-    Process the bounding boxes produced by the table detection model into
-    cropped table images and cropped tokens.
-    """
+    """Process the bounding boxes produced by the table detection model into
+    cropped table images and cropped tokens."""
 
     table_crops = []
     for obj in objects:
@@ -324,9 +317,9 @@ def objects_to_crops(img, tokens, objects, class_thresholds, padding=10):
     return table_crops
 
 def objects_to_structures(objects, tokens, class_thresholds):
-    """
-    Process the bounding boxes produced by the table structure recognition model into
+    """Process the bounding boxes produced by the table structure recognition model into
     a *consistent* set of table structures (rows, columns, spanning cells, headers).
+
     This entails resolving conflicts/overlaps, and ensuring the boxes meet certain alignment
     conditions (for example: rows should all have the same width, etc.).
     """
@@ -390,10 +383,11 @@ def objects_to_structures(objects, tokens, class_thresholds):
     return table_structures
 
 def structure_to_cells(table_structure, tokens):
-    """
-    Assuming the row, column, spanning cell, and header bounding boxes have
+    """Assuming the row, column, spanning cell, and header bounding boxes have
     been refined into a set of consistent table structures, process these
-    table structures into table cells. This is a universal representation
+    table structures into table cells.
+
+    This is a universal representation
     format for the table, which can later be exported to Pandas or CSV formats.
     Classify the cells as header/access cells or data cells
     based on if they intersect with the header bounding box.

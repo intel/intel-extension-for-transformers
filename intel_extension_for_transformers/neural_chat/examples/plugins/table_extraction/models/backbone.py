@@ -1,7 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-"""
-Backbone modules.
-"""
+"""Backbone modules."""
 from collections import OrderedDict
 
 import torch
@@ -17,8 +15,7 @@ from .position_encoding import build_position_encoding
 
 
 class FrozenBatchNorm2d(torch.nn.Module):
-    """
-    BatchNorm2d where the batch statistics and the affine parameters are fixed.
+    """BatchNorm2d where the batch statistics and the affine parameters are fixed.
 
     Copy-paste from torchvision.misc.ops with added eps before rqsrt,
     without which any other models than torchvision.models.resnet[18,34,50,101]

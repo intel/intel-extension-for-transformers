@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-"""
-Misc functions, including distributed helpers.
+"""Misc functions, including distributed helpers.
 
 Mostly copy-paste from torchvision references.
 """
@@ -26,8 +25,7 @@ if version.parse(torchvision.__version__) < version.parse('0.7'):
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
-    window or the global series average.
-    """
+    window or the global series average."""
 
     def __init__(self, window_size=20, fmt=None):
         if fmt is None:
@@ -343,7 +341,7 @@ class NestedTensor(object):
         self.mask = mask
 
     def to(self, device):
-        # type: (Device) -> NestedTensor # noqa
+        # type: (Device) -> NestedTensor
         cast_tensor = self.tensors.to(device)
         mask = self.mask
         if mask is not None:
@@ -361,9 +359,7 @@ class NestedTensor(object):
 
 
 def setup_for_distributed(is_master):
-    """
-    This function disables printing when not in master process
-    """
+    """This function disables printing when not in master process."""
     import builtins as __builtin__
     builtin_print = __builtin__.print
 
@@ -431,7 +427,7 @@ def init_distributed_mode(args):
 
 @torch.no_grad()
 def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
+    """Computes the precision@k for the specified values of k."""
     if target.numel() == 0:
         return [torch.zeros([], device=output.device)]
     maxk = max(topk)
@@ -450,8 +446,8 @@ def accuracy(output, target, topk=(1,)):
 
 def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
     # type: (Tensor, Optional[List[int]], Optional[float], str, Optional[bool]) -> Tensor
-    """
-    Equivalent to nn.functional.interpolate, but with support for empty batch sizes.
+    """Equivalent to nn.functional.interpolate, but with support for empty batch sizes.
+
     This will eventually be supported natively by PyTorch, and this
     class can go away.
     """
