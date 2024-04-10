@@ -19,9 +19,8 @@ parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
 parser.add_argument("--ipex", action="store_true", help="use intel extension for pytorch.")
 parser.add_argument("--jit", action="store_true", help="convert model to torchscript mode.")
-parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
-                    "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
-                    help="tasks list for accuracy validation")
+parser.add_argument("--tasks",  default="winogrande,copa,piqa,rte,hellaswag,openbookqa,lambada_openai,lambada_standard,wikitext",
+                    type=str, help="tasks list for accuracy validation")
 
 args = parser.parse_args()
 
@@ -93,7 +92,7 @@ if args.accuracy:
             tasks=args.tasks,
         )
         results = evaluate(eval_args)
-        for task_name in args.tasks:
+        for task_name in args.tasksi.split(","):
             if task_name == "wikitext":
                 print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
             else:
