@@ -625,76 +625,82 @@ class HFLM(TemplateLM):
 
                 if Version(optimum.version.__version__) >= Version("1.14.0"):
                     if os.path.exists(os.path.join(pretrained, "model.onnx")):
-                        session = (
-                            ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                                os.path.join(pretrained, "model.onnx"),
-                                session_options=sess_options,
-                            )
-                        )
-                        inputs_names = [
-                            input.name for input in session.get_inputs()
-                        ]  # pylint: disable=E1101
-                        key_value_input_names = [
-                            key
-                            for key in inputs_names
-                            if (".key" in key) or (".value" in key)
-                        ]
+                        session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "model.onnx"),
+                            session_options=sess_options)
+                        inputs_names = [input.name for input in session.get_inputs()] # pylint: disable=E1101
+                        key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
                         use_cache = len(key_value_input_names) > 0
 
-                        self._model = ORTModelForCausalLM(
-                            session,  # pylint: disable=E1120
-                            model_config,
-                            use_cache=True if use_cache else False,
-                            use_io_binding=True if use_cache else False,
-                        )
+                        self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                                                        model_config,
+                                                        use_cache=True if use_cache else False,
+                                                        use_io_binding=True if use_cache else False)
                     else:
-                        if os.path.exists(
-                            os.path.join(pretrained, "decoder_model_merged.onnx")
-                        ):
-                            session = (
-                                ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                                    os.path.join(
-                                        pretrained, "decoder_model_merged.onnx"
-                                    ),
-                                    session_options=sess_options,
-                                )
-                            )
-                            self._model = ORTModelForCausalLM(
-                                session,  # pylint: disable=E1120
-                                model_config,
-                                use_cache=True,
-                            )
-                        elif os.path.exists(
-                            os.path.join(pretrained, "decoder_with_past_model.onnx")
-                        ):
-                            session = (
-                                ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                                    os.path.join(
-                                        pretrained, "decoder_with_past_model.onnx"
-                                    ),
-                                    session_options=sess_options,
-                                )
-                            )
-                            self._model = ORTModelForCausalLM(
-                                session,  # pylint: disable=E1120
-                                model_config,
-                                use_cache=True,
-                            )
-                        elif os.path.exists(
-                            os.path.join(pretrained, "decoder_model.onnx")
-                        ):
-                            session = (
-                                ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                                    os.path.join(pretrained, "decoder_model.onnx"),
-                                    session_options=sess_options,
-                                )
-                            )
-                            self._model = ORTModelForCausalLM(
-                                session,  # pylint: disable=E1120
-                                model_config,
-                                use_cache=False,
-                                use_io_binding=False,
-                            )
+                        if os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
+                            session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "decoder_model_merged.onnx"),
+                            session_options=sess_options)
+                            self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                                                            model_config,
+                                                            use_cache=True)
+                        elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
+                            session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "decoder_with_past_model.onnx"),
+                            session_options=sess_options)
+                            self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                                                            model_config,
+                                                            use_cache=True)
+                        elif os.path.exists(os.path.join(pretrained, "decoder_model.onnx")):
+                            session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "decoder_model.onnx"),
+                            session_options=sess_options)
+                            self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                                                            model_config,
+                                                            use_cache=False,
+                                                            use_io_binding=False)
+                else:
+                    if os.path.exists(os.path.join(pretrained, "model.onnx")):
+                        session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "model.onnx"),
+                            session_options=sess_options)
+                        inputs_names = session.get_inputs()
+                        key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
+                        use_cache = len(key_value_input_names) > 0
+
+                        self.model = ORTModelForCausalLM(session[0],  # pylint: disable=E1121
+                                                        model_config,
+                                                        pretrained,
+                                                        use_cache=True if use_cache else False,
+                                                        use_io_binding=True if use_cache else False,)
+                    else:
+                        if os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
+                            sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                                os.path.join(pretrained, "decoder_model_merged.onnx"),
+                                session_options=sess_options)
+                            self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                                                            model_config,
+                                                            pretrained,
+                                                            use_cache=True)
+                        elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
+                            sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                                os.path.join(pretrained, "decoder_model.onnx"),
+                                os.path.join(pretrained, "decoder_with_past_model.onnx"),
+                                session_options=sess_options)
+                            self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                                                            model_config,
+                                                            pretrained,
+                                                            sessions[1],
+                                                            use_cache=True)
+                        else:
+                            sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                                os.path.join(pretrained, "decoder_model.onnx"),
+                                session_options=sess_options)
+                            self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                                                            model_config,
+                                                            pretrained,
+                                                            use_cache=False,
+                                                            use_io_binding=False)
             elif (
                 self.model_format == "onnx"
                 and self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM
