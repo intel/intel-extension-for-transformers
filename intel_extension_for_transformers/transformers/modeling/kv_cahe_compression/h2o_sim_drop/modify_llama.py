@@ -19,7 +19,7 @@ import os
 import pdb
 import copy
 import math
-import numpy as np 
+import numpy as np
 from dataclasses import dataclass
 from typing import Optional, Tuple, Union
 
@@ -71,7 +71,7 @@ def local_heavy_hitter_mask(attn_weights, heavy_budget):
 
 
 class LlamaAttention_heavy_hitter(nn.Module):
-    """Multi-headed attention from 'Attention Is All You Need' paper"""
+    """Multi-headed attention from 'Attention Is All You Need' paper."""
 
     def __init__(self, config: LlamaConfig):
         super().__init__()
@@ -148,7 +148,7 @@ class LlamaAttention_heavy_hitter(nn.Module):
         heavy_budget = int(self.heavy_budget_ratio * attn_weights.shape[-1])
         recent_budget = int(self.recent_budget_ratio * attn_weights.shape[-1])
 
-        
+
         # # Heavy Hitter Mask (Based on local statistics)
         # if heavy_budget > 0:
         #     mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget) # Default: No padding applied to input
@@ -165,10 +165,10 @@ class LlamaAttention_heavy_hitter(nn.Module):
         # attn_weights[~mask_bottom] = torch.min(attention_mask)
 
 
-        
+
         # Heavy Hitter Mask (Based on global statistics)
         tmp_attn = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(attn_weights.dtype)
-        tmp_sum = torch.sum(tmp_attn, dim=-2) 
+        tmp_sum = torch.sum(tmp_attn, dim=-2)
         _, tmp_topk = tmp_sum.topk(k=heavy_budget, dim=-1)
 
         zeros = torch.zeros_like(tmp_sum, dtype=torch.bool)
@@ -215,4 +215,3 @@ def convert_kvcache_llama_heavy_recent(model, config):
             model._modules[name] = LlamaAttention_heavy_hitter(config)
 
     return model
-

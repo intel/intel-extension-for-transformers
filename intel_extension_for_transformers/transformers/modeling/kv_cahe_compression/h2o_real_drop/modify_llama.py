@@ -46,8 +46,7 @@ from transformers.configuration_utils import PretrainedConfig
 LLAMA_PRETRAINED_CONFIG_ARCHIVE_MAP = {}
 
 class LlamaConfig(PretrainedConfig):
-    r"""
-    This is the configuration class to store the configuration of a [`LlamaModel`]. It is used to instantiate an LLaMA
+    r"""This is the configuration class to store the configuration of a [`LlamaModel`]. It is used to instantiate an LLaMA
     model according to the specified arguments, defining the model architecture. Instantiating a configuration with the
     defaults will yield a similar configuration to that of the LLaMA-7B.
 
@@ -126,7 +125,8 @@ class LlamaConfig(PretrainedConfig):
 
     >>> # Accessing the model configuration
     >>> configuration = model.config
-    ```"""
+    ```
+    """
 
     model_type = "llama"
     keys_to_ignore_at_inference = ["past_key_values"]
@@ -187,9 +187,7 @@ class LlamaConfig(PretrainedConfig):
         )
 
     def _rope_scaling_validation(self):
-        """
-        Validate the `rope_scaling` configuration.
-        """
+        """Validate the `rope_scaling` configuration."""
         if self.rope_scaling is None:
             return
 
@@ -209,8 +207,9 @@ class LlamaConfig(PretrainedConfig):
 
 
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
-    """
-    This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
+    """This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep).
+
+    The hidden states go from (batch,
     num_key_value_heads, seqlen, head_dim) to (batch, num_attention_heads, seqlen, head_dim)
     """
     batch, num_key_value_heads, slen, head_dim = hidden_states.shape
@@ -221,9 +220,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 def _make_causal_mask(
     bsz: int, tgt_len: int, past_key_values_length: int, dtype: torch.dtype, device: torch.device):
-    """
-    Make causal mask used for bi-directional self-attention.
-    """
+    """Make causal mask used for bi-directional self-attention."""
     mask = torch.full((tgt_len, tgt_len), torch.finfo(dtype).min, device=device)
     mask_cond = torch.arange(mask.size(-1), device=device)
     mask.masked_fill_(mask_cond < (mask_cond + 1).view(mask.size(-1), 1), 0)
@@ -335,7 +332,7 @@ class H2OKVCache_LayerWise:
 
 
 class H2OLlamaAttention(nn.Module):
-    """Multi-headed attention from 'Attention Is All You Need' paper"""
+    """Multi-headed attention from 'Attention Is All You Need' paper."""
 
     def __init__(self, config: LlamaConfig):
         super().__init__()
@@ -557,7 +554,7 @@ class H2OLlamaForCausalLM(LlamaForCausalLM):
 
 ## H2O KV Cache dropping with Position rolling
 class H2OLlamaAttention_streaming(nn.Module):
-    """Multi-headed attention from 'Attention Is All You Need' paper"""
+    """Multi-headed attention from 'Attention Is All You Need' paper."""
 
     def __init__(self, config: LlamaConfig):
         super().__init__()
@@ -777,8 +774,3 @@ class H2OLlamaForCausalLM_streaming(LlamaForCausalLM):
         num_layers = len(self.model.layers)
         for layer_idx in range(num_layers):
             self.model.layers[layer_idx].self_attn = H2OLlamaAttention_streaming(config)
-
-
-
-
-
