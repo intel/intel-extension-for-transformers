@@ -422,26 +422,27 @@ class _BaseQBitsAutoModelClass:
                     quantization_config = ConfigInit[quantization_config["quant_method"]].from_dict(quantization_config)
                     logger.info("Loading Low Bits model by Neural Speed.")
                     quantization_config.post_init_runtime()
-                    from neural_speed import Model
 
-                    model = Model()
-                    model.init( # pylint: disable=E1123
-                        pretrained_model_name_or_path,
-                        weight_dtype=quantization_config.weight_dtype,
-                        alg=quantization_config.scheme,
-                        group_size=quantization_config.group_size,
-                        scale_dtype=quantization_config.scale_dtype,
-                        compute_dtype=quantization_config.compute_dtype,
-                        use_ggml=quantization_config.use_ggml,
-                        use_quant=True,
-                        use_gptq=quantization_config.quant_method.value == "gptq"
-                        or quantization_config.quant_method.value == "autoround"
-                        or quantization_config.quant_method.value == "rtn",
-                        use_awq=quantization_config.quant_method.value == "awq",
-                        model_hub=model_hub,
-                    )
-                    model.quantization_config = quantization_config
-                    return model
+                from neural_speed import Model
+
+                model = Model()
+                model.init( # pylint: disable=E1123
+                    pretrained_model_name_or_path,
+                    weight_dtype=quantization_config.weight_dtype,
+                    alg=quantization_config.scheme,
+                    group_size=quantization_config.group_size,
+                    scale_dtype=quantization_config.scale_dtype,
+                    compute_dtype=quantization_config.compute_dtype,
+                    use_ggml=quantization_config.use_ggml,
+                    use_quant=True,
+                    use_gptq=quantization_config.quant_method.value == "gptq"
+                    or quantization_config.quant_method.value == "autoround"
+                    or quantization_config.quant_method.value == "rtn",
+                    use_awq=quantization_config.quant_method.value == "awq",
+                    model_hub=model_hub,
+                )
+                model.quantization_config = quantization_config
+                return model
             else:
                 logger.info(
                     "quantization_config: {}".format(config.quantization_config)

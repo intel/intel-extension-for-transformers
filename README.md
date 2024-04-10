@@ -237,14 +237,13 @@ You can also load the low-bit model quantized by GPTQ/AWQ/RTN/AutoRound algorith
 from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, GPTQConfig
 
-# Download Hugging Face GPTQ/AWQ model or use local quantize model
-model_name = "PATH_TO_MODEL"  # local path to model
-woq_config = GPTQConfig(bits=4)   # use AwqConfig for AWQ models, and AutoRoundConfig for AutoRound models
+# Hugging Face GPTQ/AWQ model or use local quantize model
+model_name = "MODEL_NAME_OR_PATH"
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
 outputs = model.generate(inputs)
 ```
 
