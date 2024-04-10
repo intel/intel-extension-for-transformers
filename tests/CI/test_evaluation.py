@@ -43,7 +43,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
     def test_evaluate_for_CasualLM(self):
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf", 
+        args = LMEvalParser(model = "hf",
                             model_args="pretrained=hf-internal-testing/tiny-random-gptj,dtype=float32",
                             tasks = "piqa",
                             device = "cpu",
@@ -54,17 +54,17 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
     def test_evaluate_for_Seq2SeqLM(self):
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf", 
+        args = LMEvalParser(model = "hf",
                             model_args="pretrained=hf-internal-testing/tiny-random-t5,dtype=float32",
                             tasks = "piqa",
                             device = "cpu",
                             batch_size = 1,
                             limit = 5)
         results = evaluate(args)
-        self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)       
+        self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)
 
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf", 
+        args = LMEvalParser(model = "hf",
                             model_args="pretrained=hf-internal-testing/tiny-random-t5,dtype=float32",
                             tasks = "piqa",
                             device = "cpu",
@@ -97,7 +97,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf", 
+        args = LMEvalParser(model = "hf",
                             model_args="pretrained=./t5-past,dtype=float32,model_format=onnx",
                             tasks = "piqa",
                             device = "cpu",
@@ -110,7 +110,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         merged_model_path = "./t5-past/decoder_model_merged.onnx"
         if os.path.exists(merged_model_path):
             os.remove(merged_model_path)
-            args = LMEvalParser(model = "hf", 
+            args = LMEvalParser(model = "hf",
                                 model_args="pretrained=./t5-past,dtype=float32,model_format=onnx",
                                 tasks = "piqa",
                                 device = "cpu",
@@ -123,7 +123,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation t5/"
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
-        args = LMEvalParser(model = "hf", 
+        args = LMEvalParser(model = "hf",
                             model_args="pretrained=./t5,dtype=float32,model_format=onnx",
                             tasks = "piqa",
                             device = "cpu",
@@ -142,7 +142,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
         # test evaluate decoder_model_merged
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf", 
+        args = LMEvalParser(model = "hf",
                             model_args="pretrained=./gptj-past,dtype=float32,model_format=onnx",
                             tasks = "piqa",
                             device = "cpu",
@@ -155,7 +155,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         merged_model_path = "./gptj-past/decoder_model_merged.onnx"
         if os.path.exists(merged_model_path):
             os.remove(merged_model_path)
-            args = LMEvalParser(model = "hf", 
+            args = LMEvalParser(model = "hf",
                                 model_args="pretrained=./gptj-past,dtype=float32,model_format=onnx",
                                 tasks = "piqa",
                                 device = "cpu",
@@ -171,7 +171,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
             cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation gptj/"
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
-        args = LMEvalParser(model = "hf", 
+        args = LMEvalParser(model = "hf",
                             model_args="pretrained=./gptj,dtype=float32,model_format=onnx",
                             tasks = "piqa",
                             device = "cpu",
@@ -185,7 +185,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
             cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/"
             p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
             p.communicate()
-            args = LMEvalParser(model = "hf", 
+            args = LMEvalParser(model = "hf",
                                 model_args="pretrained=./gptj-past,dtype=float32,model_format=onnx",
                                 tasks = "piqa",
                                 device = "cpu",
