@@ -323,7 +323,7 @@ if args.accuracy:
     args = LMEvalParser(model = "hf", 
                         tokenizer = tokenizer,
                         user_model = user_model,
-                        tasks = args.tasks,,
+                        tasks = args.tasks,
                         device = args.device,
                         batch_size = args.batch_size)
     results = evaluate(args)
