@@ -435,9 +435,9 @@ class _BaseQBitsAutoModelClass:
                         use_ggml=quantization_config.use_ggml,
                         use_quant=True,
                         use_gptq=quantization_config.quant_method.value == "gptq"
-                        or quantization_config.quant_method.value == "autoround",
-                        use_awq=quantization_config.quant_method.value == "awq"
+                        or quantization_config.quant_method.value == "autoround"
                         or quantization_config.quant_method.value == "rtn",
+                        use_awq=quantization_config.quant_method.value == "awq",
                         model_hub=model_hub,
                     )
                     model.quantization_config = quantization_config
