@@ -1,0 +1,81 @@
+:orphan:
+
+:py:mod:`extract_tables`
+========================
+
+.. py:module:: extract_tables
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   extract_tables.get_model
+   extract_tables.iob
+   extract_tables.align_headers
+   extract_tables.refine_table_structure
+   extract_tables.objects_to_crops
+   extract_tables.objects_to_structures
+   extract_tables.structure_to_cells
+
+
+
+.. py:function:: get_model(args, device)
+
+   Loads DETR model on to the device specified.
+
+   If a load path is specified, the state dict is updated accordingly.
+
+
+.. py:function:: iob(bbox1, bbox2)
+
+   Compute the intersection area over box area, for bbox1.
+
+
+.. py:function:: align_headers(headers, rows)
+
+   Adjust the header boundary to be the convex hull of the rows it intersects
+   at least 50% of the height of.
+
+   For now, we are not supporting tables with multiple headers, so we need to
+   eliminate anything besides the top-most header.
+
+
+.. py:function:: refine_table_structure(table_structure, class_thresholds)
+
+   Apply operations to the detected table structure objects such as
+   thresholding, NMS, and alignment.
+
+
+.. py:function:: objects_to_crops(img, tokens, objects, class_thresholds, padding=10)
+
+   Process the bounding boxes produced by the table detection model into
+   cropped table images and cropped tokens.
+
+
+.. py:function:: objects_to_structures(objects, tokens, class_thresholds)
+
+   Process the bounding boxes produced by the table structure recognition model into
+   a *consistent* set of table structures (rows, columns, spanning cells, headers).
+
+   This entails resolving conflicts/overlaps, and ensuring the boxes meet certain alignment
+   conditions (for example: rows should all have the same width, etc.).
+
+
+.. py:function:: structure_to_cells(table_structure, tokens)
+
+   Assuming the row, column, spanning cell, and header bounding boxes have
+   been refined into a set of consistent table structures, process these
+   table structures into table cells.
+
+   This is a universal representation
+   format for the table, which can later be exported to Pandas or CSV formats.
+   Classify the cells as header/access cells or data cells
+   based on if they intersect with the header bounding box.
+
+

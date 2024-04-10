@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>models.segmentation &mdash; Intel® Extension for Transformers 0.1.dev1+gdb9e6fb documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">models.segmentation</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/autoapi/models/segmentation/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-models.segmentation">
+<span id="models-segmentation"></span><h1><a class="reference internal" href="#module-models.segmentation" title="models.segmentation"><code class="xref py py-mod docutils literal notranslate"><span class="pre">models.segmentation</span></code></a><a class="headerlink" href="#module-models.segmentation" title="Link to this heading"></a></h1>
+<p>This file provides the definition of the convolutional heads used to predict masks, as well as the losses.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#models.segmentation.MaskHeadSmallConv" title="models.segmentation.MaskHeadSmallConv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MaskHeadSmallConv</span></code></a></p></td>
+<td><p>Simple convolutional head, using group norm.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#models.segmentation.MHAttentionMap" title="models.segmentation.MHAttentionMap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MHAttentionMap</span></code></a></p></td>
+<td><p>This is a 2D attention module, which only returns the attention softmax (no multiplication by value)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#models.segmentation.PostProcessPanoptic" title="models.segmentation.PostProcessPanoptic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PostProcessPanoptic</span></code></a></p></td>
+<td><p>This class converts the output of the model to the final panoptic result, in the format expected by the</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#models.segmentation.dice_loss" title="models.segmentation.dice_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dice_loss</span></code></a>(inputs, targets, num_boxes)</p></td>
+<td><p>Compute the DICE loss, similar to generalized IOU for masks</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#models.segmentation.sigmoid_focal_loss" title="models.segmentation.sigmoid_focal_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sigmoid_focal_loss</span></code></a>(inputs, targets, num_boxes[, ...])</p></td>
+<td><p>Loss used in RetinaNet for dense detection: <a class="reference external" href="https://arxiv.org/abs/1708.02002">https://arxiv.org/abs/1708.02002</a>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="models.segmentation.MaskHeadSmallConv">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">models.segmentation.</span></span><span class="sig-name descname"><span class="pre">MaskHeadSmallConv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fpn_dims</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_dim</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/models/segmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#models.segmentation.MaskHeadSmallConv" title="Link to this definition"></a></dt>
+<dd><p>Simple convolutional head, using group norm.</p>
+<p>Upsampling is done using a FPN approach</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="models.segmentation.MHAttentionMap">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">models.segmentation.</span></span><span class="sig-name descname"><span class="pre">MHAttentionMap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/models/segmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#models.segmentation.MHAttentionMap" title="Link to this definition"></a></dt>
+<dd><p>This is a 2D attention module, which only returns the attention softmax (no multiplication by value)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="models.segmentation.dice_loss">
+<span class="sig-prename descclassname"><span class="pre">models.segmentation.</span></span><span class="sig-name descname"><span class="pre">dice_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_boxes</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/models/segmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#models.segmentation.dice_loss" title="Link to this definition"></a></dt>
+<dd><p>Compute the DICE loss, similar to generalized IOU for masks
+:param inputs: A float tensor of arbitrary shape.</p>
+<blockquote>
+<div><p>The predictions for each example.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>targets</strong> – <dl class="simple">
+<dt>A float tensor with the same shape as inputs. Stores the binary</dt><dd><p>classification label for each element in inputs</p>
+</dd>
+</dl>
+<p>(0 for the negative class and 1 for the positive class).</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="models.segmentation.sigmoid_focal_loss">
+<span class="sig-prename descclassname"><span class="pre">models.segmentation.</span></span><span class="sig-name descname"><span class="pre">sigmoid_focal_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_boxes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/models/segmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#models.segmentation.sigmoid_focal_loss" title="Link to this definition"></a></dt>
+<dd><p>Loss used in RetinaNet for dense detection: <a class="reference external" href="https://arxiv.org/abs/1708.02002">https://arxiv.org/abs/1708.02002</a>.
+:param inputs: A float tensor of arbitrary shape.</p>
+<blockquote>
+<div><p>The predictions for each example.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>targets</strong> – <dl class="simple">
+<dt>A float tensor with the same shape as inputs. Stores the binary</dt><dd><p>classification label for each element in inputs</p>
+</dd>
+</dl>
+<p>(0 for the negative class and 1 for the positive class).</p>
+</p></li>
+<li><p><strong>alpha</strong> – (optional) Weighting factor in range (0,1) to balance
+positive vs negative examples. Default = -1 (no weighting).</p></li>
+<li><p><strong>gamma</strong> – Exponent of the modulating factor (1 - p_t) to
+balance easy vs hard examples.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loss tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="models.segmentation.PostProcessPanoptic">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">models.segmentation.</span></span><span class="sig-name descname"><span class="pre">PostProcessPanoptic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">is_thing_map</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.85</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/models/segmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#models.segmentation.PostProcessPanoptic" title="Link to this definition"></a></dt>
+<dd><p>This class converts the output of the model to the final panoptic result, in the format expected by the
+coco panoptic API.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="models.segmentation.PostProcessPanoptic.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processed_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_sizes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/models/segmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#models.segmentation.PostProcessPanoptic.forward" title="Link to this definition"></a></dt>
+<dd><p>This function computes the panoptic prediction from the model’s predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>outputs</strong> – This is a dict coming directly from the model. See the model doc for the content.</p></li>
+<li><p><strong>processed_sizes</strong> – This is a list of tuples (or torch tensors) of sizes of the images that were passed to the
+model, ie the size after data augmentation but before batching.</p></li>
+<li><p><strong>target_sizes</strong> – This is a list of tuples (or torch tensors) corresponding to the requested final size
+of each prediction. If left to None, it will default to the processed_sizes</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f7a3fdf47f0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
