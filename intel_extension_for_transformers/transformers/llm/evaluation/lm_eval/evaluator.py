@@ -169,31 +169,6 @@ def simple_evaluate(
         )
         if gen_kwargs == "":
             gen_kwargs = None
-    # for ipex smoothquant, the quantized model is torchscript mode.
-    # model_args_dict = utils.simple_parse_args_string(model_args)
-    # if "torchscript" in model_args_dict:
-    #     import intel_extension_for_pytorch as ipex
-    #     from intel_extension_for_transformers.transformers.llm.evaluation.models import (
-    #         TSModelCausalLMForITREX,
-    #     )
-    #     if "restore" in model_args_dict:
-    #         from intel_extension_for_transformers.transformers.utils.utility import (
-    #             recover_model_from_json,
-    #         )
-    #         fp32_model_name_or_path = model_args_dict["fp32_model_name_or_path"]
-    #         torchscript_model = recover_model_from_json(
-    #             fp32_model_name_or_path,
-    #             os.path.join(model_args_dict["pretrained"], "best_configure.json"),
-    #             trust_remote_code=model_args_dict["trust_remote_code"] if "trust_remote_code" in model_args
-    #                 else False,
-    #         )
-    #     else:
-    #         torchscript_model = TSModelCausalLMForITREX.from_pretrained(
-    #             model_args_dict["pretrained"],
-    #             file_name="best_model.pt",
-    #             trust_remote_code=model_args_dict["trust_remote_code"] if "trust_remote_code" in model_args
-    #                                 else False,
-    #         )
 
     if isinstance(model, str):
         if model_args is None:
@@ -206,6 +181,8 @@ def simple_evaluate(
 
         if user_model is not None:
             # use tiny model to built lm.
+            print("Due to provide user_model in memory, we use 'pretrained=Muennighoff/tiny-random-bert'" + 
+                  "to build `LM` instance")
             lm = lm_eval.api.registry.get_model(model).create_from_arg_string(
                 "pretrained=Muennighoff/tiny-random-bert",
                 {
