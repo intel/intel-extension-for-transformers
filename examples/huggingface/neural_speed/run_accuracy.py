@@ -29,7 +29,7 @@ if __name__ == "__main__":
     if args.model_format == "neural_speed":
         eval_args = LMEvalParser(model="hf", 
                             model_args=model_args,
-                            tasks=f"{args.tasks}"
+                            tasks=f"{args.tasks}",
                             device = "cpu",
                             batch_size = args.batch_size,
                             )
