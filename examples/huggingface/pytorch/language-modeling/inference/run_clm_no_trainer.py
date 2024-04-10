@@ -19,7 +19,7 @@ parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
 parser.add_argument("--ipex", action="store_true", help="use intel extension for pytorch.")
 parser.add_argument("--jit", action="store_true", help="convert model to torchscript mode.")
-parser.add_argument("--tasks",  default="winogrande,copa,piqa,rte,hellaswag,openbookqa,lambada_openai,lambada_standard,wikitext",
+parser.add_argument("--tasks", default="winogrande,copa,piqa,rte,hellaswag,openbookqa,lambada_openai,lambada_standard,wikitext",
                     type=str, help="tasks list for accuracy validation")
 
 args = parser.parse_args()
@@ -82,7 +82,7 @@ pred = last_token_logits.argmax(dim=-1)
 if args.accuracy:
     user_model.eval()
     def eval_func(user_model):
-        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import,LMEvalParser
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
         eval_args = LMEvalParser(
             model="hf",
             user_model=user_model,
@@ -92,7 +92,7 @@ if args.accuracy:
             tasks=args.tasks,
         )
         results = evaluate(eval_args)
-        for task_name in args.tasksi.split(","):
+        for task_name in args.tasks.split(","):
             if task_name == "wikitext":
                 print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
             else:
