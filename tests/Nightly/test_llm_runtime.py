@@ -53,8 +53,7 @@ class TestLLMRUNTIME(unittest.TestCase):
         print(tokenizer.decode(pt_generate_ids))
 
         # check output ids
-        woq_config = RtnConfig(use_quant=False)
-        itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_neural_speed=True, trust_remote_code=True)
+        itrex_model = AutoModel.from_pretrained(model_name, quantization_config=None, use_neural_speed=True, trust_remote_code=True)
         itrex_generate_ids = itrex_model.generate(inputs.input_ids, do_sample=False, max_new_tokens=100)[0]
         print(tokenizer.decode(itrex_generate_ids))
         for i in range(len(pt_generate_ids)):
