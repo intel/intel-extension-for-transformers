@@ -1125,7 +1125,7 @@ class HFLM(TemplateLM):
                         prefix_token=self.eot_token_id,
                         max_seq_len=self.max_length,
                         context_len=1,
-                    ), 
+                    ),
                 )
             )
 
