@@ -3,14 +3,14 @@ accelerate
 auto-gptq
 auto-round
 bitsandbytes
-datasets
+datasets==2.16.1
 einops
 evaluate
 gguf
 git+https://github.com/intel/neural-compressor.git
 intel-extension-for-pytorch==2.2.0
 intel-tensorflow==2.14.0
-lm-eval
+lm-eval==0.4.2
 mlflow
 neural-speed==1.0a0
 nlpaug==1.1.9
@@ -26,7 +26,7 @@ tokenizers
 torch==2.2.0+cpu
 torchprofile
 torchvision==0.17.0+cpu
-transformers
+transformers==4.38.0
 transformers_stream_generator
 tyro
 wget

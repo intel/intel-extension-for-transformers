@@ -632,7 +632,7 @@ class HFLM(TemplateLM):
                         key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
                         use_cache = len(key_value_input_names) > 0
 
-                        self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                        self._model = ORTModelForCausalLM(session,  # pylint: disable=E1120
                                                         model_config,
                                                         use_cache=True if use_cache else False,
                                                         use_io_binding=True if use_cache else False)
@@ -641,21 +641,21 @@ class HFLM(TemplateLM):
                             session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                             os.path.join(pretrained, "decoder_model_merged.onnx"),
                             session_options=sess_options)
-                            self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                            self._model = ORTModelForCausalLM(session,  # pylint: disable=E1120
                                                             model_config,
                                                             use_cache=True)
                         elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
                             session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                             os.path.join(pretrained, "decoder_with_past_model.onnx"),
                             session_options=sess_options)
-                            self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                            self._model = ORTModelForCausalLM(session,  # pylint: disable=E1120
                                                             model_config,
                                                             use_cache=True)
                         elif os.path.exists(os.path.join(pretrained, "decoder_model.onnx")):
                             session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                             os.path.join(pretrained, "decoder_model.onnx"),
                             session_options=sess_options)
-                            self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                            self._model = ORTModelForCausalLM(session,  # pylint: disable=E1120
                                                             model_config,
                                                             use_cache=False,
                                                             use_io_binding=False)
@@ -668,7 +668,7 @@ class HFLM(TemplateLM):
                         key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
                         use_cache = len(key_value_input_names) > 0
 
-                        self.model = ORTModelForCausalLM(session[0],  # pylint: disable=E1121
+                        self._model = ORTModelForCausalLM(session[0],  # pylint: disable=E1121
                                                         model_config,
                                                         pretrained,
                                                         use_cache=True if use_cache else False,
@@ -678,7 +678,7 @@ class HFLM(TemplateLM):
                             sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                                 os.path.join(pretrained, "decoder_model_merged.onnx"),
                                 session_options=sess_options)
-                            self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                            self._model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
                                                             model_config,
                                                             pretrained,
                                                             use_cache=True)
@@ -687,7 +687,7 @@ class HFLM(TemplateLM):
                                 os.path.join(pretrained, "decoder_model.onnx"),
                                 os.path.join(pretrained, "decoder_with_past_model.onnx"),
                                 session_options=sess_options)
-                            self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                            self._model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
                                                             model_config,
                                                             pretrained,
                                                             sessions[1],
@@ -696,7 +696,7 @@ class HFLM(TemplateLM):
                             sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                                 os.path.join(pretrained, "decoder_model.onnx"),
                                 session_options=sess_options)
-                            self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                            self._model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
                                                             model_config,
                                                             pretrained,
                                                             use_cache=False,
@@ -900,7 +900,7 @@ class HFLM(TemplateLM):
             return batch_size
 
         try:
-            batch_size = forward_batch()
+            batch_size = forward_batch()   # pylint: disable=E1120
         except RuntimeError as e:
             if "No executable batch size found" in str(e):
                 batch_size = 1
@@ -937,7 +937,7 @@ class HFLM(TemplateLM):
 
         # left-truncate the encoded context to be at most `left_truncate_len` tokens long
         if left_truncate_len:
-            encoding = encoding[-left_truncate_len:]
+            encoding = encoding[-left_truncate_len:]  # pylint: disable=E1130
 
         return encoding
 
@@ -965,9 +965,9 @@ class HFLM(TemplateLM):
             add_special_tokens=add_special_tokens,
         )
         if left_truncate_len:
-            encoding["input_ids"] = encoding["input_ids"][:, -left_truncate_len:]
+            encoding["input_ids"] = encoding["input_ids"][:, -left_truncate_len:] # pylint: disable=E1130
             encoding["attention_mask"] = encoding["attention_mask"][
-                :, -left_truncate_len:
+                :, -left_truncate_len: # pylint: disable=E1130
             ]
         self.tokenizer.padding_side = old_padding_side
 
@@ -1125,7 +1125,7 @@ class HFLM(TemplateLM):
                         prefix_token=self.eot_token_id,
                         max_seq_len=self.max_length,
                         context_len=1,
-                    ),
+                    ), 
                 )
             )
 
@@ -1279,7 +1279,7 @@ class HFLM(TemplateLM):
                     (inplen,) = inp.shape
                 elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
                     inp = torch.tensor(
-                        (context_enc)[-self.max_length :],
+                        (context_enc)[-self.max_length :], # pylint: disable=E1130
                         dtype=torch.long,
                         device=self.device,
                     )
@@ -1289,7 +1289,7 @@ class HFLM(TemplateLM):
                     encoder_attns.append(torch.ones_like(inp))
 
                     cont = torch.tensor(
-                        (continuation_enc)[-self.max_length :],
+                        (continuation_enc)[-self.max_length :], # pylint: disable=E1130
                         # TODO: left-shift these?
                         # TODO: our code assumes we never end up truncating conts for either model type
                         dtype=torch.long,
