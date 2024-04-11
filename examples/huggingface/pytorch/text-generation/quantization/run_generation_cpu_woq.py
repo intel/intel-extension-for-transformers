@@ -299,20 +299,21 @@ else:
     print("Didn't do Weight Only Quantization.")
 
 # save model
-if args.output_dir is not None and args.woq:
+if args.output_dir is not None and (args.woq or args.load_in_4bit or args.load_in_8bit):
     user_model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
-    print("Loading model from: ", args.output_dir)
-    user_model = AutoModelForCausalLM.from_pretrained(
-        args.output_dir,
-        trust_remote_code=args.trust_remote_code,
-        _commit_hash=args._commit_hash,
-        use_neural_speed=args.use_neural_speed,
-    )
     # to validate woq model accuracy 
     args.model = args.output_dir
 
 if args.benchmark:
+    print("Loading model from: ", args.model)
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        quantization_config=quantization_config,
+        trust_remote_code=args.trust_remote_code,
+        _commit_hash=args._commit_hash,
+        use_neural_speed=args.use_neural_speed,
+    )
     user_model = user_model.eval() if hasattr(user_model, "eval") else user_model
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
