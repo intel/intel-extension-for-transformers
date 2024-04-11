@@ -1,4 +1,4 @@
-:accelerate
+accelerate
 datasets >= 2.0
 peft
 protobuf

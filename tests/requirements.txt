@@ -26,7 +26,7 @@ tokenizers
 torch==2.2.0+cpu
 torchprofile
 torchvision==0.17.0+cpu
-transformers==4.38.0
+transformers==4.37.2
 transformers_stream_generator
 tyro
 wget
