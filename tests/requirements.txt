@@ -8,11 +8,11 @@ einops
 evaluate
 gguf
 git+https://github.com/intel/neural-compressor.git
+git+https://github.com/intel/neural-speed.git@3e0d643b1baf1f9b15733a4ddc1e54fc93ef8051
 intel-extension-for-pytorch==2.2.0
 intel-tensorflow==2.14.0
 lm-eval==0.4.2
 mlflow
-git+https://github.com/intel/neural-speed.git@3e0d643b1baf1f9b15733a4ddc1e54fc93ef8051
 nlpaug==1.1.9
 onnx
 onnxruntime
