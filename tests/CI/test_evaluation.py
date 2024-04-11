@@ -19,7 +19,7 @@ import subprocess
 import torch
 import optimum.version
 import platform
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM AutoTokenizer
 from packaging.version import Version
 
 OPTIMUM114_VERSION = Version("1.14.0")
