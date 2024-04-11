@@ -32,6 +32,7 @@ from transformers.models.llama.modeling_llama import (
     logger,
 )
 
+from ..cache_compress import CompressedCache, StreamCompressedCache
 from ..modeling_attn_mask_utils import (
     _gaudi_prepare_4d_causal_attention_mask,
 )
@@ -341,6 +342,7 @@ class GaudiLlamaAttention(LlamaAttention):
         - add new args use_flash_attention
         - add new arg flash_attention_recompute
         """
+        compress_config = kwargs.get("compress_config", None)
         bsz, q_len, _ = hidden_states.size()
 
         if self.config.pretraining_tp > 1:
@@ -459,6 +461,11 @@ class GaudiLlamaAttention(LlamaAttention):
 
         attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
 
+        if self.compress_config is not None:
+            past_key_value.compress(self.layer_idx)
+            if self.compress_config.get("stream", True) is True:
+                past_key_value.increase_idx(self.layer_idx)
+
         attn_output = self.o_proj(attn_output)
 
         if not output_attentions:
@@ -574,6 +581,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         use_flash_attention: Optional[bool] = False,
         flash_attention_recompute: Optional[bool] = False,
         cache_idx: int = None,
+        **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         hidden_states = self.input_layernorm(hidden_states)
         output_attn, attn_weights, present_key_value = self.self_attn.pre_attn_forward(
@@ -590,6 +598,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
             use_flash_attention,
             flash_attention_recompute,
             cache_idx=cache_idx,
+            **kwargs,
         )
         return output_attn, attn_weights, present_key_value
 
@@ -615,7 +624,7 @@ class GaudiLlamaModel(LlamaModel):
     Copied from https://github.com/huggingface/transformers/blob/v4.38.2/src/transformers/models/llama/modeling_llama.py#L909
     """
 
-    def __init__(self, config: LlamaConfig):
+    def __init__(self, config: LlamaConfig, compress_config=None):
         """
         Copied from https://github.com/huggingface/transformers/blob/v4.38.2/src/transformers/models/llama/modeling_llama.py#L917
         1. set fill_value to 1 instead of True
@@ -641,6 +650,7 @@ class GaudiLlamaModel(LlamaModel):
         )
         self.register_buffer("causal_mask", torch.triu(causal_mask, diagonal=1), persistent=False)
         # Initialize weights and apply final processing
+        self.compress_config = compress_config
         self.post_init()
 
     def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len, kv_cache_fp8):
@@ -713,15 +723,26 @@ class GaudiLlamaModel(LlamaModel):
         past_seen_tokens = 0
 
         if past_key_values is not None and use_cache:  # kept for BC (cache positions)
-            if reuse_cache:
-                past_seen_tokens = past_key_values[0][0][2]
-            else:
-                if use_new_cache:
-                    if not isinstance(past_key_values, StaticCache):
-                        past_key_values = DynamicCache.from_legacy_cache(past_key_values)
-                    past_seen_tokens = past_key_values.get_seq_length()
+            use_legacy_cache = not isinstance(past_key_values, Cache)
+            if use_legacy_cache:
+                if self.compress_config is not None:
+                    if self.compress_config.get("stream", True) is False:
+                        past_key_values = CompressedCache.from_legacy_cache(past_key_values)
+                    else:
+                        past_key_values = StreamCompressedCache.from_legacy_cache(past_key_values)
                 else:
-                    past_seen_tokens = past_key_values[0][0].shape[2]
+                    past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+            else:
+                if reuse_cache:
+                    past_seen_tokens = past_key_values[0][0][2]
+                else:
+                    if use_new_cache:
+                        if not isinstance(past_key_values, StaticCache):
+                            past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+                        past_seen_tokens = past_key_values.get_seq_length()
+                    else:
+                        past_seen_tokens = past_key_values[0][0].shape[2]
+            past_key_values_length = past_key_values.get_usable_length(seq_length)
 
         if ignore_cache_position is False:
             if cache_position is None:
