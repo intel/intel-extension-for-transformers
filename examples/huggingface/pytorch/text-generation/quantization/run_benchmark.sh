@@ -208,10 +208,8 @@ function run_benchmark {
             extra_cmd=$extra_cmd" --bitsandbytes"
             script="run_generation_cpu_woq.py"
         elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
-            extra_cmd=$extra_cmd" --load_in_4bit "
             script="run_generation_cpu_woq.py"
         elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
-            extra_cmd=$extra_cmd" --load_in_8bit "
             script="run_generation_cpu_woq.py"
         elif [ "${topology}" = "gpt_j_mp" ]; then
             extra_cmd=$extra_cmd" --mixed_precision"
