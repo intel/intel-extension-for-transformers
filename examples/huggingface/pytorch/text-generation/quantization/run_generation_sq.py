@@ -198,27 +198,20 @@ if quantization_config is not None:
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
+        use_neural_speed=False
     )
-else:
-    print("Didn't do SmoothQuant or MixedPrecision.")
-    user_model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        trust_remote_code=args.trust_remote_code,
-        _commit_hash=args._commit_hash,
-    )
-# save model
-if args.output_dir is not None and (args.sq or args.mixed_precision):
-    tokenizer.save_pretrained(args.output_dir)
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision:
-        user_model.save_pretrained(args.output_dir)
-    args.model = args.output_dir
+    # save model
+    if args.output_dir is not None and (args.sq or args.mixed_precision):
+        tokenizer.save_pretrained(args.output_dir)
+        if args.sq:
+            config.save_pretrained(args.output_dir)
+            user_model.save(args.output_dir)
+        elif args.mixed_precision:
+            user_model.save_pretrained(args.output_dir)
+        args.model = args.output_dir
 
-
-# smoothquant int8 
 if args.int8:
+    print("Loading SmoothQuant model from: ", args.model)
     import intel_extension_for_pytorch as ipex
     from intel_extension_for_transformers.transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
@@ -228,7 +221,7 @@ if args.int8:
             recover_model_from_json,
         )
         user_model = recover_model_from_json(
-            user_model,
+            args.model,
             os.path.join(args.output_dir, "best_configure.json"),
             args.trust_remote_code,
         )
@@ -238,6 +231,15 @@ if args.int8:
             file_name="best_model.pt",
             trust_remote_code=args.trust_remote_code,
         )
+else:
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        trust_remote_code=args.trust_remote_code,
+        _commit_hash=args._commit_hash,
+        use_neural_speed=False
+    )
+
+
 
 if args.benchmark:
     user_model = user_model.eval() if hasattr(user_model, "eval") else user_model
