@@ -130,6 +130,12 @@ parser.add_argument(
     help="Calibration dataset sequence max length, this should align with your model config",
 )
 parser.add_argument(
+    "--calib_iters",
+    type=int,
+    default=200,
+    help="Calibration inference iterations",
+)
+parser.add_argument(
     "--lr",
     type=float,
     default=0.0025,
