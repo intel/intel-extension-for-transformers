@@ -233,4 +233,3 @@ class LMEvalParser:
         self.predict_only = predict_only
         self.seed = seed
         self.trust_remote_code = trust_remote_code
-
