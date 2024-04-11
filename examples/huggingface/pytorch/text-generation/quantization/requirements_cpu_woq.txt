@@ -10,7 +10,7 @@ bitsandbytes  #baichuan
 transformers_stream_generator
 tiktoken  #qwen
 einops  #qwen
-git+https://github.com/intel/neural-speed.git@v1.0.1.dev0
+git+https://github.com/intel/neural-speed.git
 auto-round
 git+https://github.com/intel/neural-compressor.git
 lm-eval
