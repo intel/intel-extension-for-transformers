@@ -231,7 +231,7 @@ if args.int8:
             file_name="best_model.pt",
             trust_remote_code=args.trust_remote_code,
         )
-else:
+elif not (args.sq or args.mixed_precision):
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
         trust_remote_code=args.trust_remote_code,
