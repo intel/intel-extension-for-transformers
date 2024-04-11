@@ -270,7 +270,7 @@ function run_tuning {
         python -u ./${script} \
             --model ${model_name_or_path} \
             ${extra_cmd}
-    if [ ${script} = "run_generation_cpu_woq.py" ];then
+    elif [ ${script} = "run_generation_cpu_woq.py" ];then
         python -u ./${script} \
             --model ${model_name_or_path} \
             ${extra_cmd}
