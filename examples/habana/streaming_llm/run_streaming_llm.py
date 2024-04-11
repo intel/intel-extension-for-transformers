@@ -123,6 +123,7 @@ def main():
                                                   trust_remote_code=bool(args.trust_remote_code))
     model.eval().to("hpu")
     tokenizer.pad_token_id = tokenizer.eos_token_id
+    print(model.generation_config)
 
     # Set up the dataset
     dataset = load_dataset(args.dataset_name, split="train")
