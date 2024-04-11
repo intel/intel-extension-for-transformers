@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Monkey patch the llama implementation in the huggingface/transformers library.
 
-"""
-Monkey patch the llama implementation in the huggingface/transformers library.
 Avoid bugs in mps backend by not using in-place operations.
 """
 import math

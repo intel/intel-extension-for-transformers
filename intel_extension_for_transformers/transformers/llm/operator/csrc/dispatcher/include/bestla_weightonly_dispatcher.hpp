@@ -25,6 +25,8 @@ enum WOQ_TASK {
   WOQ_QUANTIZE,
   WOQ_DEQUANTIZE,
   WOQ_LINEAR,
+  WOQ_REPACK,
+  WOQ_GET_PACKW_SIZE,
 };
 
 struct woq_param_base {
@@ -47,6 +49,7 @@ struct repack_quantized_weight_param : public woq_param_base {
 struct repack_quantized_weight_ctx {
   torch::Tensor *qweight, *scale, *zp, *g_idx, *output;
   int n, k;
+  size_t packw_size;
 };
 
 struct woq_runtime_ctx {

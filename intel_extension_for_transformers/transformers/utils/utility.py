@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Utils for pytorch framework."""
 
 import argparse
@@ -97,9 +96,7 @@ def _build_inc_dataloader(dataloader):
 
 
 def generate_dummy_past_key_values(config, input_bs):
-    """
-    Generate the dummy past_key_values.
-    """
+    """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
 
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
@@ -157,9 +154,7 @@ def generate_dummy_past_key_values(config, input_bs):
     return tuple(past_key_values)
 
 def generate_dummy_past_key_values_for_inference(config, input_bs):
-    """
-    Generate the dummy past_key_values.
-    """
+    """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
 
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
@@ -209,9 +204,7 @@ def generate_dummy_past_key_values_for_inference(config, input_bs):
     return tuple(past_key_values)
 
 def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
-    """
-    Generate the dummy past_key_values.
-    """
+    """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
 
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
@@ -272,8 +265,7 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
 }
 
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
-    """Generate the dummy example inputs.
-    """
+    """Generate the dummy example inputs."""
     prompt = "Welcome to use Intel Extension for Transformers."
     prompt = [prompt] * batch_size
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids

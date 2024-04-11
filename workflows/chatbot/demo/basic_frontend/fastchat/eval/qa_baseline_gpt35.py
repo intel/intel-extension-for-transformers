@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Generate answers with GPT-3.5"""
+"""Generate answers with GPT-3.5."""
 # Note: you need to be using OpenAI Python v0.27.0 for the code below to work
 import argparse
 import json

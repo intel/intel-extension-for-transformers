@@ -258,9 +258,7 @@ def _quantize2bf16(graph):
 
 
 def _dynamic_quantization(base_model, per_token=True):
-    """
-    base_model is a engine ir path or a graph(fp32 or bf16)
-    """
+    """base_model is a engine ir path or a graph(fp32 or bf16)"""
     # load fp32model
     if isinstance(base_model, Graph):
         graph = deepcopy(base_model)

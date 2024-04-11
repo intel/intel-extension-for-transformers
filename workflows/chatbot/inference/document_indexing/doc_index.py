@@ -106,9 +106,7 @@ def d_load_file(file_path, process, max_length=378):
     text = text.replace('\n', '')
     text = text.replace('\n\n', '')
     text = re.sub(r'\s+', ' ', text)
-    """
-    split the document
-    """
+    """Split the document."""
     sentences = re.split('(?<=[;!.?])', text)
 
     new_sents = []
@@ -195,9 +193,7 @@ def s_load_file(file_path, process, document_store, max_length=378):
     text = text.replace('\n', '')
     text = text.replace('\n\n', '')
     text = re.sub(r'\s+', ' ', text)
-    """
-    split the document
-    """
+    """Split the document."""
     sentences = re.split('(?<=[;!.?])', text)
 
     new_sents = []

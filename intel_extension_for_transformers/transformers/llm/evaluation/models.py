@@ -33,9 +33,9 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
     def _reorder_cache(
         self, past_key_values: Tuple[Tuple[torch.Tensor]], beam_idx: torch.Tensor
     ) -> Tuple[Tuple[torch.Tensor]]:
-        """
-        This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
+        """This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
         [`~PreTrainedModel.beam_sample`] is called.
+
         This is required to match `past_key_values` with the correct beam_idx at every generation step.
         """
         if self.config.model_type == "bloom":

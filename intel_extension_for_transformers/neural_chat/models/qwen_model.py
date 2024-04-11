@@ -50,8 +50,7 @@ def prepare_inputs_for_generation(
 
 class QwenModel(BaseModel):
     def match(self):
-        """
-        Check if the provided model_path matches the current model.
+        """Check if the provided model_path matches the current model.
 
         Returns:
             bool: True if the model_path matches, False otherwise.
@@ -59,8 +58,7 @@ class QwenModel(BaseModel):
         return "qwen" in self.model_name.lower()
 
     def get_default_conv_template(self) -> Conversation:
-        """
-        Get the default conversation template for the given model path.
+        """Get the default conversation template for the given model path.
 
         Args:
             model_path (str): Path to the model.

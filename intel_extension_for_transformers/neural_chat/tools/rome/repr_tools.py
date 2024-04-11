@@ -14,10 +14,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Contains utilities for extracting token representations and indices
+from string templates.
 
-"""
-Contains utilities for extracting token representations and indices
-from string templates. Used in computing the left and right vectors for ROME.
+Used in computing the left and right vectors for ROME.
 """
 
 import torch
@@ -38,9 +38,10 @@ def get_reprs_at_word_tokens(
     track: Optional[Literal["in", "out", "both"]] = "in",
     batch_first: Optional[bool] = True
 ) -> torch.Tensor:
-    r"""
-    Retrieves the last token representation of `word` in `context_template`
-    when `word` is substituted into `context_template`. See `get_last_word_idx_in_template`
+    r"""Retrieves the last token representation of `word` in `context_template`
+    when `word` is substituted into `context_template`.
+
+    See `get_last_word_idx_in_template`
     for more details.
     """
 
@@ -60,8 +61,7 @@ def get_reprs_at_word_tokens(
 def get_words_idxs_in_templates(
     tokenizer: PreTrainedTokenizer, context_templates: List[str], words: List[str], subtoken: str
 ) -> List[List[int]]:
-    r"""
-    Given list of template strings, each with *one* format specifier
+    r"""Given list of template strings, each with *one* format specifier
     (e.g. "{} plays basketball"), and words to be substituted into the
     template, computes the post-tokenization index of their last tokens.
 
@@ -107,10 +107,8 @@ def get_reprs_at_idxs(
     track: Optional[Literal["in", "out", "both"]] = "in",
     batch_first: Optional[bool] = True
 ) -> torch.Tensor:
-    r"""
-    Runs input through model and returns averaged representations of the tokens
-    at each index in `idxs`.
-    """
+    r"""Runs input through model and returns averaged representations of the tokens
+    at each index in `idxs`."""
 
     if track == "both":
         to_return = {"in": [], "out": []}

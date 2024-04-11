@@ -540,19 +540,12 @@ if args.accuracy:
                   else user_model)
     args.model = (peft_config.base_model_name_or_path if args.peft_model_id else args.model)
     from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
-    pretrained = ',pretrained=' + args.model
+    pretrained = ',pretrained=' + args.output_dir if args.woq_loading else ',pretrained=' + args.model
     args._commit_hash = "main" if args._commit_hash is None else args._commit_hash
     eval_args = "tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + \
                 args._commit_hash + ",trust_remote_code=" + str(args.trust_remote_code)
     if args.use_neural_speed:
         eval_args += pretrained
-        q_conf = user_model.config.quantization_config
-        if isinstance(q_conf, dict):
-            q_algo = q_conf.get("quant_method", None)
-        else:
-            q_algo = q_conf.quant_method.value
-        if q_algo.upper() in ["AWQ", "GPTQ", "AUTOROUND"]:
-            eval_args += ",use_gptq=True"
     results = evaluate(
         model="hf-causal",
         model_args=eval_args,

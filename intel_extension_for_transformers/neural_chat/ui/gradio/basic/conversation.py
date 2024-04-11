@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Conversation prompt templates.
+"""Conversation prompt templates.
 
 We kindly request that you import fastchat instead of copying this file if you wish to use it.
 If you have any changes in mind, please contribute back so the community can benefit collectively and continue to maintain these valuable templates.

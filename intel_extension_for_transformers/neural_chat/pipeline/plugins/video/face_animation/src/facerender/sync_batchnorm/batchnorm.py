@@ -29,12 +29,12 @@ __all__ = ["SynchronizedBatchNorm1d", "SynchronizedBatchNorm2d", "SynchronizedBa
 
 
 def _sum_ft(tensor):
-    """sum over the first and last dimension"""
+    """Sum over the first and last dimension."""
     return tensor.sum(dim=0).sum(dim=-1)
 
 
 def _unsqueeze_ft(tensor):
-    """add new dementions at the front and the tail"""
+    """Add new dementions at the front and the tail."""
     return tensor.unsqueeze(0).unsqueeze(-1)
 
 
@@ -125,8 +125,11 @@ class _SynchronizedBatchNorm(_BatchNorm):
         return outputs
 
     def _compute_mean_std(self, sum_, ssum, size):
-        """Compute the mean and standard-deviation with sum and square-sum. This method
-        also maintains the moving average on the master device."""
+        """Compute the mean and standard-deviation with sum and square-sum.
+
+        This method
+        also maintains the moving average on the master device.
+        """
         assert size > 1, "BatchNorm computes unbiased standard-deviation, which requires size > 1."
         mean = sum_ / size
         sumvar = ssum - sum_ * mean
@@ -203,7 +206,7 @@ class SynchronizedBatchNorm1d(_SynchronizedBatchNorm):
 
 class SynchronizedBatchNorm2d(_SynchronizedBatchNorm):
     r"""Applies Batch Normalization over a 4d input that is seen as a mini-batch
-    of 3d inputs
+    of 3d inputs.
 
     .. math::
 
@@ -265,7 +268,7 @@ class SynchronizedBatchNorm2d(_SynchronizedBatchNorm):
 
 class SynchronizedBatchNorm3d(_SynchronizedBatchNorm):
     r"""Applies Batch Normalization over a 5d input that is seen as a mini-batch
-    of 4d inputs
+    of 4d inputs.
 
     .. math::
 

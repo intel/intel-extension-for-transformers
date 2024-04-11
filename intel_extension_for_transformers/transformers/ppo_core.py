@@ -56,9 +56,7 @@ def flatten_dict(nested, sep="/"):
 
 
 def convert_to_scalar(stats):
-    """
-    Converts the stats from a flattened dict to single scalar dicts
-    """
+    """Converts the stats from a flattened dict to single scalar dicts."""
     tensorboard_stats = {}
     for k, v in stats.items():
         # for tensorboard compatibility - arrays and tensors are ignored with tensorboard
@@ -162,8 +160,7 @@ def stats_to_np(stats_dict):
 
 
 def set_seed(seed: int):
-    """
-    Helper function for reproducible behavior to set the seed in `random`, `numpy`, and `torch`.
+    """Helper function for reproducible behavior to set the seed in `random`, `numpy`, and `torch`.
 
     Args:
         seed (`int`): The seed to set.
@@ -181,9 +178,7 @@ def set_seed(seed: int):
 
 
 class LengthSampler:
-    """
-    Samples a length
-    """
+    """Samples a length."""
 
     def __init__(self, min_value, max_value):
         self.values = list(range(min_value, max_value))

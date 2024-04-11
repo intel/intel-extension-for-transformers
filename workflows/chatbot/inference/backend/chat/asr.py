@@ -28,7 +28,7 @@ class AudioSpeechRecognition:
         #self.model = ipex.optimize(self.model, dtype=torch.bfloat16)
 
     def audio2text(self, audio_path):
-        """Convert audio to text
+        """Convert audio to text.
 
         audio_path: the path to the input audio, e.g. ~/xxx.mp3
         """

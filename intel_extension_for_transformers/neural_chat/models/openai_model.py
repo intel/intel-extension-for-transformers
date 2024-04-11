@@ -33,9 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class OpenAIModel(BaseModel):
-    """
-    Customized class to operate on OpenAI models in the pipeline.
-    """
+    """Customized class to operate on OpenAI models in the pipeline."""
     def __init__(self, model_name, task, openai_config):
         self.api_key = openai_config.api_key
         self.organization = openai_config.organization

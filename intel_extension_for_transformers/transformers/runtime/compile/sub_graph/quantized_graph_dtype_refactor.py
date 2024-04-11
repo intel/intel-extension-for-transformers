@@ -27,6 +27,7 @@ import copy
 @pattern_registry(pattern_type='QuantizedGraphDtypeRefactor')
 class QuantizedGraphDtypeCheck(Pattern):
     """The QuantizedGraphDtypeRefactor pattern.
+
     Fuse the original sub-graph into the custom acceleration 'QuantizedGraphDtypeRefactor' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """

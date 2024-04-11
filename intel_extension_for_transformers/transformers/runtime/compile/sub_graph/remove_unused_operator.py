@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The RemoveUnusedOperator pattern."""
 
 from .pattern import Pattern, pattern_registry
@@ -23,7 +22,6 @@ from .subgraph_matcher import EXECUTOR_TYPE
 
 @pattern_registry(pattern_type='RemoveUnusedOperator')
 class RemoveUnusedOperator(Pattern):
-
     """The RemoveUnusedOperator pattern.
 
     Remove some operators which are not be used after all fusion patterns.

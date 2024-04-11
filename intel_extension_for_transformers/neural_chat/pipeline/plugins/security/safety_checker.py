@@ -130,7 +130,7 @@ class SafetyChecker:
         return tmpFlag, category
 
     def _get_sensitive_word(self, context):
-        """get the sensitive word."""
+        """Get the sensitive word."""
         sensitiveWordList = list()
         for i in range(len(context)):
             length = self._checkSensitiveWord(context, i)[0]

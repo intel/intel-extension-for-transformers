@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Merge two conversation files into one
+"""Merge two conversation files into one.
 
 Usage: python3 -m fastchat.data.merge --in file1.json file2.json --out merged.json
 """

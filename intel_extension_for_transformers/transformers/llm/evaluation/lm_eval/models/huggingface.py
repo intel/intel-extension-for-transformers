@@ -120,6 +120,7 @@ class HuggingFaceAutoLM(BaseLM):
         _commit_hash: Optional[str] = None
     ):
         """Initializes a HuggingFace `AutoModel` and `AutoTokenizer` for evaluation.
+
         Args:
             pretrained (str):
                 The HuggingFace Hub model ID name or the path to a pre-trained
@@ -458,7 +459,9 @@ class HuggingFaceAutoLM(BaseLM):
 
     @property
     def add_special_tokens(self) -> bool:
-        """Whether to include special tokens in encoded text. This should be
+        """Whether to include special tokens in encoded text.
+
+        This should be
         determined by whether or not the model was trained with special tokens.
         TODO: Remove these conditionals once HuggingFace supports a way to
         check whether or not an arbitrary model was trained with special tokens.
@@ -605,6 +608,7 @@ class HuggingFaceAutoLM(BaseLM):
 
 class AutoCausalLM(HuggingFaceAutoLM):
     """Causal language modeling.
+
     You can find a set of supported models in the HF documentation:
     https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForCausalLM
     """
@@ -616,18 +620,13 @@ class AutoCausalLM(HuggingFaceAutoLM):
         self.model_format = model_format
         if self.model_format == "neural_speed":
             from intel_extension_for_transformers.transformers import RtnConfig, AwqConfig, GPTQConfig, AutoRoundConfig
-            use_gptq = kwargs.pop("use_gptq", False)
-            if use_gptq:
-                self.woq_config = GPTQConfig(bits=4, compute_dtype="int8", weight_dtype="int4")
-            else:
-                self.woq_config = RtnConfig(bits=4, compute_dtype="int8", weight_dtype="int4")
         super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
 
         if self.model_format == "neural_speed":
             from transformers import AutoTokenizer, TextStreamer
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=self.woq_config,
-                                        use_neural_speed=True, trust_remote_code=kwargs.get("trust_remote_code", False))
+            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, use_neural_speed=True,
+                                trust_remote_code=kwargs.get("trust_remote_code", False))
 
         if self.model_format == "onnx":
             if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
@@ -812,6 +811,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
 class AutoSeq2SeqLM(HuggingFaceAutoLM):
     """Seq2Seq language modeling.
+
     You can find a set of supported models in the following documentation:
     https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForSeq2SeqLM
     """

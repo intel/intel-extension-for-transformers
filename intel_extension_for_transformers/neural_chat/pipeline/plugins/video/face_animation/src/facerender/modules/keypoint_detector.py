@@ -26,8 +26,9 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_an
 
 
 class KPDetector(nn.Module):
-    """
-    Detecting canonical keypoints. Return keypoint position and jacobian near each keypoint.
+    """Detecting canonical keypoints.
+
+    Return keypoint position and jacobian near each keypoint.
     """
 
     def __init__(
@@ -86,9 +87,7 @@ class KPDetector(nn.Module):
             self.down = AntiAliasInterpolation2d(image_channel, self.scale_factor)
 
     def gaussian2kp(self, heatmap):
-        """
-        Extract the mean from a heatmap
-        """
+        """Extract the mean from a heatmap."""
         shape = heatmap.shape
         heatmap = heatmap.unsqueeze(-1)
         grid = make_coordinate_grid(shape[2:], heatmap.type()).unsqueeze_(0).unsqueeze_(0)
@@ -128,9 +127,7 @@ class KPDetector(nn.Module):
 
 
 class HEEstimator(nn.Module):
-    """
-    Estimating head pose and expression.
-    """
+    """Estimating head pose and expression."""
 
     def __init__(
         self, block_expansion, feature_channel, num_kp, image_channel, max_features, num_bins=66, estimate_jacobian=True

@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The supported pattern file."""
 
 from abc import abstractmethod
@@ -67,7 +66,6 @@ supported_patterns = [
     'AttentionBlock_QKVPreReshape',
     'AttentionBlock_AttentionMaskAddReshape',
     'AttentionBlock_ConstantOfShapeWithMul',
-
     'Transformer2Dmodel_GetSampleBatch',
     'Transformer2Dmodel_SampleSlice',
     'Transformer2Dmodel_EncoderHiddenStatesReshape',
@@ -87,7 +85,6 @@ supported_patterns = [
     'AddClsToken',
     'TransposeBatchMatMul',
     'Gelu',
-
     'MatMulWithBiasGelu',
     'MatMulWithBiasAdd',
     'AddEmbeddings',
@@ -95,7 +92,6 @@ supported_patterns = [
     'MatMulWithBiasRelu',
     'MatMulWithBiasSigmoid',
     'MatMulWithBiasUnsqueeze',
-
     "RestoreHiddenStatesInLengthAdaptiveUpdateIndices",
     "AttentionOutputLayerNormLengthAdaptiveExpandIndices",
     "ReshapeBeforeAndAfterAttentionOutLayerNormGatherElements",
@@ -105,7 +101,6 @@ supported_patterns = [
     'LayerNormWithTranspose',
     'StartEndLogits',
     'CastTo',
-
     'TorchUnpackBaddbmm',
     'RemoveZeros',
     'LowerAllTuples',
@@ -125,11 +120,9 @@ supported_patterns = [
     'RemoveSlice',
     'RemoveRange',
     'RemoveLastView',
-
     'MatMulWithTransposeScaleAdd',
     'NeoxReorderChange',
     'NeoxRoraryPosEmb',
-
     'InsertQuantNode',
     'StableDiffusion_InsertQuantNode',
     'InsertBF16Node',
@@ -143,7 +136,6 @@ supported_patterns = [
     'StableDiffusion_ReshapeFusion',
     'StableDiffusion_MHAReshape',
     'StableDiffusion_MHA',
-
     'OperatorAdaptor',
     'EmbeddingsTo2DBeforeInnerProduct',
     'QuantGatherToBF16',
@@ -152,7 +144,6 @@ supported_patterns = [
     'QuantizedGraphDtypeRefactor',
     'ExplicitNHWCTransposeForConv',
     'ExplicitNHWCTransposeForConvQAT',
-
     'Int8BF16MixedPrecisionChecker',
     'LlamaPostprocess',
     'RemoveUnusedOperator',

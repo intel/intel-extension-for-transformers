@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-A model worker executes the model based on Cacheflow.
+"""A model worker executes the model based on Cacheflow.
 
 Install Cacheflow first. Then, assuming controller is live:
 1. ray start --head

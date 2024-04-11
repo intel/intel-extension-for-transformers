@@ -32,31 +32,31 @@ from ...cli.log import logger
 from ...plugins import plugins
 
 class Task():
-    """ task class """
+    """Task class."""
     def __init__(self):
         self.cond = Condition()
         self.is_complete = False
         self.response = None
 
     def done(self):
-        """ function """
+        """function."""
         logger.info("task is done")
         self.cond.acquire()
         self.cond.notify()
         self.cond.release()
 
     def wait_for_done(self):
-        """ function """
+        """function."""
         self.cond.acquire()
         self.cond.wait_for(predicate=self.get_task_status, timeout=None)
         self.cond.release()
 
     def set_prompt(self, prompt):
-        """ function """
+        """function."""
         self.prompt = prompt
 
     def set_steps(self, num_inference_steps):
-        """ function """
+        """function."""
         self.num_inference_steps = num_inference_steps
 
     def set_scale(self, guidance_scale):
@@ -72,33 +72,33 @@ class Task():
         self.strength = strength
 
     def set_task_type(self, task_type):
-        """ set task type """
+        """Set task type."""
         self.task_type = task_type
 
     def set_start_time(self, time):
-        """ set_start_time for time-out """
+        """set_start_time for time-out."""
         self.start_time = time
 
     def get_task_status(self):
         return self.is_complete
 
 class TaskQueue():
-    """ TaskQueue """
+    """TaskQueue."""
     def __init__(self):
         self.queue = queue.Queue()
 
     def push(self, task):
-        """ function """
+        """function."""
         self.queue.put(task)
 
     def pop(self):
-        """ function """
+        """function."""
         item = self.queue.get_nowait()
         self.queue.task_done()
         return item
 
     def batch_pop(self, batch_size):
-        """ function """
+        """function."""
         result = []
         count = 0
         while count < batch_size and not self.queue.empty():
@@ -108,11 +108,11 @@ class TaskQueue():
         return result
 
     def empty(self):
-        """ function """
+        """function."""
         return self.queue.empty()
 
     def join(self):
-        """ function """
+        """function."""
         self.queue.join()
 
 class Worker(threading.Thread):

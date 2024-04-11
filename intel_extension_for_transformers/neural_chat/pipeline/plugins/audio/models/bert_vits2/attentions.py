@@ -416,6 +416,7 @@ class MultiHeadAttention(nn.Module):
 
     def _attention_bias_proximal(self, length):
         """Bias for self-attention to encourage attention to close positions.
+
         Args:
           length: an integer scalar.
         Returns:

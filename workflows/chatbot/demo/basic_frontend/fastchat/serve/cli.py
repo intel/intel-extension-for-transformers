@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Chat with a model with command line interface.
+"""Chat with a model with command line interface.
 
 Usage:
 python3 -m fastchat.serve.cli --model ~/model_weights/llama-7b

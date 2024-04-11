@@ -60,7 +60,7 @@ def setup_router(
         port=80,
         endpoint=None
     ):
-    """Setup router for FastAPI
+    """Setup router for FastAPI.
 
     Args:
         api_list (List): List of API names

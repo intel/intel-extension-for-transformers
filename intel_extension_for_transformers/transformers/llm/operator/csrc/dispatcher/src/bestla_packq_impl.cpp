@@ -1,14 +1,30 @@
+// Copyright (c) 2024 Intel Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "bestla/bestla_prologue_b.h"
 #include "../include/bestla_packq_impl.hpp"
 
 namespace woq {
 template <class GemmCore, BTLA_ISA ISA>
-void execute_qpack(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx) {
+void execute_qpack(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx, WOQ_TASK task) {
   using proB = bestla::prologue_b::gemm::WeightKBlockNInteger<GemmCore, ISA>;
   static proB ker;
   auto qpackw = ker.createStorage(ctx->n, ctx->k, p->blocksize, wei2bestladt_map[p->weight_type],
                                   scale2bestladt_map[p->scale_type], BTLA_DTYPE::BF16, p->asym);
   if (p->enable_act_shuffle) ker.enableShuffle(&qpackw);
+  ctx->packw_size = qpackw.mSize;
+  if (task == WOQ_GET_PACKW_SIZE) return;
   *(ctx->output) = torch::empty(qpackw.mSize, torch::kInt8);
   qpackw.assign(ctx->output->data_ptr<int8_t>());
   if (p->enable_act_shuffle)
@@ -106,7 +122,8 @@ void bestla_2dcpy_tensor(int row, int col, int ld_src, torch::Tensor& dst, void*
   dst = torch::empty({row, col}, get_torch_dtype(dtype));
   auto dt_size = get_sizeof_bestla_dtype(dtype);
   for (int i = 0; i < row; i++) {
-    memcpy(reinterpret_cast<char*>(dst.data_ptr()) + i * col * dt_size, reinterpret_cast<char*>(src) + i * ld_src * dt_size, col * dt_size);
+    memcpy(reinterpret_cast<char*>(dst.data_ptr()) + i * col * dt_size,
+           reinterpret_cast<char*>(src) + i * ld_src * dt_size, col * dt_size);
   }
 }
 
@@ -164,36 +181,50 @@ torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T) {
   return output;
 }
 
-void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx) {
+void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx, WOQ_TASK task) {
   TORCH_CHECK(p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int4_fullrange",
               "Qbits: only support Integer WOQ in PACKQ");
 
+  // NTILE & compute-dtype determine the padsize.
+  // in qbits:
+  // avx_vnni/avx512f_vnni/amx-int8 NTILE==48, compute-dtype=int8;
+  // avx2/avx512f NTILE==48, compute-dtype=fp32;
+  // amx-bf16 NTILE==64, compute-dtype=bf16.
+  if (task == WOQ_GET_PACKW_SIZE) {
+    if (p->compute_type == "int8")
+      return execute_qpack<bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>, BTLA_ISA::AMX_INT8>(p, ctx, task);
+    if (p->compute_type == "fp32")
+      return execute_qpack<bestla::gemm::SCoreRowNAvx512f<48, 8>, BTLA_ISA::AVX512F>(p, ctx, task);
+    if (p->compute_type == "bf16")
+      return execute_qpack<bestla::gemm::HCoreRowNAmxbf16<64, 16>, BTLA_ISA::AMX_BF16>(p, ctx, task);
+  }
+
   if (p->compute_type == "int8") {
     if (dispatcher_utils::check_amx() && p->blocksize % bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>::KTILE == 0) {
-      return execute_qpack<bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>, BTLA_ISA::AMX_INT8>(p, ctx);
+      return execute_qpack<bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>, BTLA_ISA::AMX_INT8>(p, ctx, task);
     }
     if (dispatcher_utils::check_avx512_vnni() &&
         p->blocksize % bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::KTILE == 0) {
-      return execute_qpack<bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>, BTLA_ISA::AVX512_VNNI>(p, ctx);
+      return execute_qpack<bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>, BTLA_ISA::AVX512_VNNI>(p, ctx, task);
     }
     if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>::KTILE == 0) {
-      return execute_qpack<bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>, BTLA_ISA::AVX_VNNI>(p, ctx);
+      return execute_qpack<bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>, BTLA_ISA::AVX_VNNI>(p, ctx, task);
     }
     TORCH_CHECK(false, "Qbits: Illegal config in int8 compute_type, blocksize:", p->blocksize,
                 ", ISA support vnni:", dispatcher_utils::check_avx_vnni());
   }
   if (p->compute_type == "fp32") {
     if (dispatcher_utils::check_avx512f()) {
-      return execute_qpack<bestla::gemm::SCoreRowNAvx512f<48, 8>, BTLA_ISA::AVX512F>(p, ctx);
+      return execute_qpack<bestla::gemm::SCoreRowNAvx512f<48, 8>, BTLA_ISA::AVX512F>(p, ctx, task);
     }
     if (dispatcher_utils::check_avx2()) {
-      return execute_qpack<bestla::gemm::SCoreRowNAvx2<48, 2>, BTLA_ISA::AVX2>(p, ctx);
+      return execute_qpack<bestla::gemm::SCoreRowNAvx2<48, 2>, BTLA_ISA::AVX2>(p, ctx, task);
     }
     TORCH_CHECK(false, "Qbits: device ISA must support BTLA_ISA::AVX2 when compute_type==fp32");
   }
   if (p->compute_type == "bf16") {
     if (dispatcher_utils::check_amx()) {
-      return execute_qpack<bestla::gemm::HCoreRowNAmxbf16<64, 16>, BTLA_ISA::AMX_BF16>(p, ctx);
+      return execute_qpack<bestla::gemm::HCoreRowNAmxbf16<64, 16>, BTLA_ISA::AMX_BF16>(p, ctx, task);
     }
     TORCH_CHECK(false, "Qbits: device ISA must support AMX-BF16 when compute_type==bf16");
   }
