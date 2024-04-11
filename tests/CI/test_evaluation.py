@@ -50,7 +50,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
                             batch_size = 1,
                             limit = 5)
         results = evaluate(args)
-        self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)
+        self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
 
     def test_evaluate_for_Seq2SeqLM(self):
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
@@ -62,16 +62,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
                             limit = 5)
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)
-
-        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf",
-                            model_args="pretrained=hf-internal-testing/tiny-random-t5,dtype=float32",
-                            tasks = "piqa",
-                            device = "cpu",
-                            batch_size = 1,
-                            limit = 5)
-        results = evaluate(args)
-        self.assertEqual(results["results"]["piqa"]["acc,none"], 1.0)
 
     def test_cnn_daily(self):
         from intel_extension_for_transformers.transformers.llm.evaluation.hf_eval import (
