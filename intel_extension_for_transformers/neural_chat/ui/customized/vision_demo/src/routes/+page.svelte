@@ -173,7 +173,7 @@
 </script>
 
 <div
-	class="flex flex-col grow font-intel-light"
+	class="flex flex-col grow"
 >
 	<div class="relative h-full items-center gap-5 bg-fixed sm:flex">
 		<div
