@@ -39,6 +39,7 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models import GaudiLlamaForCausalLM
 from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import adapt_transformers_to_gaudi
+from optimum.habana.utils import get_hpu_memory_stats
 
 # Tweak generation so that it runs faster on Gaudi
 adapt_transformers_to_gaudi()
@@ -52,6 +53,7 @@ def greedy_generate(model, tokenizer, dataset, kv_cache=None, max_new_tokens=512
     streamer = TextStreamer(tokenizer)
     new_line_tokens = tokenizer("\n\n", return_tensors="pt", add_special_tokens=False).input_ids
     past_key_values = None
+    num_token = 0
 
     for prompt_index, prompt in enumerate(dataset["prompt"]):
         # Use the chat template initially, as it adds the system prompt if the model has one, and then use [INST] and [/INST]
@@ -61,6 +63,7 @@ def greedy_generate(model, tokenizer, dataset, kv_cache=None, max_new_tokens=512
             prompt = tokenizer.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False)
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids
         input_ids = input_ids.to(model.device)
+        num_token += input_ids.size(-1)
 
         streamer.put(input_ids)
         for _ in range(max_new_tokens):
@@ -71,11 +74,18 @@ def greedy_generate(model, tokenizer, dataset, kv_cache=None, max_new_tokens=512
             pred_token_idx = outputs.logits[:, -1, :].argmax(dim=-1).unsqueeze(1)
             streamer.put(pred_token_idx)
             input_ids = pred_token_idx
+            num_token += 1
 
             if pred_token_idx == tokenizer.eos_token_id:
                 break
 
         streamer.put(new_line_tokens)
+        mem = get_hpu_memory_stats()
+        print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        for k, v in mem.items():
+            print("{:35} = {} GB".format(k[:-5].replace("_", " ").capitalize(), v))
+        print("total token: {}k".format(num_token / 1000.0))
+        print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
 
 def main():
