@@ -22,7 +22,7 @@ git checkout 989671d365ce6bfd9ef2ad34c2bc1d8614dd708e
 cd ./intel_extension_for_transformers/neural_chat
 
 # Install neural-chat dependency for Intel GPU
-pip install -r requirements_xpu.txt
+pip install -r requirements_cpu.txt
 
 pip install accelerate==0.28.0
 pip install transformers_stream_generator==0.0.5
