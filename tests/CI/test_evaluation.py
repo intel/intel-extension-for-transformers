@@ -19,7 +19,7 @@ import subprocess
 import torch
 import optimum.version
 import platform
-from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from packaging.version import Version
 
 OPTIMUM114_VERSION = Version("1.14.0")
@@ -45,6 +45,31 @@ class TestLmEvaluationHarness(unittest.TestCase):
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
         args = LMEvalParser(model = "hf",
                             model_args="pretrained=hf-internal-testing/tiny-random-gptj,dtype=float32",
+                            tasks = "piqa",
+                            device = "cpu",
+                            batch_size = 1,
+                            limit = 5)
+        results = evaluate(args)
+        self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
+
+    def test_evaluate_for_NS(self):
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+        args = LMEvalParser(model = "hf",
+                            model_args="pretrained=facebook/opt-125m,dtype=float32,model_format=neural_speed",
+                            tasks = "piqa",
+                            device = "cpu",
+                            batch_size = 1,
+                            limit = 5)
+        results = evaluate(args)
+        self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)
+
+    def test_evaluate_for_user_model(self):
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+        user_model = AutoModelForCausalLM.from_pretrained("hf-internal-testing/tiny-random-gptj")
+        tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-gptj")
+        args = LMEvalParser(model = "hf",
+                            user_model = user_model,
+                            tokenizer = tokenizer,
                             tasks = "piqa",
                             device = "cpu",
                             batch_size = 1,

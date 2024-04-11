@@ -563,30 +563,10 @@ class HFLM(TemplateLM):
             )
 
             if self.model_format == "neural_speed":
-                from intel_extension_for_transformers.transformers import (
-                    RtnConfig,
-                    AwqConfig,
-                    GPTQConfig,
-                    AutoRoundConfig,
-                )
-
-                if self.config.quantization_config["quant_method"] in ["awq", "gptq", "autoround"]:
-                    use_gptq = True
-                else:
-                    use_gptq = False
-                if use_gptq:
-                    woq_config = GPTQConfig(
-                        bits=4, compute_dtype="int8", weight_dtype="int4"
-                    )
-                else:
-                    woq_config = RtnConfig(
-                        bits=4, compute_dtype="int8", weight_dtype="int4"
-                    )
                 from transformers import AutoTokenizer, TextStreamer
 
                 self._model = AutoModelForCausalLM.from_pretrained(
                     pretrained,
-                    quantization_config=woq_config,
                     use_neural_speed=True,
                     trust_remote_code=trust_remote_code,
                 )
