@@ -436,7 +436,7 @@ if args.output_dir is not None:
     if args.sq:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
+    elif args.mixed_precision or (args.woq and not args.use_neural_speed):
         # user_model will be changed.
         user_model.save_pretrained(args.output_dir)
         # loading saved woq model
