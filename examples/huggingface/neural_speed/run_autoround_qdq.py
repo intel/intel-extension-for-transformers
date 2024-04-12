@@ -23,7 +23,7 @@ if __name__ == "__main__":
     print(args)
     eval_args = LMEvalParser(
         model="hf",
-        model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True',
+        model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True,model_format=neural_speed',
         tasks=f"{args.tasks}",
         device="cpu"
     )

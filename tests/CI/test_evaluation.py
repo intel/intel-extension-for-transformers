@@ -77,7 +77,11 @@ class TestLmEvaluationHarness(unittest.TestCase):
                             )
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
-        cmd = 'wandb sync -y && pip uninstall wandb'
+        cmd = 'wandb sync -y'
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE, shell=True) # nosec
+        p.communicate()
+        cmd = 'pip uninstall wandb -y'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
