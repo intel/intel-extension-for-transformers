@@ -247,7 +247,7 @@ function run_benchmark {
             script="run_generation_cpu_woq.py"
         fi
     fi
-    if [[ ${int8} == "true" ]]; then
+    if [[ ${int8} == "true" ]] && [[ "$model_source" != "huggingface" ]]; then
         if [ "${script}" == "run_generation_sq.py" ];then
             extra_cmd=$extra_cmd" --int8"
         fi
