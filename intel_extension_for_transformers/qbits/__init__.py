@@ -16,4 +16,4 @@
 # limitations under the License.
 
 import torch
-from intel_extension_for_transformers.qbits_py import *
+from intel_extension_for_transformers.qbits_py import * # pylint: disable=E0401, E0611
