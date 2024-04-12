@@ -32,7 +32,12 @@ PYTHON_VERSION = Version(platform.python_version())
 )
 
 class TestLmEvaluationHarness(unittest.TestCase):
-
+    @classmethod
+    def setUpClass(self):
+        if os.path.exists("./evaluation_results.json"):
+            os.remove("./evaluation_results.json")
+        if os.path.exists("./include_path.json"):
+            os.remove("./include_path.json")
     @classmethod
     def tearDownClass(self):
         shutil.rmtree("./lm_cache", ignore_errors=True)
@@ -77,10 +82,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
                             )
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
-        cmd = 'wandb sync -y'
-        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, shell=True) # nosec
-        p.communicate()
         cmd = 'pip uninstall wandb -y'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
