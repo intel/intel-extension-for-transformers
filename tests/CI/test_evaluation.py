@@ -116,7 +116,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
                             device="cpu",
                             batch_size=1,
                             limit=5,
-                            output_path = "./evaluation_results.json"
+                            output_path = "./evaluation_results.json",
+                            log_samples=True
                             )
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
