@@ -34,12 +34,20 @@ PYTHON_VERSION = Version(platform.python_version())
 class TestLmEvaluationHarness(unittest.TestCase):
     @classmethod
     def setUpClass(self):
+        cmd = 'pip install wandb'
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE, shell=True) # nosec
+        p.communicate()
         if os.path.exists("./evaluation_results.json"):
             os.remove("./evaluation_results.json")
         if os.path.exists("./include_path.json"):
             os.remove("./include_path.json")
     @classmethod
     def tearDownClass(self):
+        cmd = 'pip uninstall wandb -y'
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE, shell=True) # nosec
+        p.communicate()
         shutil.rmtree("./lm_cache", ignore_errors=True)
         shutil.rmtree("./t5", ignore_errors=True)
         shutil.rmtree("./t5-past", ignore_errors=True)
@@ -67,10 +75,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
 
     def test_evaluate_for_CasualLM_with_wandb_args(self):
-        cmd = 'pip install wandb'
-        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, shell=True) # nosec
-        p.communicate()
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
         args = LMEvalParser(model="hf",
                             model_args="pretrained=hf-internal-testing/tiny-random-gptj,dtype=float32",
@@ -81,11 +85,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
                             wandb_args="project=test-project,name=test-run,mode=offline"
                             )
         results = evaluate(args)
-        self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
-        cmd = 'pip uninstall wandb -y'
-        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, shell=True) # nosec
-        p.communicate()
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
 
     def test_evaluate_for_CasualLM_Predict_Only(self):
