@@ -173,8 +173,8 @@ function run_benchmark {
         model_name_or_path="Qwen/Qwen-7B"
         extra_cmd=$extra_cmd" --trust_remote_code"
         extra_cmd=$extra_cmd" --_commit_hash f7bc352f27bb1c02ee371a4576942a7d96c8bb97"
-	      pip install transformers==4.35.2
-          script="run_generation_sq.py"
+	    pip install transformers==4.35.2
+        script="run_generation_sq.py"
     elif [ "${topology}" = "mistral_7b" ]; then
         model_name_or_path="Intel/neural-chat-7b-v3
         script="run_generation_sq.py""
@@ -198,61 +198,60 @@ function run_benchmark {
     elif [ "${topology}" = "mistral_7b_gptq" ] && [ "$model_source" != "huggingface" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
         script="run_generation_cpu_woq.py"
-    fi
-
-    if [[ ${int8} == "true" ]]; then
-        if [ "${topology}" = "gpt_j_woq_rtn" ]; then
-            extra_cmd=$extra_cmd" --woq"
+    elif [ "${topology}" = "gpt_j_woq_rtn" ]; then
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "gpt_j_woq_bab" ]; then
+        extra_cmd=$extra_cmd" --bitsandbytes"
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "gpt_j_mp" ]; then
+        extra_cmd=$extra_cmd" --mixed_precision"
+        script="run_generation_sq.py"
+    elif [ "${topology}" = "llama2_7b_gptq" ]; then
+        if [[ "$model_source" == "huggingface" ]]; then
+            model_name_or_path="TheBloke/Llama-2-7B-Chat-GPTQ"
             script="run_generation_cpu_woq.py"
-        elif [ "${topology}" = "gpt_j_woq_bab" ]; then
-            extra_cmd=$extra_cmd" --bitsandbytes"
-            script="run_generation_cpu_woq.py"
-        elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
-            script="run_generation_cpu_woq.py"
-        elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
-            script="run_generation_cpu_woq.py"
-        elif [ "${topology}" = "gpt_j_mp" ]; then
-            extra_cmd=$extra_cmd" --mixed_precision"
-            script="run_generation_sq.py"
-        elif [ "${topology}" = "llama2_7b_gptq" ]; then
-            if [[ "$model_source" == "huggingface" ]]; then
-                model_name_or_path="TheBloke/Llama-2-7B-Chat-GPTQ"
-                script="run_generation_cpu_woq.py"
-            else
-                model_name_or_path="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
-                extra_cmd=$extra_cmd" --trust_remote_code"
-                script="run_generation_cpu_woq.py"
-            fi
-        elif [ "${topology}" = "mistral_7b_autoround" ]; then
-            if [[ "$model_source" == "huggingface" ]]; then
-                model_name_or_path="Intel/Mistral-7B-v0.1-int4-inc"
-                script="run_generation_cpu_woq.py"
-            else
-                model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-                extra_cmd=$extra_cmd" --trust_remote_code"
-                script="run_generation_cpu_woq.py"
-            fi            
-        elif [ "${topology}" = "mistral_7b_rtn" ]; then
-            if [[ "$model_source" == "huggingface" ]]; then
-                model_name_or_path="mistralai/Mistral-7B-v0.1"
-                script="run_generation_cpu_woq.py"
-            else
-                model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-                extra_cmd=$extra_cmd" --trust_remote_code"
-                script="run_generation_cpu_woq.py"
-            fi            
-        elif [ "${topology}" = "mistral_7b_gptq" ]; then
-            if [[ "$model_source" == "huggingface" ]]; then
-                model_name_or_path="TheBloke/Mistral-7B-Instruct-v0.1-GPTQ"
-                script="run_generation_cpu_woq.py"
-            else
-                model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-                extra_cmd=$extra_cmd" --trust_remote_code"
-                script="run_generation_cpu_woq.py"
-            fi
         else
+            model_name_or_path="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
+            extra_cmd=$extra_cmd" --trust_remote_code"
+            script="run_generation_cpu_woq.py"
+        fi
+    elif [ "${topology}" = "mistral_7b_autoround" ]; then
+        if [[ "$model_source" == "huggingface" ]]; then
+            model_name_or_path="Intel/Mistral-7B-v0.1-int4-inc"
+            script="run_generation_cpu_woq.py"
+        else
+            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+            extra_cmd=$extra_cmd" --trust_remote_code"
+            script="run_generation_cpu_woq.py"
+        fi            
+    elif [ "${topology}" = "mistral_7b_rtn" ]; then
+        if [[ "$model_source" == "huggingface" ]]; then
+            model_name_or_path="mistralai/Mistral-7B-v0.1"
+            script="run_generation_cpu_woq.py"
+        else
+            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+            extra_cmd=$extra_cmd" --trust_remote_code"
+            script="run_generation_cpu_woq.py"
+        fi            
+    elif [ "${topology}" = "mistral_7b_gptq" ]; then
+        if [[ "$model_source" == "huggingface" ]]; then
+            model_name_or_path="TheBloke/Mistral-7B-Instruct-v0.1-GPTQ"
+            script="run_generation_cpu_woq.py"
+        else
+            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+            extra_cmd=$extra_cmd" --trust_remote_code"
+            script="run_generation_cpu_woq.py"
+        fi
+    fi
+    if [[ ${int8} == "true" ]]; then
+        if [ "${script}" == "run_generation_sq.py" ];then
             extra_cmd=$extra_cmd" --int8"
         fi
+        model_name_or_path=$tuned_checkpoint
     fi
     if [[ $backend == "neuralspeed" ]]; then
         extra_cmd=$extra_cmd" --use_neural_speed"
@@ -261,13 +260,13 @@ function run_benchmark {
 
     if [ "${script}" == "run_generation_sq.py" ];then
         python -u ./${script} \
-            --model ${tuned_checkpoint} \
+            --model ${model_name_or_path} \
             --batch_size ${batch_size} \
             ${mode_cmd} \
             ${extra_cmd}
     elif [ "${script}" == "run_generation_cpu_woq.py" ];then
         python -u ./${script} \
-            --model ${tuned_checkpoint} \
+            --model ${model_name_or_path} \
             --batch_size ${batch_size} \
             ${mode_cmd} \
             ${extra_cmd}
