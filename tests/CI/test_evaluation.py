@@ -38,8 +38,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
-        output,erorr = p.communicate()
-        print(erorr.decode())
+        output,error = p.communicate()
+        print(error.decode())
         print(output.decode())
         if os.path.exists("./evaluation_results.json"):
             os.remove("./evaluation_results.json")
@@ -50,8 +50,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
         cmd = 'pip uninstall wandb -y'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
-        output,erorr = p.communicate()
-        print(erorr.decode())
+        output,error = p.communicate()
+        print(error.decode())
         print(output.decode())
         shutil.rmtree("./lm_cache", ignore_errors=True)
         shutil.rmtree("./t5", ignore_errors=True)
