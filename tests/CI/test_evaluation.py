@@ -30,6 +30,7 @@ PYTHON_VERSION = Version(platform.python_version())
     PYTHON_VERSION.release < Version("3.9.0").release,
     "Please use Python 3.9 or higher version for lm-eval",
 )
+
 class TestLmEvaluationHarness(unittest.TestCase):
 
     @classmethod
@@ -39,27 +40,68 @@ class TestLmEvaluationHarness(unittest.TestCase):
         shutil.rmtree("./t5-past", ignore_errors=True)
         shutil.rmtree("./gptj", ignore_errors=True)
         shutil.rmtree("./gptj-past", ignore_errors=True)
-        shutil.rmtree("./evaluation_results.json", ignore_errors=True)
+        shutil.rmtree("./wandb", ignore_errors=True)
+        if os.path.exists("./evaluation_results.json"):
+            os.remove("./evaluation_results.json")
+        if os.path.exists("./include_path.json"):
+            os.remove("./include_path.json")
 
     def test_evaluate_for_CasualLM(self):
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf",
+        args = LMEvalParser(model="hf",
                             model_args="pretrained=hf-internal-testing/tiny-random-gptj,dtype=float32",
-                            tasks = "piqa",
-                            device = "cpu",
-                            batch_size = 1,
-                            limit = 5)
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5,
+                            trust_remote_code=True,
+                            verbosity="DEBUG",
+                            include_path="./include_path.json"
+                            )
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
 
+    def test_evaluate_for_CasualLM_with_wandb_args(self):
+        cmd = 'pip install wandb'
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE, shell=True) # nosec
+        p.communicate()
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+        args = LMEvalParser(model="hf",
+                            model_args="pretrained=hf-internal-testing/tiny-random-gptj,dtype=float32",
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5,
+                            wandb_args="project=test-project,name=test-run,mode=offline"
+                            )
+        results = evaluate(args)
+        self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
+        cmd = 'wandb sync -y && pip uninstall wandb'
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE, shell=True) # nosec
+        p.communicate()
+        self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
+
+    def test_evaluate_for_CasualLM_Predict_Only(self):
+        from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+        args = LMEvalParser(model="hf",
+                            model_args="pretrained=hf-internal-testing/tiny-random-gptj,dtype=float32",
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5,
+                            predict_only=True
+                            )
+
     def test_evaluate_for_NS(self):
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf",
+        args = LMEvalParser(model="hf",
                             model_args="pretrained=facebook/opt-125m,dtype=float32,model_format=neural_speed",
-                            tasks = "piqa",
-                            device = "cpu",
-                            batch_size = 1,
-                            limit = 5)
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5)
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)
 
@@ -67,24 +109,26 @@ class TestLmEvaluationHarness(unittest.TestCase):
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
         user_model = AutoModelForCausalLM.from_pretrained("hf-internal-testing/tiny-random-gptj")
         tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-gptj")
-        args = LMEvalParser(model = "hf",
-                            user_model = user_model,
-                            tokenizer = tokenizer,
-                            tasks = "piqa",
-                            device = "cpu",
-                            batch_size = 1,
-                            limit = 5)
+        args = LMEvalParser(model="hf",
+                            user_model=user_model,
+                            tokenizer=tokenizer,
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5,
+                            output_path = "./evaluation_results.json"
+                            )
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
 
     def test_evaluate_for_Seq2SeqLM(self):
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf",
+        args = LMEvalParser(model="hf",
                             model_args="pretrained=hf-internal-testing/tiny-random-t5,dtype=float32",
-                            tasks = "piqa",
-                            device = "cpu",
-                            batch_size = 1,
-                            limit = 5)
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5)
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)
 
@@ -112,12 +156,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf",
+        args = LMEvalParser(model="hf",
                             model_args="pretrained=./t5-past,dtype=float32,model_format=onnx",
-                            tasks = "piqa",
-                            device = "cpu",
-                            batch_size = 1,
-                            limit = 5)
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5)
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)
 
@@ -125,12 +169,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
         merged_model_path = "./t5-past/decoder_model_merged.onnx"
         if os.path.exists(merged_model_path):
             os.remove(merged_model_path)
-            args = LMEvalParser(model = "hf",
+            args = LMEvalParser(model="hf",
                                 model_args="pretrained=./t5-past,dtype=float32,model_format=onnx",
-                                tasks = "piqa",
-                                device = "cpu",
-                                batch_size = 1,
-                                limit = 5)
+                                tasks="piqa",
+                                device="cpu",
+                                batch_size=1,
+                                limit=5)
             results = evaluate(args)
             self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)
 
@@ -138,12 +182,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
         cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation t5/"
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
-        args = LMEvalParser(model = "hf",
+        args = LMEvalParser(model="hf",
                             model_args="pretrained=./t5,dtype=float32,model_format=onnx",
-                            tasks = "piqa",
-                            device = "cpu",
-                            batch_size = 1,
-                            limit = 5)
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5)
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.6)
 
@@ -157,12 +201,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
         # test evaluate decoder_model_merged
         from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-        args = LMEvalParser(model = "hf",
+        args = LMEvalParser(model="hf",
                             model_args="pretrained=./gptj-past,dtype=float32,model_format=onnx",
-                            tasks = "piqa",
-                            device = "cpu",
-                            batch_size = 1,
-                            limit = 5)
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5)
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
 
@@ -170,12 +214,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
         merged_model_path = "./gptj-past/decoder_model_merged.onnx"
         if os.path.exists(merged_model_path):
             os.remove(merged_model_path)
-            args = LMEvalParser(model = "hf",
+            args = LMEvalParser(model="hf",
                                 model_args="pretrained=./gptj-past,dtype=float32,model_format=onnx",
-                                tasks = "piqa",
-                                device = "cpu",
-                                batch_size = 1,
-                                limit = 5)
+                                tasks="piqa",
+                                device="cpu",
+                                batch_size=1,
+                                limit=5)
             results = evaluate(args)
             self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
 
@@ -186,12 +230,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
             cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation gptj/"
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
         p.communicate()
-        args = LMEvalParser(model = "hf",
+        args = LMEvalParser(model="hf",
                             model_args="pretrained=./gptj,dtype=float32,model_format=onnx",
-                            tasks = "piqa",
-                            device = "cpu",
-                            batch_size = 1,
-                            limit = 5)
+                            tasks="piqa",
+                            device="cpu",
+                            batch_size=1,
+                            limit=5)
         results = evaluate(args)
         self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
 
@@ -200,12 +244,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
             cmd = "optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/"
             p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)  # nosec
             p.communicate()
-            args = LMEvalParser(model = "hf",
+            args = LMEvalParser(model="hf",
                                 model_args="pretrained=./gptj-past,dtype=float32,model_format=onnx",
-                                tasks = "piqa",
-                                device = "cpu",
-                                batch_size = 1,
-                                limit = 5)
+                                tasks="piqa",
+                                device="cpu",
+                                batch_size=1,
+                                limit=5)
             results = evaluate(args)
             self.assertEqual(results["results"]["piqa"]["acc,none"], 0.4)
 
