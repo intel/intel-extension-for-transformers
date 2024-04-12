@@ -104,10 +104,9 @@ pipeline = StableDiffusionPipeline(
     unet=unet,
     tokenizer=tokenizer,
     scheduler=PNDMScheduler.from_config("CompVis/stable-diffusion-v1-4", subfolder="scheduler"),
-    safety_checker=StableDiffusionSafetyChecker.from_pretrained("CompVis/stable-diffusion-safety-checker"),
+    safety_checker=None,
     feature_extractor=CLIPFeatureExtractor.from_pretrained("openai/clip-vit-base-patch32"),
 )
-pipeline.safety_checker = lambda images, clip_input: (images, False)
 int8_model_path = os.path.join(args.pretrained_model_name_or_path, "pytorch_model.bin")
 if os.path.exists(int8_model_path):
     unet = load(int8_model_path, model=unet)
@@ -120,7 +119,7 @@ grid, images = generate_images(pipeline, prompt=args.caption, num_images_per_pro
 grid.save(
     os.path.join(args.pretrained_model_name_or_path, "{}.png".format("_".join(args.caption.split())))
 )
-dirname = os.path.join(args.pretrained_model_name_or_path, "_".join(args.caption.split()))
-os.makedirs(shlex.quote(dirname), exist_ok=True)
+dirname = shlex.quote(os.path.join(args.pretrained_model_name_or_path, "_".join(args.caption.split())))
+os.makedirs(dirname, exist_ok=True)
 for idx, image in enumerate(images):
     image.save(os.path.join(dirname, "{}.png".format(idx+1)))
