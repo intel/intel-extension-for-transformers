@@ -1734,6 +1734,8 @@
     "benchmark": {
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
+	"woq": "false",
+	"disable_optimize_transformers": "false",
         "model": "/tf_dataset2/models/nlp_toolkit/mistral_7b_rtn",
         "mode": "benchmark"
       }
@@ -1751,6 +1753,8 @@
     "benchmark": {
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
+	"woq": "false",
+        "disable_optimize_transformers": "false",
         "model": "/tf_dataset2/models/nlp_toolkit/llama2_rtn",
         "mode": "benchmark"
       }
@@ -1768,6 +1772,8 @@
     "benchmark": {
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
+	"woq": "false",
+	"disable_optimize_transformers": "false",
         "model": "/tf_dataset2/models/nlp_toolkit/qwen_rtn",
         "mode": "benchmark"
       }
