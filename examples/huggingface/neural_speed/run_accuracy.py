@@ -27,6 +27,7 @@ if __name__ == "__main__":
     model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True'
 
     if args.model_format == "neural_speed":
+        model_args += f",model_format=neural_speed"
         eval_args = LMEvalParser(model="hf", 
                             model_args=model_args,
                             tasks=f"{args.tasks}",
