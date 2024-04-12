@@ -8,48 +8,52 @@
 ```
 conda create -n itrex-chatbot python=3.9
 conda activate itrex-chatbot
-pip install intel-extension-for-transformers==1.3.2
-```
-## 1.2 Install neural-chat dependency
-
-```
-pip install accelerate
-pip install transformers_stream_generator
-
 git clone https://github.com/intel/intel-extension-for-transformers.git ~/itrex
-cd ~/itrex
-git checkout v1.3.2
-
-cd ~/itrex/intel_extension_for_transformers/neural_chat
 ```
+
+## 1.2 Install neural-chat dependency
 
 Setup CPU platform go to [1.2.1](#121-cpu-platform)
 
 Setup GPU platform go to [1.2.2](#122-GPU-Platform)
 
 ### 1.2.1 CPU Platform
-`pip install -r requirements_cpu.txt`
+```
+cd ~/itrex/intel_extension_for_transformers/neural_chat/examples/quick_start/chatbot
+sh install_chatbot_cpu.sh
+```
 
 Got to [Section 2](#2-Run-the-chatbot-in-command-mode).
 
 ### 1.2.2 GPU Platform
 
 #### prerequisite
-GPU driver and oneAPI 2024.0 is required.
+GPU driver and *oneAPI Base Toolkit 2024.0* is required.
 
-`pip install -r requirements_xpu.txt`
+```
+cd ~/itrex/intel_extension_for_transformers/neural_chat/examples/quick_start/chatbot
+sh install_chatbot_gpu.sh
+```
 
 # 2 Run the chatbot in command mode
 
-## Usage
-
-Go back to the quick_example folder and run the example
+## GPU Usage
 
 ```
 source /opt/intel/oneapi/setvars.sh
+cd ~/itrex/intel_extension_for_transformers/neural_chat/examples/quick_start/chatbot
 python chatbot.py
 ```
 
+## CPU Usage
+
+```
+cd ~/itrex/intel_extension_for_transformers/neural_chat/examples/quick_start/chatbot
+python chatbot.py
+
+```
+
+Output of GPU:
 ```
 /home/xiguiwang/anaconda3/envs/test/lib/python3.9/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: ''If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
   warn(
@@ -74,7 +78,10 @@ Eventually, the little girl returned to her village, now a wise and compassionat
 
 ## 3.1 Start the service
 
+set the oneAPI environment variables for GPU `source /opt/intel/oneapi/setvars.sh` (skip this for CPU)
+
 ```
+cd ~/itrex/intel_extension_for_transformers/neural_chat/examples/quick_start/chatbot
 python chatbot_server.py
 ```
 
@@ -161,6 +168,7 @@ Edit app.py line 745, set the server port. For example we set port as 8008.
 ```
 
 Start the service:
+cd ~/itrex/intel_extension_for_transformers/neural_chat/ui/gradio/basic
 `python app.py`
 
 The output is as following:
