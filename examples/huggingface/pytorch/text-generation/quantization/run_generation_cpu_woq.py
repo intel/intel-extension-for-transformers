@@ -299,7 +299,7 @@ else:
     print("Didn't do Weight Only Quantization.")
 
 # save model
-if args.output_dir is not None and (args.woq or args.load_in_4bit or args.load_in_8bit):
+if args.output_dir is not None and ((args.woq or args.load_in_4bit or args.load_in_8bit) and not args.use_neural_speed):
     user_model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
     # to validate woq model accuracy 
