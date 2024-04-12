@@ -1,7 +1,9 @@
-Full Publications/Events (42)
+Full Publications/Events (44)
 ==========
 
-## 2024 (2)
+## 2024 (4)
+* Video on YouTube: [Intel Vision Keynotes 2024](https://www.youtube.com/watch?v=QB7FoIpx8os&t=2280s) (Apr 2024)
+* Blog published on Vectara: [Do Smaller Models Hallucinate More?](https://vectara.com/blog/do-smaller-models-hallucinate-more) (Apr 2024)
 * Blog of Intel Developer News: [Use the neural-chat-7b Model for Advanced Fraud Detection: An AI-Driven Approach in Cybersecurity](https://www.intel.com/content/www/us/en/developer/articles/technical/bilics-approach-cybersecurity-using-neuralchat-7b.html) (March 2024)
 * CES 2024: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
 
