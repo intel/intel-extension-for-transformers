@@ -22,5 +22,6 @@ starlette
 torch==2.2.0
 torchaudio==2.2.0
 transformers
+transformers_stream_generator
 uvicorn
 yacs
