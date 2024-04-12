@@ -39,6 +39,7 @@ from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
+    pipeline,
     DataCollatorForSeq2Seq,
     Trainer,
     TrainingArguments,
@@ -136,13 +137,24 @@ class Finetuning:
         # that only one local process can concurrently download the dataset.
         if data_args.dataset_name is not None:
             # Downloading and loading a dataset from the hub.
-            raw_datasets = load_dataset(
-                data_args.dataset_name,
-                data_args.dataset_config_name,
-                cache_dir=model_args.cache_dir,
-                token=model_args.token,
-                streaming=data_args.streaming,
-            )
+            if "glue" not in data_args.dataset_name:
+                raw_datasets = load_dataset(
+                    data_args.dataset_name,
+                    data_args.dataset_config_name,
+                    cache_dir=model_args.cache_dir,
+                    token=model_args.token,
+                    streaming=data_args.streaming,
+                )
+            else:
+                ds = load_dataset(
+                    data_args.dataset_name,
+                    data_args.dataset_config_name,
+                    cache_dir=model_args.cache_dir,
+                    token=model_args.token,
+                    streaming=data_args.streaming,
+                    split=["train", "validation_matched"],
+                )
+                raw_datasets = datasets.DatasetDict({"train": ds[0], "validation": ds[1]})
 
             if "validation" not in raw_datasets.keys() and training_args.do_eval:
                 raw_datasets["validation"] = load_dataset(
@@ -614,7 +626,7 @@ class Finetuning:
             trainer.save_model()
 
         # Evaluation
-        if training_args.do_eval:
+        if training_args.do_eval and "glue" not in data_args.dataset_name:
             self.logger.info("*** Evaluate After Training***")
             metrics = trainer.evaluate()
             max_eval_samples = data_args.max_eval_samples \
@@ -623,7 +635,22 @@ class Finetuning:
             trainer.log_metrics("eval", metrics)
             trainer.save_metrics("eval", metrics)
 
-        if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
+        elif training_args.do_eval and "glue" in data_args.dataset_name:
+            generator = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=5)
+            eval_ds = raw_datasets["validation"]
+            if data_args.max_eval_samples is not None:
+                eval_ds = eval_ds[:data_args.max_eval_samples]
+            eval_prompts = eval_ds['prompt_sources']
+            eval_labels = eval_ds['prompt_targets']
+            eval_preds = generator(eval_prompts)#, pad_token_id=50256)
+            eval_pred_labels = [x[0]['generated_text'][-1] for x in eval_preds]
+            import evaluate as eval_lib
+            accuracy_metric = eval_lib.load("accuracy")
+            results = accuracy_metric.compute(references=eval_labels, predictions=eval_pred_labels)
+            print("Accuracy:",results)
+
+
+        elif finetune_args.do_lm_eval and finetune_args.task == "code-generation":
             tokenizer.padding_side = "right" # padding on the right is needed to cut off padding in `complete_code`
             tokenizer.truncation_side = "left"
             unwrapped_model = unwrap_model(model)
