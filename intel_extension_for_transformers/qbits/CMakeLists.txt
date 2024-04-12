@@ -31,7 +31,10 @@ endif()
 find_package(Torch REQUIRED
 PATHS ${torch_path}
 NO_DEFAULT_PATH)
+
+if(NOT WIN32)
 find_package(PythonLibs 3 REQUIRED)
+endif()
 
 include(FindOpenMP)
 add_subdirectory(dispatcher)
