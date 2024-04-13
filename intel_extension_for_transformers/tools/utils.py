@@ -34,34 +34,10 @@ except ImportError:
 def supported_gpus():
     return ['flex', 'max', 'arc']
 
-def get_gpu_family():
-    """Get gpu device family info.
-
-    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
-
-    Note, this function need to import intel_extension_for_pytorch
-
-
-    Additional info (common gpu name):
-      'Intel(R) Data Center GPU Flex 170'
-      'Intel(R) Data Center GPU Max 1100'
-      'Intel(R) Arc(TM) A770 Graphics'
-    """
-
+def is_gpu_available():
     import intel_extension_for_pytorch as ipex
-    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
-        return 'no_gpu'
+    return hasattr(torch, "xpu") and torch.xpu.is_available()
 
-    name = torch.xpu.get_device_name()
-    if torch.xpu.has_xmx() and torch.xpu.has_2d_block_array():
-        return "PVC"
-    elif torch.xpu.has_xmx() and not torch.xpu.has_2d_block_array():
-        return "ARC"
-    elif not torch.xpu.has_xmx() and not torch.xpu.has_2d_block_array():
-        return "MTL"
-    else:
-        warnings.warn("Unverified GPU device: {}".format(name))
-        return name
 
 _ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
 _ipex_version = "N/A"
