@@ -5,8 +5,8 @@ huggingface_hub
 markdown2
 nh3
 openai
-pydantic==1.10.13
 pip
+pydantic==1.10.13
 requests
 torch==2.2.0
 transformers
