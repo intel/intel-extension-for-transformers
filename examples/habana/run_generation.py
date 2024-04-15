@@ -13,9 +13,7 @@ from pathlib import Path
 
 import torch
 from utils import adjust_batch, count_hpu_graphs, initialize_model
-
-from optimum.habana.utils import get_hpu_memory_stats
-
+from utils import print_memory_stats
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -128,11 +126,11 @@ def setup_parser(parser):
     args.quant_config = os.getenv("QUANT_CONFIG", "")
     return args
 
-
 def main():
     parser = argparse.ArgumentParser()
     args = setup_parser(parser)
     model, tokenizer, generation_config = initialize_model(args, logger)
+    # print_memory_stats()
     use_lazy_mode = True
     if args.torch_compile and model.config.model_type == "llama":
         use_lazy_mode = False
@@ -204,6 +202,7 @@ def main():
     for _ in range(args.warmup):
         generate(input_sentences, None)
     torch_hpu.synchronize()
+    # print_memory_stats()
     compilation_duration = time.perf_counter() - t0
 
     HabanaProfile.enable()
@@ -226,10 +225,11 @@ def main():
     print(separator)
     print("The input token size is {}K ".format(args.size))
     print(stats)
-    mem = get_hpu_memory_stats()
-    for k, v in mem.items():
-        print("{:35} = {} GB".format(k[:-5].replace("_", " ").capitalize(), v))
+    print_memory_stats()
     print(separator)
+    if args.quant_config:
+        import habana_quantization_toolkit
+        habana_quantization_toolkit.finish_measurements(model)
 
 if __name__ == "__main__":
     main()

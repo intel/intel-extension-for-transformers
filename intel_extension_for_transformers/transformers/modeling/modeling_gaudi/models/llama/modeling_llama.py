@@ -1,17 +1,3 @@
-# Copyright (c) 2024 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import math
 import warnings
 from typing import List, Optional, Tuple, Union
@@ -47,9 +33,11 @@ except ImportError:
 
 try:
     from habana_frameworks.torch.hpex.normalization import FusedRMSNorm as FusedRMSNorm
+
+    has_fused_rms_norm = True
 except ImportError:
+    has_fused_rms_norm = False
     print("Not using HPU fused kernel for RMSNorm")
-    FusedRMSNorm = None
 
 try:
     from habana_frameworks.torch.hpex.kernels import FusedSDPA
@@ -57,24 +45,7 @@ except ImportError:
     print("Not using HPU fused scaled dot-product attention kernel.")
     FusedSDPA = None
 
-
-def update(prev, cur, dim, idx, inp_seq_len):
-    orig_cur = cur
-    if prev.dtype == torch.float8_e4m3fn:
-        from habana_frameworks.torch.hpex.kernels.Fp8Ops import cast_to_fp8_v2
-
-        cur = cast_to_fp8_v2(cur, None, False, False, prev.dtype)[0]
-    if cur.shape[2] > 1 and cur.shape[2] <= prev.shape[2]:
-        # Initialize
-        prev[:, :, :inp_seq_len, :].copy_(cur)
-        return orig_cur
-    assert cur.shape[2] == 1, f"Cannot update kv-cache. Unsupported shapes. prev:{prev.shape} cur:{cur.shape}"
-    if idx is not None:
-        prev.index_copy_(dim, idx - 1, cur)
-        prev_cast = prev.to(orig_cur.dtype)
-        return prev_cast
-    else:
-        return torch.cat((prev, cur), dim=dim)
+import habana_frameworks.torch.core as htcore
 
 
 def gaudi_llama_rmsnorm_forward(self, hidden_states):
@@ -83,7 +54,7 @@ def gaudi_llama_rmsnorm_forward(self, hidden_states):
     The only differences are:
         - override RMSNorm with Habana fused RMSNorm
     """
-    if hidden_states.device.type == "hpu" and FusedRMSNorm:
+    if hidden_states.device.type == "hpu" and has_fused_rms_norm:
         # mixed dtypes are not good for FusedRMSNorm, both inputs need to have same dtype
         if hidden_states.dtype != self.weight.dtype:
             orig_dtype = hidden_states.dtype
@@ -183,11 +154,9 @@ class KVCache(torch.nn.Module):
         self.cache = None
         self.inp_seq_len = -1
 
-    def allocate(self, inp_seq_len, kv_cache_fp8, dtype, device, shape):
+    def allocate(self, inp_seq_len, dtype, device, shape):
         if self.cache is None or self.cache.shape != shape:
             self.inp_seq_len = inp_seq_len
-            if kv_cache_fp8:
-                dtype = torch.float8_e4m3fn
             self.cache = torch.zeros(shape, dtype=dtype, device=device)
         else:
             assert (
@@ -195,13 +164,29 @@ class KVCache(torch.nn.Module):
             ), f"inp_seq_len must be the same. self.inp_seq_len:{self.inp_seq_len} inp_seq_len:{inp_seq_len}"
             self.cache.fill_(0)
 
+    def update(self, prev, cur, dim, idx, inp_seq_len):
+        orig_cur = cur
+        if prev.shape == cur.shape:
+            prev.copy_(cur)
+            return orig_cur
+        if cur.shape[2] > 1 and cur.shape[2] <= prev.shape[2]:
+            # Initialize
+            prev[:, :, :inp_seq_len, :].copy_(cur)
+            return orig_cur
+        assert cur.shape[2] == 1, f"Cannot update kv-cache. Unsupported shapes. prev:{prev.shape} cur:{cur.shape}"
+        if idx is not None:
+            prev.index_copy_(dim, idx - 1, cur)
+            return prev
+        else:
+            return torch.cat((prev, cur), dim=dim)
+
     def get_shape(self):
         if self.cache is None:
             return None
         return self.cache.shape
 
     def forward(self, cur, dim, idx):
-        return update(self.cache, cur, dim, idx, self.inp_seq_len)
+        return self.update(self.cache, cur, dim, idx, self.inp_seq_len)
 
 
 class GaudiLlamaRotaryEmbedding(torch.nn.Module):
@@ -285,15 +270,15 @@ class GaudiLlamaAttention(LlamaAttention):
         self.inp_seq_len = -1
         self.norm_factor = 1.0 / math.sqrt(self.head_dim)
 
-    def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len, kv_cache_fp8):
+    def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len):
         cache_shape = (batch_size, self.num_key_value_heads, max_seq_len, self.head_dim)
         device = self.k_proj.weight.device
         dtype = self.config.torch_dtype
-        self.k_cache.allocate(inp_seq_len, kv_cache_fp8, dtype, device, cache_shape)
-        self.v_cache.allocate(inp_seq_len, kv_cache_fp8, dtype, device, cache_shape)
+        self.k_cache.allocate(inp_seq_len, dtype, device, cache_shape)
+        self.v_cache.allocate(inp_seq_len, dtype, device, cache_shape)
 
     def update_sincos_cache(self, seq_len):
-        # Call rotary emb forward() to update cos/sin cache when inferring more than self.max_position_embeddings
+        # Call rotary emb forward() to update cos/sin cache when infering more than self.max_position_embeddings
         # This helps in avoiding creation of these caches during actual model forward pass and
         # reduce memory consumption and improve performance.
         if seq_len > self.max_position_embeddings:
@@ -328,6 +313,7 @@ class GaudiLlamaAttention(LlamaAttention):
         reuse_cache: Optional[bool] = False,
         use_flash_attention: Optional[bool] = False,
         flash_attention_recompute: Optional[bool] = False,
+        flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
@@ -340,6 +326,7 @@ class GaudiLlamaAttention(LlamaAttention):
         - add new args reuse_cache
         - add new args use_flash_attention
         - add new arg flash_attention_recompute
+        - add new arg flash_attention_causal_mask
         """
         bsz, q_len, _ = hidden_states.size()
 
@@ -385,14 +372,23 @@ class GaudiLlamaAttention(LlamaAttention):
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
         query_states, key_states = apply_customized_rope(query_states, key_states, cos, sin, position_ids)
 
-        if past_key_value is not None or reuse_cache:
+        if use_cache:
             # reuse k, v, self_attention
             if reuse_cache:
                 key_states = self.k_cache(key_states, 2, token_idx)
                 value_states = self.v_cache(value_states, 2, token_idx)
+                past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())
             else:
-                key_states = update(past_key_value[0], key_states, 2, token_idx, self.inp_seq_len)
-                value_states = update(past_key_value[1], value_states, 2, token_idx, self.inp_seq_len)
+                if past_key_value is None:
+                    past_key = torch.zeros(key_states.shape, dtype=self.k_proj.weight.dtype, device=key_states.device)
+                    past_value = torch.zeros(
+                        key_states.shape, dtype=self.k_proj.weight.dtype, device=key_states.device
+                    )
+                    past_key_value = (past_key, past_value)
+                key_states = self.k_cache.update(past_key_value[0], key_states, 2, token_idx, self.inp_seq_len)
+                value_states = self.v_cache.update(past_key_value[1], value_states, 2, token_idx, self.inp_seq_len)
+                if token_idx is None:
+                    past_key_value = (key_states, value_states)
 
             if cache_idx is not None and q_len == 1:
                 key_states = key_states[:, :, :cache_idx, :]
@@ -400,12 +396,6 @@ class GaudiLlamaAttention(LlamaAttention):
                 if attention_mask is not None:
                     attention_mask = attention_mask[:, :, :, :cache_idx]
                 kv_seq_len = key_states.shape[-2]
-
-        if use_cache:
-            if reuse_cache:
-                past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())
-            else:
-                past_key_value = (key_states.contiguous(), value_states.contiguous())
         else:
             past_key_value = None
 
@@ -420,10 +410,15 @@ class GaudiLlamaAttention(LlamaAttention):
                     )
             else:
                 # first token
-                with ht.sdp_kernel(enable_recompute=flash_attention_recompute):
-                    attn_output = FusedSDPA.apply(
-                        query_states, key_states, value_states, attention_mask, 0.0, False, None
-                    )
+                if flash_attention_causal_mask:
+                    # causal masking on first token requires inputs to be of the same length
+                    with ht.sdp_kernel(enable_recompute=flash_attention_recompute):
+                        attn_output = FusedSDPA.apply(query_states, key_states, value_states, None, 0.0, True, None)
+                else:
+                    with ht.sdp_kernel(enable_recompute=flash_attention_recompute):
+                        attn_output = FusedSDPA.apply(
+                            query_states, key_states, value_states, attention_mask, 0.0, False, None
+                        )
 
         else:
             query_states, key_states, value_states, attention_mask = gaudi_llama_repeat_kv(
@@ -487,8 +482,8 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
-    def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len, kv_cache_fp8):
-        self.self_attn.allocate_kv_cache(batch_size, max_seq_len, inp_seq_len, kv_cache_fp8)
+    def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len):
+        self.self_attn.allocate_kv_cache(batch_size, max_seq_len, inp_seq_len)
 
     def reorder_kv_cache(self, beam_idx: torch.LongTensor):
         return self.self_attn.reorder_kv_cache(beam_idx)
@@ -510,6 +505,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         reuse_cache: Optional[bool] = False,
         use_flash_attention: Optional[bool] = False,
         flash_attention_recompute: Optional[bool] = False,
+        flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
@@ -521,6 +517,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         - add new args reuse_cache
         - add new args use_flash_attention
         - add new arg flash_attention_recompute
+        - add new arg flash_attention_causal_mask
         """
         if "padding_mask" in kwargs:
             warnings.warn(
@@ -528,7 +525,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
             )
 
         residual = hidden_states
-        output_pre_attn, self_attn_weights, present_key_value = self.pre_attn(
+        hidden_states, self_attn_weights, present_key_value = self.pre_attn(
             hidden_states,
             attention_mask,
             position_ids,
@@ -541,16 +538,16 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
             reuse_cache,
             use_flash_attention=use_flash_attention,
             flash_attention_recompute=flash_attention_recompute,
+            flash_attention_causal_mask=flash_attention_causal_mask,
             cache_idx=cache_idx,
             **kwargs,
         )
+        self.self_attn.attention_all_reduce(hidden_states)
+        hidden_states, residual = self.post_attn_pre_mlp(hidden_states, residual)
+        self.mlp.mlp_all_reduce(hidden_states)
+        hidden_states = self.post_mlp(hidden_states, residual)
 
-        self.self_attn.attention_all_reduce(output_pre_attn)
-        output_post_attn_pre_mlp, residual_mlp = self.post_attn_pre_mlp(output_pre_attn, residual)
-        self.mlp.mlp_all_reduce(output_post_attn_pre_mlp)
-        output_post_mlp = self.post_mlp(output_post_attn_pre_mlp, residual_mlp)
-
-        outputs = (output_post_mlp,)
+        outputs = (hidden_states,)
 
         if output_attentions:
             outputs += (self_attn_weights,)
@@ -573,10 +570,11 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         reuse_cache: Optional[bool] = False,
         use_flash_attention: Optional[bool] = False,
         flash_attention_recompute: Optional[bool] = False,
+        flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         hidden_states = self.input_layernorm(hidden_states)
-        output_attn, attn_weights, present_key_value = self.self_attn.pre_attn_forward(
+        hidden_states, attn_weights, present_key_value = self.self_attn.pre_attn_forward(
             hidden_states,
             attention_mask,
             position_ids,
@@ -589,25 +587,36 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
             reuse_cache,
             use_flash_attention,
             flash_attention_recompute,
+            flash_attention_causal_mask,
             cache_idx=cache_idx,
         )
-        return output_attn, attn_weights, present_key_value
+        return hidden_states, attn_weights, present_key_value
 
-    def post_attn_pre_mlp(self, input, residual):
-        output_post_attn = self.self_attn.post_attn_forward(input)
+    def post_attn_pre_mlp(self, hidden_states, residual):
+        hidden_states = self.self_attn.post_attn_forward(hidden_states)
 
-        hidden_states = residual + output_post_attn
-        residual = hidden_states
+        if self.training:
+            hidden_states = hidden_states + residual
+            residual = hidden_states
+        else:
+            residual.add_(hidden_states)
+            hidden_states = residual
 
         hidden_states = self.post_attention_layernorm(hidden_states)
 
         hidden_states = self.mlp.pre_mlp_forward(hidden_states)
         return hidden_states, residual
 
-    def post_mlp(self, input, residual):
-        output_post_mlp = self.mlp.post_mlp_forward(input)
-        output = output_post_mlp + residual
-        return output
+    def post_mlp(self, hidden_states, residual):
+        hidden_states = self.mlp.post_mlp_forward(hidden_states)
+
+        if self.training:
+            hidden_states = hidden_states + residual
+        else:
+            residual.add_(hidden_states)
+            hidden_states = residual
+
+        return hidden_states
 
 
 class GaudiLlamaModel(LlamaModel):
@@ -643,9 +652,9 @@ class GaudiLlamaModel(LlamaModel):
         # Initialize weights and apply final processing
         self.post_init()
 
-    def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len, kv_cache_fp8):
+    def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len):
         for layer in self.layers:
-            layer.allocate_kv_cache(batch_size, max_seq_len, inp_seq_len, kv_cache_fp8)
+            layer.allocate_kv_cache(batch_size, max_seq_len, inp_seq_len)
 
     def reorder_kv_cache(self, beam_idx: torch.LongTensor):
         return tuple(layer.reorder_kv_cache(beam_idx) for layer in self.layers)
@@ -671,7 +680,9 @@ class GaudiLlamaModel(LlamaModel):
         reuse_cache: Optional[bool] = False,
         use_flash_attention: Optional[bool] = False,
         flash_attention_recompute: Optional[bool] = False,
+        flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
+        lazy_mode: Optional[bool] = True,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         """
         Copied from LlamaModel.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py
@@ -681,6 +692,8 @@ class GaudiLlamaModel(LlamaModel):
         - add new args reuse_cache
         - add new args use_flash_attention
         - add new arg flash_attention_recompute
+        - add new arg flash_attention_causal_mask
+        - add new arg lazy_mode
         """
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -757,7 +770,17 @@ class GaudiLlamaModel(LlamaModel):
         all_self_attns = () if output_attentions else None
         next_decoder_cache = () if not use_new_cache else None
 
+        if lazy_mode:
+            htcore.mark_step()
+
         for layer_idx, decoder_layer in enumerate(self.layers):
+            if (
+                lazy_mode
+                and not self.training
+                and (torch.distributed.is_initialized() is False or torch.distributed.get_world_size() == 1)
+            ):
+                htcore.mark_step()
+
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
 
@@ -776,6 +799,7 @@ class GaudiLlamaModel(LlamaModel):
                     False,
                     use_flash_attention,
                     flash_attention_recompute,
+                    flash_attention_causal_mask,
                 )
             else:
                 layer_outputs = decoder_layer(
@@ -791,6 +815,7 @@ class GaudiLlamaModel(LlamaModel):
                     reuse_cache=reuse_cache,
                     use_flash_attention=use_flash_attention,
                     flash_attention_recompute=flash_attention_recompute,
+                    flash_attention_causal_mask=flash_attention_causal_mask,
                     cache_idx=cache_idx,
                 )
             hidden_states = layer_outputs[0]
@@ -834,9 +859,8 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
     - add new args reuse_cache
     """
 
-    def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len, kv_cache_fp8):
-        self.model.allocate_kv_cache(batch_size, max_seq_len, inp_seq_len, kv_cache_fp8)
-        self.kv_cache_len = max_seq_len
+    def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len):
+        self.model.allocate_kv_cache(batch_size, max_seq_len, inp_seq_len)
 
     def reorder_kv_cache(self, beam_idx: torch.LongTensor):
         return self.model.reorder_kv_cache(beam_idx)
@@ -863,7 +887,9 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
         reuse_cache: Optional[bool] = False,
         use_flash_attention: Optional[bool] = False,
         flash_attention_recompute: Optional[bool] = False,
+        flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
+        lazy_mode: Optional[bool] = True,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -891,7 +917,9 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
             reuse_cache=reuse_cache,
             use_flash_attention=use_flash_attention,
             flash_attention_recompute=flash_attention_recompute,
+            flash_attention_causal_mask=flash_attention_causal_mask,
             cache_idx=cache_idx,
+            lazy_mode=lazy_mode,
         )
         hidden_states = outputs[0]
         _, seq_len, _ = hidden_states.shape
@@ -1024,7 +1052,9 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
                 "reuse_cache": reuse_cache,
                 "use_flash_attention": kwargs.get("use_flash_attention"),
                 "flash_attention_recompute": kwargs.get("flash_attention_recompute"),
+                "flash_attention_causal_mask": kwargs.get("flash_attention_causal_mask"),
                 "cache_idx": kwargs.get("cache_idx"),
+                "lazy_mode": kwargs.get("lazy_mode"),
             }
         )
         return model_inputs

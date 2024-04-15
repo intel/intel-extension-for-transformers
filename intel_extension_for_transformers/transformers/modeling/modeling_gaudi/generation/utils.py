@@ -204,7 +204,7 @@ class GaudiGenerationMixin(GenerationMixin):
             if isinstance(decoder_start_token_id, list):
                 if len(decoder_start_token_id) != batch_size:
                     raise ValueError(
-                        f"`decoder_start_token_id` expected to have length {batch_size} but got {len(decoder_start_token_id)}"
+                        f"`decoder_start_token_id` expcted to have length {batch_size} but got {len(decoder_start_token_id)}"
                     )
                 decoder_input_ids_start = torch.tensor(decoder_start_token_id, dtype=torch.long, device=device)
                 decoder_input_ids_start = decoder_input_ids_start.view(-1, 1)
@@ -321,7 +321,7 @@ class GaudiGenerationMixin(GenerationMixin):
                     model_kwargs["attention_mask"], (0, pad_amount), value=0
                 )
             else:
-                assert False, "Not tested for cases where attn_mask isn't passed"
+                assert False, "Not tested for cases where attn_mask isnt passed"
             if reduce_recompile and params["passnum"] == 0:
                 position_ids_cpu = model_kwargs["attention_mask"].long().cumsum(-1) - 1
                 position_ids_cpu.masked_fill_(model_kwargs["attention_mask"] == 0, 1)
@@ -345,20 +345,32 @@ class GaudiGenerationMixin(GenerationMixin):
                         assert False, "Unknown case, please handle, or dont use bucketing"
 
                 new_kv = [None for i in range(len(model_kwargs["past_key_values"]))]
-                for i in range(len(model_kwargs["past_key_values"])):
-                    tmp_lst = [None for j in range(len(model_kwargs["past_key_values"][i]))]
-                    for j in range(len(model_kwargs["past_key_values"][i])):
-                        pad_tuple = create_pad_arg(pad_amount, i, j)
-                        # Different models might have different shapes of kv-cache
-                        # create_pad_arg handles them on a per-model basis
-                        # This is a necessary (but not sufficient) condition: what ever dimension we are padding, should be a multiple of bucket_size
-                        # This check is added in case we get a new model with a new kv-cache structure, and we attempt to pad some wrong dimension
-                        assert model_kwargs["past_key_values"][i][j].shape[-(len(pad_tuple) // 2)] % bucket_size == 0
-                        tmp_lst[j] = torch.nn.functional.pad(
-                            model_kwargs["past_key_values"][i][j], pad_tuple, value=pad_token_id
+                if self.config.model_type == "gpt_bigcode" and model_kwargs["past_key_values"][0][0].dim() == 2:
+                    # GPT_BIGCODE's kv cache is list of tensors.
+                    new_kv = [None for i in range(len(model_kwargs["past_key_values"]))]
+                    for i in range(len(model_kwargs["past_key_values"])):
+                        pad = (0, 0, 0, pad_amount)
+                        new_kv[i] = torch.nn.functional.pad(
+                            model_kwargs["past_key_values"][i], pad, value=pad_token_id
                         )
-                    new_kv[i] = tuple(tmp_lst)
-                model_kwargs["past_key_values"] = tuple(new_kv)
+                    model_kwargs["past_key_values"] = list(new_kv)
+                else:
+                    for i in range(len(model_kwargs["past_key_values"])):
+                        tmp_lst = [None for j in range(len(model_kwargs["past_key_values"][i]))]
+                        for j in range(len(model_kwargs["past_key_values"][i])):
+                            pad_tuple = create_pad_arg(pad_amount, i, j)
+                            # Different models might have different shapes of kv-cache
+                            # create_pad_arg handles them on a per-model basis
+                            # This is a necessary (but not sufficient) condition: what ever dimension we are padding, should be a multiple of bucket_size
+                            # This check is added in case we get a new model with a new kv-cache structure, and we attempt to pad some wrong dimension
+                            assert (
+                                model_kwargs["past_key_values"][i][j].shape[-(len(pad_tuple) // 2)] % bucket_size == 0
+                            )
+                            tmp_lst[j] = torch.nn.functional.pad(
+                                model_kwargs["past_key_values"][i][j], pad_tuple, value=pad_token_id
+                            )
+                        new_kv[i] = tuple(tmp_lst)
+                    model_kwargs["past_key_values"] = tuple(new_kv)
 
         if "token_idx" not in model_kwargs:
             model_kwargs["token_idx"] = torch.tensor(params["token_idx"], device=self.device)
@@ -435,7 +447,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 generating before other GPUs. Otherwise it'll be set to `False`.
             assistant_model (`PreTrainedModel`, *optional*):
                 An assistant model that can be used to accelerate generation. The assistant model must have the exact
-                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistant model
+                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistent model
                 is much faster than running generation with the model you're calling generate from. As such, the
                 assistant model should be much smaller.
             streamer (`BaseStreamer`, *optional*):
@@ -451,7 +463,7 @@ class GaudiGenerationMixin(GenerationMixin):
             hpu_graphs (`bool`, *optional*, defaults to `False`):
                 Whether to use HPU graphs for inference.
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profiling.
+                Number of steps to ignore for profling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             kwargs (`Dict[str, Any]`, *optional*):
@@ -584,7 +596,8 @@ class GaudiGenerationMixin(GenerationMixin):
             assert self.config.model_type in [
                 "llama",
                 "mistral",
-            ], "reuse_cache only supported by llama and mistral at the moment"
+                "falcon",
+            ], "reuse_cache only supported by llama, mistral and falcon at the moment"
             if not generation_config.bucket_internal:
                 assert (
                     generation_config.bucket_size <= 0
@@ -725,6 +738,8 @@ class GaudiGenerationMixin(GenerationMixin):
         # determine whether flash attention needs to be used
         model_kwargs["use_flash_attention"] = generation_config.use_flash_attention
         model_kwargs["flash_attention_recompute"] = True if generation_config.flash_attention_recompute else False
+        model_kwargs["flash_attention_causal_mask"] = True if generation_config.flash_attention_causal_mask else False
+
         if not self.config.is_encoder_decoder:
             calculated_max_length = input_ids.shape[-1]
             if not generation_config.static_shapes and generation_config.max_new_tokens is not None:
@@ -733,14 +748,11 @@ class GaudiGenerationMixin(GenerationMixin):
                 bs, _ = input_ids.shape
                 if not is_greedy_or_beam_and_bucket:
                     unwrap_deepspeed_model(self).allocate_kv_cache(
-                        bs * generation_config.num_beams,
-                        calculated_max_length,
-                        token_idx,
-                        generation_config.kv_cache_fp8,
+                        bs * generation_config.num_beams, calculated_max_length, token_idx
                     )
                     model_kwargs["kv_cache_len"] = calculated_max_length
 
-            if self.config.model_type in ["llama"]:
+            if self.config.model_type in ["llama", "falcon"]:
                 if self.config.max_position_embeddings < calculated_max_length:
                     unwrap_deepspeed_model(self).update_sincos_cache(seq_len=calculated_max_length)
 
@@ -1181,7 +1193,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profiling.
+                Number of steps to ignore for profling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -1294,7 +1306,7 @@ class GaudiGenerationMixin(GenerationMixin):
             ignore_eos (`bool`, *optional*, defaults to `False`):
                 Whether to ignore finished sequences (faster in lazy mode and with HPU graphs) or not (eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profiling.
+                Number of steps to ignore for profling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -1433,6 +1445,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 )
 
             # prepare model inputs
+            model_kwargs["lazy_mode"] = lazy_mode
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
 
             hpu_graphs_kwargs = self._get_hpu_graphs_kwargs(model_kwargs)
@@ -1643,7 +1656,7 @@ class GaudiGenerationMixin(GenerationMixin):
             ignore_eos (`bool`, *optional*, defaults to `False`):
                 Whether to ignore finished sequences (faster in lazy mode and with HPU graphs) or not (eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profiling.
+                Number of steps to ignore for profling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -1784,6 +1797,7 @@ class GaudiGenerationMixin(GenerationMixin):
                     break
 
             # prepare model inputs
+            model_kwargs["lazy_mode"] = lazy_mode
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
 
             hpu_graphs_kwargs = self._get_hpu_graphs_kwargs(model_kwargs)
@@ -1976,7 +1990,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profiling.
+                Number of steps to ignore for profling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2230,6 +2244,7 @@ class GaudiGenerationMixin(GenerationMixin):
                     params, input_ids, model_kwargs, pad_token_id, bucket_size, reduce_recompile
                 )
 
+            model_kwargs["lazy_mode"] = lazy_mode
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
 
             # if sequential is True, split the input to batches of batch_size and run sequentially
@@ -2564,7 +2579,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profiling.
+                Number of steps to ignore for profling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2710,7 +2725,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profiling.
+                Number of steps to ignore for profling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2857,7 +2872,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profiling.
+                Number of steps to ignore for profling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -3010,6 +3025,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 if this_peer_finished_flag.item() == 0.0:
                     break
 
+            model_kwargs["lazy_mode"] = lazy_mode
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
 
             hpu_graphs_kwargs = self._get_hpu_graphs_kwargs(model_kwargs)
@@ -3209,7 +3225,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 more information, the documentation of [`CandidateGenerator`] should be read. Only one of `assistant_model` or `candidate_generator` should be passed as input to this function.
             assistant_model (`PreTrainedModel`, *optional*):
                 An assistant model that can be used to accelerate generation. The assistant model must have the exact
-                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistant model
+                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistent model
                 is much faster than running generation with the model you're calling generate from. As such, the
                 assistant model should be much smaller.
             do_sample (`bool`, *optional*, defaults to `False`):
@@ -3246,7 +3262,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profiling.
+                Number of steps to ignore for profling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             streamer (`BaseStreamer`, *optional*):

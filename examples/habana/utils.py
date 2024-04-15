@@ -21,6 +21,16 @@ from optimum.habana.utils import check_habana_frameworks_version
 from optimum.habana.utils import check_optimum_habana_min_version
 from optimum.habana.utils import set_seed
 
+def print_memory_stats(p_info=""):
+    from optimum.habana.utils import get_hpu_memory_stats
+    separator = "-" * 90
+    print(separator)
+    print("{}".format(p_info))
+    mem = get_hpu_memory_stats()
+    for k, v in mem.items():
+        print("{:35} = {} GB".format(k[:-5].replace("_", " ").capitalize(), v))
+    print(separator)
+
 def adjust_batch(batch, size):
     curr_size = batch["input_ids"].shape[1]
     if curr_size >= size:
@@ -142,13 +152,15 @@ def get_torch_compiled_model(model):
 
 def setup_model(args, model_dtype, model_kwargs, logger):
     logger.info("Single-device run.")
-
     model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs)
     if args.quant_config:
         import habana_quantization_toolkit
 
         habana_quantization_toolkit.prep_model(model)
-    model = model.eval().to("hpu")
+
+    model = model.eval()
+    # import pdb; pdb.set_trace()
+    model = model.to("hpu")
 
     if args.use_hpu_graphs:
         from habana_frameworks.torch.hpu import wrap_in_hpu_graph
@@ -319,10 +331,10 @@ def setup_generation_config(args, model, tokenizer):
     # generation_config.num_return_sequences = args.num_return_sequences
     generation_config.trim_logits = args.trim_logits
     # TODO notice here why can't use softmax_bf16
-    generation_config.attn_softmax_bf16 = False
+    generation_config.attn_softmax_bf16 = True
     generation_config.limit_hpu_graphs = args.limit_hpu_graphs
     # TODO why reuse cache  and reduce recompile false
-    generation_config.reuse_cache = False
+    generation_config.reuse_cache = True
     generation_config.reduce_recompile = False
     if generation_config.reduce_recompile:
         assert generation_config.bucket_size > 0
@@ -339,7 +351,8 @@ def initialize_model(args, logger):
     setup_device(args)
     set_seed(27)
     get_repo_root(args.model_name_or_path, local_rank=args.local_rank, token=None)
-    use_deepspeed = args.world_size > 0
+    use_deepspeed = args.world_size > 1
+    # import pdb; pdb.set_trace()
     if use_deepspeed or args.bf16 or args.fp8:
         model_dtype = torch.bfloat16
     else:
@@ -368,9 +381,10 @@ def initialize_model(args, logger):
         import habana_frameworks.torch.core as htcore
 
         print("Initializing inference mode")
-        const_marking = os.getenv("ENABLE_CONST_MARKING", "True")
-        if const_marking == "True":
-            htcore.hpu_initialize(model)
+        # const_marking = os.getenv("ENABLE_CONST_MARKING", "True")
+        # if const_marking == "True":
+            # TODO always initialize model
+        htcore.hpu_initialize(model)
     init_end = time.perf_counter()
     # logger.info(f"Args: {args}")
     logger.info(f"device: {args.device}, n_hpu: {args.world_size}, bf16: {model_dtype == torch.bfloat16}")

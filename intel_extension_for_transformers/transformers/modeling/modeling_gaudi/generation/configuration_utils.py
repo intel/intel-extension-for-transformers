@@ -1,17 +1,3 @@
-# Copyright (c) 2024 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from transformers.generation import GenerationConfig
 
 
@@ -43,12 +29,12 @@ class GaudiGenerationConfig(GenerationConfig):
         Only active if `static_shapes` is used. Can't be used with `reuse_cache`.
     bucket_internal (`bool`, *optional*):
         Split kv sequence into buckets in decode phase. It improves throughput when max_new_tokens is large.
-    kv_cache_fp8 (`bool`, *optional*):
-        Store kv-cache in float8 when kv-cache is used
     use_flash_attention (`bool`, *optional*):
         Whether to use flash attention optimization.
     flash_attention_recompute (`bool`, *optional*):
         Whether to enable recompute if use Habana flash attention.
+    flash_attention_causal_mask (`bool`, *optional*):
+        Whether to enable causal_mask if use Habana flash attention.
     """
 
     def __init__(self, **kwargs):
@@ -62,7 +48,7 @@ class GaudiGenerationConfig(GenerationConfig):
         self.bucket_size = kwargs.get("bucket_size", -1)
         self.bucket_internal = kwargs.get("bucket_internal", None)
         self.reduce_recompile = kwargs.get("reduce_recompile", None)
-        self.kv_cache_fp8 = kwargs.get("kv_cache_fp8", None)
         self.use_flash_attention = kwargs.get("use_flash_attention", None)
         self.flash_attention_recompute = kwargs.get("flash_attention_recompute", None)
+        self.flash_attention_causal_mask = kwargs.get("flash_attention_causal_mask", None)
         self.use_fused_rope = kwargs.get("use_fused_rope", None)
