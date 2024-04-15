@@ -2,7 +2,7 @@
 
 Intel Extension for Transformers supports the EAGLE (Extrapolation Algorithm for Greater Language-model Efficiency) which is a speculative sampling method that improves text generation speed.
 
-See [here](https://arxiv.org/abs/2401.15077) to view the paper and [here](https://github.com/SafeAILab/EAGLE) for more info on EAGLE code .
+See [here](https://arxiv.org/abs/2401.15077) to view the paper and [here](https://github.com/SafeAILab/EAGLE) for more info on EAGLE code.
 
 
 ## Setup and installation 
@@ -26,10 +26,10 @@ The modeling_eagle.py script can be found at intel_extension_for_transformers/tr
 
 The script accepts several command-line arguments:
 
--d or --device: Target device for text generation (default: "cpu", options: "cpu", "xpu", "cuda").
--t or --dtype: Data type for text generation (default: "float32", options: "float32", "float16", "bfloat16").
---max_new_tokens: Number of max new tokens for text generation (default: 512).
---use_eagle: Use EAGLE model for generation (default: False).
+- -d or --device: Target device for text generation (default: "cpu", options: "cpu", "xpu", "cuda").
+- -t or --dtype: Data type for text generation (default: "float32", options: "float32", "float16", "bfloat16").
+- --max_new_tokens: Number of max new tokens for text generation (default: 512).
+- --use_eagle: Use EAGLE model for generation (default: False).
 
 ```bash
 python3 eagle_example.py
