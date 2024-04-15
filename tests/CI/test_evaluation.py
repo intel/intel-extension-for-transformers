@@ -34,7 +34,7 @@ PYTHON_VERSION = Version(platform.python_version())
 class TestLmEvaluationHarness(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        cmd = 'pip install wandb==0.16.5'
+        cmd = 'pip install protobuf==4.24.4 && pip install wandb'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
@@ -47,7 +47,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
             os.remove("./include_path.json")
     @classmethod
     def tearDownClass(self):
-        cmd = 'pip uninstall wandb -y'
+        cmd = 'pip uninstall wandb -y && pip install protobuf==4.25.3'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         output,error = p.communicate()
