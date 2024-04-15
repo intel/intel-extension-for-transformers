@@ -34,7 +34,7 @@ PYTHON_VERSION = Version(platform.python_version())
 class TestLmEvaluationHarness(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        cmd = 'pip install wandb==0.16.6'
+        cmd = 'pip install wandb==0.16.5'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
