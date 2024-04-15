@@ -1712,7 +1712,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "toprepare_cmd_paramspology": "mistral_7b_rtn",
+        "topology": "mistral_7b_rtn",
         "task": "generation",
         "mode": "benchmark",
         "batch_size": "112",
