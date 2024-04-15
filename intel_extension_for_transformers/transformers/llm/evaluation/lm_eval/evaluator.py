@@ -181,8 +181,8 @@ def simple_evaluate(
 
         if user_model is not None:
             # use tiny model to built lm.
-            print("Due to provide user_model in memory, we use 'pretrained=Muennighoff/tiny-random-bert'" +
-                  "to build `LM` instance")
+            print("We use 'pretrained=Muennighoff/tiny-random-bert'" +
+                  "to build `LM` instance, the actually run model is user_model you passed.")
             lm = lm_eval.api.registry.get_model(model).create_from_arg_string(
                 "pretrained=Muennighoff/tiny-random-bert",
                 {
