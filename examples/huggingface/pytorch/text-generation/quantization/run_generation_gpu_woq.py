@@ -177,6 +177,7 @@ if args.woq:
             lr=args.lr,
             minmax_lr=args.minmax_lr,
             use_quant_input=args.use_quant_input,
+            low_gpu_mem_usage=False,
         )
     elif args.woq_algo.lower() == "rtn":
         quantization_config = RtnConfig(

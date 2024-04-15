@@ -108,10 +108,10 @@ def replace_linear(
     device="cpu",
     empty_weights=False,
 ):
-    # if modules_to_not_convert is None:
-    #     # output_layer is chatglm last layer name
-    #     # embed_out is dolly_v2 last layer name
-    #     modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
+    if modules_to_not_convert is None:
+        # output_layer is chatglm last layer name
+        # embed_out is dolly_v2 last layer name
+        modules_to_not_convert = []
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(
             quantization_config.llm_int8_skip_modules
@@ -401,12 +401,14 @@ def convert_to_quantized_model(model, config, device="cpu"):
             return torch.vstack(input_ids_padded)
 
         if config.quant_method.value == "autoround":
-            calib_dataloader = DataLoader(
-                tokenized_dataset,
-                batch_size=8,
-                shuffle=False,
-                collate_fn=collate_batch_for_autoround,
-            )
+            from auto_round.calib_dataset import get_dataloader
+            calib_dataloader = get_dataloader(config.tokenizer, 2048)
+            # calib_dataloader = DataLoader(
+            #     tokenized_dataset,
+            #     batch_size=8,
+            #     shuffle=False,
+            #     collate_fn=collate_batch_for_autoround,
+            # )
         else:
             calib_dataloader = DataLoader(
                 tokenized_dataset,
@@ -492,6 +494,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     "use_quant_input": config.use_quant_input,
                     "lr": config.lr,
                     "minmax_lr": config.minmax_lr,
+                    "low_gpu_mem_usage": config.low_gpu_mem_usage,
                 }
             }
             algorithm = "AUTOROUND"
@@ -546,7 +549,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 compression_dim=0,
                 use_optimum_format=False,
                 scale_dtype=convert_dtype_str2torch(config.scale_dtype),
-                device="cuda",
+                device="xpu",
             )
 
             q_model = model

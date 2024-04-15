@@ -977,6 +977,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
         self.calib_len = kwargs.get("calib_len", None)
         self.calib_func = kwargs.get("calib_func", None)
+        self.low_gpu_mem_usage = kwargs.get("low_gpu_mem_usage", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"
         if isinstance(compute_dtype, torch.dtype):
