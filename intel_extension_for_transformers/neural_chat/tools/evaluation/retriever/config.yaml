@@ -1,0 +1,14 @@
+index_file_jsonl_path: /home/itrex/manxin/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/candidate_context.jsonl
+query_file_jsonl_path: /home/itrex/manxin/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/example.jsonl
+vector_database: Chroma
+embedding_model: facebook/opt-125m
+llm_model: facebook/opt-125m
+reranker_model: facebook/opt-125m
+retrieval_type: [default]
+polish: [true]
+search_type: [similarity, mmr]
+k: [1]
+fetch_k: [5]
+score_threshold: [0.3]
+top_n: [1]
+enable_rerank: [true]

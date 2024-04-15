@@ -133,6 +133,30 @@ This will run benchmark multiple times based on the following different paramete
 
 ...
 
+### Config SuperBenchmark
+You can also run retrieval superbenchmark by the following commands.
+```
+cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/retriever
+python ragas_config_benchmark.py --config_path = /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/retriever/config.yaml
+```
+You can set the parameters in config.yaml.
+``` yaml
+index_file_jsonl_path: path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/candidate_context.jsonl
+query_file_jsonl_path: path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/example.jsonl
+vector_database: Chroma
+embedding_model: <embedding model name or path>
+llm_model: <llm model name or path>
+reranker_model: <reranker model name or path>
+retrieval_type: ['default','child_parent','bm25']
+polish: [True, False]
+search_type: ['similarity','mmr','similarity_score_threshold']
+k: [1, 3, 5]
+fetch_k: [5, 10, 20]
+score_threshold: [0.3, 0.5, 0.7]
+top_n: [1, 3, 5, 10]
+enable_rerank: [True, False]
+```
+
 ## 3. Rag Benchmark
 ### Installation
 Please ensure the installation of requirements for NeuralChat and retrieval plugin first by the following commands.
@@ -386,3 +410,35 @@ This will run benchmark multiple times based on the following different paramete
 | "context_precision_average" | 0.49999999995 |
 
 ...
+
+### Config SuperBenchmark
+You can also run rag superbenchmark by the following commands.
+```
+cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework
+python ragas_config_benchmark.py --config_path = /path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/framework/config.yaml
+```
+You can set the parameters in config.yaml.
+``` yaml
+ground_truth_file: path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/ground_truth.jsonl
+input_path: path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/evaluation/data_augmentation/data.txt
+use_openai_key: false
+vector_database: Chroma
+embedding_model: <embedding model name or path>
+llm_model: <llm model name or path>
+reranker_model: <reranker model name or path>
+retrieval_type: ['default','child_parent','bm25']
+polish: [True, False]
+search_type: ['similarity','mmr','similarity_score_threshold']
+k: [1, 3, 5]
+fetch_k: [5, 10, 20]
+score_threshold: [0.3, 0.5, 0.7]
+top_n: [1, 3, 5, 10]
+enable_rerank: [True, False]
+max_chuck_size: [256, 512, 768, 1024]
+temperature: [0.01, 0.05, 0.1, 0.3, 0.5, 0.7]
+top_k: [1, 3, 10, 20]
+top_p: [0.1, 0.3, 0.5, 0.7]
+repetition_penalty: [1.0, 1.1, 1.3, 1.5, 1.7]
+num_beams: [1, 3, 10, 20]
+do_sample: [True, False]
+```

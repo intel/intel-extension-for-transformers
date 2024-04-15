@@ -3,3 +3,4 @@ intel-extension-for-transformers
 jsonlines
 ragas
 sentence-transformers==2.3.1
+pyyaml
