@@ -262,7 +262,7 @@ if __name__ == '__main__':
         ext_modules = []
     else:
         ext_modules = [CMakeExtension(
-            "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/transformers/llm/operator/csrc/')]
+            "intel_extension_for_transformers.qbits_py", 'intel_extension_for_transformers/qbits/')]
         if SKIP_RUNTIME:
             subprocess.check_call(
                 ["git", "submodule", "update", "--init", "intel_extension_for_transformers/transformers/runtime/third_party/pybind11"], cwd=cwd)
