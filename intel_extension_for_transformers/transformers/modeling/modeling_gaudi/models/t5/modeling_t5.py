@@ -93,15 +93,15 @@ def gaudi_T5Attention_forward(
     key_length = real_seq_length if key_value_states is None else key_value_states.shape[1]
 
     def shape(states):
-        """projection"""
+        """projection."""
         return states.view(batch_size, -1, self.n_heads, self.key_value_proj_dim).transpose(1, 2)
 
     def unshape(states):
-        """reshape"""
+        """reshape."""
         return states.transpose(1, 2).contiguous().view(batch_size, -1, self.inner_dim)
 
     def project(hidden_states, proj_layer, key_value_states, past_key_value):
-        """projects hidden states correctly to key/query states"""
+        """Projects hidden states correctly to key/query states."""
         if key_value_states is None:
             # self-attn
             # (batch_size, n_heads, seq_length, dim_per_head)

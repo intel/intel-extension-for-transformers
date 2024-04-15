@@ -139,10 +139,8 @@ from .models import (
 
 
 def adapt_transformers_to_gaudi():
-    """
-    Replaces some Transformers' methods for equivalent methods optimized
-    for Gaudi.
-    """
+    """Replaces some Transformers' methods for equivalent methods optimized
+    for Gaudi."""
 
     # optimize Conv1D
     transformers.pytorch_utils.Conv1D.forward = gaudi_conv1d_forward

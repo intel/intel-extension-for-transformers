@@ -281,10 +281,8 @@ def gaudi_bloom_block_forward(
 def gaudi_bloom_convert_to_standard_cache(
     self, past_key_value: Tuple[Tuple[torch.Tensor, torch.Tensor]], batch_size: int, training: bool
 ) -> Tuple[Tuple[torch.Tensor, torch.Tensor]]:
-    """
-    Standardizes the format of the cache so as to match most implementations, i.e. to tuple(tuple([batch_size,
-    num_heads, ...]))
-    """
+    """Standardizes the format of the cache so as to match most implementations, i.e. to tuple(tuple([batch_size,
+    num_heads, ...]))"""
     batch_size_times_num_heads, head_dim, seq_length = past_key_value[0][0].shape
     if training:
         num_heads = batch_size_times_num_heads // batch_size
@@ -307,9 +305,7 @@ def gaudi_bloom_convert_to_standard_cache(
 def gaudi_bloom_convert_to_bloom_cache(
     self, past_key_value: Tuple[Tuple[torch.Tensor, torch.Tensor]]
 ) -> Tuple[Tuple[torch.Tensor, torch.Tensor]]:
-    """
-    Converts the cache to the format expected by Bloom, i.e. to tuple(tuple([batch_size * num_heads, ...]))
-    """
+    """Converts the cache to the format expected by Bloom, i.e. to tuple(tuple([batch_size * num_heads, ...]))"""
     batch_size, num_heads, head_dim, seq_length = past_key_value[0][0].shape
     batch_size_times_num_heads = batch_size * num_heads
     # key:  [batch_size, num_heads, head_dim, seq_length] -> [batch_size * num_heads, head_dim, seq_length]
@@ -526,11 +522,11 @@ class GaudiBloomForCausalLM(BloomForCausalLM):
         token_idx: Optional[torch.Tensor] = None,
         **deprecated_arguments,
     ) -> Union[Tuple[torch.Tensor], CausalLMOutputWithCrossAttentions]:
-        r"""
-        labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
-            Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
-            `labels = input_ids` Indices are selected in `[-100, 0, ..., config.vocab_size]` All labels set to `-100`
-            are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
+        r"""Labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+
+        Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
+        `labels = input_ids` Indices are selected in `[-100, 0, ..., config.vocab_size]` All labels set to `-100`
+        are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
         """
         if deprecated_arguments.pop("position_ids", False) is not False:
             # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to `False` allows to detect if users were passing explicitly `None`
@@ -589,8 +585,7 @@ class GaudiBloomForCausalLM(BloomForCausalLM):
     def _reorder_cache(
         self, past: Tuple[Tuple[torch.Tensor, torch.Tensor], ...], beam_idx: torch.LongTensor
     ) -> Tuple[Tuple[torch.Tensor, torch.Tensor], ...]:
-        """
-        This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
+        """This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
         [`~PreTrainedModel.beam_sample`] is called. This is required to match `past_key_values` with the correct
         beam_idx at every generation step.
 

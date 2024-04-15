@@ -109,8 +109,8 @@ def incrementor(bucket_size, prompt_len):
 
 
 class GaudiGenerationMixin(GenerationMixin):
-    """
-    This class enables to perform fast generation in lazy mode and with HPU graphs.
+    """This class enables to perform fast generation in lazy mode and with HPU graphs.
+
     The only difference with GenerationMixin is that the various generation
     methods will generate sequences whose size is max_length. Having constant
     sizes allows to make the most of lazy mode and HPU graphs.
@@ -123,8 +123,7 @@ class GaudiGenerationMixin(GenerationMixin):
         input_ids: Optional[torch.LongTensor] = None,
         **model_kwargs,
     ) -> Tuple[torch.LongTensor, Dict[str, Any]]:
-        """
-        Expands tensors from [batch_size, ...] to [batch_size * expand_size, ...].
+        """Expands tensors from [batch_size, ...] to [batch_size * expand_size, ...].
 
         Copied from Transformers: https://github.com/huggingface/transformers/blob/527ab894e59b6582578008e3b47648a65063f73d/src/transformers/generation/utils.py#L704
         The tensor `token_idx` is not expanded.
@@ -183,7 +182,7 @@ class GaudiGenerationMixin(GenerationMixin):
         device: torch.device = None,
         max_new_tokens: int = None,
     ) -> Tuple[torch.LongTensor, Dict[str, torch.Tensor]]:
-        """Prepares `decoder_input_ids` for generation with encoder-decoder models"""
+        """Prepares `decoder_input_ids` for generation with encoder-decoder models."""
         # 1. Check whether the user has defined `decoder_input_ids` manually. To facilitate in terms of input naming,
         # we also allow the user to pass it under `input_ids`, if the encoder does not use it as the main input.
 
@@ -204,7 +203,7 @@ class GaudiGenerationMixin(GenerationMixin):
             if isinstance(decoder_start_token_id, list):
                 if len(decoder_start_token_id) != batch_size:
                     raise ValueError(
-                        f"`decoder_start_token_id` expcted to have length {batch_size} but got {len(decoder_start_token_id)}"
+                        f"`decoder_start_token_id` expected to have length {batch_size} but got {len(decoder_start_token_id)}"
                     )
                 decoder_input_ids_start = torch.tensor(decoder_start_token_id, dtype=torch.long, device=device)
                 decoder_input_ids_start = decoder_input_ids_start.view(-1, 1)
@@ -321,7 +320,7 @@ class GaudiGenerationMixin(GenerationMixin):
                     model_kwargs["attention_mask"], (0, pad_amount), value=0
                 )
             else:
-                assert False, "Not tested for cases where attn_mask isnt passed"
+                assert False, "Not tested for cases where attn_mask isn't passed"
             if reduce_recompile and params["passnum"] == 0:
                 position_ids_cpu = model_kwargs["attention_mask"].long().cumsum(-1) - 1
                 position_ids_cpu.masked_fill_(model_kwargs["attention_mask"] == 0, 1)
@@ -395,8 +394,7 @@ class GaudiGenerationMixin(GenerationMixin):
         profiling_steps: Optional[int] = 0,
         **kwargs,
     ) -> Union[GenerateOutput, torch.LongTensor]:
-        r"""
-        Generates sequences of token ids for models with a language modeling head.
+        r"""Generates sequences of token ids for models with a language modeling head.
 
         <Tip warning={true}>
 
@@ -447,7 +445,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 generating before other GPUs. Otherwise it'll be set to `False`.
             assistant_model (`PreTrainedModel`, *optional*):
                 An assistant model that can be used to accelerate generation. The assistant model must have the exact
-                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistent model
+                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistant model
                 is much faster than running generation with the model you're calling generate from. As such, the
                 assistant model should be much smaller.
             streamer (`BaseStreamer`, *optional*):
@@ -463,7 +461,7 @@ class GaudiGenerationMixin(GenerationMixin):
             hpu_graphs (`bool`, *optional*, defaults to `False`):
                 Whether to use HPU graphs for inference.
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             kwargs (`Dict[str, Any]`, *optional*):
@@ -1139,8 +1137,7 @@ class GaudiGenerationMixin(GenerationMixin):
         profiling_steps: Optional[int] = 0,
         **model_kwargs,
     ) -> Union[GenerateNonBeamOutput, torch.LongTensor]:
-        r"""
-        Generates sequences of token ids for models with a language modeling head using **contrastive search** and can
+        r"""Generates sequences of token ids for models with a language modeling head using **contrastive search** and can
         be used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
 
         <Tip warning={true}>
@@ -1193,7 +1190,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -1229,7 +1226,8 @@ class GaudiGenerationMixin(GenerationMixin):
         ... )
         >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
         ['DeepMind Company is a company that focuses on the development and commercialization of artificial intelligence (AI). DeepMind’s mission is to help people understand and solve problems that are difficult to solve in the world today.\n\nIn this post, we talk about the benefits of deep learning in business and how it']
-        ```"""
+        ```
+        """
 
         raise NotImplementedError("Contrastive search is not supported by optimum-habana yet.")
 
@@ -1254,8 +1252,7 @@ class GaudiGenerationMixin(GenerationMixin):
         profiling_steps: Optional[int] = 0,
         **model_kwargs,
     ) -> Union[GenerateNonBeamOutput, torch.LongTensor]:
-        r"""
-        Generates sequences of token ids for models with a language modeling head using **greedy decoding** and can be
+        r"""Generates sequences of token ids for models with a language modeling head using **greedy decoding** and can be
         used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
 
         <Tip warning={true}>
@@ -1306,7 +1303,7 @@ class GaudiGenerationMixin(GenerationMixin):
             ignore_eos (`bool`, *optional*, defaults to `False`):
                 Whether to ignore finished sequences (faster in lazy mode and with HPU graphs) or not (eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -1355,7 +1352,8 @@ class GaudiGenerationMixin(GenerationMixin):
 
         >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
         ["It might be possible to get a better understanding of the nature of the problem, but it's not"]
-        ```"""
+        ```
+        """
         # init values
         logits_processor = logits_processor if logits_processor is not None else LogitsProcessorList()
         stopping_criteria = stopping_criteria if stopping_criteria is not None else StoppingCriteriaList()
@@ -1601,8 +1599,7 @@ class GaudiGenerationMixin(GenerationMixin):
         profiling_steps: Optional[int] = 0,
         **model_kwargs,
     ) -> Union[GenerateNonBeamOutput, torch.LongTensor]:
-        r"""
-        Generates sequences of token ids for models with a language modeling head using **multinomial sampling** and
+        r"""Generates sequences of token ids for models with a language modeling head using **multinomial sampling** and
         can be used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
 
         <Tip warning={true}>
@@ -1656,7 +1653,7 @@ class GaudiGenerationMixin(GenerationMixin):
             ignore_eos (`bool`, *optional*, defaults to `False`):
                 Whether to ignore finished sequences (faster in lazy mode and with HPU graphs) or not (eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -1721,7 +1718,8 @@ class GaudiGenerationMixin(GenerationMixin):
 
         >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
         ['Today is a beautiful day, and we must do everything possible to make it a day of celebration.']
-        ```"""
+        ```
+        """
 
         # init values
         logits_processor = logits_processor if logits_processor is not None else LogitsProcessorList()
@@ -1937,8 +1935,7 @@ class GaudiGenerationMixin(GenerationMixin):
         profiling_steps: Optional[int] = 0,
         **model_kwargs,
     ) -> Union[GenerateBeamOutput, torch.LongTensor]:
-        r"""
-        Generates sequences of token ids for models with a language modeling head using **beam search decoding** and
+        r"""Generates sequences of token ids for models with a language modeling head using **beam search decoding** and
         can be used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
 
         <Tip warning={true}>
@@ -1990,7 +1987,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2053,7 +2050,8 @@ class GaudiGenerationMixin(GenerationMixin):
 
         >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
         ['Wie alt bist du?']
-        ```"""
+        ```
+        """
         # init values
         logits_processor = logits_processor if logits_processor is not None else LogitsProcessorList()
         stopping_criteria = stopping_criteria if stopping_criteria is not None else StoppingCriteriaList()
@@ -2526,8 +2524,7 @@ class GaudiGenerationMixin(GenerationMixin):
         profiling_steps: Optional[int] = 0,
         **model_kwargs,
     ) -> Union[GenerateBeamOutput, torch.LongTensor]:
-        r"""
-        Generates sequences of token ids for models with a language modeling head using **beam search multinomial
+        r"""Generates sequences of token ids for models with a language modeling head using **beam search multinomial
         sampling** and can be used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
 
         <Tip warning={true}>
@@ -2579,7 +2576,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2652,7 +2649,8 @@ class GaudiGenerationMixin(GenerationMixin):
 
         >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
         ['Wie alt bist du?']
-        ```"""
+        ```
+        """
 
         raise NotImplementedError("Beam search sampling is not supported by optimum-habana yet.")
 
@@ -2676,8 +2674,7 @@ class GaudiGenerationMixin(GenerationMixin):
         profiling_steps: Optional[int] = 0,
         **model_kwargs,
     ):
-        r"""
-        Generates sequences of token ids for models with a language modeling head using **diverse beam search
+        r"""Generates sequences of token ids for models with a language modeling head using **diverse beam search
         decoding** and can be used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
 
         <Tip warning={true}>
@@ -2725,7 +2722,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2794,7 +2791,8 @@ class GaudiGenerationMixin(GenerationMixin):
 
         >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
         ['Wie alt bist du?']
-        ```"""
+        ```
+        """
 
         raise NotImplementedError("Group beam search is not supported by optimum-habana yet.")
 
@@ -2818,8 +2816,7 @@ class GaudiGenerationMixin(GenerationMixin):
         profiling_steps: Optional[int] = 0,
         **model_kwargs,
     ) -> Union[GenerateBeamOutput, torch.LongTensor]:
-        r"""
-        Generates sequences of token ids for models with a language modeling head using **constrained beam search
+        r"""Generates sequences of token ids for models with a language modeling head using **constrained beam search
         decoding** and can be used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
 
         <Tip warning={true}>
@@ -2872,7 +2869,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             model_kwargs:
@@ -2940,7 +2937,8 @@ class GaudiGenerationMixin(GenerationMixin):
 
         >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
         ['Wie alt sind Sie?']
-        ```"""
+        ```
+        """
 
         # init values
         logits_processor = logits_processor if logits_processor is not None else LogitsProcessorList()
@@ -3203,8 +3201,7 @@ class GaudiGenerationMixin(GenerationMixin):
         streamer: Optional["BaseStreamer"] = None,
         **model_kwargs,
     ) -> Union[GenerateNonBeamOutput, torch.LongTensor]:
-        r"""
-        Generates sequences of token ids for models with a language modeling head using **greedy decoding** or
+        r"""Generates sequences of token ids for models with a language modeling head using **greedy decoding** or
         **sample** (depending on `do_sample`), assisted by candidate sequences. Assisted generation is an example of a
         candidate decoding strategy. Can be used for text-decoder, text-to-text, speech-to-text, and vision-to-text
         models.
@@ -3225,7 +3222,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 more information, the documentation of [`CandidateGenerator`] should be read. Only one of `assistant_model` or `candidate_generator` should be passed as input to this function.
             assistant_model (`PreTrainedModel`, *optional*):
                 An assistant model that can be used to accelerate generation. The assistant model must have the exact
-                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistent model
+                same tokenizer. The acceleration is achieved when forecasting candidate tokens with the assistant model
                 is much faster than running generation with the model you're calling generate from. As such, the
                 assistant model should be much smaller.
             do_sample (`bool`, *optional*, defaults to `False`):
@@ -3262,7 +3259,7 @@ class GaudiGenerationMixin(GenerationMixin):
             lazy_mode (`bool`, *optional*, defaults to `False`):
                 Whether the run is executed in lazy mode or not (i.e. eager mode).
             profiling_warmup_steps (`int`, *optional*, defaults to 0):
-                Number of steps to ignore for profling.
+                Number of steps to ignore for profiling.
             profiling_steps (`int`, *optional*, defaults to 0):
                 Number of steps to be captured when enabling profiling.
             streamer (`BaseStreamer`, *optional*):
@@ -3313,5 +3310,6 @@ class GaudiGenerationMixin(GenerationMixin):
         ... )
         >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
         ["It might be possible to get a better understanding of the nature of the problem, but it's not"]
-        ```"""
+        ```
+        """
         raise NotImplementedError("Assisted decoding is not supported by optimum-habana yet.")

@@ -35,9 +35,7 @@ class GaudiAttentionMaskConverter(AttentionMaskConverter):
         past_key_values_length: int = 0,
         sliding_window: Optional[int] = None,
     ):
-        """
-        Make causal mask used for bi-directional self-attention.
-        """
+        """Make causal mask used for bi-directional self-attention."""
         bsz, tgt_len = input_ids_shape
         mask = torch.full((tgt_len, tgt_len), torch.finfo(dtype).min, device=device)
         mask_cond = torch.arange(mask.size(-1), device=device)

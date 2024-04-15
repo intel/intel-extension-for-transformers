@@ -23,8 +23,8 @@ import torch
 def gaudi_vit_self_attention_forward(
     self, hidden_states, head_mask: Optional[torch.Tensor] = None, output_attentions: bool = False
 ) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor]]:
-    """
-    Same method as transformers.models.vit.modeling_vit.ViTSelfAttention.forward with a small tweak:
+    """Same method as transformers.models.vit.modeling_vit.ViTSelfAttention.forward with a small tweak:
+
     the division is performed before the matmul for computing attention scores.
     This gives better performance on HPU.
     """

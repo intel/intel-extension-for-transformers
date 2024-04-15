@@ -50,7 +50,7 @@ def _gaudi_wav2vec2_compute_mask_indices(
     epsilon = torch.rand([], device="hpu")
 
     def compute_num_masked_span(input_length):
-        """Given input length, compute how many spans should be masked"""
+        """Given input length, compute how many spans should be masked."""
         num_masked_span = int(mask_prob * input_length / mask_length + epsilon)
         num_masked_span = max(num_masked_span, min_masks)
 

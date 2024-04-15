@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import math
 import warnings
 from typing import List, Optional, Tuple, Union
@@ -278,7 +292,7 @@ class GaudiLlamaAttention(LlamaAttention):
         self.v_cache.allocate(inp_seq_len, dtype, device, cache_shape)
 
     def update_sincos_cache(self, seq_len):
-        # Call rotary emb forward() to update cos/sin cache when infering more than self.max_position_embeddings
+        # Call rotary emb forward() to update cos/sin cache when inferring more than self.max_position_embeddings
         # This helps in avoiding creation of these caches during actual model forward pass and
         # reduce memory consumption and improve performance.
         if seq_len > self.max_position_embeddings:

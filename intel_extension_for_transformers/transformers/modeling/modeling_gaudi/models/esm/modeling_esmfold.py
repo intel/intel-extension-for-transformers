@@ -239,8 +239,7 @@ def gaudi_esm_for_protein_folding_forward(
 
 
 def gaudi_rot_vec_mul(r: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-    """
-    Applies a rotation to a vector. Written out by hand to avoid transfer to avoid AMP downcasting.
+    """Applies a rotation to a vector. Written out by hand to avoid transfer to avoid AMP downcasting.
 
     Args:
         r: [*, 3, 3] rotation matrices
@@ -296,8 +295,7 @@ def gaudi_rot_vec_mul(r: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
 
 
 def gaudi_rot_matmul(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    """
-    Performs matrix multiplication of two rotation matrix tensors. Written out by hand to avoid AMP downcasting.
+    """Performs matrix multiplication of two rotation matrix tensors. Written out by hand to avoid AMP downcasting.
 
     Args:
         a: [*, 3, 3] left multiplicand
