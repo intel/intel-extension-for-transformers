@@ -26,11 +26,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path", type=str, default="config.yaml")
     args = parser.parse_args()
-    
+
     data = read_yaml_file(args.config_path)
     data = {k: [str(item) for item in v] if isinstance(v, list) else str(v) for k, v in data.items()}
     args = parser.parse_args()
-    
+
     data = read_yaml_file(args.config_path)
     data = {k: [str(item) for item in v] if isinstance(v, list) else str(v) for k, v in data.items()}
     arg1 = data['index_file_jsonl_path']
@@ -121,4 +121,3 @@ def read_yaml_file(file_path):
 
 if __name__ == '__main__':
     main()
-

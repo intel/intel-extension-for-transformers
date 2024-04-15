@@ -1,6 +1,6 @@
 InstructorEmbedding
 intel-extension-for-transformers
 jsonlines
+pyyaml
 ragas
 sentence-transformers==2.3.1
-pyyaml

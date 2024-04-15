@@ -22,7 +22,7 @@ def main():
     if os.path.exists("result_ragas.jsonl"):
         os.remove("result_ragas.jsonl")
     script_path = 'ragas_benchmark.sh'
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path", type=str, default="config.yaml")
     args = parser.parse_args()

@@ -77,9 +77,7 @@ def load_list(file_jsonl_path, item):
     return data
 
 def evaluate(preds, labels, cutoffs=[1,5]):
-    """
-    Evaluate MRR and Hit at cutoffs.
-    """
+    """Evaluate MRR and Hit at cutoffs."""
     metrics = {}
 
     # MRR
