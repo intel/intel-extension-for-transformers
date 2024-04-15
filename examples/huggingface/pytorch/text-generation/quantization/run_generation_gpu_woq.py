@@ -5,7 +5,6 @@ import json
 import torch
 from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
-import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.llm.utils.generation import _beam_search, _greedy_search
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, AutoRoundConfig, RtnConfig, GPTQConfig
 from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_dtype_str2torch
@@ -139,11 +138,7 @@ config = AutoConfig.from_pretrained(
 user_model = None
 
 # tokenizer
-if config.model_type == "llama":
-   from transformers import LlamaTokenizer
-   tokenizer = LlamaTokenizer.from_pretrained(args.model)
-else:
-   tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
 quantization_config = None
 if args.woq:
@@ -206,6 +201,7 @@ elif args.load_in_4bit or args.load_in_8bit:
                                                       load_in_8bit=args.load_in_8bit,
                                                       use_neural_speed=False
                                                       )
+
 if user_model is not None:
     user_model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)

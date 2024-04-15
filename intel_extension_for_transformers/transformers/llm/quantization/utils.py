@@ -108,10 +108,10 @@ def replace_linear(
     device="cpu",
     empty_weights=False,
 ):
-    if modules_to_not_convert is None:
-        # output_layer is chatglm last layer name
-        # embed_out is dolly_v2 last layer name
-        modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
+    # if modules_to_not_convert is None:
+    #     # output_layer is chatglm last layer name
+    #     # embed_out is dolly_v2 last layer name
+    #     modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(
             quantization_config.llm_int8_skip_modules
@@ -328,12 +328,6 @@ def _replace_linear(
 
 
 def convert_to_quantized_model(model, config, device="cpu"):
-    if device == "xpu" or device == torch.device("xpu"):
-        import intel_extension_for_pytorch
-
-        assert (
-            hasattr(torch, "xpu") and torch.xpu.is_available()
-        ), "There is no xpu device in this system!"
     calib_dataloader = config.calib_dataloader
     calib_func = config.calib_func
     calib_iters = config.calib_iters
@@ -517,17 +511,17 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     },
                 },
             },
-            op_name_dict={
-                ".*lm_head": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-                ".*output_layer": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-                ".*embed_out": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-            },
+            # op_name_dict={
+            #     ".*lm_head": {  # re.match
+            #         "weight": {"dtype": "fp32"},
+            #     },
+            #     ".*output_layer": {  # re.match
+            #         "weight": {"dtype": "fp32"},
+            #     },
+            #     ".*embed_out": {  # re.match
+            #         "weight": {"dtype": "fp32"},
+            #     },
+            # },
             recipes=recipes,
         )
         # TEQ: set calib_func=None, use default training func as calib_func
@@ -552,10 +546,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 compression_dim=0,
                 use_optimum_format=False,
                 scale_dtype=convert_dtype_str2torch(config.scale_dtype),
-                device="xpu",
+                device="cuda",
             )
 
-            q_model = replace_linear(model, None, None, config, device=device)
+            q_model = model
         else:
             if config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
@@ -568,7 +562,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
         if orig_dtype != torch.float32:
             q_model.to(dtype=orig_dtype)
-        return q_model.to(device)
+        return q_model
 
 
 def convert_dtype_str2torch(str_dtype):

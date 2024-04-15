@@ -653,11 +653,6 @@ class _BaseQBitsAutoModelClass:
                 model.eval()
 
                 if use_xpu:
-                    import intel_extension_for_pytorch
-
-                    assert (
-                        hasattr(torch, "xpu") and torch.xpu.is_available()
-                    ), "There is no xpu device in this system!"
                     quantization_config.update(**{"device": "xpu"})
                 if (
                     not torch.cuda.is_available()
