@@ -47,7 +47,7 @@ parser.add_argument("--batch_size", default=1, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
-parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, \
+parser.add_argument("--tasks", default="lambada_openai", type=str, \
                     help="tasks list for accuracy validation")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--bits", type=int, default=4, choices=[4])
