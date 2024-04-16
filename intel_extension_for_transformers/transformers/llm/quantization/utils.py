@@ -538,10 +538,29 @@ def convert_to_quantized_model(model, config, device="cpu"):
             if orig_dtype != torch.float32:
                 model.to(dtype=torch.float32)
             break
+        print('===torch.cuda.current_device():', os.getenv("CUDA_VISIBLE_DEVICES"), flush=True)
+        import shutil
+
+        device_num = os.getenv("CUDA_VISIBLE_DEVICES")
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )
         inc_model.eval()
+
+        qdq_model_path = "~/qdq_llama3_"+str(config.use_quant_input)+"-"+str(config.minmax_lr)+"-"+str(config.calib_iters)
+        if os.path.exists(qdq_model_path):
+            shutil.rmtree(qdq_model_path)
+
+        inc_model.model.save_pretrained(qdq_model_path)
+        config.tokenizer.save_pretrained(qdq_model_path)
+        print("QDQ model path:" + qdq_model_path, flush=True)
+        command = "CUDA_VISIBLE_DEVICES={}  lm_eval --model hf \
+                --model_args pretrained={},dtype='float16' \
+                --tasks lambada_openai,hellaswag,piqa,winogrande,truthfulqa_mc1,openbookqa,boolq,rte,arc_easy,arc_challenge \
+                --device cuda \
+                --batch_size 16".format(device_num, qdq_model_path)
+        print(command, flush=True)
+        os.system(command)
 
         if device == "xpu" or device == torch.device("xpu"):
             model = inc_model.export_compressed_model(

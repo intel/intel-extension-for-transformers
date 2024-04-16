@@ -204,6 +204,10 @@ elif args.load_in_4bit or args.load_in_8bit:
                                                       )
 
 if user_model is not None:
+    import os
+    import shutil
+    if os.path.exists(args.output_dir):
+        shutil.rmtree(args.output_dir)	
     user_model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
 
