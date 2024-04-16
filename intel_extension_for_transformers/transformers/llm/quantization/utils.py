@@ -111,7 +111,7 @@ def replace_linear(
     if modules_to_not_convert is None:
         # output_layer is chatglm last layer name
         # embed_out is dolly_v2 last layer name
-        modules_to_not_convert = []
+        modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(
             quantization_config.llm_int8_skip_modules
@@ -514,17 +514,17 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     },
                 },
             },
-            # op_name_dict={
-            #     ".*lm_head": {  # re.match
-            #         "weight": {"dtype": "fp32"},
-            #     },
-            #     ".*output_layer": {  # re.match
-            #         "weight": {"dtype": "fp32"},
-            #     },
-            #     ".*embed_out": {  # re.match
-            #         "weight": {"dtype": "fp32"},
-            #     },
-            # },
+            op_name_dict={
+                ".*lm_head": {  # re.match
+                    "weight": {"dtype": "fp32"},
+                },
+                ".*output_layer": {  # re.match
+                    "weight": {"dtype": "fp32"},
+                },
+                ".*embed_out": {  # re.match
+                    "weight": {"dtype": "fp32"},
+                },
+            },
             recipes=recipes,
         )
         # TEQ: set calib_func=None, use default training func as calib_func
@@ -542,6 +542,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )
         inc_model.eval()
+        inc_model.model.save_pretrained("qdq_model_"+str(config.use_quant_input)+"-"+str(config.minmax_lr))
+        config.tokenizer.save_pretrained("qdq_model_"+str(config.use_quant_input)+"-"+str(config.minmax_lr))
 
         if device == "xpu" or device == torch.device("xpu"):
             model = inc_model.export_compressed_model(
