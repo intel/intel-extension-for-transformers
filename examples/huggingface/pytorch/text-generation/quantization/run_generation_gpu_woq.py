@@ -251,7 +251,7 @@ if args.benchmark:
         for i in range(num_iter + num_warmup):
             # workaround for IPEX Windows
             # with torch.autograd.profiler_legacy.profile(enabled=args.do_profiling, use_xpu=(args.device=="xpu"), record_shapes=False) as prof:
-            if True
+            if True:
                 input_ids = tokenizer(
                     prompt, return_tensors="pt").input_ids.to(args.device)
                 tic = time.time()
