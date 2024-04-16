@@ -18,7 +18,7 @@
 
 import os, re
 from typing import List
-from .context_utils import load_unstructured_data, load_structured_data, get_chuck_data
+from .context_utils import load_unstructured_data, load_structured_data, get_chuck_data, split_text_chuck
 from .html_parser import load_html_data
 import logging
 
@@ -76,7 +76,8 @@ class DocumentParser:
            or input.endswith("txt") or input.endswith("md"):
             content = load_unstructured_data(input)
             if self.process:
-                chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
+                chuck = split_text_chuck(content, self.max_chuck_size, self.min_chuck_size, input)
+                #chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
             else:
                 chuck = [[content.strip(),input]]
         elif input.endswith("jsonl") or input.endswith("xlsx") or input.endswith("csv") or \
@@ -120,7 +121,9 @@ class DocumentParser:
                     or filename.endswith("txt") or filename.endswith("md"):
                     content = load_unstructured_data(os.path.join(dirpath, filename))
                     if self.process:
-                        chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
+                        chuck = split_text_chuck(content, self.max_chuck_size, self.min_chuck_size, input)
+                        #chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
+                        print(chuck)
                     else:
                         chuck = [[content.strip(),input]]
                     paragraphs += chuck

@@ -55,7 +55,8 @@ def read_pdf(pdf_path):
     result =''
     for i in range(doc.page_count):
         page = doc.load_page(i)
-        pagetext = page.get_text().strip()
+        #pagetext = page.get_text().strip()
+        pagetext = page.get_text()
         if pagetext:
             if pagetext.endswith('!') or pagetext.endswith('?') or pagetext.endswith('.'):
                 result=result+pagetext
@@ -227,11 +228,30 @@ def load_unstructured_data(input):
     elif input.endswith("md"):
         text = read_md(input)
 
-    text = text.replace('\n', ' ')
-    text = text.replace('\n\n', ' ')
+    #text = text.replace('\n', ' ')
+    #text = text.replace('\n\n', ' ')
     text = uni_pro(text)
-    text = re.sub(r'\s+', ' ', text)
+    #text = re.sub(r'\s+', ' ', text)
     return text
+
+def split_text_chuck(content, max_length, min_length, input):
+    from langchain_text_splitters import RecursiveCharacterTextSplitter, SpacyTextSplitter
+    #from langchain.text_splitter import NLTKTextSplitter
+    paragraphs = []
+    text_splitter = RecursiveCharacterTextSplitter(
+    # 设置一个非常小的块大小。
+    chunk_size = max_length,
+    separators=["\n\n", "\n"], #, ".", "!", "?", ",", " ", ""],
+    chunk_overlap  = 64
+    )
+    chunks = text_splitter.split_text(content)
+    #chunks = SpacyTextSplitter.split_text(content)
+    for chunk in chunks:
+        chunk = re.sub(r'\s+', ' ', chunk)
+        paragraphs.append([chunk.strip(), input])
+    return paragraphs
+    #docs = text_splitter.create_documents([text])
+
 
 def get_chuck_data(content, max_length, min_length, input):
     """Process the context to make it maintain a suitable length for the generation."""
