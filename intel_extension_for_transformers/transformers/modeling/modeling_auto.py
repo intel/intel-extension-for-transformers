@@ -1371,6 +1371,20 @@ class _BaseQBitsAutoModelClass:
         with ContextManagers(init_contexts):
             model = model_class(config, *model_args, **kwargs)
 
+        if is_sharded:
+            loaded_state_dict_keys = sharded_metadata["all_checkpoint_keys"]
+            for shard_filename in resolved_archive_file:
+                shard_state_dict = load_state_dict(shard_filename)
+                state_dict = model.state_dict()
+                state_dict.update(shard_state_dict)
+            if "lm_head.qweight" in state_dict \
+                and (state_dict["lm_head.qweight"].dtype != torch.int8 and state_dict["lm_head.qweight"].dtype != torch.int32):
+                quantization_config.llm_int8_skip_modules.extend(["lm_head"])
+        else:
+            # Time to load the checkpoint
+            state_dict = load_state_dict(resolved_archive_file)
+            loaded_state_dict_keys = list(state_dict.keys())
+
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
@@ -1386,13 +1400,6 @@ class _BaseQBitsAutoModelClass:
                 device="cpu" if device_map == "auto" else device_map,
                 empty_weights=True,
             )
-
-        if is_sharded:
-            loaded_state_dict_keys = sharded_metadata["all_checkpoint_keys"]
-        else:
-            # Time to load the checkpoint
-            state_dict = load_state_dict(resolved_archive_file)
-            loaded_state_dict_keys = list(state_dict.keys())
 
         # restore default dtype
         if dtype_orig is not None:
