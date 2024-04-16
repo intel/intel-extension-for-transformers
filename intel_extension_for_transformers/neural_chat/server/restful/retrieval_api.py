@@ -32,7 +32,7 @@ from ...config import GenerationConfig
 from ...cli.log import logger
 from ...server.restful.request import RetrievalRequest, FeedbackRequest
 from ...server.restful.response import RetrievalResponse
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...plugins import plugins
 from ...pipeline.plugins.retrieval.parser.context_utils import clean_filename
@@ -124,7 +124,7 @@ def check_path(path: str):
 def remove_folder_with_ignore(folder_path: str, except_patterns=None):
     """
     Remove the specific folder, and ignore some files/folders
-
+    
     :param folder_path: file path to delete
     :param except_patterns: files/folder name to ignore
     """
@@ -164,13 +164,15 @@ async def save_file_to_local_disk(save_path: str, file):
 
 def get_file_structure(root_path: str, parent_path: str="") -> List[Dict[str, Union[str, List]]]:
     result = []
+    except_patterns = EXCEPT_PATTERNS
+    except_patterns.append(UPLOAD_LINK_FOLDER)
     for path in os.listdir(root_path):
         complete_path = parent_path + '/' + path if parent_path else path
         file_path = root_path+'/'+path
-        if any(pattern in file_path for pattern in EXCEPT_PATTERNS):
+        if any(pattern in file_path for pattern in except_patterns):
             continue
         p = Path(file_path)
-        # append file into result
+        # appen file into result
         if p.is_file():
             file_dict = {
                 "name": path,
@@ -189,22 +191,100 @@ def get_file_structure(root_path: str, parent_path: str="") -> List[Dict[str, Un
                 "parent": ""
             }
             result.append(folder_dict)
-
     return result
 
 
-def save_link_content(link_list: List, link_content: List, upload_path):
+def save_link_content(link_list: List, link_content: List, upload_path:str):
     file_names = []
+    file_prefix = os.path.join(upload_path, UPLOAD_LINK_FOLDER)
+    assert check_path(file_prefix)
     for link, content in zip(link_list, link_content):
-        logger.info(f"= save link = link: {link}, content: {content}")
+        logger.info(f"[ save link content ] link: {link}, content: {content}")
         file_name = clean_filename(link)+".jsonl"
-        file_path = os.path.join(upload_path, file_name)
+        file_path = os.path.join(file_prefix, file_name)
         file_content = content[0]
         data = {'content':file_content, 'link':link}
-        with open(file_path, 'w') as file:
+        with open(file_path, 'a') as file:
             json.dump(data, file)
+            file.write('\n')
         file_names.append(file_name)
     return file_names
+
+
+def save_link_names(link_list: List, upload_path: str):
+    file_prefix = os.path.join(upload_path, UPLOAD_LINK_FOLDER)
+    assert check_path(file_prefix)
+    file_path = os.path.join(file_prefix, UPLOAD_LINK_FILE)
+    with open(file_path, 'a') as file:
+        for link in link_list:
+            logger.info(f"[ save link name ] link: {link}")
+            file.write(link+'\n')
+    logger.info(f"[ save link name ] link name saved: {file_path}")
+    return file_path
+
+
+def get_link_structure(upload_dir: str):
+    folder_name = UPLOAD_LINK_FOLDER
+    link_folder = os.path.join(upload_dir, folder_name)
+    link_file = link_folder+"/"+UPLOAD_LINK_FILE
+    # no link uploaded
+    if not Path(link_folder).exists() or not Path(link_file):
+        return None
+    
+    link_results = []
+    with open(link_file, 'r') as f:
+        for link in f:
+            link_name = link.rstrip('\n')
+            link_obj = {
+                "name": link_name,
+                "id": folder_name + '/' + link_name,
+                "type": "Link",
+                "parent": ""
+            }
+            link_results.append(link_obj)
+
+    final_result = {
+        "name": folder_name,
+        "id": folder_name,
+        "type": "Directory",
+        "children": link_results,
+        "parent": ""
+    }
+    return final_result
+
+
+def delete_link_file(prefix: str, link:str):
+    file_name = clean_filename(link) + '.jsonl'
+    path = Path(prefix+'/'+file_name)
+
+    if not path.exists():
+        raise FileNotFoundError(f"link {path} does not exist.")
+    try:
+        path.unlink()
+    except OSError as e:
+        print()(f"Fail to delete link. Error: {e.strerror}")
+        raise OSError(f"Error: {e.strerror}")
+
+
+def delete_link_name(prefix: str, link:str):
+    link_file_name = prefix+'/'+UPLOAD_LINK_FILE
+
+    if not Path(link_file_name).exists():
+        raise FileNotFoundError(f"file {link_file_name} does not exist.")
+    
+    # read file then write again
+    try:
+        with open(link_file_name, 'r') as f:
+            lines = f.readlines()
+        new_content = ""
+        for line in lines:
+            if link not in line:
+                new_content += line
+        with open(link_file_name, 'w') as f:
+            f.write(new_content)
+    except OSError as e:
+        print(f"Fail to read/write link file. Error: {e.strerror}")
+        raise OSError(f"Error: {e.strerror}")
 
 
 class RetrievalAPIRouter(APIRouter):
@@ -233,7 +313,9 @@ class RetrievalAPIRouter(APIRouter):
 
 router = RetrievalAPIRouter()
 RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./retrieval_docs")+'/'
-EXCEPT_PATTERNS = ["/xuhui_doc", "default/persist_dir"]
+UPLOAD_LINK_FOLDER = "uploaded_links"
+UPLOAD_LINK_FILE = "link_names.txt"
+EXCEPT_PATTERNS = ["/xuhui_doc", "default/persist_dir", UPLOAD_LINK_FILE]
 
 
 @router.post("/v1/askdoc/upload_link")
@@ -262,6 +344,8 @@ async def retrieval_upload_link(request: Request):
             print(f"[askdoc - upload_link] kb appended successfully")
             file_names = save_link_content(link_list, link_content, upload_path)
             print(f"[askdoc - upload_link] link content saved to local path: {file_names}")
+            link_file_path = save_link_names(link_list, upload_path)
+            print(f"[askdoc - upload_link] link names saved to local path: {link_file_path}")
         except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base fails! {e}")
             return Response(content="Error occurred while uploading links.", status_code=500)
@@ -287,6 +371,8 @@ async def retrieval_upload_link(request: Request):
             logger.info(f"[askdoc - upload_link] kb created successfully")
             file_names = save_link_content(link_list, link_content, upload_path)
             print(f"[askdoc - upload_link] link content saved to local path: {file_names}")
+            link_file_path = save_link_names(link_list, upload_path)
+            print(f"[askdoc - upload_link] link names saved to local path: {link_file_path}")
         except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base fails! {e}")
             return "Error occurred while uploading files."
@@ -326,8 +412,6 @@ async def retrieval_add_files(request: Request,
 
         # append to retieval kb
         try:
-            # instance = plugins['retrieval']["instance"]
-            # instance.create(input_path=upload_dir, persist_directory=persist_dir)
             instance = plugins['retrieval']["instance"]
             if knowledge_base_id == 'null':
                 instance.create(input_path=str(save_path), persist_directory=persist_path)
@@ -405,6 +489,7 @@ async def retrieval_chat(request: Request):
             yield f"data: [DONE]\n\n"
     else:
         def stream_generator():
+            streaming_result = ""
             for output in generator:
                 ret = {
                     "text": output,
@@ -434,10 +519,12 @@ async def retrieval_chat(request: Request):
                     if flag:
                         formatted_link += '<br/><br/>'
                     yield f"data: {formatted_link}\n\n"
+                    streaming_result += formatted_link
                 else:
                     formatted_str = ret['text'].replace('\n', '<br/><br/>')
                     formatted_str = formatted_str.replace('**:', '</b>:').replace('**', '<b>')
                     logger.info(f"[askdoc - chat] formatted: {formatted_str}")
+                    streaming_result += formatted_str
                     yield f"data: {formatted_str}\n\n"
             if return_link and link != []:
                 yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
@@ -462,7 +549,9 @@ async def retrieval_chat(request: Request):
                             background: #fff; white-space: nowrap; width: 10rem;  color: #0077FF;"   \
                             href="{raw_link}" target="_blank"> {raw_link} </a></div>"""
                     logger.info(f"[askdoc - chat] link below: {formatted_link}")
+                    streaming_result += formatted_link
                     yield f"data: {formatted_link}\n\n"
+            logger.info(f"%%%%%%%%%%%%% final result: {streaming_result}")
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
@@ -619,10 +708,19 @@ async def delete_single_file(request: Request):
         logger.info(f"[askdoc - delete_file] successfully delete kb {knowledge_base_id}")
         return {"status": True}
 
+    # delete link file and link name
+    if UPLOAD_LINK_FOLDER in str(del_path):
+        link = '/'.join(del_path.split('/')[1:])
+        prefix = path_prefix+'/upload_dir/'+UPLOAD_LINK_FOLDER
+        delete_link_file(prefix, link)
+        delete_link_name(prefix, link)
+        return {"status": True}
+
+
+    # partially delete files/folders from the kb
     delete_path = Path(path_prefix) / "upload_dir" / del_path
     logger.info(f'[askdoc - delete_file] delete_path: {delete_path}')
 
-    # partially delete files/folders from the kb
     if delete_path.exists():
         # delete file
         if delete_path.is_file():
@@ -646,15 +744,17 @@ async def delete_single_file(request: Request):
                 )
         return {"status": True}
     else:
-        raise HTTPException(status_code=404, detail="File/folder not found. Please check del_path.")
+        raise HTTPException(
+            status_code=404, 
+            detail="File/folder not found. Please check del_path.")
 
 
 @router.post("/v1/askdoc/get_file_structure")
-async def rag_get_file_structure(request: Request):
+async def handle_get_file_structure(request: Request):
     params = await request.json()
     knowledge_base_id = params['knowledge_base_id']
     user_id = request.client.host
-    logger.info(f'[askdoc - get_file_structure] user id is: {user_id}')
+    logger.info(f'[askdoc - append] user id is: {user_id}')
 
     path_prefix = get_path_prefix(knowledge_base_id, user_id)
     upload_dir = path_prefix + '/upload_dir'
@@ -662,10 +762,13 @@ async def rag_get_file_structure(request: Request):
     if not Path(upload_dir).exists():
         raise HTTPException(
             status_code=404,
-            detail=f'Knowledge base {knowledge_base_id} does not exists. Please check again'
+            detail=f'Knowledge base {knowledge_base_id} does not exists.'
         )
 
     file_content = get_file_structure(upload_dir)
+    link_content = get_link_structure(upload_dir)
+    if link_content:
+        file_content.append(link_content)
     return file_content
 
 
@@ -683,7 +786,6 @@ async def recreate_kb(request: Request):
     if Path(persist_dir).exists():
         logger.info(f"[askdoc - recreate_kb] deleting persist_dir: {persist_dir}")
         shutil.rmtree(persist_dir)
-        # remove_folder_with_ignore(persist_dir)
         logger.info(f"[askdoc - recreate_kb] persist_dir cleared.")
     # create kb
     try:
