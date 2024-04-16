@@ -95,6 +95,7 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     reuse_cache: Optional[bool] = False,
     use_flash_attention: Optional[bool] = False,
     flash_attention_recompute: Optional[bool] = False,
+    flash_attention_causal_mask: Optional[bool] = False,
     cache_idx: int = None,
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
@@ -107,6 +108,7 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     - add new args reuse_cache
     - add new args use_flash_attention
     - add new arg flash_attention_recompute
+    - add new arg flash_attention_causal_mask
     In streaming-llm (attention sinks), reuse_cache=False, self.k_cache=None, self.v_cache=None, and
     the token_idx will not be used inside the function.
     """
@@ -156,17 +158,25 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     # query_states, key_states = apply_customized_rope(query_states, key_states, cos, sin, position_ids)
     query_states = gaudi_apply_rotary_pos_emb_single(query_states, cos, sin, position_ids)
 
-    if past_key_value is not None or reuse_cache:
-        # reuse k, v, self_attention
+    if use_cache:
+            # reuse k, v, self_attention
         if reuse_cache:
             key_states = self.k_cache(key_states, 2, token_idx)
             value_states = self.v_cache(value_states, 2, token_idx)
+            past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())
         else:
-            # reuse k, v, self_attention
-            key_states = torch.cat([past_key_value[0], key_states], dim=2)
-            value_states = torch.cat([past_key_value[1], value_states], dim=2)
-            # key_states = update(past_key_value[0], key_states, 2, token_idx, self.inp_seq_len)
-            # value_states = update(past_key_value[1], value_states, 2, token_idx, self.inp_seq_len)
+            if past_key_value is None:
+                past_key = torch.zeros(key_states.shape, dtype=self.k_proj.weight.dtype, device=key_states.device)
+                past_value = torch.zeros(
+                    key_states.shape, dtype=self.k_proj.weight.dtype, device=key_states.device
+                )
+                past_key_value = (past_key, past_value)
+            key_states = self.k_cache.update(past_key_value[0], key_states, 2, token_idx, self.inp_seq_len,
+                                             reuse_cache=False)
+            value_states = self.v_cache.update(past_key_value[1], value_states, 2, token_idx, self.inp_seq_len,
+                                               reuse_cache=False)
+            if token_idx is None:
+                past_key_value = (key_states, value_states)
 
         if cache_idx is not None and q_len == 1:
             key_states = key_states[:, :, :cache_idx, :]
@@ -174,12 +184,6 @@ def gaudi_llama_pos_shift_pre_attn_forward(
             if attention_mask is not None:
                 attention_mask = attention_mask[:, :, :, :cache_idx]
             kv_seq_len = key_states.shape[-2]
-
-    if use_cache:
-        if reuse_cache:
-            past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())
-        else:
-            past_key_value = (key_states.contiguous(), value_states.contiguous())
     else:
         past_key_value = None
 
@@ -199,10 +203,15 @@ def gaudi_llama_pos_shift_pre_attn_forward(
                 )
         else:
             # first token
-            with ht.sdp_kernel(enable_recompute=flash_attention_recompute):
-                attn_output = FusedSDPA.apply(
-                    query_states, key_states, value_states, attention_mask, 0.0, False, None
-                )
+            if flash_attention_causal_mask:
+                # causal masking on first token requires inputs to be of the same length
+                with ht.sdp_kernel(enable_recompute=flash_attention_recompute):
+                    attn_output = FusedSDPA.apply(query_states, key_states, value_states, None, 0.0, True, None)
+            else:
+                with ht.sdp_kernel(enable_recompute=flash_attention_recompute):
+                    attn_output = FusedSDPA.apply(
+                        query_states, key_states, value_states, attention_mask, 0.0, False, None
+                    )
 
     else:
         query_states, key_states, value_states, attention_mask = gaudi_llama_repeat_kv(
