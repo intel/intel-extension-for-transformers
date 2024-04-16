@@ -218,6 +218,8 @@ class BaseModel(ABC):
                                 query = response
         assert query is not None, "Query cannot be None."
 
+        logging.info(f"[ base_model ] ================ final prompt: {query}")
+
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, config.task)
 
@@ -245,6 +247,7 @@ class BaseModel(ABC):
                                                           top_p=config.top_p,
                                                           stream=True)
             else:
+                logging.info(f"[ base_model ] predict config: {config}")
                 response = predict_stream(
                     **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
         except Exception as e:

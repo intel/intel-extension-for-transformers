@@ -754,7 +754,7 @@ async def handle_get_file_structure(request: Request):
     params = await request.json()
     knowledge_base_id = params['knowledge_base_id']
     user_id = request.client.host
-    logger.info(f'[askdoc - append] user id is: {user_id}')
+    logger.info(f'[askdoc - get_file_structure] user id is: {user_id}')
 
     path_prefix = get_path_prefix(knowledge_base_id, user_id)
     upload_dir = path_prefix + '/upload_dir'

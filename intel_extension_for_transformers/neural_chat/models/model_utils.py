@@ -1037,6 +1037,7 @@ def predict_stream(**params):
     Returns:
         generator: A generator that yields the generated streaming text.
     """
+    logging.info(f"[ model_utils ] predict_stream params: {params}")
     start_time = datetime.now()
     device = params["device"] if "device" in params else "cpu"
     temperature = float(params["temperature"]) if "temperature" in params else 0.9

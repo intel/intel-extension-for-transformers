@@ -62,7 +62,7 @@ class Agent_QA():
     """
     def __init__(self,
                  vector_database="Chroma",
-                 embedding_model="BAAI/bge-base-en-v1.5",
+                 embedding_model="hkunlp/instructor-large",
                  input_path = None,
                  response_template="Please reformat your query to regenerate the answer.",
                  asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets",
@@ -313,6 +313,7 @@ class Agent_QA():
         if self.mode == "accuracy":
         # "retrieval with threshold" will only return the document that bigger than the threshold.
             context, links = self.retriever.get_context(query)
+            logging.info(f"[ retrieval_agent ] retriever context: {context}")
             if 'qa' not in intent.lower() and context == '':
                 logging.info("Chat with AI Agent.")
                 prompt = generate_prompt(query)
