@@ -258,14 +258,7 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    if IS_INTEL_GPU:
-        ext_modules = []
-    else:
-        ext_modules = [CMakeExtension(
-            "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/transformers/llm/operator/csrc/')]
-        if SKIP_RUNTIME:
-            subprocess.check_call(
-                ["git", "submodule", "update", "--init", "intel_extension_for_transformers/transformers/runtime/third_party/pybind11"], cwd=cwd)
+    ext_modules = []
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
