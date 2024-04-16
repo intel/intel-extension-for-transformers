@@ -24,7 +24,7 @@ from intel_extension_for_transformers.transformers.modeling import AutoModelForC
 from intel_extension_for_transformers.transformers import GPTQConfig, RtnConfig
 from math import isclose
 from transformers import AutoTokenizer
-from intel_extension_for_transformers.tools.utils import is_gpu_available, is_ipex_available
+from intel_extension_for_transformers.tools.utils import is_intel_gpu_available, is_ipex_available
 from torch.utils.data import DataLoader
 
 
@@ -69,7 +69,7 @@ class M(torch.nn.Module):
         return self.linear(x)
 
 
-@unittest.skipIf(not is_ipex_available() or not is_gpu_available(),
+@unittest.skipIf(not is_ipex_available() or not is_intel_gpu_available(),
     "There is no Intel GPU in this machine, skip this test!")
 class TestArcWeightOnly(unittest.TestCase):
 

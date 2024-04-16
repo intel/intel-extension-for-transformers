@@ -34,7 +34,7 @@ except ImportError:
 def supported_gpus():
     return ['flex', 'max', 'arc']
 
-def is_gpu_available():
+def is_intel_gpu_available():
     import intel_extension_for_pytorch as ipex
     return hasattr(torch, "xpu") and torch.xpu.is_available()
 

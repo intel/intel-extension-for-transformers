@@ -67,7 +67,7 @@ from ..llm.quantization.utils import (
     convert_to_quantized_model,
     replace_linear,
 )
-from ...tools.utils import is_gpu_available, is_ipex_available
+from ...tools.utils import is_intel_gpu_available, is_ipex_available
 from accelerate import init_empty_weights
 from huggingface_hub import hf_hub_download
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
@@ -84,7 +84,7 @@ from transformers.utils import (
 
 from typing import Union
 
-if is_ipex_available() and is_gpu_available():
+if is_ipex_available() and is_intel_gpu_available():
     # pylint: disable=E0401
     from intel_extension_for_pytorch.nn.utils._quantize_convert import (
         WeightOnlyQuantizedLinear,
