@@ -1004,8 +1004,8 @@ class HFLM(TemplateLM):
                     ).logits
             else:
                 assert self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM
-                if hasattr(self.model, "config") and hasattr(self.model.config, "_name_or_path") and \
-                                                self.model.config._name_or_path == "THUDM/chatglm2-6b":
+                if hasattr(self.model, "config") and hasattr(self.model.config, "auto_map") and \
+                    "chatglm2" in self.model.config.auto_map["AutoConfig"]:
                     input_bs, input_len = inps.shape
                     bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
                     inps = torch.cat((bos, inps), 1)

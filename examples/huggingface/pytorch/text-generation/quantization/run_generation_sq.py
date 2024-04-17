@@ -122,9 +122,14 @@ config = AutoConfig.from_pretrained(
 if config.model_type == "chatglm":
     AutoModelForCausalLM = AutoModel
 # tokenizer
-tokenizer = AutoTokenizer.from_pretrained(
-    args.model, trust_remote_code=args.trust_remote_code
-)
+if hasattr(config, "auto_map") and "chatglm2" in config.auto_map["AutoConfig"]:
+    tokenizer = AutoTokenizer.from_pretrained(
+        "THUDM/chatglm2-6b", trust_remote_code=True
+    )
+else:
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.model, trust_remote_code=args.trust_remote_code
+    )
 
 # use peft
 args.model = args.peft_model_id if args.peft_model_id is not None else args.model

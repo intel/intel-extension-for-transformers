@@ -179,10 +179,16 @@ config = AutoConfig.from_pretrained(
 # chatglm
 if config.model_type == "chatglm":
     AutoModelForCausalLM = AutoModel
+
 # tokenizer
-tokenizer = AutoTokenizer.from_pretrained(
-    args.model, trust_remote_code=args.trust_remote_code
-)
+if hasattr(config, "auto_map") and "chatglm2" in config.auto_map["AutoConfig"]:
+    tokenizer = AutoTokenizer.from_pretrained(
+        "THUDM/chatglm2-6b", trust_remote_code=True
+    )
+else:
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.model, trust_remote_code=args.trust_remote_code
+    )
 
 # Generation
 if args.use_neural_speed:
