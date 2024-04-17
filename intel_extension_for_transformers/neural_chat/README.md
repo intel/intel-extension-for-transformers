@@ -60,12 +60,6 @@ pip install -r requirements.txt
 ```
 >**Note**: Suggest using fastapi==0.103.2
 
-And Install the dependency for RAG (Retrieval Augmented Generation) feature.
-
-```shell
-pip install -r ./pipeline/plugins/retrieval/requirements.txt
-```
-
 # Getting Started
 
 ## OpenAI-Compatible RESTful APIs
