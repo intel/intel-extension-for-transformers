@@ -1028,27 +1028,39 @@ class _BaseQBitsAutoModelClass:
         # modules_to_not_convert = kwargs.pop("modules_to_not_convert", None)
         trust_remote_code = kwargs.pop("trust_remote_code", None)
         # Maybe needed when extract_local_archive_file
-        subfolder = kwargs.get("subfolder", "")
-        variant = kwargs.get("variant", None)
-        offload_folder = kwargs.get("offload_folder", None)
-        offload_state_dict = kwargs.get("offload_state_dict", False)
-        torch_dtype = kwargs.pop("torch_dtype", "auto")
-        cache_dir = kwargs.get("cache_dir", None)
-        force_download = kwargs.get("force_download", False)
-        proxies = kwargs.get("proxies", None)
-        resume_download = kwargs.get("resume_download", False)
-        local_files_only = kwargs.get("local_files_only", False)
-        token = kwargs.get("token", None)
-        from_pipeline = kwargs.get("_from_pipeline", None)
-        from_auto_class = kwargs.get("_from_auto", False)
-        revision = kwargs.get("revision", "main")
+        subfolder = kwargs.pop("subfolder", "")
+        variant = kwargs.pop("variant", None)
+        offload_folder = kwargs.pop("offload_folder", None)
+        offload_state_dict = kwargs.pop("offload_state_dict", False)
+        torch_dtype = kwargs.get("torch_dtype", "auto")
+        cache_dir = kwargs.pop("cache_dir", None)
+        force_download = kwargs.pop("force_download", False)
+        proxies = kwargs.pop("proxies", None)
+        resume_download = kwargs.pop("resume_download", False)
+        local_files_only = kwargs.pop("local_files_only", False)
+        use_auth_token = kwargs.pop("use_auth_token", None)
+        token = kwargs.pop("token", None)
+        from_pipeline = kwargs.pop("_from_pipeline", None)
+        from_auto_class = kwargs.pop("_from_auto", False)
+        revision = kwargs.pop("revision", "main")
         commit_hash = kwargs.pop("_commit_hash", None)
-        _fast_init = kwargs.get("_fast_init", True)
+        _fast_init = kwargs.pop("_fast_init", True)
         device_map = kwargs.pop("device_map", "auto")
-        use_safetensors = kwargs.get("use_safetensors", None)
+        use_safetensors = kwargs.pop("use_safetensors", None)
+        kwarg_attn_imp = kwargs.pop("attn_implementation", None)
 
         if use_safetensors is None and not is_safetensors_available():
             use_safetensors = False
+
+        if use_auth_token is not None:
+            logger.warn(
+                "The `use_auth_token` argument is deprecated and will be removed in v5 of Transformers. Please use `token` instead.",
+            )
+            if token is not None:
+                raise ValueError(
+                    "`token` and `use_auth_token` are both specified. Please set only the argument `token`."
+                )
+            token = use_auth_token
 
         use_cpu = True if device_map == torch.device("cpu") or device_map == "cpu" else False
         use_xpu = True if device_map == torch.device("xpu") or device_map == "xpu" else False
@@ -1061,10 +1073,10 @@ class _BaseQBitsAutoModelClass:
         if from_pipeline is not None:
             user_agent["using_pipeline"] = from_pipeline
 
-        # if torch_dtype=auto was passed here, ensure to pass it on
-        if kwargs_orig.get("torch_dtype", None) == "auto":
-            kwargs["torch_dtype"] = "auto"
         config = kwargs.pop("config", None)
+        if kwarg_attn_imp is not None and config._attn_implementation != kwarg_attn_imp:
+            config._attn_implementation = kwarg_attn_imp
+
         quantization_config = config.quantization_config
 
         if quantization_config["quant_method"] == "rtn":
@@ -1117,7 +1129,7 @@ class _BaseQBitsAutoModelClass:
         if has_remote_code and trust_remote_code:
             class_ref = config.auto_map[cls.ORIG_MODEL.__name__]
             model_class = get_class_from_dynamic_module(
-                class_ref, pretrained_model_name_or_path, **kwargs
+                class_ref, pretrained_model_name_or_path, **kwargs_orig
             )
             if os.path.isdir(pretrained_model_name_or_path):
                 model_class.register_for_auto_class(cls.ORIG_MODEL.__name__)
@@ -1443,7 +1455,16 @@ class _BaseQBitsAutoModelClass:
             try:
                 model.generation_config = GenerationConfig.from_pretrained(
                     pretrained_model_name_or_path,
+                    cache_dir=cache_dir,
+                    force_download=force_download,
+                    resume_download=resume_download,
+                    proxies=proxies,
+                    local_files_only=local_files_only,
+                    token=token,
+                    revision=revision,
                     subfolder=subfolder,
+                    _from_auto=from_auto_class,
+                    _from_pipeline=from_pipeline,
                     **kwargs,
                 )
             except (OSError, TypeError):
