@@ -434,6 +434,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         runtime_supported_weight_dtype = [
             "int4",
             "int4_clip",  # int4_clip will merge to int4 in next release.
+            "int4_fullrange", # int4_fullrange will merge to int4 in next release.
             "int8",
             "fp8",
             "fp8_e5m2",
@@ -466,6 +467,8 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
         elif self.weight_dtype == "int4_clip":
+            self.weight_dtype == "int4"
+        elif self.weight_dtype == "int4_fullrange":
             self.weight_dtype == "int4"
         elif self.weight_dtype == "fp8":
             self.weight_dtype == "fp8_e4m3"
