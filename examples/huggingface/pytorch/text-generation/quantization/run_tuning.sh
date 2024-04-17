@@ -147,6 +147,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
         script="run_generation_sq.py"
+        pip install transformers==4.35.2
     elif [ "${topology}" = "chatglm2_6b" ]; then
         alpha=0.75
         model_name_or_path="THUDM/chatglm2-6b"
@@ -154,6 +155,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
         script="run_generation_sq.py"
+        pip install transformers==4.35.2
     elif [ "${topology}" = "chatglm_6b" ]; then
         alpha=0.75
         model_name_or_path="THUDM/chatglm-6b"
