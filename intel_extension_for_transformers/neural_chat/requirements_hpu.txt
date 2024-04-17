@@ -17,5 +17,6 @@ sacremoses
 shortuuid
 starlette
 transformers>=4.35.2
+transformers_stream_generator
 uvicorn
 yacs

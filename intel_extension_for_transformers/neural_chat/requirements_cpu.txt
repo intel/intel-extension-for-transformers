@@ -23,5 +23,6 @@ tiktoken==0.4.0
 torch==2.2.0
 torchaudio==2.2.0
 transformers>=4.35.2
+transformers_stream_generator
 uvicorn
 yacs

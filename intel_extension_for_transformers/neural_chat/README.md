@@ -54,6 +54,9 @@ pip install -r requirements_hpu.txt
 # For XPU device
 pip install -r requirements_xpu.txt
 
+# For Windows
+pip install -r requirements_win.txt
+
 # For CUDA device
 pip install -r requirements.txt
 
