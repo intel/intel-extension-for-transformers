@@ -11,7 +11,7 @@ from setuptools.command.build_ext import build_ext
 
 result = subprocess.Popen("pip install -r requirements.txt", shell=True)
 result.wait()
-from intel_extension_for_transformers.tools.utils import get_gpu_family
+from intel_extension_for_transformers.tools.utils import is_intel_gpu_available
 
 def check_env_flag(name: str, default: bool = False) -> bool:
     if default:  # if a flag meant to be true if not set / mal-formatted
@@ -29,7 +29,7 @@ RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
 ipex_available = importlib.util.find_spec(
     "intel_extension_for_pytorch") is not None
 IS_INTEL_GPU = False
-if ipex_available and (get_gpu_family() != "no_gpu"):
+if ipex_available and is_intel_gpu_available():
     SKIP_RUNTIME = True
     RUNTIME_ONLY = False
     IS_INTEL_GPU = True
