@@ -1741,7 +1741,8 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "model": "/tf_dataset2/models/nlp_toolkit/mistral_7b_rtn",
-        "mode": "benchmark"
+        "mode": "benchmark",
+        "output_dir": "saved_results"
       }
     }
   },
@@ -1759,7 +1760,8 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "model": "/tf_dataset2/models/nlp_toolkit/llama2_rtn",
-        "mode": "benchmark"
+        "mode": "benchmark",
+        "output_dir": "saved_results"
       }
     }
   },
@@ -1777,7 +1779,8 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "model": "/tf_dataset2/models/nlp_toolkit/qwen_rtn",
-        "mode": "benchmark"
+        "mode": "benchmark",
+        "output_dir": "saved_results"
       }
     }
   },
