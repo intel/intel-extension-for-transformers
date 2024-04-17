@@ -119,12 +119,14 @@ function run_benchmark {
     elif [ "${topology}" = "llama_7b" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-chat-hf"
         script="run_generation_sq.py"
+        pip install transformers==4.35.2
     elif [ "${topology}" = "llama2_7b_gptq" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-hf"
         script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "llama_13b" ]; then
         model_name_or_path="meta-llama/Llama-2-13b-chat-hf"
         script="run_generation_sq.py"
+        pip install transformers==4.35.2
     elif [ "${topology}" = "dolly_v2_3b" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
         script="run_generation_sq.py"

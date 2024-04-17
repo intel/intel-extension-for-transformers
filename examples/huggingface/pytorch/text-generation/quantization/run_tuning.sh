@@ -119,6 +119,7 @@ function run_tuning {
         model_name_or_path="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        pip install transformers==4.35.2
         script="run_generation_sq.py"
     elif [ "${topology}" = "llama_13b" ]; then
         alpha=0.8
@@ -126,6 +127,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         script="run_generation_sq.py"
+        pip install transformers==4.35.2
     elif [ "${topology}" = "dolly_v2_3b" ]; then
         alpha=0.6
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
