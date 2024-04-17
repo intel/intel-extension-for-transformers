@@ -171,7 +171,7 @@ Please refer to the deployment examples for deploying the NeuralChat service.
 			<td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1">NeuralChat-7B</a></td>
 			<td>Xeon</td>
 			<td>Text Generation Application</td>
-			<td><a href=examples/deployment/textchat/README.md>Text Geneation Example</a></td>
+			<td><a href=examples/deployment/textbot/README.md>Text Geneation Example</a></td>
 		</tr>
 		<tr>
 			<td>ChatQnA</td>
@@ -189,7 +189,7 @@ Please refer to the deployment examples for deploying the NeuralChat service.
 		</tr>
 		<tr>
 			<td>TalkingBot</td>
-			<td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1">NeuralChat-7B</a></td>
+			<td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1">NeuralChat-7B</a>, <a href="https://huggingface.co/microsoft/speecht5_tts">speecht5_tts</a>， <a href="https://huggingface.co/openai/whisper-base">whisper</a></td>
 			<td>AIPC, Xeon</td>
 			<td>Audio & LLM Generation Application</td>
 			<td><a href=examples/deployment/talkingbot/server/README.md>TalkingBot Example</a></td>
