@@ -3,9 +3,10 @@ set -x
 # config1: 
     # use_quant_input: True; 
     # minmax_lr: 1/200
+model_path=$1
 cd ~/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/quantization
 CUDA_VISIBLE_DEVICES=0 nohup python run_generation_gpu_woq.py \
-    --model  ~/llama3_8b_hf \
+    --model $model_path \
     --woq --woq_algo AutoRound  \
     --use_quant_input \
     --calib_iters 200  \
@@ -18,7 +19,7 @@ CUDA_VISIBLE_DEVICES=0 nohup python run_generation_gpu_woq.py \
     # minmax_lr: 2/200
 cd ~/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/quantization
 CUDA_VISIBLE_DEVICES=1 nohup python run_generation_gpu_woq.py \
-    --model  ~/llama3_8b_hf \
+    --model $model_path \
     --woq --woq_algo AutoRound  \
     --use_quant_input \
     --calib_iters 200  \
@@ -31,7 +32,7 @@ CUDA_VISIBLE_DEVICES=1 nohup python run_generation_gpu_woq.py \
     # minmax_lr: 1/200
 cd ~/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/quantization
 CUDA_VISIBLE_DEVICES=2 nohup python run_generation_gpu_woq.py \
-    --model  ~/llama3_8b_hf \
+    --model $model_path \
     --woq --woq_algo AutoRound  \
     --calib_iters 200  \
     --lr 5e-3 \
@@ -43,7 +44,7 @@ CUDA_VISIBLE_DEVICES=2 nohup python run_generation_gpu_woq.py \
     # minmax_lr: 2/200
 cd ~/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/quantization
 CUDA_VISIBLE_DEVICES=3 nohup python run_generation_gpu_woq.py \
-    --model  ~/llama3_8b_hf \
+    --model $model_path \
     --woq --woq_algo AutoRound  \
     --calib_iters 200  \
     --lr 5e-3 \
@@ -51,8 +52,47 @@ CUDA_VISIBLE_DEVICES=3 nohup python run_generation_gpu_woq.py \
     --output_dir llama3_conf4  \
     --nsamples 512  > test_4.log 2>&1 & 
 
-CUDA_VISIBLE_DEVICES=4 lm_eval --model hf \
-    --model_args pretrained=~/llama3_8b_hf,dtype="float16"\
-    --tasks lambada_openai,hellaswag,piqa,winogrande,truthfulqa_mc1,openbookqa,boolq,rte,arc_easy,arc_challenge\
-    --device cuda:0 \
-    --batch_size 16  > test_accu_fp16.log 2>&1 & 
+
+## iters 1000
+
+cd ~/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/quantization
+CUDA_VISIBLE_DEVICES=4 nohup python run_generation_gpu_woq.py \
+    --model $model_path \
+    --woq --woq_algo AutoRound  \
+    --use_quant_input \
+    --calib_iters 1000  \
+    --lr 1e-3 \
+    --minmax_lr 1e-3 \
+    --output_dir llama3_conf5  \
+    --nsamples 512  > test_5.log 2>&1 & 
+
+cd ~/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/quantization
+CUDA_VISIBLE_DEVICES=5 nohup python run_generation_gpu_woq.py \
+    --model $model_path \
+    --woq --woq_algo AutoRound  \
+    --use_quant_input \
+    --calib_iters 1000  \
+    --lr 1e-3 \
+    --minmax_lr 2e-3 \
+    --output_dir llama3_conf6  \
+    --nsamples 512  > test_6.log 2>&1 & 
+
+cd ~/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/quantization
+CUDA_VISIBLE_DEVICES=6 nohup python run_generation_gpu_woq.py \
+    --model $model_path \
+    --woq --woq_algo AutoRound  \
+    --calib_iters 1000  \
+    --lr 1e-3 \
+    --minmax_lr 1e-3 \
+    --output_dir llama3_conf7  \
+    --nsamples 512  > test_7.log 2>&1 & 
+
+cd ~/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/quantization
+CUDA_VISIBLE_DEVICES=7 nohup python run_generation_gpu_woq.py \
+    --model $model_path \
+    --woq --woq_algo AutoRound  \
+    --calib_iters 1000  \
+    --lr 1e-3 \
+    --minmax_lr 2e-3 \
+    --output_dir llama3_conf8  \
+    --nsamples 512  > test_8.log 2>&1 & 

@@ -538,7 +538,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             if orig_dtype != torch.float32:
                 model.to(dtype=torch.float32)
             break
-        print('===torch.cuda.current_device():', os.getenv("CUDA_VISIBLE_DEVICES"), flush=True)
+        print('===torch.cuda.current_device():', os.getenv("CUDA_VISIBLE_DEVICES"), torch.cuda.current_device(), flush=True)
         import shutil
 
         device_num = os.getenv("CUDA_VISIBLE_DEVICES")
