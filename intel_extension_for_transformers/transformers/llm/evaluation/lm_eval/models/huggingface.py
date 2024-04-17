@@ -1004,6 +1004,11 @@ class HFLM(TemplateLM):
                     ).logits
             else:
                 assert self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM
+                if hasattr(self.model, "config") and hasattr(self.model.config, "_name_or_path") and \
+                                                self.model.config._name_or_path == "THUDM/chatglm2-6b":
+                    input_bs, input_len = inps.shape
+                    bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
+                    inps = torch.cat((bos, inps), 1)
                 if self.model_format == "neural_speed":
                     out = self.model(
                         inps, reinit=True, logits_all=True, ignore_padding=True
