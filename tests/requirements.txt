@@ -3,7 +3,7 @@ accelerate
 auto-gptq
 auto-round
 bitsandbytes
-datasets
+datasets==2.14.7
 einops
 evaluate
 gguf
