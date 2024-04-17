@@ -41,7 +41,7 @@ python -m pylint -f json --disable=R,C,W,E1129 \
     --max-line-length=120 \
     --extension-pkg-whitelist=numpy,nltk \
     --ignored-classes=TensorProto,NodeProto \
-    --ignored-modules=tensorflow,torch,torch.quantization,torch.tensor,torchvision,mxnet,onnx,onnxruntime,neural_compressor,neural_compressor.benchmark,intel_extension_for_transformers.neural_engine_py,cv2,PIL.Image \
+    --ignored-modules=tensorflow,torch,torch.quantization,torch.tensor,torchvision,mxnet,onnx,onnxruntime,neural_compressor,neural_compressor.benchmark,intel_extension_for_transformers.neural_engine_py,intel_extension_for_transformers.qbits,cv2,PIL.Image \
     /intel-extension-for-transformers/intel_extension_for_transformers >${log_dir}/pylint.json
 exit_code1=$?
 
@@ -51,7 +51,7 @@ python -m pylint -f json --disable=R,C,W,E1129 \
     --disable=no-name-in-module,import-error,no-member,undefined-variable,no-value-for-parameter,unexpected-keyword-arg,not-callable,no-self-argument,too-many-format-args,invalid-unary-operand-type,too-many-function-args \
     --extension-pkg-whitelist=numpy,nltk \
     --ignored-classes=TensorProto,NodeProto \
-    --ignored-modules=tensorflow,torch,torch.quantization,torch.tensor,torchvision,mxnet,onnx,onnxruntime,neural_compressor,neural_compressor.benchmark,intel_extension_for_transformers.neural_engine_py,cv2,PIL.Image \
+    --ignored-modules=tensorflow,torch,torch.quantization,torch.tensor,torchvision,mxnet,onnx,onnxruntime,neural_compressor,neural_compressor.benchmark,intel_extension_for_transformers.neural_engine_py,intel_extension_for_transformers.qbits,cv2,PIL.Image \
     /intel-extension-for-transformers/intel_extension_for_transformers >> ${log_dir}/pylint.json
 exit_code2=$?
 
