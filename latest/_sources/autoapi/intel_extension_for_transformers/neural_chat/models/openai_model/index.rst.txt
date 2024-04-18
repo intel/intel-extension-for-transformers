@@ -26,32 +26,6 @@ Classes
 
    Customized class to operate on OpenAI models in the pipeline.
 
-   .. py:method:: load_model(kwargs: dict)
-
-      Load the model using the provided arguments.
-
-      :param kwargs: A dictionary containing the configuration parameters for model loading.
-      :type kwargs: dict
-
-      Example 'kwargs' dictionary:
-      {
-          "model_name": "my_model",
-          "tokenizer_name": "my_tokenizer",
-          "device": "cuda",
-          "use_hpu_graphs": True,
-          "cpu_jit": False,
-          "ipex_int8": False,
-          "use_cache": True,
-          "peft_path": "/path/to/peft",
-          "use_deepspeed": False,
-          "use_tpp": False,
-          "hf_access_token": "user's huggingface access token",
-          "assistant_model": "assistant model name to speed up inference",
-          "use_vllm": "whether to use vllm for serving",
-          "vllm_engine_params": "vllm engine parameters if use_vllm is true",
-      }
-
-
    .. py:method:: predict(query, config: intel_extension_for_transformers.neural_chat.config.GenerationConfig = None)
 
       Customized OpenAI model predict.
@@ -70,15 +44,6 @@ Classes
    .. py:method:: update_user_prompt(query, new_user_prompt)
 
       Update the user prompt in the query List[Dict].
-
-
-   .. py:method:: predict_stream(query, config: intel_extension_for_transformers.neural_chat.config.GenerationConfig = None)
-
-      Predict using a streaming approach.
-
-      :param query: The input query for prediction.
-      :param origin_query: The origin Chinese query for safety checker.
-      :param config: Configuration for prediction.
 
 
 

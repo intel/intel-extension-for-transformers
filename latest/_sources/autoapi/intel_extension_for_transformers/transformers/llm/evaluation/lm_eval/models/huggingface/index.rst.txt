@@ -14,40 +14,20 @@ Classes
 
 .. autoapisummary::
 
-   intel_extension_for_transformers.transformers.llm.evaluation.lm_eval.models.huggingface.AutoCausalLM
-   intel_extension_for_transformers.transformers.llm.evaluation.lm_eval.models.huggingface.AutoSeq2SeqLM
-   intel_extension_for_transformers.transformers.llm.evaluation.lm_eval.models.huggingface.MultiTokenEOSCriteria
+   intel_extension_for_transformers.transformers.llm.evaluation.lm_eval.models.huggingface.HFLM
 
 
 
 
-.. py:class:: AutoCausalLM(*args, pretrained, model_format, **kwargs)
+.. py:class:: HFLM(pretrained: Optional[Union[str, transformers.PreTrainedModel]] = 'gpt2', backend: Optional[Literal[default, causal, seq2seq]] = 'default', revision: Optional[str] = 'main', subfolder: Optional[str] = None, tokenizer: Optional[Union[str, transformers.PreTrainedTokenizer, transformers.PreTrainedTokenizerFast]] = None, truncation: Optional[bool] = False, logits_cache: bool = True, max_length: Optional[int] = None, device: Optional[str] = 'cuda', dtype: Optional[Union[str, torch.dtype]] = 'auto', batch_size: Optional[Union[int, str]] = 1, max_batch_size: Optional[int] = 64, trust_remote_code: Optional[bool] = False, use_fast_tokenizer: Optional[bool] = True, add_bos_token: Optional[bool] = False, parallelize: Optional[bool] = False, device_map_option: Optional[str] = 'auto', max_memory_per_gpu: Optional[Union[int, str]] = None, max_cpu_memory: Optional[Union[int, str]] = None, offload_folder: Optional[Union[str, os.PathLike]] = './offload', peft: Optional[str] = None, autogptq: Optional[Union[bool, str]] = False, model_format: Optional[str] = 'torch', **kwargs)
 
 
 
 
-   Causal language modeling.
+   An abstracted Huggingface model class. Enables usage with both models of
+   `intel_extension_for_transformers.transformers.AutoModelForCausalLM` and
+   `intel_extension_for_transformers.transformers.AutoModelForSeq2SeqLM` classes.
 
-   You can find a set of supported models in the HF documentation:
-   https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForCausalLM
-
-
-.. py:class:: AutoSeq2SeqLM(*args, pretrained, model_format, **kwargs)
-
-
-
-
-   Seq2Seq language modeling.
-
-   You can find a set of supported models in the following documentation:
-   https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForSeq2SeqLM
-
-
-.. py:class:: MultiTokenEOSCriteria(sequence: str, tokenizer: transformers.PreTrainedTokenizer, initial_decoder_input_length: int, batch_size: int)
-
-
-
-
-   Criteria to stop on the specified multi-token sequence.
+   Supports data-parallel multi-GPU with HF Accelerate.
 
 

@@ -4,10 +4,10 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise &mdash; Intel® Extension for Transformers 0.1.dev1+ga6f3ab3 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise &mdash; Intel® Extension for Transformers 0.1.dev1+gd72f136 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=fd3f3429" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/custom.css?v=68dfede1" />
 
   
@@ -123,7 +123,7 @@
 <dd><p>Convert the input tensor from amplitude to decibel scale.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>tensor.</strong><strong>]</strong> (<em>x {</em><em>[</em><em>torch.Tensor</em><em>]</em><em>} --</em><em> [</em><a class="reference internal" href="../../../../../../transformers/runtime/compile/ops/empty_ops/index.html#intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops.Input" title="intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops.Input"><em>Input</em></a>) – </p>
+<dd class="field-odd"><p><strong>tensor.</strong><strong>]</strong> (<em>x {</em><em>[</em><em>torch.Tensor</em><em>]</em><em>} --</em><em> [</em><a class="reference internal" href="../../../../../../transformers/runtime/compile/ops/empty_ops/index.html#intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops.Input" title="intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops.Input"><em>Input</em></a>)</p>
 </dd>
 <dt class="field-even">Keyword Arguments<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -144,9 +144,9 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>tensor.</strong><strong>]</strong> (<em>x {</em><em>[</em><em>torch.Tensor</em><em>]</em><em>} --</em><em> [</em><a class="reference internal" href="../../../../../../transformers/runtime/compile/ops/empty_ops/index.html#intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops.Input" title="intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops.Input"><em>Input</em></a>) – </p></li>
-<li><p><strong>sigmoid.</strong><strong>]</strong> (<em>temp_coeff {</em><em>[</em><em>float</em><em>]</em><em>} --</em><em> [</em><em>Parameter that controls the slope</em><em> of </em><em>the</em>) – </p></li>
-<li><p><strong>sigmoid.</strong><strong>]</strong> – </p></li>
+<li><p><strong>tensor.</strong><strong>]</strong> (<em>x {</em><em>[</em><em>torch.Tensor</em><em>]</em><em>} --</em><em> [</em><a class="reference internal" href="../../../../../../transformers/runtime/compile/ops/empty_ops/index.html#intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops.Input" title="intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops.Input"><em>Input</em></a>)</p></li>
+<li><p><strong>sigmoid.</strong><strong>]</strong> (<em>temp_coeff {</em><em>[</em><em>float</em><em>]</em><em>} --</em><em> [</em><em>Parameter that controls the slope</em><em> of </em><em>the</em>)</p></li>
+<li><p><strong>sigmoid.</strong><strong>]</strong></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -162,7 +162,7 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sequence.</strong><strong>]</strong> (<em>start {</em><em>[</em><em>Number</em><em>]</em><em>} --</em><em> [</em><em>The starting value</em><em> of </em><em>the</em>) – </p></li>
+<li><p><strong>sequence.</strong><strong>]</strong> (<em>start {</em><em>[</em><em>Number</em><em>]</em><em>} --</em><em> [</em><em>The starting value</em><em> of </em><em>the</em>)</p></li>
 <li><p><strong>sequence</strong> (<em>stop {</em><em>[</em><em>Number</em><em>]</em><em>} --</em><em> [</em><em>The end value</em><em> of </em><em>the</em>) – In that case, the sequence consists of all but the last of <code class="docutils literal notranslate"><span class="pre">num</span> <span class="pre">+</span> <span class="pre">1</span></code>
 evenly spaced samples, so that <cite>stop</cite> is excluded. Note that the step
 size changes when <cite>endpoint</cite> is False.]</p></li>
@@ -173,9 +173,9 @@ size changes when <cite>endpoint</cite> is False.]</p></li>
 </dd>
 <dt class="field-even">Keyword Arguments<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>non-negative.</strong><strong>]</strong> (<em>num {</em><em>[</em><em>int</em><em>]</em><em>} --</em><em> [</em><em>Number</em><em> of </em><em>samples to generate. Default is 50. Must be</em>) – </p></li>
+<li><p><strong>non-negative.</strong><strong>]</strong> (<em>num {</em><em>[</em><em>int</em><em>]</em><em>} --</em><em> [</em><em>Number</em><em> of </em><em>samples to generate. Default is 50. Must be</em>)</p></li>
 <li><p><strong>included.</strong> (<em>endpoint {</em><em>[</em><em>bool</em><em>]</em><em>} --</em><em> [</em><em>If True</em><em>, </em><em>stop is the last sample. Otherwise</em><em>, </em><em>it is not</em>) – Default is True.]</p></li>
-<li><p><strong>function.</strong><strong>]</strong> (<em>**kwargs --</em><em> [</em><em>Additional arguments to be passed to the underlying PyTorch linspace</em>) – </p></li>
+<li><p><strong>function.</strong><strong>]</strong> (<em>**kwargs --</em><em> [</em><em>Additional arguments to be passed to the underlying PyTorch linspace</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -191,7 +191,7 @@ size changes when <cite>endpoint</cite> is False.]</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>signal.</strong> (<em>sr {int} -- Sample rate</em><em> of </em><em>the input</em>) – </p></li>
+<li><p><strong>signal.</strong> (<em>sr {int} -- Sample rate</em><em> of </em><em>the input</em>)</p></li>
 <li><p><strong>(</strong><strong>default</strong> (<em>defaults to win_length // 4</em>) – {False}).</p></li>
 <li><p><strong>for</strong> (<em>n_thresh_nonstationary {float} -- Number</em><em> of </em><em>multiplies above smoothed magnitude spectrogram.</em>) – stationary masking (default: {1.5}).</p></li>
 <li><p><strong>for</strong> – non-stationary masking (default: {1.3}).</p></li>
@@ -249,7 +249,7 @@ signal is used as the noise signal. Default: <cite>None</cite>.</p></li>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f1ce967a020> 
+   <jinja2.runtime.BlockReference object at 0x7fd2e3469ba0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

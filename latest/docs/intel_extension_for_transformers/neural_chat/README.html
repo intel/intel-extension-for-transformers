@@ -4,10 +4,10 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+ga6f3ab3 documentation</title>
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+gd72f136 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=fd3f3429" />
       <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=68dfede1" />
 
   
@@ -138,6 +138,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 <span class="c1"># For XPU device</span>
 pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements_xpu.txt
 
+<span class="c1"># For Windows</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements_win.txt
+
 <span class="c1"># For CUDA device</span>
 pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 </pre></div>
@@ -232,6 +235,48 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 </section>
 </section>
 </section>
+<section id="deploy-neuralchat-service">
+<h2>Deploy NeuralChat Service<a class="headerlink" href="#deploy-neuralchat-service" title="Link to this heading"></a></h2>
+<p>Please refer to the deployment examples for deploying the NeuralChat service.</p>
+<table>
+	<tbody>
+		<tr>
+			<td>Application</td>
+			<td>LLM</td>
+			<td>HW</td>
+			<td>Description</td>
+			<td>Examples</td>
+		</tr>
+		<tr>
+			<td>TextGen</td>
+			<td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1">NeuralChat-7B</a></td>
+			<td>Xeon</td>
+			<td>Text Generation Application</td>
+			<td><a href=examples/deployment/textbot/README.html>Text Generation Example</a></td>
+		</tr>
+		<tr>
+			<td>ChatQnA</td>
+			<td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1">NeuralChat-7B</a></td>
+			<td>Xeon, Gaudi</td>
+			<td>RAG Application</td>
+			<td><a href=examples/deployment/rag/README.html>RAG Example</a></td>
+		</tr>
+		<tr>
+			<td>CodeGen</td>
+			<td><a href="https://huggingface.co/Phind/Phind-CodeLlama-34B-v2">Phind/Phind-CodeLlama-34B-v2</a></td>
+			<td>AIPC, Xeon, Gaudi</td>
+			<td>Code Generation Application</td>
+			<td><a href=examples/deployment/codegen/README.html>CodeGen Example</a></td>
+		</tr>
+		<tr>
+			<td>TalkingBot</td>
+			<td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1">NeuralChat-7B</a>, <a href="https://huggingface.co/microsoft/speecht5_tts">speecht5_tts</a>， <a href="https://huggingface.co/openai/whisper-base">whisper</a></td>
+			<td>AIPC, Xeon</td>
+			<td>Audio & LLM Generation Application</td>
+			<td><a href=examples/deployment/talkingbot/server/README.html>TalkingBot Example</a></td>
+		</tr>
+	</tbody>
+</table></section>
 <section id="langchain-extension-apis">
 <h2>Langchain Extension APIs<a class="headerlink" href="#langchain-extension-apis" title="Link to this heading"></a></h2>
 <p>Intel Extension for Transformers provides a comprehensive suite of Langchain-based extension APIs, including advanced retrievers, embedding models, and vector stores. These enhancements are carefully crafted to expand the capabilities of the original langchain API, ultimately boosting overall performance. This extension is specifically tailored to enhance the functionality and performance of RAG.</p>
@@ -552,7 +597,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f1cd0336ef0> 
+   <jinja2.runtime.BlockReference object at 0x7fd2c61c1cc0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

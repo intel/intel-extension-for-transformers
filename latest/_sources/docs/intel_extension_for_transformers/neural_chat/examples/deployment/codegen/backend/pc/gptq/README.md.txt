@@ -33,7 +33,7 @@ pip install -e .
 Install dependencies using pip
 
 ```bash
-pip install ../../../../../requirements_pc.txt
+pip install ../../../../../requirements_win.txt
 pip install transformers==4.35.2
 ```
 
