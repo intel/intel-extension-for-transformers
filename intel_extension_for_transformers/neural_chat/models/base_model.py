@@ -218,8 +218,6 @@ class BaseModel(ABC):
                                 query = response
         assert query is not None, "Query cannot be None."
 
-        logging.info(f"[ base_model ] ================ final prompt: {query}")
-
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, config.task)
 
