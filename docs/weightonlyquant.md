@@ -241,6 +241,8 @@ python run_generation_gpu_woq.py --woq --benchmark
 
 ### Example of AutoRound on Intel GPU
 
+For the specific usage of parameters for AutoRoundConfig, please refer to the definition [class AutoRoundConfig](https://github.com/intel/intel-extension-for-transformers/blob/629b9d40caf97c963dc76f908e4cb66cc6f72eeb/intel_extension_for_transformers/transformers/utils/config.py#L930)
+
 ```python
 import torch
 import intel_extension_for_pytorch as ipex
