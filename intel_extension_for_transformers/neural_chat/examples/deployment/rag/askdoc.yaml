@@ -26,6 +26,18 @@ port: 8899
 model_name_or_path: "Intel/neural-chat-7b-v3-1"
 device: "auto"
 
+#################### for int4 model ####################
+tokenizer_name_or_path: "Intel/neural-chat-7b-v3-1"
+use_neural_speed: true
+use_woq: true
+
+optimization:
+    use_neural_speed: true
+    optimization_type: "weight_only"
+    compute_dtype: "fp32"
+    weight_dtype: "int4"
+######################### end #########################
+
 retrieval:
     enable: true
     args:
@@ -36,5 +48,7 @@ retrieval:
 
 safety_checker:
     enable: true
+    args:
+        dict_path: "./pipeline/plugins/security"
 
 tasks_list: ['textchat', 'retrieval']
