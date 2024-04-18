@@ -105,7 +105,7 @@ parser.add_argument(
 parser.add_argument(
     "--lr",
     type=float,
-    default=0.0025,
+    default=None,
     help="learning rate, if None, it will be set to 1.0/iters automatically",
 )
 parser.add_argument(
