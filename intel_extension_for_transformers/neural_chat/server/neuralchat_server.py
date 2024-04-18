@@ -271,6 +271,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             plugins.retrieval.args['search_type'] = "similarity_score_threshold"
             plugins.retrieval.args['search_kwargs'] = {"score_threshold": 0.7, "k": 4}
 
+            logger.info(f"============== retrieval args: {plugins.retrieval.args}")
+
             # Create a dictionary of parameters for PipelineConfig
             params = {
                 "model_name_or_path": model_name_or_path,
