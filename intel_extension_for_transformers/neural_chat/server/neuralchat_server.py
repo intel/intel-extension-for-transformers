@@ -359,15 +359,20 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                         command_list = f"{launch_str} --base_model_path {model_name_or_path} --use_tpp \
                             --host {host} --port {port} --return_stats"
                     try:
-                        print(f"{self.__class__.__name__} init(): command = {command_list}")
-                        sys.stdout.flush()
-                        sys.stderr.flush()
-                        subprocess.Popen(command_list, shell=True, executable="/bin/bash")   # nosec
-                        logger.info("waiting for server to start...")
-                        time.sleep(30)
+                        if world_size > 1:
+                            print(f"{self.__class__.__name__} init(): command = {command_list}")
+                            sys.stdout.flush()
+                            sys.stderr.flush()
+                            subprocess.Popen(command_list, shell=True, executable="/bin/bash")   # nosec
+                            logger.info("waiting for server to start...")
+                            time.sleep(30)
+                            self.chatbot = None
+                        else:
+                            pipeline_config = PipelineConfig(**params)
+                            self.chatbot = build_chatbot(pipeline_config)
+                            use_tpp = False
                     except Exception as exc:
                         raise RuntimeError(f"Error in {self.__class__.__name__} init()") from exc
-                    self.chatbot = None
                 else:
                     raise RuntimeError(f"Error in {self.__class__.__name__} init(): \
                         The device {device} is not supported for TPP.")

@@ -1,7 +1,8 @@
-Full Publications/Events (44)
+Full Publications/Events (45)
 ==========
 
-## 2024 (4)
+## 2024 (5)
+* Blog published on Techcrunch: [Intel and others commit to building open generative AI tools for the enterprise](https://techcrunch.com/2024/04/16/intel-and-others-commit-to-building-open-generative-ai-tools-for-the-enterprise) (Apr 2024)
 * Video on YouTube: [Intel Vision Keynotes 2024](https://www.youtube.com/watch?v=QB7FoIpx8os&t=2280s) (Apr 2024)
 * Blog published on Vectara: [Do Smaller Models Hallucinate More?](https://vectara.com/blog/do-smaller-models-hallucinate-more) (Apr 2024)
 * Blog of Intel Developer News: [Use the neural-chat-7b Model for Advanced Fraud Detection: An AI-Driven Approach in Cybersecurity](https://www.intel.com/content/www/us/en/developer/articles/technical/bilics-approach-cybersecurity-using-neuralchat-7b.html) (March 2024)

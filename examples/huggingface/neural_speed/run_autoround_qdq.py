@@ -13,7 +13,7 @@
 #  limitations under the License.
 import sys
 import argparse
-from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
+from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diff for a model")
@@ -21,11 +21,12 @@ if __name__ == "__main__":
     parser.add_argument('--tasks', type=str, default="lambada_openai")
     args = parser.parse_args()
     print(args)
-
-    results = evaluate(
-        model="hf-causal",
-        model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True',
-        tasks=[f"{args.tasks}"]
+    eval_args = LMEvalParser(
+        model="hf",
+        model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True,model_format=neural_speed',
+        tasks=f"{args.tasks}",
+        device="cpu"
     )
+    results = evaluate(eval_args)
 
     print(results)

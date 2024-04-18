@@ -14,27 +14,53 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import math
+
+import copy
 import os
+from datetime import timedelta
+from pathlib import Path
+from typing import List, Literal, Optional, Tuple, Union
+
 import torch
 import torch.nn.functional as F
 import transformers
-import peft
+from accelerate import (
+    Accelerator,
+    DistributedType,
+    InitProcessGroupKwargs,
+    find_executable_batch_size,
+)
+from packaging import version
+from peft import PeftModel
 from peft import __version__ as PEFT_VERSION
-from pathlib import Path
-from typing import List, Mapping, NewType, Optional, Tuple, Union
 from tqdm import tqdm
-from packaging.version import Version
-
-from transformers import BatchEncoding
+from transformers.models.auto.modeling_auto import (
+    MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
+    MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING_NAMES,
+)
 
 from lm_eval import utils
-from lm_eval.base import BaseLM, CacheHook
-import re
+from lm_eval.api.instance import Instance
+from lm_eval.api.model import TemplateLM
+from lm_eval.models.utils import (
+    Collator,
+    clear_torch_cache,
+    get_dtype,
+    pad_and_concat,
+    stop_sequences_criteria,
+)
+from intel_extension_for_transformers.transformers import (
+    AutoModelForCausalLM,
+    AutoModelForSeq2SeqLM,
+    AutoModel,
+)
+from packaging.version import Version
 
-TokenSequence = Union[List[int], torch.LongTensor, torch.Tensor, BatchEncoding]
-
-_DeviceMapping = NewType("DeviceMapping", Mapping[str, Union[int, str, torch.device]])
+eval_logger = utils.eval_logger
+import transformers
+transformers.AutoModelForCausalLM = AutoModelForCausalLM
+transformers.AutoModelForSeq2SeqLM = AutoModelForSeq2SeqLM
+transformers.AutoModel = AutoModel
 
 
 def _get_accelerate_args(
@@ -62,457 +88,323 @@ def _get_accelerate_args(
     return args
 
 
-def _get_dtype(
-    dtype: Union[str, torch.dtype], config: Optional[transformers.AutoConfig] = None
-) -> torch.dtype:
-    """Converts `dtype` from `str` to torch.dtype when possible."""
-    if dtype is None and config is not None:
-        _torch_dtype = config.torch_dtype
-    elif isinstance(dtype, str) and dtype != "auto":
-        # Convert `str` args torch dtype: `float16` -> `torch.float16`
-        _torch_dtype = getattr(torch, dtype)
-    else:
-        _torch_dtype = dtype
-    return _torch_dtype
+class HFLM(TemplateLM):
+    """An abstracted Huggingface model class. Enables usage with both models of
+    `intel_extension_for_transformers.transformers.AutoModelForCausalLM` and
+    `intel_extension_for_transformers.transformers.AutoModelForSeq2SeqLM` classes.
 
+    Supports data-parallel multi-GPU with HF Accelerate.
+    """
 
-class HuggingFaceAutoLM(BaseLM):
-    AUTO_CONFIG_CLASS: transformers.AutoConfig = transformers.AutoConfig
-    AUTO_TOKENIZER_CLASS: transformers.AutoTokenizer = transformers.AutoTokenizer
-    AUTO_MODEL_CLASS: transformers.AutoModel = None
-    AUTO_PEFT_CLASS: peft.PeftModel = None
-
-    # Default max sequence length setting for when no `max_length` is provided
-    # or no max length config setting is found in the model or tokenizer.
-    _DEFAULT_MAX_LENGTH: int = 2048
+    AUTO_MODEL_CLASS = None
+    _DEFAULT_MAX_LENGTH = 2048
 
     def __init__(
         self,
-        pretrained: str,
-        quantized: Optional[Union[bool, str]] = False,
-        tokenizer: Optional[str] = None,
-        subfolder: Optional[str] = None,
+        pretrained: Optional[Union[str, transformers.PreTrainedModel]] = "gpt2",
+        backend: Optional[Literal["default", "causal", "seq2seq"]] = "default",
+        # override whether the model should be treated as decoder-only (causal) or encoder-decoder (seq2seq)
         revision: Optional[str] = "main",
-        batch_size: Optional[Union[int, str]] = 1,
-        max_batch_size: Optional[int] = 512,
-        max_gen_toks: Optional[int] = 256,
+        subfolder: Optional[str] = None,
+        tokenizer: Optional[
+            Union[
+                str,
+                transformers.PreTrainedTokenizer,
+                transformers.PreTrainedTokenizerFast,
+            ]
+        ] = None,
+        truncation: Optional[bool] = False,
+        logits_cache: bool = True,
         max_length: Optional[int] = None,
-        add_special_tokens: Optional[bool] = None,
-        use_accelerate: Optional[bool] = False,
-        low_cpu_mem_usage: Optional[bool] = True,
+        device: Optional[str] = "cuda",
+        dtype: Optional[Union[str, torch.dtype]] = "auto",
+        batch_size: Optional[Union[int, str]] = 1,
+        max_batch_size: Optional[int] = 64,
+        trust_remote_code: Optional[bool] = False,
+        use_fast_tokenizer: Optional[bool] = True,
+        add_bos_token: Optional[bool] = False,
+        # arguments used for splitting a model across GPUs naively.
+        # only used if `parallelize=True`.
+        parallelize: Optional[bool] = False,
         device_map_option: Optional[str] = "auto",
         max_memory_per_gpu: Optional[Union[int, str]] = None,
         max_cpu_memory: Optional[Union[int, str]] = None,
-        offload_folder: Optional[str] = "./offload",
-        dtype: Optional[Union[str, torch.dtype]] = None,
-        device: Optional[Union[int, str]] = "cuda",
-        peft: str = None,
-        load_in_8bit: Optional[bool] = False,
-        load_in_4bit: Optional[bool] = False,
-        trust_remote_code: Optional[bool] = False,
-        gptq_use_triton: Optional[bool] = False,
-        inject_fused_attention: Optional[bool] = True,
-        bnb_4bit_quant_type: Optional[str] = None,
-        bnb_4bit_compute_dtype: Optional[Union[str, torch.dtype]] = None,
-        bnb_4bit_use_double_quant: Optional[bool] = False,
-        init_empty_weights: Optional[bool] = False,
+        offload_folder: Optional[Union[str, os.PathLike]] = "./offload",
+        # PEFT and quantization options
+        peft: Optional[str] = None,
+        autogptq: Optional[Union[bool, str]] = False,
         model_format: Optional[str] = "torch",
-        _commit_hash: Optional[str] = None
-    ):
-        """Initializes a HuggingFace `AutoModel` and `AutoTokenizer` for evaluation.
-
-        Args:
-            pretrained (str):
-                The HuggingFace Hub model ID name or the path to a pre-trained
-                model to load. This is effectively the `pretrained_model_name_or_path`
-                argument of `from_pretrained` in the HuggingFace `transformers` API.
-            quantized (str or bool, optional, defaults to False):
-                File name of a GPTQ quantized model to load. Set to `True` to use the
-                default name of the quantized model.
-            add_special_tokens (bool, optional, defaults to True):
-                Whether to add special tokens to the input sequences. If `None`, the
-                default value will be set to `True` for seq2seq models (e.g. T5) and
-                `False` for causal models.
-                WARNING: Evaluating causal models with `add_special_tokens=True` is
-                currently __not__ supported.
-            > Large model loading `accelerate` arguments
-            use_accelerate (bool, optional, defaults to False):
-                If True, uses the `accelerate` library to load a large model across
-                multiple devices.
-            low_cpu_mem_usage (bool, optional, defaults to True):
-                It True, uses the `accelerate` library to accelerate loading the model.
-            device_map_option (str, optional, defaults to "auto"):
-                The device map option to use when loading the model with
-                `accelerate`.
-                Options:
-                    "auto", "balanced", "balanced_low_0", "sequential"
-                See the `accelerate` docs for more details on these options:
-                https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.PreTrainedModel.from_pretrained.device_map
-            max_memory_per_gpu (Union[int, str], optional, defaults to None):
-                The maximum memory available for each GPU in bytes as `int` or in
-                the format f"{significand}{unit_symbol}" where {unit_symbol} is
-                any of ["GB", "MB", "GIB", "MIB"]. Refer to the `max_memory` arg in
-                the "Parameters for big model inference" section of the following
-                docs:
-                https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.PreTrainedModel.from_pretrained.max_memory
-            max_cpu_memory (Union[int, str], optional, defaults to None):
-                The maximum available CPU RAM in bytes as `int` or in the format
-                f"{significand}{unit_symbol}" where {unit_symbol} is any of
-                ["GB", "MB", "GIB", "MIB"]. Refer to the `max_memory` arg in the
-                "Parameters for big model inference" section of the following docs:
-                https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.PreTrainedModel.from_pretrained.max_memory
-            offload_folder (str, optional, defaults to "./offload"):
-                The folder to offload weights into if `device_map` contains any
-                "disk" value.
-            dtype (Union[str, torch.dtype], optional, defaults to None):):
-                Converts the model weights to `dtype`, if specified. Strings get
-                converted to `torch.dtype` objects (e.g. `float16` -> `torch.float16`).
-                Use `dtype="auto"` to derive the type from the model’s weights.
-            peft (str, optional, defaults to None):
-                Path of the adapter weights to load from Huggingface. This will usually
-                include a directory that includes the files `adapter_config.json` and
-                `adapter_model.bin`. Compatible with [PEFT](https://github.com/huggingface/peft)
-            load_in_8bit (bool, optional, defaults to False):
-                If True, will convert the loaded model into mixed-8bit quantized model. See:
-                https://huggingface.co/docs/transformers/main/en/main_classes/quantization#load-a-large-model-in-8bit
-            load_in_4bit (bool, optional, defaults to False):
-                If True, will convert the loaded model into mixed-4bit quantized model. See:
-                https://huggingface.co/docs/transformers/main/en/main_classes/quantization#load-a-large-model-in-4bit
-            trust_remote_code (bool, optional, defaults to False):
-                If True, will trust the remote code when loading the model.
-            gptq_use_triton (bool, optional, defaults to False):
-                Use Triton for GPTQ inference.
-            inject_fused_attention (bool, optional, defaults to True):
-                Inject fused attention into GPTQ model.
-            bnb_4bit_quant_type (str, optional, defaults to None):
-                The quantization type to use for BnB 4bit quantization. See:
-                https://github.com/huggingface/transformers/blob/main/src/transformers/utils/quantization_config.py#L77
-            bnb_4bit_compute_dtype (Union[str, torch.dtype], optional, defaults to None):
-                The compute dtype to use for BnB 4bit quantization. See:
-                https://github.com/huggingface/transformers/blob/main/src/transformers/utils/quantization_config.py#L74
-            bnb_4bit_use_double_quant (bool, optional, defaults to False):
-                Whether or not to use double quant to quantize the absmax.
-                https://github.com/huggingface/transformers/blob/main/src/transformers/utils/quantization_config.py#L80
-            init_empty_weights (bool, optional, defaults to False):):
-                Initialize model with empty weights if model is not used for inference.
-            model_format (str, optional, defaults to torch):
-                The format of target model, support 'torch' and 'onnx'
-        """
+        **kwargs,
+    ) -> None:
         super().__init__()
 
-        assert isinstance(pretrained, str)
-        assert isinstance(device, str)
-        assert isinstance(batch_size, (int, str))
-        if (
-            add_special_tokens is not None
-            and self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM
-        ):
-            # TODO: Support evaluating causal models with special tokens. Currently,
-            # this is not possible because the `_loglikelihood_tokens()` method for
-            # causal LMs makes a no-special-tokens assumption given that contexts
-            # and labels/continuations are tokenized separately without special
-            # tokens, concatenated, and then processed as inputs.
+        self.model_format = model_format
+        # optionally: take in an already-initialized transformers.PreTrainedModel
+        if not isinstance(pretrained, str):
+            eval_logger.warning(
+                "`pretrained` model kwarg is not of type `str`. "+ \
+                "Many other model arguments may be ignored. " + \
+                "Please do not launch via accelerate or use `parallelize=True`" + \
+                "if passing an existing model this way."
+            )
             assert (
-                not add_special_tokens
-            ), "Evaluating causal models with `add_special_tokens=True` is currently not supported."
+                not parallelize
+            ), "`parallelize=True` is not compatible with passing pre-initialized model to `pretrained`"
+            self._model = pretrained
+            self._device = self._model.device
+            self._config = self._model.config
+            gpus = 0
 
-        # setup for automatic batch size detection
-        if str(batch_size).startswith("auto"):
-            batch_size = batch_size.split(":")
-            self._batch_size = batch_size[0]
-            self.batch_schedule = float(batch_size[1]) if len(batch_size) > 1 else 1
+            if tokenizer:
+                assert isinstance(
+                    tokenizer, transformers.PreTrainedTokenizer
+                ) or isinstance(tokenizer, transformers.PreTrainedTokenizerFast)
+                self.tokenizer = tokenizer
+            else:
+                # Get tokenizer
+                model_name = self._model.name_or_path
+                self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+                    model_name,
+                    revision=revision,
+                    trust_remote_code=trust_remote_code,
+                    use_fast=use_fast_tokenizer,
+                )
+
         else:
-            self._batch_size = int(batch_size)
-        self.init_empty_weights = init_empty_weights
+            assert isinstance(device, str)
+            assert isinstance(pretrained, str)
+            assert isinstance(batch_size, (int, str))
+
+            gpus = torch.cuda.device_count()
+            accelerator_kwargs = InitProcessGroupKwargs(timeout=timedelta(weeks=52))
+            accelerator = Accelerator(kwargs_handlers=[accelerator_kwargs])
+            if accelerator.num_processes > 1:
+                self.accelerator = accelerator
+
+            if not (parallelize or accelerator.num_processes > 1):
+                # use user-passed device
+                device_list = set(
+                    ["cuda", "cpu", "xpu"]
+                    + [f"cuda:{i}" for i in range(torch.cuda.device_count())]
+                    + ["mps", "mps:0"]
+                )
+                if device and device in device_list:
+                    self._device = torch.device(device)
+                    eval_logger.info(f"Using device '{device}'")
+                    if device in ("mps", "mps:0") and version.parse(
+                        torch.__version__
+                    ) < version.parse("2.1"):
+                        raise RuntimeError(
+                            f"mps requires torch >= 2.1. You have {torch.__version__}"
+                        )
+                else:
+                    eval_logger.info("Device not specified")
+                    eval_logger.info(f"Cuda Available? {torch.cuda.is_available()}")
+                    self._device = (
+                        torch.device("cuda")
+                        if torch.cuda.is_available()
+                        else torch.device("cpu")
+                    )
+            else:
+                if device != "cuda":
+                    eval_logger.info(
+                        f"Using `accelerate launch` or `parallelize=True`, device '{device}' " + \
+                        "will be overridden when placing model."
+                    )
+                # TODO: include in warning that `load_in_8bit` etc. affect this too
+                self._device = torch.device(device)
+
+            # TODO: update this to be less of a hack once subfolder is fixed in HF
+            revision = revision + ("/" + subfolder if subfolder is not None else "")
+
+            self._get_config(
+                pretrained,
+                revision=revision,
+                trust_remote_code=trust_remote_code,
+            )
+
+        # determine which of 'causal' and 'seq2seq' backends to use
+        self._get_backend(
+            config=self.config, backend=backend, trust_remote_code=trust_remote_code
+        )
+
+        # if we passed `pretrained` as a string, initialize our model now
+        if isinstance(pretrained, str):
+            self._create_model(
+                pretrained=pretrained,
+                revision=revision,
+                dtype=dtype,
+                trust_remote_code=trust_remote_code,
+                parallelize=parallelize,
+                device_map_option=device_map_option,
+                max_memory_per_gpu=max_memory_per_gpu,
+                max_cpu_memory=max_cpu_memory,
+                offload_folder=offload_folder,
+                peft=peft,
+                autogptq=autogptq,
+                **kwargs,
+            )
+
+        # access self._model through self.model property outside this method
+        if isinstance(self.model, torch.nn.Module):
+            self.model.eval()
+            self.model.tie_weights()
+
+        if isinstance(pretrained, str) and (gpus >= 1 or str(self.device) == "mps"):
+            # TODO: can remove this whole snippet except in the mps case, perhaps?
+            if not (parallelize or autogptq or hasattr(self, "accelerator")):
+                # place model onto device requested manually,
+                # if not using HF Accelerate or device_map
+                # or any other option that preloads model onto device
+                try:
+                    self.model.to(self.device)
+                except ValueError:
+                    eval_logger.debug(
+                    "Failed to place model onto specified device. "+ \
+                    "This may be because the model is quantized via `bitsandbytes` or `device_map` is provided." + \
+                    "If the desired GPU is being used, this message is safe to ignore."
+                    )
+
+        self._create_tokenizer(
+            pretrained,
+            tokenizer,
+            revision=revision,
+            trust_remote_code=trust_remote_code,
+            use_fast_tokenizer=use_fast_tokenizer,
+        )
+
+        self.truncation = truncation
+        self.logits_cache = logits_cache
+        self.vocab_size = self.tokenizer.vocab_size
+        # select (or create) a pad token to use
+        if self.tokenizer.pad_token:
+            pass
+        elif self.tokenizer.unk_token:
+            self.tokenizer.pad_token_id = self.tokenizer.unk_token_id
+        elif self.tokenizer.eos_token:
+            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+        else:
+            if getattr(self.config, "model_type", None) == "qwen":
+                # Qwen's trust_remote_code tokenizer does not allow for adding special tokens
+                self.tokenizer.pad_token = "<|endoftext|>"
+            elif (
+                self.tokenizer.__class__.__name__ == "RWKVWorldTokenizer"
+                or self.tokenizer.__class__.__name__ == "Rwkv5Tokenizer"
+            ):
+                # The RWKV world tokenizer, does not allow for adding special tokens /
+                # setting the pad token (which is set as 0)
+                # The additional tokenizer name check is needed, as there exists rwkv4 models with neox tokenizer
+                # ---
+                # Note that the world tokenizer class name, might change in the future
+                # for the final huggingface merge
+                # https://github.com/huggingface/transformers/pull/26963
+                assert self.tokenizer.pad_token_id == 0
+            else:
+                self.tokenizer.add_special_tokens({"pad_token": "<|pad|>"})
+
+        # TODO: override this for Gemma
+        self.add_bos_token = add_bos_token
+        if getattr(self.config, "model_type", None) == "gemma":
+            self.add_bos_token = True
+            eval_logger.info(
+                f"Model type is '{self.config.model_type}', " + \
+                 "a BOS token will be used as Gemma underperforms without it."
+            )
+
+        self._max_length = max_length
+
+        self.batch_schedule = 1
+        self.batch_sizes = {}
         self.max_batch_size = max_batch_size
 
-        self._max_gen_toks = max_gen_toks
-        self._max_length = max_length
-        self._config = self.AUTO_CONFIG_CLASS.from_pretrained(
-            pretrained,
-            trust_remote_code=trust_remote_code,
-            revision=revision + ("/" + subfolder if subfolder is not None else ""),
-        )
+        if str(batch_size).startswith("auto"):
+            batch_size = batch_size.split(":")
+            self.batch_size_per_gpu = batch_size[0]
+            self.batch_schedule = float(batch_size[1]) if len(batch_size) > 1 else 1
+        else:
+            self.batch_size_per_gpu = int(batch_size)
 
-        self._add_special_tokens = add_special_tokens
-        self.tokenizer = self._create_auto_tokenizer(
-            pretrained=pretrained,
-            revision=revision,
-            subfolder=subfolder,
-            tokenizer=tokenizer,
-            trust_remote_code=trust_remote_code,
-        )
-        self.tokenizer.model_max_length = self.max_length
-
-        model_kwargs = {}
-        if use_accelerate:
-            model_kwargs = _get_accelerate_args(
-                device_map_option,
-                max_memory_per_gpu,
-                max_cpu_memory,
-                offload_folder,
-            )
-        self._device = device
-        self.model_format = model_format
-        if model_format == "torch":
-            self.model = self._create_auto_model(
-                pretrained=pretrained,
-                quantized=quantized,
-                trust_remote_code=trust_remote_code,
-                revision=revision,
-                subfolder=subfolder,
-                torch_dtype=_get_dtype(dtype, self._config),
-                gptq_use_triton=gptq_use_triton,
-                inject_fused_attention=inject_fused_attention,
-                load_in_8bit=load_in_8bit,
-                load_in_4bit=load_in_4bit,
-                bnb_4bit_quant_type=bnb_4bit_quant_type,
-                bnb_4bit_compute_dtype=bnb_4bit_compute_dtype,
-                bnb_4bit_use_double_quant=bnb_4bit_use_double_quant,
-                low_cpu_mem_usage=low_cpu_mem_usage,
-                **model_kwargs,
-            )
-            # note: peft_path can be different than pretrained model path
-            if peft is not None:
-                self.model = self._create_auto_model_peft(
-                    model=self.model,
-                    peft=peft,
-                    revision=revision,
-                    subfolder=subfolder,
-                    load_in_4bit=load_in_4bit,
-                )
-            self.model.eval()
-            torch.set_grad_enabled(False)
-
-            if use_accelerate and "lm_head" in self.model.hf_device_map:
-                # `accelerate` can place `lm_head` weights on a different device than
-                # the user specified one so we force `self._device` to be the same as
-                # `lm_head`'s.
-                self._device = self.model.hf_device_map["lm_head"]
-            if not use_accelerate and not (load_in_4bit or load_in_8bit):
-                try:
-                    self.model.to(self._device)
-                except:
-                    print(
-                        "Failed to place model onto specified device." + \
-                        "This may be because the model is quantized via `bitsandbytes`." + \
-                        "If the desired GPU is being used, this message is safe to ignore."
-                    )
-
-    def _create_auto_model(
-        self,
-        *,
-        pretrained: str,
-        quantized: Optional[Union[bool, str]] = False,
-        revision: str,
-        subfolder: str,
-        low_cpu_mem_usage: Optional[bool] = True,
-        device_map: Optional[Union[str, _DeviceMapping]] = None,
-        max_memory: Optional[dict] = None,
-        offload_folder: Optional[str] = None,
-        load_in_8bit: Optional[bool] = False,
-        load_in_4bit: Optional[bool] = False,
-        trust_remote_code: Optional[bool] = False,
-        torch_dtype: Optional[Union[str, torch.dtype]] = None,
-        gptq_use_triton: Optional[bool] = False,
-        inject_fused_attention: Optional[bool] = True,
-        bnb_4bit_quant_type: Optional[str] = None,
-        bnb_4bit_compute_dtype: Optional[Union[str, torch.dtype]] = None,
-        bnb_4bit_use_double_quant: Optional[bool] = False,
-    ) -> transformers.AutoModel:
-        """Returns a pre-trained pytorch model from a pre-trained model configuration."""
-        if not quantized:
-            if self.init_empty_weights:
-                from accelerate import init_empty_weights
-                with init_empty_weights():
-                    if self._config.model_type =="chatglm":
-                        self.AUTO_MODEL_CLASS = transformers.AutoModel
-                    if re.search("qwen-72b", self._config._name_or_path.lower()):
-                        model = self.AUTO_MODEL_CLASS.from_pretrained(
-                            pretrained,
-                            revision=revision + ("/" + subfolder if subfolder is not None else ""),
-                            low_cpu_mem_usage=low_cpu_mem_usage,
-                            device_map=device_map,
-                            max_memory=max_memory,
-                            offload_folder=offload_folder,
-                            load_in_8bit=load_in_8bit,
-                            trust_remote_code=trust_remote_code,
-                            torch_dtype=torch_dtype,
-                            fp32=(bool(torch_dtype==torch.float32)),
-                            fp16=(bool(torch_dtype==torch.float16)),
+        if isinstance(pretrained, str):
+            # multigpu data-parallel support when launched with accelerate
+            if gpus > 1:
+                if parallelize:
+                    if accelerator.num_processes > 1:
+                        raise RuntimeError(
+                            "Attempted to use both a HF Accelerate `device_map` " + \
+                            "and to launch via `accelerate launch`." + \
+                            "If this is the case, please either remove `parallelize=True` from" + \
+                            " --model_args or launch outside of the Accelerate launcher."
                         )
                     else:
-                        model = self.AUTO_MODEL_CLASS.from_pretrained(
-                            pretrained,
-                            revision=revision + ("/" + subfolder if subfolder is not None else ""),
-                            low_cpu_mem_usage=low_cpu_mem_usage,
-                            device_map=device_map,
-                            max_memory=max_memory,
-                            offload_folder=offload_folder,
-                            load_in_8bit=load_in_8bit,
-                            trust_remote_code=trust_remote_code,
-                            torch_dtype=torch_dtype
-                        )
-            else:
-                if load_in_4bit:
-                    assert (
-                        transformers.__version__ >= "4.30.0"
-                    ), "load_in_4bit requires transformers >= 4.30.0"
-                model_kwargs = {}
-                if transformers.__version__ >= "4.30.0":
-                    model_kwargs["load_in_4bit"] = load_in_4bit
-                    if load_in_4bit:
-                        if bnb_4bit_quant_type:
-                            model_kwargs["bnb_4bit_quant_type"] = bnb_4bit_quant_type
-                        if bnb_4bit_compute_dtype:
-                            model_kwargs["bnb_4bit_compute_dtype"] = _get_dtype(
-                                bnb_4bit_compute_dtype
-                            )
-                        if bnb_4bit_use_double_quant:
-                            model_kwargs[
-                                "bnb_4bit_use_double_quant"
-                            ] = bnb_4bit_use_double_quant
-                if re.search("qwen-72b", self._config._name_or_path.lower()):
-                    model = self.AUTO_MODEL_CLASS.from_pretrained(
-                        pretrained,
-                        revision=revision + ("/" + subfolder if subfolder is not None else ""),
-                        low_cpu_mem_usage=low_cpu_mem_usage,
-                        device_map=device_map,
-                        max_memory=max_memory,
-                        offload_folder=offload_folder,
-                        load_in_8bit=load_in_8bit,
-                        trust_remote_code=trust_remote_code,
-                        torch_dtype=torch_dtype,
-                        **model_kwargs,
-                        fp32=(bool(torch_dtype==torch.float32)),
-                        fp16=(bool(torch_dtype==torch.float16)),
-                    )
+                        pass
+                elif accelerator.num_processes == 1:
+                    # if we aren't launching via accelerate, ditch
+                    self._rank = 0
+                    self._world_size = 1
                 else:
-                    model = self.AUTO_MODEL_CLASS.from_pretrained(
-                        pretrained,
-                        revision=revision + ("/" + subfolder if subfolder is not None else ""),
-                        low_cpu_mem_usage=low_cpu_mem_usage,
-                        device_map=device_map,
-                        max_memory=max_memory,
-                        offload_folder=offload_folder,
-                        load_in_8bit=load_in_8bit,
-                        trust_remote_code=trust_remote_code,
-                        torch_dtype=torch_dtype,
-                        **model_kwargs
+                    if gpus > accelerator.num_processes:
+                        eval_logger.warning(
+                            "WARNING: The number of total system GPUs " + \
+                            "does not match the number of spawned processes. "
+                            "If you would like to use data parallelism, please launch the script "
+                            "with 'accelerate launch *script*'. "
+                            f"Current run will proceed with {accelerator.num_processes} devices."
+                        )
+                    assert accelerator.distributed_type in [
+                        DistributedType.FSDP,
+                        DistributedType.MULTI_GPU,
+                    ], "Unsupported distributed type provided. Only DDP and FSDP are supported."
+                    if accelerator.distributed_type == DistributedType.FSDP:
+                        self._model = accelerator.prepare(self.model)
+                    else:
+                        self._model = accelerator.prepare_model(
+                            self.model, evaluation_mode=True
+                        )
+                    self._device = torch.device(
+                        f"cuda:{accelerator.local_process_index}"
                     )
+                    self.accelerator = accelerator
+
+                    if self.accelerator.is_local_main_process:
+                        eval_logger.info(f"Using {gpus} devices with data parallelism")
+
+                    self._rank = self.accelerator.local_process_index
+                    self._world_size = self.accelerator.num_processes
         else:
-            from auto_gptq import AutoGPTQForCausalLM    # pylint: disable=E0401
-
-            model = AutoGPTQForCausalLM.from_quantized(
-                pretrained,
-                model_basename=None if quantized == True else Path(quantized).stem,
-                device_map=device_map,
-                max_memory=max_memory,
-                trust_remote_code=trust_remote_code,
-                use_safetensors=True
-                if quantized == True
-                else quantized.endswith(".safetensors"),
-                use_triton=gptq_use_triton,
-                warmup_triton=gptq_use_triton,
-                inject_fused_attention=inject_fused_attention,
+            # if a PreTrainedModel was passed into HFLM, we forgo distributed setup.
+            eval_logger.warning(
+                "Passed an already-initialized model through `pretrained`," + \
+                " assuming single-process call to evaluate() or custom distributed integration"
             )
-        return model
-
-    def _create_auto_model_peft(
-        self,
-        *,
-        model: transformers.PreTrainedModel,
-        peft: str,
-        revision: str,
-        subfolder: str,
-        load_in_4bit: Optional[bool] = False,
-    ):
-        if load_in_4bit:
-            assert PEFT_VERSION >= "0.4.0", "load_in_4bit requires peft >= 0.4.0"
-        model = self.AUTO_PEFT_CLASS.from_pretrained(
-            model,
-            peft,
-            revision=revision + ("/" + subfolder if subfolder is not None else ""),
-        )
-        return model
-
-    def _create_auto_tokenizer(
-        self,
-        *,
-        pretrained: str,
-        revision: str,
-        subfolder: str,
-        tokenizer: Optional[str] = None,
-        trust_remote_code: Optional[bool] = False,
-    ) -> transformers.PreTrainedTokenizer:
-        """Returns a pre-trained tokenizer from a pre-trained tokenizer configuration."""
-        tokenizer = self.AUTO_TOKENIZER_CLASS.from_pretrained(
-            pretrained if tokenizer is None else tokenizer,
-            revision=revision + ("/" + subfolder if subfolder is not None else ""),
-            trust_remote_code=trust_remote_code,
-        )
-        try:
-            tokenizer.pad_token = tokenizer.eos_token
-        except:
-            print("token.pad_token setting failed.")
-        return tokenizer
+            self._rank = 0
+            self._world_size = 1
 
     @property
-    def add_special_tokens(self) -> bool:
-        """Whether to include special tokens in encoded text.
+    def config(self):
+        # return the associated transformers.AutoConfig for the given pretrained model.
+        return self._config
 
-        This should be
-        determined by whether or not the model was trained with special tokens.
-        TODO: Remove these conditionals once HuggingFace supports a way to
-        check whether or not an arbitrary model was trained with special tokens.
-        """
-        if self._add_special_tokens is not None:
-            return self._add_special_tokens
-        elif self.model_format == "neural_speed":
-            return True
-        elif self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM:
-            return False
-        elif self.AUTO_MODEL_CLASS is transformers.AutoModel:
-            return False
-        elif self.AUTO_MODEL_CLASS is transformers.AutoModelForSeq2SeqLM:
-            return True
+    @property
+    def model(self):
+        # returns the model, unwrapping it if using Accelerate
+        if hasattr(self, "accelerator"):
+            return self.accelerator.unwrap_model(self._model)
         else:
-            raise ValueError(
-                "Could not determine `add_special_tokens` value from the model "
-                "class. Set to `True` or `False` depending on whether the model "
-                "was pre-trained with special tokens."
-            )
+            return self._model
 
     @property
-    def eot_token(self) -> str:
-        return self.tokenizer.eos_token
-
-    @property
-    def eot_token_id(self) -> int:
+    def eot_token_id(self):
+        # we use EOT because end of *text* is more accurate for what we're doing than end of *sentence*
         return self.tokenizer.eos_token_id
 
     @property
-    def max_gen_toks(self) -> int:
-        return self._max_gen_toks
-
-    @property
-    def max_length(self) -> int:
-        """Return the maximum sequence length of the model.
-        NOTE: Different model configurations have different max sequence length
-        attribute names.
-            - n_positions: (CTRLConfig, T5Config)
-            - max_position_embeddings: (BartConfig, RoFormerConfig)
-            - n_ctx: (GPT2Config)
-        NOTE: For relative position encoded models you should specify the max
-        sequence length of the model in the constructor via `max_length`.
-        """
-        if self._max_length is not None:
+    def max_length(self):
+        if self._max_length:  # if max length manually set, return it
             return self._max_length
-        # Try to get the sequence length from the model config.
         seqlen_config_attrs = ("n_positions", "max_position_embeddings", "n_ctx")
         for attr in seqlen_config_attrs:
-            if hasattr(self._config, attr):
-                return getattr(self._config, attr)
+            if hasattr(self.model.config, attr):
+                return getattr(self.model.config, attr)
         if hasattr(self.tokenizer, "model_max_length"):
             if self.tokenizer.model_max_length == 1000000000000000019884624838656:
                 return self._DEFAULT_MAX_LENGTH
@@ -520,38 +412,684 @@ class HuggingFaceAutoLM(BaseLM):
         return self._DEFAULT_MAX_LENGTH
 
     @property
-    def batch_size(self) -> int:
-        # TODO: Add adaptive batch size.
-        return self._batch_size  # * gpus
+    def max_gen_toks(self) -> int:
+        return 256
 
     @property
-    def device(self) -> Union[int, str, torch.device]:
+    def batch_size(self):
+        return self.batch_size_per_gpu
+
+    @property
+    def device(self):
         return self._device
 
-    def tok_encode(self, string: str) -> TokenSequence:
-        # TODO: Merge `tok_encode_batch` here.
-        return self.tokenizer.encode(string, add_special_tokens=self.add_special_tokens)
+    @property
+    def rank(self):
+        return self._rank
 
-    def tok_encode_batch(self, strings: List[str]) -> TokenSequence:
-        return self.tokenizer(
-            strings,
-            padding=True,
-            add_special_tokens=self.add_special_tokens,
-            return_tensors="pt",
+    @property
+    def world_size(self):
+        return self._world_size
+
+    def _get_backend(
+        self,
+        config: Union[transformers.PretrainedConfig, transformers.AutoConfig],
+        backend: Optional[Literal["default", "causal", "seq2seq"]] = "default",
+        trust_remote_code: Optional[bool] = False,
+    ) -> None:
+        """Helper method during initialization.
+
+        Determines the backend ("causal" (decoder-only) or "seq2seq" (encoder-decoder))
+        model type to be used.
+        """
+        assert backend in ["default", "causal", "seq2seq"]
+        if backend != "default":
+            # if we've settled on non-default backend, use that manually
+            if backend == "causal":
+                self.AUTO_MODEL_CLASS = AutoModelForCausalLM
+            elif backend == "seq2seq":
+                self.AUTO_MODEL_CLASS = AutoModelForSeq2SeqLM
+            eval_logger.info(
+                f"Overrode HF model backend type, and using type '{backend}'"
+            )
+        else:
+            # determine and use the default HF backend for this model, based on its config + metadata.
+            if (
+                getattr(config, "model_type")
+                in MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING_NAMES
+            ):
+                # first check if model type is listed under seq2seq models, since some
+                # models like MBart are listed in both seq2seq and causal mistakenly in HF transformers.
+                # these special cases should be treated as seq2seq models.
+                self.AUTO_MODEL_CLASS = AutoModelForSeq2SeqLM
+            elif (
+                getattr(self.config, "model_type") in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
+            ):
+                self.AUTO_MODEL_CLASS = AutoModelForCausalLM
+            else:
+                if not trust_remote_code:
+                    eval_logger.warning(
+                        "HF model type is neither marked as CausalLM or Seq2SeqLM. \
+                    This is expected if your model requires `trust_remote_code=True` but may be an error otherwise."
+                    )
+                # if model type is neither in HF transformers causal or seq2seq model registries
+                # then we default to AutoModelForCausalLM
+                self.AUTO_MODEL_CLASS = AutoModelForCausalLM
+
+        assert self.AUTO_MODEL_CLASS in [
+            AutoModelForCausalLM,
+            AutoModelForSeq2SeqLM,
+        ]
+        return None
+
+    def _get_config(
+        self,
+        pretrained: str,
+        revision: str = "main",
+        trust_remote_code: bool = False,
+    ) -> None:
+        self._config = transformers.AutoConfig.from_pretrained(
+            pretrained,
+            revision=revision,
+            trust_remote_code=trust_remote_code,
         )
 
-    def tok_decode(self, tokens: torch.LongTensor) -> List[str]:
-        return self.tokenizer.batch_decode(tokens, skip_special_tokens=True)
+    def _create_model(
+        self,
+        pretrained: str,
+        revision: Optional[str] = "main",
+        dtype: Optional[Union[str, torch.dtype]] = "auto",
+        trust_remote_code: Optional[bool] = False,
+        # arguments used for splitting a model across GPUs naively.
+        # only used if `parallelize=True`.
+        # (accelerate naive PP (device_map) options)
+        parallelize: Optional[bool] = False,
+        device_map_option: Optional[str] = "auto",
+        max_memory_per_gpu: Optional[Union[int, str]] = None,
+        max_cpu_memory: Optional[Union[int, str]] = None,
+        offload_folder: Optional[str] = "./offload",
+        # PEFT and quantization options
+        peft: Optional[str] = None,
+        autogptq: Optional[Union[bool, str]] = False,
+        **kwargs,
+    ) -> None:
+        """Initializes an HF or HF-compatible PreTrainedModel from scratch
+        inside HFLM, using the kwargs passed into self.__init__().
 
-    def greedy_until(
-        self, requests: List[Tuple[str, Union[List[str], str]]]
-    ) -> List[str]:
-        def _collate(x):
-            tokens = self.tok_encode(x[0])
-            return len(tokens), x[0]
+        Also handles functionality such as AutoGPTQ usage and PEFT wrapping.
 
-        results = []
-        reorder = utils.Reorderer(requests, _collate)
+        For future similar extensions to AutoGPTQ that are not core to HF's ecosystem,
+        (such as PyTorch models that are nearly, but not quite, fully mirroring
+        HF's public interface relied on in this HFLM class)
+        please consider subclassing HFLM and overriding this and other methods as needed.
+        """
+
+        model_kwargs = kwargs if kwargs else {}
+
+        if parallelize:
+            model_kwargs.update(
+                _get_accelerate_args(
+                    device_map_option,  # TODO: phase out device_map_option?
+                    max_memory_per_gpu,
+                    max_cpu_memory,
+                    offload_folder,
+                )
+            )
+        elif "device_map" not in model_kwargs:
+            # set a device_map to initialize model on the right GPU.
+            # this is needed because it seems that the default behavior
+            # for quantized models now seems to be device_map="auto"
+            # which breaks data-parallel mode.
+            if hasattr(self, "accelerator"):
+                model_kwargs.update(
+                    {"device_map": {"": f"cuda:{self.accelerator.local_process_index}"}}
+                )
+            else:
+                model_kwargs.update({"device_map": {"": str(self.device)}})
+
+        if not autogptq:
+            if model_kwargs.get("load_in_4bit", None):
+                assert (
+                    transformers.__version__ >= "4.30.0"
+                ), "load_in_4bit requires transformers >= 4.30.0"
+            if transformers.__version__ >= "4.30.0":
+                if model_kwargs.get("load_in_4bit", None):
+                    if model_kwargs.get("bnb_4bit_compute_dtype", None):
+                        model_kwargs["bnb_4bit_compute_dtype"] = get_dtype(
+                            model_kwargs["bnb_4bit_compute_dtype"]
+                        )
+            from intel_extension_for_transformers.transformers import (
+                AutoModelForCausalLM,
+            )
+
+            if self.model_format == "neural_speed":
+                from transformers import AutoTokenizer, TextStreamer
+
+                self._model = AutoModelForCausalLM.from_pretrained(
+                    pretrained,
+                    use_neural_speed=True,
+                    trust_remote_code=trust_remote_code,
+                )
+            elif (
+                self.model_format == "onnx"
+                and self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM
+            ):
+                if (
+                    not os.path.exists(os.path.join(pretrained, "decoder_model.onnx"))
+                    and not os.path.exists(
+                        os.path.join(pretrained, "decoder_with_past_model.onnx")
+                    )
+                    and not os.path.exists(
+                        os.path.join(pretrained, "decoder_model_merged.onnx")
+                    )
+                    and not os.path.exists(os.path.join(pretrained, "model.onnx"))
+                ):
+                    raise ValueError(
+                        "Couldn't find any ONNX model name in " + \
+                        "['decoder_model.onnx', 'decoder_with_past_model.onnx', "
+                        "'decoder_model_merged.onnx', 'model.onnx'] in {}.".format(
+                            pretrained
+                        )
+                    )
+
+                import optimum.version
+                import onnxruntime as ort
+                from transformers import PretrainedConfig
+                from optimum.onnxruntime import ORTModelForCausalLM
+
+                model_config = PretrainedConfig.from_pretrained(pretrained)
+                sess_options = ort.SessionOptions()
+                sess_options.graph_optimization_level = (
+                    ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+                )
+
+                if Version(optimum.version.__version__) >= Version("1.14.0"):
+                    if os.path.exists(os.path.join(pretrained, "model.onnx")):
+                        session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "model.onnx"),
+                            session_options=sess_options)
+                        inputs_names = [input.name for input in session.get_inputs()] # pylint: disable=E1101
+                        key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
+                        use_cache = len(key_value_input_names) > 0
+
+                        self._model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                                                        model_config,
+                                                        use_cache=True if use_cache else False,
+                                                        use_io_binding=True if use_cache else False)
+                    else:
+                        if os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
+                            session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "decoder_model_merged.onnx"),
+                            session_options=sess_options)
+                            self._model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                                                            model_config,
+                                                            use_cache=True)
+                        elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
+                            session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "decoder_with_past_model.onnx"),
+                            session_options=sess_options)
+                            self._model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                                                            model_config,
+                                                            use_cache=True)
+                        elif os.path.exists(os.path.join(pretrained, "decoder_model.onnx")):
+                            session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "decoder_model.onnx"),
+                            session_options=sess_options)
+                            self._model = ORTModelForCausalLM(session,  # pylint: disable=E1120
+                                                            model_config,
+                                                            use_cache=False,
+                                                            use_io_binding=False)
+                else:
+                    if os.path.exists(os.path.join(pretrained, "model.onnx")):
+                        session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            os.path.join(pretrained, "model.onnx"),
+                            session_options=sess_options)
+                        inputs_names = session.get_inputs()
+                        key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
+                        use_cache = len(key_value_input_names) > 0
+
+                        self._model = ORTModelForCausalLM(session[0],  # pylint: disable=E1121
+                                                        model_config,
+                                                        pretrained,
+                                                        use_cache=True if use_cache else False,
+                                                        use_io_binding=True if use_cache else False,)
+                    else:
+                        if os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
+                            sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                                os.path.join(pretrained, "decoder_model_merged.onnx"),
+                                session_options=sess_options)
+                            self._model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                                                            model_config,
+                                                            pretrained,
+                                                            use_cache=True)
+                        elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
+                            sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                                os.path.join(pretrained, "decoder_model.onnx"),
+                                os.path.join(pretrained, "decoder_with_past_model.onnx"),
+                                session_options=sess_options)
+                            self._model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                                                            model_config,
+                                                            pretrained,
+                                                            sessions[1],
+                                                            use_cache=True)
+                        else:
+                            sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                                os.path.join(pretrained, "decoder_model.onnx"),
+                                session_options=sess_options)
+                            self._model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                                                            model_config,
+                                                            pretrained,
+                                                            use_cache=False,
+                                                            use_io_binding=False)
+            elif (
+                self.model_format == "onnx"
+                and self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM
+            ):
+                if not os.path.exists(
+                    os.path.join(pretrained, "encoder_model.onnx")
+                ) or (
+                    not os.path.exists(os.path.join(pretrained, "decoder_model.onnx"))
+                    and not os.path.exists(
+                        os.path.join(pretrained, "decoder_model_merged.onnx")
+                    )
+                ):
+                    raise ValueError(
+                        "Please ensure encoder_model.onnx and "
+                        "decoder_model(_merged).onnx are under {}.".format(pretrained)
+                    )
+
+                import onnxruntime as ort
+                from transformers import PretrainedConfig
+                from optimum.onnxruntime import ORTModelForSeq2SeqLM
+
+                model_config = PretrainedConfig.from_pretrained(pretrained)
+                sess_options = ort.SessionOptions()
+                sess_options.graph_optimization_level = (
+                    ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+                )
+                if os.path.exists(
+                    os.path.join(pretrained, "decoder_model_merged.onnx")
+                ):
+                    sessions = ORTModelForSeq2SeqLM.load_model(
+                        os.path.join(pretrained, "encoder_model.onnx"),
+                        os.path.join(pretrained, "decoder_model_merged.onnx"),
+                    )
+
+                    self._model = ORTModelForSeq2SeqLM(
+                        sessions[0],
+                        sessions[1],
+                        model_config,
+                        pretrained,
+                        use_cache=True,
+                    )
+
+                elif os.path.exists(
+                    os.path.join(pretrained, "decoder_with_past_model.onnx")
+                ):
+                    sessions = ORTModelForSeq2SeqLM.load_model(
+                        os.path.join(pretrained, "encoder_model.onnx"),
+                        os.path.join(pretrained, "decoder_model.onnx"),
+                        os.path.join(pretrained, "decoder_with_past_model.onnx"),
+                    )
+
+                    self._model = ORTModelForSeq2SeqLM(
+                        sessions[0],
+                        sessions[1],
+                        model_config,
+                        pretrained,
+                        sessions[2],
+                        use_cache=True,
+                    )
+                else:
+                    sessions = ORTModelForSeq2SeqLM.load_model(  # pylint: disable=E1120
+                        os.path.join(pretrained, "encoder_model.onnx"),
+                        os.path.join(pretrained, "decoder_model.onnx"),
+                    )
+
+                    self._model = ORTModelForSeq2SeqLM(
+                        sessions[0],
+                        sessions[1],
+                        model_config,
+                        pretrained,
+                        use_cache=False,
+                        use_io_binding=False,
+                    )
+            else:
+                dtype = "float32" if dtype == "auto" else dtype
+                if pretrained == "Muennighoff/tiny-random-bert":
+                    self._model = None
+                else:
+                    model_kwargs["use_neural_speed"] = False
+                    self._model = self.AUTO_MODEL_CLASS.from_pretrained(
+                        pretrained,
+                        revision=revision,
+                        torch_dtype=get_dtype(dtype),
+                        trust_remote_code=trust_remote_code,
+                        **model_kwargs,
+                    )
+        else:
+            try:
+                from auto_gptq import AutoGPTQForCausalLM
+            except ModuleNotFoundError:
+                raise Exception(
+                    "Tried to load auto_gptq, but auto-gptq is not installed ",
+                    "please install auto-gptq via pip install lm-eval[gptq] or pip install -e .[gptq]",
+                )
+
+            self._model = AutoGPTQForCausalLM.from_quantized(
+                pretrained,
+                trust_remote_code=trust_remote_code,
+                model_basename=None if autogptq is True else Path(autogptq).stem,
+                use_safetensors=(
+                    True if autogptq is True else autogptq.endswith(".safetensors")
+                ),
+                **model_kwargs,
+            )
+
+        if peft:
+            if model_kwargs.get("load_in_4bit", None):
+                assert PEFT_VERSION >= "0.4.0", "load_in_4bit requires peft >= 0.4.0"
+            self._model = PeftModel.from_pretrained(
+                self._model, peft, revision=revision
+            )
+
+        return None
+
+    def _create_tokenizer(
+        self,
+        pretrained: Union[str, transformers.PreTrainedModel],
+        tokenizer: Optional[
+            Union[
+                str,
+                transformers.PreTrainedTokenizer,
+                transformers.PreTrainedTokenizerFast,
+            ]
+        ],
+        revision: Optional[str] = "main",
+        trust_remote_code: Optional[bool] = False,
+        use_fast_tokenizer: Optional[bool] = True,
+    ) -> None:
+        """Helper method during initialization.
+
+        Create a tokenizer object corresponding to the correct
+        tokenizer for value of `pretrained`, or use the pre-initialized tokenizer passed.
+        """
+
+        if tokenizer:
+            if isinstance(tokenizer, str):
+                self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+                    tokenizer,
+                    revision=revision,
+                    trust_remote_code=trust_remote_code,
+                    use_fast=use_fast_tokenizer,
+                )
+            else:
+                assert isinstance(
+                    tokenizer, transformers.PreTrainedTokenizer
+                ) or isinstance(tokenizer, transformers.PreTrainedTokenizerFast)
+                self.tokenizer = tokenizer
+        else:
+            # Get tokenizer based on 'pretrained'
+            if isinstance(pretrained, str):
+                model_name = pretrained
+            else:
+                # get the HF hub name via accessor on model
+                model_name = self.model.name_or_path
+            self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+                model_name,
+                revision=revision,
+                trust_remote_code=trust_remote_code,
+                use_fast=use_fast_tokenizer,
+            )
+        return None
+
+    def _detect_batch_size(self, requests=None, pos: int = 0):
+        if requests:
+            _, context_enc, continuation_enc = requests[pos]
+            max_length = len(
+                (context_enc + continuation_enc)[-(self.max_length + 1) :][:-1]
+            )
+            max_context_enc = len(context_enc[-(self.max_length + 1) :])
+            max_cont_enc = len(continuation_enc[-(self.max_length + 1) :])
+        else:
+            max_length = self.max_length
+
+        # if OOM, then halves batch_size and tries again
+        @find_executable_batch_size(starting_batch_size=self.max_batch_size)
+        def forward_batch(batch_size):
+            if self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
+                length = max(max_context_enc, max_cont_enc)
+                batched_conts = torch.ones(
+                    (batch_size, length), device=self.device
+                ).long()
+                test_batch = torch.ones((batch_size, length), device=self.device).long()
+                call_kwargs = {
+                    "attn_mask": test_batch,
+                    "labels": batched_conts,
+                }
+            else:
+                call_kwargs = {}
+                test_batch = torch.ones(
+                    (batch_size, max_length), device=self.device
+                ).long()
+            for _ in range(5):
+                out = F.log_softmax(
+                    self._model_call(test_batch, **call_kwargs), dim=-1
+                )
+
+            return batch_size
+
+        try:
+            batch_size = forward_batch()   # pylint: disable=E1120
+        except RuntimeError as e:
+            if "No executable batch size found" in str(e):
+                batch_size = 1
+            else:
+                raise
+
+        if self.world_size > 1:
+            # if multi-GPU, always take minimum over all selected batch sizes
+            max_rnk_bs = torch.tensor([batch_size], device=self.device)
+            gathered = (
+                self.accelerator.gather(max_rnk_bs).cpu().detach().numpy().tolist()
+            )
+            batch_size = min(gathered)
+            clear_torch_cache()
+            return batch_size
+
+        clear_torch_cache()
+        return batch_size
+
+    def tok_encode(
+        self, string: str, left_truncate_len=None, add_special_tokens=None
+    ) -> List[int]:
+        """"""
+        if add_special_tokens is None:
+            if self.model_format == "neural_speed":
+                add_special_tokens = True
+            elif self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
+                add_special_tokens = False or self.add_bos_token
+            elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
+                # TODO: investigate best practices for enc-dec models + special tokens
+                add_special_tokens = True
+
+        encoding = self.tokenizer.encode(string, add_special_tokens=add_special_tokens)
+
+        # left-truncate the encoded context to be at most `left_truncate_len` tokens long
+        if left_truncate_len:
+            encoding = encoding[-left_truncate_len:]  # pylint: disable=E1130
+
+        return encoding
+
+    def tok_batch_encode(
+        self,
+        strings: List[str],
+        padding_side: str = "left",
+        left_truncate_len: int = None,
+        truncation: bool = False,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        # encode a batch of strings. converts to tensors and pads automatically, unlike tok_encode.
+        old_padding_side = self.tokenizer.padding_side
+        self.tokenizer.padding_side = padding_side
+
+        if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
+            add_special_tokens = False or self.add_bos_token
+        elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
+            add_special_tokens = True
+
+        encoding = self.tokenizer(
+            strings,
+            truncation=truncation,
+            padding="longest",
+            return_tensors="pt",
+            add_special_tokens=add_special_tokens,
+        )
+        if left_truncate_len:
+            encoding["input_ids"] = encoding["input_ids"][:, -left_truncate_len:] # pylint: disable=E1130
+            encoding["attention_mask"] = encoding["attention_mask"][
+                :, -left_truncate_len: # pylint: disable=E1130
+            ]
+        self.tokenizer.padding_side = old_padding_side
+
+        return encoding["input_ids"], encoding["attention_mask"]
+
+    def tok_decode(self, tokens, skip_special_tokens=True):
+        if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
+            return self.tokenizer.decode(
+                tokens, skip_special_tokens=skip_special_tokens
+            )
+        elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
+            return self.tokenizer.decode(
+                tokens, skip_special_tokens=skip_special_tokens
+            )
+
+    def _model_call(self, inps, attn_mask=None, labels=None):
+        """
+        :param inps: torch.Tensor
+            A torch tensor of shape [batch, (sequence_ctx + sequence_cont)] or of shape
+            [batch, sequence_ctx]. the size of sequence may vary from call to call
+        :param attn_mask: torch.Tensor, optional
+            A torch tensor of shape [batch, (sequence_ctx + sequence_cont)]. Only passed
+            (and must be passed) if self.AUTO_MODEL_CLASS is intel_extension_for_transformers
+        :param labels: torch.Tensor, optional
+            A torch tensor of shape [batch, (sequence_ctx + sequence_cont)]. Only passed
+            (and must be passed) if self.AUTO_MODEL_CLASS is intel_extension_for_transformers.
+            .transformers.AutoModelForSeq2SeqLM
+        :return
+            A torch tensor of shape [batch, sequence, vocab] with the
+        logits returned from the model's decoder
+        """
+        with torch.no_grad():
+            if attn_mask is not None or labels is not None:
+                assert attn_mask is not None and labels is not None
+                assert self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM
+                if self.model_format == "onnx":
+                    decoder_start_token_id = self._config.decoder_start_token_id
+                    pad_token_id = self._config.pad_token_id
+                    shifted_input_ids = labels.new_zeros(labels.shape)
+                    shifted_input_ids[..., 1:] = labels[..., :-1].clone()
+                    shifted_input_ids[..., 0] = decoder_start_token_id
+                    shifted_input_ids.masked_fill_(
+                        shifted_input_ids == -100, pad_token_id
+                    )
+                    return self.model(
+                        inps,
+                        attention_mask=attn_mask,
+                        decoder_input_ids=shifted_input_ids,
+                        labels=labels,
+                    ).logits
+                else:
+                    return self.model(
+                        input_ids=inps, attention_mask=attn_mask, labels=labels
+                    ).logits
+            else:
+                assert self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM
+                if hasattr(self.model, "config") and hasattr(self.model.config, "auto_map") and \
+                    "chatglm2" in self.model.config.auto_map["AutoConfig"]:
+                    input_bs, input_len = inps.shape
+                    bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
+                    inps = torch.cat((bos, inps), 1)
+                if self.model_format == "neural_speed":
+                    out = self.model(
+                        inps, reinit=True, logits_all=True, ignore_padding=True
+                    )
+                    output = torch.from_numpy(out)
+                elif self.model_format == "onnx":
+                    inputs_names = [
+                        input.name for input in self.model.model.get_inputs()
+                    ]
+                    if "position_ids" in inputs_names:
+                        # model is exported with optimum >= 1.14.0 with new input 'position_ids'
+                        input_shape = inps.shape
+                        position_ids = (
+                            torch.arange(0, input_shape[-1], dtype=torch.long)
+                            .unsqueeze(0)
+                            .view(-1, input_shape[-1])
+                        )
+                        output = self.model(
+                            inps,
+                            torch.ones(inps.shape, dtype=torch.int64),
+                            position_ids,
+                        ).logits
+                    else:
+                        output = self.model(
+                            inps, torch.ones(inps.shape, dtype=torch.int64)
+                        ).logits
+                else:
+                    output = self.model(inps).logits
+                return output
+
+    def _model_generate(self, context, max_length, stop, **generation_kwargs):
+        # temperature = 0.0 if not set
+        # if do_sample is false and temp==0.0:
+        # remove temperature, as do_sample=False takes care of this
+        # and we don't want a warning from HF
+        generation_kwargs["temperature"] = generation_kwargs.get("temperature", 0.0)
+        do_sample = generation_kwargs.get("do_sample", None)
+
+        # The temperature has to be a strictly positive float -- if it is 0.0, use greedy decoding strategies
+        if generation_kwargs.get("temperature") == 0.0 and do_sample is None:
+            generation_kwargs["do_sample"] = do_sample = False
+
+        if do_sample is False and generation_kwargs.get("temperature") == 0.0:
+            generation_kwargs.pop("temperature")
+        # build stopping criteria
+        stopping_criteria = stop_sequences_criteria(
+            self.tokenizer, stop, context.shape[1], context.shape[0]
+        )
+        return self.model.generate(
+            input_ids=context,
+            max_length=max_length,
+            stopping_criteria=stopping_criteria,
+            pad_token_id=self.tokenizer.pad_token_id,
+            use_cache=True,
+            **generation_kwargs,
+        )
+
+    def _select_cont_toks(
+        self, logits: torch.Tensor, contlen: int = None, inplen: int = None
+    ) -> torch.Tensor:
+        if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
+            assert (
+                contlen and inplen
+            ), "Must pass input len and cont. len to select scored logits for causal LM"
+            # discard right-padding.
+            # also discard the input/context tokens. we'll only score continuations.
+            logits = logits[inplen - contlen : inplen]
+        elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
+            assert (
+                contlen and not inplen
+            ), "Selecting scored logits for Seq2SeqLM requires only cont. len"
+            # only discard right-padding.
+            # the logits input to this fn only contain decoder-side tokens.
+            logits = logits[:contlen]
+
+        return logits
+
+    def loglikelihood_rolling(
+        self, requests: List[Instance], disable_tqdm: bool = False
+    ) -> List[float]:
+        loglikelihoods = []
 
         adaptive_batch_size = None
         if self.batch_size == "auto":
@@ -561,348 +1099,9 @@ class HuggingFaceAutoLM(BaseLM):
             print(f"Determined Largest batch size: {batch_size}")
             adaptive_batch_size = batch_size
 
-        for chunk in utils.chunks(
-            tqdm(reorder.get_reordered(), disable=False),
-            self.batch_size if self.batch_size != "auto" else adaptive_batch_size,
+        for (string,) in tqdm(
+            [req.args for req in requests], disable=(disable_tqdm or (self.rank != 0))
         ):
-            context = [c[0] for c in chunk]
-            request_args = chunk[0][1]
-            stop = request_args.get("until", None)
-            stop_sequences = stop if isinstance(stop, list) else [stop]
-            max_generation_length = request_args.get("max_length", None)
-
-            assert (
-                isinstance(max_generation_length, int) or max_generation_length is None
-            )
-            assert isinstance(stop_sequences, list) or stop_sequences is None
-
-            # TODO: Find a better way to handle stop sequences for 0-shot.
-            if stop_sequences is None:
-                until = [self.eot_token]
-            else:
-                until = stop_sequences + [self.eot_token]
-
-            if max_generation_length is None:
-                max_tokens = self.max_gen_toks
-            else:
-                max_tokens = max_generation_length
-
-            token_context = self.tok_encode_batch(context)
-
-            responses = self._model_generate(     # pylint: disable=E1123, E1120
-                inputs=token_context,
-                max_tokens=max_tokens,
-                stop=until,
-            )
-            responses = self.tok_decode(responses.tolist())
-
-            for response in responses:
-                # Ensure the generated responses do not contain the stop sequences.
-                for term in until:
-                    response = response.split(term)[0]
-                # partial caching
-                self.cache_hook.add_partial("greedy_until", (context, until), response)
-                results.append(response)
-        return reorder.get_original(results)
-
-
-class AutoCausalLM(HuggingFaceAutoLM):
-    """Causal language modeling.
-
-    You can find a set of supported models in the HF documentation:
-    https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForCausalLM
-    """
-
-    AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
-    AUTO_PEFT_CLASS = peft.PeftModel
-
-    def __init__(self, *args, pretrained, model_format, **kwargs):
-        self.model_format = model_format
-        if self.model_format == "neural_speed":
-            from intel_extension_for_transformers.transformers import RtnConfig, AwqConfig, GPTQConfig, AutoRoundConfig
-        super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
-
-        if self.model_format == "neural_speed":
-            from transformers import AutoTokenizer, TextStreamer
-            from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, use_neural_speed=True,
-                                trust_remote_code=kwargs.get("trust_remote_code", False))
-
-        if self.model_format == "onnx":
-            if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
-               not os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")) and \
-               not os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")) and \
-               not os.path.exists(os.path.join(pretrained, "model.onnx")):
-                raise ValueError(
-                "Couldn't find any ONNX model name in ['decoder_model.onnx', 'decoder_with_past_model.onnx', "\
-                "'decoder_model_merged.onnx', 'model.onnx'] in {}.".format(
-                    pretrained)
-                )
-
-            import optimum.version
-            import onnxruntime as ort
-            from transformers import PretrainedConfig
-            from optimum.onnxruntime import ORTModelForCausalLM
-
-            model_config = PretrainedConfig.from_pretrained(pretrained)
-            sess_options = ort.SessionOptions()
-            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-
-            if Version(optimum.version.__version__) >= Version("1.14.0"):
-                if os.path.exists(os.path.join(pretrained, "model.onnx")):
-                    session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                        os.path.join(pretrained, "model.onnx"),
-                        session_options=sess_options)
-                    inputs_names = [input.name for input in session.get_inputs()] # pylint: disable=E1101
-                    key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
-                    use_cache = len(key_value_input_names) > 0
-
-                    self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
-                                                     model_config,
-                                                     use_cache=True if use_cache else False,
-                                                     use_io_binding=True if use_cache else False)
-                else:
-                    if os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
-                        session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                        os.path.join(pretrained, "decoder_model_merged.onnx"),
-                        session_options=sess_options)
-                        self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
-                                                         model_config,
-                                                         use_cache=True)
-                    elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
-                        session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                        os.path.join(pretrained, "decoder_with_past_model.onnx"),
-                        session_options=sess_options)
-                        self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
-                                                         model_config,
-                                                         use_cache=True)
-                    elif os.path.exists(os.path.join(pretrained, "decoder_model.onnx")):
-                        session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                        os.path.join(pretrained, "decoder_model.onnx"),
-                        session_options=sess_options)
-                        self.model = ORTModelForCausalLM(session,  # pylint: disable=E1120
-                                                        model_config,
-                                                        use_cache=False,
-                                                        use_io_binding=False)
-            else:
-                if os.path.exists(os.path.join(pretrained, "model.onnx")):
-                    session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                        os.path.join(pretrained, "model.onnx"),
-                        session_options=sess_options)
-                    inputs_names = session.get_inputs()
-                    key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
-                    use_cache = len(key_value_input_names) > 0
-
-                    self.model = ORTModelForCausalLM(session[0],  # pylint: disable=E1121
-                                                     model_config,
-                                                     pretrained,
-                                                     use_cache=True if use_cache else False,
-                                                     use_io_binding=True if use_cache else False,)
-                else:
-                    if os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
-                        sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                            os.path.join(pretrained, "decoder_model_merged.onnx"),
-                            session_options=sess_options)
-                        self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
-                                                        model_config,
-                                                        pretrained,
-                                                        use_cache=True)
-                    elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
-                        sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                            os.path.join(pretrained, "decoder_model.onnx"),
-                            os.path.join(pretrained, "decoder_with_past_model.onnx"),
-                            session_options=sess_options)
-                        self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
-                                                        model_config,
-                                                        pretrained,
-                                                        sessions[1],
-                                                        use_cache=True)
-                    else:
-                        sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
-                            os.path.join(pretrained, "decoder_model.onnx"),
-                            session_options=sess_options)
-                        self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
-                                                        model_config,
-                                                        pretrained,
-                                                        use_cache=False,
-                                                        use_io_binding=False)
-
-    def _create_auto_tokenizer(
-        self,
-        *,
-        pretrained: str,
-        revision: str,
-        subfolder: str,
-        tokenizer: Optional[str] = None,
-        trust_remote_code: Optional[bool] = False,
-    ) -> transformers.PreTrainedTokenizer:
-        tokenizer = super()._create_auto_tokenizer(
-            pretrained=pretrained,
-            revision=revision,
-            subfolder=subfolder,
-            tokenizer=tokenizer,
-            trust_remote_code=trust_remote_code,
-        )
-        tokenizer.padding_side = "left"
-        return tokenizer
-
-    def _model_call(
-        self, inputs: TokenSequence, labels: Optional[TokenSequence] = None
-    ) -> TokenSequence:
-        if hasattr(self._config, "_name_or_path") and self._config._name_or_path == "THUDM/chatglm-6b":
-            input_bs, input_len = inputs.shape
-            eos = torch.tensor([130001, 130004]).repeat(input_bs, 1)
-            inputs = torch.cat((inputs, eos), 1)
-        if hasattr(self._config, "_name_or_path") and self._config._name_or_path == "THUDM/chatglm2-6b":
-            input_bs, input_len = inputs.shape
-            bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
-            inputs = torch.cat((bos, inputs), 1)
-        if self.model_format == "neural_speed":
-            out = self.runtime_model(inputs, reinit=True, logits_all=True, ignore_padding=True)
-            output = {"logits": torch.from_numpy(out)}
-        elif self.model_format != "onnx":
-            output = self.model(inputs)
-        else:
-            inputs_names = [input.name for input in self.model.model.get_inputs()]
-            if "position_ids" in inputs_names:
-                # model is exported with optimum >= 1.14.0 with new input 'position_ids'
-                input_shape = inputs.shape
-                position_ids = torch.arange(0, input_shape[-1], dtype=torch.long).unsqueeze(0).view(-1, input_shape[-1])
-                output = self.model(inputs, torch.ones(inputs.shape, dtype=torch.int64), position_ids)
-            else:
-                output = self.model(inputs, torch.ones(inputs.shape, dtype=torch.int64))
-        if isinstance(output, tuple):
-            return output[0]
-        return output["logits"]
-
-    def _model_generate(
-        self,
-        inputs: transformers.BatchEncoding,
-        max_tokens: int,
-        stop: Optional[List[str]] = None,
-    ) -> TokenSequence:
-        # Ensure that the context does not encroach into the `space`
-        # for the generation.
-        input_ids = inputs["input_ids"][:, self.max_gen_toks - self.max_length :]
-        attention_mask = inputs["attention_mask"][
-            :, self.max_gen_toks - self.max_length :
-        ]
-        input_ids = input_ids.to(self.device)
-        attention_mask = attention_mask.to(self.device)
-
-        stopping_criteria = stop_sequences_criteria(
-            self.tokenizer, stop, input_ids.shape[1], input_ids.shape[0]
-        )
-
-        generations = self.model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            # GPT style models require the `generate` `max_length` arg to include the
-            # context length, so we instead set `max_new_tokens` which is the number
-            # of new tokens to generate, excluding the current number of tokens.
-            max_new_tokens=max_tokens,
-            stopping_criteria=stopping_criteria,
-            do_sample=False,
-        )
-        return utils.select_continuation_from_batch_left_padding(
-            generations, max_context_size=inputs["input_ids"].size(1)
-        )
-
-
-class AutoSeq2SeqLM(HuggingFaceAutoLM):
-    """Seq2Seq language modeling.
-
-    You can find a set of supported models in the following documentation:
-    https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForSeq2SeqLM
-    """
-
-    AUTO_MODEL_CLASS = transformers.AutoModelForSeq2SeqLM
-    AUTO_PEFT_CLASS = peft.PeftModel
-    def __init__(self, *args, pretrained, model_format, **kwargs):
-        super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
-
-        self.model_format = model_format
-        if self.model_format == "onnx":
-            if not os.path.exists(os.path.join(pretrained, "encoder_model.onnx")) or \
-               (not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
-                not os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx"))):
-                raise ValueError(
-                    "Please ensure encoder_model.onnx and " \
-                    "decoder_model(_merged).onnx are under {}.".format(pretrained)
-                )
-
-            import onnxruntime as ort
-            from transformers import PretrainedConfig
-            from optimum.onnxruntime import ORTModelForSeq2SeqLM
-
-            model_config = PretrainedConfig.from_pretrained(pretrained)
-            sess_options = ort.SessionOptions()
-            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            if os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
-                sessions = ORTModelForSeq2SeqLM.load_model(
-                                os.path.join(pretrained, 'encoder_model.onnx'),
-                                os.path.join(pretrained, 'decoder_model_merged.onnx'))
-
-                self.model = ORTModelForSeq2SeqLM(sessions[0],
-                                                  sessions[1],
-                                                  model_config,
-                                                  pretrained,
-                                                  use_cache=True)
-
-            elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
-                sessions = ORTModelForSeq2SeqLM.load_model(
-                                os.path.join(pretrained, 'encoder_model.onnx'),
-                                os.path.join(pretrained, 'decoder_model.onnx'),
-                                os.path.join(pretrained, 'decoder_with_past_model.onnx'))
-
-                self.model = ORTModelForSeq2SeqLM(sessions[0],
-                                                  sessions[1],
-                                                  model_config,
-                                                  pretrained,
-                                                  sessions[2],
-                                                  use_cache=True)
-            else:
-                sessions = ORTModelForSeq2SeqLM.load_model(  # pylint: disable=E1120
-                                os.path.join(pretrained, 'encoder_model.onnx'),
-                                os.path.join(pretrained, 'decoder_model.onnx'))
-
-                self.model = ORTModelForSeq2SeqLM(sessions[0],
-                                                  sessions[1],
-                                                  model_config,
-                                                  pretrained,
-                                                  use_cache=False,
-                                                  use_io_binding=False)
-    def loglikelihood(
-        self, requests: List[Tuple[str, str]]
-    ) -> List[Tuple[float, bool]]:
-        new_requests = []
-        for chunk in utils.chunks(requests, self.batch_size):
-            context, continuation = zip(*chunk)
-
-            # Fill empty contexts with the EOT token.
-            context = [
-                f"{self.eot_token}" if len(text) == 0 else text for text in context
-            ]
-            context_enc = self.tok_encode_batch(context)
-            for key in context_enc:
-                context_enc[key] = context_enc[key][:, -self.max_length :]
-
-            # Remove leading whitespace introduced by the default
-            # `text_target_separator` since the context and continuation
-            # will not be concatenated as a single (decoder) input.
-            continuation = [text.lstrip() for text in continuation]
-            continuation_enc = self.tok_encode_batch(list(continuation))
-            for key in continuation_enc:
-                continuation_enc[key] = continuation_enc[key][:, -self.max_length :]
-
-            new_requests.append(
-                ((context, continuation), context_enc, continuation_enc)
-            )
-        return self._loglikelihood_tokens(new_requests)
-
-    def loglikelihood_rolling(self, requests: List[Tuple[str, str]]) -> List[float]:
-        loglikelihoods = []
-        for (string,) in tqdm(requests):
             rolling_token_windows = list(
                 map(
                     utils.make_disjoint_window,
@@ -914,244 +1113,408 @@ class AutoSeq2SeqLM(HuggingFaceAutoLM):
                     ),
                 )
             )
-            contexts, conts = utils.split_and_pad_windows(  # pylint: disable=E1101
-                rolling_token_windows,
-                pad_token_id=self.eot_token_id,
-                max_seq_len=self.max_length,
-            )
-            # Manually create BatchEncoding tensors with attention masks as
-            # expected by `self._model_call` in `self._loglikelihood_tokens`.
-            contexts_enc = torch.Tensor(contexts).long()
-            contexts_enc = transformers.tokenization_utils_base.BatchEncoding(
-                {
-                    "input_ids": contexts_enc,
-                    "attention_mask": (contexts_enc != self.eot_token_id).long(),
-                }
-            )
-            conts_enc = torch.Tensor(conts).long()
-            conts_enc = transformers.tokenization_utils_base.BatchEncoding(
-                {
-                    "input_ids": conts_enc,
-                    "attention_mask": (conts_enc != self.eot_token_id).long(),
-                }
-            )
-            # TODO: Extract out this call so it only gets called once and also
-            # somehow figure out partial caching for.
-            rolling_token_windows_request = [
-                ((contexts, conts), contexts_enc, conts_enc)
-            ]
+
+            # TODO: Right now,
+            # we pass single EOT token to the Encoder and the full context to the decoder, in seq2seq case
+            rolling_token_windows = [(None,) + x for x in rolling_token_windows]
+
+            pad_amnt = 0
+            if self.world_size > 1:
+                # We pad out the external document-level iterator so the inner iterator doesn't hang
+                mytensor = torch.tensor(len(rolling_token_windows), device=self.device)
+                gathered = (
+                    self.accelerator.gather(mytensor).cpu().detach().numpy().tolist()
+                )
+
+                pad_amnt = max(gathered) - gathered[self.rank]
+                if pad_amnt > 0:
+                    rolling_token_windows += pad_amnt * [rolling_token_windows[0]]
+
             string_nll = self._loglikelihood_tokens(
-                rolling_token_windows_request, disable_tqdm=True
+                requests=rolling_token_windows,
+                disable_tqdm=True,
+                override_bs=adaptive_batch_size,
             )
-            string_nll = [x[0] for x in string_nll]  # discard is_greedy
+
+            if (self.world_size > 1) and (pad_amnt > 0):
+                string_nll = [x[0] for x in string_nll[:-pad_amnt]]
+            else:
+                # discard is_greedy
+                string_nll = [x[0] for x in string_nll]
+
             string_nll = sum(string_nll)
             loglikelihoods.append(string_nll)
+
         return loglikelihoods
+
+    def _batch_scheduler(self, pos, n_reordered_requests):
+        sched = pos // int(len(n_reordered_requests) / self.batch_schedule)
+        if sched in self.batch_sizes:
+            return self.batch_sizes[sched]
+        if (len(self.batch_sizes) > 1) and (
+            self.batch_sizes[sched - 1] == self.max_batch_size
+        ):
+            # if previous batch size is already maximal, skip recomputation
+            self.batch_sizes[sched] = self.max_batch_size
+            return self.batch_sizes[sched]
+        print(
+            f"Passed argument batch_size = auto:{self.batch_schedule}. Detecting largest batch size"
+        )
+        self.batch_sizes[sched] = self._detect_batch_size(n_reordered_requests, pos)
+        print(f"Determined largest batch size: {self.batch_sizes[sched]}")
+        return self.batch_sizes[sched]
 
     def _loglikelihood_tokens(
         self,
-        requests: List[Tuple[Tuple[str, str], TokenSequence, TokenSequence]],
-        disable_tqdm: Optional[bool] = False,
+        requests: List[Tuple[Tuple[str, str], List[int], List[int]]],
+        disable_tqdm: bool = False,
+        override_bs: int = None,
     ) -> List[Tuple[float, bool]]:
-        results = []
-        for chunk in tqdm(
-            requests, total=math.ceil(len(requests)), disable=disable_tqdm
-        ):
-            cache_keys, inputs_tokens, targets_tokens = chunk
-            inputs_tokens = inputs_tokens.to(self.device)
-            targets_tokens = targets_tokens.to(self.device)
-            outputs = self._model_call(inputs=inputs_tokens, labels=targets_tokens)
-            log_softmaxes = F.log_softmax(outputs.logits, dim=-1)
+        # TODO:
+        # implement some kind of efficient-request-middleware that lumps together requests with the same context
+        res = []
 
-            output_iterator = zip(
-                zip(cache_keys[0], cache_keys[1]),
-                log_softmaxes,
-                targets_tokens["input_ids"],
-                targets_tokens["attention_mask"],
-            )
-            for cache_key, log_softmax, target_tokens, target_mask in output_iterator:
-                length = target_mask.sum()
-                log_softmax = log_softmax[:length]
-                target_tokens = target_tokens[:length]
-                greedy_tokens = log_softmax.argmax(dim=-1)
-                max_equal = (greedy_tokens == target_tokens).all()
-                target_logits = torch.gather(
-                    log_softmax, 1, target_tokens.unsqueeze(-1)
-                ).squeeze(-1)
-                answer = (float(target_logits.sum()), bool(max_equal))
-                results.append(answer)
-                if cache_key is not None:
-                    self.cache_hook.add_partial("loglikelihood", cache_key, answer)
-        return results
+        def _collate(req: Tuple[Tuple[str, str], List[int], List[int]]):
+            """Defines the key for the sorted method."""
+            # the negative sign on len(toks) sorts descending - this has a few advantages:
+            # - time estimates will always be over not underestimates, which is more useful for planning
+            # - to know the size of a batch when going through the list, you know the first one is always the batch
+            #   padded context length. this is useful to simplify the batching logic and more importantly to make
+            #   automatic adaptive batches much much easier to implement
+            # - any OOMs will happen right away rather than near the end
 
-    def _model_call(
-        self, inputs: TokenSequence, labels: Optional[TokenSequence] = None
-    ) -> TokenSequence:
-        if self.model_format == "onnx":
-            decoder_start_token_id = self._config.decoder_start_token_id
-            pad_token_id = self._config.pad_token_id
-            shifted_input_ids = labels["input_ids"].new_zeros(labels["input_ids"].shape)
-            shifted_input_ids[..., 1:] = labels["input_ids"][..., :-1].clone()
-            shifted_input_ids[..., 0] = decoder_start_token_id
-            shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
-            return self.model(**inputs, decoder_input_ids=shifted_input_ids, labels=labels["input_ids"])
-        else:
-            return self.model(**inputs, labels=labels["input_ids"])
+            toks = req[1] + req[2]
+            return -len(toks), tuple(toks)
 
-    def _model_generate(
-        self,
-        inputs: transformers.BatchEncoding,
-        max_tokens: int,
-        stop: Optional[List[str]] = None,
-    ) -> TokenSequence:
-        input_ids = inputs["input_ids"][:, -self.max_length :].to(self.device)
-        attention_mask = inputs["attention_mask"][:, -self.max_length :].to(self.device)
+        def _lookup_one_token_cont(req: Tuple[Tuple[str, str], List[int], List[int]]):
+            """Defines the key to group and lookup one-token continuations."""
+            # Use with group_by="contexts" (optional)"
+            # allows for the creation of a lookup, so we can reuse logits in case of one-token continuations.
+            # speeds up some multiple-choice tasks proportionally to the number of choices.
+            # groups requests by context+continuation[:-1] and infer on one request/group.
+            return req[-2] + req[-1][:-1]
 
-        # Generate one token to calculate the number of start tokens prepended to decoder_input_ids
-        # (leaving this here in case the below assumption is violated in the future)
-        # one_tok_gen = self.model.generate(
-        #    input_ids=torch.zeros((1, 1), dtype=torch.int),
-        #    min_length=2,
-        #    max_new_tokens=1,
-        # ).squeeze()
-        # initial_decoder_input_length = len(one_tok_gen) - 1
-
-        # Assume that there will always only be one token in the decoder inputs, assumption holds for existing HF models
-        stopping_criteria = stop_sequences_criteria(
-            self.tokenizer, stop, 1, input_ids.shape[0]
+        re_ord = Collator(
+            requests,
+            sort_fn=_collate,
+            group_by=(
+                "contexts"
+                if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM and self.logits_cache
+                else None
+            ),
+            group_fn=_lookup_one_token_cont,
         )
 
-        generations = self.model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            max_new_tokens=max_tokens,
-            stopping_criteria=stopping_criteria,
-            do_sample=False,
+        # automatic (variable) batch size detection for vectorization
+        # pull longest context sample from request
+        n_reordered_requests = len(re_ord)
+        batch_size = (
+            self.batch_size
+            if self.batch_size != "auto"
+            else override_bs if override_bs is not None else 0
         )
-        return generations
+        batch_fn = (
+            self._batch_scheduler
+            if self.batch_size == "auto"
+            and n_reordered_requests > 0
+            and not override_bs
+            else None
+        )
 
+        chunks = re_ord.get_batched(n=batch_size, batch_fn=batch_fn)
+        pbar = tqdm(
+            total=len(requests),
+            disable=(disable_tqdm or (self.rank != 0)),
+            desc="Running loglikelihood requests",
+        )
+        for chunk in chunks:
+            inps = []
+            cont_toks_list = []
+            inplens = []
 
-class MultiTokenEOSCriteria(transformers.StoppingCriteria):
-    """Criteria to stop on the specified multi-token sequence."""
+            conts = []
+            encoder_attns = []
 
-    def __init__(
-        self,
-        sequence: str,
-        tokenizer: transformers.PreTrainedTokenizer,
-        initial_decoder_input_length: int,
-        batch_size: int,
-    ):
-        self.initial_decoder_input_length = initial_decoder_input_length
-        self.done_tracker = [False] * batch_size
-        self.sequence = sequence
-        self.sequence_ids = tokenizer.encode(sequence, add_special_tokens=False)
-        self.sequence_id_len = len(self.sequence_ids)
-        self.tokenizer = tokenizer
+            padding_len_inp = None
+            padding_len_cont = None
+            # because vectorizing is annoying, we first convert each (context, continuation) pair to padded
+            # tensors, then we pack them together into a batch, call the model, and then pick it all apart
+            # again because vectorizing is annoying
 
-    def __call__(self, input_ids, scores, **kwargs) -> bool:
-        # For efficiency, we compare the last n tokens where n is the number of tokens in the stop_sequence
-        lookback_ids_batch = input_ids[:, self.initial_decoder_input_length :][
-            :, -self.sequence_id_len :
-        ]
+            for _, context_enc, continuation_enc in chunk:
+                # sanity check
+                assert len(context_enc) > 0
+                assert len(continuation_enc) > 0
+                assert len(continuation_enc) <= self.max_length
 
-        lookback_tokens_batch = self.tokenizer.batch_decode(lookback_ids_batch)
+                # how this all works (illustrated on a causal decoder-only setup):
+                #          CTX      CONT
+                # inp    0 1 2 3|4 5 6 7 8 9   <- last token is deleted by inp[:, :-1]
+                # model  \               \
+                # logits   1 2 3|4 5 6 7 8 9   <- the ctx half gets tossed out by the
+                # cont_toks      4 5 6 7 8 9      [:, -len(continuation_enc):, :self.vocab_size] slice
 
-        for i, done in enumerate(self.done_tracker):
-            if not done:
-                self.done_tracker[i] = self.sequence in lookback_tokens_batch[i]
-        return False not in self.done_tracker
+                # when too long to fit in context, truncate from the left
+                if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
+                    inp = torch.tensor(
+                        (context_enc + continuation_enc)[-(self.max_length + 1) :][:-1],
+                        dtype=torch.long,
+                        device=self.device,
+                    )
+                    (inplen,) = inp.shape
+                elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
+                    inp = torch.tensor(
+                        (context_enc)[-self.max_length :], # pylint: disable=E1130
+                        dtype=torch.long,
+                        device=self.device,
+                    )
+                    (inplen,) = inp.shape
 
+                    # build encoder attn masks
+                    encoder_attns.append(torch.ones_like(inp))
 
-def stop_sequences_criteria(
-    tokenizer: transformers.PreTrainedTokenizer,
-    stop_sequences: List[str],
-    initial_decoder_input_length: int,
-    batch_size: int,
-) -> transformers.StoppingCriteriaList:
-    return transformers.StoppingCriteriaList(
-        [
-            *[
-                MultiTokenEOSCriteria(
-                    sequence, tokenizer, initial_decoder_input_length, batch_size
+                    cont = torch.tensor(
+                        (continuation_enc)[-self.max_length :], # pylint: disable=E1130
+                        # TODO: left-shift these?
+                        # TODO: our code assumes we never end up truncating conts for either model type
+                        dtype=torch.long,
+                        device=self.device,
+                    )
+                    (contlen,) = cont.shape
+
+                    conts.append(cont)
+
+                    padding_len_cont = (
+                        max(padding_len_cont, contlen)
+                        if padding_len_cont is not None
+                        else contlen
+                    )
+
+                padding_len_inp = (
+                    max(padding_len_inp, inplen)
+                    if padding_len_inp is not None
+                    else inplen
                 )
-                for sequence in stop_sequences
-            ],
-        ]
-    )
 
+                inps.append(inp)  # [1, inp_length]
+                cont_toks_list.append(continuation_enc)
+                inplens.append(inplen)
 
-class HFModelAdapter(HuggingFaceAutoLM):
-    AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
-    AUTO_PEFT_CLASS = peft.PeftModel
+            # create encoder attn mask and batched conts, if seq2seq
+            call_kwargs = {}
+            if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
+                batched_inps = pad_and_concat(
+                    padding_len_inp, inps, padding_side="right"
+                )  # [batch, padding_len_inp]
+            elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
+                # TODO: left-pad encoder inps and mask?
+                batched_inps = pad_and_concat(
+                    padding_len_inp, inps
+                )  # [batch, padding_len_inp]
+                batched_conts = pad_and_concat(
+                    padding_len_cont, conts
+                )  # [batch, padding_len_cont]
+                batched_encoder_mask = pad_and_concat(
+                    padding_len_inp, encoder_attns
+                )  # [batch, padding_len_inp]
+                call_kwargs = {
+                    "attn_mask": batched_encoder_mask,
+                    "labels": batched_conts,
+                }
 
-    def __init__(self, *args, user_model=None, user_tokenizer=None, **kwargs):
-        self.cache_hook = CacheHook(None)
-        self.model = user_model
-        if user_tokenizer is None:
-            self.tokenizer = self._create_auto_tokenizer(
-                    pretrained=kwargs["pretrained"],
-                    revision="main",
-                    subfolder=None,)
-        else:
-            self.tokenizer = user_tokenizer
-        self._batch_size = kwargs["batch_size"]
-        self._add_special_tokens = None
-        self.model_format = "torch"
-        self.buckets = [16, 32, 64, 128, 189, 284]
-        self._device = kwargs["device"]
-        if self._device == "hpu":
-            from optimum.habana.checkpoint_utils import model_is_optimized # pylint: disable=E0611, E0401
-            self.static_shapes = model_is_optimized(self.model.config)
-        else:
-            self.static_shapes = False
-        if kwargs["warmup"]:
-            print("lm-eval warmup for Gaudi.")
-            self.warm_up()
+            multi_logits = F.log_softmax(
+                self._model_call(batched_inps, **call_kwargs), dim=-1
+            )  # [batch, padding_length (inp or cont), vocab]
 
-    def warm_up(self):
-        for bucket_size in reversed(self.buckets):
-            inps = torch.ones((self._batch_size, bucket_size), dtype=torch.int64)
-            self._model_call(inps)
-            pass
+            for (request_str, ctx_tokens, _), logits, inplen, cont_toks in zip(
+                chunk, multi_logits, inplens, cont_toks_list
+            ):
+                # Slice to original seq length
+                contlen = len(cont_toks)
+                # take only logits in the continuation
+                # (discard context toks if decoder-only ; discard right-padding)
+                # also discards + checks for "virtual tokens" in the causal LM's input window
+                # from prompt/prefix tuning tokens, if applicable
+                ctx_len = (
+                    inplen + (logits.shape[0] - padding_len_inp)
+                    if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM
+                    else None
+                )
+                logits = self._select_cont_toks(logits, contlen=contlen, inplen=ctx_len)
+                logits = logits.unsqueeze(0)  # [1, seq, vocab]
 
-    @property
-    def eot_token_id(self):
-        return self.model.config.eos_token_id
+                # Check if per-token argmax is exactly equal to continuation
+                greedy_tokens = logits.argmax(dim=-1)
 
-    @property
-    def max_length(self):
-        return self.buckets[-1]
+                # check for one-token continuation cache hits.
+                # noop in case group_by != "contexts" or no cache hit and returns the
+                # original args. Otherwise, expands the logits batch dimension and yields each
+                # batch along with matching continuation tokens and prompt strings.
+                # logits -> [1, seq, vocab]
+                for request_str, cont_toks, logits in re_ord.get_cache(
+                    req_str=request_str,
+                    cxt_toks=ctx_tokens,
+                    cont_toks=cont_toks,
+                    logits=logits,
+                ):
+                    cont_toks = torch.tensor(
+                        cont_toks, dtype=torch.long, device=self.device
+                    ).unsqueeze(
+                        0
+                    )  # [1, seq]
+                    max_equal = (greedy_tokens == cont_toks).all()
 
-    @property
-    def max_gen_toks(self):
-        raise NotImplementedError()
+                    # Obtain log-probs at the corresponding continuation token indices
+                    # last_token_slice = logits[:, -1, :].squeeze(0).tolist()
+                    logits = torch.gather(logits, 2, cont_toks.unsqueeze(-1)).squeeze(
+                        -1
+                    )  # [1, seq]
 
-    @property
-    def batch_size(self):
-        return self._batch_size
+                    # Answer: (log prob, is-exact-match)
+                    answer = (float(logits.sum()), bool(max_equal))
 
-    @property
-    def device(self):
-        # We need to do padding ourselves, otherwise we'll end up with recompilations
-        # Returning 'cpu' to keep tensors on CPU in lm_eval code
-        return "cpu"
+                    res.append(answer)
 
-    def _model_generate(self, context, max_length, eos_token_id):
-        raise NotImplementedError()
+                    self.cache_hook.add_partial("loglikelihood", request_str, answer)
+                    pbar.update(1)
 
-    def find_bucket(self, length):
-        return [b for b in self.buckets if b >= length][0]
+        pbar.close()
 
-    def _model_call(self, inps):
-        bs, seq_length = inps.shape
-        padding_length = 0
-        if self.static_shapes:
-            bucket_length = self.find_bucket(seq_length)
-            padding_length = bucket_length - seq_length
-            inps = F.pad(inps, (0, padding_length), value=self.model.config.pad_token_id)
-        logits = self.model(inps.to(self._device))["logits"].cpu()
+        return re_ord.get_original(res)
 
-        if self.static_shapes and padding_length > 0:
-            logits = logits[:, :-padding_length, :]
-        logits = logits.to(torch.float32)
-        return logits
+    def generate_until(
+        self, requests: List[Instance], disable_tqdm: bool = False
+    ) -> List[str]:
+        res = []
+
+        def _collate(req: Tuple[str, dict]):
+            """Defines the key for the sorted method."""
+            # the negative sign on len(toks) sorts descending - this has a few advantages:
+            # - time estimates will always be over not underestimates, which is more useful for planning
+            # - to know the size of a batch when going through the list, you know the first one is always the batch
+            #   padded context length. this is useful to simplify the batching logic and more importantly to make
+            #   automatic adaptive batches much much easier to implement
+            # - any OOMs will happen right away rather than near the end
+            toks = self.tok_encode(req[0])
+            return -len(toks), req[0]
+
+        pbar = tqdm(
+            total=len(requests),
+            disable=(disable_tqdm or (self.rank != 0)),
+            desc="Running generate_until requests",
+        )
+        adaptive_batch_size = None
+        if self.batch_size == "auto":
+            # using rolling window with maximum context
+            print("Passed argument batch_size = auto. Detecting largest batch size")
+            batch_size = self._detect_batch_size()
+            print(f"Determined Largest batch size: {batch_size}")
+            adaptive_batch_size = batch_size
+        # for each different set of kwargs, we execute all requests, by batch.
+        batch_size = (
+            self.batch_size
+            if self.batch_size != "auto"
+            else adaptive_batch_size if adaptive_batch_size is not None else 0
+        )
+        batch_fn = (
+            self._batch_scheduler
+            if self.batch_size == "auto" and not adaptive_batch_size
+            else None
+        )
+
+        # we group requests by their generation_kwargs,
+        # so that we don't try to execute e.g. greedy sampling and temp=0.8 sampling
+        # in the same batch.
+        # group_fn=lambda x: x[1] -> x=(context, gen_kwargs)
+        re_ords = Collator(
+            [reg.args for reg in requests],
+            sort_fn=_collate,
+            group_by="gen_kwargs",
+            group_fn=lambda x: x[1],
+        )
+        chunks = re_ords.get_batched(n=batch_size, batch_fn=batch_fn)
+        for chunk in chunks:
+            contexts, all_gen_kwargs = zip(*chunk)
+            # we assume all gen kwargs in the batch are the same
+            # this is safe to assume because the `grouper` object ensures it.
+            gen_kwargs = all_gen_kwargs[0]
+            # unpack our keyword arguments.
+            until = None
+            if isinstance(gen_kwargs, dict):
+                kwargs = copy.deepcopy(gen_kwargs)  # edge case for repeats > 1
+                if "until" in kwargs.keys():
+                    until = kwargs.pop("until")
+                    if isinstance(until, str):
+                        until = [kwargs]
+                    elif not isinstance(until, list):
+                        raise ValueError(
+                            f"Expected `kwargs['until']` to be of type Union[str,list] but got {until}"
+                        )
+            else:
+                raise ValueError(
+                    f"Expected `kwargs` to be of type `dict` but got {type(gen_kwargs)}"
+                )
+            # add EOS token to stop sequences
+            eos = self.tok_decode(self.eot_token_id, skip_special_tokens=False)
+            if not until:
+                until = [eos]
+            else:
+                until.append(eos)
+            if "max_gen_toks" in kwargs.keys():
+                max_gen_toks = kwargs.pop("max_gen_toks")
+            else:
+                max_gen_toks = self.max_gen_toks
+
+            # set the max length in tokens of inputs ("context_enc")
+            if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
+                # max len for inputs = max length, minus room to generate the max new tokens
+                max_ctx_len = self.max_length - max_gen_toks
+            elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
+                # max len for inputs = encoder's whole max_length
+                max_ctx_len = self.max_length
+
+            # encode, pad, and truncate contexts for this batch
+            context_enc, attn_masks = self.tok_batch_encode(
+                contexts,
+                left_truncate_len=max_ctx_len,
+                truncation=self.truncation,
+            )
+            context_enc = context_enc.to(self.device)
+            attn_masks = attn_masks.to(self.device)
+
+            if "max_length" not in kwargs:
+                kwargs["max_length"] = context_enc.shape[1] + max_gen_toks
+
+            # perform batched generation
+            cont = self._model_generate(
+                context=context_enc,
+                attention_mask=attn_masks,
+                stop=until,
+                **kwargs,
+            )
+
+            cont_toks_list = cont.tolist()
+            for cont_toks, context in zip(cont_toks_list, contexts):
+                # discard context + left-padding toks if using causal decoder-only LM
+                if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
+                    cont_toks = cont_toks[context_enc.shape[1] :]
+
+                s = self.tok_decode(cont_toks)
+
+                # use secondary stop seqs to cut off should-have-been-stopped content post-hoc
+                for term in until:
+                    if len(term) > 0:
+                        # ignore '' separator,
+                        # for seq2seq case where self.tok_decode(self.eot_token_id) = ''
+                        s = s.split(term)[0]
+
+                res.append(s)
+
+                self.cache_hook.add_partial("generate_until", (context, gen_kwargs), s)
+                pbar.update(1)
+        # reorder this group of results back to original unsorted form
+        res = re_ords.get_original(res)
+
+        pbar.close()
+
+        return res
