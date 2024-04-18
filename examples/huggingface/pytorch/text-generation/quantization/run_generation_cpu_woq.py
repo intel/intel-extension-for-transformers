@@ -83,7 +83,7 @@ parser.add_argument(
     choices=["fp32", "bf16", "int8"],
 )
 parser.add_argument("--group_size", type=int, default=32)
-parser.add_argument("--scheme", default="sym")
+parser.add_argument("--scheme", default=None)
 parser.add_argument(
     "--layer_wise",
     action="store_true",
@@ -163,6 +163,7 @@ parser.add_argument("--trust_remote_code", action="store_true")
 parser.add_argument("--use_neural_speed", action="store_true")
 # =======================================
 args = parser.parse_args()
+args.scheme = "asym" if args.scheme is None and args.woq_algo == "AutoRound" else "sym" 
 
 config = AutoConfig.from_pretrained(
     args.model,
