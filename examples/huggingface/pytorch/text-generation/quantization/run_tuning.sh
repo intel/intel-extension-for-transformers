@@ -63,12 +63,15 @@ function run_tuning {
     elif [ "${topology}" = "gpt_j_woq_rtn" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --woq"
+        extra_cmd=$extra_cmd" --weight_dtype ${weight_dtype}"
     elif [ "${topology}" = "gpt_j_woq_bab" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --bitsandbytes"
+        extra_cmd=$extra_cmd" --weight_dtype ${weight_dtype}"
     elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --load_in_4bit"
+        extra_cmd=$extra_cmd" --weight_dtype ${weight_dtype}"
     elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --load_in_8bit "
