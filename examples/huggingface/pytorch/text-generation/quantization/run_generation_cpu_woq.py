@@ -380,7 +380,7 @@ if args.accuracy:
     from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
     model_args="pretrained="+args.model+",trust_remote_code="+str(args.trust_remote_code)
     if args.use_neural_speed:
-        model_args += ",model_format=neuralspeed"
+        model_args += ",model_format=neural_speed"
     args = LMEvalParser(model = "hf", 
                         model_args=model_args,
                         tasks = args.tasks,
