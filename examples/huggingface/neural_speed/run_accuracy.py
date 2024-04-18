@@ -13,7 +13,7 @@
 #  limitations under the License.
 import sys
 import argparse
-from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
+from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate diff for a model")
@@ -25,22 +25,23 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(args)
     model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True'
-    if args.use_gptq:
-        model_args += ",use_gptq=True"
+
     if args.model_format == "neural_speed":
-        results = evaluate(
-            model="hf-causal",
-            model_args=model_args,
-            batch_size=args.batch_size,
-            tasks=[f"{args.tasks}"],
-            model_format=f"{args.model_format}"
-        )
+        model_args += f",model_format=neural_speed"
+        eval_args = LMEvalParser(model="hf", 
+                            model_args=model_args,
+                            tasks=f"{args.tasks}",
+                            device = "cpu",
+                            batch_size = args.batch_size,
+                            )
+        results = evaluate(eval_args)
     else:
-        results = evaluate(
-            model="hf-causal",
-            model_args=model_args,
-            batch_size=args.batch_size,
-            tasks=[f"{args.tasks}"]
-        )
+        eval_args = LMEvalParser(model="hf", 
+                            model_args=model_args,
+                            tasks=f"{args.tasks}",
+                            device = "cpu",
+                            batch_size = args.batch_size,
+        )       
+        results = evaluate(eval_args)
 
     print(results)
