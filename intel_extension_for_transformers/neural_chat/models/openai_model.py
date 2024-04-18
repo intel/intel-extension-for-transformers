@@ -16,7 +16,7 @@
 # limitations under the License.
 
 from .base_model import BaseModel
-from openai import OpenAI
+from openai import OpenAI # pylint: disable=E0401
 import logging
 from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
