@@ -1165,14 +1165,14 @@ def predict_stream(**params):
                                 temperature=temperature,
                                 top_p=top_p,
                                 top_k=top_k,
-                                repetition_penalty=repetition_penalty,
+                                repetition_penalty=1.0,
                                 max_new_tokens=max_new_tokens,
-                                ctx_size=max_new_tokens,
+                                ctx_size=max_new_tokens+input_token_len,
                                 ignore_prompt=True,
-                                interactive=False if "magicoder" in model_name.lower() else True,
-                                do_sample=do_sample,
+                                # interactive=False if "magicoder" in model_name.lower() else True,
+                                do_sample=False,
                                 num_beams=num_beams,
-                                n_keep=2 if "chatglm" in model_name.lower() else 1
+                                # n_keep=2 if "chatglm" in model_name.lower() else 1
                             )
                         else:
                             with context:
@@ -1462,14 +1462,14 @@ def predict(**params):
                                 temperature=temperature,
                                 top_p=top_p,
                                 top_k=top_k,
-                                repetition_penalty=repetition_penalty,
+                                repetition_penalty=1.0,
                                 max_new_tokens=max_new_tokens,
-                                ctx_size=max_new_tokens,
+                                ctx_size=max_new_tokens+input_token_len,
                                 ignore_prompt=True,
-                                interactive=True,
-                                do_sample=do_sample,
+                                # interactive=True,
+                                do_sample=False,
                                 num_beams=num_beams,
-                                seed=1
+                                # seed=1
                             )
                         else:
                             generation_output = model.generate(
