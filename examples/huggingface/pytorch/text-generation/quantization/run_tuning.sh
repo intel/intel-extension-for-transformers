@@ -80,7 +80,6 @@ function run_tuning {
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --load_in_8bit "
         script="run_generation_cpu_woq.py"
-        script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --mixed_precision"
