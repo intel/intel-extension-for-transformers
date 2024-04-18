@@ -82,7 +82,7 @@ parser.add_argument(
     default="fp32",
     choices=["fp32", "bf16", "int8"],
 )
-parser.add_argument("--group_size", type=int, default=32)
+parser.add_argument("--group_size", type=int, default=128)
 parser.add_argument("--scheme", default=None)
 parser.add_argument(
     "--layer_wise",

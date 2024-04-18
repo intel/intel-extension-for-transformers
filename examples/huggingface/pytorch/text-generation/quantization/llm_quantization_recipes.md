@@ -506,4 +506,450 @@ python run_generation_cpu_woq.py \
 
 # int4 GPTQ
 python run_generation_cpu_woq.py \
-    --model baichuan-inc/Baichuan2-7B-Chat
+    --model baichuan-inc/Baichuan2-7B-Chat \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo GPTQ \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --desc_act \
+    --max_input_length 2048 \
+    --scheme sym \
+    --group_size 32 \
+    --accuracy
+
+# int4 AutoRound
+python run_generation_cpu_woq.py \
+    --model baichuan-inc/Baichuan2-7B-Chat \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo AutoRound \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --calib_iters 200 \
+    --scheme asym \
+    --group_size 128 \
+    --accuracy
+```
+
+## baichuan-inc/Baichuan2-13B-Chat
+
+### SmoothQuant
+
+```bash
+python run_generation_sq.py \
+    --model baichuan-inc/Baichuan2-13B-Chat \
+    --output_dir ./saved_results \
+    --trust_remote_code \
+    --tasks lambada_openai \
+    --int8 --sq --accuracy \
+    --batch_size 1 \
+    --alpha 0.65
+```
+
+### Weight-Only Quantization
+
+```bash
+# int8 RTN
+python run_generation_cpu_woq.py \
+    --model baichuan-inc/Baichuan2-13B-Chat \
+    --output_dir ./saved_results \
+    --woq \
+    --accuracy
+
+# int4 GPTQ
+python run_generation_cpu_woq.py \
+    --model baichuan-inc/Baichuan2-13B-Chats \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo GPTQ \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --desc_act \
+    --max_input_length 2048 \
+    --scheme sym \
+    --group_size 32 \
+    --accuracy
+
+# int4 AutoRound
+python run_generation_cpu_woq.py \
+    --model baichuan-inc/Baichuan2-13B-Chat \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo AutoRound \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --calib_iters 200 \
+    --scheme asym \
+    --group_size 128 \
+    --accuracy
+```
+
+## baichuan-inc/Baichuan-13B-Chat
+
+### SmoothQuant
+
+```bash
+python run_generation_sq.py \
+    --model baichuan-inc/Baichuan-13B-Chat \
+    --output_dir ./saved_results \
+    --trust_remote_code \
+    --tasks lambada_openai \
+    --int8 --sq --accuracy \
+    --batch_size 1 \
+    --alpha 0.5
+```
+
+### Weight-Only Quantization
+
+```bash
+# int8 RTN
+python run_generation_cpu_woq.py \
+    --model baichuan-inc/Baichuan-13B-Chat \
+    --output_dir ./saved_results \
+    --woq \
+    --accuracy
+
+# int4 GPTQ
+
+python run_generation_cpu_woq.py \
+    --model baichuan-inc/Baichuan-13B-Chat \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo GPTQ \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --desc_act \
+    --max_input_length 2048 \
+    --scheme sym \
+    --group_size 32 \
+    --accuracy
+
+# int4 AutoRound
+python run_generation_cpu_woq.py \
+    --model baichuan-inc/Baichuan-13B-Chat \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo AutoRound \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --calib_iters 200 \
+    --scheme asym \
+    --group_size 128 \
+    --accuracy
+```
+
+## THUDM/chatglm2-6b
+
+### SmoothQuant
+
+```bash
+python run_generation_sq.py \
+    --model THUDM/chatglm2-6b \
+    --output_dir ./saved_results \
+    --trust_remote_code \
+    --tasks lambada_openai \
+    --int8 --sq --accuracy \
+    --batch_size 1 \
+    --alpha 0.75
+```
+
+### Weight-Only Quantization
+
+```bash
+# int8 RTN
+python run_generation_cpu_woq.py \
+    --model THUDM/chatglm2-6b \
+    --output_dir ./saved_results \
+    --woq \
+    --accuracy
+
+# int4 GPTQ
+python run_generation_cpu_woq.py \
+    --model THUDM/chatglm2-6b \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo GPTQ \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --max_input_length 2048 \
+    --scheme asym \
+    --group_size 32 \
+    --accuracy
+
+# int4 AutoRound
+python run_generation_cpu_woq.py \
+    --model THUDM/chatglm2-6b \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo AutoRound \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --calib_iters 200 \
+    --scheme asym \
+    --group_size 128 \
+    --accuracy
+```
+
+## THUDM/chatglm3-6b
+
+### SmoothQuant
+
+```bash
+python run_generation_sq.py \
+    --model THUDM/chatglm3-6b \
+    --output_dir ./saved_results \
+    --trust_remote_code \
+    --tasks lambada_openai \
+    --int8 --sq --accuracy \
+    --batch_size 1 \
+    --alpha 0.9
+```
+
+### Weight-Only Quantization
+
+```bash
+# int8 RTN
+python run_generation_cpu_woq.py \
+    --model THUDM/chatglm3-6b \
+    --output_dir ./saved_results \
+    --woq \
+    --accuracy
+
+# int4 GPTQ
+python run_generation_cpu_woq.py \
+    --model THUDM/chatglm3-6b \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo GPTQ \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --max_input_length 2048 \
+    --scheme sym \
+    --group_size 32 \
+     --nsamples 256 \
+    --accuracy
+
+# int4 AutoRound
+python run_generation_cpu_woq.py \
+    --model THUDM/chatglm3-6b \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo AutoRound \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --calib_iters 200 \
+    --scheme asym \
+    --group_size 128 \
+    --accuracy
+```
+
+## bigscience/bloom-1b7
+
+### SmoothQuant
+
+```bash
+python run_generation_sq.py \
+    --model bigscience/bloom-1b7 \
+    --output_dir ./saved_results \
+    --trust_remote_code \
+    --tasks lambada_openai \
+    --int8 --sq --accuracy \
+    --batch_size 1 \
+    --alpha 0.6
+```
+
+### Weight-Only Quantization
+
+```bash
+# int8 RTN
+python run_generation_cpu_woq.py \
+    --model bigscience/bloom-1b7 \
+    --output_dir ./saved_results \
+    --woq \
+    --accuracy
+
+# int4 GPTQ
+python run_generation_cpu_woq.py \
+    --model bigscience/bloom-1b7 \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo GPTQ \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --desc_act \
+    --max_input_length 2048 \
+    --scheme sym \
+    --group_size 32 \
+    --accuracy
+
+# int4 AutoRound
+python run_generation_cpu_woq.py \
+    --model bigscience/bloom-1b7 \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo AutoRound \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --calib_iters 200 \
+    --scheme asym \
+    --group_size 128 \
+    --accuracy
+```
+
+## EleutherAI/gpt-neox-20b
+
+### SmoothQuant
+
+```bash
+python run_generation_sq.py \
+    --model EleutherAI/gpt-neox-20b \
+    --output_dir ./saved_results \
+    --trust_remote_code \
+    --tasks lambada_openai \
+    --int8 --sq --accuracy \
+    --batch_size 1 \
+    --alpha 0.7
+```
+
+### Weight-Only Quantization
+
+```bash
+# int8 RTN
+python run_generation_cpu_woq.py \
+    --model EleutherAI/gpt-neox-20b \
+    --output_dir ./saved_results \
+    --woq \
+    --accuracy
+
+# int4 GPTQ
+python run_generation_cpu_woq.py \
+    --model EleutherAI/gpt-neox-20b \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo GPTQ \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --max_input_length 2048 \
+    --scheme asym \
+    --group_size 32 \
+    --accuracy
+
+# int4 AutoRound
+python run_generation_cpu_woq.py \
+    --model EleutherAI/gpt-neox-20b \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo AutoRound \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --calib_iters 200 \
+    --scheme asym \
+    --group_size 128 \
+    --accuracy
+```
+
+## mistralai/Mistral-7B-v0.1
+
+### SmoothQuant
+
+```bash
+python run_generation_sq.py \
+    --model mistralai/Mistral-7B-v0.1 \
+    --output_dir ./saved_results \
+    --trust_remote_code \
+    --tasks lambada_openai \
+    --int8 --sq --accuracy \
+    --batch_size 1 \
+    --alpha 0.75
+```
+
+### Weight-Only Quantization
+
+```bash
+# int8 RTN
+python run_generation_cpu_woq.py \
+    --model mistralai/Mistral-7B-v0.1 \
+    --output_dir ./saved_results \
+    --woq \
+    --accuracy
+
+# int4 GPTQ
+python run_generation_cpu_woq.py \
+    --model mistralai/Mistral-7B-v0.1 \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo GPTQ \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --desc_act \
+    --max_input_length 2048 \
+    --scheme sym \
+    --group_size 32 \
+    --accuracy
+
+# int4 AutoRound
+python run_generation_cpu_woq.py \
+    --model mistralai/Mistral-7B-v0.1 \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo AutoRound \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --calib_iters 200 \
+    --scheme asym \
+    --group_size 128 \
+    --accuracy
+```
+
+## databricks/dolly-v2-12b
+
+### SmoothQuant
+
+```bash
+python run_generation_sq.py \
+    --model databricks/dolly-v2-12b \
+    --output_dir ./saved_results \
+    --trust_remote_code \
+    --tasks lambada_openai \
+    --int8 --sq --accuracy \
+    --batch_size 1 \
+    --alpha 0.75
+```
+
+### Weight-Only Quantization
+
+```bash
+# int8 RTN
+python run_generation_cpu_woq.py \
+    --model databricks/dolly-v2-12b \
+    --output_dir ./saved_results \
+    --woq \
+    --accuracy
+
+# int4 GPTQ
+python run_generation_cpu_woq.py \
+    --model databricks/dolly-v2-12b \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo GPTQ \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --max_input_length 2048 \
+    --scheme sym \
+    --group_size 128 \
+    --accuracy
+
+# int4 AutoRound
+python run_generation_cpu_woq.py \
+    --model databricks/dolly-v2-12b \
+    --output_dir ./saved_results \
+    --woq \
+    --woq_algo AutoRound \
+    --bits 4 \
+    --weight_dtype int4_clip \
+    --calib_iters 200 \
+    --scheme asym \
+    --group_size 128 \
+    --accuracy
+```
