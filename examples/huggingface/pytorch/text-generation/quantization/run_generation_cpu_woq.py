@@ -109,7 +109,7 @@ parser.add_argument(
     help="Block size. sub weight matrix size to run GPTQ.",
 )
 parser.add_argument(
-    "--nsamples", type=int, default=128, help="Number of calibration data samples."
+    "--nsamples", type=int, default=512, help="Number of calibration data samples."
 )
 parser.add_argument(
     "--max_input_length",
@@ -138,13 +138,13 @@ parser.add_argument(
 parser.add_argument(
     "--lr",
     type=float,
-    default=0.0025,
+    default=None,
     help="learning rate, if None, it will be set to 1.0/iters automatically",
 )
 parser.add_argument(
     "--minmax_lr",
     type=float,
-    default=0.0025,
+    default=None,
     help="minmax learning rate, if None,it will beset to be the same with lr",
 )
 parser.add_argument(

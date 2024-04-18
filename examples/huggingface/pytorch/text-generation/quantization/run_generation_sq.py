@@ -316,6 +316,6 @@ if args.accuracy:
     results = evaluate(args)
     for task_name in args.tasks.split(","):
         if task_name == "wikitext":
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity,none"]))
         else:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc,none"]))
