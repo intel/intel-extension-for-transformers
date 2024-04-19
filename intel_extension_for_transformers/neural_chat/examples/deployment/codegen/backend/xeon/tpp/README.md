@@ -73,10 +73,42 @@ export USE_MXFP4=1
 export KV_CACHE_INC_SIZE=512
 ```
 
-# Configure Multi-NumaNodes
-To use the multi-socket model parallelism with Xeon servers, you need to configure a hostfile first.
+# Configure the codegen.yaml
 
-Here is a example using 3 numa nodes on single socket on GNR server.
+You can customize the configuration file 'codegen.yaml' to match your environment setup. Here's a table to help you understand the configurable options:
+
+|  Item               | Value                                      |
+| ------------------- | ------------------------------------------ |
+| host                | 0.0.0.0                                    |
+| port                | 8000                                       |
+| model_name_or_path  | "Phind/Phind-CodeLlama-34B-v2"             |
+| device              | "cpu"                                      |
+| use_tpp             | true                                       |
+| tasks_list          | ['codegen']                                |
+
+Note: To switch from code generation to text generation mode, adjust the model_name_or_path settings accordingly, e.g. the model_name_or_path can be set "meta-llama/Llama-2-7b-chat-hf".
+
+# Using Single NumaNode
+To configure a single NUMA node on Xeon processors, edit the hostfile located at `../../../../../../server/config/hostfile` and set the NUMA node number to 1.
+
+## Modify hostfile
+```bash
+vim ../../../../../../server/config/hostfile
+    localhost slots=1
+```
+
+# Run the Code Generation Chatbot Server
+
+To start the code-generating chatbot server, use the following command:
+
+```shell
+bash run.sh
+```
+
+
+# Configure Multi-NumaNodes
+To utilize multi-socket model parallelism on Xeon servers, you'll need to adjust the hostfile settings.
+For instance, to allocate 3 NUMA nodes on a single socket of the GNR server, modify the hostfile as shown below:
 
 ## Modify hostfile
 ```bash
@@ -84,10 +116,11 @@ vim ../../../../../../server/config/hostfile
     localhost slots=3
 ```
 
+Afterward, run the run.sh script as previously instructed.
+
 
 # Configure Multi-Nodes
 To use the multi-node model parallelism with Xeon servers, you need to configure a hostfile first and make sure ssh is able between your servers.
-
 For example, you have two servers which have the IP of `192.168.1.1` and `192.168.1.2`, and each of it has 3 numa nodes on single socket.
 
 ## Modify hostfile
@@ -135,25 +168,12 @@ localhost slots=3
 192.168.1.2 slots=3
 ```
 
-# Configure the codegen.yaml
-
-You can customize the configuration file 'codegen.yaml' to match your environment setup. Here's a table to help you understand the configurable options:
-
-|  Item              | Value                                      |
-| ------------------- | --------------------------------------- |
-| host                | 0.0.0.0                              |
-| port                | 8000                                   |
-| model_name_or_path  | "Phind/Phind-CodeLlama-34B-v2"        |
-| device              | "cpu"                                  |
-| use_tpp             | true                                  |
-| tasks_list          | ['codegen']                           |
-
-
-# Run the Code Generation Chatbot Server
-Before running the code-generating chatbot server, make sure you have already deploy the same `conda environment` and `intel-extension-for-tranformers codes` on both servers.
+## Run the Code Generation Chatbot Server
+Before running the code-generating chatbot server, make sure you have already deploy the same conda environment and intel-extension-for-tranformers codes on both servers.
 
 To start the code-generating chatbot server, use the following command:
 
 ```shell
 bash run.sh
 ```
+
