@@ -1057,7 +1057,8 @@ class _BaseQBitsAutoModelClass:
 
         if use_auth_token is not None:
             logger.warn(
-                "The `use_auth_token` argument is deprecated and will be removed in v5 of Transformers. Please use `token` instead.",
+                "The `use_auth_token` argument is deprecated and will be removed in v5 of Transformers. "
+                "Please use `token` instead."
             )
             if token is not None:
                 raise ValueError(
