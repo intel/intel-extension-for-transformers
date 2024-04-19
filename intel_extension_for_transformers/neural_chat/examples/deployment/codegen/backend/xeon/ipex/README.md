@@ -57,7 +57,7 @@ You can customize the configuration file 'codegen.yaml' to match your environmen
 | device              | "cpu"                                      |
 | tasks_list          | ['codegen']                                |
 
-Note: To switch from code generation to text generation mode, adjust the model_name_or_path settings accordingly, e.g. the model_name_or_path can be set "meta-llama/Llama-2-7b-chat-hf".
+Note: To switch from code generation to text generation mode, adjust the model_name_or_path settings accordingly, e.g. the model_name_or_path can be set "Intel/neural-chat-7b-v3-3".
 
 
 # Run the Code Generation Chatbot Server
