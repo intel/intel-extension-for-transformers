@@ -311,7 +311,12 @@ def simple_evaluate(
         }
         results["git_hash"] = get_git_commit_hash()
         results["date"] = start_date
-        add_env_info(results)  # additional environment info to results
+        try:
+            add_env_info(results)  # additional environment info to results
+        except:
+            eval_logger.info(
+                    f"get env info failed."
+                )
         return results
     else:
         return None
