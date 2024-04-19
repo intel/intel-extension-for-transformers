@@ -26,6 +26,8 @@ function pytest() {
 
     # temperately add limitation for onnx before onnxruntime next release to match onnx=1.16.1
     pip install onnx==1.15.0
+    # workaround for tokenizers upgrade to 0.19.1
+    pip install --upgrade --force-reinstall tokenizers==40.15.2
     itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >run.sh
     coverage erase
