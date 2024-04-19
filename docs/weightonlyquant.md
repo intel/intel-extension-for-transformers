@@ -287,3 +287,30 @@ qmodel = ipex.optimize_transformers(
 output = qmodel.generate(inputs, max_new_tokens=100, do_sample=True)
 print(tokenizer.batch_decode(output, skip_special_tokens=True))
 ```
+
+### Llama3 on MTL
+Currently, we only support running llama3 on MTL and only support the following parameters to quantize and inference:
+- quantification method: RTN
+- group_size: 32
+- batch_size: 1
+- num_beams 1
+
+```python
+import intel_extension_for_pytorch as ipex
+from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+from transformers import AutoTokenizer
+import torch
+
+device_map = "xpu"
+model_name ="meta-llama/Meta-Llama-3-8B"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "Once upon a time, there existed a little girl,"
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
+                                              device_map=device_map, load_in_4bit=True)
+
+model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, quantization_config=True, device=device_map)
+
+output = model.generate(inputs)
+```

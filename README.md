@@ -254,6 +254,7 @@ outputs = model.generate(inputs)
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
+import torch
 
 device_map = "xpu"
 model_name ="Qwen/Qwen-7B"
@@ -264,7 +265,7 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
 model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
                                               device_map=device_map, load_in_4bit=True)
 
-model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, quantization_config=True, device=device_map)
 
 output = model.generate(inputs)
 ```
