@@ -67,7 +67,7 @@ from ..llm.quantization.utils import (
     convert_to_quantized_model,
     replace_linear,
 )
-from ...tools.utils import get_gpu_family, is_ipex_available
+from ...tools.utils import is_intel_gpu_available, is_ipex_available
 from accelerate import init_empty_weights
 from huggingface_hub import hf_hub_download
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
@@ -84,7 +84,7 @@ from transformers.utils import (
 
 from typing import Union
 
-if is_ipex_available() and get_gpu_family() != "no_gpu":
+if is_ipex_available() and is_intel_gpu_available():
     # pylint: disable=E0401
     from intel_extension_for_pytorch.nn.utils._quantize_convert import (
         WeightOnlyQuantizedLinear,
@@ -94,8 +94,7 @@ torch = LazyImport("torch")
 
 
 def recover_export_model(model, current_key_name=None):
-    """
-    Private method that wraps the recursion for module replacement.
+    """Private method that wraps the recursion for module replacement.
 
     Return optimum format model.
     """
@@ -359,6 +358,7 @@ class _BaseQBitsAutoModelClass:
         config = kwargs.pop("config", None)
         model_hub = kwargs.pop("model_hub", "huggingface")
 
+        quantization_config = kwargs.pop("quantization_config", None)
         if not isinstance(config, PretrainedConfig):
             if model_hub == "modelscope":
                 import modelscope # pylint: disable=E0401
@@ -372,7 +372,6 @@ class _BaseQBitsAutoModelClass:
 
                 )
 
-        quantization_config = kwargs.pop("quantization_config", None)
         if kwargs.get("use_llm_runtime", None) is not None:
             use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
             logger.warning(
@@ -421,6 +420,29 @@ class _BaseQBitsAutoModelClass:
                     assert quantization_config.get("quant_method", None) in ConfigInit, \
                         "Detect this model is not a low-bit model."
                     quantization_config = ConfigInit[quantization_config["quant_method"]].from_dict(quantization_config)
+                    logger.info("Loading Low Bits model by Neural Speed.")
+                    quantization_config.post_init_runtime()
+
+                from neural_speed import Model
+
+                model = Model()
+                model.init( # pylint: disable=E1123
+                    pretrained_model_name_or_path,
+                    weight_dtype=quantization_config.weight_dtype,
+                    alg=quantization_config.scheme,
+                    group_size=quantization_config.group_size,
+                    scale_dtype=quantization_config.scale_dtype,
+                    compute_dtype=quantization_config.compute_dtype,
+                    use_ggml=quantization_config.use_ggml,
+                    use_quant=True,
+                    use_gptq=quantization_config.quant_method.value == "gptq"
+                    or quantization_config.quant_method.value == "autoround"
+                    or quantization_config.quant_method.value == "rtn",
+                    use_awq=quantization_config.quant_method.value == "awq",
+                    model_hub=model_hub,
+                )
+                model.quantization_config = quantization_config
+                return model
             else:
                 logger.info(
                     "quantization_config: {}".format(config.quantization_config)
@@ -560,7 +582,10 @@ class _BaseQBitsAutoModelClass:
         ):
             logger.info("Applying Weight Only Quantization.")
             if use_neural_speed:
-                logger.info("Using Neural Speed.")
+                if not isinstance(quantization_config, RtnConfig):
+                    logger.error("Only Supports RTN Quantization in Neural Speed.")
+                    exit(0)
+                logger.info("Quantize model by Neural Speed with RTN Algorithm.")
                 quantization_config.post_init_runtime()
                 from neural_speed import Model
 
@@ -574,9 +599,8 @@ class _BaseQBitsAutoModelClass:
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
                     use_quant=True,
-                    use_gptq=quantization_config.quant_method.value == "gptq"
-                    or quantization_config.quant_method.value == "autoround",
-                    use_awq=quantization_config.quant_method.value == "awq",
+                    use_gptq=False,
+                    use_awq=False,
                     model_hub=model_hub,
                 )
                 model.quantization_config = quantization_config
@@ -940,23 +964,39 @@ class _BaseQBitsAutoModelClass:
             )
             logger.info("SmoothQuant done.")
         else:
-            model = cls.ORIG_MODEL.from_pretrained(
-                pretrained_model_name_or_path, *model_args, config=config, **kwargs
-            )
-            if (
-                not torch.cuda.is_available()
-                or device_map == "cpu"
-                or device_map == torch.device("cpu")
-            ) and model.config.model_type == "chatglm":
-                model = model.float()
+            if use_neural_speed:
+                logger.info("Using Neural Speed with FP32 model dtype.")
+                from neural_speed import Model
 
-            model.eval()
+                model = Model()
+                model.init( # pylint: disable=E1123
+                    pretrained_model_name_or_path,
+                    weight_dtype="fp32",
+                    use_quant=False,
+                    use_gptq=False,
+                    use_awq=False,
+                    model_hub=model_hub,
+                )
+                model.quantization_config = None
+                return model
+            else:
+                model = cls.ORIG_MODEL.from_pretrained(
+                    pretrained_model_name_or_path, *model_args, config=config, **kwargs
+                )
+                if (
+                    not torch.cuda.is_available()
+                    or device_map == "cpu"
+                    or device_map == torch.device("cpu")
+                ) and model.config.model_type == "chatglm":
+                    model = model.float()
+
+                model.eval()
         return model
 
     @classmethod
     def load_low_bit(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        """
-        Load a low bit optimized model (including INT4, INT5 and INT8) from a saved ckpt.
+        """Load a low bit optimized model (including INT4, INT5 and INT8) from a saved ckpt.
+
         :param pretrained_model_name_or_path: str value, Path to load the optimized model ckpt.
         # :param optimize_model: boolean value, Whether to further optimize the low_bit llm model.
         #                        Default to be True.
@@ -1001,10 +1041,12 @@ class _BaseQBitsAutoModelClass:
         token = kwargs.get("token", None)
         from_pipeline = kwargs.get("_from_pipeline", None)
         from_auto_class = kwargs.get("_from_auto", False)
-        revision = kwargs.get("revision", "main")
+        revision = kwargs.pop("revision", "main")
         commit_hash = kwargs.pop("_commit_hash", None)
         _fast_init = kwargs.get("_fast_init", True)
         device_map = kwargs.pop("device_map", "auto")
+        # lm-eval device map is dictionary
+        device_map = device_map[""] if isinstance(device_map, dict) and "" in device_map else device_map
         use_safetensors = kwargs.get("use_safetensors", None)
 
         if use_safetensors is None and not is_safetensors_available():
@@ -1287,6 +1329,7 @@ class _BaseQBitsAutoModelClass:
                     if (
                         hasattr(config, "torch_dtype")
                         and config.torch_dtype is not None
+                        and config.torch_dtype != "auto"
                     ):
                         torch_dtype = config.torch_dtype
                     else:
@@ -1298,6 +1341,7 @@ class _BaseQBitsAutoModelClass:
                     assert (
                         False
                     ), f'`torch_dtype` can be either `torch.dtype` or `"auto"`, but received {torch_dtype}'
+
             dtype_orig = model_class._set_default_torch_dtype(torch_dtype)
         if quantization_config.compute_dtype is None:
             if use_xpu:

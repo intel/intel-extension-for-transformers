@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Utilities for instrumenting a torch model.
+"""Utilities for instrumenting a torch model.
 
 Trace will hook one layer at a time.
 TraceDict will hook multiple layers at once.
@@ -76,10 +74,8 @@ class Trace(contextlib.AbstractContextManager):
         edit_output=None,
         stop=False,
     ):
-        r"""
-        Method to replace a forward method with a closure that
-        intercepts the call, and tracks the hook so that it can be reverted.
-        """
+        r"""Method to replace a forward method with a closure that
+        intercepts the call, and tracks the hook so that it can be reverted."""
         retainer = self
         self.layer = layer
         if layer is not None:
@@ -214,9 +210,10 @@ class StopForward(Exception):
 
 
 def recursive_copy(x, clone=None, detach=None, retain_grad=None):
-    r"""
-    Copies a reference to a tensor, or an object that contains tensors,
-    optionally detaching and cloning the tensor(s).  If retain_grad is
+    r"""Copies a reference to a tensor, or an object that contains tensors,
+    optionally detaching and cloning the tensor(s).
+
+    If retain_grad is
     true, the original tensors are marked to have grads retained.
     """
     if not clone and not detach and not retain_grad:
@@ -249,8 +246,7 @@ def subsequence(
     single_layer=None,
     share_weights=False,
 ):
-    r"""
-    Creates a subsequence of a pytorch Sequential model, copying over
+    r"""Creates a subsequence of a pytorch Sequential model, copying over
     modules together with parameters for the subsequence.  Only
     modules from first_layer to last_layer (inclusive) are included,
     or modules between after_layer and upto_layer (exclusive).
@@ -284,9 +280,10 @@ def subsequence(
 def hierarchical_subsequence(
     sequential, first, last, after, upto, share_weights=False, depth=0
 ):
-    r"""
-    Recursive helper for subsequence() to support descent into dotted
-    layer names.  In this helper, first, last, after, and upto are
+    r"""Recursive helper for subsequence() to support descent into dotted
+    layer names.
+
+    In this helper, first, last, after, and upto are
     arrays of names resulting from splitting on dots.  Can only
     descend into nested Sequentials.
     """
@@ -355,10 +352,8 @@ def hierarchical_subsequence(
 
 
 def set_requires_grad(requires_grad, *models):
-    r"""
-    Sets requires_grad true or false for all parameters within the
-    models passed.
-    """
+    r"""Sets requires_grad true or false for all parameters within the
+    models passed."""
     for model in models:
         if isinstance(model, torch.nn.Module):
             for param in model.parameters():
@@ -370,9 +365,7 @@ def set_requires_grad(requires_grad, *models):
 
 
 def get_module(model, name):
-    r"""
-    Finds the named module within the given model.
-    """
+    r"""Finds the named module within the given model."""
     for n, m in model.named_modules():
         if n == name:
             return m
@@ -380,9 +373,7 @@ def get_module(model, name):
 
 
 def get_parameter(model, name):
-    r"""
-    Finds the named parameter within the given model.
-    """
+    r"""Finds the named parameter within the given model."""
     for n, p in model.named_parameters():
         if n == name:
             return p
@@ -390,9 +381,7 @@ def get_parameter(model, name):
 
 
 def replace_module(model, name, new_module):
-    r"""
-    Replaces the named module within the given model.
-    """
+    r"""Replaces the named module within the given model."""
     if "." in name:
         parent_name, attr_name = name.rsplit(".", 1)
         model = get_module(model, parent_name)
@@ -401,10 +390,10 @@ def replace_module(model, name, new_module):
 
 
 def invoke_with_optional_args(fn, *args, **kwargs):
-    r"""
-    Invokes a function with only the arguments that it
+    r"""Invokes a function with only the arguments that it
     is written to accept, giving priority to arguments
     that match by-name, using the following rules.
+
     (1) arguments with matching names are passed by name.
     (2) remaining non-name-matched args are passed by order.
     (3) extra caller arguments that the function cannot

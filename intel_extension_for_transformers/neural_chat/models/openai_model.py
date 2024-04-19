@@ -16,7 +16,7 @@
 # limitations under the License.
 
 from .base_model import BaseModel
-from openai import OpenAI
+from openai import OpenAI # pylint: disable=E0401
 import logging
 from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
@@ -33,9 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class OpenAIModel(BaseModel):
-    """
-    Customized class to operate on OpenAI models in the pipeline.
-    """
+    """Customized class to operate on OpenAI models in the pipeline."""
     def __init__(self, model_name, task, openai_config):
         self.api_key = openai_config.api_key
         self.organization = openai_config.organization

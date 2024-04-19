@@ -57,8 +57,9 @@ def document_append_id(documents):
 
 
 class Agent_QA():
-    """
-    The agent for retrieval-based chatbot. Contains all parameters setting and file parsing.
+    """The agent for retrieval-based chatbot.
+
+    Contains all parameters setting and file parsing.
     """
     def __init__(self,
                  vector_database="Chroma",
@@ -210,8 +211,9 @@ class Agent_QA():
         logging.info("The retriever is successfully built.")
 
     def reload_localdb(self, local_persist_dir, **kwargs):
-        """
-        Reload the local existed knowledge base. Do not support inmemory database.
+        """Reload the local existed knowledge base.
+
+        Do not support inmemory database.
         """
         assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), \
             "Please check the local knowledge base was built!"
@@ -232,9 +234,7 @@ class Agent_QA():
 
 
     def create(self, input_path, **kwargs):
-        """
-        Create a new knowledge base based on the uploaded files.
-        """
+        """Create a new knowledge base based on the uploaded files."""
         data_collection = self.document_parser.load(input=input_path, **kwargs)
         langchain_documents = document_transfer(data_collection, self.min_chuck_size)
 

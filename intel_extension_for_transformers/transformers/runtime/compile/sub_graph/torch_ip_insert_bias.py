@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The TorchInnerProductInsertBias Pattern."""
 
 from .pattern import Pattern, pattern_registry
@@ -26,9 +25,7 @@ import numpy as np
 
 @pattern_registry(pattern_type='TorchInnerProductInsertBias')
 class TorchInnerProductInsertBias(Pattern):
-    """The TorchInnerProductInsertBias pattern.
-
-    """
+    """The TorchInnerProductInsertBias pattern."""
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         if model.framework_modeling_config['framework'] != 'torch' or not util.get_quant_info():

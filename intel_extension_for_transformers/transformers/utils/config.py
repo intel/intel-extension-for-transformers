@@ -83,8 +83,7 @@ class SparsityConfig(PretrainedConfig):
 
     @classmethod
     def from_dict(cls, config_dict, return_unused_kwargs=False, **kwargs):
-        """
-        Instantiates a [`SparsityConfig`] from a Python dictionary of parameters.
+        """Instantiates a [`SparsityConfig`] from a Python dictionary of parameters.
 
         Args:
             config_dict (`Dict[str, Any]`):
@@ -123,8 +122,7 @@ class SparsityConfig(PretrainedConfig):
     def to_json_file(
         self, json_file_path: Union[str, os.PathLike], use_diff: bool = True
     ):
-        """
-        Save this instance to a JSON file.
+        """Save this instance to a JSON file.
 
         Args:
             json_file_path (`str` or `os.PathLike`):
@@ -134,9 +132,10 @@ class SparsityConfig(PretrainedConfig):
             writer.write(self.to_json_string(use_diff=use_diff))
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Serializes this instance to a Python dictionary. Returns:
-            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance.
+        """Serializes this instance to a Python dictionary.
+
+        Returns:
+        `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance.
         """
 
         output = copy.deepcopy(self.__dict__)
@@ -146,8 +145,7 @@ class SparsityConfig(PretrainedConfig):
         return f"{self.__class__.__name__} {self.to_json_string()}"
 
     def to_json_string(self, use_diff: bool = True) -> str:
-        """
-        Serializes this instance to a JSON string.
+        """Serializes this instance to a JSON string.
 
         Args:
             use_diff (`bool`, *optional*, defaults to `True`):
@@ -166,9 +164,8 @@ class SparsityConfig(PretrainedConfig):
         return json.dumps(config_dict, indent=2, sort_keys=True) + "\n"
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes for better
+        readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -193,8 +190,7 @@ class SparsityConfig(PretrainedConfig):
         push_to_hub: bool = False,
         **kwargs,
     ):
-        """
-        Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
+        """Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
         [`~PretrainedConfig.from_pretrained`] class method.
 
         Args:
@@ -264,13 +260,10 @@ class QuantizationMethod(str, Enum):
 
 
 class ITREXQuantizationConfigMixin(QuantizationConfig):
-    """
-    Mixin class for quantization config
-    """
+    """Mixin class for quantization config."""
 
     def update(self, **kwargs):
-        """
-        Updates attributes of this class instance with attributes from `kwargs` if they match existing atributtes,
+        """Updates attributes of this class instance with attributes from `kwargs` if they match existing atributtes,
         returning all the unused kwargs.
 
         Args:
@@ -291,9 +284,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         return unused_kwargs
 
     def post_init_cpu(self):
-        r"""
-        Safety checker that arguments are correct
-        """
+        r"""Safety checker that arguments are correct."""
 
         if self.compute_dtype is not None and self.compute_dtype not in [
             "fp32",
@@ -443,6 +434,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         runtime_supported_weight_dtype = [
             "int4",
             "int4_clip",  # int4_clip will merge to int4 in next release.
+            "int4_fullrange", # int4_fullrange will merge to int4 in next release.
             "int8",
             "fp8",
             "fp8_e5m2",
@@ -475,6 +467,8 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
         elif self.weight_dtype == "int4_clip":
+            self.weight_dtype == "int4"
+        elif self.weight_dtype == "int4_fullrange":
             self.weight_dtype == "int4"
         elif self.weight_dtype == "fp8":
             self.weight_dtype == "fp8_e4m3"
@@ -549,8 +543,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
     def to_json_file(
         self, json_file_path: Union[str, os.PathLike], use_diff: bool = True
     ):
-        """
-        Save this instance to a JSON file.
+        """Save this instance to a JSON file.
 
         Args:
             json_file_path (`str` or `os.PathLike`):
@@ -581,8 +574,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         push_to_hub: bool = False,
         **kwargs,
     ):
-        """
-        Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
+        """Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
         [`~PretrainedConfig.from_pretrained`] class method.
 
         Args:
@@ -677,9 +669,8 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = None
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -778,9 +769,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.post_init_gptq()
 
     def post_init_gptq(self):
-        r"""
-        Safety checker that arguments are correct
-        """
+        r"""Safety checker that arguments are correct."""
 
         if self.bits not in [4, 8]:
             raise ValueError(
@@ -791,9 +780,8 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             raise ValueError("damp_percent must between 0 and 1.")
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -858,9 +846,8 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.sym = True if not self.zero_point else False
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -920,9 +907,8 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = kwargs.get("calib_iters", 100)
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -1014,9 +1000,8 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
             self.double_quant_scale_dtype = double_quant_scale_dtype
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,

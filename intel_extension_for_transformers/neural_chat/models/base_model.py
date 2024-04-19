@@ -59,14 +59,10 @@ def construct_parameters(query, model_name, device, assistant_model, config):
     return params
 
 class BaseModel(ABC):
-    """
-    A base class for LLM.
-    """
+    """A base class for LLM."""
 
     def __init__(self, model_name, task="chat"):
-        """
-        Initializes the BaseModel class.
-        """
+        """Initializes the BaseModel class."""
         self.model_name = model_name
         self.asr = None
         self.tts = None
@@ -85,8 +81,7 @@ class BaseModel(ABC):
         self.get_conv_template(task)
 
     def match(self):
-        """
-        Check if the provided model_name matches the current model.
+        """Check if the provided model_name matches the current model.
 
         Returns:
             bool: True if the model_name matches, False otherwise.
@@ -94,8 +89,7 @@ class BaseModel(ABC):
         return True
 
     def load_model(self, kwargs: dict):
-        """
-        Load the model using the provided arguments.
+        """Load the model using the provided arguments.
 
         Args:
             kwargs (dict): A dictionary containing the configuration parameters for model loading.
@@ -111,6 +105,7 @@ class BaseModel(ABC):
             "use_cache": True,
             "peft_path": "/path/to/peft",
             "use_deepspeed": False,
+            "use_tpp": False,
             "hf_access_token": "user's huggingface access token",
             "assistant_model": "assistant model name to speed up inference",
             "use_vllm": "whether to use vllm for serving",
@@ -133,6 +128,7 @@ class BaseModel(ABC):
                    use_cache=kwargs["use_cache"],
                    peft_path=kwargs["peft_path"],
                    use_deepspeed=kwargs["use_deepspeed"],
+                   use_tpp=kwargs["use_tpp"],
                    optimization_config=kwargs["optimization_config"],
                    hf_access_token=kwargs["hf_access_token"],
                    use_neural_speed=kwargs["use_neural_speed"],
@@ -142,8 +138,7 @@ class BaseModel(ABC):
                    gguf_model_path=kwargs["gguf_model_path"])
 
     def predict_stream(self, query, origin_query="", config=None):
-        """
-        Predict using a streaming approach.
+        """Predict using a streaming approach.
 
         Args:
             query: The input query for prediction.
@@ -269,8 +264,7 @@ class BaseModel(ABC):
         return response, link
 
     def predict(self, query, origin_query="", config=None):
-        """
-        Predict using a non-streaming approach.
+        """Predict using a non-streaming approach.
 
         Args:
             query: The input query for prediction.
@@ -387,8 +381,7 @@ class BaseModel(ABC):
         return response
 
     def chat_stream(self, query, origin_query="", config=None):
-        """
-        Chat using a streaming approach.
+        """Chat using a streaming approach.
 
         Args:
             query: The input query for prediction.
@@ -398,8 +391,7 @@ class BaseModel(ABC):
         return self.predict_stream(query=query, origin_query=origin_query, config=config)
 
     def chat(self, query, origin_query="", config=None):
-        """
-        Chat using a non-streaming approach.
+        """Chat using a non-streaming approach.
 
         Args:
             query: The input query for conversation.
@@ -434,8 +426,7 @@ class BaseModel(ABC):
         return video_path
 
     def get_default_conv_template(self) -> Conversation:
-        """
-        Get the default conversation template for the given model path.
+        """Get the default conversation template for the given model path.
 
         Args:
             model_path (str): Path to the model.
@@ -446,8 +437,7 @@ class BaseModel(ABC):
         return get_conv_template("zero_shot")
 
     def get_conv_template(self, model_path: str, task: str = "") -> Conversation:
-        """
-        Get the conversation template for the given model path or given task.
+        """Get the conversation template for the given model path or given task.
 
         Args:
             model_path (str): Path to the model.
@@ -488,8 +478,7 @@ class BaseModel(ABC):
             self.conv_template.conv.system_message = system_prompts
 
     def register_plugin_instance(self, plugin_name, instance):
-        """
-        Register a plugin instance.
+        """Register a plugin instance.
 
         Args:
             instance: An instance of a plugin.

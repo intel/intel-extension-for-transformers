@@ -19,5 +19,6 @@ torch==2.1.0a0
 torchaudio==2.1.0a0
 torchvision==0.16.0a0
 transformers>=4.35.2
+transformers_stream_generator
 uvicorn
 yacs

@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""A controller manages distributed workers.
 
-"""
-A controller manages distributed workers.
 It sends worker addresses to clients.
 """
 import argparse
@@ -408,11 +407,9 @@ def generate_random_data():
 @app.post("/api/chat")
 async def handle_chat(request: Request):
     logger.info('Received request: %s', await request.json())
-    """
-    request.headers["Content-Type"] = "text/event-stream"
+    """request.headers["Content-Type"] = "text/event-stream"
     request.headers["Cache-Control"] = "no-cache"
-    request.headers["Connection"] = "keep-alive"
-    """
+    request.headers["Connection"] = "keep-alive"."""
 
     async def event_stream():
          while True:

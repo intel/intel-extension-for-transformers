@@ -49,7 +49,6 @@ text_encoder_pattern_config = {
         'AttentionBlock_QKVPreReshape': False,
         'AttentionBlock_AttentionMaskAddReshape': False,
         'AttentionBlock_ConstantOfShapeWithMul': False,
-
         'Transformer2Dmodel_GetSampleBatch': False,
         'Transformer2Dmodel_SampleSlice': False,
         'Transformer2Dmodel_EncoderHiddenStatesReshape': False,
@@ -111,7 +110,6 @@ unet_pattern_config = {
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,
         'AttentionBlock_ConstantOfShapeWithMul': True,
-
         'Transformer2Dmodel_GetSampleBatch': True,
         'Transformer2Dmodel_SampleSlice': True,
         'Transformer2Dmodel_EncoderHiddenStatesReshape': True,
@@ -173,7 +171,6 @@ qat_unet_pattern_config = {
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,
         'AttentionBlock_ConstantOfShapeWithMul': True,
-
         'Transformer2Dmodel_GetSampleBatch': True,
         'Transformer2Dmodel_SampleSlice': True,
         'Transformer2Dmodel_EncoderHiddenStatesReshape': True,
@@ -243,7 +240,6 @@ vae_decoder_pattern_config = {
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,
         'AttentionBlock_ConstantOfShapeWithMul': True,
-
         'Transformer2Dmodel_GetSampleBatch': True,
         'Transformer2Dmodel_SampleSlice': True,
         'Transformer2Dmodel_EncoderHiddenStatesReshape': True,

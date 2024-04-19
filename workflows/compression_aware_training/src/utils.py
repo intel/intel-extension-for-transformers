@@ -32,8 +32,8 @@ task_to_keys = {
 
 @dataclass
 class DataTrainingArguments:
-    """
-    Arguments pertaining to what data we are going to input our model for training and eval.
+    """Arguments pertaining to what data we are going to input our model for training and eval.
+
     Using `HfArgumentParser` we can turn this class
     into argparse arguments to be able to specify them on
     the command line.
@@ -132,9 +132,7 @@ class DataTrainingArguments:
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
-    """
+    """Arguments pertaining to which model/config/tokenizer we are going to fine-tune from."""
 
     model_name_or_path: str = field(
         metadata={
@@ -182,9 +180,7 @@ class ModelArguments:
 
 @dataclass
 class OptimizationArguments:
-    """
-    Arguments pertaining to what type of optimization we are going to apply on the model.
-    """
+    """Arguments pertaining to what type of optimization we are going to apply on the model."""
 
     sat: bool = field(
         default=False,

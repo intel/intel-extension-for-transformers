@@ -23,7 +23,7 @@ import os.path as path
 
 
 def neural_engine_bin():
-    ''' Entry point for C++ interface '''
+    """Entry point for C++ interface."""
     neural_engine_bin = path.join(
         intel_extension_for_transformers.__path__[0], 'neural_engine_bin')
     raise SystemExit(subprocess.call(

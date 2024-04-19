@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Do optional cleaning (e.g., remove some languages).
+"""Do optional cleaning (e.g., remove some languages).
 
 Usage:
 python3 -m fastchat.data.optional_clean --in input.json --out output.json --keep-lang en

@@ -52,8 +52,7 @@ class BgeReranker(BaseDocumentCompressor):
         query: str,
         callbacks: Optional[Callbacks] = None,
     ) -> Sequence[Document]:
-        """
-        Compress documents using BAAI/bge-reranker models.
+        """Compress documents using BAAI/bge-reranker models.
 
         Args:
             documents: A sequence of documents to compress.

@@ -1,0 +1,27 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+cchardet
+einops
+evaluate
+fastapi
+fschat==0.2.35
+huggingface_hub
+intel-extension-for-transformers
+lm-eval
+neural-compressor
+numpy==1.23.5
+optimum
+optimum-intel
+peft
+pydantic==1.10.13
+python-dotenv
+python-multipart
+rouge_score
+sacremoses
+shortuuid
+starlette
+torch==2.2.0
+torchaudio==2.2.0
+transformers
+transformers_stream_generator
+uvicorn
+yacs

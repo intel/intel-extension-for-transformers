@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Usage:
 python3 -m fastchat.data.inspect --in sharegpt_20230322_clean_lang_split.json

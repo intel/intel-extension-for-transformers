@@ -108,8 +108,8 @@ class LlavaMetaModel:
 
 
 def unpad_image(tensor, original_size):
-    """
-    Unpads a PyTorch tensor of a padded and resized image.
+    """Unpads a PyTorch tensor of a padded and resized image.
+
     Args:
     tensor (torch.Tensor): The image tensor, assumed to be in CxHxW format.
     original_size (tuple): The original size of the image (height, width).

@@ -11,6 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
+* [2024/04] Demonstrated the chatbot in 4th, 5th, and 6th Gen Xeon Scalable Processors in [**Intel Vision Pat's Keynote**](https://youtu.be/QB7FoIpx8os?t=2280).
 * [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (e.g., PVC) and Intel Arc A-Series (e.g., ARC). Check out the [examples](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [scripts](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py).
 * [2024/01] Demonstrated **Intel Hybrid Copilot** in **CES 2024 Great Minds** Session "[Bringing the Limitless Potential of AI Everywhere](https://youtu.be/70J3uO3eLZA?t=1348)".
 * [2023/12] Supported **QLoRA on CPUs** to make fine-tuning on client CPU possible. Check out the [blog](https://medium.com/@NeuralCompressor/creating-your-own-llms-on-your-laptop-a08cc4f7c91b) and [readme](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md) for more details.
@@ -237,14 +238,13 @@ You can also load the low-bit model quantized by GPTQ/AWQ/RTN/AutoRound algorith
 from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, GPTQConfig
 
-# Download Hugging Face GPTQ/AWQ model or use local quantize model
-model_name = "PATH_TO_MODEL"  # local path to model
-woq_config = GPTQConfig(bits=4)   # use AwqConfig for AWQ models, and AutoRoundConfig for AutoRound models
+# Hugging Face GPTQ/AWQ model or use local quantize model
+model_name = "MODEL_NAME_OR_PATH"
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
 outputs = model.generate(inputs)
 ```
 
@@ -369,6 +369,9 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 https://github.com/intel/intel-extension-for-transformers/assets/88082706/9d9bdb7e-65db-47bb-bbed-d23b151e8b31
 
 ## 📃Selected Publications/Events
+* Blog published on Techcrunch: [Intel and others commit to building open generative AI tools for the enterprise](https://techcrunch.com/2024/04/16/intel-and-others-commit-to-building-open-generative-ai-tools-for-the-enterprise) (Apr 2024)
+* Video on YouTube: [Intel Vision Keynotes 2024](https://www.youtube.com/watch?v=QB7FoIpx8os&t=2280s) (Apr 2024)
+* Blog published on Vectara: [Do Smaller Models Hallucinate More?](https://vectara.com/blog/do-smaller-models-hallucinate-more) (Apr 2024)
 * Blog of Intel Developer News: [Use the neural-chat-7b Model for Advanced Fraud Detection: An AI-Driven Approach in Cybersecurity](https://www.intel.com/content/www/us/en/developer/articles/technical/bilics-approach-cybersecurity-using-neuralchat-7b.html) (March 2024)
 * CES 2024: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
 * Blog published on Medium: [Connect an AI agent with your API: Intel Neural-Chat 7b LLM can replace Open AI Function Calling](https://medium.com/11tensors/connect-an-ai-agent-with-your-api-intel-neural-chat-7b-llm-can-replace-open-ai-function-calling-242d771e7c79) (Dec 2023)
