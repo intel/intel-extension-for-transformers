@@ -165,7 +165,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 	</tbody>
 </table>
 
-> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [Intel GPU](https://github.com/intel/intel-extension-for-transformers/blob/main/requirements-xpu.txt).
+> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [Intel GPU](intel_extension_for_transformers/neural_chat/requirements-xpu.txt).
 
 ## 🔓Validated OS
 Ubuntu 20.04/22.04, Centos 8.
