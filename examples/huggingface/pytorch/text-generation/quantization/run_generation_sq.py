@@ -215,7 +215,7 @@ if quantization_config is not None:
             user_model.save_pretrained(args.output_dir)
         args.model = args.output_dir
 
-if args.int8:
+if args.int8 or args.int8_bf16_mixed:
     print("Loading SmoothQuant model from: ", args.model)
     import intel_extension_for_pytorch as ipex
     from intel_extension_for_transformers.transformers.llm.evaluation.models import (
@@ -316,6 +316,6 @@ if args.accuracy:
     results = evaluate(args)
     for task_name in args.tasks.split(","):
         if task_name == "wikitext":
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity,none"]))
         else:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc,none"]))

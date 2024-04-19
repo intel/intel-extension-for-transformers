@@ -8,7 +8,7 @@ einops
 evaluate
 gguf
 git+https://github.com/intel/neural-compressor.git
-git+https://github.com/intel/neural-speed.git@3e0d643b1baf1f9b15733a4ddc1e54fc93ef8051
+git+https://github.com/intel/neural-speed.git
 intel-extension-for-pytorch==2.2.0
 intel-tensorflow==2.14.0
 lm-eval==0.4.2
@@ -22,7 +22,7 @@ py-cpuinfo
 sacremoses
 sentencepiece != 0.1.92
 tiktoken
-tokenizers
+tokenizers==0.15.2
 torch==2.2.0+cpu
 torchprofile
 torchvision==0.17.0+cpu
