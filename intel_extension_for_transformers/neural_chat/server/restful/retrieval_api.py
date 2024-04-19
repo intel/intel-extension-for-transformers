@@ -35,7 +35,6 @@ from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse, JSONResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...plugins import plugins
-from ...pipeline.plugins.retrieval.parser.context_utils import clean_filename
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -194,6 +193,7 @@ def get_file_structure(root_path: str, parent_path: str="") -> List[Dict[str, Un
 
 def save_link_content(link_list: List, link_content: List, upload_path):
     file_names = []
+    from ...pipeline.plugins.retrieval.parser.context_utils import clean_filename
     for link, content in zip(link_list, link_content):
         logger.info(f"= save link = link: {link}, content: {content}")
         file_name = clean_filename(link)+".jsonl"

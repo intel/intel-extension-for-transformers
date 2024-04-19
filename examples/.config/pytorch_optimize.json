@@ -1390,7 +1390,8 @@
       "params": {
         "topology": "llama2_7b_gptq",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
@@ -1413,7 +1414,8 @@
       "params": {
         "topology": "gpt_j_woq_bab",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
@@ -1436,7 +1438,8 @@
       "params": {
         "topology": "gpt_j_woq_rtn",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
@@ -1459,7 +1462,8 @@
       "params": {
         "topology": "gpt_j_woq_load4bit",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
@@ -1482,7 +1486,8 @@
       "params": {
         "topology": "gpt_j_woq_load8bit",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int8"
       }
     },
     "benchmark": {
@@ -1728,14 +1733,16 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "model": "/tf_dataset2/models/pytorch/Mistral-7B-v0.1",
-        "output_dir": "saved_results"
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "model": "/tf_dataset2/models/nlp_toolkit/mistral_7b_rtn",
-        "mode": "benchmark"
+        "mode": "benchmark",
+        "output_dir": "saved_results"
       }
     }
   },
@@ -1745,14 +1752,16 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "model": "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf",
-        "output_dir": "saved_results"
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "model": "/tf_dataset2/models/nlp_toolkit/llama2_rtn",
-        "mode": "benchmark"
+        "mode": "benchmark",
+        "output_dir": "saved_results"
       }
     }
   },
@@ -1762,14 +1771,16 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "model": "/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat",
-        "output_dir": "saved_results"
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "model": "/tf_dataset2/models/nlp_toolkit/qwen_rtn",
-        "mode": "benchmark"
+        "mode": "benchmark",
+        "output_dir": "saved_results"
       }
     }
   },

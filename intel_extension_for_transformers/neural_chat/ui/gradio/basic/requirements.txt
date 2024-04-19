@@ -1,11 +1,12 @@
 diffusers==0.8.1
 fschat
-gradio
+gradio==3.36.0
 huggingface_hub
 markdown2
 nh3
 openai
 pip
+pydantic==1.10.13
 requests
 torch==2.2.0
 transformers
