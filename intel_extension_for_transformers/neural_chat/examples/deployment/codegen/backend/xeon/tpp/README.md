@@ -175,4 +175,3 @@ To start the code-generating chatbot server, use the following command:
 ```shell
 bash run.sh
 ```
-
