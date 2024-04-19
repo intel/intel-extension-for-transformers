@@ -29,8 +29,7 @@ sudo apt install numactl
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd ./intel-extension-for-transformers/
-pip install -r requirements.txt
-pip install -e .
+python setup.py install
 ```
 
 # Install NeuralChat Python Dependencies
@@ -97,7 +96,7 @@ vim ../../../../../../server/config/hostfile
     localhost slots=1
 ```
 
-# Run the Code Generation Chatbot Server
+## Run the Code Generation Chatbot Server
 
 To start the code-generating chatbot server, use the following command:
 

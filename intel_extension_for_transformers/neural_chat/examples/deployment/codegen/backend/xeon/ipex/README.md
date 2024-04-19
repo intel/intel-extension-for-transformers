@@ -28,8 +28,7 @@ sudo apt install numactl
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd ./intel-extension-for-transformers/
-pip install -r requirements.txt
-pip install -e .
+python setup.py install
 ```
 
 # Install NeuralChat Python Dependencies
@@ -38,6 +37,12 @@ Install neuralchat dependencies:
 
 ```bash
 pip install -r ../../../../../../requirements_cpu.txt
+```
+
+# Install Python dependencies
+```bash
+conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y
+conda install jemalloc gperftools -c conda-forge -y
 ```
 
 # Configure the codegen.yaml
