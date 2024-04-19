@@ -35,20 +35,20 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_sq.py \
     --model <MODEL_NAME_OR_PATH> \
     --sq \
-    --output_dir <WOQ_MODEL_SAVE_PATH> \ # Default is "./saved_results."
+    --output_dir <SQ_MODEL_SAVE_PATH> \ # Default is "./saved_results."
     --int8 \
     --benchmark \
     --batch_size 1
 # load SQ model quantied by itrex and do benchmark.
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_sq.py \
-    --model <WOQ_MODEL_SAVE_PATH> \
+    --model <SQ_MODEL_SAVE_PATH> \
     --int8 \
     --benchmark \
     --batch_size 1
 # load SQ model quantied configure.json and do benchmark.
 python run_generation_sq.py \
     --model <MODEL_NAME_OR_PATH> \
-    --output_dir <WOQ_MODEL_SAVE_PATH> \
+    --output_dir <SQ_MODEL_SAVE_PATH> \
     --int8 \
     --restore \
     --benchmark \
@@ -67,14 +67,14 @@ python run_generation_sq.py \
 python run_generation_sq.py \
     --model <MODEL_NAME_OR_PATH> \
     --sq \
-    --output_dir <WOQ_MODEL_SAVE_PATH> \ # Default is "./saved_results."
+    --output_dir <SQ_MODEL_SAVE_PATH> \ # Default is "./saved_results."
     --int8 \
     --accuracy \
     --batch_size 56 
 
 # load SQ model quantied by itrex and do benchmark.
 python run_generation_sq.py \
-    --model <WOQ_MODEL_SAVE_PATH> \
+    --model <SQ_MODEL_SAVE_PATH> \
     --int8 \
     --accuracy \
     --batch_size 56 
@@ -82,7 +82,7 @@ python run_generation_sq.py \
 # load SQ model quantied configure.json and do benchmark.
 python run_generation_sq.py \
     --model <MODEL_NAME_OR_PATH> \
-    --output_dir <WOQ_MODEL_SAVE_PATH> \
+    --output_dir <SQ_MODEL_SAVE_PATH> \
     --int8 \
     --restore \
     --accuracy \
