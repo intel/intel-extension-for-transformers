@@ -178,29 +178,29 @@ class KVCache(torch.nn.Module):
             ), f"inp_seq_len must be the same. self.inp_seq_len:{self.inp_seq_len} inp_seq_len:{inp_seq_len}"
             self.cache.fill_(0)
 
-    def update(self, prev, cur, dim, idx, inp_seq_len, reuse_cache=True):
+    def update(self, prev, cur, dim, idx, inp_seq_len):
         orig_cur = cur
         if prev.shape == cur.shape:
             prev.copy_(cur)
             return orig_cur
-        if reuse_cache:
-            if cur.shape[2] > 1 and cur.shape[2] <= prev.shape[2]:
-                # Initialize
-                prev[:, :, :inp_seq_len, :].copy_(cur)
-                return orig_cur
-            assert cur.shape[2] == 1, f"Cannot update kv-cache. Unsupported shapes. prev:{prev.shape} cur:{cur.shape}"
-            if idx is not None:
-                prev.index_copy_(dim, idx - 1, cur)
-                return prev
-        return torch.cat((prev, cur), dim=dim)
+        if cur.shape[2] > 1 and cur.shape[2] <= prev.shape[2]:
+            # Initialize
+            prev[:, :, :inp_seq_len, :].copy_(cur)
+            return orig_cur
+        assert cur.shape[2] == 1, f"Cannot update kv-cache. Unsupported shapes. prev:{prev.shape} cur:{cur.shape}"
+        if idx is not None:
+            prev.index_copy_(dim, idx - 1, cur)
+            return prev
+        else:
+            return torch.cat((prev, cur), dim=dim)
 
     def get_shape(self):
         if self.cache is None:
             return None
         return self.cache.shape
 
-    def forward(self, cur, dim, idx, reuse_cache=True):
-        return self.update(self.cache, cur, dim, idx, self.inp_seq_len, reuse_cache=reuse_cache)
+    def forward(self, cur, dim, idx):
+        return self.update(self.cache, cur, dim, idx, self.inp_seq_len)
 
 
 class GaudiLlamaRotaryEmbedding(torch.nn.Module):
@@ -399,10 +399,8 @@ class GaudiLlamaAttention(LlamaAttention):
                         key_states.shape, dtype=self.k_proj.weight.dtype, device=key_states.device
                     )
                     past_key_value = (past_key, past_value)
-                key_states = self.k_cache.update(past_key_value[0], key_states, 2, token_idx, self.inp_seq_len,
-                                                 reuse_cache=False)
-                value_states = self.v_cache.update(past_key_value[1], value_states, 2, token_idx, self.inp_seq_len,
-                                                   reuse_cache=False)
+                key_states = self.k_cache.update(past_key_value[0], key_states, 2, token_idx, self.inp_seq_len)
+                value_states = self.v_cache.update(past_key_value[1], value_states, 2, token_idx, self.inp_seq_len)
                 if token_idx is None:
                     past_key_value = (key_states, value_states)
 

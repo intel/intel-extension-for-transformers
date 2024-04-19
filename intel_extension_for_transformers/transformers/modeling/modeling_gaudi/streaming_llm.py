@@ -43,9 +43,11 @@ def enable_streaming_llm(model, attention_sink_size, window_size):
         k_seq_dim = v_seq_dim = 2
         from .models.llama.pos_shift_llama import (
             enable_gaudi_llama_pos_shift_attention,
+            enable_gaudi_llama_cont_cat_kv_cache
         )
 
         enable_gaudi_llama_pos_shift_attention(model)
+        enable_gaudi_llama_cont_cat_kv_cache(model)
     else:
         raise ValueError(f"got {model.config.model_type}")
     kv_cache = AttentionSinkKVCache(

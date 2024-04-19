@@ -32,16 +32,18 @@
 
 
 import os
+import sys
 import argparse
 from typing import Any, Dict, List
 
 import torch
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextStreamer
-from intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models import GaudiLlamaForCausalLM
+import habana_frameworks.torch.core as htcore
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import adapt_transformers_to_gaudi
 from utils import print_memory_stats
-import habana_frameworks.torch.core as htcore
 
 
 def create_prompts(samples: Dict[str, List[Any]]) -> Dict[str, Any]:
@@ -73,6 +75,7 @@ def greedy_generate(model, tokenizer, dataset, kv_cache=None, max_new_tokens=512
             outputs = model(input_ids, past_key_values=past_key_values, use_cache=True, reuse_cache=False)
             htcore.mark_step()
             past_key_values = outputs.past_key_values
+            # print("past_key_values dtype:", past_key_values[0][0].dtype)
             pred_token_idx = outputs.logits[:, -1, :].argmax(dim=-1).unsqueeze(1)
             streamer.put(pred_token_idx)
             input_ids = pred_token_idx
@@ -157,9 +160,19 @@ def main():
                                         window_size=args.window_size
         )
     else:
+        from intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.llama.pos_shift_llama \
+            import enable_gaudi_llama_cont_cat_kv_cache
+        enable_gaudi_llama_cont_cat_kv_cache(model)
         kv_cache = None
+        if args.quant_config or args.fp8:
+            print("Error: can not use fp8 when not using attention sinks.")
+            exit(0)
 
     # Set up model
+    if args.fp8:
+        import habana_frameworks.torch.core as htcore
+        htcore.hpu_set_env()
+
     if args.quant_config:
         import habana_quantization_toolkit
         habana_quantization_toolkit.prep_model(model)
@@ -176,13 +189,13 @@ def main():
         if const_marking == "True":
             htcore.hpu_initialize(model)
     model.generation_config.use_flash_attention = False
+    # print(model)
     print(model.generation_config)
 
     # Set up the dataset
     dataset = load_dataset(args.dataset_name, split="train")
     dataset = dataset.map(create_prompts, batched=True, remove_columns=dataset.column_names)
 
-    print(model)
     greedy_generate(model, tokenizer, dataset, kv_cache=kv_cache,
                     max_new_tokens=args.max_new_tokens, n_round=args.n_sample)
 
