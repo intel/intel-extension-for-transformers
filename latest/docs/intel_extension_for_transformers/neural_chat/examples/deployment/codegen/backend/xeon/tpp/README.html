@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup Conda &mdash; Intel® Extension for Transformers 0.1.dev1+g1663aad documentation</title>
+  <title>Setup Conda &mdash; Intel® Extension for Transformers 0.1.dev1+g307ab8e documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../../_static/graphviz.css?v=fd3f3429" />
@@ -113,8 +113,7 @@ conda<span class="w"> </span>activate<span class="w"> </span>demo
 <h1>Install ITREX<a class="headerlink" href="#install-itrex" title="Link to this heading"></a></h1>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git
 <span class="nb">cd</span><span class="w"> </span>./intel-extension-for-transformers/
-pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+python<span class="w"> </span>setup.py<span class="w"> </span>install
 </pre></div>
 </div>
 </section>
@@ -153,24 +152,81 @@ python<span class="w"> </span>setup.py<span class="w"> </span>install
 </pre></div>
 </div>
 </section>
-<section id="configure-multi-numanodes">
-<h1>Configure Multi-NumaNodes<a class="headerlink" href="#configure-multi-numanodes" title="Link to this heading"></a></h1>
-<p>To use the multi-socket model parallelism with Xeon servers, you need to configure a hostfile first.</p>
-<p>Here is a example using 3 numa nodes on single socket on GNR server.</p>
+<section id="configure-the-codegen-yaml">
+<h1>Configure the codegen.yaml<a class="headerlink" href="#configure-the-codegen-yaml" title="Link to this heading"></a></h1>
+<p>You can customize the configuration file ‘codegen.yaml’ to match your environment setup. Here’s a table to help you understand the configurable options:</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>host</td>
+<td>0.0.0.0</td>
+</tr>
+<tr>
+<td>port</td>
+<td>8000</td>
+</tr>
+<tr>
+<td>model_name_or_path</td>
+<td>"Phind/Phind-CodeLlama-34B-v2"</td>
+</tr>
+<tr>
+<td>device</td>
+<td>"cpu"</td>
+</tr>
+<tr>
+<td>use_tpp</td>
+<td>true</td>
+</tr>
+<tr>
+<td>tasks_list</td>
+<td>['codegen']</td>
+</tr>
+</tbody>
+</table><p>Note: To switch from code generation to text generation mode, adjust the model_name_or_path settings accordingly, e.g. the model_name_or_path can be set “meta-llama/Llama-2-13b-chat-hf”.</p>
+</section>
+<section id="using-single-numanode">
+<h1>Using Single NumaNode<a class="headerlink" href="#using-single-numanode" title="Link to this heading"></a></h1>
+<p>To configure a single NUMA node on Xeon processors, edit the hostfile located at <code class="docutils literal notranslate"><span class="pre">../../../../../../server/config/hostfile</span></code> and set the NUMA node number to 1.</p>
 <section id="modify-hostfile">
 <h2>Modify hostfile<a class="headerlink" href="#modify-hostfile" title="Link to this heading"></a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>vim<span class="w"> </span>../../../../../../server/config/hostfile
-<span class="w">    </span>localhost<span class="w"> </span><span class="nv">slots</span><span class="o">=</span><span class="m">3</span>
+<span class="w">    </span>localhost<span class="w"> </span><span class="nv">slots</span><span class="o">=</span><span class="m">1</span>
+</pre></div>
+</div>
+</section>
+<section id="run-the-code-generation-chatbot-server">
+<h2>Run the Code Generation Chatbot Server<a class="headerlink" href="#run-the-code-generation-chatbot-server" title="Link to this heading"></a></h2>
+<p>To start the code-generating chatbot server, use the following command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>run.sh
 </pre></div>
 </div>
 </section>
 </section>
-<section id="configure-multi-nodes">
-<h1>Configure Multi-Nodes<a class="headerlink" href="#configure-multi-nodes" title="Link to this heading"></a></h1>
-<p>To use the multi-node model parallelism with Xeon servers, you need to configure a hostfile first and make sure ssh is able between your servers.</p>
-<p>For example, you have two servers which have the IP of <code class="docutils literal notranslate"><span class="pre">192.168.1.1</span></code> and <code class="docutils literal notranslate"><span class="pre">192.168.1.2</span></code>, and each of it has 3 numa nodes on single socket.</p>
+<section id="configure-multi-numanodes">
+<h1>Configure Multi-NumaNodes<a class="headerlink" href="#configure-multi-numanodes" title="Link to this heading"></a></h1>
+<p>To utilize multi-socket model parallelism on Xeon servers, you’ll need to adjust the hostfile settings.
+For instance, to allocate 3 NUMA nodes on a single socket of the GNR server, modify the hostfile as shown below:</p>
 <section id="id1">
 <h2>Modify hostfile<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>vim<span class="w"> </span>../../../../../../server/config/hostfile
+<span class="w">    </span>localhost<span class="w"> </span><span class="nv">slots</span><span class="o">=</span><span class="m">3</span>
+</pre></div>
+</div>
+<p>Afterward, run the run.sh script as previously instructed.</p>
+</section>
+</section>
+<section id="configure-multi-nodes">
+<h1>Configure Multi-Nodes<a class="headerlink" href="#configure-multi-nodes" title="Link to this heading"></a></h1>
+<p>To use the multi-node model parallelism with Xeon servers, you need to configure a hostfile first and make sure ssh is able between your servers.
+For example, you have two servers which have the IP of <code class="docutils literal notranslate"><span class="pre">192.168.1.1</span></code> and <code class="docutils literal notranslate"><span class="pre">192.168.1.2</span></code>, and each of it has 3 numa nodes on single socket.</p>
+<section id="id2">
+<h2>Modify hostfile<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>vim<span class="w"> </span>../../../../../../server/config/hostfile
 <span class="w">    </span><span class="m">192</span>.168.1.1<span class="w"> </span><span class="nv">slots</span><span class="o">=</span><span class="m">3</span>
 <span class="w">    </span><span class="m">192</span>.168.1.2<span class="w"> </span><span class="nv">slots</span><span class="o">=</span><span class="m">3</span>
@@ -219,51 +275,14 @@ chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>~
 </pre></div>
 </div>
 </section>
-</section>
-<section id="configure-the-codegen-yaml">
-<h1>Configure the codegen.yaml<a class="headerlink" href="#configure-the-codegen-yaml" title="Link to this heading"></a></h1>
-<p>You can customize the configuration file ‘codegen.yaml’ to match your environment setup. Here’s a table to help you understand the configurable options:</p>
-<table border="1" class="docutils">
-<thead>
-<tr>
-<th>Item</th>
-<th>Value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>host</td>
-<td>0.0.0.0</td>
-</tr>
-<tr>
-<td>port</td>
-<td>8000</td>
-</tr>
-<tr>
-<td>model_name_or_path</td>
-<td>"Phind/Phind-CodeLlama-34B-v2"</td>
-</tr>
-<tr>
-<td>device</td>
-<td>"cpu"</td>
-</tr>
-<tr>
-<td>use_tpp</td>
-<td>true</td>
-</tr>
-<tr>
-<td>tasks_list</td>
-<td>['codegen']</td>
-</tr>
-</tbody>
-</table></section>
-<section id="run-the-code-generation-chatbot-server">
-<h1>Run the Code Generation Chatbot Server<a class="headerlink" href="#run-the-code-generation-chatbot-server" title="Link to this heading"></a></h1>
-<p>Before running the code-generating chatbot server, make sure you have already deploy the same <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">environment</span></code> and <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tranformers</span> <span class="pre">codes</span></code> on both servers.</p>
+<section id="id3">
+<h2>Run the Code Generation Chatbot Server<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<p>Before running the code-generating chatbot server, make sure you have already deploy the same conda environment and intel-extension-for-tranformers codes on both servers.</p>
 <p>To start the code-generating chatbot server, use the following command:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>run.sh
 </pre></div>
 </div>
+</section>
 </section>
 
 
@@ -280,7 +299,7 @@ chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>~
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9d69e2e020> 
+   <jinja2.runtime.BlockReference object at 0x7f45c4c8f8b0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
