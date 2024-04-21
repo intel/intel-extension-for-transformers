@@ -180,8 +180,8 @@ function run_benchmark {
 	    pip install transformers==4.35.2
         script="run_generation_sq.py"
     elif [ "${topology}" = "mistral_7b" ]; then
-        model_name_or_path="Intel/neural-chat-7b-v3
-        script="run_generation_sq.py""
+        model_name_or_path="Intel/neural-chat-7b-v3"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "phi_1b" ]; then
         model_name_or_path="susnato/phi-1_dev"
 	    pip install transformers==4.36.1
