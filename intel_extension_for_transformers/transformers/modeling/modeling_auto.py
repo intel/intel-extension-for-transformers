@@ -1032,7 +1032,7 @@ class _BaseQBitsAutoModelClass:
         variant = kwargs.pop("variant", None)
         offload_folder = kwargs.pop("offload_folder", None)
         offload_state_dict = kwargs.pop("offload_state_dict", False)
-        torch_dtype = kwargs.get("torch_dtype", "auto")
+        torch_dtype = kwargs.pop("torch_dtype", "auto")
         cache_dir = kwargs.pop("cache_dir", None)
         force_download = kwargs.pop("force_download", False)
         proxies = kwargs.pop("proxies", None)
