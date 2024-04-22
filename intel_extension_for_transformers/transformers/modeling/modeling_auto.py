@@ -42,6 +42,7 @@ from ..utils import (
     BitsAndBytesConfig,
     MixedPrecisionConfig,
     SmoothQuantConfig,
+    StaticQuantConfig,
     RtnConfig,
     AwqConfig,
     TeqConfig,
@@ -681,6 +682,153 @@ class _BaseQBitsAutoModelClass:
 
             model.save_pretrained = types.MethodType(save_low_bit, model)
             logger.info("WeightOnlyQuant done.")
+        elif isinstance(quantization_config, StaticQuantConfig):
+            if quantization_config.backend == "ipex":
+                try:
+                    import intel_extension_for_pytorch as ipex
+                except ImportError:
+                    logger.warning(
+                        "Please install Intel Extension for PyTorch to accelerate the model inference."
+                    )
+                config.torchscript = True
+                assert quantization_config.example_inputs is not None, \
+                    "Please provide example_inputs for IPEX static quantization."
+
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path,
+                *model_args,
+                config=config,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float,
+                **kwargs,
+            )
+
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "chatglm":
+                model = model.float()
+            model.eval()
+            logger.info("Applying StaticQuant.")
+            # calibration function
+            calib_func = quantization_config.calib_func
+            tokenizer = quantization_config.tokenizer
+            if calib_func is None:
+                if quantization_config.tokenizer is None:
+                    logger.error(
+                        "Please provide the tokenizer or provide calib_func directly,"
+                        + " the following is how to get tokenizer. \n"
+                        + " from transformer import AutoTokenizer \n"
+                        + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
+                    )
+                    exit(0)
+
+                from datasets import load_dataset
+                from torch.utils.data import DataLoader
+
+                calib_dataset = quantization_config.calib_dataset
+                calib_shuffle = quantization_config.calib_shuffle
+                calib_iters = quantization_config.calib_iters
+                calib_padding = quantization_config.calib_padding
+                calib_len = quantization_config.calib_len
+                calib_pad_val = quantization_config.calib_pad_val
+                from torch.nn.functional import pad
+
+                calib_dataset = load_dataset(
+                    calib_dataset,
+                    split=(
+                        "test"
+                        if calib_dataset in ["mbpp", "openai_humaneval"]
+                        else "train"
+                    ),
+                )
+                if calib_shuffle:
+                    calib_dataset = calib_dataset.shuffle(seed=42)
+
+                def tokenize_function(examples):
+                    if "code" in examples:
+                        example = tokenizer(examples["code"])
+                    elif "prompt" in examples:
+                        example = tokenizer(examples["prompt"])
+                    elif "text" in examples:
+                        example = tokenizer(examples["text"])
+                    else:
+                        logger.error(
+                            "Please check dataset prompt identifier,"
+                            + " NeelNanda/pile-10k is default used calibration dataset."
+                        )
+                        exit(0)
+                    return example
+
+                def collate_batch(batch):
+                    input_ids_padded = []
+                    last_ind = []
+                    for text in batch:
+                        input_ids = text["input_ids"]
+                        if not calib_padding:
+                            input_ids = (
+                                input_ids[: int(calib_len)]
+                                if len(input_ids) > int(calib_len)
+                                else input_ids
+                            )  # no_padding
+                        else:
+                            pad_len = calib_len - input_ids.shape[0]
+                            input_ids = pad(
+                                input_ids, (0, pad_len), value=calib_pad_val
+                            )
+
+                        last_ind.append(input_ids.shape[0] - 1)
+                        input_ids_padded.append(input_ids)
+
+                    return (
+                        {
+                            "input_ids": torch.vstack(input_ids_padded),
+                        },
+                        torch.tensor(last_ind),
+                    )
+
+
+                tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
+                tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+                calib_dataloader = DataLoader(
+                    tokenized_dataset,
+                    batch_size=1,
+                    shuffle=False,
+                    collate_fn=collate_batch,
+                )
+
+                def calib_func(model):
+                    with torch.no_grad():
+                        for i, (inputs, last_ind) in enumerate(calib_dataloader):
+                            if i >= calib_iters:
+                                break
+                            model(**inputs)
+
+                logger.info(
+                    "The default calibration function is used, "
+                    + "the calibration dataset is NeelNanda/pile-10k, "
+                    + "batchsize is 1 and calibration iteration is 100."
+                )
+                calib_func = calib_func
+
+
+            # call inc static quant
+            from neural_compressor import PostTrainingQuantConfig, quantization
+
+            conf = PostTrainingQuantConfig(
+                backend=quantization_config.backend,  # default is ipex
+                excluded_precisions=quantization_config.excluded_precisions,
+                op_type_dict=quantization_config.op_type_dict,
+                op_name_dict=quantization_config.op_name_dict,
+                example_inputs=quantization_config.example_inputs,
+            )
+            model = quantization.fit(
+                model,
+                conf,
+                calib_func=calib_func,
+            )
+            logger.info("StaticQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
             try:
                 import intel_extension_for_pytorch as ipex

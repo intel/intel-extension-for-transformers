@@ -32,32 +32,81 @@ torch = LazyImport("torch")
 class MixedPrecisionConfig:
     dtype: str = "bfloat16"
 
+class StaticQuantConfig(PretrainedConfig):
+    def __init__(
+            self,
+            backend="default",
+            tokenizer=None,
+            calib_dataset="NeelNanda/pile-10k",
+            calib_dataloader=None,
+            calib_func=None,
+            calib_shuffle=True,
+            calib_iters=100,
+            calib_padding=False,
+            calib_len=512,
+            calib_pad_val=1,
+            op_name_dict=None,
+            op_type_dict=None,
+            excluded_precisions=[],
+            example_inputs=None
+    ):
+        self.backend = backend
+        self.tokenizer = tokenizer
+        self.calib_dataset = calib_dataset
+        self.calib_dataloader = calib_dataloader
+        self.calib_func = calib_func
+        self.calib_shuffle = calib_shuffle
+        self.calib_iters = calib_iters
+        self.calib_padding = calib_padding
+        self.calib_len = calib_len
+        self.calib_pad_val = calib_pad_val
+        self.op_name_dict = op_name_dict
+        self.op_type_dict = op_type_dict
+        self.excluded_precisions = excluded_precisions
+        self.example_inputs = example_inputs
 
-@dataclass
-class SmoothQuantConfig:
-    backend: str = "ipex"
-    ipex_opt_llm: bool = None
-    tokenizer: Any = None
-    calib_func: Any = None
-    calib_dataset: str = "NeelNanda/pile-10k"
-    calib_shuffle: bool = True
-    calib_iters: int = 100
-    calib_padding: bool = False
-    calib_len: int = 512
-    calib_pad_val: int = 1
-    alpha: float = 0.5
-    op_type_dict: dict = None
-    op_name_dict: dict = None
-    excluded_precisions: list = field(default_factory=list)
-    example_inputs: Any = None
-    num_beams: int = 1
-    recipes: dict = field(
-        default_factory=lambda: {
-            "smooth_quant": True,
-            "smooth_quant_args": {"alpha": 0.5},
-        }
-    )
-
+class SmoothQuantConfig(StaticQuantConfig):
+    def __init__(
+            self,
+            backend="ipex",
+            tokenizer=None,
+            calib_dataset="NeelNanda/pile-10k",
+            calib_dataloader=None,
+            calib_func=None,
+            calib_shuffle=True,
+            calib_iters=100,
+            calib_padding=False,
+            calib_len=512,
+            calib_pad_val=1,
+            op_name_dict=None,
+            op_type_dict=None,
+            excluded_precisions=[],
+            example_inputs=None,
+            ipex_opt_llm=None,
+            alpha=0.5,
+            num_beams=1,
+            recipes={"smooth_quant": True, "smooth_quant_args":{"alpha":0.5}}
+    ):
+        super().__init__(
+            backend=backend,
+            tokenizer=tokenizer,
+            calib_dataset=calib_dataset,
+            calib_dataloader=calib_dataloader,
+            calib_func=calib_func,
+            calib_shuffle=calib_shuffle,
+            calib_iters=calib_iters,
+            calib_padding=calib_padding,
+            calib_len=calib_len,
+            calib_pad_val=calib_pad_val,
+            op_name_dict=op_name_dict,
+            op_type_dict=op_type_dict,
+            excluded_precisions=excluded_precisions,
+            example_inputs=example_inputs,
+        )
+        self.ipex_opt_llm = ipex_opt_llm
+        self.alpha = alpha
+        self.num_beams = num_beams
+        self.recipes = recipes
 
 class SparsityConfig(PretrainedConfig):
     def __init__(

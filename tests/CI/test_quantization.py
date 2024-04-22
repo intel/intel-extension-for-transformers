@@ -316,6 +316,7 @@ class TestQuantization(unittest.TestCase):
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
             SmoothQuantConfig,
+            StaticQuantConfig,
             RtnConfig,
             AwqConfig,
             TeqConfig,
@@ -326,7 +327,19 @@ class TestQuantization(unittest.TestCase):
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
         fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_neural_speed=False)
         dummy_input = fp32_model.dummy_inputs["input_ids"]
-        # SQ
+        # Static quant
+        sq_config = StaticQuantConfig(
+                                    tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                                    calib_iters=2,
+                                    )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=sq_config,
+                                                    use_neural_speed=False
+                                                )
+        q_model.eval()
+        output = q_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17378684878349304, rel_tol=1e-04))
+        # Smoothquant
         sq_config = SmoothQuantConfig(
                                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
                                     calib_iters=2,
@@ -338,7 +351,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
 
-        # SQ auto
+        # Smoothquant auto
         recipes = {
             "smooth_quant": True,
             "smooth_quant_args": { "alpha": "auto", "auto_alpha_args":{"alpha_max": 0.6,
