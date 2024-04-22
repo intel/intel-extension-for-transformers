@@ -1507,7 +1507,7 @@ class _BaseQBitsAutoModelClass:
             q_model = load(weights_file, model, dataloader=None)
             del model
             return q_model
-        
+
         dtype_orig = None
         if torch_dtype is not None:
             if isinstance(torch_dtype, str):
