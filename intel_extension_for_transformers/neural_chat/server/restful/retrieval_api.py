@@ -254,6 +254,7 @@ def get_link_structure(upload_dir: str):
 
 
 def delete_link_file(prefix: str, link:str):
+    from ...pipeline.plugins.retrieval.parser.context_utils import clean_filename
     file_name = clean_filename(link) + '.jsonl'
     path = Path(prefix+'/'+file_name)
 
