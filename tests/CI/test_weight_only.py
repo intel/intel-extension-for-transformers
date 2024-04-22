@@ -173,6 +173,7 @@ class TestWeightOnly(unittest.TestCase):
         output = model.generate(
             input_ids, max_new_tokens=int(5), num_beams=1
         )
+        # if used transformers 4.39, the output len is 1.
         self.assertTrue(len(output) == 2 and isinstance(output[1], list))
         output = model.generate(
             input_ids, max_new_tokens=int(5), num_beams=2

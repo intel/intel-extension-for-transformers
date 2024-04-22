@@ -12,7 +12,7 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(qbits LANGUAGES C CXX)
+project(qbits_py LANGUAGES C CXX)
 
 
 set(QBITS_TORCH_PATH "" CACHE STRING "Torch install path")
@@ -31,17 +31,20 @@ endif()
 find_package(Torch REQUIRED
 PATHS ${torch_path}
 NO_DEFAULT_PATH)
+
+if(NOT WIN32)
 find_package(PythonLibs 3 REQUIRED)
+endif()
 
 include(FindOpenMP)
 add_subdirectory(dispatcher)
-add_subdirectory(../../../runtime/third_party/pybind11 pybind11)
+add_subdirectory(../transformers/runtime/third_party/pybind11 pybind11)
 
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp)
 file(GLOB qbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 # Link against LibTorch
-pybind11_add_module(qbits ${qbits_src})
-target_compile_features(qbits PRIVATE cxx_std_14)
-target_link_directories(qbits PRIVATE ${torch_path}/lib)
-target_link_libraries(qbits PRIVATE bestla_dispatcher torch_python)
+pybind11_add_module(qbits_py ${qbits_src})
+target_compile_features(qbits_py PRIVATE cxx_std_14)
+target_link_directories(qbits_py PRIVATE ${torch_path}/lib)
+target_link_libraries(qbits_py PRIVATE bestla_dispatcher torch_python)
