@@ -334,10 +334,14 @@ class TestQuantization(unittest.TestCase):
                                     )
         q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=sq_config,
-                                                    use_neural_speed=False
                                                 )
         q_model.eval()
         output = q_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17378684878349304, rel_tol=1e-04))
+        q_model.save_pretrained("./saved_results")
+        loading_model = AutoModelForCausalLM.from_pretrained("./saved_results")
+        loading_model.eval()
+        output = loading_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.17378684878349304, rel_tol=1e-04))
         # Smoothquant
         sq_config = SmoothQuantConfig(
