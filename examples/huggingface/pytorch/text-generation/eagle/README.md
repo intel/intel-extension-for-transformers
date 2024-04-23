@@ -20,7 +20,7 @@ git clone https://github.com/SafeAILab/EAGLE.git
 cd EAGLE
 pip install -e .
 ```
-The modeling_eagle.py script can be found at intel_extension_for_transformers/transformers/modeling/modeling_eagle.py 
+
 
 ## Usage 
 
@@ -44,4 +44,14 @@ The default base model is set to "meta-llama/Llama-2-7b-chat-hf", you can change
 - Dynamic Device and Data Type Configuration: The script allows specifying the target device and data type for text generation, supporting CPU, XPU, and CUDA devices, as well as different data types.
 - EAGLE Model Integration: The script demonstrates how to integrate the EAGLE model for enhanced text generation capabilities.
 - Performance Measurement: The script measures the performance of the text generation process, including the tokens per second (TPS) based on the total new tokens and total time.
+
+
+# Results
+
+We conducted benchmarking tests on both CPU and XPU environments.
+
+On GPU, llama2-7b-chat + EAGLE outperforms llama2-7b-chat by 3x speed in generating new tokens.
+On CPU, llama2-7b-chat + EAGLE outperforms llama2-7b-chat by 1.75x speed in generating new tokens.
+
+This highlights the superior capabilities of the EAGLE in handling the text generation task.
 
