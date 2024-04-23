@@ -1,0 +1,8 @@
+{
+    "k_quantize_bit": 4,
+    "k_compress_mode": "channel_asymmetric_quantization",
+    "k_group_size": 128,
+    "v_quantize_bit": 4,
+    "v_compress_mode": "token_asymmetric_quantization",
+    "v_group_size": 128
+}

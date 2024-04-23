@@ -334,7 +334,7 @@ def setup_generation_config(args, model, tokenizer):
     generation_config.attn_softmax_bf16 = True
     generation_config.limit_hpu_graphs = args.limit_hpu_graphs
     # TODO why reuse cache  and reduce recompile false
-    generation_config.reuse_cache = True
+    generation_config.reuse_cache = False
     generation_config.reduce_recompile = False
     if generation_config.reduce_recompile:
         assert generation_config.bucket_size > 0
