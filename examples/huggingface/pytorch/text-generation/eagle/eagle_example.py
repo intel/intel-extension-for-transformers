@@ -4,7 +4,7 @@ import time
 import argparse
 from tqdm import tqdm
 from pprint import pprint
-from modeling_eagle import EAGLE
+from eagle.modeling_eagle import EAGLE
 from transformers import AutoModelForCausalLM,LlamaModel,MistralModel,AutoTokenizer,MixtralForCausalLM,LlamaConfig,LlamaForCausalLM
 import torch
 from fastchat.model import get_conversation_template
