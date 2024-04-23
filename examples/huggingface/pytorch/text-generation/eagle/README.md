@@ -7,7 +7,7 @@ See [here](https://arxiv.org/abs/2401.15077) to view the paper and [here](https:
 
 ## Setup and installation 
 
-With pip:
+With pip: (recommended)
 
 ```bash
 pip install eagle-llm
