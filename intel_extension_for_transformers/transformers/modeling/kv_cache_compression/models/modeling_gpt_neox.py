@@ -14,7 +14,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import List, Optional, Tuple, Union
+
+import os
+import pdb
+import copy
+import math
+import numpy as np
+from dataclasses import dataclass
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -123,9 +130,7 @@ class GPTNeoXAttention(nn.Module):
 
     @classmethod
     def _split_heads(cls, tensor, num_attention_heads, attn_head_size):
-        """
-        Splits hidden dim into attn_head_size and num_attention_heads
-        """
+        """Splits hidden dim into attn_head_size and num_attention_heads."""
         # tensor: [bs, seq_len, hidden_size]
         new_shape = tensor.size()[:-1] + (num_attention_heads, attn_head_size)
         # -> [bs, seq_len, num_attention_heads, attn_head_size]
@@ -136,9 +141,7 @@ class GPTNeoXAttention(nn.Module):
 
     @classmethod
     def _merge_heads(cls, tensor, num_attention_heads, attn_head_size):
-        """
-        Merges attn_head_size dim and num_attn_heads dim into hidden dim
-        """
+        """Merges attn_head_size dim and num_attn_heads dim into hidden dim."""
         # tensor [bs, num_attention_heads, seq_len, attn_head_size]
         tensor = tensor.permute(0, 2, 1, 3).contiguous()
         # -> [bs, seq_len, num_attention_heads, attn_head_size]
