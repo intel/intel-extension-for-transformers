@@ -1732,7 +1732,8 @@
     "tune":{
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
-        "model": "/tf_dataset2/models/pytorch/Mistral-7B-v0.1",
+	"woq": "false",
+        "model": "/home/gta/.cache/huggingface/hub/models--mistralai--Mistral-7B-v0.1",
         "output_dir": "saved_results",
         "weight_dtype": "int4_clip"
       }
@@ -1746,12 +1747,33 @@
       }
     }
   },
+  "mistral_7b_rtn_gpu_oob": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+	"woq": "false",
+        "model": "/home/gta/.cache/huggingface/hub/models--mistralai--Mistral-7B-v0.1",
+        "output_dir": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "disable_optimize_transformers": "true",
+        "model": "/tf_dataset2/models/nlp_toolkit/mistral_7b_rtn",
+        "mode": "benchmark"
+	"output_dir": "saved_results"
+      }
+    }
+  },
   "llama2_7b_rtn_gpu": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "tune":{
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
-        "model": "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf",
+	"woq": "false",
+        "model": "/home/gta/.cache/huggingface/hub/models--meta-llama--Llama-2-7b-hf",
         "output_dir": "saved_results",
         "weight_dtype": "int4_clip"
       }
@@ -1765,12 +1787,33 @@
       }
     }
   },
+  "llama2_7b_rtn_gpu_oob": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+	"woq": "false",
+        "model": "/home/gta/.cache/huggingface/hub/models--meta-llama--Llama-2-7b-hf",
+        "output_dir": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "disable_optimize_transformers": "true",
+        "model": "/tf_dataset2/models/nlp_toolkit/llama2_rtn",
+        "mode": "benchmark"
+	"output_dir": "saved_results"
+      }
+    }
+  },
   "qwen_7b_rtn_gpu": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "tune":{
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
-        "model": "/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat",
+	"woq": "false",
+        "model": "/home/gta/.cache/huggingface/hub/models--Qwen--Qwen-7B-Chat",
         "output_dir": "saved_results",
         "weight_dtype": "int4_clip"
       }
@@ -1781,6 +1824,26 @@
         "model": "/tf_dataset2/models/nlp_toolkit/qwen_rtn",
         "mode": "benchmark",
         "output_dir": "saved_results"
+      }
+    }
+  },
+  "qwen_7b_rtn_gpu_oob": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+	"woq": "false",
+        "model": "/home/gta/.cache/huggingface/hub/models--Qwen--Qwen-7B-Chat",
+        "output_dir": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "disable_optimize_transformers": "true",
+        "model": "/tf_dataset2/models/nlp_toolkit/qwen_rtn",
+        "mode": "benchmark"
+	"output_dir": "saved_results"
       }
     }
   },

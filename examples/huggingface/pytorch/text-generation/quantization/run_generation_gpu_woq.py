@@ -55,7 +55,7 @@ parser.add_argument("--woq", action="store_true")
 parser.add_argument("--woq_algo", default="Rtn", choices=['Rtn', 'GPTQ', 'AutoRound'], 
                     help="Weight-only parameter.")
 parser.add_argument("--weight_dtype", type=str, default="int4_fullrange",
-                    choices=["int4_fullrange"])
+                    choices=["int4_fullrange", "int_clip"])
 parser.add_argument("--group_size", type=int, default=128)
 parser.add_argument("--scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
