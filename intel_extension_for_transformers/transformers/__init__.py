@@ -46,6 +46,7 @@ from .utils import (
     SmoothQuantConfig,
     StaticQuantConfig,
     DynamicQuantConfig,
+    QuantAwareTrainingConfig,
     RtnConfig,
     AwqConfig,
     TeqConfig,

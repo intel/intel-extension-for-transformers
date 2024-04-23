@@ -44,6 +44,7 @@ from ..utils import (
     SmoothQuantConfig,
     StaticQuantConfig,
     DynamicQuantConfig,
+    QuantAwareTrainingConfig,
     RtnConfig,
     AwqConfig,
     TeqConfig,
@@ -413,7 +414,7 @@ class _BaseQBitsAutoModelClass:
                     "Quantization_config loading failed. If you want to load saved "
                     "low bit model, please check your quantizate_config.json."
                 )
-            elif use_neural_speed and not config.quantization_config["quant_method"] in ["dynamic", "static"]:
+            elif use_neural_speed and not config.quantization_config["quant_method"] in ["dynamic", "static", "qat"]:
                 if not os.path.exists(pretrained_model_name_or_path):
                     from huggingface_hub import snapshot_download
                     pretrained_model_name_or_path = snapshot_download(repo_id=pretrained_model_name_or_path,
@@ -1160,6 +1161,157 @@ class _BaseQBitsAutoModelClass:
             model.quantization_config = quantization_config
             logger.info("StaticQuant done.")
             return model
+        elif isinstance(quantization_config, QuantAwareTrainingConfig):
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path,
+                *model_args,
+                config=config,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float,
+                **kwargs,
+            )
+
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "chatglm":
+                model = model.float()
+            logger.info("Applying QuantAwareTraining.")
+            # train function
+            train_func = quantization_config.train_func
+            tokenizer = quantization_config.tokenizer
+            if train_func is None:
+                if quantization_config.tokenizer is None:
+                    logger.error(
+                        "Please provide the tokenizer or provide train_func directly,"
+                        + " the following is how to get tokenizer. \n"
+                        + " from transformer import AutoTokenizer \n"
+                        + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
+                    )
+                    exit(0)
+
+                from datasets import load_dataset
+                from torch.utils.data import DataLoader
+
+                train_dataset = quantization_config.train_dataset
+                train_shuffle = quantization_config.train_shuffle
+                train_iters = quantization_config.train_iters
+                train_padding = quantization_config.train_padding
+                train_len = quantization_config.train_len
+                train_pad_val = quantization_config.train_pad_val
+                from torch.nn.functional import pad
+
+                train_dataset = load_dataset(
+                    train_dataset,
+                    split=(
+                        "test"
+                        if train_dataset in ["mbpp", "openai_humaneval"]
+                        else "train"
+                    ),
+                )
+                if train_shuffle:
+                    train_dataset = train_dataset.shuffle(seed=42)
+
+                def tokenize_function(examples):
+                    if "code" in examples:
+                        example = tokenizer(examples["code"])
+                    elif "prompt" in examples:
+                        example = tokenizer(examples["prompt"])
+                    elif "text" in examples:
+                        example = tokenizer(examples["text"])
+                    else:
+                        logger.error(
+                            "Please check dataset prompt identifier,"
+                            + " NeelNanda/pile-10k is default used calibration dataset."
+                        )
+                        exit(0)
+                    return example
+
+                def collate_batch(batch):
+                    input_ids_padded = []
+                    last_ind = []
+                    for text in batch:
+                        input_ids = text["input_ids"]
+                        if not train_padding:
+                            input_ids = (
+                                input_ids[: int(train_len)]
+                                if len(input_ids) > int(train_len)
+                                else input_ids
+                            )  # no_padding
+                        else:
+                            pad_len = train_len - input_ids.shape[0]
+                            input_ids = pad(
+                                input_ids, (0, pad_len), value=train_pad_val
+                            )
+
+                        last_ind.append(input_ids.shape[0] - 1)
+                        input_ids_padded.append(input_ids)
+
+                    return (
+                        {
+                            "input_ids": torch.vstack(input_ids_padded),
+                        },
+                        torch.tensor(last_ind),
+                    )
+
+
+                tokenized_dataset = train_dataset.map(tokenize_function, batched=True)
+                tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+                train_dataloader = DataLoader(
+                    tokenized_dataset,
+                    batch_size=quantization_config.train_batch_size,
+                    shuffle=False,
+                    collate_fn=collate_batch,
+                )
+
+                def train_func(model):
+                    optimizer = torch.optim.SGD(model.parameters(), lr=0.0001)
+                    # switch to evaluate mode
+                    model.train()
+                    for i, (inputs, last_ind) in enumerate(train_dataloader):
+                        if i >= train_iters:
+                            break
+                        output = model(**inputs)
+                        if isinstance(output, tuple):
+                            loss = output[0].mean() 
+                        elif isinstance(output, dict):
+                            loss = output["logits"].mean()
+                        else:
+                            loss = output.mean()
+                        optimizer.zero_grad()
+                        loss.backward()
+                        optimizer.step()
+                        print('Iteration [{}], Loss: {:.4f}'.format(i+1, loss))
+                    return model
+
+                logger.info(
+                    "The default calibration function is used, "
+                    + "the calibration dataset is NeelNanda/pile-10k, "
+                    + "batchsize is 1 and calibration iteration is 100."
+                )
+                train_func = train_func
+
+
+            # call inc static quant
+            from neural_compressor import QuantizationAwareTrainingConfig, quantization
+            from neural_compressor.training import prepare_compression
+            conf = QuantizationAwareTrainingConfig(
+                backend=quantization_config.backend,
+                excluded_precisions=quantization_config.excluded_precisions,
+                op_type_dict=quantization_config.op_type_dict,
+                op_name_dict=quantization_config.op_name_dict,
+            )
+            compression_manager = prepare_compression(model, conf)
+            compression_manager.callbacks.on_train_begin()
+            model = compression_manager.model
+            train_func(model)
+            compression_manager.callbacks.on_train_end()
+            compression_manager.model.save_pretrained = types.MethodType(save_low_bit, model)
+            quantization_config.remove_redundant_parameters()
+            compression_manager.model.quantization_config = quantization_config
+            logger.info("Quant Aware Training done.")
+            return compression_manager.model
         else:
             if use_neural_speed:
                 logger.info("Using Neural Speed with FP32 model dtype.")
@@ -1294,6 +1446,8 @@ class _BaseQBitsAutoModelClass:
             quantization_config = StaticQuantConfig.from_dict(quantization_config)
         elif quantization_config["quant_method"] == "dynamic":
             quantization_config = DynamicQuantConfig.from_dict(quantization_config)
+        elif quantization_config["quant_method"] == "qat":
+            quantization_config = QuantAwareTrainingConfig.from_dict(quantization_config)
         assert (
             quantization_config is not None
         ), "Detect this model is not a low-bit model."
@@ -1538,7 +1692,7 @@ class _BaseQBitsAutoModelClass:
         #    - we assume all floating dtype weights are of the same dtype
         # we also may have config.torch_dtype available, but we won't rely on it till v5
         # Pretrained Model
-        if quantization_config.quant_method in ["static", "dynamic"]:
+        if quantization_config.quant_method in ["static", "dynamic", "qat"]:
             model = model_class(config, *model_args, **kwargs)
             from neural_compressor.utils.pytorch import load
             weights_file = os.path.join(

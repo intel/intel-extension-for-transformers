@@ -22,6 +22,7 @@ from .config import (
     SmoothQuantConfig,
     StaticQuantConfig,
     DynamicQuantConfig,
+    QuantAwareTrainingConfig,
     SparsityConfig,
     RtnConfig,
     AwqConfig,
