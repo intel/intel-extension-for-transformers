@@ -14,106 +14,48 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import os
-import pdb
-import copy
-import math
-import numpy as np 
-from dataclasses import dataclass
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import torch
-from torch import nn
-import torch.utils.checkpoint
-import torch.nn.functional as F
-from torch.cuda.amp import autocast
-from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+import torch.nn as nn
 
-from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXRotaryEmbedding, GPTNeoXAttention, apply_rotary_pos_emb
-# from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXRotaryEmbedding
+from ..h2o import get_hh_mask
 
 
-__all__ = ['convert_kvcache_gpt_neox_heavy_recent', 'GPTNeoXAttention_Mask']
-
-def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=None):
-
-    # attn_weights (BS, head, query, keys)
-    dtype_attn_weights = attn_weights.dtype
-    seq_length = attn_weights.shape[-1]
-    if no_padding_seq_length is None:
-        padding_length = 0
-    else:
-        padding_length = seq_length - no_padding_seq_length
-
-    offset = torch.finfo(attn_weights.dtype).min
-    tmp_attn = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(dtype_attn_weights)
-
-    accumulated_attention_score = torch.sum(tmp_attn[:,:,padding_length:heavy_budget+padding_length,:], dim=-2) #(head, keys)
-    accumulated_attention_score[:,:,heavy_budget+padding_length:] = 0
-    if padding_length > 0:
-        accumulated_attention_score[:,:,:padding_length] = 0
-
-    mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
-    mask_bottom[:,:, padding_length:heavy_budget+padding_length, padding_length:heavy_budget+padding_length] = True
-
-    for token_index in range(heavy_budget+padding_length, seq_length):
-
-        tmp_attn_index = nn.functional.softmax(attn_weights[:,:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
-        _, tmp_topk_index = accumulated_attention_score.topk(k=heavy_budget-1, dim=-1)
-        zeros_index = torch.zeros_like(tmp_attn_index, dtype=torch.bool)
-        mask_bottom_index = zeros_index.scatter(-1, tmp_topk_index, True) #(head, keys)
-        mask_bottom_index[:,:, token_index] = True
-
-        mask_bottom[:,:,token_index,:] = mask_bottom_index
-        accumulated_attention_score += tmp_attn_index
-        accumulated_attention_score = accumulated_attention_score * mask_bottom_index
-
-    return mask_bottom
-
-def sanity_check(mask):
-    # mask (head, query, key)
-    ones = torch.ones_like(mask)
-    ones = torch.triu(ones, diagonal=0)
-    mask_bottom = torch.logical_or(mask, ones)
-
-    error_cnt = 0
-    for i in range(mask_bottom.shape[1]-1):
-        index = mask_bottom[:,i,:].eq(0).unsqueeze(1)
-        index[:,i:]=0
-        error_cnt += (mask_bottom[:,i:,:] * index).sum().item()
-    print(error_cnt)
-    return error_cnt
-
-class GPTNeoXAttention_Mask(nn.Module):
-    def __init__(self, config):
+class GPTNeoXAttention(nn.Module):
+    def __init__(
+            self,
+            model,
+            config,
+            heavy_ratio,
+            recent_ratio,
+            h2o_min_seqlen=1024,
+            ):
         super().__init__()
+        self.config = config
         self.num_attention_heads = config.num_attention_heads
         self.hidden_size = config.hidden_size
+        if self.hidden_size % self.num_attention_heads != 0:
+            raise ValueError(
+                "The hidden size is not divisble by the number of attention heads! Make sure to update them"
+            )
         self.head_size = self.hidden_size // self.num_attention_heads
         self.rotary_ndims = int(self.head_size * config.rotary_pct)
-        max_positions = config.max_position_embeddings
-        self.register_buffer(
-            "bias",
-            torch.tril(torch.ones((max_positions, max_positions), dtype=torch.bool)).view(
-                1, 1, max_positions, max_positions
-            ),
-        )
-        self.register_buffer("masked_bias", torch.tensor(-1e9))
-        # self.rotary_emb = RotaryEmbedding(
-        self.rotary_emb = GPTNeoXRotaryEmbedding(
-            self.rotary_ndims, config.max_position_embeddings, base=config.rotary_emb_base
-        )
-        self.register_buffer(
-            "norm_factor",
-            torch.sqrt(torch.tensor(self.head_size, dtype=torch.float32)).to(torch.get_default_dtype()),
-            persistent=False,
-        )
-        self.query_key_value = nn.Linear(config.hidden_size, 3 * config.hidden_size)
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
+        self.bias = model.bias
 
-        self.heavy_budget_ratio = config.heavy_ratio
-        self.recent_budget_ratio = config.recent_ratio
+        self.register_buffer("masked_bias", torch.tensor(-1e9), persistent=False)
+        self.rotary_emb = model.rotary_emb
+
+        self.norm_factor = self.head_size**-0.5
+        self.query_key_value = model.query_key_value
+        self.dense = model.dense
+        self.attention_dropout = model.attention_dropout
+        self.is_causal = True
+
+        # for h2o
+        self.heavy_ratio = heavy_ratio
+        self.recent_ratio = recent_ratio
+        self.h2o_min_seqlen = h2o_min_seqlen
 
     def forward(
         self,
@@ -124,6 +66,7 @@ class GPTNeoXAttention_Mask(nn.Module):
         layer_past: Optional[Tuple[torch.Tensor]] = None,
         use_cache: Optional[bool] = False,
         output_attentions: Optional[bool] = False,
+        padding_mask: Optional[torch.Tensor] = None,
     ):
         has_layer_past = layer_past is not None
 
@@ -209,6 +152,9 @@ class GPTNeoXAttention_Mask(nn.Module):
         batch_size, num_attention_heads, query_length, attn_head_size = query.size()
         key_length = key.size(-2)
 
+        # dynamically increase the causal mask with the key length, if needed.
+        if key_length > self.bias.shape[-1]:
+            self._init_bias(key_length, device=key.device)
         causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
 
         query = query.view(batch_size * num_attention_heads, query_length, attn_head_size)
@@ -225,7 +171,7 @@ class GPTNeoXAttention_Mask(nn.Module):
             query,
             key.transpose(1, 2),
             beta=1.0,
-            alpha=(torch.tensor(1.0, dtype=self.norm_factor.dtype, device=self.norm_factor.device) / self.norm_factor),
+            alpha=self.norm_factor,
         )
         attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length)
 
@@ -239,46 +185,52 @@ class GPTNeoXAttention_Mask(nn.Module):
             # Apply the attention mask
             attn_scores = attn_scores + attention_mask
 
-        #attn_scores (bs, head, token, token)
-        ### Heavy + Recent
-        heavy_budget = int(self.heavy_budget_ratio * attn_scores.shape[-1])
-        recent_budget = int(self.recent_budget_ratio * attn_scores.shape[-1])
-
-        # Heavy Hitter Mask
-        if heavy_budget > 0:
-            mask_bottom = local_heavy_hitter_mask(attn_scores, heavy_budget, None) # Default: No padding applied to input
-        else:
-            mask_bottom = torch.zeros_like(attn_scores, dtype=torch.bool)
-
-        ones = torch.ones_like(attn_scores, dtype=torch.bool)
-        ones = torch.triu(ones, diagonal=-recent_budget)
-        mask_bottom = torch.logical_or(mask_bottom, ones)
-
-        mask_bottom = torch.tril(mask_bottom, diagonal=0)
-
-        # mask_bottom = ones
-        attn_scores[~mask_bottom] = torch.finfo(attn_scores.dtype).min
         attn_weights = nn.functional.softmax(attn_scores, dim=-1)
-
         attn_weights = attn_weights.to(value.dtype)
+
+        # get hh mask
+        if query_length > self.h2o_min_seqlen:
+            mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
+            attn_weights[~mask_bottom] = torch.min(attention_mask)
 
         # Mask heads if we want to
         if head_mask is not None:
             attn_weights = attn_weights * head_mask
 
+        attn_weights = self.attention_dropout(attn_weights)
+
         attn_output = torch.matmul(attn_weights, value)
         return attn_output, attn_weights
 
-def convert_kvcache_gpt_neox_heavy_recent(model, config):
+def apply_rotary_pos_emb(q, k, cos, sin, position_ids, unsqueeze_dim=1):
+    """Applies Rotary Position Embedding to the query and key tensors.
 
-    for name, module in reversed(model._modules.items()):
+    Args:
+        q (`torch.Tensor`): The query tensor.
+        k (`torch.Tensor`): The key tensor.
+        cos (`torch.Tensor`): The cosine part of the rotary embedding.
+        sin (`torch.Tensor`): The sine part of the rotary embedding.
+        position_ids (`torch.Tensor`):
+            The position indices of the tokens corresponding to the query and key tensors. For example, this can be
+            used to pass offsetted position ids when working with a KV-cache.
+        unsqueeze_dim (`int`, *optional*, defaults to 1):
+            The 'unsqueeze_dim' argument specifies the dimension along which to unsqueeze cos[position_ids] and
+            sin[position_ids] so that they can be properly broadcasted to the dimensions of q and k. For example, note
+            that cos[position_ids] and sin[position_ids] have the shape [batch_size, seq_len, head_dim]. Then, if q and
+            k have the shape [batch_size, heads, seq_len, head_dim], then setting unsqueeze_dim=1 makes
+            cos[position_ids] and sin[position_ids] broadcastable to the shapes of q and k. Similarly, if q and k have
+            the shape [batch_size, seq_len, heads, head_dim], then set unsqueeze_dim=2.
+    Returns:
+        `tuple(torch.Tensor)` comprising of the query and key tensors rotated using the Rotary Position Embedding.
+    """
+    cos = cos[position_ids].unsqueeze(unsqueeze_dim)
+    sin = sin[position_ids].unsqueeze(unsqueeze_dim)
+    q_embed = (q * cos) + (rotate_half(q) * sin)
+    k_embed = (k * cos) + (rotate_half(k) * sin)
+    return q_embed, k_embed
 
-        if len(list(module.children())) > 0:
-            model._modules[name] = convert_kvcache_gpt_neox_heavy_recent(module, config)
-
-        if isinstance(module, GPTNeoXAttention):
-            model._modules[name] = GPTNeoXAttention_Mask(config)
-
-    return model
-
-
+def rotate_half(x):
+    """Rotates half the hidden dims of the input."""
+    x1 = x[..., : x.shape[-1] // 2]
+    x2 = x[..., x.shape[-1] // 2 :]
+    return torch.cat((-x2, x1), dim=-1)

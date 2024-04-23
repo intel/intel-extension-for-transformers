@@ -1,113 +1,65 @@
-import os
-import pdb
-import copy
-import math
-import numpy as np 
-from dataclasses import dataclass
-from typing import Optional, Tuple, Union
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+""" PyTorch OPT model."""
+from typing import List, Optional, Tuple, Union
 
 import torch
-from torch import nn
-import torch.utils.checkpoint
-import torch.nn.functional as F
-from torch.cuda.amp import autocast
-from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+import torch.nn as nn
 
-from transformers.models.opt.modeling_opt import OPTAttention
+from ..h2o import get_hh_mask
 
-
-__all__ = ['convert_kvcache_opt_heavy_recent', 'OPTAttention_Mask']
-
-
-
-def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=None):
-
-    # attn_weights (head, query, keys)
-    dtype_attn_weights = attn_weights.dtype
-    seq_length = attn_weights.shape[-1]
-    if no_padding_seq_length is None:
-        padding_length = 0
-    else:
-        padding_length = seq_length - no_padding_seq_length
-
-    offset = torch.finfo(attn_weights.dtype).min
-    tmp_attn = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(dtype_attn_weights)
-
-    accumulated_attention_score = torch.sum(tmp_attn[:,padding_length:heavy_budget+padding_length,:], dim=-2) #(head, keys)
-    accumulated_attention_score[:,heavy_budget+padding_length:] = 0
-
-    if padding_length > 0:
-        accumulated_attention_score[:,:padding_length] = 0
-
-    mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
-    mask_bottom[:, padding_length:heavy_budget+padding_length, padding_length:heavy_budget+padding_length] = True
-
-    for token_index in range(heavy_budget+padding_length, seq_length):
-
-        tmp_attn_index = nn.functional.softmax(attn_weights[:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
-        _, tmp_topk_index = accumulated_attention_score.topk(k=heavy_budget-1, dim=-1)
-        zeros_index = torch.zeros_like(tmp_attn_index, dtype=torch.bool)
-        mask_bottom_index = zeros_index.scatter(-1, tmp_topk_index, True) #(head, keys)
-        mask_bottom_index[:, token_index] = True
-
-        mask_bottom[:,token_index,:] = mask_bottom_index
-        accumulated_attention_score += tmp_attn_index
-        accumulated_attention_score = accumulated_attention_score * mask_bottom_index
-
-    mask_bottom = torch.tril(mask_bottom, diagonal=0)
-
-    return mask_bottom
-
-
-def sanity_check(mask):
-    # mask (head, query, key)
-    ones = torch.ones_like(mask)
-    ones = torch.triu(ones, diagonal=0)
-    mask_bottom = torch.logical_or(mask, ones)
-
-    error_cnt = 0
-    for i in range(mask_bottom.shape[1]-1):
-        index = mask_bottom[:,i,:].eq(0).unsqueeze(1)
-        index[:,i:]=0
-        error_cnt += (mask_bottom[:,i:,:] * index).sum().item()
-    print(error_cnt)
-    return error_cnt
-
-
-class OPTAttention_Mask(nn.Module):
+class H2OOPTAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
     def __init__(
         self,
-        embed_dim: int,
-        num_heads: int,
-        heavy_ratio: float,
-        recent_ratio: float,
-        dropout: float = 0.0,
-        is_decoder: bool = False,
-        bias: bool = True,
+        model,
+        config,
+        heavy_ratio,
+        recent_ratio,
+        h2o_min_seqlen=1024,
     ):
         super().__init__()
-        self.embed_dim = embed_dim
-        self.num_heads = num_heads
-        self.dropout = dropout
-        self.head_dim = embed_dim // num_heads
+        self.config = config
+        self.embed_dim = config.hidden_size
+        self.num_heads = config.num_attention_heads
+        self.dropout = config.attention_dropout
+        self.enable_bias = config.enable_bias
 
-        if (self.head_dim * num_heads) != self.embed_dim:
+        self.head_dim = self.embed_dim // self.num_heads
+        self.is_causal = True
+
+        if (self.head_dim * self.num_heads) != self.embed_dim:
             raise ValueError(
                 f"embed_dim must be divisible by num_heads (got `embed_dim`: {self.embed_dim}"
-                f" and `num_heads`: {num_heads})."
+                f" and `num_heads`: {self.num_heads})."
             )
         self.scaling = self.head_dim**-0.5
-        self.is_decoder = is_decoder
+        self.is_decoder = model.is_decoder
 
-        self.k_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.v_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.k_proj = model.k_proj
+        self.v_proj = model.v_proj
+        self.q_proj = model.q_proj
+        self.out_proj = model.out_proj
 
-        self.heavy_budget_ratio = heavy_ratio
-        self.recent_budget_ratio = recent_ratio
+        # for h2o
+        self.heavy_ratio = heavy_ratio
+        self.recent_ratio = recent_ratio
+        self.h2o_min_seqlen = h2o_min_seqlen
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
@@ -181,29 +133,15 @@ class OPTAttention_Mask(nn.Module):
                     f"Attention mask should be of size {(bsz, 1, tgt_len, src_len)}, but is {attention_mask.size()}"
                 )
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len) + attention_mask
-            attn_weights = torch.max(attn_weights, torch.tensor(torch.finfo(attn_weights.dtype).min))
+            attn_weights = torch.max(
+                attn_weights, torch.tensor(torch.finfo(attn_weights.dtype).min, device=attn_weights.device)
+            )
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
 
-        ### Heavy + Recent
-        heavy_budget = int(self.heavy_budget_ratio * attn_weights.shape[-1])
-        recent_budget = int(self.recent_budget_ratio * attn_weights.shape[-1])
-
-        # Heavy Hitter Mask
-        if heavy_budget > 0:
-            mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None) # Default: No padding applied to input
-        else:
-            mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
-
-        # Recent Mask
-        ones = torch.ones_like(attn_weights, dtype=torch.bool)
-        ones = torch.triu(ones, diagonal=-recent_budget)
-        mask_bottom = torch.logical_or(mask_bottom, ones)
-
-        # Combine h2o+recent and apply casual mask
-        mask_bottom = torch.tril(mask_bottom, diagonal=0)
-        # mask_bottom = ones
-        attn_weights[~mask_bottom] = torch.min(attention_mask)
-
+        # get hh mask
+        if tgt_len > self.h2o_min_seqlen:
+            mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
+            attn_weights[~mask_bottom] = torch.min(attention_mask)
 
         # upcast to fp32 if the weights are in fp16. Please see https://github.com/huggingface/transformers/pull/17437
         if attn_weights.dtype == torch.float16:
@@ -250,24 +188,3 @@ class OPTAttention_Mask(nn.Module):
         attn_output = self.out_proj(attn_output)
 
         return attn_output, attn_weights_reshaped, past_key_value
-
-
-def convert_kvcache_opt_heavy_recent(model, config):
-
-    for name, module in reversed(model._modules.items()):
-
-        if len(list(module.children())) > 0:
-            model._modules[name] = convert_kvcache_opt_heavy_recent(module, config)
-
-        if isinstance(module, OPTAttention):
-            model._modules[name] = OPTAttention_Mask(
-                embed_dim=module.embed_dim,
-                num_heads=config.num_attention_heads,
-                heavy_ratio = config.heavy_ratio,
-                recent_ratio = config.recent_ratio,
-                dropout=config.attention_dropout,
-                is_decoder=True,
-                bias=config.enable_bias,
-            )
-    return model
-
