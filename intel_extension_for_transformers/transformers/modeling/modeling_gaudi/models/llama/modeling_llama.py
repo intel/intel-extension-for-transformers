@@ -195,7 +195,7 @@ class KVCache(torch.nn.Module):
 
     def build_compress_env(self):
         # config_path = os.getenv("QUANT_CONFIG")
-        config_path = "/home/mewang/workspace/intel-extension-for-transformers/examples/habana/test/kv_cache.json"
+        config_path = "./quantization_config/kv_cache.json"
         # config_path = None
         if config_path is not None:
             import json
