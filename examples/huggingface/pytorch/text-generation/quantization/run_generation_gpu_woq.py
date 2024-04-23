@@ -47,7 +47,7 @@ parser.add_argument("--batch_size", default=1, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
-parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, \
+parser.add_argument("--tasks", default="lambada_openai", type=str, \
                     help="tasks list for accuracy validation")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--bits", type=int, default=4, choices=[4])
@@ -56,12 +56,12 @@ parser.add_argument("--woq_algo", default="Rtn", choices=['Rtn', 'GPTQ', 'AutoRo
                     help="Weight-only parameter.")
 parser.add_argument("--weight_dtype", type=str, default="int4_fullrange",
                     choices=["int4_fullrange"])
-parser.add_argument("--group_size", type=int, default=32)
+parser.add_argument("--group_size", type=int, default=128)
 parser.add_argument("--scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--device", default="xpu")
 parser.add_argument("--compute_dtype", default="fp16")
-parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
+parser.add_argument("--calib_iters", default=200, type=int, help="Calibration iters.")
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
 # ============GPTQ configs==============
@@ -83,7 +83,7 @@ parser.add_argument(
     help="Block size. sub weight matrix size to run GPTQ.",
 )
 parser.add_argument(
-    "--nsamples", type=int, default=128, help="Number of calibration data samples."
+    "--nsamples", type=int, default=512, help="Number of calibration data samples."
 )
 parser.add_argument(
     "--max_input_length",
@@ -106,13 +106,13 @@ parser.add_argument(
 parser.add_argument(
     "--lr",
     type=float,
-    default=0.0025,
+    default=None,
     help="learning rate, if None, it will be set to 1.0/iters automatically",
 )
 parser.add_argument(
     "--minmax_lr",
     type=float,
-    default=0.0025,
+    default=None,
     help="minmax learning rate, if None,it will beset to be the same with lr",
 )
 parser.add_argument(
@@ -308,7 +308,6 @@ if args.benchmark:
 
 
 if args.accuracy:
-    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model
@@ -320,22 +319,16 @@ if args.accuracy:
             user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
     else:
         print("Disabled optimization with IPEX...")
-
-    results = evaluate(
-        model="hf-causal",
-        model_args='tokenizer=' + args.model + \
-            ',dtype=float32,trust_remote_code=' + str(args.trust_remote_code),
-        user_model=user_model,
-        batch_size=args.batch_size,
-        tasks=args.tasks,
-        device=args.device
-    )
-    dumped = json.dumps(results, indent=2)
-    if args.save_accuracy_path:
-        with open(args.save_accuracy_path, "w") as f:
-            f.write(dumped)
-    for task_name in args.tasks:
+    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+    args = LMEvalParser(model = "hf", 
+                        tokenizer = tokenizer,
+                        user_model = user_model,
+                        tasks = args.tasks,
+                        device = args.device,
+                        batch_size = args.batch_size)
+    results = evaluate(args)
+    for task_name in args.tasks.split(","):
         if task_name == "wikitext":
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity,none"]))
         else:
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc,none"]))

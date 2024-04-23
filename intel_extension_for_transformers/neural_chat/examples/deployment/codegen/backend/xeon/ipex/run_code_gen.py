@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2022 Intel Corporation
+# Copyright (c) 2023 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,19 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import (
-    huggingface,
-)
 
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
 
-# TODO: implement __all__
+def main():
+    server_executor = NeuralChatServerExecutor()
+    server_executor(config_file="./codegen.yaml", log_file="./codegen.log")
 
-
-try:
-    # enable hf hub transfer if available
-    import hf_transfer  # type: ignore # noqa
-    import huggingface_hub.constants  # type: ignore
-
-    huggingface_hub.constants.HF_HUB_ENABLE_HF_TRANSFER = True
-except ImportError:
-    pass
+if __name__ == "__main__":
+    main()

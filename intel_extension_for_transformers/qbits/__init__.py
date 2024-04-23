@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2022 Intel Corporation
+# Copyright (c) 2024 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,19 +15,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import (
-    huggingface,
-)
-
-
-# TODO: implement __all__
-
-
-try:
-    # enable hf hub transfer if available
-    import hf_transfer  # type: ignore # noqa
-    import huggingface_hub.constants  # type: ignore
-
-    huggingface_hub.constants.HF_HUB_ENABLE_HF_TRANSFER = True
-except ImportError:
-    pass
+import torch
+from intel_extension_for_transformers.qbits_py import * # pylint: disable=E0401, E0611

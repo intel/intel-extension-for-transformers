@@ -106,7 +106,7 @@ void quantize_to_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   }
 }
 
-void* get_workspace(int need_size) {
+void* get_workspace(size_t need_size) {
   void* tmpbuf = NULL;
   void* workspace = woq_workspace == nullptr ? NULL : woq_workspace;
   if (workspace != NULL) {
@@ -126,7 +126,7 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
   EpiParam param_epi = {ctx->output->data_ptr(), ctx->bias->data_ptr(), ctx->ldo, 0, ctx->alpha, ctx->beta};
   using GemmCore = typename Launcher::GemmCore;
   using StorageWeight = typename Launcher::PrologueB::StorageWeight;
-  int asym_size = 0, shuf_size = 0;
+  size_t asym_size = 0, shuf_size = 0;
   int8_t* tmpbuf = nullptr;
   if constexpr (GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
                 GemmCore::ISA == BTLA_ISA::AVX_VNNI) {
