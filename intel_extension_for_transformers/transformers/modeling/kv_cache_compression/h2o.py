@@ -73,7 +73,7 @@ def convert_model(model, heavy_ratio, recent_ratio, h2o_min_seqlen=1024):
     for name, module in model.named_modules():
         if isinstance(module, atten_cls):
             atten_layers.append(name)
-    
+
     for layer_name in atten_layers:
         module = get_module(model, layer_name)
         module = h2o_cls(module, model.config, heavy_ratio, recent_ratio, h2o_min_seqlen)
@@ -81,7 +81,7 @@ def convert_model(model, heavy_ratio, recent_ratio, h2o_min_seqlen=1024):
     print(model)
     print(f"heavy_ratio={heavy_ratio}, recent_ratio={recent_ratio}")
     model = model.to(device)
-    return model 
+    return model
 
 
 def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=None):
@@ -129,8 +129,8 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
     if heavy_budget > 0:
         mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None) # Default: No padding applied to input
     else:
-        mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool) 
-    
+        mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
+
     # Recent Mask
     ones = torch.ones_like(attn_weights, dtype=torch.bool)
     ones = torch.triu(ones, diagonal=-recent_budget)

@@ -14,7 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" PyTorch llama model."""
+"""PyTorch llama model."""
 
 import math
 from typing import List, Optional, Tuple, Union
@@ -33,11 +33,11 @@ from ..h2o import get_hh_mask, H2OKVCache
 logger = logging.get_logger(__name__)
 
 class H2OLlamaAttention(nn.Module):
-    """Multi-headed attention from 'Attention Is All You Need' paper"""
+    """Multi-headed attention from 'Attention Is All You Need' paper."""
 
     def __init__(
             self,
-            model, 
+            model,
             config: LlamaConfig,
             heavy_ratio,
             recent_ratio,

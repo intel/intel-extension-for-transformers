@@ -29,14 +29,15 @@ from ..h2o import get_hh_mask
 logger = logging.get_logger(__name__)
 
 class MistralAttention(nn.Module):
-    """
-    Multi-headed attention from 'Attention Is All You Need' paper. Modified to use sliding window attention: Longformer
+    """Multi-headed attention from 'Attention Is All You Need' paper.
+
+    Modified to use sliding window attention: Longformer
     and "Generating Long Sequences with Sparse Transformers".
     """
 
     def __init__(
             self,
-            model, 
+            model,
             config,
             heavy_ratio,
             recent_ratio,
@@ -135,7 +136,7 @@ class MistralAttention(nn.Module):
                 )
 
             attn_weights = attn_weights + attention_mask
-        
+
         # get hh mask
         if q_len > self.h2o_min_seqlen:
             mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)

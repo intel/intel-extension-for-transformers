@@ -44,7 +44,7 @@ class GPTNeoXAttention(nn.Module):
         self.hidden_size = config.hidden_size
         if self.hidden_size % self.num_attention_heads != 0:
             raise ValueError(
-                "The hidden size is not divisble by the number of attention heads! Make sure to update them"
+                "The hidden size is not divisible by the number of attention heads! Make sure to update them"
             )
         self.head_size = self.hidden_size // self.num_attention_heads
         self.rotary_ndims = int(self.head_size * config.rotary_pct)
