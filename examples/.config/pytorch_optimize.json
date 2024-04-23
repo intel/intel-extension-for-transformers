@@ -1733,7 +1733,7 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
 	"woq": "false",
-        "model": "/home/gta/.cache/huggingface/hub/models--mistralai--Mistral-7B-v0.1",
+        "model": "mistralai/Mistral-7B-v0.1",
         "output_dir": "saved_results",
         "weight_dtype": "int4_clip"
       }
@@ -1753,7 +1753,7 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
 	"woq": "false",
-        "model": "/home/gta/.cache/huggingface/hub/models--mistralai--Mistral-7B-v0.1",
+        "model": "mistralai/Mistral-7B-v0.1",
         "output_dir": "saved_results"
       }
     },
@@ -1773,7 +1773,7 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
 	"woq": "false",
-        "model": "/home/gta/.cache/huggingface/hub/models--meta-llama--Llama-2-7b-hf",
+        "model": "meta-llama/Llama-2-7b-hf",
         "output_dir": "saved_results",
         "weight_dtype": "int4_clip"
       }
@@ -1793,7 +1793,7 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
 	"woq": "false",
-        "model": "/home/gta/.cache/huggingface/hub/models--meta-llama--Llama-2-7b-hf",
+        "model": "meta-llama/Llama-2-7b-hf",
         "output_dir": "saved_results"
       }
     },
@@ -1813,7 +1813,7 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
 	"woq": "false",
-        "model": "Qwen/Qwen-7B",
+        "model": "Qwen/Qwen-7B-Chat",
         "output_dir": "saved_results",
         "weight_dtype": "int4_clip"
       }
@@ -1821,7 +1821,7 @@
     "benchmark": {
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
-        "model": "/tf_dataset2/models/nlp_toolkit/qwen_rtn",
+        "model": "Qwen/Qwen-7B-Chat",
         "mode": "benchmark",
         "output_dir": "saved_results"
       }
@@ -1833,7 +1833,7 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
 	"woq": "false",
-        "model": "Qwen/Qwen-7B",
+        "model": "Qwen/Qwen-7B-Chat",
         "output_dir": "saved_results"
       }
     },
@@ -1841,7 +1841,7 @@
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
         "disable_optimize_transformers": "true",
-        "model": "/tf_dataset2/models/nlp_toolkit/qwen_rtn",
+        "model": "Qwen/Qwen-7B-Chat",
         "mode": "benchmark"
 	"output_dir": "saved_results"
       }
