@@ -179,7 +179,8 @@ def build_chatbot(config: PipelineConfig=None):
             return
     from .models.base_model import register_model_adapter
     register_model_adapter(adapter)
-    # register plugin instance in model adaptor
+    # register plugin instance in model adapter
+    use_retrieval_plugin = False
     if config.plugins:
         for plugin_name, plugin_value in config.plugins.items():
             enable_plugin = plugin_value.get('enable', False)
@@ -244,6 +245,10 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "retrieval":
                     from .pipeline.plugins.retrieval.retrieval_agent import Agent_QA
                     plugins[plugin_name]['class'] = Agent_QA
+                    use_retrieval_plugin = True
+                    retrieval_plugin_value = plugin_value
+                    retrieval_plugin_value['args']['table_summary_model_name_or_path'] = config.model_name_or_path
+                    continue
                 elif plugin_name == "cache":
                     from .pipeline.plugins.caching.cache import ChatCache
                     plugins[plugin_name]['class'] = ChatCache
@@ -268,15 +273,12 @@ def build_chatbot(config: PipelineConfig=None):
                 try:
                     plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
                 except Exception as e:
-                    if "[Rereieval ERROR] Document format not supported" in str(e):
-                        set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
-                        logger.error("build_chatbot: retrieval plugin init failed")
-                    elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
+                    if "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
                         set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
-                        logger.error("build_chatbot: safety checker plugin init failed")
+                        logging.error("build_chatbot: safety checker plugin init failed")
                     else:
                         set_latest_error(ErrorCodes.ERROR_GENERIC)
-                        logger.error("build_chatbot: plugin init failed")
+                        logging.error("build_chatbot: plugin init failed")
                     return
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
@@ -308,6 +310,22 @@ def build_chatbot(config: PipelineConfig=None):
     if config.hf_endpoint_url:
         return adapter
     adapter.load_model(parameters)
+
+    if use_retrieval_plugin:
+        print(f"create retrieval plugin instance...")
+        print(f"plugin parameters: ", retrieval_plugin_value['args'])
+        try:
+            plugins["retrieval"]["instance"] = plugins["retrieval"]['class'](**retrieval_plugin_value['args'])
+        except Exception as e:
+            if "[Rereieval ERROR] Document format not supported" in str(e):
+                set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
+                logging.error("build_chatbot: retrieval plugin init failed")
+            else:
+                set_latest_error(ErrorCodes.ERROR_GENERIC)
+                logging.error("build_chatbot: plugin init failed")
+            return
+        adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
+
     if get_latest_error():
         return
     else:

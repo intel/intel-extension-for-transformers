@@ -714,5 +714,86 @@ class TestEmbeddingPrecision(unittest.TestCase):
         plugins.retrieval.args = {}
         plugins.retrieval.enable = False
 
+class TestHQTableStrategy(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("./hq_table_strategy"):
+            shutil.rmtree("./hq_table_strategy", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("./hq_table_strategy"):
+            shutil.rmtree("./hq_table_strategy", ignore_errors=True)
+        return super().tearDown()
+
+    def test_hq_table_strategy(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/LLAMA2_short.pdf"
+        plugins.retrieval.args["persist_directory"] = "./hq_table_strategy"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        plugins.retrieval.args["table_strategy"] = 'hq'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("What is the number of training tokens for LLaMA2?")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
+
+class TestLLMTableStrategy(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("./llm_table_strategy"):
+            shutil.rmtree("./llm_table_strategy", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("./llm_table_strategy"):
+            shutil.rmtree("./llm_table_strategy", ignore_errors=True)
+        return super().tearDown()
+
+    def test_llm_table_strategy(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/LLAMA2_short.pdf"
+        plugins.retrieval.args["persist_directory"] = "./llm_table_strategy"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        plugins.retrieval.args["table_strategy"] = 'llm'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("What is the number of training tokens for LLaMA2?")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
+
+class TestTableSummaryNoneMode(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("./fast_table_strategy"):
+            shutil.rmtree("./fast_table_strategy", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("./fast_table_strategy"):
+            shutil.rmtree("./fast_table_strategy", ignore_errors=True)
+        return super().tearDown()
+
+    def test_fast_table_strategy(self):
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/LLAMA2_short.pdf"
+        plugins.retrieval.args["persist_directory"] = "./fast_table_strategy"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        plugins.retrieval.args["table_strategy"] = 'fast'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("What is the number of training tokens for LLaMA2?")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args = {}
+        plugins.retrieval.enable = False
+
 if __name__ == '__main__':
     unittest.main()

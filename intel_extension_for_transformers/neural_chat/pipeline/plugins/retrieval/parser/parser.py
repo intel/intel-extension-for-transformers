@@ -48,6 +48,9 @@ class DocumentParser:
             self.min_chuck_size = kwargs['min_chuck_size']
         if 'process' in kwargs:
             self.process = kwargs['process']
+        self.table_summary_model_name_or_path = kwargs['table_summary_model_name_or_path'] \
+             if 'table_summary_model_name_or_path' in kwargs else None
+        self.table_strategy = kwargs['table_strategy'] if 'table_strategy' in kwargs else 'fast'
 
         if isinstance(input, str):
             if os.path.isfile(input):
@@ -71,11 +74,14 @@ class DocumentParser:
         """Parse the uploaded file."""
         if input.endswith("pdf") or input.endswith("docx") or input.endswith("html") \
            or input.endswith("txt") or input.endswith("md"):
-            content = load_unstructured_data(input)
+            content, tables = load_unstructured_data(input, self.table_strategy, \
+                                                     self.table_summary_model_name_or_path)
             if self.process:
                 chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
             else:
                 chuck = [[content.strip(),input]]
+            if tables is not None:
+                chuck = chuck + tables
         elif input.endswith("jsonl") or input.endswith("xlsx") or input.endswith("csv") or \
                 input.endswith("json"):
             chuck = load_structured_data(input, self.process, \
@@ -111,11 +117,15 @@ class DocumentParser:
             for filename in filenames:
                 if filename.endswith("pdf") or filename.endswith("docx") or filename.endswith("html") \
                     or filename.endswith("txt") or filename.endswith("md"):
-                    content = load_unstructured_data(os.path.join(dirpath, filename))
+                    content, tables = load_unstructured_data(os.path.join(dirpath, filename), \
+                                                             self.table_strategy, \
+                                                             self.table_summary_model_name_or_path)
                     if self.process:
                         chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
                     else:
                         chuck = [[content.strip(),input]]
+                    if tables is not None:
+                        chuck = chuck + tables
                     paragraphs += chuck
                 elif filename.endswith("jsonl") or filename.endswith("xlsx") or filename.endswith("csv") or \
                         filename.endswith("json"):

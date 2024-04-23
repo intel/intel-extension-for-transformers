@@ -42,7 +42,7 @@ To ensure a smooth experience, we've made sure this plugin is compatible with co
 | pdf  | No format required |
 
 # Usage
-Before using RAG in NeuralChat, please install the necessary dependencies in [requirements.txt](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/requirements.txt) to avoid the import errors. The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/plugins/retrieval). The user could refer to it for a simple test. 
+Before using RAG in NeuralChat, please install the necessary dependencies in [requirements.txt](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/requirements.txt) to avoid the import errors. Additionally, for users who take pdf format file as input, the installation of [tesseract](https://tesseract-ocr.github.io/tessdoc/Installation.html) and [poppler](https://poppler.freedesktop.org/) is also required. The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/plugins/retrieval). The user could refer to it for a simple test. 
 
 We support multiple file formats for retrieval, including unstructured file formats such as pdf, docx, html, txt, and markdown, as well as structured file formats like jsonl/json, csv, xlsx. For structured file formats, they must adhere to predefined structures. We also support to upload the knowledge base via a http web link.
 
@@ -92,6 +92,7 @@ Below are the description for the available parameters in `agent_QA`,
 | enable_rerank   | bool | Whether to enable retrieval then rerank pipeline |True, False|
 | reranker_model   | str | The name of the reranker model from the Huggingface or a local path |-|
 | top_n   | int | The return number of the reranker model |-|
+| table_strategy | str | The strategies to understand tables for table retrieval. As the setting progresses from "fast" to "hq" to "llm," the focus shifts towards deeper table understanding at the expense of processing speed. The default strategy is "fast" |"fast", "hq", "llm"|
 
 More retriever- and vectorstore-related parameters please check [here](#langchain-extension)
 
