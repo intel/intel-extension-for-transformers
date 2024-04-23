@@ -33,7 +33,7 @@ The script accepts several command-line arguments:
 
 ```bash
 python3 eagle_example.py
-python main.py -d xpu --max_new_tokens 1024 --use_eagle
+python eagle_example.py -d xpu --max_new_tokens 1024 --use_eagle
 
 ```
 
