@@ -19,6 +19,8 @@ Classes
 
    intel_extension_for_transformers.transformers.utils.config.QuantizationMethod
    intel_extension_for_transformers.transformers.utils.config.ITREXQuantizationConfigMixin
+   intel_extension_for_transformers.transformers.utils.config.StaticQuantConfig
+   intel_extension_for_transformers.transformers.utils.config.SmoothQuantConfig
    intel_extension_for_transformers.transformers.utils.config.RtnConfig
    intel_extension_for_transformers.transformers.utils.config.GPTQConfig
    intel_extension_for_transformers.transformers.utils.config.AwqConfig
@@ -101,6 +103,22 @@ Classes
       :param kwargs: Additional key word arguments passed along to the [`~utils.PushToHubMixin.push_to_hub`] method.
       :type kwargs: `Dict[str, Any]`, *optional*
 
+
+
+.. py:class:: StaticQuantConfig(backend='default', tokenizer=None, calib_dataset='NeelNanda/pile-10k', calib_dataloader=None, calib_func=None, calib_shuffle=True, calib_iters=100, calib_padding=False, calib_len=512, calib_pad_val=1, op_name_dict=None, op_type_dict=None, excluded_precisions=[], example_inputs=None, **kwargs)
+
+
+
+
+   Mixin class for quantization config.
+
+
+.. py:class:: SmoothQuantConfig(backend='ipex', tokenizer=None, calib_dataset='NeelNanda/pile-10k', calib_dataloader=None, calib_func=None, calib_shuffle=True, calib_iters=100, calib_padding=False, calib_len=512, calib_pad_val=1, op_name_dict=None, op_type_dict=None, excluded_precisions=[], example_inputs=None, ipex_opt_llm=None, alpha=0.5, num_beams=1, recipes={'smooth_quant': True, 'smooth_quant_args': {'alpha': 0.5}}, **kwargs)
+
+
+
+
+   Mixin class for quantization config.
 
 
 .. py:class:: RtnConfig(bits: int = 4, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, mse_range: bool = False, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, layer_wise: bool = False, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
