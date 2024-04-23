@@ -1274,7 +1274,7 @@ class _BaseQBitsAutoModelClass:
                             break
                         output = model(**inputs)
                         if isinstance(output, tuple):
-                            loss = output[0].mean() 
+                            loss = output[0].mean()
                         elif isinstance(output, dict):
                             loss = output["logits"].mean()
                         else:
