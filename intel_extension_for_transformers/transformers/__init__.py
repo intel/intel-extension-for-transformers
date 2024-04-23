@@ -45,6 +45,7 @@ from .utils import (
     BitsAndBytesConfig,
     SmoothQuantConfig,
     StaticQuantConfig,
+    DynamicQuantConfig,
     RtnConfig,
     AwqConfig,
     TeqConfig,

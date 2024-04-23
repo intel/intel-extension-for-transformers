@@ -48,6 +48,7 @@ class QuantizationMethod(str, Enum):
     RTN = "rtn"
     AUTOROUND = "autoround"
     TEQ = "teq"
+    DYNAMIC = "dynamic"
     STATIC = "static"
     SmoothQuant = "sq"
 
@@ -599,6 +600,18 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         return super().get_config_dict(
             pretrained_model_name_or_path, _configuration_file=cf, **kwargs
         )
+class DynamicQuantConfig(ITREXQuantizationConfigMixin):
+    def __init__(
+            self,
+            excluded_precisions=[],
+            op_name_dict=None,
+            op_type_dict=None,
+            **kwargs,
+    ):
+        self.quant_method = QuantizationMethod.DYNAMIC
+        self.excluded_precisions = excluded_precisions
+        self.op_name_dict = op_name_dict
+        self.op_type_dict = op_type_dict
 
 class StaticQuantConfig(ITREXQuantizationConfigMixin):
     def __init__(

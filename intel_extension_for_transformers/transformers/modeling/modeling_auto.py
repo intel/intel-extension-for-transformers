@@ -43,6 +43,7 @@ from ..utils import (
     MixedPrecisionConfig,
     SmoothQuantConfig,
     StaticQuantConfig,
+    DynamicQuantConfig,
     RtnConfig,
     AwqConfig,
     TeqConfig,
@@ -412,7 +413,7 @@ class _BaseQBitsAutoModelClass:
                     "Quantization_config loading failed. If you want to load saved "
                     "low bit model, please check your quantizate_config.json."
                 )
-            elif use_neural_speed and not config.quantization_config["quant_method"] == "static":
+            elif use_neural_speed and not config.quantization_config["quant_method"] in ["dynamic", "static"]:
                 if not os.path.exists(pretrained_model_name_or_path):
                     from huggingface_hub import snapshot_download
                     pretrained_model_name_or_path = snapshot_download(repo_id=pretrained_model_name_or_path,
@@ -972,6 +973,42 @@ class _BaseQBitsAutoModelClass:
                 ),
             )
             logger.info("SmoothQuant done.")
+        elif isinstance(quantization_config, DynamicQuantConfig):
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path,
+                *model_args,
+                config=config,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float,
+                **kwargs,
+            )
+
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "chatglm":
+                model = model.float()
+            model.eval()
+            logger.info("Applying DynamicQuant.")
+            # call inc dynamic quant
+            from neural_compressor import PostTrainingQuantConfig, quantization
+
+            conf = PostTrainingQuantConfig(
+                approach="dynamic",
+                excluded_precisions=quantization_config.excluded_precisions,
+                op_type_dict=quantization_config.op_type_dict,
+                op_name_dict=quantization_config.op_name_dict,
+            )
+            model = quantization.fit(
+                model,
+                conf,
+            )
+            model.save_pretrained = types.MethodType(save_low_bit, model)
+            quantization_config.remove_redundant_parameters()
+            model.quantization_config = quantization_config
+            logger.info("DynamicQuant done.")
+            return model
         elif isinstance(quantization_config, StaticQuantConfig):
             if quantization_config.backend == "ipex":
                 try:
@@ -1107,7 +1144,7 @@ class _BaseQBitsAutoModelClass:
             from neural_compressor import PostTrainingQuantConfig, quantization
 
             conf = PostTrainingQuantConfig(
-                backend=quantization_config.backend,  # default is ipex
+                backend=quantization_config.backend,
                 excluded_precisions=quantization_config.excluded_precisions,
                 op_type_dict=quantization_config.op_type_dict,
                 op_name_dict=quantization_config.op_name_dict,
@@ -1255,6 +1292,8 @@ class _BaseQBitsAutoModelClass:
             quantization_config = AutoRoundConfig.from_dict(quantization_config)
         elif quantization_config["quant_method"] == "static":
             quantization_config = StaticQuantConfig.from_dict(quantization_config)
+        elif quantization_config["quant_method"] == "dynamic":
+            quantization_config = DynamicQuantConfig.from_dict(quantization_config)
         assert (
             quantization_config is not None
         ), "Detect this model is not a low-bit model."
@@ -1499,7 +1538,7 @@ class _BaseQBitsAutoModelClass:
         #    - we assume all floating dtype weights are of the same dtype
         # we also may have config.torch_dtype available, but we won't rely on it till v5
         # Pretrained Model
-        if quantization_config.quant_method == "static":
+        if quantization_config.quant_method in ["static", "dynamic"]:
             model = model_class(config, *model_args, **kwargs)
             from neural_compressor.utils.pytorch import load
             weights_file = os.path.join(

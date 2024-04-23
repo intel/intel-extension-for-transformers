@@ -21,6 +21,7 @@ from .config import (
     BitsAndBytesConfig,
     SmoothQuantConfig,
     StaticQuantConfig,
+    DynamicQuantConfig,
     SparsityConfig,
     RtnConfig,
     AwqConfig,
