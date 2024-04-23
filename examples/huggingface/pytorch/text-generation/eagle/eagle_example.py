@@ -119,13 +119,15 @@ if __name__ == "__main__":
             output=tokenizer.batch_decode(outs)
             t_e = time.time()
 
-          
             # Update counters
             t_total += t_e - t_b
-            total_new_tokens += len(outs) - inputs.input_ids.shape[-1]
-
-            # Print total new tokens and generated text
-            print("Total new tokens", total_new_tokens)
+            
+            # Update tokens per second based on outs type
+            if isinstance(outs, list):
+                total_new_tokens =  len(outs)
+            else:
+                total_new_tokens += len(outs[0]) - inputs.input_ids.shape[-1]
+            # Print output 
             pprint(output)
         print(f"TPS:  {total_new_tokens / t_total}")
 
