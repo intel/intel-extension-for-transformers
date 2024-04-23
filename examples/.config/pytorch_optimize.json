@@ -1762,7 +1762,7 @@
       "params": {
         "disable_optimize_transformers": "true",
         "model": "mistralai/Mistral-7B-v0.1",
-        "mode": "benchmark"
+        "mode": "benchmark",
 	"output_dir": "saved_results"
       }
     }
@@ -1802,7 +1802,7 @@
       "params": {
         "disable_optimize_transformers": "true",
         "model": "meta-llama/Llama-2-7b-hf",
-        "mode": "benchmark"
+        "mode": "benchmark",
 	"output_dir": "saved_results"
       }
     }
@@ -1842,7 +1842,7 @@
       "params": {
         "disable_optimize_transformers": "true",
         "model": "Qwen/Qwen-7B-Chat",
-        "mode": "benchmark"
+        "mode": "benchmark",
 	"output_dir": "saved_results"
       }
     }
