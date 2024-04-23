@@ -124,7 +124,7 @@ if __name__ == "__main__":
             
             # Update tokens per second based on outs type
             if isinstance(outs, list):
-                total_new_tokens =  len(outs)
+                total_new_tokens +=  len(outs)
             else:
                 total_new_tokens += len(outs[0]) - inputs.input_ids.shape[-1]
             # Print output 
