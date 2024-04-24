@@ -7,6 +7,8 @@ repos:
     rev: v4.5.0
     hooks:
       - id: debug-statements
+      - id: mixed-line-ending
+        args: [--fix=lf]
       - id: file-contents-sorter
         files: |
           (?x)^(

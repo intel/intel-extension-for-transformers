@@ -170,7 +170,7 @@ static bool check_isa_supported(std::string isa) {
   return false;
 }
 
-PYBIND11_MODULE(qbits, m) {
+PYBIND11_MODULE(qbits_py, m) {
   m.def("quantize_to_packed_weight", &quantize_to_packed_weight);
   m.def("woq_linear", &woq_linear);
   m.def("dequantize_packed_weight", &dequantize_packed_weight);

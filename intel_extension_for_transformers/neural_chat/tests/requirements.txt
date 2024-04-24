@@ -21,7 +21,6 @@ FlagEmbedding
 fschat==0.2.35
 g2p_en
 gfpgan
-git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 gptcache
 huggingface_hub
 imageio==2.19.3
@@ -36,8 +35,10 @@ jsonlines
 kornia==0.6.8
 langchain==0.1.11
 langchain-community==0.0.27
+langchain_core==0.1.35
 langid
 librosa
+lm-eval
 markdown
 neural-compressor
 neural_speed==1.0a0
@@ -62,7 +63,7 @@ pypinyin
 python-docx
 python-multipart
 pyyaml
-qdrant-client
+qdrant-client==1.8.2
 rank_bm25
 resampy==0.3.1
 rouge_score
@@ -82,7 +83,7 @@ torch==2.2.0
 torchaudio==2.2.0
 torchvision==0.17.0
 tqdm
-transformers==4.36.2
+transformers==4.38.0
 transformers_stream_generator
 unstructured
 urllib3

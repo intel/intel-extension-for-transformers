@@ -237,3 +237,80 @@ python run_generation_gpu_woq.py --woq --benchmark
 >Note:
 > * Saving quantized model should be executed before the optimize_transformers function is called.
 > * The optimize_transformers function is designed to optimize transformer-based models within frontend Python modules, with a particular focus on Large Language Models (LLMs). It provides optimizations for both model-wise and content-generation-wise. The detail of `optimize_transformers`, please refer to [the link](https://github.com/intel/intel-extension-for-pytorch/blob/xpu-main/docs/tutorials/llm/llm_optimize_transformers.md).
+
+
+### Example of AutoRound on Intel GPU
+
+For the specific usage of parameters for AutoRoundConfig, please refer to the definition [class AutoRoundConfig](https://github.com/intel/intel-extension-for-transformers/blob/629b9d40caf97c963dc76f908e4cb66cc6f72eeb/intel_extension_for_transformers/transformers/utils/config.py#L930)
+
+```python
+import torch
+import intel_extension_for_pytorch as ipex
+from transformers import AutoConfig, AutoTokenizer
+from intel_extension_for_transformers.transformers import (
+    AutoModelForCausalLM,
+    AutoRoundConfig,
+)
+
+device = "xpu"
+model_name = "meta-llama/Llama-2-7b-hf"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "Once upon a time, a little girl"
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
+
+quantization_config = AutoRoundConfig(
+    tokenizer=tokenizer,
+    bits=4,
+    group_size=32,
+    max_input_length=2048,
+    compute_dtype="fp16",
+    scale_dtype="fp16",
+    weight_dtype="int4_fullrange",
+    calib_iters=2,
+    calib_len=32,
+    nsamples=2,
+    lr=0.0025,
+    minmax_lr=0.0025,
+)
+qmodel = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    device_map=device,
+    quantization_config=quantization_config,
+    trust_remote_code=True,
+    torch_dtype=torch.float16,
+)
+
+# optimize the model with ipex, it will improve performance.
+qmodel = ipex.optimize_transformers(
+    qmodel, inplace=True, dtype=torch.float16, quantization_config=True, device=device
+)
+output = qmodel.generate(inputs, max_new_tokens=100, do_sample=True)
+print(tokenizer.batch_decode(output, skip_special_tokens=True))
+```
+
+### Llama3 on MTL
+Currently, we only support running llama3 on MTL and only support the following parameters to quantize and inference:
+- quantification method: RTN
+- group_size: 32
+- batch_size: 1
+- num_beams 1
+
+```python
+import intel_extension_for_pytorch as ipex
+from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+from transformers import AutoTokenizer
+import torch
+
+device_map = "xpu"
+model_name ="meta-llama/Meta-Llama-3-8B"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "Once upon a time, there existed a little girl,"
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
+                                              device_map=device_map, load_in_4bit=True)
+
+model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, quantization_config=True, device=device_map)
+
+output = model.generate(inputs)
+```

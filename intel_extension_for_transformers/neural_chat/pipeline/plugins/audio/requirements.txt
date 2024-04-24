@@ -5,6 +5,7 @@ inflect
 jaconv
 jieba
 langid
+librosa
 num2words
 openjtalk; sys_platform != 'linux'
 pydub
