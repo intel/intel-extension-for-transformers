@@ -38,8 +38,8 @@ from typing import Any, Dict, List
 
 import torch
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForCausalLM, TextStreamer
-import habana_frameworks.torch.core as htcore
+from transformers import AutoTokenizer, AutoConfig, AutoModelForCausalLM, TextStreamer
+# import habana_frameworks.torch.core as htcore
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import adapt_transformers_to_gaudi
@@ -59,24 +59,31 @@ def greedy_generate(model, tokenizer, dataset, kv_cache=None, max_new_tokens=512
     count_round = 0
 
     for prompt_index, prompt in enumerate(dataset["prompt"]):
-        # Use the chat template initially, as it adds the system prompt if the model has one, and then use [INST] and [/INST]
-        if prompt_index:
-            prompt = f"[INST] {prompt} [/INST]"
-        else:
-            prompt = tokenizer.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False)
+        if tokenizer.chat_template is not None:
+            # Use the chat template initially, as it adds the system prompt if the model has one,
+            # and then use [INST] and [/INST]
+            if prompt_index:
+                prompt = f"[INST] {prompt} [/INST]"
+            else:
+                prompt = tokenizer.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False)
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        # input_ids = tokenizer(prompt,
+        #                       padding="max_length",
+        #                       max_length=256,
+        #                       truncation=True,
+        #                       return_tensors="pt").input_ids
         input_ids = input_ids.to(model.device)
         num_token += input_ids.size(-1)
 
         streamer.put(input_ids)
         for _ in range(max_new_tokens):
-            if kv_cache is not None:
-                past_key_values = kv_cache(past_key_values)
             outputs = model(input_ids, past_key_values=past_key_values, use_cache=True, reuse_cache=False)
-            htcore.mark_step()
+            # htcore.mark_step()
             past_key_values = outputs.past_key_values
             # print("past_key_values dtype:", past_key_values[0][0].dtype)
             pred_token_idx = outputs.logits[:, -1, :].argmax(dim=-1).unsqueeze(1)
+            if kv_cache is not None:
+                past_key_values = kv_cache(past_key_values)
             streamer.put(pred_token_idx)
             input_ids = pred_token_idx
             num_token += 1
@@ -97,13 +104,19 @@ def greedy_generate(model, tokenizer, dataset, kv_cache=None, max_new_tokens=512
 def main():
     parser = argparse.ArgumentParser()
     # Model args
-    parser.add_argument("--model_name_or_path", type=str, default="meta-llama/Llama-2-7b-chat-hf")
+    parser.add_argument("--model_name_or_path", type=str, default="01-ai/Yi-34B-200K")
     parser.add_argument("--hf_token", type=str, default="")
     parser.add_argument("--trust_remote_code", action="store_true")
 
-    # Dataset args, not recommended to change:
+    # Dataset args, not recommended to change
+    # streaming demo: HuggingFaceH4/mt_bench_prompts
+    # ppl: emozilla/pg19-test
     parser.add_argument("--dataset_name", type=str, default="HuggingFaceH4/mt_bench_prompts")
-    parser.add_argument("--n_sample", type=int, default=-1)
+    parser.add_argument("--data_column", type=str, default="text")
+    parser.add_argument("--task", type=str, default=None)
+    parser.add_argument("--split", type=str, default="test")
+    parser.add_argument("--num_sample", type=int, default=-1)
+    parser.add_argument("--num_tokens", type=int, default=8192)
 
     # Attention Sinks-only settings
     parser.add_argument("--enable_streaming", action="store_true")
@@ -123,36 +136,42 @@ def main():
         help="Whether to use HPU graphs or not. Using HPU graphs should give better latencies.",
     )
 
+    # compute perplexity and log
+    parser.add_argument("--perplexity", action="store_true")
+    parser.add_argument("--output_dir", type=str, default="benchmark/outputs")
+    parser.add_argument("--overwrite", action="store_true")
+
     args = parser.parse_args()
     args.quant_config = os.getenv("QUANT_CONFIG", "")
 
     # set hpu env
     # Tweak generation so that it runs faster on Gaudi
     adapt_transformers_to_gaudi()
+    if args.fp8:
+        import habana_frameworks.torch.core as htcore
+        htcore.hpu_set_env()
 
     # Initialize the model
-    if args.hf_token == "":
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model_name_or_path,
-            trust_remote_code=bool(args.trust_remote_code),
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-        )
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path,
-                                                  trust_remote_code=bool(args.trust_remote_code))
-    else:
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model_name_or_path,
-            trust_remote_code=bool(args.trust_remote_code),
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-            token=args.hf_token,
-        )
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path,
-                                                  token=args.hf_token,
-                                                  trust_remote_code=bool(args.trust_remote_code))
+    model_config = AutoConfig.from_pretrained(args.model_name_or_path, token=args.hf_token)
+    if model_config.model_type != "llama":
+        print("Error: only supports llama architecture.")
+        exit(0)
+    # single device memory limitation
+    model_config.max_position_embeddings = min(model_config.max_position_embeddings, 16000)
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_name_or_path,
+        config=model_config,
+        trust_remote_code=bool(args.trust_remote_code),
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        token=args.hf_token,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path,
+                                                token=args.hf_token,
+                                                padding_side="left",
+                                                trust_remote_code=bool(args.trust_remote_code))
 
-     # Set up the kv cache
+    # Set up the kv cache
     if args.enable_streaming:
         from intel_extension_for_transformers.transformers.modeling.modeling_gaudi.streaming_llm import enable_streaming_llm
         kv_cache = enable_streaming_llm(model,
@@ -169,10 +188,6 @@ def main():
             exit(0)
 
     # Set up model
-    if args.fp8:
-        import habana_frameworks.torch.core as htcore
-        htcore.hpu_set_env()
-
     if args.quant_config:
         import habana_quantization_toolkit
         habana_quantization_toolkit.prep_model(model)
@@ -189,15 +204,43 @@ def main():
         if const_marking == "True":
             htcore.hpu_initialize(model)
     model.generation_config.use_flash_attention = False
+    model.generation_config.attn_softmax_bf16 = True
+    # for llama
+    # unwind broken decapoda-research config
+    # model.generation_config.pad_token_id = 0
+    # model.generation_config.bos_token_id = 1
+    # model.generation_config.eos_token_id = 2
+    # tokenizer.bos_token_id = model.generation_config.bos_token_id
+    # tokenizer.eos_token_id = model.generation_config.eos_token_id
+    # tokenizer.pad_token_id = model.generation_config.pad_token_id
+    # tokenizer.pad_token = tokenizer.decode(tokenizer.pad_token_id)
+    # tokenizer.eos_token = tokenizer.decode(tokenizer.eos_token_id)
+    # tokenizer.bos_token = tokenizer.decode(tokenizer.bos_token_id)
     # print(model)
     print(model.generation_config)
 
-    # Set up the dataset
-    dataset = load_dataset(args.dataset_name, split="train")
-    dataset = dataset.map(create_prompts, batched=True, remove_columns=dataset.column_names)
+    if args.perplexity:  # compute perplexity
+        from perplexity import compute_perplexity
+        # Set up the dataset
+        dataset = load_dataset(args.dataset_name, args.task, split=args.split, streaming=True)
+        compute_perplexity(
+            model,
+            tokenizer,
+            dataset,
+            kv_cache=kv_cache,
+            output_dir=args.output_dir,
+            data_column=args.data_column,
+            num_samples=1,  # No support for more than one instance now
+            num_tokens=args.num_tokens,
+            overwrite=args.overwrite,
+        )
+    else:  # streaming generation demo
+        # Set up the dataset
+        dataset = load_dataset(args.dataset_name, split="train")
+        dataset = dataset.map(create_prompts, batched=True, remove_columns=dataset.column_names)
 
-    greedy_generate(model, tokenizer, dataset, kv_cache=kv_cache,
-                    max_new_tokens=args.max_new_tokens, n_round=args.n_sample)
+        greedy_generate(model, tokenizer, dataset, kv_cache=kv_cache,
+                        max_new_tokens=args.max_new_tokens, n_round=args.num_sample)
 
     if args.quant_config:
         import habana_quantization_toolkit
