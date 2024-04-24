@@ -1734,8 +1734,7 @@
       "params": {
 	"woq": "false",
         "model": "mistralai/Mistral-7B-v0.1",
-        "output_dir": "saved_results",
-        "weight_dtype": "int4_clip"
+        "output_dir": "saved_results"
       }
     },
     "benchmark": {
@@ -1774,8 +1773,7 @@
       "params": {
 	"woq": "false",
         "model": "meta-llama/Llama-2-7b-hf",
-        "output_dir": "saved_results",
-        "weight_dtype": "int4_clip"
+        "output_dir": "saved_results"
       }
     },
     "benchmark": {
@@ -1814,8 +1812,7 @@
       "params": {
 	"woq": "false",
         "model": "Qwen/Qwen-7B-Chat",
-        "output_dir": "saved_results",
-        "weight_dtype": "int4_clip"
+        "output_dir": "saved_results"
       }
     },
     "benchmark": {
