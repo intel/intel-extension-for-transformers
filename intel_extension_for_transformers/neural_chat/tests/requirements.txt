@@ -35,6 +35,7 @@ jsonlines
 kornia==0.6.8
 langchain==0.1.11
 langchain-community==0.0.27
+langchain_core==0.1.35
 langid
 librosa
 lm-eval
@@ -62,7 +63,7 @@ pypinyin
 python-docx
 python-multipart
 pyyaml
-qdrant-client
+qdrant-client==1.8.2
 rank_bm25
 resampy==0.3.1
 rouge_score
