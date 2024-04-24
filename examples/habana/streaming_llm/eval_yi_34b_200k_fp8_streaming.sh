@@ -33,5 +33,5 @@ python plot_perplexity.py \
     --output_dir benchmark/yi_fp8_outputs \
     --title "Log perplexity & memory of Yi-38B-200K FP8" \
     --log_perplexity_limit 5.0 \
-    ----skip_first 100 \
+    --skip_first 100 \
     --figure_dir yi_34b_fp8_ppl.svg
