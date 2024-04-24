@@ -3,9 +3,9 @@ chromadb==0.4.15
 easyocr
 FlagEmbedding
 InstructorEmbedding
-langchain_core==0.1.35
 langchain==0.1.11
 langchain-community==0.0.27
+langchain_core==0.1.35
 langid
 markdown
 openpyxl
