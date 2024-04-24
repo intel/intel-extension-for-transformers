@@ -1810,6 +1810,7 @@
     "tune":{
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
+	"trust_remote_code": "true",
 	"woq": "false",
         "model": "Qwen/Qwen-7B-Chat",
         "output_dir": "saved_results"
@@ -1818,7 +1819,6 @@
     "benchmark": {
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
-	"trust_remote_code": "true",
         "model": "Qwen/Qwen-7B-Chat",
         "mode": "benchmark",
         "output_dir": "saved_results"
@@ -1830,6 +1830,7 @@
     "tune":{
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
+	"trust_remote_code": "true",
 	"woq": "false",
         "model": "Qwen/Qwen-7B-Chat",
         "output_dir": "saved_results"
@@ -1838,7 +1839,6 @@
     "benchmark": {
       "cmd": "python run_generation_gpu_woq.py",
       "params": {
-	"trust_remote_code": "true",
         "disable_optimize_transformers": "true",
         "model": "Qwen/Qwen-7B-Chat",
         "mode": "benchmark",
