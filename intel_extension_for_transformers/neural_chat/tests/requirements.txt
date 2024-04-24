@@ -63,7 +63,7 @@ pypinyin
 python-docx
 python-multipart
 pyyaml
-qdrant-client
+qdrant-client==1.8.2
 rank_bm25
 resampy==0.3.1
 rouge_score
