@@ -5,7 +5,7 @@ protobuf
 sentencepiece != 0.1.92
 --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
 torch==2.1.0a0
-transformers
+transformers==4.35
 optimum-intel
 bitsandbytes  #baichuan
 transformers_stream_generator

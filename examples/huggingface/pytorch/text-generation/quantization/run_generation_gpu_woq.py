@@ -139,11 +139,7 @@ config = AutoConfig.from_pretrained(
 user_model = None
 
 # tokenizer
-if config.model_type == "llama":
-   from transformers import LlamaTokenizer
-   tokenizer = LlamaTokenizer.from_pretrained(args.model)
-else:
-   tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
 quantization_config = None
 if args.woq:
@@ -253,7 +249,9 @@ if args.benchmark:
         dtype=amp_dtype if amp_enabled else None,
     ):
         for i in range(num_iter + num_warmup):
-            with torch.autograd.profiler_legacy.profile(enabled=args.do_profiling, use_xpu=(args.device=="xpu"), record_shapes=False) as prof:
+            # workaround for Windows
+            # with torch.autograd.profiler_legacy.profile(enabled=args.do_profiling, use_xpu=(args.device=="xpu"), record_shapes=False) as prof:
+            if True
                 input_ids = tokenizer(
                     prompt, return_tensors="pt").input_ids.to(args.device)
                 tic = time.time()

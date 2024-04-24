@@ -109,9 +109,7 @@ def replace_linear(
     empty_weights=False,
 ):
     if modules_to_not_convert is None:
-        # output_layer is chatglm last layer name
-        # embed_out is dolly_v2 last layer name
-        modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
+        modules_to_not_convert = []
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(
             quantization_config.llm_int8_skip_modules
@@ -515,17 +513,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
                         "scheme": config.scheme,
                         "algorithm": algorithm,
                     },
-                },
-            },
-            op_name_dict={
-                ".*lm_head": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-                ".*output_layer": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-                ".*embed_out": {  # re.match
-                    "weight": {"dtype": "fp32"},
                 },
             },
             recipes=recipes,
