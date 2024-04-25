@@ -8,13 +8,15 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import sys
 sys.path.insert(0, '/home/hengguo/code/intel-extension-for-transformers')
 
+import sys
+sys.path.insert(0, '/root/hengguo/intel-extension-for-transformers')
+
 from lm_eval import evaluator, tasks
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
 from intel_extension_for_transformers.transformers.modeling.kv_cache_compression.h2o_sim_drop.modify_llama import convert_kvcache_llama_heavy_recent
 from intel_extension_for_transformers.transformers.modeling.kv_cache_compression.h2o_sim_drop.modify_opt import convert_kvcache_opt_heavy_recent
 from intel_extension_for_transformers.transformers.modeling.kv_cache_compression.h2o_sim_drop.modify_gptneox import convert_kvcache_gpt_neox_heavy_recent
-
 
 from tasks import EvalHarnessAdaptor
 
