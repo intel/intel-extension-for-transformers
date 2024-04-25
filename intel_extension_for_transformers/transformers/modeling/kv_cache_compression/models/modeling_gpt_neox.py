@@ -37,7 +37,7 @@ class GPTNeoXAttention(nn.Module):
         self.hidden_size = config.hidden_size
         if self.hidden_size % self.num_attention_heads != 0:
             raise ValueError(
-                "The hidden size is not divisble by the number of attention heads! Make sure to update them"
+                "The hidden size is not divisible by the number of attention heads! Make sure to update them"
             )
         self.head_size = self.hidden_size // self.num_attention_heads
         self.rotary_ndims = int(self.head_size * config.rotary_pct)
@@ -123,9 +123,7 @@ class GPTNeoXAttention(nn.Module):
 
     @classmethod
     def _split_heads(cls, tensor, num_attention_heads, attn_head_size):
-        """
-        Splits hidden dim into attn_head_size and num_attention_heads
-        """
+        """Splits hidden dim into attn_head_size and num_attention_heads."""
         # tensor: [bs, seq_len, hidden_size]
         new_shape = tensor.size()[:-1] + (num_attention_heads, attn_head_size)
         # -> [bs, seq_len, num_attention_heads, attn_head_size]
@@ -136,9 +134,7 @@ class GPTNeoXAttention(nn.Module):
 
     @classmethod
     def _merge_heads(cls, tensor, num_attention_heads, attn_head_size):
-        """
-        Merges attn_head_size dim and num_attn_heads dim into hidden dim
-        """
+        """Merges attn_head_size dim and num_attn_heads dim into hidden dim."""
         # tensor [bs, num_attention_heads, seq_len, attn_head_size]
         tensor = tensor.permute(0, 2, 1, 3).contiguous()
         # -> [bs, seq_len, num_attention_heads, attn_head_size]

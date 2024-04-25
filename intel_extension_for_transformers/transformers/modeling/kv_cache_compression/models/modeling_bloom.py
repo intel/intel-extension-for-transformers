@@ -64,8 +64,7 @@ class H2OBloomAttention(nn.Module):
         self.h2o_min_seqlen = h2o_min_seqlen
 
     def _split_heads(self, fused_qkv: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """
-        Split the last dimension into (num_heads, head_dim) without making any copies, results share same memory
+        """Split the last dimension into (num_heads, head_dim) without making any copies, results share same memory
         storage as `fused_qkv`
 
         Args:
@@ -80,8 +79,7 @@ class H2OBloomAttention(nn.Module):
         return fused_qkv[..., 0, :], fused_qkv[..., 1, :], fused_qkv[..., 2, :]
 
     def _merge_heads(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Merge heads together over the last dimension
+        """Merge heads together over the last dimension.
 
         Args:
             x (`torch.tensor`, *required*): [batch_size * num_heads, seq_length, head_dim]
@@ -201,8 +199,7 @@ class H2OBloomAttention(nn.Module):
         return outputs
 
 def dropout_add(x: torch.Tensor, residual: torch.Tensor, prob: float, training: bool) -> torch.Tensor:
-    """
-    Dropout add function
+    """Dropout add function.
 
     Args:
         x (`torch.tensor`, *required*):
