@@ -1391,7 +1391,8 @@
         "topology": "llama2_7b_gptq",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1415,7 +1416,8 @@
         "topology": "gpt_j_woq_bab",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1439,7 +1441,8 @@
         "topology": "gpt_j_woq_rtn",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1586,7 +1589,8 @@
         "topology": "mistral_7b_autoround",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1611,7 +1615,8 @@
         "topology": "mistral_7b_gptq",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1637,7 +1642,8 @@
         "topology": "mistral_7b_rtn",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1662,7 +1668,8 @@
         "topology": "mistral_7b_autoround",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1686,7 +1693,8 @@
         "topology": "mistral_7b_gptq",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1711,7 +1719,8 @@
         "topology": "mistral_7b_rtn",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
