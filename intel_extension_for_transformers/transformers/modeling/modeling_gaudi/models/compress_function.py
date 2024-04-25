@@ -261,3 +261,57 @@ def token_asymmetric_dequantization(
     dequantized_input = dequantized_input.permute(0, 2, 1, 3)
     # print("decompress done")
     return dequantized_input
+
+class Buffer:
+    def __init__(self, is_k_states=True):
+        super(KVCache, self).__init__()
+        self.cache = None
+        self.inp_seq_len = -1
+        self.compress_cache = False
+        self.is_k_states = is_k_states
+
+    def compress(self, input):
+        self.cache.set_cache(input)
+        self.cache.compress()
+        return self.cache
+
+    def get_cache(self):
+        return self.cache.decompress()
+
+    def set_cache(self, prev, cur, dim, idx, inp_seq_len):
+        prev = prev.decompress()
+
+        if prev.shape == cur.shape:
+            prev.copy_(cur)
+        elif cur.shape[2] > 1 and cur.shape[2] <= prev.shape[2]:
+            # Initialize
+            prev[:, :, :inp_seq_len, :].copy_(cur)
+        elif idx is not None:
+            assert cur.shape[2] == 1, f"Cannot update kv-cache. Unsupported shapes. prev:{prev.shape} cur:{cur.shape}"
+            prev.index_copy_(dim, idx - 1, cur)
+        else:
+            prev = torch.cat((prev, cur), dim=dim)
+        self.cache.set_cache(prev)
+        self.cache.compress()
+        return self.cache
+
+    def build_compress_env(self):
+        # config_path = os.getenv("QUANT_CONFIG")
+        config_path = "./quantization_config/kv_cache.json"
+        # config_path = None
+        if config_path is not None:
+            import json
+            from ..compress_function import CompressedUnion
+            self.compress_cache = True
+            with open(config_path) as config_json:
+                compress_kwargs = json.load(config_json)
+            if self.is_k_states:
+                self.quantize_bit = compress_kwargs["k_quantize_bit"]
+                self.compress_mode = compress_kwargs["k_compress_mode"]
+                self.group_size = compress_kwargs["k_group_size"]
+            else:
+                self.quantize_bit = compress_kwargs["v_quantize_bit"]
+                self.compress_mode = compress_kwargs["v_compress_mode"]
+                self.group_size = compress_kwargs["v_group_size"]
+            self.cache = CompressedUnion(self.quantize_bit, self.compress_mode, self.group_size)
+
