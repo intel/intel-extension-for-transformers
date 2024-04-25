@@ -32,31 +32,24 @@ torch = LazyImport("torch")
 class MixedPrecisionConfig:
     dtype: str = "bfloat16"
 
+if transformers.__version__ >= "4.32.0":
+    from transformers.utils.quantization_config import QuantizationConfigMixin
+    QuantizationConfig = QuantizationConfigMixin
+else:
+    QuantizationConfig = PretrainedConfig
+from enum import Enum
 
-@dataclass
-class SmoothQuantConfig:
-    backend: str = "ipex"
-    ipex_opt_llm: bool = None
-    tokenizer: Any = None
-    calib_func: Any = None
-    calib_dataset: str = "NeelNanda/pile-10k"
-    calib_shuffle: bool = True
-    calib_iters: int = 100
-    calib_padding: bool = False
-    calib_len: int = 512
-    calib_pad_val: int = 1
-    alpha: float = 0.5
-    op_type_dict: dict = None
-    op_name_dict: dict = None
-    excluded_precisions: list = field(default_factory=list)
-    example_inputs: Any = None
-    num_beams: int = 1
-    recipes: dict = field(
-        default_factory=lambda: {
-            "smooth_quant": True,
-            "smooth_quant_args": {"alpha": 0.5},
-        }
-    )
+
+class QuantizationMethod(str, Enum):
+    BITS_AND_BYTES = "bitsandbytes"
+    GPTQ = "gptq"
+    AWQ = "awq"
+    AQLM = "aqlm"
+    RTN = "rtn"
+    AUTOROUND = "autoround"
+    TEQ = "teq"
+    STATIC = "static"
+    SmoothQuant = "sq"
 
 
 class SparsityConfig(PretrainedConfig):
@@ -240,24 +233,6 @@ class SparsityConfig(PretrainedConfig):
         return super().get_config_dict(
             pretrained_model_name_or_path, _configuration_file=SPARSITY_CONFIG, **kwargs
         )
-
-if transformers.__version__ >= "4.32.0":
-    from transformers.utils.quantization_config import QuantizationConfigMixin
-    QuantizationConfig = QuantizationConfigMixin
-else:
-    QuantizationConfig = PretrainedConfig
-from enum import Enum
-
-
-class QuantizationMethod(str, Enum):
-    BITS_AND_BYTES = "bitsandbytes"
-    GPTQ = "gptq"
-    AWQ = "awq"
-    AQLM = "aqlm"
-    RTN = "rtn"
-    AUTOROUND = "autoround"
-    TEQ = "teq"
-
 
 class ITREXQuantizationConfigMixin(QuantizationConfig):
     """Mixin class for quantization config."""
@@ -561,7 +536,8 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         remove_parameters = ["calib_dataloader", "dataset", "calib_func", "calib_iters", "calib_len",
         "double_quant_scale_dtype", "use_double_quant", "mse_range", "scheme", "tokenizer", "use_ggml",
         "use_neural_speed", "use_quant", "layer_wise", "blocksize", "nsamples", "max_input_length", "static_groups",
-        "lr", "minmax_lr", "iters", "use_quant_input", "device"]
+        "lr", "minmax_lr", "iters", "use_quant_input", "device", "calib_dataset", "calib_pad_val", "calib_shuffle",
+        "calib_padding", "example_inputs", "excluded_precisions", "op_name_dict", "op_type_dict"]
         for parameter in remove_parameters:
             if hasattr(self, parameter):
                 delattr(self, parameter)
@@ -624,6 +600,85 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             pretrained_model_name_or_path, _configuration_file=cf, **kwargs
         )
 
+class StaticQuantConfig(ITREXQuantizationConfigMixin):
+    def __init__(
+            self,
+            backend="default",
+            tokenizer=None,
+            calib_dataset="NeelNanda/pile-10k",
+            calib_dataloader=None,
+            calib_func=None,
+            calib_shuffle=True,
+            calib_iters=100,
+            calib_padding=False,
+            calib_len=512,
+            calib_pad_val=1,
+            op_name_dict=None,
+            op_type_dict=None,
+            excluded_precisions=[],
+            example_inputs=None,
+            **kwargs,
+    ):
+        self.quant_method = QuantizationMethod.STATIC
+        self.backend = backend
+        self.tokenizer = tokenizer
+        self.calib_dataset = calib_dataset
+        self.calib_dataloader = calib_dataloader
+        self.calib_func = calib_func
+        self.calib_shuffle = calib_shuffle
+        self.calib_iters = calib_iters
+        self.calib_padding = calib_padding
+        self.calib_len = calib_len
+        self.calib_pad_val = calib_pad_val
+        self.op_name_dict = op_name_dict
+        self.op_type_dict = op_type_dict
+        self.excluded_precisions = excluded_precisions
+        self.example_inputs = example_inputs
+
+class SmoothQuantConfig(StaticQuantConfig):
+    def __init__(
+            self,
+            backend="ipex",
+            tokenizer=None,
+            calib_dataset="NeelNanda/pile-10k",
+            calib_dataloader=None,
+            calib_func=None,
+            calib_shuffle=True,
+            calib_iters=100,
+            calib_padding=False,
+            calib_len=512,
+            calib_pad_val=1,
+            op_name_dict=None,
+            op_type_dict=None,
+            excluded_precisions=[],
+            example_inputs=None,
+            ipex_opt_llm=None,
+            alpha=0.5,
+            num_beams=1,
+            recipes={"smooth_quant": True, "smooth_quant_args":{"alpha":0.5}},
+            **kwargs,
+    ):
+        super().__init__(
+            backend=backend,
+            tokenizer=tokenizer,
+            calib_dataset=calib_dataset,
+            calib_dataloader=calib_dataloader,
+            calib_func=calib_func,
+            calib_shuffle=calib_shuffle,
+            calib_iters=calib_iters,
+            calib_padding=calib_padding,
+            calib_len=calib_len,
+            calib_pad_val=calib_pad_val,
+            op_name_dict=op_name_dict,
+            op_type_dict=op_type_dict,
+            excluded_precisions=excluded_precisions,
+            example_inputs=example_inputs,
+        )
+        self.quant_method = QuantizationMethod.SmoothQuant
+        self.ipex_opt_llm = ipex_opt_llm
+        self.alpha = alpha
+        self.num_beams = num_beams
+        self.recipes = recipes
 
 class RtnConfig(ITREXQuantizationConfigMixin):
     def __init__(

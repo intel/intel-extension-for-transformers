@@ -245,7 +245,7 @@ function run_tuning {
         script="run_generation_sq.py"
     elif [ "${topology}" = "llama2_7b_gptq" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-hf"
-        extra_cmd=$extra_cmd" --woq --bits 4 --compute_dtype fp32 --scheme asym "
+        extra_cmd=$extra_cmd" --woq --bits 4 --compute_dtype fp32 --scheme asym --calib_iters 100"
         extra_cmd=$extra_cmd" --woq_algo "GPTQ" --desc_act --blocksize 128 --max_input_length 2048 "
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
@@ -254,7 +254,7 @@ function run_tuning {
     elif [ "${topology}" = "mistral_7b_autoround" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
         extra_cmd=$extra_cmd" --woq --bits 4 --compute_dtype fp32 --scheme asym "
-        extra_cmd=$extra_cmd" --woq_algo "AutoRound" --desc_act --group_size 128 --calib_len 2048 "
+        extra_cmd=$extra_cmd" --woq_algo "AutoRound" --desc_act --group_size 128 --calib_len 2048 --calib_iters 100"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"
         extra_cmd=$extra_cmd" --weight_dtype ${weight_dtype}"
@@ -269,7 +269,7 @@ function run_tuning {
         script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "mistral_7b_gptq" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
-        extra_cmd=$extra_cmd" --woq --bits 4 --compute_dtype fp32 --scheme asym "
+        extra_cmd=$extra_cmd" --woq --bits 4 --compute_dtype fp32 --scheme asym --calib_iters 100"
         extra_cmd=$extra_cmd" --woq_algo "GPTQ" --desc_act --blocksize 128 --max_input_length 2048 --group_size 128"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code"

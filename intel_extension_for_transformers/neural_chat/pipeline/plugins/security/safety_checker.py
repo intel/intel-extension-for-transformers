@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Function to check the intent of the input user query with LLM."""
 from __future__ import division
 from .dict import defaultSensitiveWordSet

@@ -180,8 +180,8 @@ function run_benchmark {
 	    pip install transformers==4.35.2
         script="run_generation_sq.py"
     elif [ "${topology}" = "mistral_7b" ]; then
-        model_name_or_path="Intel/neural-chat-7b-v3
-        script="run_generation_sq.py""
+        model_name_or_path="Intel/neural-chat-7b-v3"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "phi_1b" ]; then
         model_name_or_path="susnato/phi-1_dev"
 	    pip install transformers==4.36.1
@@ -211,9 +211,6 @@ function run_benchmark {
         script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
         script="run_generation_cpu_woq.py"
-    elif [ "${topology}" = "gpt_j_mp" ]; then
-        extra_cmd=$extra_cmd" --mixed_precision"
-        script="run_generation_sq.py"
     elif [ "${topology}" = "llama2_7b_gptq" ]; then
         if [[ "$model_source" == "huggingface" ]]; then
             model_name_or_path="TheBloke/Llama-2-7B-Chat-GPTQ"
@@ -252,7 +249,7 @@ function run_benchmark {
         fi
     fi
     if [[ ${int8} == "true" ]] && [[ "$model_source" != "huggingface" ]]; then
-        if [ "${script}" == "run_generation_sq.py" ];then
+        if [[ "${script}" == "run_generation_sq.py" ]] && [[ "${topology}" != "gpt_j_mp" ]];then
             extra_cmd=$extra_cmd" --int8"
         fi
         model_name_or_path=$tuned_checkpoint

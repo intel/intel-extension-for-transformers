@@ -105,6 +105,7 @@ class AutoDistillation(NASBase):
                 model_arch_paras = self.select_model_arch()
             model = self._model_builder(model_arch_paras)
             if self.framework == 'tensorflow':
+                model.build()
                 model = reload_tf_model(model)
 
             model_paras = self.count_model_parameters(model)
