@@ -45,7 +45,7 @@ tts:
         output_audio_path: "./output_audio"
 
 tts_multilang:
-    enable: true
+    enable: false
     args:
         device: "cpu"
         precision: "fp32"
