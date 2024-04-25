@@ -35,7 +35,8 @@ from transformers.models.llama.modeling_llama import (
 from ..modeling_attn_mask_utils import (
     _gaudi_prepare_4d_causal_attention_mask,
 )
-
+import gc
+gc.enable()
 
 try:
     from habana_frameworks.torch.hpex.kernels import RotaryPosEmbeddingHelperV2 as FusedRoPE
@@ -169,15 +170,18 @@ class KVCache(torch.nn.Module):
         self.inp_seq_len = -1
         self.compress_cache = False
         self.is_k_states = is_k_states
+        self.past = None
+
+    def compress(self, input):
+        self.cache.set_cache(input)
+        self.cache.compress()
+        return self.cache
 
     def get_cache(self):
         return self.cache.decompress()
 
-    def set_cache(self, cur, dim, idx, inp_seq_len):
-        if self.cache.cache is None:
-            prev = cur
-        else:
-            prev = self.cache.decompress()
+    def set_cache(self, prev, cur, dim, idx, inp_seq_len):
+        prev = prev.decompress()
 
         if prev.shape == cur.shape:
             prev.copy_(cur)
@@ -326,6 +330,8 @@ class GaudiLlamaAttention(LlamaAttention):
         self.matmul_av = Matmul()
         self.k_cache = KVCache(is_k_states=True)
         self.v_cache = KVCache(is_k_states=False)
+        # self.past_k = KVCache(is_k_states=True)
+        # self.past_v = KVCache(is_k_states=False)
         self.inp_seq_len = -1
         self.norm_factor = 1.0 / math.sqrt(self.head_dim)
 
@@ -423,10 +429,14 @@ class GaudiLlamaAttention(LlamaAttention):
                 else:
                     kv_seq_len += past_key_value[0].shape[-2]
             else:
-                if reuse_cache:
-                    kv_seq_len = past_key_value[0][-2]
-                else:
+                try:
                     kv_seq_len = past_key_value[0].shape[-2]
+                except:
+                    kv_seq_len = past_key_value[0][-2]
+                # if reuse_cache:
+                #     kv_seq_len = past_key_value[0][-2]
+                # else:
+                #     kv_seq_len = past_key_value[0].shape[-2]
         else:
             self.k_cache.build_compress_env()
             self.v_cache.build_compress_env()
@@ -441,21 +451,12 @@ class GaudiLlamaAttention(LlamaAttention):
                 past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())
             else:
                 if past_key_value is None:
-                    if self.k_cache.compress_cache is True:
-                        past_key_value = (key_states.shape, key_states.shape)
-                    else:
-
-                        past_key = torch.zeros(key_states.shape, dtype=self.k_proj.weight.dtype, device=key_states.device)
-                        past_value = torch.zeros(
-                            key_states.shape, dtype=self.k_proj.weight.dtype, device=key_states.device
-                        )
-                        past_key_value = (past_key, past_value)
-                if self.k_cache.compress_cache is True:
-                    key_states = self.k_cache.set_cache(key_states, 2, token_idx, self.inp_seq_len)
-                    value_states = self.v_cache.set_cache(value_states, 2, token_idx, self.inp_seq_len)
+                    past_key = self.k_cache.compress(key_states)
+                    past_value = self.v_cache.compress(value_states)
+                    past_key_value = (past_key, past_value)
                 else:
-                    key_states = self.k_cache.update(past_key_value[0], key_states, 2, token_idx, self.inp_seq_len)
-                    value_states = self.v_cache.update(past_key_value[1], value_states, 2, token_idx, self.inp_seq_len)
+                    key_states = self.k_cache.set_cache(past_key_value[0], key_states, 2, token_idx, self.inp_seq_len)
+                    value_states = self.v_cache.set_cache(past_key_value[1], value_states, 2, token_idx, self.inp_seq_len)
                 if token_idx is None:
                     past_key_value = (key_states, value_states)
 
@@ -493,8 +494,7 @@ class GaudiLlamaAttention(LlamaAttention):
             query_states, key_states, value_states, attention_mask = gaudi_llama_repeat_kv(
                 query_states, key_states, value_states, attention_mask, self.num_key_value_groups
             )
-            if self.k_cache.compress_cache:
-                key_states = self.k_cache.get_cache()
+            key_states = self.k_cache.get_cache()
 
             attn_weights = self.matmul_qk(query_states, key_states.transpose(-2, -1)) * self.norm_factor
 
@@ -503,6 +503,7 @@ class GaudiLlamaAttention(LlamaAttention):
                 if cache_position is not None:
                     causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
                 attn_weights = attn_weights + causal_mask
+            del key_states; gc.collect()
 
             if attn_softmax_bf16:
                 attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=query_states.dtype)
@@ -512,10 +513,10 @@ class GaudiLlamaAttention(LlamaAttention):
                     query_states.dtype
                 )
             attn_weights = torch.nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
-            if self.v_cache.compress_cache:
-                value_states = self.v_cache.get_cache()
+            value_states = self.v_cache.get_cache()
 
             attn_output = self.matmul_av(attn_weights, value_states)
+            del value_states; gc.collect()
             attn_output = attn_output.reshape(bsz, -1, q_len, self.head_dim)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):

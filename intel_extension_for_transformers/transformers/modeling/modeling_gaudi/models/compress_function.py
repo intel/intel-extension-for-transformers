@@ -135,6 +135,7 @@ class CompressedUnion:
         self.min = None
         self.step = None
         self.shape = None
+        self.scale = None
 
     def compress(self):
         # print("compress")
@@ -155,7 +156,7 @@ class CompressedUnion:
         elif self.compress_mode == "token_asymmetric_quantization":
             output = token_asymmetric_dequantization(
                 self.cache, self.scale, self.mn, self.quantize_bit, self.shape, self.group_size).to(self.dtype)
-        self.clean_cache()
+        # self.clean_cache()
         return output
 
 def channel_asymmetric_quantization(
@@ -230,6 +231,7 @@ def channel_asymmetric_dequantization(
     # for i in range(input.shape[-1]):
     #     for j in range(rounded_input.shape[2]):
     #         rounded_input[:, :, j].__ior__(rounded_input[:, :, i].__irshift__(quantize_bit * (rounded_input.shape[2] - j)))
+    # import pdb;pdb.set_trace()
     rounded_input = input.repeat(1,1,sep_dim * num_head // input.shape[2])
     idx =  torch.tensor(list(range(0, 32, quantize_bit)), dtype=torch.int32).unsqueeze(0)
     rounded_input = torch.bitwise_right_shift(rounded_input, idx.repeat(1, rounded_input.shape[2] // (32 // quantize_bit)))
