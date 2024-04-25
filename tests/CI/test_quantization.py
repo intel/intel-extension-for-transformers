@@ -317,6 +317,8 @@ class TestQuantization(unittest.TestCase):
             MixedPrecisionConfig,
             SmoothQuantConfig,
             StaticQuantConfig,
+            DynamicQuantConfig,
+            QuantAwareTrainingConfig,
             RtnConfig,
             AwqConfig,
             TeqConfig,
@@ -327,6 +329,21 @@ class TestQuantization(unittest.TestCase):
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
         fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_neural_speed=False)
         dummy_input = fp32_model.dummy_inputs["input_ids"]
+
+        # Dynamic quant
+        dq_config = DynamicQuantConfig()
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=dq_config,
+                                                )
+        q_model.eval()
+        output = q_model(dummy_input)
+        q_model.save_pretrained("./saved_results")
+        output = q_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17140813171863556, rel_tol=1e-04))
+        q_model = AutoModelForCausalLM.from_pretrained("./saved_results"
+                                                )
+        output = q_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17140813171863556, rel_tol=1e-04))
         # Static quant
         sq_config = StaticQuantConfig(
                                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
@@ -343,6 +360,22 @@ class TestQuantization(unittest.TestCase):
         loading_model.eval()
         output = loading_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.17378684878349304, rel_tol=1e-04))
+        # Quant aware training
+        qat_config = QuantAwareTrainingConfig(
+                                    tokenizer=tokenizer,  # either two of one, tokenizer or train_func
+                                    train_iters=2,
+                                    )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=qat_config,
+                                                )
+        q_model.eval()
+        output = q_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17362995445728302, rel_tol=1e-04))
+        q_model.save_pretrained("./saved_results")
+        loading_model = AutoModelForCausalLM.from_pretrained("./saved_results")
+        loading_model.eval()
+        output = loading_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17362995445728302, rel_tol=1e-04))
         # Smoothquant
         sq_config = SmoothQuantConfig(
                                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
