@@ -48,8 +48,11 @@ class QuantizationMethod(str, Enum):
     RTN = "rtn"
     AUTOROUND = "autoround"
     TEQ = "teq"
+    DYNAMIC = "dynamic"
     STATIC = "static"
     SmoothQuant = "sq"
+    QuantAwareTraining = "qat"
+
 
 
 class SparsityConfig(PretrainedConfig):
@@ -537,7 +540,9 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         "double_quant_scale_dtype", "use_double_quant", "mse_range", "scheme", "tokenizer", "use_ggml",
         "use_neural_speed", "use_quant", "layer_wise", "blocksize", "nsamples", "max_input_length", "static_groups",
         "lr", "minmax_lr", "iters", "use_quant_input", "device", "calib_dataset", "calib_pad_val", "calib_shuffle",
-        "calib_padding", "example_inputs", "excluded_precisions", "op_name_dict", "op_type_dict"]
+        "calib_padding", "example_inputs", "excluded_precisions", "op_name_dict", "op_type_dict", "train_dataloader",
+        "train_func", "train_iters", "train_len", "train_padding", "train_dataset", "train_pad_val", "train_shuffle",
+        "train_batch_size"]
         for parameter in remove_parameters:
             if hasattr(self, parameter):
                 delattr(self, parameter)
@@ -599,6 +604,55 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         return super().get_config_dict(
             pretrained_model_name_or_path, _configuration_file=cf, **kwargs
         )
+
+class QuantAwareTrainingConfig(ITREXQuantizationConfigMixin):
+    def __init__(
+            self,
+            backend="default",
+            tokenizer=None,
+            train_dataset="NeelNanda/pile-10k",
+            train_dataloader=None,
+            train_func=None,
+            train_shuffle=True,
+            train_iters=100,
+            train_padding=True,
+            train_batch_size=8,
+            train_len=512,
+            train_pad_val=1,
+            op_name_dict=None,
+            op_type_dict=None,
+            excluded_precisions=[],
+            **kwargs,
+    ):
+        self.quant_method = QuantizationMethod.QuantAwareTraining
+        self.backend = backend
+        self.tokenizer = tokenizer
+        self.train_dataset = train_dataset
+        self.train_dataloader = train_dataloader
+        self.train_func = train_func
+        self.train_shuffle = train_shuffle
+        self.train_iters = train_iters
+        self.train_padding = train_padding
+        self.train_len = train_len
+        self.train_pad_val = train_pad_val
+        self.train_batch_size = train_batch_size
+        self.op_name_dict = op_name_dict
+        self.op_type_dict = op_type_dict
+        self.excluded_precisions = excluded_precisions
+
+
+class DynamicQuantConfig(ITREXQuantizationConfigMixin):
+    def __init__(
+            self,
+            excluded_precisions=[],
+            op_name_dict=None,
+            op_type_dict=None,
+            **kwargs,
+    ):
+        self.quant_method = QuantizationMethod.DYNAMIC
+        self.excluded_precisions = excluded_precisions
+        self.op_name_dict = op_name_dict
+        self.op_type_dict = op_type_dict
 
 class StaticQuantConfig(ITREXQuantizationConfigMixin):
     def __init__(
