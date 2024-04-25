@@ -2,13 +2,19 @@ import argparse
 import json, tqdm
 import torch
 import copy
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+import sys
+sys.path.insert(0, '/home/hengguo/code/intel-extension-for-transformers')
 
 from lm_eval import evaluator, tasks
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
-from intel_extension_for_transformers.transformers.modeling.kv_cahe_compression.h2o_sim_drop.modify_llama import convert_kvcache_llama_heavy_recent
-from intel_extension_for_transformers.transformers.modeling.kv_cahe_compression.h2o_sim_drop.modify_opt import convert_kvcache_opt_heavy_recent
-from intel_extension_for_transformers.transformers.modeling.kv_cahe_compression.h2o_sim_drop.modify_gptneox import convert_kvcache_gpt_neox_heavy_recent
+from intel_extension_for_transformers.transformers.modeling.kv_cache_compression.h2o_sim_drop.modify_llama import convert_kvcache_llama_heavy_recent
+from intel_extension_for_transformers.transformers.modeling.kv_cache_compression.h2o_sim_drop.modify_opt import convert_kvcache_opt_heavy_recent
+from intel_extension_for_transformers.transformers.modeling.kv_cache_compression.h2o_sim_drop.modify_gptneox import convert_kvcache_gpt_neox_heavy_recent
+
 
 from tasks import EvalHarnessAdaptor
 
@@ -24,12 +30,13 @@ if __name__ == '__main__':
                         prog = 'ProgramName',
                         description = 'What the program does',
                         epilog = 'Text at the bottom of help')
-    parser.add_argument('--task_name', type=str, default='hellaswag')
+    parser.add_argument("--tasks", nargs='+', default=["lambada_openai",
+                                                   "hellaswag", "winogrande", "piqa", "wikitext"],
+                    type=str, help="tasks list for accuracy validation")
     parser.add_argument('--num_fewshot', type=int, default=0)
 
     parser.add_argument('--enable_small_cache', action='store_true')
     parser.add_argument('--model_name', type=str, default='facebook/opt-350m')
-    parser.add_argument('--model_type', type=str, default='opt')
     parser.add_argument("--cache_dir", type=str, default=None)
 
     parser.add_argument("--heavy_ratio", type=float, default=0.1)
@@ -70,7 +77,7 @@ if __name__ == '__main__':
             return out
     t = DryRunner()
     adaptor = EvalHarnessAdaptor(t, seq, batch_size, shrink=pe != "fixed")
-    result = evaluator.evaluate(adaptor, tasks.get_task_dict([args.task_name]), False, args.num_fewshot, None)
+    result = evaluator.evaluate(adaptor, tasks.get_task_dict(args.tasks), False, args.num_fewshot, None)
 
     model_name = args.model_name
     if 'cpu' in args.device:
@@ -84,13 +91,14 @@ if __name__ == '__main__':
 
     if args.enable_small_cache:
         print('Enable Small Cache Size')
-        config.heavy_ratio = args.heavy_ratio
-        config.recent_ratio = args.recent_ratio
-        checkpoint = copy.deepcopy(model.state_dict())
-        model = ENABLE_Heavy_Hitter_FUNCTIONS[args.model_type](model, config)
-        model.load_state_dict(checkpoint)
+        # checkpoint = copy.deepcopy(model.state_dict())
+        # model = ENABLE_Heavy_Hitter_FUNCTIONS[args.model_type](model, config)
+        from intel_extension_for_transformers.transformers.modeling.kv_cache_compression import convert_model
+        model = convert_model(model, heavy_ratio=args.heavy_ratio, recent_ratio=args.recent_ratio, h2o_min_seqlen=0)
+        # model.load_state_dict(checkpoint)
 
     model = model.to(device)
+    print('using device: ', device)
     model.eval()
     # model.half().eval()
 
@@ -205,7 +213,7 @@ if __name__ == '__main__':
     t = RealRunner(args)
 
     adaptor = EvalHarnessAdaptor(t, seq, batch_size, shrink=pe != "fixed")
-    results = evaluator.evaluate(adaptor, tasks.get_task_dict([args.task_name]), False, args.num_fewshot, None)
+    results = evaluator.evaluate(adaptor, tasks.get_task_dict(args.tasks), False, args.num_fewshot, None)
     
     dumped = json.dumps(results, indent=2)
     print(dumped)
