@@ -28,6 +28,7 @@ from intel_extension_for_transformers.neural_chat.utils.common import get_device
 from intel_extension_for_transformers.neural_chat.server.restful.voicechat_api import router
 from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts import TextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 
 app = FastAPI()
@@ -53,12 +54,17 @@ class UnitTest(unittest.TestCase):
         plugins['tts']['enable'] = True
         plugins['tts']['args']['output_audio_path'] = "./output_audio.wav"
         plugins['tts']['args']['stream_mode'] = True
+        plugins['tts_multilang']['class'] = MultilangTextToSpeech
+        plugins['tts_multilang']['args']['output_audio_path'] = "./output_audio2.wav"
         plugins['asr']['class'] = AudioSpeechRecognition
         plugins['asr']['enable'] = True
         plugins['tts']['instance'] = plugins['tts']['class'](device='cpu',
                                         voice="default",
                                         stream_mode=False,
                                         output_audio_path="./output_audio.wav")
+        plugins['tts_multilang']['instance'] = plugins['tts_multilang']['class'](device='cpu',
+                                        voice="default",
+                                        output_audio_path="./output_audio2.wav")
         plugins['asr']['instance'] = plugins['asr']['class'](device='cpu',
                                         model_name_or_path="openai/whisper-small")
 
@@ -117,6 +123,25 @@ class UnitTest(unittest.TestCase):
         }
         response = client.post("/v1/audio/speech", json=tts_data)
         assert response.status_code == 200
+
+    def test_create_speech_multilang(self):
+        # set True/revert False at runtime to avoid enabling two TTS instances at the same time
+        # otherwise it will illegally invoke post_llm_inference_actions once for each TTS sequentially
+        plugins['tts_multilang']['enable'] = True
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        router.set_chatbot(chatbot)
+        tts_data = {
+            "model": "bert-vits2",
+            "input": "你好。",
+            "voice": "default",
+        }
+        response = client.post("/v1/audio/speech", json=tts_data)
+        assert response.status_code == 200
+        plugins['tts_multilang']['enable'] = False
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        router.set_chatbot(chatbot)
 
     def test_create_transcription(self):
         # Create a test audio file for ASR
