@@ -1,6 +1,7 @@
 import copy
 import glob
 import os
+import sys
 import shutil
 import tempfile
 import time
@@ -20,6 +21,62 @@ from optimum.habana.checkpoint_utils import (
 from optimum.habana.utils import check_habana_frameworks_version
 from optimum.habana.utils import check_optimum_habana_min_version
 from optimum.habana.utils import set_seed
+
+"Compute 'sliding window' perplexity on a dataset. Validated against the calculations reported in arXiv 2306.15595"
+def compute_perplexity(model, tokenizer, inputs, samples_num=None, add_start_token=True, max_length=None, sliding_window=256, truncate=False):
+
+    if samples_num:
+        encodings = inputs[: samples_num]
+
+    device='hpu'
+    max_tokenized_len = max_length - 1 if add_start_token else max_length
+
+    encoded_texts = encodings["input_ids"]
+    attn_masks = encodings["attention_mask"]
+
+    if max_length and truncate:
+        encoded_texts = [x[0:max_tokenized_len] for x in encoded_texts]
+        attn_masks = [x[0:max_tokenized_len] for x in attn_masks]
+        # sliding_window = max_tokenized_len
+
+    nlls = []
+    t_ppl = time.perf_counter()
+    for encoding_index in range(0, len(encoded_texts)):
+        labels = torch.tensor(encoded_texts[encoding_index:encoding_index+1])
+        seq_len = labels.size(1)
+
+        prev_end_loc = 0
+        for begin_loc in range(0, seq_len, sliding_window):
+
+            end_loc = min(begin_loc + max_tokenized_len, seq_len)
+            trg_len = end_loc - prev_end_loc
+            input_ids = labels[:, begin_loc:end_loc].to(device)
+
+            if add_start_token:
+                bos_tokens_tensor = torch.tensor(
+                    [[tokenizer.bos_token_id]] * input_ids.size(dim=0)).to(device)
+                input_ids = torch.cat(
+                    [bos_tokens_tensor, input_ids], dim=1)
+
+            target_ids = input_ids.clone()
+            target_ids[:, :-trg_len] = -100
+
+            with torch.no_grad():
+                outputs = model(input_ids, labels=target_ids)
+                neg_log_likelihood = outputs.loss
+            
+            nlls.append(neg_log_likelihood)
+
+            ppl = float(torch.exp(torch.stack(nlls).mean()).float().cpu())
+
+            prev_end_loc = end_loc
+            if end_loc == seq_len:
+                break
+
+    ppl = float(torch.exp(torch.stack(nlls).mean()).float().cpu())
+    ppl_duration = time.perf_counter() - t_ppl
+    return {'max_length': max_length, 'ppl': ppl, 'duration': ppl_duration, 'samples_num': samples_num, 'sliding_window': sliding_window}
+
 
 def print_memory_stats(p_info=""):
     from optimum.habana.utils import get_hpu_memory_stats
