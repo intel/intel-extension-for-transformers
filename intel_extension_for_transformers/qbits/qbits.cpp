@@ -114,7 +114,15 @@ static void woq_linear(const torch::Tensor& activation, const torch::Tensor& wei
                        torch::Tensor& output, const std::string& compute_type, const std::string& weight_type,
                        const std::string& scale_type, bool asym) {
   woq::woq_config_param p;
+
+  torch::Tensor bias_fp32;
   torch::Tensor* rt_bias = bias.numel() == 0 ? &output : const_cast<torch::Tensor*>(&bias);
+  if (bias.scalar_type() != torch::kFloat32) {
+    LOG(WARNING) << "QBits: bias in qbits linear op should be fp32, internal convertion will affect performance";
+    bias_fp32 = bias.to(torch::kFloat32);
+    rt_bias = &bias_fp32;
+  }
+
   woq::woq_runtime_ctx ctx{
       const_cast<torch::Tensor*>(&activation),
       const_cast<torch::Tensor*>(&weight),
