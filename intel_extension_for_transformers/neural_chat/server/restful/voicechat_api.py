@@ -84,6 +84,12 @@ class VoiceChatAPIRouter(APIRouter):
                                                            voice=voice,
                                                            speedup=speed)
                 return FileResponse(result_path)
+            elif model == "bert-vits2":
+                result_path: str = chatbot.tts_multilang.text2speech(text=input,
+                                                           output_audio_path="speech.{}".format(response_format),
+                                                           voice=voice,
+                                                           )
+                return FileResponse(result_path)
             else:
                 raise Exception("More models to be supported soon!")
         except Exception as e:

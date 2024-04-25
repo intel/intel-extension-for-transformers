@@ -44,5 +44,11 @@ tts:
         stream_mode: true
         output_audio_path: "./output_audio"
 
+tts_multilang:
+    enable: true
+    args:
+        device: "cpu"
+        precision: "fp32"
+
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
 tasks_list: ['voicechat']

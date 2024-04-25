@@ -98,6 +98,15 @@ curl http://localhost:8888/v1/audio/speech \
     "voice": "default"
   }' \
   --output speech.mp3
+
+curl http://localhost:8888/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "bert-vits2",
+    "input": "欢迎来到英特尔。",
+    "voice": "default"
+  }' \
+  --output speech.mp3
 ```
 
 # Customized endpoints of a audio-input-audio-output pipeline
