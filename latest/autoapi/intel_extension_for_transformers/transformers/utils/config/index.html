@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.transformers.utils.config &mdash; Intel® Extension for Transformers 0.1.dev1+g8116fbb documentation</title>
+  <title>intel_extension_for_transformers.transformers.utils.config &mdash; Intel® Extension for Transformers 0.1.dev1+g6a15b48 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=fd3f3429" />
@@ -101,6 +101,12 @@
 <td><p>str(object='') -&gt; str</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.config.ITREXQuantizationConfigMixin" title="intel_extension_for_transformers.transformers.utils.config.ITREXQuantizationConfigMixin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ITREXQuantizationConfigMixin</span></code></a></p></td>
+<td><p>Mixin class for quantization config.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.config.QuantAwareTrainingConfig" title="intel_extension_for_transformers.transformers.utils.config.QuantAwareTrainingConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QuantAwareTrainingConfig</span></code></a></p></td>
+<td><p>Mixin class for quantization config.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.config.DynamicQuantConfig" title="intel_extension_for_transformers.transformers.utils.config.DynamicQuantConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DynamicQuantConfig</span></code></a></p></td>
 <td><p>Mixin class for quantization config.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.config.StaticQuantConfig" title="intel_extension_for_transformers.transformers.utils.config.StaticQuantConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StaticQuantConfig</span></code></a></p></td>
@@ -209,6 +215,18 @@ namespace).</p></li>
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.config.QuantAwareTrainingConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.config.</span></span><span class="sig-name descname"><span class="pre">QuantAwareTrainingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'NeelNanda/pile-10k'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_dataloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_len</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_pad_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_type_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">excluded_precisions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.config.QuantAwareTrainingConfig" title="Link to this definition"></a></dt>
+<dd><p>Mixin class for quantization config.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.config.DynamicQuantConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.config.</span></span><span class="sig-name descname"><span class="pre">DynamicQuantConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">excluded_precisions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_type_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.config.DynamicQuantConfig" title="Link to this definition"></a></dt>
+<dd><p>Mixin class for quantization config.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -352,7 +370,7 @@ for better readability and serializes to a Python dictionary.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5eb76ebf70> 
+   <jinja2.runtime.BlockReference object at 0x7fb62d350c40> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

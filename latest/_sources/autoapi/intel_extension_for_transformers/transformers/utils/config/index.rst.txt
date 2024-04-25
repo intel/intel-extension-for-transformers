@@ -19,6 +19,8 @@ Classes
 
    intel_extension_for_transformers.transformers.utils.config.QuantizationMethod
    intel_extension_for_transformers.transformers.utils.config.ITREXQuantizationConfigMixin
+   intel_extension_for_transformers.transformers.utils.config.QuantAwareTrainingConfig
+   intel_extension_for_transformers.transformers.utils.config.DynamicQuantConfig
    intel_extension_for_transformers.transformers.utils.config.StaticQuantConfig
    intel_extension_for_transformers.transformers.utils.config.SmoothQuantConfig
    intel_extension_for_transformers.transformers.utils.config.RtnConfig
@@ -103,6 +105,22 @@ Classes
       :param kwargs: Additional key word arguments passed along to the [`~utils.PushToHubMixin.push_to_hub`] method.
       :type kwargs: `Dict[str, Any]`, *optional*
 
+
+
+.. py:class:: QuantAwareTrainingConfig(backend='default', tokenizer=None, train_dataset='NeelNanda/pile-10k', train_dataloader=None, train_func=None, train_shuffle=True, train_iters=100, train_padding=True, train_batch_size=8, train_len=512, train_pad_val=1, op_name_dict=None, op_type_dict=None, excluded_precisions=[], **kwargs)
+
+
+
+
+   Mixin class for quantization config.
+
+
+.. py:class:: DynamicQuantConfig(excluded_precisions=[], op_name_dict=None, op_type_dict=None, **kwargs)
+
+
+
+
+   Mixin class for quantization config.
 
 
 .. py:class:: StaticQuantConfig(backend='default', tokenizer=None, calib_dataset='NeelNanda/pile-10k', calib_dataloader=None, calib_func=None, calib_shuffle=True, calib_iters=100, calib_padding=False, calib_len=512, calib_pad_val=1, op_name_dict=None, op_type_dict=None, excluded_precisions=[], example_inputs=None, **kwargs)
