@@ -56,6 +56,7 @@ class VoiceChatAPIRouter(APIRouter):
         chatbot = self.get_chatbot()
         try:
             plugins.tts.args["voice"] = voice
+            plugins.tts_multilang.args["voice"] = voice
             config = GenerationConfig(audio_output_path=audio_output_path)
             result, link = chatbot.chat_stream(query=prompt, config=config)
             def audio_file_generate(result):
