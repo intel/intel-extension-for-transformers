@@ -33,7 +33,7 @@ class TestMultilangTextToSpeech(unittest.TestCase):
 
     def test_pre_llm_inference_actions_int8(self):
         text = "欢迎来到英特尔，welcome to Intel。こんにちは！"
-        output_audio_path = MultilangTextToSpeech().post_llm_inference_actions(text=text)
+        output_audio_path = MultilangTextToSpeech().post_llm_inference_actions(text_or_generator=text)
         self.assertTrue(os.path.exists(output_audio_path))
 
     def test_pre_llm_inference_actions_bf16(self):
