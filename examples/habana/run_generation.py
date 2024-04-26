@@ -7,6 +7,7 @@ import json
 import logging
 import math
 import os
+import sys
 import time
 from itertools import cycle
 from pathlib import Path
@@ -35,6 +36,9 @@ def setup_parser(parser):
             "--tokenized", 
             type=str, help="Dataset has been tokenized", default=None)
     parser.add_argument(
+            "--save_tokenized", 
+            type=str, help="Path to save tokenized file", default=None)
+    parser.add_argument(
         "--model_name_or_path",
         default=None,
         type=str,
@@ -47,7 +51,7 @@ def setup_parser(parser):
         help="Whether to perform generation in bf16 precision.",
     )
     parser.add_argument("--max_new_tokens", type=int, default=100, help="Number of tokens to generate.")
-    parser.add_argument("--size", type=int, default=19, help="Enlarge the input prompt")
+    parser.add_argument("--size", type=int, default=1, help="Enlarge the input prompt")
     parser.add_argument(
         "--max_input_tokens",
         type=int,
@@ -137,7 +141,7 @@ def setup_parser(parser):
 def main():
     parser = argparse.ArgumentParser()
     args = setup_parser(parser)
-    model, tokenizer, generation_config = initialize_model(args, logger)
+    model, tokenizer, generation_config = initialize_model(args)
     # print_memory_stats()
     use_lazy_mode = True
     if args.torch_compile and model.config.model_type == "llama":
@@ -152,14 +156,14 @@ def main():
         else:
             input_sentences = datasets.load_dataset(args.dataset_name, split='test')
             tokenizer.pad_token = tokenizer.eos_token
-            feature = 'text' if column_name is None else column_name
+            feature = 'text'
             def tokenize(example):
                 tokenized = tokenizer(
                     example[feature],
                     add_special_tokens=False,
                     padding=True,
                     truncation=False,
-                    max_length=args.max_input_tokens,
+                    max_length=sys.maxsize,
                     return_attention_mask=True,
                 )
                 example["input_ids"] = tokenized["input_ids"]
@@ -168,11 +172,14 @@ def main():
                 return example
     
             input_sentences = input_sentences.map(tokenize)
-            # TODO you can save the tokenized results, this will save a lot of time
-            # inputs.save_to_disk("tokenized_path/token_1k")
     
         input_sentences = input_sentences.filter(lambda x: x["tokenized_len"] >= args.size * 1024)
         input_sentences = input_sentences.filter(lambda x: x["tokenized_len"] <= (args.size + 2) * 1024)
+        # TODO you can save the tokenized results, this will save a lot of time
+        if args.save_tokenized:
+            input_sentences.save_to_disk(args.save_tokenized)
+            print("Token has been save to {}".format(args.save_tokenized))
+            return
 
     else:
         input_sentences = [p * args.size for p in args.prompt]
@@ -200,16 +207,17 @@ def main():
         results = []
         result = []
         has_bos_token = tokenizer.bos_token is not None
-        samples_numbers = [10, 20, 50]
+        # samples_number will influence the ppl
+        samples_numbers = [50]
         sliding_windows = [256, 512, 1024]
         for samples_num  in samples_numbers:
-            for sliding_window in sliding_windows:
-                ppl = compute_perplexity(
-                        model, tokenizer, inputs, samples_num,
-                        add_start_token=has_bos_token, max_length=args.size*1024,
-                        sliding_window=sliding_window, truncate=True)
-                print("PPL result is {}".format(ppl)) 
-                result.append(ppl)
+            # for sliding_window in sliding_windows:
+            ppl = compute_perplexity(
+                    model, tokenizer, inputs, samples_num,
+                    add_start_token=has_bos_token, max_length=args.size*1024,
+                    sliding_window=512, truncate=True)
+            print("PPL result is {}".format(ppl)) 
+            result.append(ppl)
     
         result.insert(0, model)
         results.append(result)

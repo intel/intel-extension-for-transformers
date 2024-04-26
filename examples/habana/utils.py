@@ -37,7 +37,7 @@ def compute_perplexity(model, tokenizer, inputs, samples_num=None, add_start_tok
     if max_length and truncate:
         encoded_texts = [x[0:max_tokenized_len] for x in encoded_texts]
         attn_masks = [x[0:max_tokenized_len] for x in attn_masks]
-        # sliding_window = max_tokenized_len
+        sliding_window = max_tokenized_len
 
     nlls = []
     t_ppl = time.perf_counter()
@@ -75,7 +75,7 @@ def compute_perplexity(model, tokenizer, inputs, samples_num=None, add_start_tok
 
     ppl = float(torch.exp(torch.stack(nlls).mean()).float().cpu())
     ppl_duration = time.perf_counter() - t_ppl
-    return {'max_length': max_length, 'ppl': ppl, 'duration': ppl_duration, 'samples_num': samples_num, 'sliding_window': sliding_window}
+    return {'max_length': max_length, 'ppl': ppl, 'duration': ppl_duration, 'samples_num': samples_num}
 
 
 def print_memory_stats(p_info=""):
@@ -106,37 +106,8 @@ def adjust_batch(batch, size):
     return adjusted_batch
 
 
-def override_print(enable):
-    import builtins as __builtin__
-
-    builtin_print = __builtin__.print
-
-    def print(*args, **kwargs):
-        force = kwargs.pop("force", False)
-        if force or enable:
-            builtin_print(*args, **kwargs)
-
-    __builtin__.print = print
-
-
-def override_logger(logger, enable):
-    logger_info = logger.info
-
-    def info(*args, **kwargs):
-        force = kwargs.pop("force", False)
-        if force or enable:
-            logger_info(*args, **kwargs)
-
-    logger.info = info
-
-
 def count_hpu_graphs():
     return len(glob.glob(".graph_dumps/*PreGraph*"))
-
-
-def override_prints(enable, logger):
-    override_print(enable)
-    override_logger(logger, enable)
 
 
 def setup_distributed(args):
@@ -207,8 +178,7 @@ def get_torch_compiled_model(model):
     return model
 
 
-def setup_model(args, model_dtype, model_kwargs, logger):
-    logger.info("Single-device run.")
+def setup_model(args, model_dtype, model_kwargs):
     model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs)
     if args.quant_config:
         import habana_quantization_toolkit
@@ -233,10 +203,9 @@ def setup_model(args, model_dtype, model_kwargs, logger):
     return model
 
 
-def setup_distributed_model(args, model_dtype, model_kwargs, logger):
+def setup_distributed_model(args, model_dtype, model_kwargs):
     import deepspeed
 
-    logger.info("DeepSpeed is enabled.")
     deepspeed.init_distributed(dist_backend="hccl")
     config = AutoConfig.from_pretrained(args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs)
     load_to_meta = model_on_meta(config)
@@ -255,7 +224,7 @@ def setup_distributed_model(args, model_dtype, model_kwargs, logger):
             if args.local_rank == 0:
                 if Path(merged_model_dir).is_dir():
                     shutil.rmtree(merged_model_dir)
-                peft_model(args, model_dtype, logger, **model_kwargs).save_pretrained(merged_model_dir)
+                peft_model(args, model_dtype, **model_kwargs).save_pretrained(merged_model_dir)
             torch.distributed.barrier()
 
         write_checkpoints_json(
@@ -268,7 +237,7 @@ def setup_distributed_model(args, model_dtype, model_kwargs, logger):
         # TODO: revisit placement on CPU when auto-injection is possible
         with deepspeed.OnDevice(dtype=model_dtype, device="cpu"):
             if args.peft_model is not None:
-                model = peft_model(args, model_dtype, logger, **model_kwargs)
+                model = peft_model(args, model_dtype, **model_kwargs)
             else:
                 model = AutoModelForCausalLM.from_pretrained(
                     args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs
@@ -299,7 +268,7 @@ def setup_distributed_model(args, model_dtype, model_kwargs, logger):
     return model
 
 
-def peft_model(args, model_dtype, logger, **model_kwargs):
+def peft_model(args, model_dtype, **model_kwargs):
     import importlib.util
 
     if importlib.util.find_spec("peft") is None:
@@ -326,12 +295,6 @@ def peft_model(args, model_dtype, logger, **model_kwargs):
     if base_model_is_local or base_model_is_remote:
         model = AutoPeftModelForCausalLM.from_pretrained(args.peft_model, torch_dtype=model_dtype, **model_kwargs)
     else:
-        # Since the base model doesn't exist locally nor remotely, use `args.model_name_or_path` as the base model
-        logger.warning(
-            f"The base model `{base_model_name}` of the LoRA configuration associated"
-            f" to `{args.peft_model}` does not exist locally or remotely. Using "
-            f"`--model_name_or_path {args.model_name_or_path}` as a fall back for the base model."
-        )
         from peft import PeftModel
 
         model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs)
@@ -400,10 +363,11 @@ def setup_generation_config(args, model, tokenizer):
     return generation_config
 
 
-def initialize_model(args, logger):
+def initialize_model(args):
+    args.quant_config = os.getenv("QUANT_CONFIG", "")
     init_start = time.perf_counter()
     setup_distributed(args)
-    override_prints(args.global_rank == 0 or args.verbose_workers, logger)
+    # override_prints(args.global_rank == 0 or args.verbose_workers,)
     setup_env(args)
     setup_device(args)
     set_seed(27)
@@ -425,9 +389,9 @@ def initialize_model(args, logger):
     model_kwargs["offload_folder"] = "/tmp/offload_folder/"
 
     model = (
-        setup_model(args, model_dtype, model_kwargs, logger)
+        setup_model(args, model_dtype, model_kwargs)
         if not use_deepspeed
-        else setup_distributed_model(args, model_dtype, model_kwargs, logger)
+        else setup_distributed_model(args, model_dtype, model_kwargs)
     )
     tokenizer, model = setup_tokenizer(args, model)
     generation_config = setup_generation_config(args, model, tokenizer)
@@ -443,7 +407,4 @@ def initialize_model(args, logger):
             # TODO always initialize model
         htcore.hpu_initialize(model)
     init_end = time.perf_counter()
-    # logger.info(f"Args: {args}")
-    logger.info(f"device: {args.device}, n_hpu: {args.world_size}, bf16: {model_dtype == torch.bfloat16}")
-    logger.info(f"Model initialization took {(init_end - init_start):.3f}s")
     return model, tokenizer, generation_config
