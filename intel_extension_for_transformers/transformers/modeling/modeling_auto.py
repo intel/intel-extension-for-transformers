@@ -1745,8 +1745,42 @@ class _BaseQBitsAutoModelClass:
             logger.warning("scale_dtype only support fp32, bf16, fp16.")
             quantization_config.scale_dtype = "fp32"
             logger.warning("fp32 scale_dtype is used, please change the config.json if you don't want to use it.")
+
+        # weight dtype is higher priority than bits in config.json when both existed.
         if quantization_config.weight_dtype is None:
-            quantization_config.weight_dtype = "int4_clip"
+            if quantization_config.bits == 4:
+                quantization_config.weight_dtype = "int4_clip"
+                logger.info(
+                    "{} quantization weight_dtype is used due to bits is 4 in config.json.".format(
+                        quantization_config.weight_dtype)
+                    )
+            elif quantization_config.bits == 8:
+                quantization_config.weight_dtype = "int8"
+                logger.info(
+                    "{} quantization weight_dtype is used due to bits is 8 in config.json.".format(
+                        quantization_config.weight_dtype)
+                    )
+            else:
+                logger.warning("bits number only support 4, 8.")
+                quantization_config.weight_dtype = "int4_clip"
+                logger.warning(
+                    "int4_clip weight_dtype is used, please change the config.json if you don't want to use it.")
+        else:
+            if quantization_config.weight_dtype not in ["int4_fullrange",
+                                                         "int4_clip",
+                                                         "int8",
+                                                         "fp8_e5m2",
+                                                         "fp8_e4m3",
+                                                         "nf4",
+                                                         "fp4_e2m1_bnb",
+                                                         "fp4_e2m1"]:
+                logger.warning("Please provide the correct bits number or weight_dtype in config.json.")
+                raise ValueError(
+                    f"weight_dtype must be a string in "
+                    f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+                )
+            else:
+                logger.info("{} quantization weight_dtype is used.".format(quantization_config.weight_dtype))
 
         init_contexts = [no_init_weights(_enable=_fast_init)]
         init_contexts.append(init_empty_weights())
