@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=1)
     args = parser.parse_args()
     print(args)
-    model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True'
+    model_args=f'pretrained={args.model_name},dtype=float32,trust_remote_code=True'
 
     if args.model_format == "neural_speed":
         model_args += f",model_format=neural_speed"
