@@ -1738,8 +1738,13 @@ class _BaseQBitsAutoModelClass:
             if ((not CpuInfo().bf16 and quantization_config.compute_dtype == "bf16")
                     or (use_cpu and quantization_config.compute_dtype == "fp16")):
                 quantization_config.compute_dtype = "fp32"
+
         if quantization_config.scale_dtype is None:
             quantization_config.scale_dtype = "fp32"
+        if quantization_config.scale_dtype not in ["fp32", "fp16", "bf16"]:
+            logger.warning("scale_dtype only support fp32, bf16, fp16.")
+            quantization_config.scale_dtype = "fp32"
+            logger.warning("fp32 scale_dtype is used, please change the config.json if you don't want to use it.")
         if quantization_config.weight_dtype is None:
             quantization_config.weight_dtype = "int4_clip"
 
