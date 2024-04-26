@@ -1742,7 +1742,7 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.scale_dtype is None:
             quantization_config.scale_dtype = "fp32"
         if quantization_config.scale_dtype not in ["fp32", "fp16", "bf16"]:
-            logger.warning("scale_dtype only support fp32, bf16, fp16.")
+            logger.warning("scale_dtype only supports fp32, bf16, fp16.")
             quantization_config.scale_dtype = "fp32"
             logger.warning("fp32 scale_dtype is used, please change the config.json if you don't want to use it.")
 
@@ -1761,7 +1761,7 @@ class _BaseQBitsAutoModelClass:
                         quantization_config.weight_dtype)
                     )
             else:
-                logger.warning("bits number only support 4, 8.")
+                logger.warning("bits number only supports 4, 8.")
                 quantization_config.weight_dtype = "int4_clip"
                 logger.warning(
                     "int4_clip weight_dtype is used, please change the config.json if you don't want to use it.")
