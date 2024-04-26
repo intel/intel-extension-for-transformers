@@ -330,10 +330,11 @@ class BertVITSModel:
 
 
 class MultilangTextToSpeech:
-    def __init__(self, output_audio_path="./response.wav", voice="default", device="cpu", precision="bf16"):
+    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu", precision="bf16"):
         self.output_audio_path = output_audio_path
         self.voice = voice
         self.bert_vits_model = BertVITSModel(device, precision)
+        self.stream_mode = stream_mode
 
     def text2speech(self, text, output_audio_path, voice="default"):
         "Multilingual text to speech and dump to the output_audio_path."
@@ -342,10 +343,34 @@ class MultilangTextToSpeech:
         sf.write(output_audio_path, all_speech, samplerate=44100)
         return output_audio_path
 
-    def post_llm_inference_actions(self, text):
+    def stream_text2speech(self, generator, output_audio_path, voice="default"):
+        """Stream the generation of audios with an LLM text generator."""
+        for idx, response in enumerate(generator):
+            yield self.text2speech(response, f"{output_audio_path}_{idx}.wav", voice)
+
+
+    def post_llm_inference_actions(self, text_or_generator):
         from intel_extension_for_transformers.neural_chat.plugins import plugins
         self.voice = plugins.tts_multilang.args["voice"] \
             if plugins.tts_multilang.args['voice'] in self.bert_vits_model.spk_id_map else "default"
         self.output_audio_path = plugins.tts_multilang.args['output_audio_path'] \
             if plugins.tts_multilang.args['output_audio_path'] else "./response.wav"
-        return self.text2speech(text, self.output_audio_path, self.voice)
+        if not self.stream_mode:
+            return self.text2speech(text_or_generator, self.output_audio_path, self.voice)
+        else: # pragma: no cover
+            def cache_words_into_sentences():
+                buffered_texts = []
+                hitted_ends = ['。', '，', '？', '；', '：', '.', '?', '!', ";"]
+                for new_text in text_or_generator:
+                    logging.info(f"new text: ==={new_text}===")
+                    if len(new_text.strip()) == 0:
+                        continue
+                    buffered_texts.append(new_text)
+                    if(len(buffered_texts) > 5):
+                        if new_text.endswith('... ') or new_text.strip()[-1] in hitted_ends:
+                            yield ''.join(buffered_texts)
+                            buffered_texts = []
+                # output the trailing sequence
+                if len(buffered_texts) > 0:
+                    yield ''.join(buffered_texts)
+            return self.stream_text2speech(cache_words_into_sentences(), self.output_audio_path, self.voice)
