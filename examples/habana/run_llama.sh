@@ -1,13 +1,13 @@
-for i in {10..10..2}
+for i in {16..16..2}
 do
   python run_generation.py \
       --use_hpu_graphs \
       --use_kv_cache \
       --limit_hpu_graphs \
       --size $i \
+      --model_name_or_path 01-ai/Yi-34B \
       --batch_size 1 \
       --trim_logits \
-      --model_name_or_path /chenxi/models--01-ai--Yi-34B/snapshots/f9cec17e8fcc054d6c8d98fd5a41ed14895caa8b \
       --max_input_tokens -1 \
       --fp8 \
       --bf16 \
