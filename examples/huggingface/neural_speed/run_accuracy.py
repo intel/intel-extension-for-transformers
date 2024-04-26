@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=1)
     args = parser.parse_args()
     print(args)
-    model_args=f'pretrained="{args.model_name}",dtype=float32,trust_remote_code=True'
+    model_args=f'pretrained={args.model_name},dtype=float32,trust_remote_code=True'
 
     if args.model_format == "neural_speed":
         model_args += f",model_format=neural_speed"
@@ -44,4 +44,8 @@ if __name__ == "__main__":
         )       
         results = evaluate(eval_args)
 
-    print(results)
+    for task_name in args.tasks.split(","):
+        if task_name == "wikitext":
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity,none"]))
+        else:
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc,none"]))

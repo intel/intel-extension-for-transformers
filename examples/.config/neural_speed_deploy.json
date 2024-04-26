@@ -7,7 +7,6 @@
             "cmd": "python run_accuracy.py",
             "params": {
                 "model_name": "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf",
-                "model_format": "runtime",
                 "tasks": "lambada_openai"
             }
         },
@@ -21,7 +20,6 @@
             "cmd": "python run_accuracy.py",
             "params": {
                 "model_name": "/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1",
-                "model_format": "runtime",
                 "tasks": "piqa"
             }
         },
@@ -35,7 +33,6 @@
             "cmd": "python run_accuracy.py",
             "params": {
                 "model_name": "/tf_dataset2/models/auto_round/neuralchat_v3-3",
-                "model_format": "runtime",
                 "tasks": "lambada_openai"
             }
         },
@@ -49,7 +46,6 @@
             "cmd": "python run_accuracy.py",
             "params": {
                 "model_name": "/tf_dataset2/models/pytorch/Mistral-7B-v0.1",
-                "model_format": "runtime",
                 "tasks": "piqa"
             }
         },
@@ -63,7 +59,6 @@
             "cmd": "python run_accuracy.py",
             "params": {
                 "model_name": "/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat",
-                "model_format": "runtime",
                 "tasks": "lambada_openai"
             }
         },

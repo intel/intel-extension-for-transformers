@@ -72,6 +72,7 @@ class AutoDistillation(NASBase):
             Best model architecture found in search process.
         """
         def reload_tf_model(model):
+            model.build()
             with tempfile.TemporaryDirectory() as tmp_dir:
                 model.save_pretrained(tmp_dir)
                 assert model_cls, 'model_cls should not be None'
