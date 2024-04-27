@@ -20,8 +20,8 @@ template <class GemmCore, BTLA_ISA ISA>
 void execute_qpack(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx, WOQ_TASK task) {
   using proB = bestla::prologue_b::gemm::WeightKBlockNInteger<GemmCore, ISA>;
   static proB ker;
-  auto qpackw = ker.createStorage(ctx->n, ctx->k, p->blocksize, wei2bestladt_map[p->weight_type],
-                                  scale2bestladt_map[p->scale_type], BTLA_DTYPE::BF16, p->asym);
+  auto qpackw = ker.createStorage(ctx->n, ctx->k, p->blocksize, wei2bestladt_map.at(p->weight_type),
+                                  scale2bestladt_map.at(p->scale_type), BTLA_DTYPE::BF16, p->asym);
   if (p->enable_act_shuffle) ker.enableShuffle(&qpackw);
   ctx->packw_size = qpackw.mSize;
   if (task == WOQ_GET_PACKW_SIZE) return;
