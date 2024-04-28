@@ -114,5 +114,6 @@ def compute_perplexity(
         if num_tokens and num_processed_tokens >= num_tokens:
                 break
 
-    print(f"overall_ppl: {logs["overall_ppl"]: >8.2f}")
+    pd.DataFrame(logs).to_csv(output_file, index=False)
+    print(f"overall_ppl: {logs['overall_ppl'][-1]: >8.2f}")
     return
