@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup Conda &mdash; Intel® Extension for Transformers 0.1.dev1+g307c1a8 documentation</title>
+  <title>Setup Conda &mdash; Intel® Extension for Transformers 0.1.dev1+g98daf37 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=fd3f3429" />
@@ -210,22 +210,34 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
 </pre></div>
 </div>
 <p>To test whether the talkingbot server can serve your requests correctly, you can use <code class="docutils literal notranslate"><span class="pre">curl</span></code> as follows:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span><span class="w"> </span><span class="n">http</span><span class="o">:</span><span class="c1">//localhost:8888/v1/audio/translations \</span>
-<span class="c1">  -H &quot;Content-Type: multipart/form-data&quot; \</span>
-<span class="c1">  -F file=&quot;@sample_1.wav&quot;</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>http://localhost:8888/v1/audio/translations<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: multipart/form-data&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-F<span class="w"> </span><span class="nv">file</span><span class="o">=</span><span class="s2">&quot;@sample_1.wav&quot;</span>
 
-<span class="n">curl</span><span class="w"> </span><span class="n">http</span><span class="o">:</span><span class="c1">//localhost:8888/v1/audio/transcriptions \</span>
-<span class="c1">  -H &quot;Content-Type: multipart/form-data&quot; \</span>
-<span class="c1">  -F file=&quot;@sample_zh_cn.wav&quot;</span>
+curl<span class="w"> </span>http://localhost:8888/v1/audio/transcriptions<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: multipart/form-data&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-F<span class="w"> </span><span class="nv">file</span><span class="o">=</span><span class="s2">&quot;@sample_zh_cn.wav&quot;</span>
 
-<span class="n">curl</span><span class="w"> </span><span class="n">http</span><span class="o">:</span><span class="c1">//localhost:8888/v1/audio/speech \</span>
-<span class="c1">  -H &quot;Content-Type: application/json&quot; \</span>
-<span class="c1">  -d &#39;{</span>
-<span class="w">    </span><span class="s">&quot;model&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;speecht5&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s">&quot;input&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;The quick brown fox jumped over the lazy dog.&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s">&quot;voice&quot;</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;default&quot;</span>
-<span class="w">  </span><span class="p">}</span><span class="err">&#39;</span><span class="w"> </span>\
-<span class="w">  </span><span class="o">--</span><span class="n">output</span><span class="w"> </span><span class="n">speech</span><span class="p">.</span><span class="n">mp3</span>
+curl<span class="w"> </span>http://localhost:8888/v1/audio/speech<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;model&quot;: &quot;speecht5&quot;,</span>
+<span class="s1">    &quot;input&quot;: &quot;The quick brown fox jumped over the lazy dog.&quot;,</span>
+<span class="s1">    &quot;voice&quot;: &quot;default&quot;</span>
+<span class="s1">  }&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>speech.mp3
+
+<span class="c1"># To use multi-language TTS, please</span>
+<span class="c1"># 1) set `enable: false` under tts in talkingbot.yaml</span>
+<span class="c1"># 2) set `enable: true` under tts_multilang in talkingbot.yaml</span>
+curl<span class="w"> </span>http://localhost:8888/v1/audio/speech<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;model&quot;: &quot;bert-vits2&quot;,</span>
+<span class="s1">    &quot;input&quot;: &quot;欢迎来到英特尔。&quot;,</span>
+<span class="s1">    &quot;voice&quot;: &quot;default&quot;</span>
+<span class="s1">  }&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>speech.mp3
 </pre></div>
 </div>
 </section>
@@ -256,7 +268,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f969a2d1cf0> 
+   <jinja2.runtime.BlockReference object at 0x7f0611975780> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
