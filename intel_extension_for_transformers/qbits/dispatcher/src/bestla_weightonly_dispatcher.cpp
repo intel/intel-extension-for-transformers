@@ -331,7 +331,7 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
     }
     TORCH_CHECK(false, "Qbits: device ISA must support BTLA_ISA::AVX2 when compute_type==fp32");
   }
-  if (p->compute_type == "bf16") {
+  if (p->compute_type == "bf16" && p->blocksize % 32 == 0) {
     if (dispatcher_utils::check_amx()) {
       return parse_weight<TASK, bestla::gemm::HCoreRowNAmxbf16<64, 16>>(p, ctx);
     }
