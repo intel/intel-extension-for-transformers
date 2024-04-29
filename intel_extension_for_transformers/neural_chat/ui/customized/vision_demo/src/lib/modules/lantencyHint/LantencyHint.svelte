@@ -40,7 +40,7 @@
 </script>
 
 <div
-	class="font-intel-light relative mx-[2.8rem] flex h-full w-[16.7%] flex-col items-center gap-[0.5rem] pt-[2.8rem] text-center font-light"
+	class="relative mx-[2.8rem] flex h-full w-[16.7%] flex-col items-center gap-[0.5rem] pt-[2.8rem] text-center font-light"
 >
 	<div class={cardClass}>
 		<p class={titleClass}>{cardContents.title1}</p>
