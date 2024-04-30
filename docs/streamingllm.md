@@ -23,4 +23,3 @@ model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size=100, n_keep=4, n_discard=-1)
 ```
 please refer [here](https://github.com/intel/neural-speed/blob/main/docs/supported_models.md) for more supported models.
-
