@@ -108,8 +108,8 @@ if __name__ == "__main__":
         for _ in tqdm(range(10)):
             t_b = time.time()
             
-            # inputs = tokenizer(text, return_tensors="pt", padding=True).to(device)
-            inputs = tokenizer(text, return_tensors="pt").to(device)
+            # inputs = tokenizer(prompt, return_tensors="pt", padding=True).to(device)
+            inputs = tokenizer(prompt, return_tensors="pt").to(device)
           
             # Generate text using the EAGLE model if the flag is set, otherwise use the base model
             if use_eagle:
