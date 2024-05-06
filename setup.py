@@ -14,6 +14,7 @@ result.wait()
 
 def is_intel_gpu_available():
     import torch
+    import intel_extension_for_pytorch as ipex
     return hasattr(torch, "xpu") and torch.xpu.is_available()
 
 def check_env_flag(name: str, default: bool = False) -> bool:
