@@ -11,7 +11,10 @@ from setuptools.command.build_ext import build_ext
 
 result = subprocess.Popen("pip install -r requirements.txt", shell=True)
 result.wait()
-from intel_extension_for_transformers.tools.utils import is_intel_gpu_available
+
+def is_intel_gpu_available():
+    import torch
+    return hasattr(torch, "xpu") and torch.xpu.is_available()
 
 def check_env_flag(name: str, default: bool = False) -> bool:
     if default:  # if a flag meant to be true if not set / mal-formatted
