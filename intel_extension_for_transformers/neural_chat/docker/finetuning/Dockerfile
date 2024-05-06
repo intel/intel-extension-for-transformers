@@ -116,7 +116,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install --no-cache-dir peft einops datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
-    git checkout -b v1.13 origin/1.13.0 && \
+    git checkout -b v1.15 origin/1.15.0 && \
     pip install --no-cache-dir -e .
 
 # Install dependency
