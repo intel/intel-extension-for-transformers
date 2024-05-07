@@ -141,7 +141,7 @@ class H2OOPTAttention(nn.Module):
         # get hh mask
         if tgt_len > self.h2o_min_seqlen:
             mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
-            attn_weights[~mask_bottom] = torch.min(attention_mask)
+            attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min
 
         # upcast to fp32 if the weights are in fp16. Please see https://github.com/huggingface/transformers/pull/17437
         if attn_weights.dtype == torch.float16:

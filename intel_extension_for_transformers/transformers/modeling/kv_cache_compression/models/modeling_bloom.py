@@ -159,7 +159,7 @@ class H2OBloomAttention(nn.Module):
         # get hh mask
         if q_length > self.h2o_min_seqlen:
             mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
-            attn_weights[~mask_bottom] = torch.min(attention_mask)
+            attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min
 
         attention_probs = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(input_dtype)
 

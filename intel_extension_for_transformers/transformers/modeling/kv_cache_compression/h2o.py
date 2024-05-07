@@ -141,6 +141,7 @@ def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=No
 def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
     heavy_budget = int(heavy_budget_ratio * attn_weights.shape[-1])
     recent_budget = int(recent_budget_ratio * attn_weights.shape[-1])
+    print(heavy_budget, recent_budget)
     if heavy_budget > 0:
         mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None) # Default: No padding applied to input
     else:
@@ -150,9 +151,13 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
     ones = torch.ones_like(attn_weights, dtype=torch.bool)
     ones = torch.triu(ones, diagonal=-recent_budget)
     mask_bottom = torch.logical_or(mask_bottom, ones)
-
     # Combine h2o+recent and apply casual mask
     mask_bottom = torch.tril(mask_bottom, diagonal=0)
+
+    # ones = torch.ones_like(attn_weights, dtype=torch.bool)
+    # ones = torch.tril(ones, diagonal=recent_budget)
+    # ones = torch.triu(ones, diagonal=-recent_budget)
+    # mask_bottom = torch.logical_or(mask_bottom, ones)
     return mask_bottom
 
 class H2OKVCache:
@@ -242,3 +247,9 @@ class H2OKVCache:
 
     def _clean_scores(self):
         self.hh_score = None
+
+if __name__ == "__main__":
+    a = torch.randn(1, 10,10)
+    print(a)
+    mask = get_hh_mask(0, 0.7, a)
+    print(mask)
