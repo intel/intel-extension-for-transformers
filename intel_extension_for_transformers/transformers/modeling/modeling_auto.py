@@ -951,28 +951,31 @@ class _BaseQBitsAutoModelClass:
                         }
                     break
 
-            # call inc sq
-            from neural_compressor import PostTrainingQuantConfig, quantization
+            # call inc smoothquant
+            from neural_compressor.torch.quantization import SmoothQuantConfig, quantize
+            quant_config = SmoothQuantConfig(
+                w_dtype=quantization_config.w_dtype,
+                w_sym=quantization_config.w_sym,
+                w_granularity=quantization_config.w_granularity,
+                w_algo=quantization_config.w_algo,
+                act_dtype=quantization_config.act_dtype,
+                alpha=quantization_config.alpha,
+                folding=quantization_config.folding,
+                scale_sharing=quantization_config.scale_sharing,
+                init_alpha=quantization_config.init_alpha,
+                alpha_min=quantization_config.alpha_min,
+                alpha_step=quantizate_config.alpha_step,
+                shared_criterion=quantization_config.shared_criterion,
+                do_blockwise=quantizate_config.do_blockwise,
+                auto_alpha_args=quantizate_config.auto_alpha_args,
+                white_list=quantizate_config.white_list,
+            )
 
-            conf = PostTrainingQuantConfig(
-                backend=quantization_config.backend,  # default is ipex
-                excluded_precisions=quantization_config.excluded_precisions,
-                op_type_dict=quantization_config.op_type_dict,
-                op_name_dict=quantization_config.op_name_dict,
-                recipes=quantization_config.recipes,
-                example_inputs=example_inputs,
-            )
-            model = quantization.fit(
-                model,
-                conf,
-                calib_func=calib_func,
-                calib_dataloader=(
-                    calib_dataloader
-                    if quantization_config.recipes["smooth_quant_args"]["alpha"]
-                    == "auto"
-                    else None
-                ),
-            )
+            model = quantize(model, 
+                                quant_config=quant_config, 
+                                run_fn=run_fn, 
+                                example_inputs=example_inputs
+                                )
             logger.info("SmoothQuant done.")
         elif isinstance(quantization_config, DynamicQuantConfig):
             model = cls.ORIG_MODEL.from_pretrained(
@@ -1142,20 +1145,21 @@ class _BaseQBitsAutoModelClass:
 
 
             # call inc static quant
-            from neural_compressor import PostTrainingQuantConfig, quantization
-
-            conf = PostTrainingQuantConfig(
-                backend=quantization_config.backend,
-                excluded_precisions=quantization_config.excluded_precisions,
-                op_type_dict=quantization_config.op_type_dict,
-                op_name_dict=quantization_config.op_name_dict,
-                example_inputs=quantization_config.example_inputs,
+            from neural_compressor.torch.quantization import StaticQuantConfig, convert, prepare
+            quant_config = StaticQuantConfig(
+                w_dtype=quantization_config.w_dtype,
+                w_sym=quantization_config.w_sym,
+                w_granularity=quantization_config.w_granularity,
+                w_algo=quantization_config.w_algo,
+                act_dtype=quantization_config.act_dtype,
+                act_sym=quantization_config.act_sym,
+                act_granularity=quantization_config.act_granularity,
+                act_algo=quantization_config.act_algo,
+                white_list=quantizate_config.white_list,
             )
-            model = quantization.fit(
-                model,
-                conf,
-                calib_func=calib_func,
-            )
+            prepared_model = prepare(fp32_model, quant_config=quant_config, example_inputs=example_inputs)
+            calib_func(prepared_model)
+            q_model = convert(prepared_model)
             model.save_pretrained = types.MethodType(save_low_bit, model)
             quantization_config.remove_redundant_parameters()
             model.quantization_config = quantization_config
@@ -1291,7 +1295,6 @@ class _BaseQBitsAutoModelClass:
                     + "batchsize is 1 and calibration iteration is 100."
                 )
                 train_func = train_func
-
 
             # call inc static quant
             from neural_compressor import QuantizationAwareTrainingConfig, quantization

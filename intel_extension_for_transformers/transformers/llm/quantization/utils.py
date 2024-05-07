@@ -26,7 +26,20 @@ from datasets import load_dataset
 from neural_compressor import quantization
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from neural_compressor.utils.utility import LazyImport
-from neural_compressor.config import PostTrainingQuantConfig
+from neural_compressor.torch.algorithms.weight_only.autoround import get_autoround_default_run_fn
+from neural_compressor.torch.quantization import (
+    AutoRoundConfig,
+    RTNConfig,
+    GPTQConfig,
+    AWQConfig,
+    TEQConfig,
+    StaticQuantConfig,
+    SmoothQuantConfig,
+    HQQConfig,
+    convert,
+    get_default_AutoRound_config,
+    prepare
+)
 from intel_extension_for_transformers.tools.utils import (
     is_ipex_available,
     is_autoround_available,
@@ -334,8 +347,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
         assert (
             hasattr(torch, "xpu") and torch.xpu.is_available()
         ), "There is no xpu device in this system!"
-    calib_dataloader = config.calib_dataloader
-    calib_func = config.calib_func
     calib_iters = config.calib_iters
     calib_dataset = config.dataset
     model_device = next(model.parameters()).device
@@ -406,20 +417,13 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
             return torch.vstack(input_ids_padded)
 
-        if config.quant_method.value == "autoround":
-            calib_dataloader = DataLoader(
-                tokenized_dataset,
-                batch_size=8,
-                shuffle=False,
-                collate_fn=collate_batch_for_autoround,
-            )
-        else:
-            calib_dataloader = DataLoader(
-                tokenized_dataset,
-                batch_size=1,
-                shuffle=False,
-                collate_fn=collate_batch,
-            )
+
+        calib_dataloader = DataLoader(
+            tokenized_dataset,
+            batch_size=1,
+            shuffle=False,
+            collate_fn=collate_batch,
+        )
     if calib_func is None and config.quant_method.value == "awq":
 
         def default_calib_func(model):
@@ -438,6 +442,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
             + "the calibration dataset is NeelNanda/pile-10k,"
             + "batchsize is 1 and calibration iteration is 100."
         )
+    orig_dtype = torch.float32
+    for param in model.parameters():
+        orig_dtype = param.dtype
+        if orig_dtype != torch.float32:
+            model.to(dtype=torch.float32)
+        break
     if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
         return replace_linear(model, None, None, config, device=device)
     else:
@@ -450,101 +460,73 @@ def convert_to_quantized_model(model, config, device="cpu"):
             dtype = config.weight_dtype
         # mapping to INC config
         if config.quant_method.value == "rtn":
-            recipes = {
-                "layer_wise_quant": config.layer_wise,
-                "rtn_args": {
-                    "enable_full_range": (
-                        True if "fullrange" in config.weight_dtype else False
-                    ),
-                    "enable_mse_search": config.mse_range,
-                },
-            }
-            algorithm = "RTN"
+            quant_config = RTNConfig(
+
+            )
+        elif config.quant_method.value == "hqq":
+            quant_config = HQQConfig(
+
+            )
         elif config.quant_method.value == "awq":
-            recipes = {
-                "rtn_args": {
-                    "enable_full_range": (
-                        True if "fullrange" in config.weight_dtype else False
-                    ),
-                    "enable_mse_search": config.mse_range,
-                },
-                "awq_args": {"folding": True},
-            }
-            algorithm = "AWQ"
+            quant_config = AWQConfig(
+
+            ) 
         elif config.quant_method.value == "teq":
-            recipes = {"teq_args": {}}
-            algorithm = "TEQ"
+            quant_config = TEQConfig(
+
+            )
         elif config.quant_method.value == "gptq":
-            recipes = {
-                "layer_wise_quant": config.layer_wise,
-                "gptq_args": {
-                    "act_order": config.desc_act,
-                    "percdamp": config.damp_percent,
-                    "block_size": config.blocksize,
-                    "nsamples": config.nsamples,
-                    "use_max_length": True if config.max_input_length else False,
-                    "pad_max_length": config.max_input_length,
-                    "static_groups": config.static_groups,
-                },
-            }
-            algorithm = "GPTQ"
+            quant_config = GPTQConfig(
+
+            )
         elif config.quant_method.value == "autoround":
-            recipes = {
-                "autoround_args": {
-                    "n_samples": config.nsamples,
-                    "seq_len": config.calib_len,
-                    "iters": config.calib_iters,
-                    "scale_dtype": config.scale_dtype,
-                    "use_quant_input": config.use_quant_input,
-                    "lr": config.lr,
-                    "minmax_lr": config.minmax_lr,
-                }
-            }
-            algorithm = "AUTOROUND"
+            quant_config = AutoRoundConfig(
+                dtype=config.dtype,
+                bits=config.bits,
+                use_sym=config.use_sym,
+                group_size=config.group_size,
+                enable_full_range=config.enable_full_range,
+                batch_size=config.batch_size,
+                lr_scheduler=config.lr_scheduler,
+                use_quant_input=config.use_quant_input,
+                enable_minmax_tuning=config.enable_minmax_tuning,
+                lr=config.lr,
+                minmax_lr=config.minmax_lr,
+                low_gpu_mem_usage=config.low_gpu_mem_usage,
+                iters=config.iters,
+                seqlen=config.seq_len,
+                n_samples=config.n_samples,
+                sampler=config.sampler,
+                seed=config.seed,
+                n_blocks=config.n_blocks,
+                gradient_accumulate_steps=config.gradient_accumulate_steps,
+                not_use_best_mse=config.not_use_best_mse,
+                dynamic_max_gap=config.dynamic_max_gap,
+                scale_dtype=config.scale_dtype,
+                white_list=config.white_list,
+            )
+            quant_config.set_local(".*lm_head", AutoRoundConfig(w_dtype="fp32", act_dtype="fp32"))
+            quant_config.set_local(".*output_layer", AutoRoundConfig(w_dtype="fp32", act_dtype="fp32"))
+            quant_config.set_local(".*embed_out", AutoRoundConfig(w_dtype="fp32", act_dtype="fp32"))
+            logger.info(f"Do AutoRound with config {quant_config}")
+
+            run_fn = get_autoround_default_run_fn
+            run_args = (
+                tokenizer,
+                dataset,
+                quant_config.n_samples,
+                quant_config.seq_len,
+                quant_config.seed,
+                quant_config.batch_size,
+                "train"
+            )
+            inc_model = prepare(model=model, quant_config=quant_config)
+            run_fn(model, *run_args)
+            inc_model = convert(inc_model)
+            inc_model.eval()
+
         else:
             assert False, "The Supported algorithm are RTN, AWQ, TEQ, GPTQ, AUTOROUND"
-
-        conf = PostTrainingQuantConfig(
-            approach="weight_only",
-            op_type_dict={
-                ".*": {
-                    "weight": {
-                        "bits": bits,
-                        "dtype": dtype,
-                        "group_size": config.group_size,  # -1 (per-channel)
-                        "scheme": config.scheme,
-                        "algorithm": algorithm,
-                    },
-                },
-            },
-            op_name_dict={
-                ".*lm_head": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-                ".*output_layer": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-                ".*embed_out": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-            },
-            recipes=recipes,
-        )
-        # TEQ: set calib_func=None, use default training func as calib_func
-        # RTN: doesn't need calib_func
-        if config.quant_method.value not in ["awq"]:
-            calib_func = None
-
-        orig_dtype = torch.float32
-        for param in model.parameters():
-            orig_dtype = param.dtype
-            if orig_dtype != torch.float32:
-                model.to(dtype=torch.float32)
-            break
-        inc_model = quantization.fit(
-            model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
-        )
-        inc_model.eval()
 
         if device == "xpu" or device == torch.device("xpu"):
             model = inc_model.export_compressed_model(
