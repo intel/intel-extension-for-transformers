@@ -35,7 +35,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
-    
+
     @unittest.skipIf(sys.version_info > (3, 10),
             "bigcode-lmeval not support python version higher than 3.10")
     def test_bigcode_lm_eval(self):

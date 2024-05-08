@@ -64,7 +64,7 @@ class TestModeling(unittest.TestCase):
     def tearDownClass(self):
         shutil.rmtree('./mlruns', ignore_errors=True)
         shutil.rmtree('./quantized_model', ignore_errors=True)
-    
+
     @unittest.skipIf(PT_VERSION.release < Version("2.1.0").release,
     "Please use PyTroch 2.1.0 higher version for seq2seq_jit_model")
     def test_seq2seq_jit_model(self):
