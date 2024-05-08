@@ -13,11 +13,12 @@ from vllm.config import LoRAConfig
 from vllm.distributed import get_tensor_model_parallel_world_size
 from vllm.model_executor.layers.activation import SiluAndMul
 from vllm.model_executor.layers.layernorm import RMSNorm
-from vllm.model_executor.layers.linear import (LinearMethodBase,
-                                               MergedColumnParallelLinear,
+from vllm.model_executor.layers.linear import (MergedColumnParallelLinear,
                                                QKVParallelLinear,
                                                RowParallelLinear)
 from vllm.model_executor.layers.logits_processor import LogitsProcessor
+from vllm.model_executor.layers.quantization.base_config import (
+    QuantizationConfig)
 from vllm.model_executor.layers.rotary_embedding import get_rope
 from vllm.model_executor.layers.sampler import Sampler
 from vllm.model_executor.layers.vocab_parallel_embedding import (
@@ -33,7 +34,7 @@ class GLMAttention(nn.Module):
     def __init__(
         self,
         config,
-        linear_method: Optional[LinearMethodBase] = None,
+        quant_config: Optional[QuantizationConfig] = None,
     ):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -65,13 +66,13 @@ class GLMAttention(nn.Module):
             self.total_num_heads,
             self.total_num_kv_heads,
             bias=config.add_bias_linear or config.add_qkv_bias,
-            linear_method=linear_method,
+            quant_config=quant_config,
         )
         self.dense = RowParallelLinear(
             self.total_num_heads * self.head_dim,
             config.hidden_size,
             bias=config.add_bias_linear,
-            linear_method=linear_method,
+            quant_config=quant_config,
         )
 
         # https://huggingface.co/THUDM/chatglm3-6b-32k/blob/e210410255278dd9d74463cf396ba559c0ef801c/modeling_chatglm.py#L141
@@ -123,7 +124,7 @@ class GLMMLP(nn.Module):
     def __init__(
         self,
         config,
-        linear_method: Optional[LinearMethodBase] = None,
+        quant_config: Optional[QuantizationConfig] = None,
     ):
         super().__init__()
 
@@ -134,7 +135,7 @@ class GLMMLP(nn.Module):
             config.hidden_size,
             [config.ffn_hidden_size] * 2,
             bias=config.add_bias_linear,
-            linear_method=linear_method,
+            quant_config=quant_config,
         )
 
         self.activation_func = SiluAndMul()
@@ -144,7 +145,7 @@ class GLMMLP(nn.Module):
             config.ffn_hidden_size,
             config.hidden_size,
             bias=config.add_bias_linear,
-            linear_method=linear_method,
+            quant_config=quant_config,
         )
 
     def forward(self, hidden_states):
@@ -166,7 +167,7 @@ class GLMBlock(nn.Module):
     def __init__(
         self,
         config,
-        linear_method: Optional[LinearMethodBase] = None,
+        quant_config: Optional[QuantizationConfig] = None,
     ):
         super().__init__()
         self.apply_residual_connection_post_layernorm = (
@@ -175,20 +176,20 @@ class GLMBlock(nn.Module):
         self.fp32_residual_connection = config.fp32_residual_connection
 
         layer_norm_func = RMSNorm if config.rmsnorm else LayerNorm
+        #layer_norm_func = LayerNorm
         # Layernorm on the input data.
-        self.input_layernorm = layer_norm_func(config.hidden_size,
-                                               eps=config.layernorm_epsilon)
+        self.input_layernorm = layer_norm_func(4096, eps=1e-5)
+        #self.input_layernorm = layer_norm_func(4096, eps=1e-5, elementwise_affine=False)
 
         # Self attention.
-        self.self_attention = GLMAttention(config, linear_method)
+        self.self_attention = GLMAttention(config, quant_config)
         self.hidden_dropout = config.hidden_dropout
 
         # Layernorm on the attention output
-        self.post_attention_layernorm = layer_norm_func(
-            config.hidden_size, eps=config.layernorm_epsilon)
+        self.post_attention_layernorm = layer_norm_func(4096, eps=1e-5)
 
         # MLP
-        self.mlp = GLMMLP(config, linear_method)
+        self.mlp = GLMMLP(config, quant_config)
 
     def forward(
         self,
@@ -199,7 +200,9 @@ class GLMBlock(nn.Module):
     ) -> torch.Tensor:
         # hidden_states: [num_tokens, h]
         # Layer norm at the beginning of the transformer layer.
+        #import pdb;pdb.set_trace()
         layernorm_output = self.input_layernorm(hidden_states)
+        #print("layernorm_output = ", layernorm_output)
         # Self attention.
         attention_output = self.self_attention(
             hidden_states=layernorm_output,
@@ -236,7 +239,7 @@ class GLMTransformer(nn.Module):
     def __init__(
         self,
         config,
-        linear_method: Optional[LinearMethodBase] = None,
+        quant_config: Optional[QuantizationConfig] = None,
     ):
         super().__init__()
         self.post_layer_norm = config.post_layer_norm
@@ -246,13 +249,13 @@ class GLMTransformer(nn.Module):
 
         # Transformer layers.
         self.layers = nn.ModuleList(
-            [GLMBlock(config, linear_method) for i in range(self.num_layers)])
+            [GLMBlock(config, quant_config) for i in range(self.num_layers)])
 
         if self.post_layer_norm:
-            layer_norm_func = RMSNorm if config.rmsnorm else LayerNorm
+            #layer_norm_func = RMSNorm if config.rmsnorm else LayerNorm
+            layer_norm_func = LayerNorm
             # Final layer norm before output.
-            self.final_layernorm = layer_norm_func(
-                config.hidden_size, eps=config.layernorm_epsilon)
+            self.final_layernorm = layer_norm_func(4096, eps=1e-5)
 
     def forward(
         self,
@@ -281,7 +284,7 @@ class ChatGLMModel(nn.Module):
     def __init__(
         self,
         config,
-        linear_method: Optional[LinearMethodBase] = None,
+        quant_config: Optional[QuantizationConfig] = None,
     ):
         super().__init__()
 
@@ -291,7 +294,7 @@ class ChatGLMModel(nn.Module):
         self.num_layers = config.num_layers
         self.multi_query_group_num = config.multi_query_group_num
         self.kv_channels = config.kv_channels
-        self.encoder = GLMTransformer(config, linear_method)
+        self.encoder = GLMTransformer(config, quant_config)
 
         self.output_layer = ParallelLMHead(config.padded_vocab_size,
                                            config.hidden_size)
@@ -303,9 +306,13 @@ class ChatGLMModel(nn.Module):
         kv_caches: List[torch.Tensor],
         attn_metadata: AttentionMetadata,
     ) -> torch.Tensor:
+        
+        print("Register ChatGLMModel OK!!!!!!!!!!!!!!!!!!!!")
+        print("Register ChatGLMModel OK!!!!!!!!!!!!!!!!!!!!")
         inputs_embeds = self.embedding(input_ids)
-
+       
         # Run encoder.
+        # import pdb;pdb.set_trace()
         hidden_states = self.encoder(
             hidden_states=inputs_embeds,
             position_ids=position_ids,
@@ -333,13 +340,13 @@ class ChatGLMForCausalLM(nn.Module):
     def __init__(
         self,
         config: ChatGLMConfig,
-        linear_method: Optional[LinearMethodBase] = None,
+        quant_config: Optional[QuantizationConfig] = None,
         lora_config: Optional[LoRAConfig] = None,
     ):
         super().__init__()
         self.config: ChatGLMConfig = config
-        self.linear_method = linear_method
-        self.transformer = ChatGLMModel(config, linear_method)
+        self.quant_config = quant_config
+        self.transformer = ChatGLMModel(config, quant_config)
         self.lm_head_weight = self.transformer.output_layer.weight
         self.logits_processor = LogitsProcessor(config.padded_vocab_size)
         self.sampler = Sampler()
@@ -351,11 +358,10 @@ class ChatGLMForCausalLM(nn.Module):
         kv_caches: List[torch.Tensor],
         attn_metadata: AttentionMetadata,
     ) -> torch.Tensor:
+        print("Register OK!!!!!!!!!!!!!!!!!!!!")
+        print("Register OK!!!!!!!!!!!!!!!!!!!!")
         hidden_states = self.transformer(input_ids, positions, kv_caches,
                                          attn_metadata)
-        
-        print("resgister OK!!!!!!!!!!!!!!!!!!!!")
-        print("resgister OK!!!!!!!!!!!!!!!!!!!!")
         return hidden_states
 
     def compute_logits(self, hidden_states: torch.Tensor,
@@ -382,7 +388,27 @@ class ChatGLMForCausalLM(nn.Module):
             # Skip loading extra bias for GPTQ models.
             if name.endswith(".bias") and name not in params_dict:
                 continue
+            
             param = params_dict[name]
+            #import pdb;pdb.set_trace()
             weight_loader = getattr(param, "weight_loader",
                                     default_weight_loader)
+
+            # if "norm" in name:
+            #     print("name = ", name)
+            #     print("param = ", param)
+            #     print("loaded_weight = ", loaded_weight, weight_loader)
+            #     print("  ")
+            #     print("  ")
+            #import pdb;pdb.set_trace()
             weight_loader(param, loaded_weight)
+            # if "norm" in name:
+            #     print("name = ", name)
+            #     print("param = ", param)
+            #     print("loaded_weight = ", loaded_weight, weight_loader)
+            #     print("  ")
+            #     print("  ")
+            #     print("--------------------------------------")
+            
+
+                #import pdb;pdb.set_trace()
