@@ -1,5 +1,5 @@
 from vllm import LLM
-from torch.nn import LayerNorm
+from torch.nn import LayerNorm, Embedding
 import torch
 
 #prompts = ["Hello, my name is", "The capital of France is", "你好"]  # Sample prompts.
@@ -26,6 +26,7 @@ model.load_weights(loader._get_weights_iterator(llm.llm_engine.model_config.mode
 print("modified model ---------------------------------------------------------------------------------= ", model)
 outputs = llm.generate(prompts)  # Generate texts from the prompts.
 print(outputs)
+
 
 
 # model = get_model(
