@@ -9,34 +9,13 @@ from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
+result = subprocess.Popen("pip install -r requirements.txt", shell=True)
+result.wait()
 
-def get_gpu_family():
-    ''' Get gpu device family info.
-
-    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
-
-    Note, this function need to import intel_extension_for_pytorch
-
-    Additional info (common gpu name):
-      'Intel(R) Data Center GPU Flex 170'
-      'Intel(R) Data Center GPU Max 1100'
-      'Intel(R) Arc(TM) A770 Graphics'
-    '''
-
+def is_intel_gpu_available():
     import torch
     import intel_extension_for_pytorch as ipex
-    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
-        return 'no_gpu'
-
-    name = torch.xpu.get_device_name()
-    if 'GPU Flex' in name:
-        return 'flex'
-    if 'GPU Max' in name:
-        return 'max'
-    if 'Arc(TM)' in name:
-        return 'arc'
-    assert False, "Unsupported GPU device: {}".format(name)
-
+    return hasattr(torch, "xpu") and torch.xpu.is_available()
 
 def check_env_flag(name: str, default: bool = False) -> bool:
     if default:  # if a flag meant to be true if not set / mal-formatted
@@ -46,38 +25,43 @@ def check_env_flag(name: str, default: bool = False) -> bool:
 
 
 SKIP_RUNTIME = check_env_flag("SKIP_RUNTIME", False)
-""" Whether to only packaging optimization """
+"""Whether to only packaging optimization."""
 
 RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
-""" Whether to only packaging backends """
+"""Whether to only packaging backends."""
 
-ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
+ipex_available = importlib.util.find_spec(
+    "intel_extension_for_pytorch") is not None
 IS_INTEL_GPU = False
-if ipex_available and (get_gpu_family() != "no_gpu"):
+if ipex_available and is_intel_gpu_available():
     SKIP_RUNTIME = True
     RUNTIME_ONLY = False
     IS_INTEL_GPU = True
+else:
+    result = subprocess.Popen(
+        "pip install -r requirements-cpu.txt", shell=True)
+    result.wait()
 
-if not SKIP_RUNTIME:
+if not IS_INTEL_GPU:
     from cmake import CMAKE_BIN_DIR
     from cpuinfo import get_cpu_info
     cpu_flags = get_cpu_info()['flags']
 
-
     CMAKE_BUILD_TYPE = os.environ.get("CMAKE_BUILD_TYPE", "Release")
-    """ Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release """
+    """Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release."""
 
     CMAKE_GENERATOR = os.environ.get("CMAKE_GENERATOR", "Ninja")
-    """ The CMake generator to be used; default to Ninja """
+    """The CMake generator to be used; default to Ninja."""
 
     CMAKE_ARGS = os.environ.get("CMAKE_ARGS", "")
-    """ Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge) """
+    """Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge)"""
 
-    CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "")
-    """ Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators """
+    CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get(
+        "CMAKE_BUILD_PARALLEL_LEVEL", "")
+    """Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators."""
 
     NE_WITH_AVX2 = check_env_flag("NE_WITH_AVX2", 'avx512f' not in cpu_flags)
-    """ Whether to limit the max ISA used to AVX2; otherwise AVX512 will be used; set to ON/OFF """
+    """Whether to limit the max ISA used to AVX2; otherwise AVX512 will be used; set to ON/OFF."""
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
@@ -97,7 +81,8 @@ class CMakeExtension(Extension):
         """Init a CMakeExtension object."""
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
-        self.optional = lib_only  # we only deliver shared object but not as a python extension module
+        # we only deliver shared object but not as a python extension module
+        self.optional = lib_only
 
 
 class CMakeBuild(build_ext):
@@ -117,7 +102,7 @@ class CMakeBuild(build_ext):
 
     @staticmethod
     def _get_files(scope: str, repo: str):
-        ''' Equivalent of `git ls-files --recurse-submodules -- $scope` for git-v1.x '''
+        """Equivalent of `git ls-files --recurse-submodules -- $scope` for git-v1.x."""
         files = [os.path.join(repo, f) for f in subprocess.check_output(
                 ["git", "ls-files", "--", scope], cwd=repo
         ).decode("utf-8").splitlines()]
@@ -129,7 +114,10 @@ class CMakeBuild(build_ext):
         return files
 
     def get_source_files(self):
-        """ The primary purpose of this function is to help populating the `sdist` with all the files necessary to build the distribution. -- setuptools doc"""
+        """The primary purpose of this function is to help populating the `sdist` with all the files necessary to build the distribution.
+
+        -- setuptools doc
+        """
         files = super().get_source_files()
         if not os.path.isdir(os.path.join(cwd, ".git")):
             return files
@@ -278,13 +266,17 @@ if __name__ == '__main__':
         ext_modules = []
     else:
         ext_modules = [CMakeExtension(
-            "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc', lib_only=True)]
+            "intel_extension_for_transformers.qbits_py", 'intel_extension_for_transformers/qbits/')]
+        if SKIP_RUNTIME:
+            subprocess.check_call(
+                ["git", "submodule", "update", "--init", "intel_extension_for_transformers/transformers/runtime/third_party/pybind11"], cwd=cwd)
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
-            CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
-            ])
-    cmdclass={'build_ext': CMakeBuild}
+            CMakeExtension("intel_extension_for_transformers.neural_engine_py",
+                           "intel_extension_for_transformers/transformers/runtime/"),
+        ])
+    cmdclass = {'build_ext': CMakeBuild}
 
     setup(
         name="intel-extension-for-transformers",
@@ -304,11 +296,11 @@ if __name__ == '__main__':
         package_data={
             '': ["*.yaml", "*.mat"],
         },
-        cmdclass=cmdclass if not SKIP_RUNTIME else {},
+        cmdclass=cmdclass if not IS_INTEL_GPU else {},
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [
-                'neural_engine = intel_extension_for_transformers.llm.runtime.deprecated:neural_engine_bin',
+                'neural_engine = intel_extension_for_transformers.transformers.runtime:neural_engine_bin',
                 'neuralchat = intel_extension_for_transformers.neural_chat.cli.cli_commands:neuralchat_execute',
                 'neuralchat_server = intel_extension_for_transformers.neural_chat.server.server_commands:neuralchat_server_execute',
                 'neuralchat_client = intel_extension_for_transformers.neural_chat.server.server_commands:neuralchat_client_execute'

@@ -5,11 +5,16 @@ branch = True
 omit =
  */**/fake*yaml
  */intel_extension_for_transformers/neural_chat/**
- */intel_extension_for_transformers/transformers/**
- */intel_extension_for_transformers/llm/evaluation/**
- */intel_extension_for_transformers/llm/finetuning/**
- */intel_extension_for_transformers/llm/inference/**
- */intel_extension_for_transformers/llm/quantization/**
- */intel_extension_for_transformers/llm/runtime/graph/**
+ */intel_extension_for_transformers/haystack/**
+ */intel_extension_for_transformers/llama_index/**
+ */intel_extension_for_transformers/transformers/dynamic/**
+ */intel_extension_for_transformers/transformers/mixture/**
+ */intel_extension_for_transformers/transformers/modeling/**
+ */intel_extension_for_transformers/transformers/nas/**
+ */intel_extension_for_transformers/transformers/pruner/**
+ */intel_extension_for_transformers/transformers/utils/**
+ */intel_extension_for_transformers/transformers/llm/**
+ */intel_extension_for_transformers/transformers/setfit/**
+ */intel_extension_for_transformers/transformers/*.py
 exclude_lines =
  pragma: no cover

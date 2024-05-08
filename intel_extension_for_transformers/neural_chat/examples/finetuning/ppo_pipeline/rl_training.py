@@ -57,8 +57,7 @@ def build_dataset(
     tokenizer,
     dataset_name,
 ):
-    """
-    Build dataset for training. This builds the dataset from `load_dataset`, one should
+    """Build dataset for training. This builds the dataset from `load_dataset`, one should
     customize this function to train the model on its own dataset.
 
     Args:
@@ -106,9 +105,7 @@ def collator(data):
 
 @dataclass
 class ScriptArguments:
-    """
-    The name of the Casual LM model we wish to fine with PPO
-    """
+    """The name of the Casual LM model we wish to fine with PPO."""
 
     # NOTE: gpt2 models use Conv1D instead of Linear layers which are not yet supported in 8 bit mode
     # models like gpt-neo* models are more suitable.

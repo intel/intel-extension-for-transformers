@@ -4,17 +4,17 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
+      - intel_extension_for_transformers/transformers/runtime/kernels/**"
       - .github/workflows/unit-test-kernel.yml
-      - '!intel_extension_for_transformers/llm/runtime/deprecated/kernels/README.md'
-      - '!intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/**'
+      - '!intel_extension_for_transformers/transformers/runtime/kernels/README.md'
+      - '!intel_extension_for_transformers/transformers/runtime/kernels/docs/**'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
+permissions: write-all
 env:
   DOCKER_CONFIG_NAME: "commonDockerConfig"
   REPO_NAME: "intel-extension-for-transformers"
@@ -62,11 +62,6 @@ jobs:
           -v /dataset/tf_dataset2:/tf_dataset2 \
           -v ~/.cache/oneAPI:/cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
-
-      - name: Env build
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
 
       - name: Binary build
         run: |

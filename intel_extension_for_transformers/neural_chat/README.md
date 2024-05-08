@@ -54,16 +54,14 @@ pip install -r requirements_hpu.txt
 # For XPU device
 pip install -r requirements_xpu.txt
 
+# For Windows
+pip install -r requirements_win.txt
+
 # For CUDA device
 pip install -r requirements.txt
 
 ```
 >**Note**: Suggest using fastapi==0.103.2
-
-
->**Note**: Suggest using fastapi==0.103.2
-
-
 
 # Getting Started
 
@@ -158,6 +156,51 @@ print(response.json())
 >**Note**: When intel-extension-for-transformers <= 1.3.1, please try [command](#using-curl) above
 
 
+## Deploy NeuralChat Service
+
+Please refer to the deployment examples for deploying the NeuralChat service.
+
+<table>
+	<tbody>
+		<tr>
+			<td>Application</td>
+			<td>LLM</td>
+			<td>HW</td>
+			<td>Description</td>
+			<td>Examples</td>
+		</tr>
+		<tr>
+			<td>TextGen</td>
+			<td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1">NeuralChat-7B</a></td>
+			<td>Xeon</td>
+			<td>Text Generation Application</td>
+			<td><a href=examples/deployment/textbot/README.md>Text Generation Example</a></td>
+		</tr>
+		<tr>
+			<td>ChatQnA</td>
+			<td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1">NeuralChat-7B</a></td>
+			<td>Xeon, Gaudi</td>
+			<td>RAG Application</td>
+			<td><a href=examples/deployment/rag/README.md>RAG Example</a></td>
+		</tr>
+		<tr>
+			<td>CodeGen</td>
+			<td><a href="https://huggingface.co/Phind/Phind-CodeLlama-34B-v2">Phind/Phind-CodeLlama-34B-v2</a></td>
+			<td>AIPC, Xeon, Gaudi</td>
+			<td>Code Generation Application</td>
+			<td><a href=examples/deployment/codegen/README.md>CodeGen Example</a></td>
+		</tr>
+		<tr>
+			<td>TalkingBot</td>
+			<td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1">NeuralChat-7B</a>, <a href="https://huggingface.co/microsoft/speecht5_tts">speecht5_tts</a>， <a href="https://huggingface.co/openai/whisper-base">whisper</a></td>
+			<td>AIPC, Xeon</td>
+			<td>Audio & LLM Generation Application</td>
+			<td><a href=examples/deployment/talkingbot/server/README.md>TalkingBot Example</a></td>
+		</tr>
+	</tbody>
+</table>
+
+
 ## Langchain Extension APIs
 
 Intel Extension for Transformers provides a comprehensive suite of Langchain-based extension APIs, including advanced retrievers, embedding models, and vector stores. These enhancements are carefully crafted to expand the capabilities of the original langchain API, ultimately boosting overall performance. This extension is specifically tailored to enhance the functionality and performance of RAG.
@@ -170,7 +213,7 @@ We introduce enhanced vector store operations, enabling users to adjust and fine
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain_core.vectorstores import VectorStoreRetriever
-from intel_extension_for_transformers.langchain.vectorstores import Chroma
+from intel_extension_for_transformers.langchain_community.vectorstores import Chroma
 retriever = VectorStoreRetriever(vectorstore=Chroma(...))
 retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```
@@ -180,7 +223,7 @@ retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retri
 We provide optimized retrievers such as `VectorStoreRetriever`, `ChildParentRetriever` to efficiently handle vectorstore operations, ensuring optimal retrieval performance.
 
 ```python
-from intel_extension_for_transformers.langchain.retrievers import ChildParentRetriever
+from intel_extension_for_transformers.langchain_community.retrievers import ChildParentRetriever
 from langchain.vectorstores import Chroma
 retriever = ChildParentRetriever(vectorstore=Chroma(documents=child_documents), parentstore=Chroma(documents=parent_documents), search_type=xxx, search_kwargs={...})
 docs=retriever.get_relevant_documents("Intel")

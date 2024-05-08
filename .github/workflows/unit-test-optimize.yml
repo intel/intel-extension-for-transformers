@@ -7,22 +7,23 @@ on:
       - intel_extension_for_transformers/transformers/**
       - requirements.txt
       - setup.py
-      - intel_extension_for_transformers/utils/**
-      - intel_extension_for_transformers/llm/evaluation/**
-      - intel_extension_for_transformers/llm/quantization/**
-      - intel_extension_for_transformers/llm/runtime/graph/**
-      - intel_extension_for_transformers/llm/operator/**
+      - intel_extension_for_transformers/transformers/llm/evaluation/**
+      - intel_extension_for_transformers/transformers/llm/quantization/**
+      - intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**
+      - intel_extension_for_transformers/qbits/**
       - tests/**
       - .github/workflows/unit-test-optimize.yml
-      - ".github/workflows/script/unitTest/run_unit_test_optimize.sh"
-      - "!intel_extension_for_transformers/llm/runtime/graph/*.md"
+      - '.github/workflows/script/unitTest/run_unit_test_optimize.sh'
+      - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/*.md'
+      - intel_extension_for_transformers/qbits/qbits_ut/**
+
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
+permissions: write-all
 env:
   DOCKER_CONFIG_NAME: "commonDockerConfig"
   REPO_NAME: "intel-extension-for-transformers"
@@ -81,11 +82,6 @@ jobs:
           -v /dataset/cache/huggingface:/root/.cache/huggingface \
           -v ~/.cache/oneAPI:/cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
-
-      - name: Env build
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
 
       - name: Binary build
         run: |

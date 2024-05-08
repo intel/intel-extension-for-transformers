@@ -51,6 +51,9 @@ function init_params {
       --backend=*)
           backend=$(echo $var |cut -f2 -d=)
       ;;
+      --model_source=*)
+          model_source=$(echo $var |cut -f2 -d=)
+      ;;
       *)
           echo "Error: No such parameter: ${var}"
           exit 1
@@ -79,110 +82,192 @@ function run_benchmark {
 
     if [ "${topology}" = "gpt_j" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "gpt_j_woq_rtn" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "gpt_j_woq_bab" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
 	    model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "opt_1.3b" ]; then
         model_name_or_path="facebook/opt-1.3b"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "opt_2.7b" ]; then
         model_name_or_path="facebook/opt-2.7b"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "opt_6.7b" ]; then
         model_name_or_path="facebook/opt-6.7b"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "bloom_7b1" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/bloom-7b1"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "bloom_1b7" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/bloom-1b7"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "bloomz-3b" ]; then
         model_name_or_path="bigscience/bloomz-3b"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "llama_7b" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-chat-hf"
-    elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
+        script="run_generation_sq.py"
+        pip install transformers==4.35.2
+    elif [ "${topology}" = "llama2_7b_gptq" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-hf"
+        script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "llama_13b" ]; then
         model_name_or_path="meta-llama/Llama-2-13b-chat-hf"
+        script="run_generation_sq.py"
+        pip install transformers==4.35.2
     elif [ "${topology}" = "dolly_v2_3b" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "mpt_7b_chat" ]; then
         model_name_or_path="mosaicml/mpt-7b-chat"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "chatglm3_6b" ]; then
         model_name_or_path="THUDM/chatglm3-6b"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        script="run_generation_sq.py"
+        extra_cmd=$extra_cmd" --trust_remote_code"
+        pip install transformers==4.35.2
     elif [ "${topology}" = "chatglm2_6b" ]; then
         model_name_or_path="THUDM/chatglm2-6b"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        script="run_generation_sq.py"
+        extra_cmd=$extra_cmd" --trust_remote_code"
+        pip install transformers==4.35.2
     elif [ "${topology}" = "chatglm_6b" ]; then
         model_name_or_path="THUDM/chatglm-6b"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        script="run_generation_sq.py"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         pip install transformers==4.33
     elif [ "${topology}" = "falcon_7b" ]; then
         model_name_or_path="tiiuae/falcon-7b-instruct"
+        script="run_generation_sq.py"
         pip install transformers==4.33
     elif [ "${topology}" = "baichuan_7b" ]; then
         model_name_or_path="baichuan-inc/Baichuan-7B"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         pip install transformers==4.33
+        script="run_generation_sq.py"
     elif [ "${topology}" = "baichuan_13b" ]; then
         model_name_or_path="baichuan-inc/Baichuan-13B-Base"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         extra_cmd=$extra_cmd" --_commit_hash 14d5b0e204542744900f6fb52422c6d633bdcb00"
         pip install transformers==4.33
+        script="run_generation_sq.py"
     elif [ "${topology}" = "baichuan2_7b" ]; then
         model_name_or_path="baichuan-inc/Baichuan2-7B-Base"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         pip install transformers==4.33
+        script="run_generation_sq.py"
     elif [ "${topology}" = "baichuan2_13b" ]; then
         model_name_or_path="baichuan-inc/Baichuan2-13B-Base"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
-        pip install transformers==4.33
+        extra_cmd=$extra_cmd" --trust_remote_code"
+        pip install transformers==4.35.2
+        script="run_generation_sq.py"
     elif [ "${topology}" = "qwen_7b" ]; then
         model_name_or_path="Qwen/Qwen-7B"
-        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --trust_remote_code"
         extra_cmd=$extra_cmd" --_commit_hash f7bc352f27bb1c02ee371a4576942a7d96c8bb97"
-	pip install transformers==4.35.2
+	    pip install transformers==4.35.2
+        script="run_generation_sq.py"
     elif [ "${topology}" = "mistral_7b" ]; then
         model_name_or_path="Intel/neural-chat-7b-v3"
+        script="run_generation_sq.py"
     elif [ "${topology}" = "phi_1b" ]; then
         model_name_or_path="susnato/phi-1_dev"
-	pip install transformers==4.36.1
+	    pip install transformers==4.36.1
+        script="run_generation_sq.py"
     elif [ "${topology}" = "phi_1_5b" ]; then
         model_name_or_path="susnato/phi-1_5_dev"
-	pip install transformers==4.36.1
-    fi
-
-    if [[ ${int8} == "true" ]]; then
-        if [ "${topology}" = "gpt_j_woq_rtn" ]; then
-            extra_cmd=$extra_cmd" --woq"
-        elif [ "${topology}" = "gpt_j_woq_bab" ]; then
-            extra_cmd=$extra_cmd" --bitsandbytes"
-        elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
-            extra_cmd=$extra_cmd" --load_in_4bit True"
-        elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
-            extra_cmd=$extra_cmd" --load_in_8bit True"
-        elif [ "${topology}" = "gpt_j_mp" ]; then
-            extra_cmd=$extra_cmd" --mixed_precision"
-        elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
-            model_name_or_path="meta-llama/Llama-2-7b-hf"
-            extra_cmd=$extra_cmd" --woq --woq_weight_dtype int4_clip --woq_compute_dtype fp32"
-            extra_cmd=$extra_cmd" --woq_algo "GPTQ" --gptq_actorder --gptq_block_size 128 --gptq_pad_max_length 2048 --gptq_use_max_length"
-            pip install transformers==4.35.2
+	    pip install transformers==4.36.1
+        script="run_generation_sq.py"
+    elif [ "${topology}" = "llama2_7b_gptq" ] && [ "$model_source" != "huggingface" ]; then
+        model_name_or_path="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "mistral_7b_autoround" ] && [ "$model_source" != "huggingface" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "mistral_7b_rtn" ] && [ "$model_source" != "huggingface" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "mistral_7b_gptq" ] && [ "$model_source" != "huggingface" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "gpt_j_woq_rtn" ]; then
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "gpt_j_woq_bab" ]; then
+        extra_cmd=$extra_cmd" --bitsandbytes"
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
+        script="run_generation_cpu_woq.py"
+    elif [ "${topology}" = "llama2_7b_gptq" ]; then
+        if [[ "$model_source" == "huggingface" ]]; then
+            model_name_or_path="TheBloke/Llama-2-7B-Chat-GPTQ"
+            script="run_generation_cpu_woq.py"
         else
-            extra_cmd=$extra_cmd" --int8"
+            model_name_or_path="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
+            extra_cmd=$extra_cmd" --trust_remote_code"
+            script="run_generation_cpu_woq.py"
+        fi
+    elif [ "${topology}" = "mistral_7b_autoround" ]; then
+        if [[ "$model_source" == "huggingface" ]]; then
+            model_name_or_path="Intel/Mistral-7B-v0.1-int4-inc"
+            script="run_generation_cpu_woq.py"
+        else
+            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+            extra_cmd=$extra_cmd" --trust_remote_code"
+            script="run_generation_cpu_woq.py"
+        fi            
+    elif [ "${topology}" = "mistral_7b_rtn" ]; then
+        if [[ "$model_source" == "huggingface" ]]; then
+            model_name_or_path="mistralai/Mistral-7B-v0.1"
+            script="run_generation_cpu_woq.py"
+        else
+            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+            extra_cmd=$extra_cmd" --trust_remote_code"
+            script="run_generation_cpu_woq.py"
+        fi            
+    elif [ "${topology}" = "mistral_7b_gptq" ]; then
+        if [[ "$model_source" == "huggingface" ]]; then
+            model_name_or_path="TheBloke/Mistral-7B-Instruct-v0.1-GPTQ"
+            script="run_generation_cpu_woq.py"
+        else
+            model_name_or_path="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+            extra_cmd=$extra_cmd" --trust_remote_code"
+            script="run_generation_cpu_woq.py"
         fi
     fi
-
+    if [[ ${int8} == "true" ]] && [[ "$model_source" != "huggingface" ]]; then
+        if [[ "${script}" == "run_generation_sq.py" ]] && [[ "${topology}" != "gpt_j_mp" ]];then
+            extra_cmd=$extra_cmd" --int8"
+        fi
+        model_name_or_path=$tuned_checkpoint
+    fi
+    if [[ $backend == "neuralspeed" ]]; then
+        extra_cmd=$extra_cmd" --use_neural_speed"
+    fi
     echo $extra_cmd
 
-    if [ "${script}" == "run_generation.py" ];then
+    if [ "${script}" == "run_generation_sq.py" ];then
         python -u ./${script} \
             --model ${model_name_or_path} \
-            --output_dir ${tuned_checkpoint} \
+            --batch_size ${batch_size} \
+            ${mode_cmd} \
+            ${extra_cmd}
+    elif [ "${script}" == "run_generation_cpu_woq.py" ];then
+        python -u ./${script} \
+            --model ${model_name_or_path} \
             --batch_size ${batch_size} \
             ${mode_cmd} \
             ${extra_cmd}

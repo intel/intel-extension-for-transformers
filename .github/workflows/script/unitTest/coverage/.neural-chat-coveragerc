@@ -5,14 +5,21 @@ branch = True
 omit =
  */**/fake*yaml
  */**/fake.py
- */intel_extension_for_transformers/llm/amp/**
- */intel_extension_for_transformers/llm/evaluation/**
- */intel_extension_for_transformers/llm/quantization/**
- */intel_extension_for_transformers/llm/utils/generation/**
- */intel_extension_for_transformers/llm/library/**
- */intel_extension_for_transformers/llm/operator/**
- */intel_extension_for_transformers/llm/runtime/**
- */intel_extension_for_transformers/transformers/**
+ */intel_extension_for_transformers/transformers/llm/amp/**
+ */intel_extension_for_transformers/transformers/llm/evaluation/**
+ */intel_extension_for_transformers/transformers/llm/quantization/**
+ */intel_extension_for_transformers/transformers/llm/utils/generation/**
+ */intel_extension_for_transformers/transformers/llm/library/**
+ */intel_extension_for_transformers/transformers/llm/operator/**
+ */intel_extension_for_transformers/transformers/dynamic/**
+ */intel_extension_for_transformers/transformers/mixture/**
+ */intel_extension_for_transformers/transformers/modeling/**
+ */intel_extension_for_transformers/transformers/nas/**
+ */intel_extension_for_transformers/transformers/pruner/**
+  */intel_extension_for_transformers/transformers/runtime/**
+ */intel_extension_for_transformers/transformers/setfit/**
+ */intel_extension_for_transformers/transformers/utils/**
+ */intel_extension_for_transformers/transformers/*.py
 exclude_lines =
  pragma: no cover
  raise NotImplementedError

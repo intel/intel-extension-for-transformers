@@ -4,11 +4,11 @@ einops
 evaluate
 fastapi
 fschat==0.2.35
-git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 huggingface_hub
 intel_extension_for_pytorch==2.2.0
+lm-eval
 neural-compressor
-neural_speed
+neural_speed==1.0a0
 numpy==1.23.5
 onnx>=1.15.0
 optimum
@@ -25,6 +25,7 @@ tensorflow>=2.13.0
 torch==2.2.0
 torchaudio==2.2.0
 transformers>=4.35.2
+transformers_stream_generator
 uvicorn
 vllm
 yacs

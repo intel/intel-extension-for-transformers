@@ -100,7 +100,7 @@ class CodeGenAPIRouter(APIRouter):
                 def stream_generator():
                     nonlocal buffered_texts
                     for output in generator:
-                        yield f"data: {output}\n\n"
+                        yield f"data: {output.encode()}\n\n"
                     yield f"data: [DONE]\n\n"
                     if is_plugin_enabled("cache") and \
                        not plugins["cache"]["instance"].pre_llm_inference_actions(request.prompt):
@@ -153,7 +153,7 @@ async def code_generation_endpoint(chat_request: ChatCompletionRequest):
 
         def send_request(port):
             try:
-                url = f'http://{router.host}:{port}/v1/code_generation'
+                url = f'http://{router.host}:{port}/v1/chat_completions'
                 response = requests.post(url, json=chat_request.dict())
                 response.raise_for_status()
                 json_response = json.loads(response.content)
@@ -181,7 +181,7 @@ async def code_chat_endpoint(chat_request: ChatCompletionRequest):
         if chat_request.stream:
             responses = []
             def generate_stream(port):
-                url = f'http://{router.host}:{port}/v1/code_generation'
+                url = f'http://{router.host}:{port}/v1/chat_completions'
                 response = requests.post(url, json=chat_request.dict(), stream=True, timeout=1000)
                 responses.append(response)
             with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
@@ -203,7 +203,7 @@ async def code_chat_endpoint(chat_request: ChatCompletionRequest):
 
             def send_request(port):
                 try:
-                    url = f'http://{router.host}:{port}/v1/code_generation'
+                    url = f'http://{router.host}:{port}/v1/chat_completions'
                     response = requests.post(url, json=chat_request.dict())
                     response.raise_for_status()
                     json_response = json.loads(response.content)

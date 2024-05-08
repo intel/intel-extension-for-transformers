@@ -1,18 +1,14 @@
 name: SparseLib
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'intel_extension_for_transformers/llm/runtime/deprecated/kernels/**'
-      - '.github/workflows/sparse_lib_CI.yml'
-      - '.github/workflows/script/SparseLibCI'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+permissions: write-all
 
 env:
   DOCKER_CONFIG_NAME: "commonDockerConfig"
@@ -62,7 +58,7 @@ jobs:
             -e ghprbHeadLink="${{ github.event.pull_request.head.repo.html_url }}" \
             -e ghprbPullLink="${{ github.event.pull_request._links.html.href }}" \
             -e ghprbPullId="${{ github.event.number }}" \
-            -e MR_source_branch="${{ github.head_ref }}" \
+            -e MR_source_branch="${{ github.event.pull_request._links.html.href }}" \
             -e MR_target_branch="${{ github.base_ref }}" \
             ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 

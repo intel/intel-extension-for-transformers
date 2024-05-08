@@ -16,7 +16,7 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
-from intel_extension_for_transformers.llm.quantization.optimization import Optimization
+from intel_extension_for_transformers.transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .plugins import plugins
@@ -24,17 +24,22 @@ from .utils.common import is_openai_model
 
 from .errorcode import ErrorCodes
 from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
-from intel_extension_for_transformers.utils.logger import logging
+import logging
 import importlib
+import sys
+
+logger = logging.getLogger(__name__)
 
 def check_tts_dependency():
     try:
-        importlib.import_module('paddlespeech')
-        importlib.import_module('paddle')
-        importlib.import_module('soundfile')
-        importlib.import_module('pydub')
-        importlib.import_module('speechbrain')
-        importlib.import_module('librosa')
+        for module in ['soundfile', 'pydub', 'speechbrain', 'librosa', 'zhconv', 'urllib3', 'langid',
+                       'vector_quantize_pytorch', 'cn2an', 'pypinyin', 'jaconv', 'webrtcvad', 'g2p_en', 'inflect',
+                        'jieba']:
+            importlib.import_module(module)
+        if sys.platform == 'linux':
+            importlib.import_module('pyopenjtalk')
+        else:
+            importlib.import_module('openjtalk')
         return True
     except ImportError:
         return False
@@ -118,7 +123,7 @@ def build_chatbot(config: PipelineConfig=None):
     if config.hf_endpoint_url:
         if not config.hf_access_token:
             set_latest_error(ErrorCodes.ERROR_HF_TOKEN_NOT_PROVIDED)
-            logging.error("build_chatbot: \
+            logger.error("build_chatbot: \
                the huggingface token must be provided to access the huggingface endpoint service.")
             return
         from .models.huggingface_model import HuggingfaceModel
@@ -164,12 +169,13 @@ def build_chatbot(config: PipelineConfig=None):
             "magicoder" in config.model_name_or_path.lower() or \
             "mixtral" in config.model_name_or_path.lower() or \
             "phi-2" in config.model_name_or_path.lower() or \
+            "baichuan" in config.model_name_or_path.lower() or \
             "sqlcoder" in config.model_name_or_path.lower():
             from .models.base_model import BaseModel
             adapter = BaseModel(config.model_name_or_path, config.task)
         else:
             set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
-            logging.error("build_chatbot: unknown model")
+            logger.error("build_chatbot: unknown model")
             return
     from .models.base_model import register_model_adapter
     register_model_adapter(adapter)
@@ -178,7 +184,7 @@ def build_chatbot(config: PipelineConfig=None):
         for plugin_name, plugin_value in config.plugins.items():
             enable_plugin = plugin_value.get('enable', False)
             if enable_plugin:
-                if plugin_name == "tts" or plugin_name == "tts_chinese" or plugin_name == "asr":
+                if plugin_name == "tts" or plugin_name == "tts_multilang" or plugin_name == "asr":
                     if not check_tts_dependency():
                         raise ImportError(
                             f"Unable to initialize 'tts' plugin due to missing dependency packages.\n" \
@@ -229,9 +235,9 @@ def build_chatbot(config: PipelineConfig=None):
                 if plugin_name == "tts":
                     from .pipeline.plugins.audio.tts import TextToSpeech
                     plugins[plugin_name]['class'] = TextToSpeech
-                elif plugin_name == "tts_chinese":
-                    from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-                    plugins[plugin_name]['class'] = ChineseTextToSpeech
+                elif plugin_name == "tts_multilang":
+                    from .pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
+                    plugins[plugin_name]['class'] = MultilangTextToSpeech
                 elif plugin_name == "asr":
                     from .pipeline.plugins.audio.asr import AudioSpeechRecognition
                     plugins[plugin_name]['class'] = AudioSpeechRecognition
@@ -255,7 +261,7 @@ def build_chatbot(config: PipelineConfig=None):
                     plugins[plugin_name]['class'] = Image2Image
                 else:
                     set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
-                    logging.error("build_chatbot: unknown plugin")
+                    logger.error("build_chatbot: unknown plugin")
                     return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
@@ -264,13 +270,13 @@ def build_chatbot(config: PipelineConfig=None):
                 except Exception as e:
                     if "[Rereieval ERROR] Document format not supported" in str(e):
                         set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
-                        logging.error("build_chatbot: retrieval plugin init failed")
+                        logger.error("build_chatbot: retrieval plugin init failed")
                     elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
                         set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
-                        logging.error("build_chatbot: safety checker plugin init failed")
+                        logger.error("build_chatbot: safety checker plugin init failed")
                     else:
                         set_latest_error(ErrorCodes.ERROR_GENERIC)
-                        logging.error("build_chatbot: plugin init failed")
+                        logger.error("build_chatbot: plugin init failed")
                     return
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
@@ -287,6 +293,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
+    parameters["use_tpp"] = config.loading_config.use_tpp
     parameters["use_neural_speed"] = config.loading_config.use_neural_speed
     parameters["gguf_model_path"] = config.loading_config.gguf_model_path
     parameters["optimization_config"] = config.optimization_config
@@ -314,22 +321,22 @@ def finetune_model(config: BaseFinetuningConfig):
     """
     clear_latest_error()
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
-    from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
+    from intel_extension_for_transformers.transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
     try:
         finetuning.finetune()
     except FileNotFoundError as e:
-        logging.error(f"Exception: {e}")
+        logger.error(f"Exception: {e}")
         if "Couldn't find a dataset script" in str(e):
             set_latest_error(ErrorCodes.ERROR_DATASET_NOT_FOUND)
     except ValueError as e:
-        logging.error(f"Exception: {e}")
+        logger.error(f"Exception: {e}")
         if "--do_eval requires a validation dataset" in str(e):
             set_latest_error(ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND)
         elif "--do_train requires a train dataset" in str(e):
             set_latest_error(ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
     except Exception as e:
-        logging.error(f"Exception: {e}")
+        logger.error(f"Exception: {e}")
         if "Permission denied" in str(e):
             set_latest_error(ErrorCodes.ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION)
         elif config.finetune_args.peft == "lora":
@@ -358,15 +365,19 @@ def optimize_model(model, config, use_neural_speed=False):
     try:
         model = optimization.optimize(model, use_neural_speed)
     except Exception as e:
-        logging.error(f"Exception: {e}")
+        logger.error(f"Exception: {e}")
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
-            WeightOnlyQuantConfig,
+            RtnConfig,
+            AwqConfig,
+            TeqConfig,
+            GPTQConfig,
+            AutoRoundConfig,
             BitsAndBytesConfig
         )
         if type(config) == MixedPrecisionConfig:
             set_latest_error(ErrorCodes.ERROR_AMP_OPTIMIZATION_FAIL)
-        elif type(config) == WeightOnlyQuantConfig:
+        elif type(config) in [RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoRoundConfig]:
             set_latest_error(ErrorCodes.ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL)
         elif type(config) == BitsAndBytesConfig:
             set_latest_error(ErrorCodes.ERROR_BITS_AND_BYTES_OPTIMIZATION_FAIL)

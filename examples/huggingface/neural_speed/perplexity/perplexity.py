@@ -56,7 +56,7 @@ def get_ppl(sum_nll, sum_nll2, cnt: int):
 
 def perplexity(model_name, dataset_name, **kwargs):
     import datasets
-    from intel_extension_for_transformers.transformers import (AutoModelForCausalLM, WeightOnlyQuantConfig)
+    from intel_extension_for_transformers.transformers import (AutoModelForCausalLM, RtnConfig)
     from transformers import AutoTokenizer, AutoConfig
     model_name = try_resolve_dir(model_name)
     dataset_name = try_resolve_dir(dataset_name)
@@ -107,7 +107,7 @@ def perplexity(model_name, dataset_name, **kwargs):
             for k in kwargs
             if k in ['use_cache', 'compute_dtype', 'weight_dtype', 'scale_dtype', 'group_size', 'use_ggml']
         }
-        woq_config = WeightOnlyQuantConfig(**woq_kwargs)
+        woq_config = RtnConfig(**woq_kwargs)
         model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 
     model_kwargs = {k: kwargs[k] for k in kwargs if k in ['n_keep', 'shift_roped_k', 'memory_dtype']}

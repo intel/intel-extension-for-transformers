@@ -15,8 +15,8 @@ on:
       - '.github/workflows/script/chatbot/**'
       - '.github/workflows/sample_data/**'
       - 'intel_extension_for_transformers/neural_chat/**'
-      - 'intel_extension_for_transformers/llm/finetuning/**'
-      - 'intel_extension_for_transformers/llm/quantization/**'
+      - 'intel_extension_for_transformers/transformers/llm/finetuning/**'
+      - 'intel_extension_for_transformers/transformers/llm/quantization/**'
       - 'intel_extension_for_transformers/transformers/**'
       - 'workflows/chatbot/inference/**'
       - 'workflows/chatbot/fine_tuning/**'
@@ -27,7 +27,7 @@ on:
       - '!intel_extension_for_transformers/neural_chat/README.md'
 
   workflow_dispatch:
-
+permissions: write-all
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

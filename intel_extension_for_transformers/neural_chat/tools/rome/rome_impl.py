@@ -38,8 +38,7 @@ def apply_rome_to_model(
     copy: Optional[bool] = False,
     return_diff_weights: Optional[bool] = False
 ) -> Tuple[PreTrainedModel, Dict[str, torch.Tensor]]:
-    r"""
-    Edits a pre-trained model using model-editing algorithms.
+    r"""Edits a pre-trained model using model-editing algorithms.
 
     Args:
         model (`PreTrainedModel`):
@@ -173,8 +172,8 @@ def execute_rome(
 
 
 def upd_matrix_match_shape(matrix: torch.Tensor, shape: torch.Size) -> torch.Tensor:
-    r"""
-    GPT-2 and GPT-J have transposed weight representations.
+    r"""GPT-2 and GPT-J have transposed weight representations.
+
     Returns a matrix that matches the desired shape, else raises a ValueError
     """
 

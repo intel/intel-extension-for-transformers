@@ -23,7 +23,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
+permissions: write-all
 env:
   OUT_SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script/models
   SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script
@@ -62,7 +62,7 @@ jobs:
             ${{ env.INPUT_COMPILER_VERSION }}
         env:
           WORKSPACE: ${{ env.WORKING_DIR }}
-          GRAPH_DIR: ${{ env.WORKING_DIR }}/intel_extension_for_transformers/llm/runtime/graph
+          GRAPH_DIR: ${{ env.WORKING_DIR }}/intel_extension_for_transformers/transformers/llm/runtime/neural_speed
 
       - name: Rename summary
         run: |
@@ -131,7 +131,7 @@ jobs:
           RUN_DISPLAY_URL: https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }}
           BUILD_NUMBER: ${{ github.run_id }}
           JOB_STATUS: succeed
-          MR_source_branch: ${{ github.head_ref }}
+          MR_source_branch: ${{ github.event.pull_request._links.html.href }}
           ghprbActualCommit: ${{ github.event.pull_request.head.sha }}
 
       - name: Publish Report

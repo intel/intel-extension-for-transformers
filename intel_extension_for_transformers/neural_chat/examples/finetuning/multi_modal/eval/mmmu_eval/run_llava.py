@@ -14,6 +14,9 @@
 
 import sys
 import transformers
+from optimum.habana.transformers.generation.utils import MODELS_OPTIMIZED_WITH_STATIC_SHAPES
+if "llava" not in MODELS_OPTIMIZED_WITH_STATIC_SHAPES:
+    MODELS_OPTIMIZED_WITH_STATIC_SHAPES.append("llava")
 from optimum.habana.transformers.modeling_utils import adapt_transformers_to_gaudi
 adapt_transformers_to_gaudi()
 
@@ -203,8 +206,7 @@ def run_model(args, samples, model, call_model_engine_fn=None,
     return out_samples
 
 def set_seed(seed_value):
-    """
-    Set the seed for PyTorch (both CPU and CUDA), Python, and NumPy for reproducible results.
+    """Set the seed for PyTorch (both CPU and CUDA), Python, and NumPy for reproducible results.
 
     :param seed_value: An integer value to be used as the seed.
     """

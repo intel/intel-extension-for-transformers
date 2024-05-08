@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import transformers
+import ast
 from typing import Dict, Sequence
 from PIL import Image
 from torch.utils.data import Dataset
@@ -24,8 +25,11 @@ from dataclasses import dataclass
 import json
 import os
 import copy
+import math
 import conversation_utils
-from intel_extension_for_transformers.utils.device_utils import is_hpu_available
+
+from intel_extension_for_transformers.transformers.modeling.llava_models.mm_utils import select_best_resolution
+from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
 
 # Model Constants
 IGNORE_INDEX = -100
@@ -33,6 +37,123 @@ DEFAULT_IMAGE_TOKEN = "<image>"
 DEFAULT_IM_START_TOKEN = "<im_start>"
 DEFAULT_IM_END_TOKEN = "<im_end>"
 IMAGE_TOKEN_INDEX = -200
+
+
+def resize_and_pad_image(image, target_resolution):
+    """Resize and pad an image to a target resolution while maintaining aspect ratio.
+
+    Args:
+        image (PIL.Image.Image): The input image.
+        target_resolution (tuple): The target resolution (width, height) of the image.
+
+    Returns:
+        PIL.Image.Image: The resized and padded image.
+    """
+    original_width, original_height = image.size
+    target_width, target_height = target_resolution
+
+    scale_w = target_width / original_width
+    scale_h = target_height / original_height
+
+    if scale_w < scale_h:
+        new_width = target_width
+        new_height = min(math.ceil(original_height * scale_w), target_height)
+    else:
+        new_height = target_height
+        new_width = min(math.ceil(original_width * scale_h), target_width)
+
+    # Resize the image
+    resized_image = image.resize((new_width, new_height))
+
+    new_image = Image.new('RGB', (target_width, target_height), (0, 0, 0))
+    paste_x = (target_width - new_width) // 2
+    paste_y = (target_height - new_height) // 2
+    new_image.paste(resized_image, (paste_x, paste_y))
+
+    return new_image
+
+
+def divide_to_patches(image, patch_size):
+    """Divides an image into patches of a specified size.
+
+    Args:
+        image (PIL.Image.Image): The input image.
+        patch_size (int): The size of each patch.
+
+    Returns:
+        list: A list of PIL.Image.Image objects representing the patches.
+    """
+    patches = []
+    width, height = image.size
+    for i in range(0, height, patch_size):
+        for j in range(0, width, patch_size):
+            box = (j, i, j + patch_size, i + patch_size)
+            patch = image.crop(box)
+            patches.append(patch)
+
+    return patches
+
+
+def process_anyres_image(image, processor, grid_pinpoints):
+    """Process an image with variable resolutions.
+
+    Args:
+        image (PIL.Image.Image): The input image to be processed.
+        processor: The image processor object.
+        grid_pinpoints (str): A string representation of a list of possible resolutions.
+
+    Returns:
+        torch.Tensor: A tensor containing the processed image patches.
+    """
+    if type(grid_pinpoints) is list:
+        possible_resolutions = grid_pinpoints
+    else:
+        possible_resolutions = ast.literal_eval(grid_pinpoints)
+    best_resolution = select_best_resolution(image.size, possible_resolutions)
+    image_padded = resize_and_pad_image(image, best_resolution)
+
+    patches = divide_to_patches(image_padded, processor.crop_size['height'])
+
+    image_original_resize = image.resize((processor.size['shortest_edge'], processor.size['shortest_edge']))
+
+    image_patches = [image_original_resize] + patches
+    image_patches = [processor.preprocess(image_patch, return_tensors='pt')['pixel_values'][0]
+                     for image_patch in image_patches]
+    return torch.stack(image_patches, dim=0)
+
+
+def expand2square(pil_img, background_color):
+    width, height = pil_img.size
+    if width == height:
+        return pil_img
+    elif width > height:
+        result = Image.new(pil_img.mode, (width, width), background_color)
+        result.paste(pil_img, (0, (width - height) // 2))
+        return result
+    else:
+        result = Image.new(pil_img.mode, (height, height), background_color)
+        result.paste(pil_img, ((height - width) // 2, 0))
+        return result
+
+
+def process_images(images, image_processor, model_cfg):
+    image_aspect_ratio = getattr(model_cfg, "image_aspect_ratio", None)
+    new_images = []
+    if image_aspect_ratio == 'pad':
+        for image in images:
+            image = expand2square(image, tuple(int(x*255) for x in image_processor.image_mean))
+            image = image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
+            new_images.append(image)
+    elif image_aspect_ratio == "anyres":
+        for image in images:
+            image = process_anyres_image(image, image_processor, model_cfg.image_grid_pinpoints)
+            new_images.append(image)
+    else:
+        return image_processor(images, return_tensors='pt')['pixel_values']
+    if all(x.shape == new_images[0].shape for x in new_images):
+        new_images = torch.stack(new_images, dim=0)
+    return new_images
+
 
 def tokenizer_image_token(prompt, tokenizer, image_token_index=IMAGE_TOKEN_INDEX, return_tensors=None):
     prompt_chunks = [tokenizer(chunk).input_ids for chunk in prompt.split('<image>')]
@@ -164,7 +285,7 @@ def safe_save_model_for_hf_trainer(trainer: transformers.Trainer,
             for key, value in state_dict.items()
         }
         del state_dict
-        trainer._save(output_dir, state_dict=cpu_state_dict)  # noqa
+        trainer._save(output_dir, state_dict=cpu_state_dict)
 
 
 def smart_tokenizer_and_embedding_resize(
@@ -276,6 +397,268 @@ def preprocess_multimodal(
     return sources
 
 
+# open hermes chatml
+def preprocess_mpt_oh(
+    sources,
+    tokenizer: transformers.PreTrainedTokenizer,
+    conversation_template,
+    has_image: bool = False
+) -> Dict:
+    conv = conversation_template.copy()
+    roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
+
+    # Apply prompt templates
+    conversations = []
+    for i, source in enumerate(sources):
+        if roles[source[0]["from"]] != conv.roles[0]:
+            # Skip the first one if it is not from human
+            source = source[1:]
+
+        conv.messages = []
+        for j, sentence in enumerate(source):
+            role = roles[sentence["from"]]
+            assert role == conv.roles[j % 2], f"{i}"
+            conv.append_message(role, sentence["value"])
+        conversations.append(conv.get_prompt())
+
+    # Tokenize conversations
+
+    if has_image:
+        input_ids = torch.stack([tokenizer_image_token(prompt, tokenizer, return_tensors='pt') for prompt in conversations], dim=0)
+    else:
+        input_ids = tokenizer(
+            conversations,
+            return_tensors="pt",
+            padding="longest",
+            max_length=tokenizer.model_max_length,
+            truncation=True,
+        ).input_ids
+
+    input_ids = input_ids[:, 1:]
+    targets = input_ids.clone()
+    assert conv.sep_style == conversation_utils.SeparatorStyle.MPT
+
+    # Mask targets
+    sep = conv.sep + conv.roles[1]
+    for conversation, target in zip(conversations, targets):
+        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+
+        rounds = conversation.split(conv.sep)
+        re_rounds = [conv.sep.join(rounds[:3]) + conv.sep] # system + user + gpt
+        for conv_idx in range(3, len(rounds), 2):
+            re_rounds.append(conv.sep.join(rounds[conv_idx:conv_idx+2]) + conv.sep)    # user + gpt
+        cur_len = 0
+        target[:cur_len] = IGNORE_INDEX
+        for i, rou in enumerate(re_rounds):
+            if rou == "":
+                break
+
+            parts = rou.split(sep)
+            if len(parts) != 2:
+                break
+            parts[0] += sep
+
+            if has_image:
+                round_len = len(tokenizer_image_token(rou, tokenizer)) - 1
+                instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 1
+            else:
+                round_len = len(tokenizer(rou).input_ids) - 1
+                instruction_len = len(tokenizer(parts[0]).input_ids) - 1
+
+            if i != 0 and getattr(tokenizer, 'legacy', False) and IS_TOKENIZER_GREATER_THAN_0_14:
+                round_len += 1
+                instruction_len += 1
+
+            target[cur_len : cur_len + instruction_len] = IGNORE_INDEX
+
+            cur_len += round_len
+        target[cur_len:] = IGNORE_INDEX
+
+        if cur_len < tokenizer.model_max_length:
+            if cur_len != total_len:
+                target[:] = IGNORE_INDEX
+                print(
+                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                    f" (ignored)"
+                )
+
+    return dict(
+        input_ids=input_ids,
+        labels=targets,
+    )
+
+
+def preprocess_mpt(
+    sources,
+    tokenizer: transformers.PreTrainedTokenizer,
+    has_image: bool = False
+) -> Dict:
+    conv = conversation_lib.default_conversation.copy()
+    roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
+
+    # Apply prompt templates
+    conversations = []
+    for i, source in enumerate(sources):
+        if roles[source[0]["from"]] != conv.roles[0]:
+            # Skip the first one if it is not from human
+            source = source[1:]
+
+        conv.messages = []
+        for j, sentence in enumerate(source):
+            role = roles[sentence["from"]]
+            assert role == conv.roles[j % 2], f"{i}"
+            conv.append_message(role, sentence["value"])
+        conversations.append(conv.get_prompt())
+
+    # Tokenize conversations
+
+    if has_image:
+        input_ids = torch.stack([tokenizer_image_token(prompt, tokenizer, return_tensors='pt') for prompt in conversations], dim=0)
+    else:
+        input_ids = tokenizer(
+            conversations,
+            return_tensors="pt",
+            padding="longest",
+            max_length=tokenizer.model_max_length,
+            truncation=True,
+        ).input_ids
+
+    targets = input_ids.clone()
+    assert conv.sep_style == conversation_lib.SeparatorStyle.MPT
+
+    # Mask targets
+    sep = conv.sep + conv.roles[1]
+    for conversation, target in zip(conversations, targets):
+        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+
+        rounds = conversation.split(conv.sep)
+        re_rounds = [conv.sep.join(rounds[:3])] # system + user + gpt
+        for conv_idx in range(3, len(rounds), 2):
+            re_rounds.append(conv.sep.join(rounds[conv_idx:conv_idx+2]))    # user + gpt
+        cur_len = 0
+        target[:cur_len] = IGNORE_INDEX
+        for i, rou in enumerate(re_rounds):
+            if rou == "":
+                break
+
+            parts = rou.split(sep)
+            if len(parts) != 2:
+                break
+            parts[0] += sep
+
+            if has_image:
+                round_len = len(tokenizer_image_token(rou, tokenizer))
+                instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 1
+            else:
+                round_len = len(tokenizer(rou).input_ids)
+                instruction_len = len(tokenizer(parts[0]).input_ids) - 1
+
+            if i != 0 and getattr(tokenizer, 'legacy', False) and IS_TOKENIZER_GREATER_THAN_0_14:
+                round_len += 1
+                instruction_len += 1
+
+            target[cur_len : cur_len + instruction_len] = IGNORE_INDEX
+
+            cur_len += round_len
+        target[cur_len:] = IGNORE_INDEX
+
+        if cur_len < tokenizer.model_max_length:
+            if cur_len != total_len:
+                target[:] = IGNORE_INDEX
+                print(
+                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                    f" (ignored)"
+                )
+
+    return dict(
+        input_ids=input_ids,
+        labels=targets,
+    )
+
+
+def preprocess_llama_2(
+    sources,
+    tokenizer: transformers.PreTrainedTokenizer,
+    conversation_template,
+    has_image: bool = False
+) -> Dict:
+    conv = conversation_template.copy()
+    roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
+
+    # Apply prompt templates
+    conversations = []
+    for i, source in enumerate(sources):
+        if roles[source[0]["from"]] != conv.roles[0]:
+            # Skip the first one if it is not from human
+            source = source[1:]
+
+        conv.messages = []
+        for j, sentence in enumerate(source):
+            role = roles[sentence["from"]]
+            assert role == conv.roles[j % 2], f"{i}"
+            conv.append_message(role, sentence["value"])
+        conversations.append(conv.get_prompt())
+
+    # Tokenize conversations
+
+    if has_image:
+        input_ids = torch.stack([tokenizer_image_token(prompt, tokenizer, return_tensors='pt') for prompt in conversations], dim=0)
+    else:
+        input_ids = tokenizer(
+            conversations,
+            return_tensors="pt",
+            padding="longest",
+            max_length=tokenizer.model_max_length,
+            truncation=True,
+        ).input_ids
+
+    targets = input_ids.clone()
+
+    assert conv.sep_style == conversation_utils.SeparatorStyle.LLAMA_2
+
+    # Mask targets
+    sep = "[/INST] "
+    for conversation, target in zip(conversations, targets):
+        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+
+        rounds = conversation.split(conv.sep2)
+        cur_len = 1
+        target[:cur_len] = IGNORE_INDEX
+        for i, rou in enumerate(rounds):
+            if rou == "":
+                break
+
+            parts = rou.split(sep)
+            if len(parts) != 2:
+                break
+            parts[0] += sep
+
+            if has_image:
+                round_len = len(tokenizer_image_token(rou, tokenizer))
+                instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 2
+            else:
+                round_len = len(tokenizer(rou).input_ids)
+                instruction_len = len(tokenizer(parts[0]).input_ids) - 2
+
+            target[cur_len : cur_len + instruction_len] = IGNORE_INDEX
+
+            cur_len += round_len
+        target[cur_len:] = IGNORE_INDEX
+
+        if cur_len < tokenizer.model_max_length:
+            if cur_len != total_len:
+                target[:] = IGNORE_INDEX
+                print(
+                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                    f" (ignored)"
+                )
+
+    return dict(
+        input_ids=input_ids,
+        labels=targets,
+    )
+
+
 def preprocess_v1(
     sources,
     tokenizer: transformers.PreTrainedTokenizer,
@@ -380,6 +763,7 @@ def preprocess_plain(
         tokenized_len = len(tokenizer_image_token(source[0]['value'], tokenizer))
         target[:tokenized_len] = IGNORE_INDEX
 
+    # return dict(input_ids=input_ids, labels=targets)
     return dict(input_ids=torch.stack(input_ids, dim=0), labels=torch.stack(targets, dim=0))
 
 
@@ -389,8 +773,9 @@ def preprocess(
     conversation_template,
     has_image: bool = False,
 ) -> Dict:
-    """
-    Given a list of sources, each is a conversation list. This transform:
+    """Given a list of sources, each is a conversation list.
+
+    This transform:
     1. Add signal '### ' at the beginning each sentence, with end signal '\n';
     2. Concatenate conversations together;
     3. Tokenize the concatenated conversation;
@@ -398,8 +783,14 @@ def preprocess(
     """
     if conversation_template.sep_style == conversation_utils.SeparatorStyle.PLAIN:
         return preprocess_plain(sources, tokenizer, conversation_template)
+    if conversation_template.sep_style == conversation_utils.SeparatorStyle.LLAMA_2:
+        return preprocess_llama_2(sources, tokenizer, conversation_template, has_image=has_image)
     if conversation_template.version.startswith("v1"):
         return preprocess_v1(sources, tokenizer, conversation_template, has_image=has_image)
+    if conversation_template.version == "mpt_oh":
+        return preprocess_mpt_oh(sources, tokenizer, conversation_template, has_image=has_image)
+    if conversation_template.version == "mpt":
+        return preprocess_mpt(sources, tokenizer, conversation_template, has_image=has_image)
     # add end signal and concatenate together
     conversations = []
     for source in sources:
@@ -468,28 +859,18 @@ class LazySupervisedDataset(Dataset):
         if isinstance(i, int):
             sources = [sources]
         assert len(sources) == 1, "Don't know why it is wrapped to a list"  # FIXME
+        image_sizes = None
         if 'image' in sources[0]:
             image_file = self.list_data_dict[i]['image']
             image_folder = self.data_args.image_folder
             processor = self.data_args.image_processor
             image = Image.open(os.path.join(image_folder, image_file)).convert('RGB')
+            image_sizes = [image.size]
             if self.data_args.image_aspect_ratio == 'pad':
-                def expand2square(pil_img, background_color):
-                    width, height = pil_img.size
-                    if width == height:
-                        return pil_img
-                    elif width > height:
-                        result = Image.new(pil_img.mode, (width, width), background_color)
-                        result.paste(pil_img, (0, (width - height) // 2))
-                        return result
-                    else:
-                        result = Image.new(pil_img.mode, (height, height), background_color)
-                        result.paste(pil_img, ((height - width) // 2, 0))
-                        return result
                 image = expand2square(image, tuple(int(x*255) for x in processor.image_mean))
-                image = processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
+                images = process_images([image], processor, self.data_args)[0]
             else:
-                image = processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
+                images = process_images([image], processor, self.data_args)[0]
             sources = preprocess_multimodal(
                 copy.deepcopy([e["conversations"] for e in sources]),
                 self.data_args, self.conversation_template)
@@ -502,15 +883,19 @@ class LazySupervisedDataset(Dataset):
             has_image=('image' in self.list_data_dict[i]))
 
         data_dict["attention_mask"] = data_dict["input_ids"].ne(self.tokenizer.pad_token_id)
-
         if isinstance(i, int):
             data_dict = dict(input_ids=data_dict["input_ids"][0],
                              labels=data_dict["labels"][0],
                              attention_mask=data_dict["attention_mask"][0])
 
+        # if isinstance(i, int):
+        #     data_dict = dict(input_ids=data_dict["input_ids"][0],
+        #                      labels=data_dict["labels"][0])
+
         # image exist in the data
         if 'image' in self.list_data_dict[i]:
-            data_dict['images'] = image
+            data_dict['images'] = images
+            data_dict['image_sizes'] = image_sizes
         elif self.data_args.is_multimodal:
             # image does not exist in the data, but the model is multimodal
             crop_size = self.data_args.image_processor.crop_size
@@ -572,9 +957,9 @@ class LazySupervisedDatasetPadding(LazySupervisedDataset):
             for ele_inp, ele_tar in zip(inp, tar):
                 if ele_inp == IMAGE_TOKEN_INDEX:
                     # fill image placeholder with pad token
-                    new_inp.extend([IMAGE_TOKEN_INDEX] * self.data_args.mm_im_patchs)
-                    new_tar.extend([IGNORE_INDEX] * self.data_args.mm_im_patchs)
-                    image_mask.extend([1] * self.data_args.mm_im_patchs)
+                    new_inp.extend([IMAGE_TOKEN_INDEX] * self.data_args.mm_im_patches)
+                    new_tar.extend([IGNORE_INDEX] * self.data_args.mm_im_patches)
+                    image_mask.extend([1] * self.data_args.mm_im_patches)
                 else:
                     new_inp.append(ele_inp)
                     new_tar.append(ele_tar)
@@ -645,10 +1030,9 @@ class DataCollatorForSupervisedDataset(object):
                                                  batch_first=True,
                                                  padding_value=IGNORE_INDEX)
         attention_mask = torch.nn.utils.rnn.pad_sequence(
-            attention_mask,
-            batch_first=True,
-            padding_value=0)
-
+                attention_mask,
+                batch_first=True,
+                padding_value=0)
         input_ids = input_ids[:, :self.tokenizer.model_max_length]
         labels = labels[:, :self.tokenizer.model_max_length]
         attention_mask = attention_mask[:, :self.tokenizer.model_max_length]
@@ -669,6 +1053,9 @@ class DataCollatorForSupervisedDataset(object):
             images_mask = [instance['images_mask'] for instance in instances]
             batch['images_mask'] = torch.stack(images_mask)
 
+        if 'image_sizes' in instances[0]:
+            batch['image_sizes'] = [instance['image_sizes'][0] for instance in instances]
+
         return batch
 
 
@@ -686,6 +1073,7 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                                     data_path=data_args.data_path,
                                     data_args=data_args,
                                     conversation_template=conversation_template)
+
     data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
     return dict(train_dataset=train_dataset,
                 eval_dataset=None,

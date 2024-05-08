@@ -26,6 +26,10 @@ pip install intel-extension-for-transformers
 cd <intel_extension_for_transformers_folder>
 pip install -r requirements.txt
 pip install -v .
+
+# Please use Onnx/Onnx Runtime no higher than 1.13.1
+pip install onnx==1.13.1
+pip install onnxruntime==1.13.1
 ```
 
 Install required dependencies for this example

@@ -18,7 +18,7 @@
 import unicodedata
 import pandas as pd
 import re, json
-from langchain.document_loaders import UnstructuredMarkdownLoader
+from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from docx import Document as DDocument
 from bs4 import BeautifulSoup
 import fitz
@@ -34,13 +34,24 @@ def uni_pro(text):
     for char in normalized_text:
         if ord(char) < 128 or unicodedata.category(char) == 'Mn':
             filtered_text += char
+        elif '\u4E00' <= char <= '\u9FFF':
+            filtered_text += char
+        elif ('\u3400' <= char <= '\u4DBF'  # CJK Unified Ideographs Extension A
+          or '\u20000' <= char <= '\u2A6DF'  # CJK Unified Ideographs Extension B
+          or '\u2A700' <= char <= '\u2B73F'  # CJK Unified Ideographs Extension C
+          or '\u2B740' <= char <= '\u2B81F'  # CJK Unified Ideographs Extension D
+          or '\u2B820' <= char <= '\u2CEAF'  # CJK Unified Ideographs Extension E
+          or '\uF900' <= char <= '\uFAFF'  # CJK Compatibility Ideographs
+          or '\u2F800' <= char <= '\u2FA1F'):
+            filtered_text += char
+
     return filtered_text
 
 
 def read_pdf(pdf_path):
     """Read the pdf file."""
     doc = fitz.open(pdf_path)
-    reader = easyocr.Reader(['en'])
+    reader = easyocr.Reader(['en'], gpu=False)
     result =''
     for i in range(doc.page_count):
         page = doc.load_page(i)
@@ -178,7 +189,7 @@ def load_xlsx(input):
     return all_data
 
 def load_csv(input):
-    """ Load the csv file."""
+    """Load the csv file."""
     df = pd.read_csv(input)
     all_data = []
     documents = []
@@ -244,3 +255,25 @@ def get_chuck_data(content, max_length, min_length, input):
             current_length = sentence_length
 
     return paragraphs
+
+
+def clean_filename(url):
+    # Characters to be removed or replaced
+    invalid_chars = {
+        "/": "_",
+        "\\": "_",
+        ":": "_",
+        "*": "_",
+        "?": "_",
+        "\"": "_",
+        "<": "_",
+        ">": "_",
+        "|": "_",
+        " ": "_",
+        ".": "_",
+        "=": "_",
+    }
+    for char, replacement in invalid_chars.items():
+        url = url.replace(char, replacement)
+
+    return url

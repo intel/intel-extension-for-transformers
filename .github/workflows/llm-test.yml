@@ -6,14 +6,14 @@ on:
     paths:
        - '.github/workflows/llm-test.yml'
        - '.github/workflows/script/models/run_llm.sh'
-       - "intel_extension_for_transformers/llm/runtime/deprecated/**"
-       - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
-       - "!intel_extension_for_transformers/llm/runtime/graph/**"
-       - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
-       - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
-       - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+       - "intel_extension_for_transformers/transformers/runtime/**"
+       - "!intel_extension_for_transformers/transformers/runtime/kernels/**"
+       - "!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**"
+       - "!intel_extension_for_transformers/transformers/runtime/test/**"
+       - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
+       - "!intel_extension_for_transformers/transformers/runtime/docs/**"
   workflow_dispatch:
-
+permissions: write-all
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -53,6 +53,7 @@ jobs:
           conda activate llm-test || source activate llm-test
           pip install build --upgrade
           pip install -r requirements.txt
+          pip install torch==2.0 --extra-index-url https://download.pytorch.org/whl/cpu
           python setup.py sdist bdist_wheel
           pip install dist/intel_extension_for_transformers*.whl
           pip list
@@ -129,7 +130,7 @@ jobs:
           RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
           BUILD_NUMBER: ${{ github.run_id }}
           JOB_STATUS: succeed
-          MR_source_branch: ${{ github.head_ref }}
+          MR_source_branch: ${{ github.event.pull_request._links.html.href }}
           ghprbActualCommit: ${{ github.event.pull_request.head.sha }}
 
       - name: Publish Report

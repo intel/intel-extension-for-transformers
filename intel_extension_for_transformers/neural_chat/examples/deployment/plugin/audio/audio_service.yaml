@@ -44,4 +44,10 @@ tts:
         stream_mode: false
         output_audio_path: "./output_audio.wav"
 
+tts_multilang:
+    enable: true
+    args:
+        device: "cpu"
+        precision: "bf16"
+
 tasks_list: ['plugin_audio']

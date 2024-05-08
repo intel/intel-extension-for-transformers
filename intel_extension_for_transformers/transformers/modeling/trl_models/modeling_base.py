@@ -32,7 +32,7 @@ from huggingface_hub.utils import (
 from safetensors.torch import load_file as safe_load_file
 from transformers import PreTrainedModel
 import importlib
-from intel_extension_for_transformers.utils.device_utils import is_hpu_available
+from intel_extension_for_transformers.tools.utils import is_hpu_available
 
 
 def is_peft_available():
@@ -77,8 +77,7 @@ LAYER_PATTERNS = [
 
 
 class PreTrainedModelWrapper(nn.Module):
-    r"""
-    A wrapper class around a (`transformers.PreTrainedModel`) to be compatible with the
+    r"""A wrapper class around a (`transformers.PreTrainedModel`) to be compatible with the
     (`~transformers.PreTrained`) class in order to keep some attributes and methods of the
     (`~transformers.PreTrainedModel`) class.
 
@@ -124,13 +123,11 @@ class PreTrainedModelWrapper(nn.Module):
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        r"""
-        Instantiates a new model from a pretrained model from `transformers`. The
+        r"""Instantiates a new model from a pretrained model from `transformers`. The
         pretrained model is loaded using the `from_pretrained` method of the
         `transformers.PreTrainedModel` class. The arguments that are specific to the
         `transformers.PreTrainedModel` class are passed along this method and filtered
         out from the `kwargs` argument.
-
 
         Args:
             pretrained_model_name_or_path (`str` or `transformers.PreTrainedModel`):
@@ -460,8 +457,7 @@ class PreTrainedModelWrapper(nn.Module):
 
     @classmethod
     def _get_current_device(cls):
-        r"""
-        Get the current device. For GPU, we return the local process index using the `Accelerator`
+        r"""Get the current device. For GPU, we return the local process index using the `Accelerator`
         object to handle corner cases when running scripts in distributed environments.
 
         Returns:
@@ -478,10 +474,8 @@ class PreTrainedModelWrapper(nn.Module):
 
     @classmethod
     def _split_kwargs(cls, kwargs):
-        """
-        Separate the kwargs from the arguments that we support inside
-        `supported_args` and the ones that we don't.
-        """
+        """Separate the kwargs from the arguments that we support inside
+        `supported_args` and the ones that we don't."""
         check_peft_kwargs = False
 
         if is_peft_available():
@@ -508,8 +502,7 @@ class PreTrainedModelWrapper(nn.Module):
         return supported_kwargs, unsupported_kwargs, peft_kwargs
 
     def push_to_hub(self, *args, **kwargs):
-        r"""
-        Push the pretrained model to the hub. This method is a wrapper around
+        r"""Push the pretrained model to the hub. This method is a wrapper around
         `transformers.PreTrainedModel.push_to_hub`. Please refer to the documentation
         of `transformers.PreTrainedModel.push_to_hub` for more information.
 
@@ -524,8 +517,7 @@ class PreTrainedModelWrapper(nn.Module):
         raise NotImplementedError
 
     def save_pretrained(self, *args, **kwargs):
-        r"""
-        Save the pretrained model to a directory. This method is a wrapper around
+        r"""Save the pretrained model to a directory. This method is a wrapper around
         `transformers.PreTrainedModel.save_pretrained`. Please refer to the documentation
         of `transformers.PreTrainedModel.save_pretrained` for more information.
 
@@ -559,14 +551,13 @@ class PreTrainedModelWrapper(nn.Module):
         return self.pretrained_model.save_pretrained(*args, **kwargs)
 
     def state_dict(self, *args, **kwargs):
-        r"""
-        Return the state_dict of the pretrained model.
-        """
+        r"""Return the state_dict of the pretrained model."""
         raise NotImplementedError
 
     def post_init(self, *args, **kwargs):
-        r"""
-        Post initialization method. This method is called after the model is
+        r"""Post initialization method.
+
+        This method is called after the model is
         instantiated and loaded from a checkpoint. It can be used to perform
         additional operations such as loading the state_dict.
         """
@@ -575,8 +566,9 @@ class PreTrainedModelWrapper(nn.Module):
     def add_and_load_reward_modeling_adapter(
         self, adapter_model_id, adapter_name="reward_model_adapter", token=None
     ):
-        r"""
-        Add and load a reward modeling adapter. This method can only be used if the
+        r"""Add and load a reward modeling adapter.
+
+        This method can only be used if the
         model is a `PeftModel` and if you have initialized the model with the `reward_modeling_adapter_id`
         argument, pointing to the id of the reward modeling adapter. The latest needs also to contain the
         score head in order to produce the reward.
@@ -637,8 +629,9 @@ class PreTrainedModelWrapper(nn.Module):
     def compute_reward_score(
         self, input_ids, attention_mask=None, ppo_adapter_name="default", **kwargs
     ):
-        r"""
-        Computes the reward score for a given input. The method has first to enable the adapter
+        r"""Computes the reward score for a given input.
+
+        The method has first to enable the adapter
         and then compute the reward score. After that the model disables the reward modeling
         adapter and enables the default ppo adapter again.
         """
@@ -669,8 +662,7 @@ class PreTrainedModelWrapper(nn.Module):
 def create_reference_model(
     model: PreTrainedModelWrapper, num_shared_layers: int = None, pattern: str = None
 ) -> PreTrainedModelWrapper:
-    """
-    Creates a static reference copy of a model. Note that model will be in `.eval()` mode.
+    """Creates a static reference copy of a model. Note that model will be in `.eval()` mode.
 
     Args:
         model (`PreTrainedModelWrapper`): The model to be copied.
@@ -729,7 +721,7 @@ def create_reference_model(
         param = model.get_parameter(param_name)
         param.requires_grad = False
 
-        ref_param = ref_model.get_parameter(param_name)  # noqa
+        ref_param = ref_model.get_parameter(param_name)
         ref_param = param  # noqa
 
     # for all other parameters just make sure they don't use gradients

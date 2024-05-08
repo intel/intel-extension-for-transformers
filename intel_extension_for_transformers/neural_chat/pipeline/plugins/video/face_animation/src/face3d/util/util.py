@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""This script contains basic utilities for Deep3DFaceRecon_pytorch
-"""
+"""This script contains basic utilities for Deep3DFaceRecon_pytorch."""
 import numpy as np
 import os
 import argparse
@@ -34,7 +32,7 @@ def str2bool(v):
 
 
 def mkdirs(paths):
-    """create empty directories if they don't exist
+    """Create empty directories if they don't exist.
 
     Parameters:
         paths (str list) -- a list of directory paths
@@ -47,7 +45,7 @@ def mkdirs(paths):
 
 
 def mkdir(path):
-    """create a single empty directory if it didn't exist
+    """Create a single empty directory if it didn't exist.
 
     Parameters:
         path (str) -- a single directory path

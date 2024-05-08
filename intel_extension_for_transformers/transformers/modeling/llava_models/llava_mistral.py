@@ -69,8 +69,11 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
         output_hidden_states: Optional[bool] = None,
         images: Optional[torch.FloatTensor] = None,
         images_mask: Optional[torch.LongTensor] = None,
+        image_sizes: Optional[List[List[int]]] = None,
         return_dict: Optional[bool] = None,
         token_idx: Optional[torch.Tensor] = None,
+        use_flash_attention: Optional[bool] = False,
+        flash_attention_recompute: Optional[bool] = False,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
 
         if inputs_embeds is None:
@@ -88,7 +91,8 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                     attention_mask,
                     past_key_values,
                     labels,
-                    images
+                    images,
+                    image_sizes,
                 )
             else:
                 (
@@ -110,6 +114,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                 )
 
         if "Gaudi" in MistralForCausalLM.__name__:
+            # pylint: disable=E1101
             return super().forward(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
@@ -121,10 +126,13 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
                 return_dict=return_dict,
-                token_idx=token_idx
+                token_idx=token_idx,
+                use_flash_attention=use_flash_attention,
+                flash_attention_recompute=flash_attention_recompute,
             )
         else:
-            return super().forward(  # pylint: disable=E1101
+            # pylint: disable=E1101
+            return super().forward( # pylint: disable=E1101
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 position_ids=position_ids,

@@ -18,6 +18,7 @@ import torch
 import unittest
 import shutil
 import torch.utils.data as data
+import intel_extension_for_transformers.qbits as qbits
 from peft import (
     LoraConfig,
     TaskType,
@@ -29,10 +30,16 @@ from transformers import (
     Trainer
 )
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits, QuantizedLoraLinearQBits
-from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
-from intel_extension_for_transformers.llm.utils.generation import _beam_search, _greedy_search
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers.llm.quantization.nn.modules import (
+    QuantizedLinearQBits,
+    QuantizedLoraLinearQBits
+)
+from intel_extension_for_transformers.transformers.llm.quantization.utils import (
+    convert_to_quantized_model,
+    replace_linear
+)
+from intel_extension_for_transformers.transformers.llm.utils.generation import _beam_search, _greedy_search
+from intel_extension_for_transformers.transformers import RtnConfig
 
 
 class DummyDataset(data.Dataset):
@@ -49,6 +56,7 @@ class DummyDataset(data.Dataset):
     def __getitem__(self, index):
         """Returns one data pair (source and target)."""
         return self.encoded_dict
+
 
 class M(torch.nn.Module):
     def __init__(self, with_bias=False):
@@ -77,7 +85,8 @@ class TestWeightOnly(unittest.TestCase):
         shutil.rmtree('tmp', ignore_errors=True)
 
     def test_woq_config(self):
-        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
+        config = RtnConfig(
+            bits=4, weight_dtype="int4_fullrange", group_size=32)
         diff_res = config.to_diff_dict()
         ref_config = {'weight_dtype': 'int4_fullrange'}
         self.assertEqual(diff_res, ref_config)
@@ -88,7 +97,8 @@ class TestWeightOnly(unittest.TestCase):
         print(config)
 
     def test_woq_config_post_init_runtime(self):
-        config = WeightOnlyQuantConfig(weight_dtype="fp4", compute_dtype="int8", scheme="asym", scale_dtype="fp8")
+        config = RtnConfig(bits=4, weight_dtype="fp4",
+                           compute_dtype="int8", scheme="asym", scale_dtype="fp8")
         config.post_init_runtime()
         config_dict = config.to_dict()
         self.assertEqual(config_dict["weight_dtype"], "fp4_e2m1")
@@ -100,9 +110,11 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_int8(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
-        compress_wei = torch.ops.bestlaop.woq_quantize(raw_wei, True, 32, "fp32", "int8", "fp32", False)
+        compress_wei = qbits.quantize_to_packed_weight(
+            raw_wei, True, 32, "fp32", "int8", "fp32", False)
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
-        torch.ops.bestlaop.woq_dequantize(compress_wei, revert_wei, True, "fp32", "int8", "fp32")
+        qbits.dequantize_packed_weight(compress_wei, revert_wei,
+                             True, "fp32", "int8", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
@@ -110,8 +122,8 @@ class TestWeightOnly(unittest.TestCase):
             activation = torch.rand(1, 32, dtype=torch.float)
             output = model(activation)
 
-            config = WeightOnlyQuantConfig(weight_dtype="int8", group_size=32)
-            config.post_init()
+            config = RtnConfig(bits=8, weight_dtype="int8", group_size=32)
+            config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
@@ -120,9 +132,11 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_int4(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
-        compress_wei = torch.ops.bestlaop.woq_quantize(raw_wei, True, 32, "fp32", "int4_fullrange", "fp32", False)
+        compress_wei = qbits.quantize_to_packed_weight(
+            raw_wei, True, 32, "fp32", "int4_fullrange", "fp32", False)
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
-        torch.ops.bestlaop.woq_dequantize(compress_wei, revert_wei, True, "fp32", "int4_fullrange", "fp32")
+        qbits.dequantize_packed_weight(compress_wei, revert_wei, True,
+                             "fp32", "int4_fullrange", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
@@ -131,9 +145,9 @@ class TestWeightOnly(unittest.TestCase):
             output = model(activation)
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(raw_wei)
-
-            config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
-            config.post_init()
+            config = RtnConfig(
+                bits=4, weight_dtype="int4_fullrange", group_size=32)
+            config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
@@ -141,7 +155,8 @@ class TestWeightOnly(unittest.TestCase):
             assert torch.allclose(output, output_quant, rtol=0.01)
 
     def test_auto_model(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_neural_speed=False)
+        model = AutoModelForCausalLM.from_pretrained(
+            llama_model_path, load_in_4bit=True, use_neural_speed=False)
         module_list = []
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
@@ -158,6 +173,7 @@ class TestWeightOnly(unittest.TestCase):
         output = model.generate(
             input_ids, max_new_tokens=int(5), num_beams=1
         )
+        # if used transformers 4.39, the output len is 1.
         self.assertTrue(len(output) == 2 and isinstance(output[1], list))
         output = model.generate(
             input_ids, max_new_tokens=int(5), num_beams=2
@@ -165,7 +181,7 @@ class TestWeightOnly(unittest.TestCase):
         self.assertTrue(len(output) == 2 and isinstance(output[1], list))
 
     def test_auto_model_with_config(self):
-        config = WeightOnlyQuantConfig()
+        config = RtnConfig()
         model = AutoModelForCausalLM.from_pretrained(llama_model_path,
                                                      quantization_config=config,
                                                      use_neural_speed=False)
@@ -176,21 +192,23 @@ class TestWeightOnly(unittest.TestCase):
         self.assertTrue(len(module_list) > 0)
 
     def test_auto_model_saving_loading(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_neural_speed=False)
+        model = AutoModelForCausalLM.from_pretrained(
+            llama_model_path, load_in_4bit=True, use_neural_speed=False)
         module_list = []
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
         model.save_pretrained(self.workspace, safe_serialization=False)
-        loaded_model = AutoModelForCausalLM.from_pretrained(self.workspace)
+        loaded_model = AutoModelForCausalLM.from_pretrained(self.workspace, use_neural_speed=False)
         for name, module in loaded_model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
 
     def test_nf4_training(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_neural_speed=False)
+        model = AutoModelForCausalLM.from_pretrained(
+            llama_model_path, load_in_4bit=True, use_neural_speed=False)
         peft_config = LoraConfig(
             r=8,
             lora_alpha=16,
@@ -205,8 +223,10 @@ class TestWeightOnly(unittest.TestCase):
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLoraLinearQBits) and "nf4" in module.weight_dtype:
                 lora_weights[name] = [
-                    getattr(module.lora_A, module.active_adapter[0]).weight.clone(),
-                    getattr(module.lora_B, module.active_adapter[0]).weight.clone()
+                    getattr(module.lora_A,
+                            module.active_adapter[0]).weight.clone(),
+                    getattr(module.lora_B,
+                            module.active_adapter[0]).weight.clone()
                 ]
         self.assertTrue(len(lora_weights) > 0)
 
@@ -229,7 +249,8 @@ class TestWeightOnly(unittest.TestCase):
         model.merge_and_unload()
 
     def test_int8_training(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_8bit=True, use_neural_speed=False)
+        model = AutoModelForCausalLM.from_pretrained(
+            llama_model_path, load_in_8bit=True, use_neural_speed=False)
         peft_config = LoraConfig(
             r=8,
             lora_alpha=16,
@@ -244,8 +265,10 @@ class TestWeightOnly(unittest.TestCase):
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLoraLinearQBits) and "int8" in module.weight_dtype:
                 lora_weights[name] = [
-                    getattr(module.lora_A, module.active_adapter[0]).weight.clone(),
-                    getattr(module.lora_B, module.active_adapter[0]).weight.clone()
+                    getattr(module.lora_A,
+                            module.active_adapter[0]).weight.clone(),
+                    getattr(module.lora_B,
+                            module.active_adapter[0]).weight.clone()
                 ]
         self.assertTrue(len(lora_weights) > 0)
 
@@ -263,6 +286,7 @@ class TestWeightOnly(unittest.TestCase):
                                                                   module.active_adapter[0]).weight).any())
                 self.assertTrue((lora_weights[name][1] != getattr(module.lora_B,
                                                                   module.active_adapter[0]).weight).any())
+
 
 if __name__ == "__main__":
     unittest.main()

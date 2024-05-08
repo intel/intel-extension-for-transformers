@@ -1,11 +1,21 @@
+cn2an
 datasets
+g2p_en
+inflect
+jaconv
+jieba
+langid
 librosa
 num2words
-paddlepaddle
-paddlespeech
+openjtalk; sys_platform != 'linux'
 pydub
+pyopenjtalk; sys_platform == 'linux'
+pypinyin
 python-multipart
 soundfile
 speechbrain==0.5.15
 transformers
+urllib3
+vector_quantize_pytorch
+webrtcvad
 zhconv

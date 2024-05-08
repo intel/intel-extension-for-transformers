@@ -15,7 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import importlib
+import sys
 import torch
+if sys.version_info < (3, 8):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
 try:
     import habana_frameworks.torch.hpu as hthpu
@@ -23,18 +29,23 @@ try:
 except ImportError:
     is_hpu_available = False
 
-try:
-    import intel_extension_for_pytorch as intel_ipex
-    is_ipex_available = True
-except ImportError:
-    is_ipex_available = False
+_ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
+_ipex_version = "N/A"
+if _ipex_available:
+    try:
+        _ipex_version = importlib_metadata.version("intel_extension_for_pytorch")
+    except importlib_metadata.PackageNotFoundError:
+        _ipex_available = False
+
+def is_ipex_available():
+    return _ipex_available
 
 def get_device_type():
     if torch.cuda.is_available():
         device = "cuda"
     elif is_hpu_available:
         device = "hpu"
-    elif is_ipex_available and torch.xpu.is_available():
+    elif is_ipex_available() and torch.xpu.is_available():
         device = "xpu"
     else:
         device = "cpu"
@@ -55,3 +66,6 @@ def is_openai_model(model_name_or_path):
 
 def is_hf_model(model_name_or_path):
     return "http" in model_name_or_path
+
+def supported_gpus():
+    return ['flex', 'max', 'arc']

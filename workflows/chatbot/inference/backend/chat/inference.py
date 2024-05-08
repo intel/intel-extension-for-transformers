@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Inference for LLM models."""
 import abc
 import torch
@@ -25,7 +24,7 @@ import psutil
 
 from torch import nn
 from torch.nn import functional as F
-import intel_extension_for_transformers.llm.runtime.deprecated.compile as itrex_compile
+import intel_extension_for_transformers.transformers.runtime.compile as itrex_compile
 import numpy as np
 import random
 

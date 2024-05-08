@@ -4,18 +4,15 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/llm/runtime/neural_speed/**
       - .github/workflows/unit-test-neuralspeed.yml
       - '.github/workflows/script/unitTest/run_unit_test_neuraspeed.sh'
-      - '!intel_extension_for_transformers/llm/runtime/neural_speed/docs/**'
-      - '!intel_extension_for_transformers/llm/runtime/neural_speed/*.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
+permissions: write-all
 env:
   DOCKER_CONFIG_NAME: "commonDockerConfig"
   REPO_NAME: "intel-extension-for-transformers"
@@ -68,11 +65,6 @@ jobs:
           -v /tf_dataset2:/tf_dataset2 \
           -v ~/.cache/oneAPI:/cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
-
-      - name: Env build
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
-          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
 
       - name: Binary build
         run: |

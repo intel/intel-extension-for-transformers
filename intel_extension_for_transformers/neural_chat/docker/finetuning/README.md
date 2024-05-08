@@ -30,75 +30,140 @@ If you need to use local repository, add `--build-arg REPO_PATH="."` when `docke
 #### On Xeon SPR Environment
 
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t neuralchat_finetune:latest . --target cpu
+docker build --build-arg UBUNTU_VER=22.04 \
+       --target cpu \
+       -t intel/intel-extension-for-transformers:finetuning-1.4.0 . 
 ```
 
 #### On Habana Gaudi Environment
 
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t neuralchat_finetune:latest . --target hpu
+docker build --build-arg UBUNTU_VER=22.04 \
+       --target hpu \
+       -t intel/intel-extension-for-transformers:finetuning-1.4.0 . 
 ```
 
 #### On Nvidia GPU Environment
 
 ```bash
-docker build -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t neuralchat_finetune:latest . --target nvgpu
+docker build --target nvgpu \
+       -t intel/intel-extension-for-transformers:finetuning-1.4.0 . 
 ```
 
 ### 2.2 Docker Pull from Docker Hub
 ```bash
-docker pull intel/ai-tools:itrex-chatbot
+docker pull intel/intel-extension-for-transformers:finetuning-1.4.0
 ```
 
 ## 3. Create Docker Container
 
 If you have downloaded model and datasets before, just mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
 
+If your environment requires a proxy to access the internet, export your development system's proxy settings to the docker environment:
+
+```bash
+export DOCKER_RUN_ENVS="-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"
+```
+
 ### On Xeon SPR Environment
 
 ```bash
-docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -v /dev/shm:/dev/shm neuralchat_finetune:latest /bin/bash
+docker run -it --disable-content-trust \
+       --privileged \
+       --name="chatbot" \
+       --hostname="chatbot-container" \
+       --network=host \
+       -v /dev/shm:/dev/shm \
+       ${DOCKER_RUN_ENVS} \
+       intel/intel-extension-for-transformers:finetuning-1.4.0 \
+       /bin/bash
 ```
-
-If you need to set proxy settings, please add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`. 
 
 If you want to use local datasets and models, use `-v` to mount files
 
 ```bash
-docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"  -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json neuralchat_finetune:latest /bin/bash
+export MODEL_DIR=<absolute path to flan t5 xl model directory>
+export DATASET_FILE=<absolute path Alapaca data file>
+docker run -it --disable-content-trust \
+       --privileged \
+       --name="chatbot" \
+       --hostname="chatbot-container" \
+       --network=host ${DOCKER_RUN_ENVS}  \
+       -v /dev/shm:/dev/shm \
+       -v ${MODEL_DIR}:/flan \
+       -v ${DATASET_FILE}:/dataset/alpaca_data.json \
+       intel/intel-extension-for-transformers:finetuning-1.4.0 \
+       /bin/bash
 ```
-
 
 ### On Habana Gaudi Environment
 
 ```bash
-docker run -it --runtime=habana --name="chatbot" -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -v /dev/shm:/dev/shm --cap-add=sys_nice --net=host --ipc=host neuralchat_finetune:latest /bin/bash
+docker run -it --runtime=habana \
+       --name="chatbot" \
+       -e HABANA_VISIBLE_DEVICES=all \
+       -e OMPI_MCA_btl_vader_single_copy_mechanism=none \
+       -v /dev/shm:/dev/shm \
+       ${DOCKER_RUN_ENVS} \
+       --cap-add=sys_nice \
+       --net=host \
+       --ipc=host \
+       intel/intel-extension-for-transformers:finetuning-1.4.0 /bin/bash
 ```
-
-If you need to set proxy settings, please add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`. 
-
 If you want to use local datasets and models, use `-v` to mount files.
 
-
 ```bash
-docker run -it --runtime=habana --name="chatbot" -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v /dev/shm:/dev/shm  -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json --cap-add=sys_nice --net=host --ipc=host neuralchat_finetune:latest /bin/bash
+export MODEL_DIR=<absolute path to flan t5 xl model directory>
+export DATASET_FILE=<absolute path Alapaca data file>
+docker run -it --runtime=habana \
+       --name="chatbot" \
+       -e HABANA_VISIBLE_DEVICES=all \
+       -e OMPI_MCA_btl_vader_single_copy_mechanism=none \
+       ${DOCKER_RUN_ENVS} \
+       -v /dev/shm:/dev/shm \
+       -v ${MODEL_DIR}:/flan \
+       -v ${DATASET_FILE}:/dataset/alpaca_data.json \
+       --cap-add=sys_nice \
+       --net=host \
+       --ipc=host \
+       intel/intel-extension-for-transformers:finetuning-1.4.0 \
+       /bin/bash
 ```
 
 
 ### On Nvidia GPU Environment
 
 ```bash
-docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -v /dev/shm:/dev/shm neuralchat_finetune:latest /bin/bash
+docker run --gpus all \
+       -it --disable-content-trust \
+       --privileged \
+       --name="chatbot" \
+       --hostname="chatbot-container" \
+       --network=host \
+       -v /dev/shm:/dev/shm \
+       ${DOCKER_RUN_ENVS} \
+       intel/intel-extension-for-transformers:finetuning-1.4.0 \
+       /bin/bash
 ```
-
-If you need to set proxy settings, please add `-e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1"`. 
 
 If you want to use local datasets and models, use `-v` to mount files.
 
 ```bash
-docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy=$https_proxy -e http_proxy=$http_proxy -e no_proxy="localhost,127.0.0.1" -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json neuralchat_finetune:latest /bin/bash
+export MODEL_DIR=<absolute path to flan t5 xl model directory>
+export DATASET_FILE=<absolute path Alapaca data file>
+docker run --gpus all \
+       -it --disable-content-trust \
+       --privileged \
+       --name="chatbot" \
+       --hostname="chatbot-container" \
+       --network=host \
+       ${DOCKER_RUN_ENVS} \
+       -v /dev/shm:/dev/shm \
+       -v ${MODEL_DIR}:/flan \
+       -v ${DATASET_FILE}:/dataset/alpaca_data.json \
+       intel/intel-extension-for-transformers:finetuning-1.4.0 \
+       /bin/bash
 ```
-
 
 ## 4. Simple Test using Docker Container
 ```bash
@@ -108,7 +173,6 @@ docker exec -it chatbot /bin/bash
 cd tests/nightly
 python finetuning/test_finetuning_data.py
 ```
-
 
 # Finetune
 

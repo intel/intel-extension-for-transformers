@@ -127,8 +127,7 @@ def postprocess_qa_predictions(
     prefix: Optional[str] = None,
     log_level: Optional[int] = logging.WARNING,
 ):
-    """
-    Post-processes the predictions of a question-answering model to convert them to answers that are substrings of the
+    """Post-processes the predictions of a question-answering model to convert them to answers that are substrings of the
     original contexts. This is the base postprocessing functions for models that only return start and end logits.
 
     Args:

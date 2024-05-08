@@ -6,9 +6,9 @@ import torch
 from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
 import intel_extension_for_pytorch as ipex
-from intel_extension_for_transformers.llm.utils.generation import _beam_search, _greedy_search
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_str2torch
+from intel_extension_for_transformers.transformers.llm.utils.generation import _beam_search, _greedy_search
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, AutoRoundConfig, RtnConfig, GPTQConfig
+from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_dtype_str2torch
 from transformers.utils import check_min_version
 
 parser = argparse.ArgumentParser()
@@ -16,7 +16,7 @@ parser.add_argument(
     "--model", nargs="?", default="Qwen/Qwen-7B-Chat", const="Qwen/Qwen-7B-Chat"
 )
 parser.add_argument("--revision", default=None, type=str)
-parser.add_argument("--trust_remote_code", default=True)
+parser.add_argument("--trust_remote_code", action="store_true")
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
@@ -47,49 +47,79 @@ parser.add_argument("--batch_size", default=1, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
-parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, \
+parser.add_argument("--tasks", default="lambada_openai", type=str, \
                     help="tasks list for accuracy validation")
 # ============WeightOnlyQuant configs===============
+parser.add_argument("--bits", type=int, default=4, choices=[4])
 parser.add_argument("--woq", action="store_true")
-parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'GPTQ'], 
+parser.add_argument("--woq_algo", default="Rtn", choices=['Rtn', 'GPTQ', 'AutoRound'], 
                     help="Weight-only parameter.")
-parser.add_argument("--woq_dtype", type=str, default="int4_fullrange",
+parser.add_argument("--weight_dtype", type=str, default="int4_fullrange",
                     choices=["int4_fullrange"])
-parser.add_argument("--woq_group_size", type=int, default=32)
-parser.add_argument("--woq_scheme", default="sym")
+parser.add_argument("--group_size", type=int, default=128)
+parser.add_argument("--scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--device", default="xpu")
 parser.add_argument("--compute_dtype", default="fp16")
+parser.add_argument("--calib_iters", default=200, type=int, help="Calibration iters.")
+parser.add_argument("--load_in_4bit", type=bool, default=False)
+parser.add_argument("--load_in_8bit", type=bool, default=False)
+# ============GPTQ configs==============
 parser.add_argument(
-    "--gptq_percdamp",
+    "--desc_act",
+    action="store_true",
+    help="Whether to apply the activation order GPTQ heuristic.",
+)
+parser.add_argument(
+    "--damp_percent",
     type=float,
     default=0.01,
     help="Percent of the average Hessian diagonal to use for dampening.",
 )
 parser.add_argument(
-    "--gptq_block_size",
+    "--blocksize",
     type=int,
     default=128,
     help="Block size. sub weight matrix size to run GPTQ.",
 )
 parser.add_argument(
-    "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
+    "--nsamples", type=int, default=512, help="Number of calibration data samples."
 )
 parser.add_argument(
-    "--gptq_use_max_length",
-    action="store_true",
-    help="Set all sequence length to be same length of args.gptq_pad_max_length",
-)
-parser.add_argument(
-    "--gptq_pad_max_length",
+    "--max_input_length",
     type=int,
     default=2048,
     help="Calibration dataset sequence max length, this should align with your model config",
 )
-# ============BitsAndBytes configs==============
-parser.add_argument("--bitsandbytes", action="store_true")
-parser.add_argument("--load_in_4bit", type=bool, default=False)
-parser.add_argument("--load_in_8bit", type=bool, default=False)
+parser.add_argument(
+    "--static_groups",
+    action="store_true",
+    help="Use determined group to do quantization",
+)
+# ============AutoRound==================
+parser.add_argument(
+    "--calib_len",
+    default=2048,
+    type=int,
+    help="Calibration dataset max or padding max length for AutoRound.",
+)
+parser.add_argument(
+    "--lr",
+    type=float,
+    default=None,
+    help="learning rate, if None, it will be set to 1.0/iters automatically",
+)
+parser.add_argument(
+    "--minmax_lr",
+    type=float,
+    default=None,
+    help="minmax learning rate, if None,it will beset to be the same with lr",
+)
+parser.add_argument(
+    "--use_quant_input",
+    action="store_true",
+    help="whether to use the output of quantized block to tune the next block",
+)
 # =======================================
 args = parser.parse_args()
 torch_dtype = convert_dtype_str2torch(args.compute_dtype)
@@ -117,29 +147,46 @@ else:
 
 quantization_config = None
 if args.woq:
-    if args.woq_algo == "GPTQ":
-        algorithm_args = {
-            "act_order": False,
-            "percdamp": args.gptq_percdamp,
-            "block_size": args.gptq_block_size,
-            "nsamples": args.gptq_nsamples,
-            "use_max_length": args.gptq_use_max_length,
-            "pad_max_length": args.gptq_pad_max_length,
-        }
-        quantization_config = WeightOnlyQuantConfig(
+    if args.woq_algo.lower() == "gptq":
+        quantization_config = GPTQConfig(
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            desc_act=args.desc_act,
+            damp_percent=args.damp_percent,
+            sym=True if args.scheme == "sym" else False,
+            blocksize=args.blocksize,
+            nsamples=args.nsamples,
+            static_groups=args.static_groups,
+            group_size=args.group_size,
+            max_input_length=args.max_input_length,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.compute_dtype,
-            weight_dtype=args.woq_dtype,
-            scheme=args.woq_scheme,
-            group_size=args.woq_group_size,
-            algorithm=args.woq_algo,
-            tokenizer=tokenizer,
-            algorithm_args=algorithm_args,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
         )
-    else:
-        quantization_config = WeightOnlyQuantConfig(
-            compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype,
-            group_size=args.woq_group_size, scale_dtype=args.compute_dtype
+    elif args.woq_algo.lower() == "autoround":
+        quantization_config = AutoRoundConfig(
+            tokenizer=tokenizer,
+            dataset=args.dataset,
+            bits=args.bits,
+            sym=True if args.scheme == "sym" else False,
+            group_size=args.group_size,
+            max_input_length=args.max_input_length,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.compute_dtype,
+            weight_dtype=args.weight_dtype,
+            calib_iters=args.calib_iters,
+            calib_len=args.calib_len,
+            nsamples=args.nsamples,
+            lr=args.lr,
+            minmax_lr=args.minmax_lr,
+            use_quant_input=args.use_quant_input,
+        )
+    elif args.woq_algo.lower() == "rtn":
+        quantization_config = RtnConfig(
+            compute_dtype=args.compute_dtype, weight_dtype=args.weight_dtype,
+            group_size=args.group_size, scale_dtype=args.compute_dtype
         ) #default is A16W4G16
 
 # get model
@@ -177,7 +224,7 @@ if args.benchmark:
             if user_model is None else user_model
     user_model = user_model.to(memory_format=torch.channels_last)
     if quantization_config is None:
-        quantization_config = WeightOnlyQuantConfig.from_pretrained(args.model)
+        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
     if not args.disable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
@@ -213,12 +260,12 @@ if args.benchmark:
                 output = user_model.generate(
                     input_ids, max_new_tokens=int(args.max_new_tokens), **generate_kwargs
                 )
+                if args.device == "xpu":
+                    torch.xpu.synchronize()
                 toc = time.time()
                 gen_ids = output[0] if args.profile_token_latency else output
                 gen_text = tokenizer.batch_decode(
                     gen_ids, skip_special_tokens=True)
-                if args.device == "xpu":
-                    torch.xpu.synchronize()
             if args.do_profiling and i >= num_warmup and (i == num_warmup or i == num_iter + num_warmup - 1):
                 print(f"Save pt for iter {i}")
                 torch.save(prof.key_averages().table(
@@ -261,33 +308,27 @@ if args.benchmark:
 
 
 if args.accuracy:
-    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
             if user_model is None else user_model
     if quantization_config is None:
-        quantization_config = WeightOnlyQuantConfig.from_pretrained(args.model)
+        quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
     if not args.disable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
             user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
     else:
         print("Disabled optimization with IPEX...")
-    results = evaluate(
-        model="hf-causal",
-        model_args='pretrained='+args.model+',tokenizer=' + args.model + \
-            ',dtype=float32,trust_remote_code=' + str(args.trust_remote_code),
-        user_model=user_model,
-        batch_size=args.batch_size,
-        tasks=args.tasks,
-        device=args.device
-    )
-    dumped = json.dumps(results, indent=2)
-    if args.save_accuracy_path:
-        with open(args.save_accuracy_path, "w") as f:
-            f.write(dumped)
-    for task_name in args.tasks:
+    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+    args = LMEvalParser(model = "hf", 
+                        tokenizer = tokenizer,
+                        user_model = user_model,
+                        tasks = args.tasks,
+                        device = args.device,
+                        batch_size = args.batch_size)
+    results = evaluate(args)
+    for task_name in args.tasks.split(","):
         if task_name == "wikitext":
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity,none"]))
         else:
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc,none"]))

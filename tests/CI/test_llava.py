@@ -55,6 +55,7 @@ class TestLLaVA(unittest.TestCase):
             vision_tower = "hf-internal-testing/tiny-random-clip"
             mm_use_im_patch_token = False
             mm_use_im_start_end = False
+            mm_patch_merge_type = "flat"
 
         model_args = TestArgs()
         self.model.model.initialize_vision_modules(model_args)

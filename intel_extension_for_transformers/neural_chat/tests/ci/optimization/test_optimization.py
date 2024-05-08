@@ -23,7 +23,7 @@ from transformers.utils import is_bitsandbytes_available
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
+from intel_extension_for_transformers.transformers import RtnConfig, MixedPrecisionConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TestChatbotBuilder(unittest.TestCase):
@@ -80,7 +80,7 @@ class TestChatbotBuilder(unittest.TestCase):
         if self.device == "cpu":
             loading_config = LoadingModelConfig(use_neural_speed=False)
             config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                optimization_config=WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange"),
+                optimization_config=RtnConfig(bits=4, compute_dtype="fp32", weight_dtype="int4_fullrange"),
                 loading_config=loading_config
             )
             chatbot = build_chatbot(config)
