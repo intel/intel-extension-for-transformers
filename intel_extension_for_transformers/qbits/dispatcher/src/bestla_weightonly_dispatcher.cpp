@@ -53,12 +53,13 @@ void dequantize_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
     kernel.unpackTransposeWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
                                  dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
                                  ctx->output->data_ptr<float>(), ctx->deseries_wei->mK,
-                                 &dispatcher_utils::DefaultThreading);
+                                 dispatcher_utils::qbits_threading::get());
 
   } else {
     kernel.unpackWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
                         dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
-                        ctx->output->data_ptr<float>(), ctx->deseries_wei->mN, &dispatcher_utils::DefaultThreading);
+                        ctx->output->data_ptr<float>(), ctx->deseries_wei->mN,
+                        dispatcher_utils::qbits_threading::get());
   }
 }
 
@@ -72,7 +73,6 @@ void quantize_to_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   if constexpr (std::is_same_v<WType, bestla::storage::gemm::StorageWeightKBlockNInteger>) {
     TORCH_CHECK(p->scale_type == "fp32" || p->scale_type == "bf16",
                 "Qbits: scale_type must be fp32/bf16 in NInteger Weight.");
-    if (p->scale_type == "bf16") TORCH_CHECK(!p->asym, "Qbits: asym is not supported when scale_type==bf16 currently.");
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, p->blocksize, wei2bestladt_map[p->weight_type],
                                            scale2bestladt_map[p->scale_type], BTLA_DTYPE::BF16, p->asym);
   } else if constexpr (std::is_same_v<WType, bestla::storage::gemm::StorageWeightKBlockNFloat>) {
@@ -92,10 +92,10 @@ void quantize_to_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   packedw.assign(ctx->output->data_ptr<int8_t>());
   if (ctx->transpose) {
     launcher.mProB.packTransposeWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->k, &packedw,
-                                       &dispatcher_utils::DefaultThreading);
+                                       dispatcher_utils::qbits_threading::get());
   } else {
     launcher.mProB.packWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->n, &packedw,
-                              &dispatcher_utils::DefaultThreading);
+                              dispatcher_utils::qbits_threading::get());
   }
   if (dispatcher_utils::initer.verbose) {
     dispatcher_utils::timer.stop();
@@ -140,17 +140,17 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
     if (packedw->ShfIndice()) {
       param_a.reordered->assign(tmpbuf + dyn_q_size);
       param_a.indices = packedw->ShfIndice();
-      launcher.mProA.quantize(param_a, ctx->m, ctx->deseries_wei->mK, &dispatcher_utils::DefaultThreading);
+      launcher.mProA.quantize(param_a, ctx->m, ctx->deseries_wei->mK, dispatcher_utils::qbits_threading::get());
     }
     typename Launcher::Param args{
         gp, param_a, dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei), param_epi};
     if (packedw->ShfIndice()) {
-      bestla::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      bestla::parallel::GemmRun<Parallel>(launcher, args, dispatcher_utils::qbits_threading::get());
     } else {
-      bestla::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      bestla::parallel::GemmRunWithA<Parallel>(launcher, args, dispatcher_utils::qbits_threading::get());
     }
   } else {
-    using Parallel = bestla::parallel::gemm::SchedulerKBlock<GemmCore>;
+    using Parallel = bestla::parallel::gemm::SchedulerBase<GemmCore>;
     StorageWeight* packedw = dynamic_cast<StorageWeight*>(ctx->deseries_wei);
     if (p->asym || packedw->ShfIndice()) {
       if (p->asym) asym_size = param_a.reduce->mSize;
@@ -170,18 +170,12 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
     bestla::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, p->blocksize);
 
     typename Launcher::Param args{
-        gp,
-        param_a,
-        dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
-        {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
-         p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
-         p->asym ? param_a.reduce->template RPtr<float>() : nullptr, p->asym ? param_a.reduce->lda : -1},
-        param_epi};
+        gp, param_a, dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei), param_epi};
 
     if (p->asym || packedw->ShfIndice()) {
-      bestla::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      bestla::parallel::GemmRunWithA<Parallel>(launcher, args, dispatcher_utils::qbits_threading::get());
     } else {
-      bestla::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      bestla::parallel::GemmRun<Parallel>(launcher, args, dispatcher_utils::qbits_threading::get());
     }
   }
   if (tmpbuf != woq_workspace && tmpbuf != nullptr) bestla::utils::afree(tmpbuf);
@@ -243,8 +237,7 @@ void parse_launcher(woq_config_param* p, woq_runtime_ctx* ctx) {
     using Launcher = bestla::wrapper::gemm::LauncherIntKBlock<GemmCore::ISA, GemmCore, PrologueA, PrologueB, Epilogue>;
     return execute_task<TASK, Launcher>(p, ctx);
   } else {
-    using Launcher = bestla::wrapper::gemm::LauncherKBlock<GemmCore::ISA, GemmCore, PrologueA, PrologueB,
-                                                           bestla::epilogue::gemm::CompFp32BlockEpilogue, Epilogue>;
+    using Launcher = bestla::wrapper::gemm::LauncherBase<GemmCore::ISA, GemmCore, PrologueA, PrologueB, Epilogue>;
     return execute_task<TASK, Launcher>(p, ctx);
   }
 }
@@ -289,7 +282,8 @@ void parse_activation(woq_config_param* p, woq_runtime_ctx* ctx) {
 template <WOQ_TASK TASK, class GemmCore>
 void parse_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   using namespace bestla::prologue_b::gemm;
-  if (p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int4_fullrange") {
+  if (p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int3_clip" ||
+      p->weight_type == "int2_clip") {
     return parse_activation<TASK, GemmCore, WeightKBlockNInteger>(p, ctx);
   }
   if (p->weight_type == "nf4" || p->weight_type == "fp4_e2m1_bnb" || p->weight_type == "fp4_e2m1" ||
@@ -308,7 +302,6 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
   set_nk(ctx, ctx->weight);
   p->blocksize = p->blocksize == -1 ? ctx->k : p->blocksize;
   if (p->compute_type == "int8") {
-    TORCH_CHECK(p->asym == false, "Qbits: int8 compute_type doesn't support asym quantization currently.")
     if (dispatcher_utils::check_amx() && p->blocksize % bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>::KTILE == 0) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>>(p, ctx);
     }
@@ -350,13 +343,11 @@ void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
   auto CType = bestla::gemm::CoreAttr::get_mask_val(ctx->deseries_wei->mCoreId, bestla::gemm::CoreAttr::COMP_MASK,
                                                     bestla::gemm::CoreAttr::COMP_SHIFT);
   if (CType == uint32_t(bestla::gemm::CompType::COMP_INT8_US_INT32)) {
-    TORCH_CHECK(p->asym == false, "Qbits: int8 compute_type doesn't support asym quantization currently.")
     if (NTile == bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>::NTILE && dispatcher_utils::check_amx()) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>>(p, ctx);
     }
   }
   if (CType == uint32_t(bestla::gemm::CompType::COMP_INT8_US_FP32)) {
-    TORCH_CHECK(p->asym == false, "Qbits: int8 compute_type doesn't support asym quantization currently.")
     if (NTile == bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::NTILE && dispatcher_utils::check_avx512_vnni()) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>(p, ctx);
     }

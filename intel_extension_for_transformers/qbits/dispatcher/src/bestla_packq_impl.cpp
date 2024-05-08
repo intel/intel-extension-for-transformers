@@ -28,9 +28,9 @@ void execute_qpack(repack_quantized_weight_param* p, repack_quantized_weight_ctx
   *(ctx->output) = torch::empty(qpackw.mSize, torch::kInt8);
   qpackw.assign(ctx->output->data_ptr<int8_t>());
   if (p->enable_act_shuffle)
-    ker.setShuffleIndices(ctx->g_idx->data_ptr<int>(), &qpackw, &dispatcher_utils::DefaultThreading);
+    ker.setShuffleIndices(ctx->g_idx->data_ptr<int>(), &qpackw, dispatcher_utils::qbits_threading::get());
   ker.packQWeight(ctx->n, ctx->k, ctx->qweight->data_ptr<int8_t>(), ctx->n, ctx->scale->data_ptr<float>(),
-                  p->asym ? ctx->zp->data_ptr<int8_t>() : nullptr, &qpackw, &dispatcher_utils::DefaultThreading);
+                  p->asym ? ctx->zp->data_ptr<int8_t>() : nullptr, &qpackw, dispatcher_utils::qbits_threading::get());
 }
 
 std::string get_dtype_str(BTLA_DTYPE dtype) {
@@ -41,8 +41,10 @@ std::string get_dtype_str(BTLA_DTYPE dtype) {
       return "bf16";
     case BTLA_DTYPE::S4_CLIP:
       return "int4_clip";
-    case BTLA_DTYPE::S4_FULLRANGE:
-      return "int4_fullrange";
+    case BTLA_DTYPE::S3_CLIP:
+      return "int3_clip";
+    case BTLA_DTYPE::S2_CLIP:
+      return "int2_clip";
     case BTLA_DTYPE::F4_NF4:
       return "nf4";
     case BTLA_DTYPE::F4_E2M1:
@@ -182,7 +184,9 @@ torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T) {
 }
 
 void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx, WOQ_TASK task) {
-  TORCH_CHECK(p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int4_fullrange",
+  // TODO(zhe): elegant impl.
+  TORCH_CHECK(p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int3_clip" ||
+                  p->weight_type == "int2_clip",
               "Qbits: only support Integer WOQ in PACKQ");
 
   // NTILE & compute-dtype determine the padsize.
