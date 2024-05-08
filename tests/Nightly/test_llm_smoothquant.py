@@ -27,8 +27,8 @@ PT_VERSION = nc_torch.get_torch_version()
 
 
 @unittest.skipIf(
-    PT_VERSION.release < Version("2.1.0").release,
-    "Please use PyTroch 2.1.0 or higher version for executor backend",
+    PT_VERSION.release <= Version("2.1.0").release,
+    "Please use PyTroch 2.2.0 or higher version for executor backend",
 )
 class TestLLMQuantization(unittest.TestCase):
     def test_qwen(self):
