@@ -163,7 +163,12 @@ parser.add_argument("--trust_remote_code", action="store_true")
 parser.add_argument("--use_neural_speed", action="store_true")
 # =======================================
 args = parser.parse_args()
-args.scheme = "asym" if args.scheme is None and args.woq_algo == "AutoRound" else "sym" 
+# woq AutoRound algo expects the default scheme is asym, others are sym.
+if args.scheme is None:
+    if args.woq_algo == "AutoRound":
+        args.scheme = "asym"
+    else:
+        args.scheme = "sym"
 
 config = AutoConfig.from_pretrained(
     args.model,
