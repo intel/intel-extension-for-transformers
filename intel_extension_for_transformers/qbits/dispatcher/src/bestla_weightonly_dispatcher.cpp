@@ -129,7 +129,8 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
   size_t asym_size = 0, shuf_size = 0;
   int8_t* tmpbuf = nullptr;
   if constexpr (GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
-                GemmCore::ISA == BTLA_ISA::AVX_VNNI) {
+                GemmCore::ISA == BTLA_ISA::AVX_VNNI ||
+                std::is_same_v<GemmCore, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>) {
     using Parallel = bestla::parallel::gemm::SchedulerKBlockS<GemmCore>;
     bestla::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, p->blocksize);
     StorageWeight* packedw = dynamic_cast<StorageWeight*>(ctx->deseries_wei);
@@ -233,7 +234,8 @@ template <WOQ_TASK TASK, class GemmCore, template <class _T, BTLA_ISA> class Pro
           template <class _T, BTLA_ISA> class PrologueA, template <BTLA_ISA> class Epilogue>
 void parse_launcher(woq_config_param* p, woq_runtime_ctx* ctx) {
   if constexpr (GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
-                GemmCore::ISA == BTLA_ISA::AVX_VNNI) {
+                GemmCore::ISA == BTLA_ISA::AVX_VNNI ||
+                std::is_same_v<GemmCore, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>) {
     using Launcher = bestla::wrapper::gemm::LauncherIntKBlock<GemmCore::ISA, GemmCore, PrologueA, PrologueB, Epilogue>;
     return execute_task<TASK, Launcher>(p, ctx);
   } else {
@@ -245,7 +247,6 @@ void parse_launcher(woq_config_param* p, woq_runtime_ctx* ctx) {
 template <WOQ_TASK TASK, class GemmCore, template <class _T, BTLA_ISA> class PrologueB,
           template <class _T, BTLA_ISA> class PrologueA, dispatcher_utils::QBITS_DT ACT_DT>
 void parse_store(woq_config_param* p, woq_runtime_ctx* ctx) {
-  auto constexpr ISA = GemmCore::ISA;
   if (p->dst_dt == dispatcher_utils::QBITS_FP32) {
     return parse_launcher<TASK, GemmCore, PrologueB, PrologueA, AlphaBetaProcessStoreFp32>(p, ctx);
   }
@@ -259,7 +260,8 @@ void parse_activation(woq_config_param* p, woq_runtime_ctx* ctx) {
   using namespace bestla::prologue_a::gemm;
   if (p->src_dt == dispatcher_utils::QBITS_FP32) {
     if constexpr (GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
-                  GemmCore::ISA == BTLA_ISA::AVX_VNNI) {
+                  GemmCore::ISA == BTLA_ISA::AVX_VNNI ||
+                  std::is_same_v<GemmCore, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>) {
       return parse_store<TASK, GemmCore, PrologueB, ShuffleActivationKBlockQuantizeF32, dispatcher_utils::QBITS_FP32>(
           p, ctx);
     } else {
@@ -269,7 +271,8 @@ void parse_activation(woq_config_param* p, woq_runtime_ctx* ctx) {
   }
   if (p->src_dt == dispatcher_utils::QBITS_BF16) {
     if constexpr (GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
-                  GemmCore::ISA == BTLA_ISA::AVX_VNNI) {
+                  GemmCore::ISA == BTLA_ISA::AVX_VNNI ||
+                  std::is_same_v<GemmCore, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>) {
       return parse_store<TASK, GemmCore, PrologueB, ShuffleActivationKBlockQuantizeBf16, dispatcher_utils::QBITS_BF16>(
           p, ctx);
     } else {
@@ -290,7 +293,8 @@ void parse_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
       p->weight_type == "fp8_e4m3" || p->weight_type == "fp8_e5m2") {
     TORCH_CHECK(!p->asym, "Qbits: float-weight unsupports asym quantization.");
     if constexpr (GemmCore::ISA != BTLA_ISA::AMX_INT8 && GemmCore::ISA != BTLA_ISA::AVX512_VNNI &&
-                  GemmCore::ISA != BTLA_ISA::AVX_VNNI)
+                  GemmCore::ISA != BTLA_ISA::AVX_VNNI &&
+                  !std::is_same_v<GemmCore, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>)
       return parse_activation<TASK, GemmCore, WeightKBlockNFloat>(p, ctx);
   }
   TORCH_CHECK(false,
@@ -356,7 +360,7 @@ void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>>(p, ctx);
     }
     if (NTile == bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>::NTILE && dispatcher_utils::check_avx2()) {
-      return parse_weight<TASK, bestla::gemm::bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>(p, ctx);
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>(p, ctx);
     }
   }
   if (CType == uint32_t(bestla::gemm::CompType::COMP_FP32)) {

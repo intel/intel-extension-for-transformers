@@ -200,7 +200,7 @@ void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx*
       return execute_qpack<bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>, BTLA_ISA::AVX_VNNI>(p, ctx, task);
     }
     if (dispatcher_utils::check_avx2() && p->blocksize % bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>::KTILE == 0) {
-      return parse_weight<TASK, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>(p, ctx);
+      return execute_qpack<bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>, BTLA_ISA::AVX2>(p, ctx, task);
     }
     TORCH_CHECK(false, "Qbits: Illegal config in int8 compute_type, blocksize:", p->blocksize,
                 ", ISA support avx2:", dispatcher_utils::check_avx2());
