@@ -1,7 +1,7 @@
 from vllm import LLM
-from torch.nn import LayerNorm, Embedding
+from torch.nn import LayerNorm
 import torch
-
+import copy
 #prompts = ["Hello, my name is", "The capital of France is", "你好"]  # Sample prompts.
 #prompts = ["hello, my name is"]
 prompts = ["你好"]
@@ -12,18 +12,28 @@ from vllm.model_executor.model_loader import get_model, get_model_loader, get_mo
 model = llm.llm_engine.model_executor.driver_worker.model_runner.model
 print("Original model -------------------------------------------------------------------------------- ", model)
 
-import copy
-layer_norm_func = LayerNorm(4096, eps=1e-5, dtype=torch.bfloat16)
+# replace RMSNorM by Layernorm
+# layer_norm_func = LayerNorm(4096, eps=1e-5, dtype=torch.bfloat16)
+# for idx in range(28):
+#     print("modified!!!-----------------", idx)
+#     model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['input_layernorm'] = copy.deepcopy(layer_norm_func)
+#     model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['post_attention_layernorm'] = copy.deepcopy(layer_norm_func)
+
+# model._modules['transformer']._modules['encoder']._modules['final_layernorm'] = copy.deepcopy(layer_norm_func)
+# print("modified model ---------------------------------------------------------------------------------= ", model)
+
+
+original_linear = torch.nn.Linear(in_features=4096,out_features=4608, bias=True, dtype=torch.bfloat16)
 for idx in range(28):
     print("modified!!!-----------------", idx)
-    model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['input_layernorm'] = copy.deepcopy(layer_norm_func)
-    model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['post_attention_layernorm'] = copy.deepcopy(layer_norm_func)
+    model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['self_attention']._modules['query_key_value'] = copy.deepcopy(original_linear)    
+print("modified model ---------------------------------------------------------------------------------= ", model)
 
-model._modules['transformer']._modules['encoder']._modules['final_layernorm'] = copy.deepcopy(layer_norm_func)
-
+# load weights
 loader = get_model_loader(llm.llm_engine.load_config)
 model.load_weights(loader._get_weights_iterator(llm.llm_engine.model_config.model, llm.llm_engine.model_config.revision, fall_back_to_pt=True))
-print("modified model ---------------------------------------------------------------------------------= ", model)
+
+# inference
 outputs = llm.generate(prompts)  # Generate texts from the prompts.
 print(outputs)
 
