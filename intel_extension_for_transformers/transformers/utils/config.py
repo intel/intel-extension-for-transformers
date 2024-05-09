@@ -281,7 +281,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             )
 
         if self.bits == 4 and self.weight_dtype not in [
-            "int4_fullrange",
             "int4_clip",
             "nf4",
             "fp4_e2m1_bnb",
@@ -300,7 +299,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
 
         elif self.weight_dtype not in [
             "int8",
-            "int4_fullrange",
             "int4_clip",
             "nf4",
             "fp4_e2m1_bnb",
@@ -310,7 +308,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         ]:
             raise ValueError(
                 f"weight_dtype must be a string in "
-                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+                f"'int8', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
             )
 
         if self.scale_dtype is not None and self.scale_dtype not in [

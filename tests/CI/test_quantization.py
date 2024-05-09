@@ -408,18 +408,17 @@ class TestQuantization(unittest.TestCase):
 
         # weight-only
         # RTN
-        woq_config = RtnConfig(bits=4, weight_dtype="int4_fullrange")
+        woq_config = RtnConfig(bits=4)
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
                                                     use_neural_speed=False
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.16387596726417542, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17631684243679047, rel_tol=1e-04))
 
         # AWQ
         woq_config = AwqConfig(bits=4,
-                                weight_dtype="int4_fullrange",
                                 zero_point=False,
                                 calib_iters=5,
                                 tokenizer=tokenizer
@@ -431,13 +430,13 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17998121678829193 , rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.18019595742225647 , rel_tol=1e-04))
 
         # TEQ
-        woq_config = TeqConfig(bits=4, weight_dtype="int4_fullrange",
-                                           calib_iters=5,
-                                           tokenizer=tokenizer,
-                                           )
+        woq_config = TeqConfig(bits=4,
+                                calib_iters=5,
+                                tokenizer=tokenizer,
+                                )
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
                                                     use_neural_speed=False
