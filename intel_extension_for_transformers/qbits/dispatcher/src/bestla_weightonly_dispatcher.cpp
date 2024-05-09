@@ -342,7 +342,7 @@ void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
                                                     bestla::gemm::CoreAttr::NTILE_SHIFT);
   auto CType = bestla::gemm::CoreAttr::get_mask_val(ctx->deseries_wei->mCoreId, bestla::gemm::CoreAttr::COMP_MASK,
                                                     bestla::gemm::CoreAttr::COMP_SHIFT);
-  if (CType == uint32_t(bestla::gemm::CompType::COMP_INT8_US_INT32)) {
+  if (CType == uint32_t(bestla::gemm::CompType::COMP_INT8_US_FP32)) {
     if (NTile == bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>::NTILE && dispatcher_utils::check_amx()) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>>(p, ctx);
     }

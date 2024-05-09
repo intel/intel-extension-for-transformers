@@ -68,7 +68,6 @@ std::string get_dtype_str(BTLA_DTYPE dtype) {
 std::string get_cmpt_str(bestla::gemm::CompType cmpt) {
   using bestla::gemm::CompType;
   switch (cmpt) {
-    case CompType::COMP_INT8_US_INT32:
     case CompType::COMP_INT8_US_FP32:
       return "int8";
     case CompType::COMP_FP32:
