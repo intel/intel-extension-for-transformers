@@ -312,8 +312,11 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
     if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>::KTILE == 0) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>>(p, ctx);
     }
+    if (dispatcher_utils::check_avx2() && p->blocksize % bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>::KTILE == 0) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>(p, ctx);
+    }
     TORCH_CHECK(false, "Qbits: Illegal config in int8 compute_type, blocksize:", p->blocksize,
-                ", ISA support vnni:", dispatcher_utils::check_avx_vnni());
+                ", ISA support avx2:", dispatcher_utils::check_avx2());
   }
   if (p->compute_type == "fp32") {
     if (dispatcher_utils::check_avx512f()) {
@@ -346,13 +349,14 @@ void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
     if (NTile == bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>::NTILE && dispatcher_utils::check_amx()) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>>(p, ctx);
     }
-  }
-  if (CType == uint32_t(bestla::gemm::CompType::COMP_INT8_US_FP32)) {
     if (NTile == bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::NTILE && dispatcher_utils::check_avx512_vnni()) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>(p, ctx);
     }
     if (NTile == bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>::NTILE && dispatcher_utils::check_avx_vnni()) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>>(p, ctx);
+    }
+    if (NTile == bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>::NTILE && dispatcher_utils::check_avx2()) {
+      return parse_weight<TASK, bestla::gemm::bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>(p, ctx);
     }
   }
   if (CType == uint32_t(bestla::gemm::CompType::COMP_FP32)) {

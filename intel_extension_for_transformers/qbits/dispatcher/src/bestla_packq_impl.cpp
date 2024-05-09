@@ -196,11 +196,14 @@ void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx*
         p->blocksize % bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::KTILE == 0) {
       return execute_qpack<bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>, BTLA_ISA::AVX512_VNNI>(p, ctx, task);
     }
-    if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<24, 4>::KTILE == 0) {
-      return execute_qpack<bestla::gemm::ICoreRowNAvxvnniKBlock<24, 4>, BTLA_ISA::AVX_VNNI>(p, ctx, task);
+    if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>::KTILE == 0) {
+      return execute_qpack<bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>, BTLA_ISA::AVX_VNNI>(p, ctx, task);
+    }
+    if (dispatcher_utils::check_avx2() && p->blocksize % bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>::KTILE == 0) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>(p, ctx);
     }
     TORCH_CHECK(false, "Qbits: Illegal config in int8 compute_type, blocksize:", p->blocksize,
-                ", ISA support vnni:", dispatcher_utils::check_avx_vnni());
+                ", ISA support avx2:", dispatcher_utils::check_avx2());
   }
   if (p->compute_type == "fp32") {
     if (dispatcher_utils::check_avx512f()) {
