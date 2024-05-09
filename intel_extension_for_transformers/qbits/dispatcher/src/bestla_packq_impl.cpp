@@ -189,30 +189,16 @@ void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx*
                   p->weight_type == "int2_clip",
               "Qbits: only support Integer WOQ in PACKQ");
 
-  // NTILE & compute-dtype determine the padsize.
-  // in qbits:
-  // avx_vnni/avx512f_vnni/amx-int8 NTILE==48, compute-dtype=int8;
-  // avx2/avx512f NTILE==48, compute-dtype=fp32;
-  // amx-bf16 NTILE==64, compute-dtype=bf16.
-  if (task == WOQ_GET_PACKW_SIZE) {
-    if (p->compute_type == "int8")
-      return execute_qpack<bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>, BTLA_ISA::AMX_INT8>(p, ctx, task);
-    if (p->compute_type == "fp32")
-      return execute_qpack<bestla::gemm::SCoreRowNAvx512f<48, 8>, BTLA_ISA::AVX512F>(p, ctx, task);
-    if (p->compute_type == "bf16")
-      return execute_qpack<bestla::gemm::HCoreRowNAmxbf16<64, 16>, BTLA_ISA::AMX_BF16>(p, ctx, task);
-  }
-
   if (p->compute_type == "int8") {
-    if (dispatcher_utils::check_amx() && p->blocksize % bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>::KTILE == 0) {
-      return execute_qpack<bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>, BTLA_ISA::AMX_INT8>(p, ctx, task);
+    if (dispatcher_utils::check_amx() && p->blocksize % bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>::KTILE == 0) {
+      return execute_qpack<bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>, BTLA_ISA::AMX_INT8>(p, ctx, task);
     }
     if (dispatcher_utils::check_avx512_vnni() &&
         p->blocksize % bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::KTILE == 0) {
       return execute_qpack<bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>, BTLA_ISA::AVX512_VNNI>(p, ctx, task);
     }
-    if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>::KTILE == 0) {
-      return execute_qpack<bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>, BTLA_ISA::AVX_VNNI>(p, ctx, task);
+    if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<24, 4>::KTILE == 0) {
+      return execute_qpack<bestla::gemm::ICoreRowNAvxvnniKBlock<24, 4>, BTLA_ISA::AVX_VNNI>(p, ctx, task);
     }
     TORCH_CHECK(false, "Qbits: Illegal config in int8 compute_type, blocksize:", p->blocksize,
                 ", ISA support vnni:", dispatcher_utils::check_avx_vnni());
@@ -222,7 +208,7 @@ void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx*
       return execute_qpack<bestla::gemm::SCoreRowNAvx512f<48, 8>, BTLA_ISA::AVX512F>(p, ctx, task);
     }
     if (dispatcher_utils::check_avx2()) {
-      return execute_qpack<bestla::gemm::SCoreRowNAvx2<48, 2>, BTLA_ISA::AVX2>(p, ctx, task);
+      return execute_qpack<bestla::gemm::SCoreRowNAvx2<24, 4>, BTLA_ISA::AVX2>(p, ctx, task);
     }
     TORCH_CHECK(false, "Qbits: device ISA must support BTLA_ISA::AVX2 when compute_type==fp32");
   }

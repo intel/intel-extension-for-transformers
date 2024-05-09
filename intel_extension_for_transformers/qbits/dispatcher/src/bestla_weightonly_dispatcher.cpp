@@ -302,15 +302,15 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
   set_nk(ctx, ctx->weight);
   p->blocksize = p->blocksize == -1 ? ctx->k : p->blocksize;
   if (p->compute_type == "int8") {
-    if (dispatcher_utils::check_amx() && p->blocksize % bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>::KTILE == 0) {
-      return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>>(p, ctx);
+    if (dispatcher_utils::check_amx() && p->blocksize % bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>::KTILE == 0) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>>(p, ctx);
     }
     if (dispatcher_utils::check_avx512_vnni() &&
         p->blocksize % bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::KTILE == 0) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>(p, ctx);
     }
-    if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>::KTILE == 0) {
-      return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>>(p, ctx);
+    if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>::KTILE == 0) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>>(p, ctx);
     }
     TORCH_CHECK(false, "Qbits: Illegal config in int8 compute_type, blocksize:", p->blocksize,
                 ", ISA support vnni:", dispatcher_utils::check_avx_vnni());
@@ -320,7 +320,7 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
       return parse_weight<TASK, bestla::gemm::SCoreRowNAvx512f<48, 8>>(p, ctx);
     }
     if (dispatcher_utils::check_avx2()) {
-      return parse_weight<TASK, bestla::gemm::SCoreRowNAvx2<48, 2>>(p, ctx);
+      return parse_weight<TASK, bestla::gemm::SCoreRowNAvx2<24, 4>>(p, ctx);
     }
     TORCH_CHECK(false, "Qbits: device ISA must support BTLA_ISA::AVX2 when compute_type==fp32");
   }
@@ -343,24 +343,24 @@ void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
   auto CType = bestla::gemm::CoreAttr::get_mask_val(ctx->deseries_wei->mCoreId, bestla::gemm::CoreAttr::COMP_MASK,
                                                     bestla::gemm::CoreAttr::COMP_SHIFT);
   if (CType == uint32_t(bestla::gemm::CompType::COMP_INT8_US_INT32)) {
-    if (NTile == bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>::NTILE && dispatcher_utils::check_amx()) {
-      return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>>(p, ctx);
+    if (NTile == bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>::NTILE && dispatcher_utils::check_amx()) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>>(p, ctx);
     }
   }
   if (CType == uint32_t(bestla::gemm::CompType::COMP_INT8_US_FP32)) {
     if (NTile == bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::NTILE && dispatcher_utils::check_avx512_vnni()) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>(p, ctx);
     }
-    if (NTile == bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>::NTILE && dispatcher_utils::check_avx_vnni()) {
-      return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>>(p, ctx);
+    if (NTile == bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>::NTILE && dispatcher_utils::check_avx_vnni()) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>>(p, ctx);
     }
   }
   if (CType == uint32_t(bestla::gemm::CompType::COMP_FP32)) {
     if (NTile == bestla::gemm::SCoreRowNAvx512f<48, 8>::NTILE && dispatcher_utils::check_avx512f()) {
       return parse_weight<TASK, bestla::gemm::SCoreRowNAvx512f<48, 8>>(p, ctx);
     }
-    if (NTile == bestla::gemm::SCoreRowNAvx2<48, 2>::NTILE && dispatcher_utils::check_avx2()) {
-      return parse_weight<TASK, bestla::gemm::SCoreRowNAvx2<48, 2>>(p, ctx);
+    if (NTile == bestla::gemm::SCoreRowNAvx2<24, 4>::NTILE && dispatcher_utils::check_avx2()) {
+      return parse_weight<TASK, bestla::gemm::SCoreRowNAvx2<24, 4>>(p, ctx);
     }
   }
   if (CType == uint32_t(bestla::gemm::CompType::COMP_BF16_FP32)) {
