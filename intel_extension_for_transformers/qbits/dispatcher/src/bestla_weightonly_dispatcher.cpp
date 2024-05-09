@@ -386,7 +386,7 @@ void parse_gemm_core(woq_config_param* p, woq_runtime_ctx* ctx) {
 }
 
 void dispatch_woq_task(woq_config_param* p, woq_runtime_ctx* ctx, WOQ_TASK task) {
-  TORCH_CHECK(!(p->asym && (p->compute_type == "int8" && weight_type == "int8")),
+  TORCH_CHECK(!(p->asym && (p->compute_type == "int8" && p->weight_type == "int8")),
               "QBits: unsupported bestla_config, asym quantization in int8 compute_type with int8 weight_type.");
   switch (task) {
     case WOQ_QUANTIZE:
