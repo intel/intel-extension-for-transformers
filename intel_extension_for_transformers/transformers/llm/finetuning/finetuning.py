@@ -315,6 +315,13 @@ class Finetuning:
                     bnb_4bit_use_double_quant=finetune_args.double_quant,
                     bnb_4bit_quant_type=finetune_args.quant_type,
                 )
+            elif training_args.device.type == "cpu":
+                self.device_map = "cpu"
+            else:
+                raise NotImplementedError(
+                    f"Unsupported device type {training_args.device.type}, only support cpu and cuda now."
+                )
+
             if finetune_args.bits not in [4, 8]:
                 raise NotImplementedError(
                     f"Unsupported bits {finetune_args.bits}, only support 4 and 8 now."

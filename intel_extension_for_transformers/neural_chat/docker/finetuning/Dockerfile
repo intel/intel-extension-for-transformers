@@ -103,8 +103,10 @@ WORKDIR /intel-extension-for-transformers
 
 # Build ITREX
 RUN cd /intel-extension-for-transformers && \
-    sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
+    sed -i '/--extra-index-url https:\/\/download.pytorch.org\/whl\/cpu/d' requirements.txt && \
     sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
+    sed -i '/--extra-index-url https:\/\/download.pytorch.org\/whl\/cpu/d' requirements-cpu.txt && \
+    sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements-cpu.txt && \
     pip install --no-cache-dir -r requirements.txt && \
     python setup.py install
 
@@ -116,12 +118,12 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install --no-cache-dir peft einops datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
-    git checkout -b v1.13 origin/1.13.0 && \
+    git checkout -b v1.15 origin/1.15.0 && \
     pip install --no-cache-dir -e .
 
 # Install dependency
 RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && \
-    sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
+sed -i '/--extra-index-url https:\/\/download.pytorch.org\/whl\/cpu/d' requirements.txt && \
     sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
     pip install --no-cache-dir -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
