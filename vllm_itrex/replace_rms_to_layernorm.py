@@ -2,10 +2,22 @@ from vllm import LLM
 from torch.nn import LayerNorm
 import torch
 import copy
+
+from neural_compressor import quantization
+from intel_extension_for_transformers.transformers.utils import RtnConfig
+from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
+
+
+# 为什么一定要放在上面？？
+original_linear = torch.nn.Linear(in_features=4096,out_features=4608, bias=True, dtype=torch.bfloat16)
+# original_linear = torch.nn.Linear(in_features=4096,out_features=4608, bias=True, dtype=torch.float32)
+
+# nn.Linear
 #prompts = ["Hello, my name is", "The capital of France is", "你好"]  # Sample prompts.
 #prompts = ["hello, my name is"]
 prompts = ["你好"]
 llm = LLM(model="/home/zhenzhong/model/chatglm2-6b", trust_remote_code=True)  # Create an LLM.
+
 
 from vllm.model_executor.model_loader import get_model, get_model_loader, get_model_architecture
 
@@ -23,7 +35,7 @@ print("Original model ----------------------------------------------------------
 # print("modified model ---------------------------------------------------------------------------------= ", model)
 
 
-original_linear = torch.nn.Linear(in_features=4096,out_features=4608, bias=True, dtype=torch.bfloat16)
+
 for idx in range(28):
     print("modified!!!-----------------", idx)
     model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['self_attention']._modules['query_key_value'] = copy.deepcopy(original_linear)    
@@ -33,8 +45,31 @@ print("modified model ----------------------------------------------------------
 loader = get_model_loader(llm.llm_engine.load_config)
 model.load_weights(loader._get_weights_iterator(llm.llm_engine.model_config.model, llm.llm_engine.model_config.revision, fall_back_to_pt=True))
 
+
+
+config = RtnConfig(compute_dtype="fp32", group_size=128, scale_dtype="fp32", weight_dtype="int4_clip", bits=4)
+
+model = convert_to_quantized_model(model, config)
+
+# inc_model = quantization.fit(model, config)
+
+###
+# inc_model = quantization.fit(
+#     model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
+# )
+
+
+
+# import pdb;pdb.set_trace()
+
 # inference
+import time
+T1 = time.time()
+
 outputs = llm.generate(prompts)  # Generate texts from the prompts.
+
+T2 = time.time()
+print('程序运行时间:%s毫秒' % ((T2 - T1)*1000))
 print(outputs)
 
 
