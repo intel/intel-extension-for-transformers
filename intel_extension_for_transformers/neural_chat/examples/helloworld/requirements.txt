@@ -1,6 +1,6 @@
-torch
 accelerate
 datasets
+fastchat
+torch
 uvicorn
 yacs
-fastchat
