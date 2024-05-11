@@ -647,9 +647,9 @@ class HFLM(TemplateLM):
                         inputs_names = session.get_inputs()
                         key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
                         use_cache = len(key_value_input_names) > 0
-                        
+
                         # pylint: disable=E1121,E1124
-                        self._model = ORTModelForCausalLM(session[0],  
+                        self._model = ORTModelForCausalLM(session[0],
                                                         model_config,
                                                         pretrained,
                                                         use_cache=True if use_cache else False,
@@ -675,11 +675,11 @@ class HFLM(TemplateLM):
                                                             use_cache=True)
                         else:
                             # pylint: disable=E1123,E1124
-                            sessions = ORTModelForCausalLM.load_model(  
+                            sessions = ORTModelForCausalLM.load_model(
                                 os.path.join(pretrained, "decoder_model.onnx"),
                                 session_options=sess_options)
                             # pylint: disable=E1121,E1124
-                            self._model = ORTModelForCausalLM(sessions[0],  
+                            self._model = ORTModelForCausalLM(sessions[0],
                                                             model_config,
                                                             pretrained,
                                                             use_cache=False,
