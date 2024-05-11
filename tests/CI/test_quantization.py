@@ -308,8 +308,8 @@ class TestQuantization(unittest.TestCase):
                 self.assertEqual(tensor.data_type, TensorProto.BFLOAT16)
                 break
 
-    @unittest.skipIf(PT_VERSION.release < Version("2.1.0").release,
-            "Please use PyTroch 2.1.0 or higher version for executor backend")
+    @unittest.skipIf(PT_VERSION.release <= Version("2.1.0").release,
+            "Please use PyTroch 2.2.0 or higher version for executor backend")
     def test_quantization_for_llm(self):
         model_name_or_path = "hf-internal-testing/tiny-random-gptj"
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)

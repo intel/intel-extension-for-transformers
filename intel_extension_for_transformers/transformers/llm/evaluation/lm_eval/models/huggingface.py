@@ -999,9 +999,14 @@ class HFLM(TemplateLM):
                         labels=labels,
                     ).logits
                 else:
-                    return self.model(
+                    output = self.model(
                         input_ids=inps, attention_mask=attn_mask, labels=labels
-                    ).logits
+                    )
+                    if isinstance(output, tuple):
+                        output = output[0]
+                    else:
+                        output = output.logits
+                    return output
             else:
                 assert self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM
                 if hasattr(self.model, "config") and hasattr(self.model.config, "auto_map") and \
@@ -1036,7 +1041,11 @@ class HFLM(TemplateLM):
                             inps, torch.ones(inps.shape, dtype=torch.int64)
                         ).logits
                 else:
-                    output = self.model(inps).logits
+                    output = self.model(inps)
+                    if isinstance(output, tuple):
+                        output = output[0]
+                    else:
+                        output = output.logits
                 return output
 
     def _model_generate(self, context, max_length, stop, **generation_kwargs):

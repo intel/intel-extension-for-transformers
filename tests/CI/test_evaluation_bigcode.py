@@ -16,7 +16,7 @@ import os
 import shutil
 import unittest
 import subprocess
-import torch
+import sys
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 class TestLmEvaluationHarness(unittest.TestCase):
@@ -36,6 +36,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
 
+    @unittest.skipIf(sys.version_info >= (3, 11),
+            "bigcode-lmeval not support python version higher than 3.10")
     def test_bigcode_lm_eval(self):
         from intel_extension_for_transformers.transformers.llm.evaluation.bigcode_eval import evaluate as bigcode_evaluate
         starcoder_tokenizer = AutoTokenizer.from_pretrained("bigcode/tiny_starcoder_py")
