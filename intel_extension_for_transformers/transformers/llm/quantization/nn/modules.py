@@ -213,8 +213,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
             else:
                 g_idx = torch.empty(0, dtype=torch.int32)
         if q_config.bits == 4:
-            int_weight = int_weight - 8
-            gptq_zeros = gptq_zeros - 8
+            int_weight = (int_weight - 8) * 16 // 16
+            gptq_zeros = (gptq_zeros - 8) * 16 // 16
 
         if q_config.sym:
             gptq_zeros = torch.empty(0, dtype=torch.int8)
@@ -348,7 +348,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if zp:
             qzeros = qbits.acquire_packed_weight_info(self.weight, 10)
             if bits == 4:
-                qzeros = qzeros + 8
+                qzeros = qzeros // 16 * 16 + 8
             else:
                 qzeros = (qzeros.to(torch.int32) + 128).to(torch.uint8)
         else:
