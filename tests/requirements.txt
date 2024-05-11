@@ -25,7 +25,7 @@ tiktoken
 tokenizers==0.15.2
 torch==2.3.0+cpu
 torchprofile
-torchvision==0.17.0+cpu
+torchvision==0.18.0+cpu
 transformers==4.37.2
 transformers_stream_generator
 tyro
