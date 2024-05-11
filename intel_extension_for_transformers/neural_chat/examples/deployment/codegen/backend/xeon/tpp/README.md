@@ -42,7 +42,7 @@ pip install -r  ../../../../../../pipeline/plugins/retrieval/requirements.txt
 pip uninstall torch torchvision torchaudio intel-extension-for-pytorch -y
 python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 python -m pip install intel-extension-for-pytorch
-python -m pip install oneccl_bind_pt==2.2.0--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
+python -m pip install oneccl_bind_pt==2.3.0--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
 pip install transformers==4.31.0 # need to downgrade transformers to 4.31.0 for LLAMA
 ```
 
