@@ -17,6 +17,7 @@
 
 from . import (
     huggingface,
+    llama_cpp_lm,
 )
 
 
