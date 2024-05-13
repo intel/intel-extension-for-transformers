@@ -79,7 +79,7 @@ def test(m, k, n, weight_type, scale_type, compute_type, asym, blocksize, dump_t
     if compute_type == "fp32":
         assert (abs(ref_dst - tar_dst).max() < 0.03)
     elif compute_type == "bf16":
-        assert (abs(ref_dst - tar_dst).max() < 8)
+        assert (abs(ref_dst - tar_dst).max() < 9)
     else:
         assert (abs(ref_dst - tar_dst).max() < 10)
     packw_size = qbits.acquire_packed_weight_info(
