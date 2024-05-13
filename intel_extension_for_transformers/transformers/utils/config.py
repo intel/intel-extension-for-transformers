@@ -345,9 +345,9 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             or self.scale_dtype != "fp32"
         ):
             raise ValueError(
-                "WeightOnlyQuantization doesn't support asym with \
-                                compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, \
-                                please use sym scheme"
+                f"WeightOnlyQuantization doesn't support asym with "
+                f"compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, "
+                f"please use sym scheme"
             )
 
         self.use_neural_speed = False
