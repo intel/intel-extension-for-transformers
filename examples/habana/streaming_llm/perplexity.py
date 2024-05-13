@@ -51,7 +51,7 @@ def compute_perplexity(
     model,
     tokenizer,
     dataset,
-    kv_cache=None,
+    kv_window_size=1024,
     output_dir= "outputs",
     data_column= "text",
     num_samples = 1,
@@ -60,7 +60,7 @@ def compute_perplexity(
 ):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    suffix = "attention_sink" if kv_cache else "no_attention_sink"
+    suffix = "attention_sink"
     output_file = output_dir / f"{suffix}.csv"
 
     if output_file.exists() and not overwrite:
@@ -72,6 +72,9 @@ def compute_perplexity(
     loss_fn = CrossEntropyLoss(reduction="none")
     past_key_values = None
     num_processed_tokens = 0
+
+    # allocate kv cache
+    model.allocate_kv_cache(1, kv_window_size, 1)
     for text in itertools.islice(dataset, num_samples):
         encodings = tokenizer(text[data_column], return_tensors="pt")
 
@@ -82,15 +85,18 @@ def compute_perplexity(
         for idx in pbar:
             start_t = time.time()
             input_ids = encodings.input_ids[:, idx : idx + 1].to(model.device)
+            pos_ids = torch.full((1,1), idx, dtype=torch.int64, device=model.device)
             with torch.no_grad():
-                outputs = model(input_ids, past_key_values=past_key_values, use_cache=True)
+                outputs = model(input_ids,
+                                position_ids=pos_ids,
+                                past_key_values=past_key_values,
+                                use_cache=True,
+                                reuse_cache=True)
                 logits = outputs.logits.view(-1, model.config.vocab_size)
                 past_key_values = outputs.past_key_values
                 label = encodings.input_ids[:, idx + 1 : idx + 2].to(logits.device).view(-1)
                 neg_log_likelihood = loss_fn(logits, label)
                 perplexity = neg_log_likelihood.exp()
-                if kv_cache is not None:
-                    past_key_values = kv_cache(past_key_values)
             pbar.set_description(f"nll: {neg_log_likelihood.item():>5.2f}, ppl: {perplexity.item():>8.2f}")
 
             # Store data and save every 10 tokens

@@ -40,6 +40,7 @@ import torch
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoConfig, AutoModelForCausalLM, TextStreamer
 # import habana_frameworks.torch.core as htcore
+import copy
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import adapt_transformers_to_gaudi
@@ -52,12 +53,21 @@ def create_prompts(samples: Dict[str, List[Any]]) -> Dict[str, Any]:
 
 @torch.no_grad()
 def greedy_generate(model, tokenizer, dataset, kv_cache=None, max_new_tokens=512, n_round=-1):
-    streamer = TextStreamer(tokenizer)
+    streamer = TextStreamer(tokenizer, skip_special_tokens=True)
     new_line_tokens = tokenizer("\n\n", return_tensors="pt", add_special_tokens=False).input_ids
     past_key_values = None
     num_token = 0
     count_round = 0
 
+    generation_config = copy.deepcopy(model.generation_config)
+    generation_config.max_new_tokens = max_new_tokens
+    generation_config.do_sample = False
+    generation_config.top_p = None
+    generation_config.use_cache = True
+    generation_config.attn_softmax_bf16 = True
+    generation_config.reuse_cache = True
+    generation_config.ignore_eos=False
+    print(generation_config)
     for prompt_index, prompt in enumerate(dataset["prompt"]):
         if tokenizer.chat_template is not None:
             # Use the chat template initially, as it adds the system prompt if the model has one,
@@ -67,30 +77,20 @@ def greedy_generate(model, tokenizer, dataset, kv_cache=None, max_new_tokens=512
             else:
                 prompt = tokenizer.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False)
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-        # input_ids = tokenizer(prompt,
-        #                       padding="max_length",
-        #                       max_length=256,
-        #                       truncation=True,
-        #                       return_tensors="pt").input_ids
         input_ids = input_ids.to(model.device)
-        num_token += input_ids.size(-1)
 
-        streamer.put(input_ids)
-        for _ in range(max_new_tokens):
-            outputs = model(input_ids, past_key_values=past_key_values, use_cache=True, reuse_cache=False)
-            # htcore.mark_step()
-            past_key_values = outputs.past_key_values
-            # print("past_key_values dtype:", past_key_values[0][0].dtype)
-            pred_token_idx = outputs.logits[:, -1, :].argmax(dim=-1).unsqueeze(1)
-            if kv_cache is not None:
-                past_key_values = kv_cache(past_key_values)
-            streamer.put(pred_token_idx)
-            input_ids = pred_token_idx
-            num_token += 1
+        outputs = model.generate(
+            input_ids,
+            generation_config=generation_config,
+            streamer=streamer,
+            lazy_mode=True,
+            hpu_graphs=False,
+            profiling_steps=0,
+            profiling_warmup_steps=0,
+        ).cpu()
 
-            if pred_token_idx == tokenizer.eos_token_id:
-                break
-
+        # ignore padding token
+        num_token += (outputs.shape[-1] - outputs[0].tolist().count(generation_config.pad_token_id))
         streamer.put(new_line_tokens)
         print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         print_memory_stats()
@@ -158,6 +158,7 @@ def main():
         exit(0)
     # single device memory limitation
     model_config.max_position_embeddings = min(model_config.max_position_embeddings, 16000)
+    model_config.torch_dtype = torch.bfloat16
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name_or_path,
         config=model_config,
@@ -203,22 +204,6 @@ def main():
         const_marking = os.getenv("ENABLE_CONST_MARKING", "True")
         if const_marking == "True":
             htcore.hpu_initialize(model)
-    model.generation_config.use_flash_attention = False
-    model.generation_config.attn_softmax_bf16 = True
-    # for llama
-    # unwind broken decapoda-research config
-    # model.generation_config.pad_token_id = 0
-    # model.generation_config.bos_token_id = 1
-    # model.generation_config.eos_token_id = 2
-    # tokenizer.bos_token_id = model.generation_config.bos_token_id
-    # tokenizer.eos_token_id = model.generation_config.eos_token_id
-    # tokenizer.pad_token_id = model.generation_config.pad_token_id
-    # tokenizer.pad_token = tokenizer.decode(tokenizer.pad_token_id)
-    # tokenizer.eos_token = tokenizer.decode(tokenizer.eos_token_id)
-    # tokenizer.bos_token = tokenizer.decode(tokenizer.bos_token_id)
-    # print(model)
-    print(model.generation_config)
-
     if args.perplexity:  # compute perplexity
         from perplexity import compute_perplexity
         # Set up the dataset
@@ -227,7 +212,7 @@ def main():
             model,
             tokenizer,
             dataset,
-            kv_cache=kv_cache,
+            kv_window_size=args.window_size,
             output_dir=args.output_dir,
             data_column=args.data_column,
             num_samples=1,  # No support for more than one instance now

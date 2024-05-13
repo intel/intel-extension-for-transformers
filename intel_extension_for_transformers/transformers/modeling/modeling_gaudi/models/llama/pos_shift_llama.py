@@ -48,7 +48,7 @@ from .modeling_llama import (GaudiLlamaAttention,
                              KVCache)
 from transformers.models.llama.modeling_llama import rotate_half
 
-__all__ = ["enable_gaudi_llama_pos_shift_attention", "enable_gaudi_llama_cont_cat_kv_cache"]
+__all__ = ["enable_gaudi_llama_pos_shift_attention", "enable_gaudi_llama_pos_shift_kv_cache"]
 
 
 def gaudi_apply_rotary_pos_emb_single(x, cos, sin, position_ids):
@@ -67,39 +67,55 @@ def gaudi_apply_rotary_pos_emb_single(x, cos, sin, position_ids):
         x_embed = (x * cos) + (rotate_half(x) * sin)
         return x_embed
 
-def gaudi_llama_pos_shift_allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len, kv_cache_fp8):
-    print("Warning: please supply past_k_value from outside when using streaming-llm (attention sinks).")
-    # cache_shape = (batch_size, self.num_key_value_heads, max_seq_len, self.head_dim)
-    # device = self.k_proj.weight.device
-    # dtype = self.config.torch_dtype
-    # self.k_cache.allocate(inp_seq_len, kv_cache_fp8, dtype, device, cache_shape)
-    # self.v_cache.allocate(inp_seq_len, kv_cache_fp8, dtype, device, cache_shape)
+def gaudi_llama_pos_shift_kv_cache_allocate(self, inp_seq_len, dtype, device, shape):
+    assert (
+        self.window_size > inp_seq_len
+    ), f"inp_seq_len ({inp_seq_len}) must be the less than window_size ({self.window_size})."
+    if self.cache is None:
+        self.inp_seq_len = inp_seq_len
+        bs, num_heads, seq_len, head_dim = shape
+        sink_shape = (bs, num_heads, self.window_size, head_dim)
+        self.cache = torch.zeros(sink_shape, dtype=dtype, device=device)
+    else:
+        self.inp_seq_len = inp_seq_len
 
-# TODO  CHECK IF THIS NEED OR NOT
-def gaudi_llama_pos_shift_update_sincos_cache(self, seq_len):
-    # Call rotary emb forward() to update cos/sin cache when inferring more than self.max_position_embeddings
-    # This helps in avoiding creation of these caches during actual model forward pass and
-    # reduce memory consumption and improve performance.
-    if seq_len > self.max_position_embeddings:
-        self.max_position_embeddings = seq_len
-        _, _ = self.rotary_emb(self.k_proj.weight, seq_len=seq_len)
-
-def gaudi_llama_cont_cat_kv_cache_update(self, prev, cur, dim, idx, inp_seq_len):
+def gaudi_llama_pos_shift_kv_cache_update(self, prev, cur, dim, idx, inp_seq_len):
     orig_cur = cur
     if not hasattr(self, "update_count"):
         self.update_count = 0
     self.update_count += 1
-    if prev.shape == cur.shape and self.update_count == 1:
-        prev.copy_(cur)
+    if cur.shape[2] >= 1 and cur.shape[2] <= prev.shape[2] and self.update_count == 1:
+        # Initialize
+        prev[:, :, :inp_seq_len, :].copy_(cur)
         return orig_cur
-    elif self.update_count > 1 and idx is not None:
-        prev[:, :, idx:, :] = cur
+    elif idx is not None:
+        if idx  + cur.shape[2] <= self.window_size:
+            prev[:, :, idx:idx + cur.shape[2], :] = cur
+        else:
+            prev[:, :, -cur.shape[2]:, :] = cur
         return prev
     else:
         return torch.cat((prev, cur), dim=dim)
 
-def gaudi_llama_cont_cat_kv_cache_forward(self, prev, cur, dim, idx):
-    return self.update(prev, cur, dim, idx, self.inp_seq_len)
+def gaudi_llama_pos_shift_kv_cache_forward(self, cur, dim, idx, kv_past_seq_len):
+    def prune_window(cache, attention_sink_size, prune_num):
+        if cache is None:
+            return None
+        # kv_seq_len will not exceed window_size (first prune then concat)
+        window_size = cache.shape[-2]
+        if kv_past_seq_len + prune_num <= window_size:
+            return cache
+        return torch.cat(
+            [
+                cache[:, :, 0:attention_sink_size, ...],
+                cache[:, :, attention_sink_size + prune_num:window_size, ...],
+                cache[:, :, attention_sink_size: attention_sink_size + prune_num, ...],
+            ],
+                dim=2,
+        )
+
+    self.cache = prune_window(self.cache, self.attention_sink_size, cur.shape[2])
+    return self.update(self.cache, cur, dim, idx, self.inp_seq_len)
 
 def gaudi_llama_pos_shift_pre_attn_forward(
     self,
@@ -133,6 +149,8 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     the token_idx will not be used inside the function.
     """
     bsz, q_len, _ = hidden_states.size()
+    if not hasattr(self, "kv_past_total_tokens"):
+        self.kv_past_total_tokens = 0
 
     if self.config.pretraining_tp > 1:
         key_value_slicing = (self.num_key_value_heads * self.head_dim) // self.config.pretraining_tp
@@ -160,10 +178,12 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     key_states = key_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
     value_states = value_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
 
-    kv_seq_len = key_states.shape[-2]
+    kv_seq_len = key_states.shape[-2] if self.kv_past_total_tokens == 0 else self.k_cache.window_size
     if past_key_value is not None:
         if token_idx is None:
-            if hasattr(past_key_value, "get_usable_length"):
+            if reuse_cache:
+                kv_seq_len = past_key_value[0][-2]
+            elif hasattr(past_key_value, "get_usable_length"):
                 kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
             else:
                 kv_seq_len += past_key_value[0].shape[-2]
@@ -175,36 +195,39 @@ def gaudi_llama_pos_shift_pre_attn_forward(
 
     cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
     ### Shift Pos: query pos is min(cache_size, idx)
-    # query_states, key_states = apply_customized_rope(query_states, key_states, cos, sin, position_ids)
+    if reuse_cache:
+        # shift position_ids
+        # for next model.generate round
+        if token_idx is not None and token_idx < self.kv_past_total_tokens:
+            position_ids = torch.arange(self.kv_past_total_tokens,
+                                        self.kv_past_total_tokens + q_len,
+                                        device=position_ids.device).unsqueeze(0)
+        # exceed cache window size
+        if self.kv_past_total_tokens >= self.k_cache.window_size:
+            position_ids =  position_ids - (
+                                            self.kv_past_total_tokens - self.k_cache.window_size # truncate num
+                                            + position_ids.shape[-1]                             # prune_num
+                                            )
     query_states = gaudi_apply_rotary_pos_emb_single(query_states, cos, sin, position_ids)
 
     if use_cache:
-            # reuse k, v, self_attention
+        # reuse k, v, self_attention
         if reuse_cache:
-            raise ValueError("reuse_cache is not supported in streaming-llm (attention sinks).")
-            # key_states = self.k_cache(key_states, 2, token_idx)
-            # value_states = self.v_cache(value_states, 2, token_idx)
-            # past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())
+            kv_past_seq_len = min(self.kv_past_total_tokens, self.k_cache.window_size)
+            key_states = self.k_cache(key_states, 2, self.kv_past_total_tokens, kv_past_seq_len)
+            value_states = self.v_cache(value_states, 2, self.kv_past_total_tokens, kv_past_seq_len)
+            past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())
         else:
-            past_key, past_value = None, None
             if past_key_value is None:
                 past_key = torch.zeros(key_states.shape, dtype=self.k_proj.weight.dtype, device=key_states.device)
                 past_value = torch.zeros(
                     key_states.shape, dtype=self.k_proj.weight.dtype, device=key_states.device
                 )
                 past_key_value = (past_key, past_value)
-            else:
-                cat_shape = (key_states.shape[0], key_states.shape[1], kv_seq_len, key_states.shape[3])
-                past_key = torch.zeros(cat_shape, dtype=self.k_proj.weight.dtype, device=key_states.device)
-                past_value = torch.zeros(
-                    cat_shape, dtype=self.k_proj.weight.dtype, device=key_states.device
-                )
-                past_key[:, :, :past_key_value[0].shape[2], :] = past_key_value[0]
-                past_value[:, :, :past_key_value[1].shape[2], :] = past_key_value[1]
-            key_states = self.k_cache(past_key, key_states, 2, -key_states.shape[2])
-            value_states = self.v_cache(past_value, value_states, 2, -value_states.shape[2])
+            key_states = self.k_cache.update(past_key_value[0], key_states, 2, token_idx, self.inp_seq_len)
+            value_states = self.v_cache.update(past_key_value[1], value_states, 2, token_idx, self.inp_seq_len)
             if token_idx is None:
-                past_key_value = (past_key, past_value)
+                past_key_value = (key_states, value_states)
 
         if cache_idx is not None and q_len == 1:
             key_states = key_states[:, :, :cache_idx, :]
@@ -215,10 +238,43 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     else:
         past_key_value = None
 
+    if attention_mask is not None and self.kv_past_total_tokens > 0:
+        # fill the former mask for multi-round model.generate
+        updated_attention_mask = torch.full((attention_mask.shape[0], attention_mask.shape[1], q_len, kv_seq_len),
+                                            0,
+                                            dtype=attention_mask.dtype,
+                                            device=attention_mask.device)
+        if self.kv_past_total_tokens < kv_seq_len:
+            updated_attention_mask[:, :, :, self.kv_past_total_tokens:] = torch.finfo(attention_mask.dtype).min
+        first_token = (attention_mask.shape[-1] == attention_mask.shape[-2])
+        if first_token:
+            if self.kv_past_total_tokens + q_len <= kv_seq_len:
+                updated_attention_mask[:, :, :, self.kv_past_total_tokens:
+                                                self.kv_past_total_tokens + q_len] = attention_mask
+            else:
+                updated_attention_mask[:, :, :, -q_len:] = attention_mask
+        else:
+            if self.kv_past_total_tokens + q_len <= self.k_cache.window_size:
+                updated_attention_mask[:, :, :, self.kv_past_total_tokens:
+                                                self.kv_past_total_tokens + q_len] = 0
+        attention_mask = updated_attention_mask
+
+    if attention_mask is None and q_len == 1 and kv_seq_len > self.kv_past_total_tokens:
+        attention_mask = torch.full((1, 1, 1, kv_seq_len),
+                                    torch.finfo(query_states.dtype).min,
+                                    dtype=query_states.dtype,
+                                    device=query_states.device)
+        attention_mask[:, :, :, 0:self.kv_past_total_tokens + q_len] = 0
+
+    self.kv_past_total_tokens += q_len
+
     ### Shift Pos: key pos is the pos in cache
-    # TODO CHECK SHAPE
     key_position_ids = torch.arange(kv_seq_len, device=position_ids.device).unsqueeze(0)
     key_states = gaudi_apply_rotary_pos_emb_single(key_states, cos, sin, key_position_ids)
+
+    # TODO it will accelerate inference?
+    import habana_frameworks.torch.core as htcore
+    htcore.mark_step()
 
     if use_flash_attention and FusedSDPA:
         import habana_frameworks.torch.hpu as ht
@@ -289,24 +345,26 @@ def enable_gaudi_llama_pos_shift_attention(model):
             )
 
         if isinstance(module, GaudiLlamaAttention):
-            model._modules[name].allocate_kv_cache = types.MethodType(
-                gaudi_llama_pos_shift_allocate_kv_cache, model._modules[name]
-            )
             model._modules[name].pre_attn_forward = types.MethodType(
                 gaudi_llama_pos_shift_pre_attn_forward, model._modules[name]
             )
 
-def enable_gaudi_llama_cont_cat_kv_cache(model):
+def enable_gaudi_llama_pos_shift_kv_cache(model, attention_sink_size, window_size):
     for name, module in reversed(model._modules.items()):
         if len(list(module.children())) > 0:
-            enable_gaudi_llama_cont_cat_kv_cache(
-                module,
+            enable_gaudi_llama_pos_shift_kv_cache(
+                module, attention_sink_size, window_size
             )
 
         if isinstance(module, KVCache):
+            model._modules[name].allocate = types.MethodType(
+                gaudi_llama_pos_shift_kv_cache_allocate, model._modules[name]
+            )
             model._modules[name].update = types.MethodType(
-                gaudi_llama_cont_cat_kv_cache_update, model._modules[name]
+                gaudi_llama_pos_shift_kv_cache_update, model._modules[name]
             )
             model._modules[name].forward = types.MethodType(
-                gaudi_llama_cont_cat_kv_cache_forward, model._modules[name]
+                gaudi_llama_pos_shift_kv_cache_forward, model._modules[name]
             )
+            model._modules[name].attention_sink_size = attention_sink_size
+            model._modules[name].window_size = window_size
