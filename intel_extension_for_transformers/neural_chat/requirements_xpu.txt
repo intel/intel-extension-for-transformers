@@ -5,7 +5,7 @@ evaluate
 fastapi
 fschat==0.2.35
 huggingface_hub
-intel-extension-for-pytorch==2.1.10+xpu
+intel-extension-for-pytorch==2.1.30+xpu
 neural-compressor
 numpy==1.23.5
 pydantic==1.10.13

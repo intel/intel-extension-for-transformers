@@ -42,8 +42,8 @@ cd examples/huggingface/pytorch/text-generation/quantization
 pip install -r requirements.txt
 pip install neural-compressor==2.5
 pip install transformers==4.35.2
-pip install torch==2.2.0+cpu --index-url https://download.pytorch.org/whl/cpu
-pip install intel-extension-for-pytorch==2.2.0
+pip install torch==2.3.0+cpu --index-url https://download.pytorch.org/whl/cpu
+pip install intel-extension-for-pytorch==2.3.0
 ```
 
 # Run Quantization and evaluate INT8 accuracy
