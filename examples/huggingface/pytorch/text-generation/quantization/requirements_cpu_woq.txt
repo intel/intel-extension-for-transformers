@@ -13,5 +13,5 @@ einops  #qwen
 git+https://github.com/intel/neural-speed.git
 auto-round
 git+https://github.com/intel/neural-compressor.git
-lm-eval
+lm-eval==0.4.2
 huggingface_hub
