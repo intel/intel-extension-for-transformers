@@ -110,7 +110,7 @@ class DocumentParser:
         for dirpath, dirnames, filenames in os.walk(input):
             for filename in filenames:
                 if filename.endswith("pdf") or filename.endswith("docx") or filename.endswith("html") \
-                    or filename.endswith("txt") or filename.endswith("md") or input.endswith("pptx"):
+                    or filename.endswith("txt") or filename.endswith("md") or filename.endswith("pptx"):
                     content = load_unstructured_data(os.path.join(dirpath, filename))
                     if self.process:
                         chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
