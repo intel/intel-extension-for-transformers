@@ -19,8 +19,7 @@
 import logging
 
 def configure_logging(log_file="app.log", log_level=logging.INFO):
-    """
-    Configure logging for the application.
+    """Configure logging for the application.
 
     Parameters:
     - log_file: str, optional, default: "app.log"

@@ -83,7 +83,7 @@ class Graph(object):
 
     @execution_options.setter
     def execution_options(self, options):
-        """Set execution_options"""
+        """Set execution_options."""
         # pylint: disable=E0611
         import intel_extension_for_transformers.neural_engine_py as ne
         if isinstance(options, ne.ExecutionOptions):
@@ -141,20 +141,20 @@ class Graph(object):
 
     @property
     def framework_modeling_config(self):
-        """Get framework_modeling_config"""
+        """Get framework_modeling_config."""
         return self._framework_modeling_config
 
     @framework_modeling_config.setter
     def framework_modeling_config(self, config):
-        """Set framework_modeling_config"""
+        """Set framework_modeling_config."""
         self._framework_modeling_config = config
 
     def add_config_item(self, key, val):
-        """Add a pair into framework_modeling_config"""
+        """Add a pair into framework_modeling_config."""
         self._framework_modeling_config[key] = val
 
     def inquire_config_item(self, key):
-        """Get a pair from framework_modeling_config"""
+        """Get a pair from framework_modeling_config."""
         val = self._framework_modeling_config.get(key, None)
         if not val:
             logger.warning("the item {} does not exist in the config...".format(key))
@@ -162,32 +162,32 @@ class Graph(object):
 
     @property
     def input_tensors_name(self):
-        """Get input_tensors_name"""
+        """Get input_tensors_name."""
         return self._input_tensors_name
 
     @input_tensors_name.setter
     def input_tensors_name(self, name_list):
-        """Set input_tensors_name"""
+        """Set input_tensors_name."""
         self._input_tensors_name = name_list
 
     @property
     def output_tensors_name(self):
-        """Get output_tensors_name"""
+        """Get output_tensors_name."""
         return self._output_tensors_name
 
     @output_tensors_name.setter
     def output_tensors_name(self, name_list):
-        """Set output_tensors_name"""
+        """Set output_tensors_name."""
         self._output_tensors_name = name_list
 
     @property
     def max_input_shapes_list(self):
-        """Get max_input_shapes"""
+        """Get max_input_shapes."""
         return self._max_input_shapes_list
 
     @max_input_shapes_list.setter
     def max_input_shapes_list(self, input_shapes_list):
-        """Set max_input_shapes"""
+        """Set max_input_shapes."""
         assert (isinstance(input_shapes_list, list) and isinstance(input_shapes_list[0], list) \
                and isinstance(input_shapes_list[0][0], list)) or input_shapes_list == None, \
                "max_input_shape should be None or List[List[List]]!"

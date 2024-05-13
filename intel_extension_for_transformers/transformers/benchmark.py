@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Benchmark: provide the inference functions for PyTorchBenchmark and ExecutorBenchmark."""
 import os
 import sys
@@ -34,7 +33,7 @@ else:
     from neural_compressor.benchmark import benchmark_with_raw_cmd  # pylint: disable=E0611
 
 def refactor_batch_size(value, batch_size, old_batch_size=-1):
-    """return batched data from value.
+    """Return batched data from value.
 
     Args:
         value (torch.Tensor): input data.
@@ -59,7 +58,7 @@ def refactor_batch_size(value, batch_size, old_batch_size=-1):
 
 
 def get_example_inputs(dataloader, batch_size=1):
-    """return batched data from dataloader.
+    """Return batched data from dataloader.
 
     Args:
         dataloader: dataloader.
@@ -92,7 +91,7 @@ def get_example_inputs(dataloader, batch_size=1):
 
 
 def preprocess_model(model, example_inputs, config, additional_cmd):
-    """convert model to torchscript and generate mode.
+    """Convert model to torchscript and generate mode.
 
     Args:
         model (torch.nn.Module): original model.
@@ -138,7 +137,7 @@ def preprocess_model(model, example_inputs, config, additional_cmd):
 
 
 def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=None):
-    """function for benchmarking model.
+    """Function for benchmarking model.
 
     Args:
         model_name_or_path (str, torch.nn.Module or torch.jit.ScriptModule): model_name_or_path.

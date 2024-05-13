@@ -35,7 +35,6 @@ from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse, JSONResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...plugins import plugins
-from ...pipeline.plugins.retrieval.parser.context_utils import clean_filename
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -122,8 +121,7 @@ def check_path(path: str):
 
 
 def remove_folder_with_ignore(folder_path: str, except_patterns=None):
-    """
-    Remove the specific folder, and ignore some files/folders
+    """Remove the specific folder, and ignore some files/folders.
 
     :param folder_path: file path to delete
     :param except_patterns: files/folder name to ignore
@@ -195,6 +193,7 @@ def get_file_structure(root_path: str, parent_path: str="") -> List[Dict[str, Un
 
 def save_link_content(link_list: List, link_content: List, upload_path):
     file_names = []
+    from ...pipeline.plugins.retrieval.parser.context_utils import clean_filename
     for link, content in zip(link_list, link_content):
         logger.info(f"= save link = link: {link}, content: {content}")
         file_name = clean_filename(link)+".jsonl"
@@ -575,9 +574,9 @@ def get_feedback_from_db():
 
 @router.delete("/v1/askdoc/delete_all")
 async def delete_all_files():
-    """
-        Delete all files and knowledge bases of current user.
-        Re-create retriever using default plugin configs.
+    """Delete all files and knowledge bases of current user.
+
+    Re-create retriever using default plugin configs.
     """
     delete_path = RETRIEVAL_FILE_PATH
     if not os.path.exists(delete_path):
@@ -597,12 +596,12 @@ async def delete_all_files():
 
 @router.delete("/v1/askdoc/delete_file")
 async def delete_single_file(request: Request):
-    """
-        Delete file according to `del_path` and `knowledge_base_id`.
-        `del_path`:
-            - specific file path(e.g. /path/to/file.txt)
-            - folder path(e.g. /path/to/folder)
-            - "all_files": delete all files of this knowledge base
+    """Delete file according to `del_path` and `knowledge_base_id`.
+
+    `del_path`:
+        - specific file path(e.g. /path/to/file.txt)
+        - folder path(e.g. /path/to/folder)
+        - "all_files": delete all files of this knowledge base
     """
     params = await request.json()
     del_path = params['del_path']

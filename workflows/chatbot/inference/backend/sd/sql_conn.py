@@ -55,8 +55,7 @@ class MysqlWorker():
         # check connection status
         while True:
             time.sleep(time_to_sleep)
-            """
-            LOGGER.info("ping mysql.")
+            """LOGGER.info("ping mysql.")
             self.conn.ping(reconnect=True)
 
             if not self._ping():

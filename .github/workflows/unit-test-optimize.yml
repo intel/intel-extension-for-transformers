@@ -10,11 +10,12 @@ on:
       - intel_extension_for_transformers/transformers/llm/evaluation/**
       - intel_extension_for_transformers/transformers/llm/quantization/**
       - intel_extension_for_transformers/transformers/llm/runtime/neural_speed/**
-      - intel_extension_for_transformers/transformers/llm/operator/**
+      - intel_extension_for_transformers/qbits/**
       - tests/**
       - .github/workflows/unit-test-optimize.yml
       - '.github/workflows/script/unitTest/run_unit_test_optimize.sh'
       - '!intel_extension_for_transformers/transformers/llm/runtime/neural_speed/*.md'
+      - intel_extension_for_transformers/qbits/qbits_ut/**
 
   workflow_dispatch:
 
@@ -22,7 +23,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
+permissions: write-all
 env:
   DOCKER_CONFIG_NAME: "commonDockerConfig"
   REPO_NAME: "intel-extension-for-transformers"

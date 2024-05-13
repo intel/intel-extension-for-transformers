@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Function to check the intent of the input user query with LLM."""
 from __future__ import division
 from .dict import defaultSensitiveWordSet
@@ -130,7 +129,7 @@ class SafetyChecker:
         return tmpFlag, category
 
     def _get_sensitive_word(self, context):
-        """get the sensitive word."""
+        """Get the sensitive word."""
         sensitiveWordList = list()
         for i in range(len(context)):
             length = self._checkSensitiveWord(context, i)[0]

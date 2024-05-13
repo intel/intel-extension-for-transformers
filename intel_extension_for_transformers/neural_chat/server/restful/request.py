@@ -64,11 +64,9 @@ class AskDocRequest(RequestBaseModel):
 
 
 class FeedbackRequest(RequestBaseModel):
-    """
-    Request class for feedback api
+    """Request class for feedback api
     'feedback_id': set to be auto_increment, no need to pass as argument
-    'feedback': 0 for 'like', 1 for 'dislike'
-    """
+    'feedback': 0 for 'like', 1 for 'dislike'."""
     # feedback_id: Optional[int] = None
     question: str
     answer: str

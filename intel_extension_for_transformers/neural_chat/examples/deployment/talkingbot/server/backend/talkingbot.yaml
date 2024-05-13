@@ -37,12 +37,19 @@ asr:
         bf16: false
 
 tts:
-    enable: true
+    enable: false
     args:
         device: "cpu"
         voice: "default"
         stream_mode: true
         output_audio_path: "./output_audio"
+
+tts_multilang:
+    enable: true
+    args:
+        device: "cpu"
+        precision: "fp32"
+        stream_mode: true
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
 tasks_list: ['voicechat']

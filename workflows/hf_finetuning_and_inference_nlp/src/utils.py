@@ -49,9 +49,7 @@ class Benchmark:
 
 @dataclass
 class Arguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
-    """
+    """Arguments pertaining to which model/config/tokenizer we are going to fine-tune from."""
     model_name_or_path: str = field(
         default="bert-base-uncased",
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
@@ -127,9 +125,7 @@ class Arguments:
             "help": "Use TPP Extension for PyTorch for fine-Tuning."
         },
     )
-    """
-    Arguments for test scenarios
-    """
+    """Arguments for test scenarios."""
     infer_impl: Optional[str] = field(
         default="trainer", metadata={
             "help": "The implementation of inference pipeline. Now we support trainer and ipex implementation."

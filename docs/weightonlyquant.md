@@ -147,16 +147,17 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 > Note: For LLM runtime model loading usage, please refer to [neural_speed readme](https://github.com/intel/neural-speed/blob/main/README.md#quick-start-transformer-like-usage)
 
 ## Examples For Intel GPU
-Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".
+Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC/ARC/MTL) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch).
 
 Now 4-bit/8-bit inference with `RtnConfig`, `AwqConfig`, `GPTQConfig`, `AutoRoundConfig` are support on intel GPU device.
 
-We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.  
+We support experimental woq inference on intel GPU(PVC/ARC/MTL) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B (only for PVC/ARC), Llama-7B.  
+
 Here are the example codes.
 
 #### Prepare Dependency Packages
 1. Install Oneapi Package  
-Weight-only quantization ops only exist in "dev/QLLM" branch on the intel-extension-for-pytorch. It needs to be compiled with the Oneapi DPCPP compiler. Please follow [the link](https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html) to install the OneAPI to "/opt/intel folder".
+The Oneapi DPCPP compiler is required to compile intel-extension-for-pytorch. Please follow [the link](https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html) to install the OneAPI to "/opt/intel folder".
 
 2. Build and Install PyTorch and Intel-extension-for-pytorch
 ```python
@@ -167,9 +168,8 @@ source /opt/intel/oneapi/setvars.sh
 # Build IPEX from Source Code
 git clone https://github.com/intel/intel-extension-for-pytorch.git ipex-gpu
 cd ipex-gpu
-git checkout -b dev/QLLM origin/dev/QLLM
 git submodule update --init --recursive
-export USE_AOT_DEVLIST='pvc,ats-m150'
+export USE_AOT_DEVLIST='pvc,ats-m150'  # Comment this line if you are compiling for MTL
 export BUILD_WITH_CPU=OFF
 
 pip install -r requirements.txt
@@ -188,6 +188,7 @@ pip install intel-extension-for-transformers
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
+import torch
 
 device = "xpu"
 model_name = "Qwen/Qwen-7B"
@@ -198,9 +199,9 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
 qmodel = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, device_map="xpu", trust_remote_code=True)
 
 # optimize the model with ipex, it will improve performance.
-qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu")
+qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, quantization_config={}, device="xpu")
 
-output = user_model.generate(inputs)
+output = qmodel.generate(inputs)
 ```
 
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
@@ -236,3 +237,80 @@ python run_generation_gpu_woq.py --woq --benchmark
 >Note:
 > * Saving quantized model should be executed before the optimize_transformers function is called.
 > * The optimize_transformers function is designed to optimize transformer-based models within frontend Python modules, with a particular focus on Large Language Models (LLMs). It provides optimizations for both model-wise and content-generation-wise. The detail of `optimize_transformers`, please refer to [the link](https://github.com/intel/intel-extension-for-pytorch/blob/xpu-main/docs/tutorials/llm/llm_optimize_transformers.md).
+
+
+### Example of AutoRound on Intel GPU
+
+For the specific usage of parameters for AutoRoundConfig, please refer to the definition [class AutoRoundConfig](https://github.com/intel/intel-extension-for-transformers/blob/629b9d40caf97c963dc76f908e4cb66cc6f72eeb/intel_extension_for_transformers/transformers/utils/config.py#L930)
+
+```python
+import torch
+import intel_extension_for_pytorch as ipex
+from transformers import AutoConfig, AutoTokenizer
+from intel_extension_for_transformers.transformers import (
+    AutoModelForCausalLM,
+    AutoRoundConfig,
+)
+
+device = "xpu"
+model_name = "meta-llama/Llama-2-7b-hf"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "Once upon a time, a little girl"
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
+
+quantization_config = AutoRoundConfig(
+    tokenizer=tokenizer,
+    bits=4,
+    group_size=32,
+    max_input_length=2048,
+    compute_dtype="fp16",
+    scale_dtype="fp16",
+    weight_dtype="int4_fullrange",
+    calib_iters=2,
+    calib_len=32,
+    nsamples=2,
+    lr=0.0025,
+    minmax_lr=0.0025,
+)
+qmodel = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    device_map=device,
+    quantization_config=quantization_config,
+    trust_remote_code=True,
+    torch_dtype=torch.float16,
+)
+
+# optimize the model with ipex, it will improve performance.
+qmodel = ipex.optimize_transformers(
+    qmodel, inplace=True, dtype=torch.float16, quantization_config=True, device=device
+)
+output = qmodel.generate(inputs, max_new_tokens=100, do_sample=True)
+print(tokenizer.batch_decode(output, skip_special_tokens=True))
+```
+
+### Llama3 on MTL
+Currently, we only support running llama3 on MTL and only support the following parameters to quantize and inference:
+- quantification method: RTN
+- group_size: 32
+- batch_size: 1
+- num_beams 1
+
+```python
+import intel_extension_for_pytorch as ipex
+from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+from transformers import AutoTokenizer
+import torch
+
+device_map = "xpu"
+model_name ="meta-llama/Meta-Llama-3-8B"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "Once upon a time, there existed a little girl,"
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
+                                              device_map=device_map, load_in_4bit=True)
+
+model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, quantization_config=True, device=device_map)
+
+output = model.generate(inputs)
+```

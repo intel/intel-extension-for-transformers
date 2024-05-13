@@ -724,7 +724,6 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
     Note that the pattern after fusion (n->n / n->1)is must be sequence pattern like
     [a->b->c->d->e], or [a]. That means if one pattern is too complicated, or the pattern after
     fusion is too complicated, you had better decompose it.
-
     """
 
     def _get_pattern_info():
@@ -1015,15 +1014,12 @@ def pattern_mapping_conf_validation(conf_dict):
         ),
         'out': Schema([[(int, str)]], error='The out pattern must be straight chain.')
     }),
-
     'search_mode': Or('op_type', 'node_name', error='Only support op_type or node_name these '\
                         'two modes'),
-
     'node_names': Schema({
         int: Or(int, str)
     },  error='For node_names, the key is the out node index while the value is the old node ' \
                 'index or a specific name'),
-
     'input_tensors': Schema({
         int: And(
             list,
@@ -1043,7 +1039,6 @@ def pattern_mapping_conf_validation(conf_dict):
             )
         )
     }),
-
     'output_tensors': Schema({
         int: And(
             list,
@@ -1063,7 +1058,6 @@ def pattern_mapping_conf_validation(conf_dict):
             )
         )
     }),
-
     'returns': Or(Schema([]), Schema([int]), error='Returns can be empty list or contains some ' \
      'old node index for set attr of new node later'),
 

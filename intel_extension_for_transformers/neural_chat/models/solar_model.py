@@ -42,8 +42,7 @@ register_conv_template(
 
 class SolarModel(BaseModel):
     def match(self, model_path: str):
-        """
-        Check if the provided model_path matches the current model.
+        """Check if the provided model_path matches the current model.
 
         Args:
             model_path (str): Path to a model.
@@ -54,8 +53,7 @@ class SolarModel(BaseModel):
         return "solar-" in self.model_name.lower() and "instruct" in self.model_name.lower()
 
     def get_default_conv_template(self) -> Conversation:
-        """
-        Get the default conversation template for the given model path.
+        """Get the default conversation template for the given model path.
 
         Args:
             model_path (str): Path to the model.

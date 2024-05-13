@@ -1390,7 +1390,9 @@
       "params": {
         "topology": "llama2_7b_gptq",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1413,7 +1415,9 @@
       "params": {
         "topology": "gpt_j_woq_bab",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1436,7 +1440,9 @@
       "params": {
         "topology": "gpt_j_woq_rtn",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1459,7 +1465,8 @@
       "params": {
         "topology": "gpt_j_woq_load4bit",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
@@ -1482,7 +1489,8 @@
       "params": {
         "topology": "gpt_j_woq_load8bit",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int8"
       }
     },
     "benchmark": {
@@ -1581,7 +1589,8 @@
         "topology": "mistral_7b_autoround",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1606,7 +1615,8 @@
         "topology": "mistral_7b_gptq",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1632,7 +1642,8 @@
         "topology": "mistral_7b_rtn",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1657,7 +1668,8 @@
         "topology": "mistral_7b_autoround",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1681,7 +1693,8 @@
         "topology": "mistral_7b_gptq",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1706,7 +1719,8 @@
         "topology": "mistral_7b_rtn",
         "task": "generation",
         "output_model": "saved_results",
-        "weight_dtype": "int4_clip"
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1719,6 +1733,66 @@
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "mistralai/Mistral-7B-v0.1",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "mistralai/Mistral-7B-v0.1",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/mistral_7b_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "llama2_7b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "meta-llama/Llama-2-7b-hf",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "meta-llama/Llama-2-7b-hf",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/llama2_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "qwen_7b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "Qwen/Qwen-7B-Chat",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "Qwen/Qwen-7B-Chat",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/qwen_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
       }
     }
   },

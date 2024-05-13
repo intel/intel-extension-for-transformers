@@ -43,8 +43,7 @@ register_conv_template(
 
 class DeciLMModel(BaseModel):
     def match(self):
-        """
-        Check if the provided model_path matches the current model.
+        """Check if the provided model_path matches the current model.
 
         Returns:
             bool: True if the model_path matches, False otherwise.
@@ -52,8 +51,7 @@ class DeciLMModel(BaseModel):
         return "decilm" in self.model_name.lower()
 
     def get_default_conv_template(self) -> Conversation:
-        """
-        Get the default conversation template for the given model path.
+        """Get the default conversation template for the given model path.
 
         Returns:
             Conversation: A default conversation template.

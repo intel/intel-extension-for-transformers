@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""A controller manages distributed workers.
 
-"""
-A controller manages distributed workers.
 It sends worker addresses to clients.
 """
 import argparse

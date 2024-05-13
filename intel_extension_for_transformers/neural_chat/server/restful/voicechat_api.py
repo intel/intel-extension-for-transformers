@@ -56,6 +56,7 @@ class VoiceChatAPIRouter(APIRouter):
         chatbot = self.get_chatbot()
         try:
             plugins.tts.args["voice"] = voice
+            plugins.tts_multilang.args["voice"] = voice
             config = GenerationConfig(audio_output_path=audio_output_path)
             result, link = chatbot.chat_stream(query=prompt, config=config)
             def audio_file_generate(result):
@@ -83,6 +84,12 @@ class VoiceChatAPIRouter(APIRouter):
                                                            output_audio_path="speech.{}".format(response_format),
                                                            voice=voice,
                                                            speedup=speed)
+                return FileResponse(result_path)
+            elif model == "bert-vits2":
+                result_path: str = chatbot.tts_multilang.text2speech(text=input,
+                                                           output_audio_path="speech.{}".format(response_format),
+                                                           voice=voice,
+                                                           )
                 return FileResponse(result_path)
             else:
                 raise Exception("More models to be supported soon!")
@@ -127,11 +134,10 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
 async def talkingbot(request: Request):
     data = await request.json()
     text = data["text"]
-    voice = data["voice"]
-    knowledge_id = data["knowledge_id"]
+    voice = data["voice"] if data["voice"] else "default"
     audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio"
 
-    logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
+    logger.info(f'Received prompt: {text}, and use voice: {voice}')
 
     return await router.handle_voice_chat_request(text, voice, audio_output_path)
 

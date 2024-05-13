@@ -40,8 +40,7 @@ IMAGE_TOKEN_INDEX = -200
 
 
 def resize_and_pad_image(image, target_resolution):
-    """
-    Resize and pad an image to a target resolution while maintaining aspect ratio.
+    """Resize and pad an image to a target resolution while maintaining aspect ratio.
 
     Args:
         image (PIL.Image.Image): The input image.
@@ -75,8 +74,7 @@ def resize_and_pad_image(image, target_resolution):
 
 
 def divide_to_patches(image, patch_size):
-    """
-    Divides an image into patches of a specified size.
+    """Divides an image into patches of a specified size.
 
     Args:
         image (PIL.Image.Image): The input image.
@@ -97,8 +95,7 @@ def divide_to_patches(image, patch_size):
 
 
 def process_anyres_image(image, processor, grid_pinpoints):
-    """
-    Process an image with variable resolutions.
+    """Process an image with variable resolutions.
 
     Args:
         image (PIL.Image.Image): The input image to be processed.
@@ -288,7 +285,7 @@ def safe_save_model_for_hf_trainer(trainer: transformers.Trainer,
             for key, value in state_dict.items()
         }
         del state_dict
-        trainer._save(output_dir, state_dict=cpu_state_dict)  # noqa
+        trainer._save(output_dir, state_dict=cpu_state_dict)
 
 
 def smart_tokenizer_and_embedding_resize(
@@ -776,8 +773,9 @@ def preprocess(
     conversation_template,
     has_image: bool = False,
 ) -> Dict:
-    """
-    Given a list of sources, each is a conversation list. This transform:
+    """Given a list of sources, each is a conversation list.
+
+    This transform:
     1. Add signal '### ' at the beginning each sentence, with end signal '\n';
     2. Concatenate conversations together;
     3. Tokenize the concatenated conversation;

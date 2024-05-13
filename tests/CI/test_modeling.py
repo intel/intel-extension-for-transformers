@@ -17,7 +17,9 @@ import os
 import shutil
 import torch
 import unittest
+import neural_compressor.adaptor.pytorch as nc_torch
 from intel_extension_for_transformers.transformers.modeling.modeling_seq2seq import INCModelForSeq2SeqLM
+from packaging.version import Version
 from neural_compressor import PostTrainingQuantConfig, quantization
 from optimum.intel.neural_compressor import INCConfig
 from optimum.exporters import TasksManager
@@ -30,7 +32,7 @@ from transformers import (
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
 MODEL_NAME = "t5-small"
-
+PT_VERSION = nc_torch.get_torch_version()
 
 def get_seq2seq_example_inputs(model):
     onnx_config_class = TasksManager.get_exporter_config_constructor(model_type=model.config.model_type, exporter="onnx", task="text2text-generation")
@@ -63,6 +65,8 @@ class TestModeling(unittest.TestCase):
         shutil.rmtree('./mlruns', ignore_errors=True)
         shutil.rmtree('./quantized_model', ignore_errors=True)
 
+    @unittest.skipIf(PT_VERSION.release < Version("2.1.0").release,
+    "Please use PyTroch 2.1.0 higher version for seq2seq_jit_model")
     def test_seq2seq_jit_model(self):
         model = INCModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
         input_ids = self.tokenizer(self.prompt_texts[0], return_tensors="pt").input_ids
