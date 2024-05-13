@@ -314,9 +314,10 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         if self.scale_dtype is not None and self.scale_dtype not in [
             "fp32",
             "fp8_e8m0",
+            "bf16"
         ]:
             raise ValueError(
-                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
+                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0', 'bf16' "
                 f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
             )
         elif self.scale_dtype is None:
