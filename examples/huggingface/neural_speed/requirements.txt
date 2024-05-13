@@ -4,8 +4,8 @@ lm-eval
 sentencepiece
 gguf
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.2.0+cpu
+torch==2.3.0+cpu
 transformers
-intel_extension_for_pytorch==2.2.0
+intel_extension_for_pytorch==2.3.0
 tiktoken
 transformers_stream_generator
