@@ -26,10 +26,26 @@ inline bool check_avx_vnni() { return bestla::device::CpuDevice::getInstance()->
 inline bool check_avx512f() { return bestla::device::CpuDevice::getInstance()->AVX512F(); }
 inline bool check_avx2() { return bestla::device::CpuDevice::getInstance()->AVX2(); }
 
+class qbits_threading {
+ public:
+  static bestla::parallel::IThreading* get() {
+    GetCPUDevice();
+    static bestla::parallel::StdThreading OptmizedThreading;
+    static bestla::parallel::OMPThreading DefaultThreading;
+    if (!_cd->isHybrid()) {
+      return &DefaultThreading;
+    }
+    return &OptmizedThreading;
+  }
+
+  static void set_threads(int n_thread) { get()->set_threads(n_thread); }
+};
+
 class env_initer {
  public:
   env_initer() {
     if (check_amx()) bestla::utils::request_perm_xtile_data();
+    qbits_threading::set_threads(bestla::device::CpuDevice::getInstance()->getThreads());
     verbose = std::getenv("QBITS_VERBOSE") != nullptr;
     FLAGS_caffe2_log_level = 0;
   }
@@ -56,7 +72,7 @@ class Timer {
   high_resolution_clock::time_point m_end;
 };
 static Timer timer;
-static bestla::parallel::OMPThreading DefaultThreading(bestla::device::CpuDevice::getInstance()->getThreads());
+
 string get_torch_dt_name(torch::Tensor* tensor);
 
 }  // namespace dispatcher_utils

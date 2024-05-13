@@ -8,5 +8,5 @@ openai
 pip
 pydantic==1.10.13
 requests
-torch==2.2.0
+torch==2.3.0
 transformers

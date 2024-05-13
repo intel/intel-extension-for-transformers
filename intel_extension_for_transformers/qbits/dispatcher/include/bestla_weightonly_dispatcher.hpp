@@ -62,7 +62,8 @@ struct woq_runtime_ctx {
 
 static std::map<std::string, BTLA_DTYPE> wei2bestladt_map{{"int8", BTLA_DTYPE::S8},
                                                           {"int4_clip", BTLA_DTYPE::S4_CLIP},
-                                                          {"int4_fullrange", BTLA_DTYPE::S4_FULLRANGE},
+                                                          {"int3_clip", BTLA_DTYPE::S3_CLIP},
+                                                          {"int2_clip", BTLA_DTYPE::S2_CLIP},
                                                           {"nf4", BTLA_DTYPE::F4_NF4},
                                                           {"fp4_e2m1_bnb", BTLA_DTYPE::F4_BNB},
                                                           {"fp4_e2m1", BTLA_DTYPE::F4_E2M1},

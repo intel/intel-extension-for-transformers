@@ -648,7 +648,8 @@ class HFLM(TemplateLM):
                         key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
                         use_cache = len(key_value_input_names) > 0
 
-                        self._model = ORTModelForCausalLM(session[0],  # pylint: disable=E1121
+                        # pylint: disable=E1121,E1124
+                        self._model = ORTModelForCausalLM(session[0],
                                                         model_config,
                                                         pretrained,
                                                         use_cache=True if use_cache else False,
@@ -673,10 +674,12 @@ class HFLM(TemplateLM):
                                                             sessions[1],
                                                             use_cache=True)
                         else:
-                            sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                            # pylint: disable=E1123,E1124
+                            sessions = ORTModelForCausalLM.load_model(
                                 os.path.join(pretrained, "decoder_model.onnx"),
                                 session_options=sess_options)
-                            self._model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                            # pylint: disable=E1121,E1124
+                            self._model = ORTModelForCausalLM(sessions[0],
                                                             model_config,
                                                             pretrained,
                                                             use_cache=False,
@@ -999,9 +1002,14 @@ class HFLM(TemplateLM):
                         labels=labels,
                     ).logits
                 else:
-                    return self.model(
+                    output = self.model(
                         input_ids=inps, attention_mask=attn_mask, labels=labels
-                    ).logits
+                    )
+                    if isinstance(output, tuple):
+                        output = output[0]
+                    else:
+                        output = output.logits
+                    return output
             else:
                 assert self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM
                 if hasattr(self.model, "config") and hasattr(self.model.config, "auto_map") and \
@@ -1036,7 +1044,11 @@ class HFLM(TemplateLM):
                             inps, torch.ones(inps.shape, dtype=torch.int64)
                         ).logits
                 else:
-                    output = self.model(inps).logits
+                    output = self.model(inps)
+                    if isinstance(output, tuple):
+                        output = output[0]
+                    else:
+                        output = output.logits
                 return output
 
     def _model_generate(self, context, max_length, stop, **generation_kwargs):
