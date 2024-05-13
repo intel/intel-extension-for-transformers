@@ -35,25 +35,17 @@ Adapted from https://github.com/mit-han-lab/streaming-llm/tree/main
 """
 
 
-from .attention_sink_kv_cache import AttentionSinkKVCache
-
-
-def enable_streaming_llm(model, attention_sink_size=1024, window_size=4):
+def enable_streaming_llm(model, attention_sink_size=4, attention_sink_window_size=1020):
+    max_attention_window_size = attention_sink_window_size + attention_sink_size
     if "llama" in model.config.model_type:
-        k_seq_dim = v_seq_dim = 2
         from .models.llama.pos_shift_llama import (
             enable_gaudi_llama_pos_shift_attention,
             enable_gaudi_llama_pos_shift_kv_cache
         )
 
-        enable_gaudi_llama_pos_shift_attention(model)
-        enable_gaudi_llama_pos_shift_kv_cache(model, attention_sink_size, window_size)
+        enable_gaudi_llama_pos_shift_attention(model, max_attention_window_size)
+        enable_gaudi_llama_pos_shift_kv_cache(model,
+                                              attention_sink_size,
+                                              max_attention_window_size)
     else:
         raise ValueError(f"got {model.config.model_type}")
-    kv_cache = AttentionSinkKVCache(
-        attention_sink_size=attention_sink_size,
-        attention_sink_window_size=window_size - attention_sink_size,
-        k_seq_dim=k_seq_dim,
-        v_seq_dim=v_seq_dim,
-    )
-    return kv_cache

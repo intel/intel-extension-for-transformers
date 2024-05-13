@@ -382,11 +382,15 @@ def initialize_model(args):
 
     model_kwargs = {
         "revision": "main",
-        "token":None, 
+        "token":None,
     }
 
     model_kwargs["device_map"] = "auto"
     model_kwargs["offload_folder"] = "/tmp/offload_folder/"
+
+    if hasattr(args, "attention_sink_size") and hasattr(args, "attention_sink_window_size"):
+        model_kwargs["attention_sink_size"] = args.attention_sink_size
+        model_kwargs["attention_sink_window_size"] = args.attention_sink_window_size
 
     model = (
         setup_model(args, model_dtype, model_kwargs)

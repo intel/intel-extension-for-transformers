@@ -1073,6 +1073,27 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
         )
         return model_inputs
 
+    @classmethod
+    def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        # Separate Attention Sink kwargs from regular kwargs
+        attention_sink_kwargs = {key: value for key, value in kwargs.items() if key.startswith("attention_sink")}
+        for key in attention_sink_kwargs:
+            kwargs.pop(key)
+
+        model = super().from_pretrained(
+            pretrained_model_name_or_path,
+            *model_args,
+            **kwargs,
+        )
+
+        if len(attention_sink_kwargs) > 0:
+            from intel_extension_for_transformers.transformers.modeling.modeling_gaudi.streaming_llm \
+            import enable_streaming_llm
+
+            enable_streaming_llm(model, **attention_sink_kwargs)
+
+        return model
+
 
 def apply_customized_rope(q, k, cos, sin, position_ids):
     if q.device.type == "hpu" and has_fused_rope:

@@ -178,7 +178,7 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     key_states = key_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
     value_states = value_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
 
-    kv_seq_len = key_states.shape[-2] if self.kv_past_total_tokens == 0 else self.k_cache.window_size
+    kv_seq_len = key_states.shape[-2] if self.kv_past_total_tokens == 0 else self.kv_cache_max_sl
     if past_key_value is not None:
         if token_idx is None:
             if reuse_cache:
@@ -203,9 +203,9 @@ def gaudi_llama_pos_shift_pre_attn_forward(
                                         self.kv_past_total_tokens + q_len,
                                         device=position_ids.device).unsqueeze(0)
         # exceed cache window size
-        if self.kv_past_total_tokens >= self.k_cache.window_size:
+        if self.kv_past_total_tokens >= self.kv_cache_max_sl:
             position_ids =  position_ids - (
-                                            self.kv_past_total_tokens - self.k_cache.window_size # truncate num
+                                            self.kv_past_total_tokens - self.kv_cache_max_sl # truncate num
                                             + position_ids.shape[-1]                             # prune_num
                                             )
     query_states = gaudi_apply_rotary_pos_emb_single(query_states, cos, sin, position_ids)
@@ -213,7 +213,7 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     if use_cache:
         # reuse k, v, self_attention
         if reuse_cache:
-            kv_past_seq_len = min(self.kv_past_total_tokens, self.k_cache.window_size)
+            kv_past_seq_len = min(self.kv_past_total_tokens, self.kv_cache_max_sl)
             key_states = self.k_cache(key_states, 2, self.kv_past_total_tokens, kv_past_seq_len)
             value_states = self.v_cache(value_states, 2, self.kv_past_total_tokens, kv_past_seq_len)
             past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())
@@ -254,7 +254,7 @@ def gaudi_llama_pos_shift_pre_attn_forward(
             else:
                 updated_attention_mask[:, :, :, -q_len:] = attention_mask
         else:
-            if self.kv_past_total_tokens + q_len <= self.k_cache.window_size:
+            if self.kv_past_total_tokens + q_len <= self.kv_cache_max_sl:
                 updated_attention_mask[:, :, :, self.kv_past_total_tokens:
                                                 self.kv_past_total_tokens + q_len] = 0
         attention_mask = updated_attention_mask
@@ -337,17 +337,18 @@ def gaudi_llama_pos_shift_pre_attn_forward(
 
     return attn_output, attn_weights, past_key_value
 
-def enable_gaudi_llama_pos_shift_attention(model):
+def enable_gaudi_llama_pos_shift_attention(model, max_attention_window_size):
     for name, module in reversed(model._modules.items()):
         if len(list(module.children())) > 0:
             enable_gaudi_llama_pos_shift_attention(
-                module,
+                module, max_attention_window_size
             )
 
         if isinstance(module, GaudiLlamaAttention):
             model._modules[name].pre_attn_forward = types.MethodType(
                 gaudi_llama_pos_shift_pre_attn_forward, model._modules[name]
             )
+            model._modules[name].kv_cache_max_sl = max_attention_window_size
 
 def enable_gaudi_llama_pos_shift_kv_cache(model, attention_sink_size, window_size):
     for name, module in reversed(model._modules.items()):
