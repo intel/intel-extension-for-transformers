@@ -43,6 +43,12 @@ concept quant_PrologueA = requires {
   requires !std::is_same_v<T, bestla::utils::bf16>;
 };
 
+template <class GemmCore>
+constexpr bool is_int8_cmpt_gemmcore() {
+  return GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
+         GemmCore::ISA == BTLA_ISA::AVX_VNNI || std::is_same_v<GemmCore, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>;
+}
+
 template <class Launcher>
 void dequantize_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   if (dispatcher_utils::initer.verbose) dispatcher_utils::timer.start();
@@ -53,16 +59,16 @@ void dequantize_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
     kernel.unpackTransposeWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
                                  dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
                                  ctx->output->data_ptr<float>(), ctx->deseries_wei->mK,
-                                 &dispatcher_utils::DefaultThreading);
+                                 dispatcher_utils::qbits_threading::get());
 
   } else {
     kernel.unpackWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
                         dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
-                        ctx->output->data_ptr<float>(), ctx->deseries_wei->mN, &dispatcher_utils::DefaultThreading);
+                        ctx->output->data_ptr<float>(), ctx->deseries_wei->mN,
+                        dispatcher_utils::qbits_threading::get());
   }
 }
 
-// TODO(zhe): weight+scale combination check.
 template <class Launcher>
 void quantize_to_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   if (dispatcher_utils::initer.verbose) dispatcher_utils::timer.start();
@@ -72,7 +78,6 @@ void quantize_to_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   if constexpr (std::is_same_v<WType, bestla::storage::gemm::StorageWeightKBlockNInteger>) {
     TORCH_CHECK(p->scale_type == "fp32" || p->scale_type == "bf16",
                 "Qbits: scale_type must be fp32/bf16 in NInteger Weight.");
-    if (p->scale_type == "bf16") TORCH_CHECK(!p->asym, "Qbits: asym is not supported when scale_type==bf16 currently.");
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, p->blocksize, wei2bestladt_map[p->weight_type],
                                            scale2bestladt_map[p->scale_type], BTLA_DTYPE::BF16, p->asym);
   } else if constexpr (std::is_same_v<WType, bestla::storage::gemm::StorageWeightKBlockNFloat>) {
@@ -92,10 +97,10 @@ void quantize_to_packed_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   packedw.assign(ctx->output->data_ptr<int8_t>());
   if (ctx->transpose) {
     launcher.mProB.packTransposeWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->k, &packedw,
-                                       &dispatcher_utils::DefaultThreading);
+                                       dispatcher_utils::qbits_threading::get());
   } else {
     launcher.mProB.packWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->n, &packedw,
-                              &dispatcher_utils::DefaultThreading);
+                              dispatcher_utils::qbits_threading::get());
   }
   if (dispatcher_utils::initer.verbose) {
     dispatcher_utils::timer.stop();
@@ -128,8 +133,7 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
   using StorageWeight = typename Launcher::PrologueB::StorageWeight;
   size_t asym_size = 0, shuf_size = 0;
   int8_t* tmpbuf = nullptr;
-  if constexpr (GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
-                GemmCore::ISA == BTLA_ISA::AVX_VNNI) {
+  if constexpr (is_int8_cmpt_gemmcore<GemmCore>()) {
     using Parallel = bestla::parallel::gemm::SchedulerKBlockS<GemmCore>;
     bestla::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, p->blocksize);
     StorageWeight* packedw = dynamic_cast<StorageWeight*>(ctx->deseries_wei);
@@ -140,17 +144,17 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
     if (packedw->ShfIndice()) {
       param_a.reordered->assign(tmpbuf + dyn_q_size);
       param_a.indices = packedw->ShfIndice();
-      launcher.mProA.quantize(param_a, ctx->m, ctx->deseries_wei->mK, &dispatcher_utils::DefaultThreading);
+      launcher.mProA.quantize(param_a, ctx->m, ctx->deseries_wei->mK, dispatcher_utils::qbits_threading::get());
     }
     typename Launcher::Param args{
         gp, param_a, dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei), param_epi};
     if (packedw->ShfIndice()) {
-      bestla::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      bestla::parallel::GemmRun<Parallel>(launcher, args, dispatcher_utils::qbits_threading::get());
     } else {
-      bestla::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      bestla::parallel::GemmRunWithA<Parallel>(launcher, args, dispatcher_utils::qbits_threading::get());
     }
   } else {
-    using Parallel = bestla::parallel::gemm::SchedulerKBlock<GemmCore>;
+    using Parallel = bestla::parallel::gemm::SchedulerBase<GemmCore>;
     StorageWeight* packedw = dynamic_cast<StorageWeight*>(ctx->deseries_wei);
     if (p->asym || packedw->ShfIndice()) {
       if (p->asym) asym_size = param_a.reduce->mSize;
@@ -170,18 +174,12 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
     bestla::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, p->blocksize);
 
     typename Launcher::Param args{
-        gp,
-        param_a,
-        dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
-        {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
-         p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
-         p->asym ? param_a.reduce->template RPtr<float>() : nullptr, p->asym ? param_a.reduce->lda : -1},
-        param_epi};
+        gp, param_a, dynamic_cast<bestla::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei), param_epi};
 
     if (p->asym || packedw->ShfIndice()) {
-      bestla::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      bestla::parallel::GemmRunWithA<Parallel>(launcher, args, dispatcher_utils::qbits_threading::get());
     } else {
-      bestla::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      bestla::parallel::GemmRun<Parallel>(launcher, args, dispatcher_utils::qbits_threading::get());
     }
   }
   if (tmpbuf != woq_workspace && tmpbuf != nullptr) bestla::utils::afree(tmpbuf);
@@ -238,13 +236,11 @@ void execute_task(woq_config_param* p, woq_runtime_ctx* ctx) {
 template <WOQ_TASK TASK, class GemmCore, template <class _T, BTLA_ISA> class PrologueB,
           template <class _T, BTLA_ISA> class PrologueA, template <BTLA_ISA> class Epilogue>
 void parse_launcher(woq_config_param* p, woq_runtime_ctx* ctx) {
-  if constexpr (GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
-                GemmCore::ISA == BTLA_ISA::AVX_VNNI) {
+  if constexpr (is_int8_cmpt_gemmcore<GemmCore>()) {
     using Launcher = bestla::wrapper::gemm::LauncherIntKBlock<GemmCore::ISA, GemmCore, PrologueA, PrologueB, Epilogue>;
     return execute_task<TASK, Launcher>(p, ctx);
   } else {
-    using Launcher = bestla::wrapper::gemm::LauncherKBlock<GemmCore::ISA, GemmCore, PrologueA, PrologueB,
-                                                           bestla::epilogue::gemm::CompFp32BlockEpilogue, Epilogue>;
+    using Launcher = bestla::wrapper::gemm::LauncherBase<GemmCore::ISA, GemmCore, PrologueA, PrologueB, Epilogue>;
     return execute_task<TASK, Launcher>(p, ctx);
   }
 }
@@ -252,7 +248,6 @@ void parse_launcher(woq_config_param* p, woq_runtime_ctx* ctx) {
 template <WOQ_TASK TASK, class GemmCore, template <class _T, BTLA_ISA> class PrologueB,
           template <class _T, BTLA_ISA> class PrologueA, dispatcher_utils::QBITS_DT ACT_DT>
 void parse_store(woq_config_param* p, woq_runtime_ctx* ctx) {
-  auto constexpr ISA = GemmCore::ISA;
   if (p->dst_dt == dispatcher_utils::QBITS_FP32) {
     return parse_launcher<TASK, GemmCore, PrologueB, PrologueA, AlphaBetaProcessStoreFp32>(p, ctx);
   }
@@ -265,8 +260,7 @@ template <WOQ_TASK TASK, class GemmCore, template <class _T, BTLA_ISA> class Pro
 void parse_activation(woq_config_param* p, woq_runtime_ctx* ctx) {
   using namespace bestla::prologue_a::gemm;
   if (p->src_dt == dispatcher_utils::QBITS_FP32) {
-    if constexpr (GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
-                  GemmCore::ISA == BTLA_ISA::AVX_VNNI) {
+    if constexpr (is_int8_cmpt_gemmcore<GemmCore>()) {
       return parse_store<TASK, GemmCore, PrologueB, ShuffleActivationKBlockQuantizeF32, dispatcher_utils::QBITS_FP32>(
           p, ctx);
     } else {
@@ -275,8 +269,7 @@ void parse_activation(woq_config_param* p, woq_runtime_ctx* ctx) {
     }
   }
   if (p->src_dt == dispatcher_utils::QBITS_BF16) {
-    if constexpr (GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
-                  GemmCore::ISA == BTLA_ISA::AVX_VNNI) {
+    if constexpr (is_int8_cmpt_gemmcore<GemmCore>()) {
       return parse_store<TASK, GemmCore, PrologueB, ShuffleActivationKBlockQuantizeBf16, dispatcher_utils::QBITS_BF16>(
           p, ctx);
     } else {
@@ -289,14 +282,14 @@ void parse_activation(woq_config_param* p, woq_runtime_ctx* ctx) {
 template <WOQ_TASK TASK, class GemmCore>
 void parse_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   using namespace bestla::prologue_b::gemm;
-  if (p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int4_fullrange") {
+  if (p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int3_clip" ||
+      p->weight_type == "int2_clip") {
     return parse_activation<TASK, GemmCore, WeightKBlockNInteger>(p, ctx);
   }
   if (p->weight_type == "nf4" || p->weight_type == "fp4_e2m1_bnb" || p->weight_type == "fp4_e2m1" ||
       p->weight_type == "fp8_e4m3" || p->weight_type == "fp8_e5m2") {
     TORCH_CHECK(!p->asym, "Qbits: float-weight unsupports asym quantization.");
-    if constexpr (GemmCore::ISA != BTLA_ISA::AMX_INT8 && GemmCore::ISA != BTLA_ISA::AVX512_VNNI &&
-                  GemmCore::ISA != BTLA_ISA::AVX_VNNI)
+    if constexpr (!is_int8_cmpt_gemmcore<GemmCore>())
       return parse_activation<TASK, GemmCore, WeightKBlockNFloat>(p, ctx);
   }
   TORCH_CHECK(false,
@@ -308,26 +301,28 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
   set_nk(ctx, ctx->weight);
   p->blocksize = p->blocksize == -1 ? ctx->k : p->blocksize;
   if (p->compute_type == "int8") {
-    TORCH_CHECK(p->asym == false, "Qbits: int8 compute_type doesn't support asym quantization currently.")
-    if (dispatcher_utils::check_amx() && p->blocksize % bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>::KTILE == 0) {
-      return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>>(p, ctx);
+    if (dispatcher_utils::check_amx() && p->blocksize % bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>::KTILE == 0) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>>(p, ctx);
     }
     if (dispatcher_utils::check_avx512_vnni() &&
         p->blocksize % bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::KTILE == 0) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>(p, ctx);
     }
-    if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>::KTILE == 0) {
-      return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>>(p, ctx);
+    if (dispatcher_utils::check_avx_vnni() && p->blocksize % bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>::KTILE == 0) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>>(p, ctx);
+    }
+    if (dispatcher_utils::check_avx2() && p->blocksize % bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>::KTILE == 0) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>(p, ctx);
     }
     TORCH_CHECK(false, "Qbits: Illegal config in int8 compute_type, blocksize:", p->blocksize,
-                ", ISA support vnni:", dispatcher_utils::check_avx_vnni());
+                ", ISA support avx2:", dispatcher_utils::check_avx2());
   }
   if (p->compute_type == "fp32") {
     if (dispatcher_utils::check_avx512f()) {
       return parse_weight<TASK, bestla::gemm::SCoreRowNAvx512f<48, 8>>(p, ctx);
     }
     if (dispatcher_utils::check_avx2()) {
-      return parse_weight<TASK, bestla::gemm::SCoreRowNAvx2<48, 2>>(p, ctx);
+      return parse_weight<TASK, bestla::gemm::SCoreRowNAvx2<24, 4>>(p, ctx);
     }
     TORCH_CHECK(false, "Qbits: device ISA must support BTLA_ISA::AVX2 when compute_type==fp32");
   }
@@ -349,27 +344,26 @@ void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
                                                     bestla::gemm::CoreAttr::NTILE_SHIFT);
   auto CType = bestla::gemm::CoreAttr::get_mask_val(ctx->deseries_wei->mCoreId, bestla::gemm::CoreAttr::COMP_MASK,
                                                     bestla::gemm::CoreAttr::COMP_SHIFT);
-  if (CType == uint32_t(bestla::gemm::CompType::COMP_INT8_US_INT32)) {
-    TORCH_CHECK(p->asym == false, "Qbits: int8 compute_type doesn't support asym quantization currently.")
-    if (NTile == bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>::NTILE && dispatcher_utils::check_amx()) {
-      return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<48, 16>>(p, ctx);
-    }
-  }
   if (CType == uint32_t(bestla::gemm::CompType::COMP_INT8_US_FP32)) {
-    TORCH_CHECK(p->asym == false, "Qbits: int8 compute_type doesn't support asym quantization currently.")
+    if (NTile == bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>::NTILE && dispatcher_utils::check_amx()) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>>(p, ctx);
+    }
     if (NTile == bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::NTILE && dispatcher_utils::check_avx512_vnni()) {
       return parse_weight<TASK, bestla::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>(p, ctx);
     }
-    if (NTile == bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>::NTILE && dispatcher_utils::check_avx_vnni()) {
-      return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<48, 2>>(p, ctx);
+    if (NTile == bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>::NTILE && dispatcher_utils::check_avx_vnni()) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAvxvnniKBlock<24, 2>>(p, ctx);
+    }
+    if (NTile == bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>::NTILE && dispatcher_utils::check_avx2()) {
+      return parse_weight<TASK, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>(p, ctx);
     }
   }
   if (CType == uint32_t(bestla::gemm::CompType::COMP_FP32)) {
     if (NTile == bestla::gemm::SCoreRowNAvx512f<48, 8>::NTILE && dispatcher_utils::check_avx512f()) {
       return parse_weight<TASK, bestla::gemm::SCoreRowNAvx512f<48, 8>>(p, ctx);
     }
-    if (NTile == bestla::gemm::SCoreRowNAvx2<48, 2>::NTILE && dispatcher_utils::check_avx2()) {
-      return parse_weight<TASK, bestla::gemm::SCoreRowNAvx2<48, 2>>(p, ctx);
+    if (NTile == bestla::gemm::SCoreRowNAvx2<24, 4>::NTILE && dispatcher_utils::check_avx2()) {
+      return parse_weight<TASK, bestla::gemm::SCoreRowNAvx2<24, 4>>(p, ctx);
     }
   }
   if (CType == uint32_t(bestla::gemm::CompType::COMP_BF16_FP32)) {
@@ -392,6 +386,8 @@ void parse_gemm_core(woq_config_param* p, woq_runtime_ctx* ctx) {
 }
 
 void dispatch_woq_task(woq_config_param* p, woq_runtime_ctx* ctx, WOQ_TASK task) {
+  TORCH_CHECK(!(p->asym && (p->compute_type == "int8" && p->weight_type == "int8")),
+              "QBits: unsupported bestla_config, asym quantization in int8 compute_type with int8 weight_type.");
   switch (task) {
     case WOQ_QUANTIZE:
       return parse_gemm_core<WOQ_QUANTIZE>(p, ctx);

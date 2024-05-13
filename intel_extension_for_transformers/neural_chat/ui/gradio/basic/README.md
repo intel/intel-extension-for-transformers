@@ -48,6 +48,8 @@ Install the required Python dependencies using pip:
 pip install gradio==3.36.0
 pip install -r requirements.txt
 ```
+>**Note**: Please check if gradio=3.36.0 like `pip list | grep gradio`.
+
 
 ## Run the frontend
 

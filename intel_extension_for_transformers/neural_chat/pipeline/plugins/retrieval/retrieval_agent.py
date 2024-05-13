@@ -202,7 +202,7 @@ class Agent_QA():
                                                                     embedding=self.embeddings, **kwargs)
             else:
                 knowledge_base = self.database.build(documents=langchain_documents, embedding=self.embeddings, **kwargs)
-                child_knowledge_base = self.database.build(documents=langchain_documents, embedding=self.embeddings, \
+                child_knowledge_base = self.database.build(documents=child_documents, embedding=self.embeddings, \
                                             sign='child', **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                child_document_store=child_knowledge_base, **kwargs)

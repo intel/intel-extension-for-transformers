@@ -13,7 +13,7 @@ on:
        - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
        - "!intel_extension_for_transformers/transformers/runtime/docs/**"
   workflow_dispatch:
-
+permissions: write-all
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -130,7 +130,7 @@ jobs:
           RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
           BUILD_NUMBER: ${{ github.run_id }}
           JOB_STATUS: succeed
-          MR_source_branch: ${{ github.head_ref }}
+          MR_source_branch: ${{ github.event.pull_request._links.html.href }}
           ghprbActualCommit: ${{ github.event.pull_request.head.sha }}
 
       - name: Publish Report

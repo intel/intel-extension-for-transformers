@@ -65,3 +65,11 @@ qbits.woq_linear(
         activation, pack_weight, bias, output, n, add_bias, compute_type, weight_type, scale_type, asym)
 ```
 please refer [here](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/transformers/llm/operator/csrc/qbits_ut) for more QBits operators usage.
+
+## Pytorch version constrain
+If user wants to use QBits, the Pytorch version must meet ITREX requirements, here are the constrains:
+
+| ITREX version | Pytorch version |
+| :-----------: | :-------------: |
+|     v1.4      |    2.2.0+cpu    |
+|    v1.4.1     |    2.2.0+cpu    |
