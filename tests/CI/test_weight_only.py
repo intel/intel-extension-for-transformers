@@ -86,9 +86,9 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_woq_config(self):
         config = RtnConfig(
-            bits=4, weight_dtype="int4_fullrange", group_size=32)
+            bits=4, weight_dtype="int4_clip", group_size=32)
         diff_res = config.to_diff_dict()
-        ref_config = {'weight_dtype': 'int4_fullrange'}
+        ref_config = {'weight_dtype': 'int4_clip'}
         self.assertEqual(diff_res, ref_config)
         print(diff_res)
         print(config.to_dict())
@@ -133,10 +133,10 @@ class TestWeightOnly(unittest.TestCase):
     def test_int4(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
         compress_wei = qbits.quantize_to_packed_weight(
-            raw_wei, True, 32, "fp32", "int4_fullrange", "fp32", False)
+            raw_wei, True, 32, "fp32", "nf4", "fp32", False)
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
         qbits.dequantize_packed_weight(compress_wei, revert_wei, True,
-                             "fp32", "int4_fullrange", "fp32")
+                             "fp32", "nf4", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
@@ -146,7 +146,7 @@ class TestWeightOnly(unittest.TestCase):
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(raw_wei)
             config = RtnConfig(
-                bits=4, weight_dtype="int4_fullrange", group_size=32)
+                bits=4, weight_dtype="nf4", group_size=32)
             config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
@@ -173,6 +173,7 @@ class TestWeightOnly(unittest.TestCase):
         output = model.generate(
             input_ids, max_new_tokens=int(5), num_beams=1
         )
+        # if used transformers 4.39, the output len is 1.
         self.assertTrue(len(output) == 2 and isinstance(output[1], list))
         output = model.generate(
             input_ids, max_new_tokens=int(5), num_beams=2

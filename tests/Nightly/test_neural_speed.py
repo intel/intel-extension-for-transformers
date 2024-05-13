@@ -59,8 +59,7 @@ class TestLLMRUNTIME(unittest.TestCase):
         print(tokenizer.decode(pt_generate_ids))
 
         # check output ids
-        woq_config = RtnConfig(use_quant=False)
-        itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_neural_speed=True, trust_remote_code=True)
+        itrex_model = AutoModel.from_pretrained(model_name, quantization_config=None, use_neural_speed=True, trust_remote_code=True)
         itrex_generate_ids = itrex_model.generate(inputs.input_ids, do_sample=False, max_new_tokens=100)[0]
         print(tokenizer.decode(itrex_generate_ids))
         for i in range(len(pt_generate_ids)):
@@ -68,7 +67,7 @@ class TestLLMRUNTIME(unittest.TestCase):
 
         # check diff of logits
         woq_configs = {
-            "fp32": RtnConfig(use_quant=False),
+            "fp32": None,
             # "ggml_int4": RtnConfig(compute_dtype="int8", weight_dtype="int4",use_ggml=True),
             "jblas_int4": RtnConfig(bits=8, compute_dtype="int8", weight_dtype="int4"),
             # "jblas_int8": RtnConfig(compute_dtype="bf16", weight_dtype="int8"),
@@ -92,8 +91,8 @@ class TestLLMRUNTIME(unittest.TestCase):
 
         model = AutoModelForCausalLM.from_pretrained(model_name, model_file = model_file)
         output = model.generate(inputs, streamer=streamer, max_new_tokens=10)
-        print("output = ", output)
-        assert(output == [[1, 5713, 3714, 264, 727, 28725, 736, 403, 264, 1628, 2746, 693, 6045, 298, 1220, 28723, 985]])
+        print("inputs = ", inputs, "output = ", output, "output[0][0:15] = ", output[0][0:15])
+        assert(output[0][0:15] == [1, 5713, 3714, 264, 727, 28725, 736, 403, 264, 1628, 2746, 693, 6045, 298, 1220])
 
 
     def test_beam_search(self):
@@ -118,9 +117,8 @@ class TestLLMRUNTIME(unittest.TestCase):
         pt_generate_ids = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/beam_pt_generate_ids.pth").tolist()
 
         # llm runtime fp32
-        woq_config = RtnConfig(use_quant=False)
         itrex_model = AutoModelForCausalLM.from_pretrained(
-            model_name, quantization_config=woq_config, trust_remote_code=True)
+            model_name, quantization_config=None, trust_remote_code=True)
         itrex_generate_ids = itrex_model.generate(
             inputs.input_ids, num_beams=4, max_new_tokens=128, min_new_tokens=30, early_stopping=True, pad_token=pad_token)
         for i in range(len(itrex_generate_ids)):

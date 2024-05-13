@@ -273,10 +273,8 @@ class QueryRequest(RequestBaseModel):
 
 
 class FeedbackRequest(RequestBaseModel):
-    """
-    Request class for feedback api
-    'feedback_id' is set to be auto_increment, no need to pass as argument
-    """
+    """Request class for feedback api
+    'feedback_id' is set to be auto_increment, no need to pass as argument."""
     # feedback_id: Optional[int] = None
     question: str
     answer: str

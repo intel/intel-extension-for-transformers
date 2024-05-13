@@ -1,4 +1,4 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 cmake
 ninja
-torch
+torch==2.3.0+cpu

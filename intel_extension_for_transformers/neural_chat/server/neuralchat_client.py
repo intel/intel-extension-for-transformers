@@ -135,9 +135,7 @@ class TextChatClientExecutor(BaseCommandExecutor):
                  repetition_penalty: float=1.1,
                  max_new_tokens: int=128,
                  stream: bool=False):
-        """
-        Python API to call an executor.
-        """
+        """Python API to call an executor."""
 
         url = 'http://' + server_ip + ":" + str(port) + '/v1/chat/completions'
         request = {

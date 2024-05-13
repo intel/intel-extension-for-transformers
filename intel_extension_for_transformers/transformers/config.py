@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Config: provide config classes for optimization processes."""
 
 import yaml
@@ -970,12 +969,11 @@ class AutoDistillationConfig(object):
 
 
 class NASConfig(object):
-    """config parser.
+    """Config parser.
 
     Args:
         approach: The approach of the NAS.
         search_algorithm: The search algorithm for NAS procedure.
-
     """
 
     def __init__(self,
@@ -1212,9 +1210,7 @@ class BenchmarkConfig:
 
 @constructor_register
 class PrunerV2:
-    """
-    similar to torch optimizer's interface
-    """
+    """Similar to torch optimizer's interface."""
 
     def __init__(self,
                  target_sparsity=None, pruning_type=None, pattern=None, op_names=None,

@@ -51,7 +51,7 @@ from intel_extension_for_transformers.transformers.pruner import (WeightPruningC
                                                                   prepare_pruning,
                                                                   model_slim,
                                                                   parse_auto_slim_config)
-from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
+from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
 
 check_min_version("4.27.0.dev0")
 logger = logging.getLogger(__name__)
@@ -588,14 +588,14 @@ def main():
     model_args = f'pretrained={model_name},tokenizer={model_name},dtype={dtype},use_accelerate={args.use_accelerate},trust_remote_code={args.trust_remote_code}'
     eval_batch = args.per_device_eval_batch_size
     user_model = None if args.use_accelerate else model
-    results = evaluate(
-            model="hf-causal",
-            model_args=model_args,
+    eval_args = LMEvalParser(
+            model="hf",
             user_model=user_model,
             batch_size=eval_batch,
             tasks=args.tasks,
             device=device,
     )
+    results = evaluate(eval_args)
     
 if __name__ == "__main__":
     main()

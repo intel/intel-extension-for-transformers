@@ -8,12 +8,13 @@ on:
       - "requirements.txt"
       - "setup.py"
       - "intel_extension_for_transformers/transformers/runtime/**"
-      - "intel_extension_for_transformers/transformers/llm/operator/**"
+      - "intel_extension_for_transformers/qbits/**"
       - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
       - "!intel_extension_for_transformers/transformers/runtime/docs/**"
       - "!intel_extension_for_transformers/transformers/runtime/test/**"
+      - "!intel_extension_for_transformers/qbits/qbits_ut/**"
   workflow_dispatch:
-
+permissions: write-all
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
     group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

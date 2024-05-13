@@ -35,8 +35,8 @@ def compute_v(
     context_templates: List[str],
     batch_first: Optional[bool] = True
 ) -> torch.Tensor:
-    r"""
-    Computes the value (right) vector for the rank-1 update.
+    r"""Computes the value (right) vector for the rank-1 update.
+
     Runs a simple optimization procedure.
     """
 
@@ -196,9 +196,7 @@ def get_module_input_output_at_word(
     fact_token_strategy: str,
     batch_first: Optional[bool] = True
 ) -> Tuple[torch.Tensor]:
-    r"""
-    Retrieves detached representations for a word at the input and output of a particular layer module.
-    """
+    r"""Retrieves detached representations for a word at the input and output of a particular layer module."""
 
     word_repr_args = dict(
         model=model,
@@ -235,9 +233,7 @@ def find_fact_lookup_idx(
     fact_token_strategy: str,
     verbose: Optional[bool] = True,
 ) -> int:
-    r"""
-    Computes hypothesized fact lookup index given a sentence and subject.
-    """
+    r"""Computes hypothesized fact lookup index given a sentence and subject."""
 
     ret = None
     if fact_token_strategy == "last":

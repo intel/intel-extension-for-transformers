@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """AutoDistillation: handling the whole pipeline of AutoDistillation for both pytorch and tensorflow framework."""
 
 from pickletools import optimize
@@ -73,6 +72,7 @@ class AutoDistillation(NASBase):
             Best model architecture found in search process.
         """
         def reload_tf_model(model):
+            model.build()
             with tempfile.TemporaryDirectory() as tmp_dir:
                 model.save_pretrained(tmp_dir)
                 assert model_cls, 'model_cls should not be None'

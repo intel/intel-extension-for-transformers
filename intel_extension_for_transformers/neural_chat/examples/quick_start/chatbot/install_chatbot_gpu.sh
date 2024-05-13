@@ -15,14 +15,16 @@
 
 pip install intel-extension-for-transformers==1.3.2
 
-git clone https://github.com/intel/intel-extension-for-transformers.git itrex
-cd itrex
-git checkout v1.3.2 #
+cd ~/itrex
 
-cd intel_extension_for_transformers/neural_chat
+git checkout 989671d365ce6bfd9ef2ad34c2bc1d8614dd708e
+
+cd ./intel_extension_for_transformers/neural_chat
 
 # Install neural-chat dependency for Intel GPU
 pip install -r requirements_xpu.txt
 
 pip install accelerate==0.28.0
+pip install transformers_stream_generator==0.0.5
 
+git checkout main

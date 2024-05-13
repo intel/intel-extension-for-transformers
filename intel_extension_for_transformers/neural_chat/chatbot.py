@@ -169,6 +169,7 @@ def build_chatbot(config: PipelineConfig=None):
             "magicoder" in config.model_name_or_path.lower() or \
             "mixtral" in config.model_name_or_path.lower() or \
             "phi-2" in config.model_name_or_path.lower() or \
+            "baichuan" in config.model_name_or_path.lower() or \
             "sqlcoder" in config.model_name_or_path.lower():
             from .models.base_model import BaseModel
             adapter = BaseModel(config.model_name_or_path, config.task)
@@ -292,6 +293,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
+    parameters["use_tpp"] = config.loading_config.use_tpp
     parameters["use_neural_speed"] = config.loading_config.use_neural_speed
     parameters["gguf_model_path"] = config.loading_config.gguf_model_path
     parameters["optimization_config"] = config.optimization_config

@@ -31,17 +31,16 @@ logging.basicConfig(
 
 class DocumentParser:
     def __init__(self, max_chuck_size=512, min_chuck_size=5, process=True):
-        """
-        Wrapper for document parsing.
-        """
+        """Wrapper for document parsing."""
         self.max_chuck_size = max_chuck_size
         self.min_chuck_size = min_chuck_size
         self.process = process
 
 
     def load(self, input, **kwargs):
-        """
-        The API for loading the file. Support single file, batch files, and urls parsing.
+        """The API for loading the file.
+
+        Support single file, batch files, and urls parsing.
         """
         if 'max_chuck_size' in kwargs:
             self.max_chuck_size=kwargs['max_chuck_size']
@@ -69,9 +68,7 @@ class DocumentParser:
 
 
     def parse_document(self, input):
-        """
-        Parse the uploaded file.
-        """
+        """Parse the uploaded file."""
         if input.endswith("pdf") or input.endswith("docx") or input.endswith("html") \
            or input.endswith("txt") or input.endswith("md") or input.endswith("pptx"):
             content = load_unstructured_data(input)
@@ -89,9 +86,7 @@ class DocumentParser:
         return chuck
 
     def parse_html(self, input):
-        """
-        Parse the uploaded file.
-        """
+        """Parse the uploaded file."""
         chucks = []
         for link in input:
             if re.match(r'^https?:/{2}\w.+$', link):
@@ -110,14 +105,12 @@ class DocumentParser:
 
 
     def batch_parse_document(self, input):
-        """
-        Parse the uploaded batch files in the input folder.
-        """
+        """Parse the uploaded batch files in the input folder."""
         paragraphs = []
         for dirpath, dirnames, filenames in os.walk(input):
             for filename in filenames:
                 if filename.endswith("pdf") or filename.endswith("docx") or filename.endswith("html") \
-                    or filename.endswith("txt") or filename.endswith("md") or filename.endswith("pptx"):
+                    or filename.endswith("txt") or filename.endswith("md") or input.endswith("pptx"):
                     content = load_unstructured_data(os.path.join(dirpath, filename))
                     if self.process:
                         chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)

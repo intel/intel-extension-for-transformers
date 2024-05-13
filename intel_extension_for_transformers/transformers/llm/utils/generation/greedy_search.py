@@ -67,9 +67,9 @@ def _greedy_search(
     streamer: Optional["BaseStreamer"] = None,
     **model_kwargs,
 ) -> Union[GreedySearchOutput, torch.LongTensor]:
-    r"""
-    Generates sequences of token ids for models with a language modeling head using **greedy decoding** and can be
+    r"""Generates sequences of token ids for models with a language modeling head using **greedy decoding** and can be
     used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
+
     <Tip warning={true}>
     In most cases, you do not need to call [`~generation.GenerationMixin.greedy_search`] directly. Use generate()
     instead. For an overview of generation strategies and code examples, check the [following
@@ -143,7 +143,8 @@ def _greedy_search(
     ... )
     >>> tokenizer.batch_decode(outputs, skip_special_tokens=True)
     ["It might be possible to get a better understanding of the nature of the problem, but it's not"]
-    ```"""
+    ```
+    """
     token_latency = (
         self.config.token_latency if hasattr(self.config, "token_latency") else False
     ) or (self.token_latency if hasattr(self, "token_latency") else False)

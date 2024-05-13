@@ -14,8 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""The wrapper for Retriever based on langchain"""
+"""The wrapper for Retriever based on langchain."""
 from intel_extension_for_transformers.langchain_community.retrievers import ChildParentRetriever  # pylint: disable=E0401, E0611
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_community.retrievers import BM25Retriever

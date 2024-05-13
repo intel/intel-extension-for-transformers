@@ -82,7 +82,7 @@ docker run -it --runtime=habana --name="chatbot" -e HABANA_VISIBLE_DEVICES=all -
 docker exec -it chatbot /bin/bash
 ## run inference unittest
 pip install -r pipeline/plugins/audio/requirements.txt
-pip install --upgrade --force-reinstall torch==2.2.0
+pip install --upgrade --force-reinstall torch==2.3.0
 cd tests/ci/api
 python test_inference.py
 

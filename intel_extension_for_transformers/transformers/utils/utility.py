@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Utils for pytorch framework."""
 
 import argparse
@@ -97,9 +96,7 @@ def _build_inc_dataloader(dataloader):
 
 
 def generate_dummy_past_key_values(config, input_bs):
-    """
-    Generate the dummy past_key_values.
-    """
+    """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
 
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
@@ -157,9 +154,7 @@ def generate_dummy_past_key_values(config, input_bs):
     return tuple(past_key_values)
 
 def generate_dummy_past_key_values_for_inference(config, input_bs):
-    """
-    Generate the dummy past_key_values.
-    """
+    """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
 
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
@@ -209,9 +204,7 @@ def generate_dummy_past_key_values_for_inference(config, input_bs):
     return tuple(past_key_values)
 
 def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
-    """
-    Generate the dummy past_key_values.
-    """
+    """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
 
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
@@ -272,8 +265,7 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
 }
 
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
-    """Generate the dummy example inputs.
-    """
+    """Generate the dummy example inputs."""
     prompt = "Welcome to use Intel Extension for Transformers."
     prompt = [prompt] * batch_size
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
@@ -310,7 +302,60 @@ def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
                 }
     return example_inputs
 
-def recover_model_from_json(user_model, json_file_path, trust_remote_code=False):
+
+def make_torchscript_model(model, json_file_path, example_inputs):
+    """Recover ipex model from JSON file.
+
+    Args:
+        model (object): fp32 model need to do quantization.
+        json_file_path (json): configuration JSON file for ipex.
+        example_inputs (tuple or torch.Tensor or dict): example inputs that will be passed to the ipex function.
+
+    Returns:
+        (object): quantized model
+    """
+
+    ipex = LazyImport("intel_extension_for_pytorch")
+    from torch.ao.quantization.observer import MinMaxObserver
+
+    if ipex.__version__ >= "2.1.100":
+        qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5, act_observer=MinMaxObserver)
+    else:
+        qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5, act_observer=MinMaxObserver())
+    if isinstance(example_inputs, dict):
+        model = ipex.quantization.prepare(model, qconfig, example_kwarg_inputs=example_inputs, inplace=True)
+    else:
+        model = ipex.quantization.prepare(model, qconfig, example_inputs=example_inputs, inplace=True)
+    model.load_qconf_summary(qconf_summary=json_file_path)
+    model = ipex.quantization.convert(model, inplace=True)
+    model.eval()
+    with torch.no_grad():
+        try:
+            if isinstance(example_inputs, dict):
+                # pylint: disable=E1120,E1123
+                model = torch.jit.trace(model, example_kwarg_inputs=example_inputs)
+            else:
+                model = torch.jit.trace(model, example_inputs)
+            model = torch.jit.freeze(model.eval())
+        except:
+            if isinstance(example_inputs, dict):
+                # pylint: disable=E1120,E1123
+                model = torch.jit.trace(model, example_kwarg_inputs=example_inputs, strict=False, check_trace=False)
+            else:
+                model = torch.jit.trace(model, example_inputs, strict=False)
+            model = torch.jit.freeze(model.eval())
+        if isinstance(example_inputs, dict):
+            model(**example_inputs)
+            model(**example_inputs)
+        elif isinstance(example_inputs, tuple) or isinstance(example_inputs, list):
+            model(*example_inputs)
+            model(*example_inputs)
+        else:
+            model(example_inputs)
+            model(example_inputs)
+    return model
+
+def recover_model_from_json(fp32_model_name_or_path, json_file_path, trust_remote_code=False):
     """Recover ipex model from JSON file.
 
     Args:
@@ -321,6 +366,8 @@ def recover_model_from_json(user_model, json_file_path, trust_remote_code=False)
     Returns:
         (object): quantized model
     """
+    from transformers import AutoModelForCausalLM
+    user_model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path, trust_remote_code=trust_remote_code)
     if user_model.config.model_type in IPEX_OPT_LLM_SUPPORTED:
         import intel_extension_for_pytorch as ipex
         qconfig = ipex.quantization.default_static_qconfig_mapping
@@ -346,7 +393,12 @@ def recover_model_from_json(user_model, json_file_path, trust_remote_code=False)
     example_inputs = get_example_inputs(user_model.config, tokenizer=tokenizer)
 
     # pylint: disable=E0611
-    from neural_compressor.utils.pytorch import recover_model_from_json as inc_recover_model_from_json
     user_model.config.torchscript = True
-    user_model = inc_recover_model_from_json(user_model, json_file_path, example_inputs)
+    config = user_model.config
+    user_model = make_torchscript_model(user_model, json_file_path, example_inputs)
+    import intel_extension_for_pytorch as ipex
+    from intel_extension_for_transformers.transformers.llm.evaluation.models import (
+        TSModelCausalLMForITREX,
+    )
+    user_model = TSModelCausalLMForITREX(user_model, config=config)
     return user_model

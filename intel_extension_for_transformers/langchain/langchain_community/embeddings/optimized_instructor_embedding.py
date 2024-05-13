@@ -37,7 +37,7 @@ class OptimizedInstructorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer)
         super().__init__(*args, **kwargs)
 
     def _load_model(self, model_name_or_path, config, cache_dir, **model_args):
-        """Loads the transformer model"""
+        """Loads the transformer model."""
         self.auto_model = OptimizedModel.from_pretrained(model_name_or_path,
                                                             config=config,
                                                             cache_dir=cache_dir,
@@ -46,7 +46,7 @@ class OptimizedInstructorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer)
             setattr(self.auto_model, "config", config)
 
     def forward(self, features):
-        """Returns token_embeddings, cls_token"""
+        """Returns token_embeddings, cls_token."""
         trans_features = {'input_ids': features['input_ids'], 'attention_mask': features['attention_mask']}
         if 'token_type_ids' in features: # pragma: no cover
             trans_features['token_type_ids'] = features['token_type_ids']

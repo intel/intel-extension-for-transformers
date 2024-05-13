@@ -84,8 +84,7 @@ def neuralchat_execute():
 
 @cli_register(name='neuralchat')
 class BaseCommand:
-    """
-    BaseCommand class serving as a foundation for other neuralchat commands.
+    """BaseCommand class serving as a foundation for other neuralchat commands.
 
     This class provides a common structure for neuralchat commands. It includes a
     default implementation of the execute method, which acts as a fallback and
@@ -110,8 +109,7 @@ class BaseCommand:
 
 @cli_register(name='neuralchat.help', description='Show help for neuralchat commands.')
 class HelpCommand:
-    """
-    HelpCommand class for displaying help about available neuralchat commands.
+    """HelpCommand class for displaying help about available neuralchat commands.
 
     This class provides the functionality to display a list of available neuralchat
     commands and their descriptions. It helps users understand how to use different
@@ -141,8 +139,7 @@ class HelpCommand:
 
 
 class TextVoiceChatExecutor(BaseCommandExecutor):
-    """
-    TextVoiceChatExecutor class for executing text-based or voice-based conversations with a chatbot.
+    """TextVoiceChatExecutor class for executing text-based or voice-based conversations with a chatbot.
 
     This class extends the BaseCommandExecutor class and provides functionality for
     interacting with a chatbot through the command line or the Python API. It initializes
@@ -155,11 +152,9 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
     Methods:
         execute(argv): Execute the chatbot using command-line arguments.
         __call__(prompt): Python API for calling the chatbot executor.
-
     """
     def __init__(self):
-        """
-        Initializes the TextVoiceChatExecutor class.
+        """Initializes the TextVoiceChatExecutor class.
 
         This constructor sets up the necessary components for the chatbot executor.
         It creates a command-line argument parser, initializes the configuration,
@@ -178,9 +173,7 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
             '--device', type=str, default=None, help='Specify chat on which device.')
 
     def execute(self, argv: List[str]) -> bool:
-        """
-        Command line entry point.
-        """
+        """Command line entry point."""
         parser_args = self.parser.parse_args(argv)
 
         prompt = parser_args.query
@@ -210,9 +203,7 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
     def __call__(
             self,
             prompt: str):
-        """
-            Python API to call an executor.
-        """
+        """Python API to call an executor."""
         result = self.chatbot.chat(prompt)
         return result
 
@@ -231,9 +222,7 @@ class FinetuingExecutor(BaseCommandExecutor):
             '--max_steps', type=int, default=None, help='Specify max steps of finetuning.')
 
     def execute(self, argv: List[str]) -> bool:
-        """
-            Command line entry.
-        """
+        """Command line entry."""
         parser_args = self.parser.parse_args(argv)
         base_model = parser_args.base_model
         device = parser_args.device
@@ -259,9 +248,7 @@ class FinetuingExecutor(BaseCommandExecutor):
             return False
 
     def __call__(self):
-        """
-            Python API to call an executor.
-        """
+        """Python API to call an executor."""
         finetune_model(self.finetuneCfg)
 
 specific_commands = {

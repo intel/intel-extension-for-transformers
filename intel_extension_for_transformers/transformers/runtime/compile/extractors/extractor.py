@@ -14,11 +14,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine base extractor file.
 
-   This is the base extractor class for tensorflow and onnx.
-   Please refer to onnx_extractor.py and tf_extractor.py for more details.
+This is the base extractor class for tensorflow and onnx.
+Please refer to onnx_extractor.py and tf_extractor.py for more details.
 """
 
 from .tf_extractor import TensorflowExtractor

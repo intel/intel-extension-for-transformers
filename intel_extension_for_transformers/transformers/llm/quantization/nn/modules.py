@@ -15,9 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import os
 import torch
+from ..utils import DTYPE_BITS_MAPPING
 from functools import reduce
 from operator import mul
 from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
@@ -100,14 +99,38 @@ class QuantizedLinearQBits(torch.nn.Linear):
         blocksize=32,
         scheme="sym",
         device=None,
+        double_quant_scale_dtype=None,
+        compression_dtype=torch.int32,
+        compression_dim=1,
+        use_optimum_format=False,
     ):
         super().__init__(input_features, output_features, bias, device)
+        self.device = device
         self.compute_dtype = compute_dtype
         self.compress_statistics = compress_statistics
         self.blocksize = blocksize
         self.scheme = scheme
         self.weight_dtype = weight_dtype
+        self.bits = DTYPE_BITS_MAPPING[weight_dtype]
         self.scale_dtype = scale_dtype
+        self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.compression_dim = compression_dim
+        assert compression_dtype in [
+            torch.int8,
+            torch.int16,
+            torch.int32,
+            torch.int64,
+        ], "Only support torch.int8|16|32|64 as compressed dtype."
+        self.compression_dtype = compression_dtype
+        self.n_pack = self.compression_dtype.itemsize * 8 // self.bits
+        # `use_optimum_format` is for GPTQ model, if it is True, it's weight is k x n,
+        # so it needn't to transpose in optimized operator.
+        self.use_optimum_format = use_optimum_format
+        if self.use_optimum_format:
+            self.scale_dtype = "fp16"
+            self.compression_dtype = torch.int32
+        else:
+            self.compression_dtype = compression_dtype
 
     def forward(self, x: torch.Tensor):
         # weights are cast automatically as Int8Params, but the bias has to be cast manually
@@ -190,9 +213,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
             else:
                 g_idx = torch.empty(0, dtype=torch.int32)
         if q_config.bits == 4:
-            int_weight = (int_weight - 8) * 16
-            gptq_scales = gptq_scales / 16
-            gptq_zeros = (gptq_zeros - 8) * 16
+            int_weight = (int_weight - 8) * 16 // 16
+            gptq_zeros = (gptq_zeros - 8) * 16 // 16
 
         if q_config.sym:
             gptq_zeros = torch.empty(0, dtype=torch.int8)
@@ -321,13 +343,12 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if scales_dtype is None:
             assert False, "scales dtype only support fp32."
         scales = qbits.acquire_packed_weight_info(self.weight, 9)
-        if bits == 4:
-            scales = scales * 16
+
         zp = qbits.acquire_packed_weight_info(self.weight, 11)[0] != 0
         if zp:
             qzeros = qbits.acquire_packed_weight_info(self.weight, 10)
             if bits == 4:
-                qzeros = qzeros // 16 + 8
+                qzeros = qzeros + 8
             else:
                 qzeros = (qzeros.to(torch.int32) + 128).to(torch.uint8)
         else:
@@ -410,8 +431,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             )
 
     def merge(self, safe_merge: bool = False) -> None:
-        """
-        Merge the active adapter weights into the base weights
+        """Merge the active adapter weights into the base weights.
 
         Args:
             safe_merge (`bool`, *optional*):
