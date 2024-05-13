@@ -338,7 +338,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             raise ValueError("scheme must be a string")
 
         if self.scheme == "asym" and (
-            self.compute_dtype == "int8"
+            (self.compute_dtype == "int8" and self.weight_dtype == "int8")
             or self.weight_dtype.startswith("fp")
             or self.weight_dtype.startswith("nf")
             or self.scale_dtype != "fp32"
