@@ -50,6 +50,7 @@ function init_params {
        ;;
        --scheme=*)
            scheme=$(echo $var |cut -f2 -d=)
+       ;;
       *)
           echo "Error: No such parameter: ${var}"
           exit 1
