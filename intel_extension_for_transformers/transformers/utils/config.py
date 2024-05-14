@@ -774,6 +774,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.dataset = None
         self.calib_func = None
         self.calib_iters = None
+        self.use_ipex_cpu = kwargs.pop("use_ipex_cpu", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes
@@ -873,6 +874,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.use_ipex_cpu = kwargs.pop("use_ipex_cpu", False)
         self.post_init_gptq()
 
     def post_init_gptq(self):
@@ -951,6 +953,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
         self.sym = True if not self.zero_point else False
+        self.use_ipex_cpu = kwargs.pop("use_ipex_cpu", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes
@@ -1012,6 +1015,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
+        self.use_ipex_cpu = kwargs.pop("use_ipex_cpu", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes
@@ -1105,6 +1109,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
             )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.use_ipex_cpu = kwargs.pop("use_ipex_cpu", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes

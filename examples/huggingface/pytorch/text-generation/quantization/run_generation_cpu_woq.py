@@ -28,6 +28,7 @@ parser.add_argument(
     "--max_new_tokens", default=32, type=int, help="output max new tokens"
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
+parser.add_argument("--use_ipex_cpu", action="store_true")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--iters", default=100, type=int, help="num iter")
@@ -215,6 +216,7 @@ if args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             layer_wise=args.layer_wise,
+            use_ipex_cpu=args.use_ipex_cpu,
         )
     elif args.woq_algo == "Awq":
         quantization_config = AwqConfig(
@@ -388,6 +390,8 @@ if args.accuracy:
         model_args += ",model_format=neural_speed"
     args = LMEvalParser(model = "hf", 
                         model_args=model_args,
+                        #user_model=user_model,
+                        #tokenizer=tokenizer,
                         tasks = args.tasks,
                         device = "cpu",
                         batch_size = args.batch_size)
