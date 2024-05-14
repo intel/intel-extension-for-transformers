@@ -247,7 +247,8 @@ def save_low_bit(
             for name, module in model.named_modules():
                 if isinstance(module, ipex_cpu_linear):
                     linear_parameters[name + ".ipex_scales"] = module._op_context.get_scales().contiguous()
-                    linear_parameters[name + ".ipex_weight"] = module._op_context.to_public(module._op_context.get_weight()).contiguous()
+                    linear_parameters[name + ".ipex_weight"] = \
+                        module._op_context.to_public(module._op_context.get_weight()).contiguous()
                     linear_parameters[name + ".ipex_zeros"] = module._op_context.get_zero_points().contiguous()
                     if module._op_context.get_bias() is not None:
                         linear_parameters[name + ".ipex_bias"] = module._op_context.get_bias().contiguous()
@@ -1850,7 +1851,6 @@ class _BaseQBitsAutoModelClass:
                 for name, module in model.named_children():
                     current_name.append(name)
                     if isinstance(module, WeightOnlyLinear):
-                        print("Replacing linear layer:", '.'.join(current_name))
                         weight_dtype = {
                             4: ipex.quantization.WoqWeightDtype.INT4,
                             8: ipex.quantization.WoqWeightDtype.INT8,
@@ -1882,9 +1882,11 @@ class _BaseQBitsAutoModelClass:
                             qweight = state_dict.pop('.'.join(current_name) + ".ipex_weight"),
                             scales = state_dict.pop('.'.join(current_name) + ".ipex_scales"),
                             zero_points = state_dict.pop('.'.join(current_name) + ".ipex_zeros"),
-                            bias = state_dict.pop('.'.join(current_name) + ".ipex_bias") if '.'.join(current_name) + ".ipex_bias" in state_dict else None,
+                            bias = state_dict.pop('.'.join(current_name) + ".ipex_bias") \
+                                if '.'.join(current_name) + ".ipex_bias" in state_dict else None,
                             group_size = quantization_config.group_size,
-                            g_idx = state_dict.pop('.'.join(current_name) + ".ipex_g_idx") if '.'.join(current_name) + ".ipex_g_idx" in state_dict else None,
+                            g_idx = state_dict.pop('.'.join(current_name) + ".ipex_g_idx") \
+                                if '.'.join(current_name) + ".ipex_g_idx" in state_dict else None,
                         )
                         setattr(model, name, target_linear)
                     else:

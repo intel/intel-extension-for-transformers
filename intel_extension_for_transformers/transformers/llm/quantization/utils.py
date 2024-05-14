@@ -185,9 +185,12 @@ def _replace_linear(
                     ):
                         if is_ipex_available() and quantization_config.use_ipex:
                             from intel_extension_for_pytorch.nn.modules import WeightOnlyQuantizedLinear as ipex_linear
-                            from intel_extension_for_pytorch.utils.weight_only_quantization import _convert_optimum_format_to_desired
+                            from intel_extension_for_pytorch.utils.weight_only_quantization import \
+                                  _convert_optimum_format_to_desired
 
-                            qweight, scales, qzeros = _convert_optimum_format_to_desired(module.qweight, module.scales, module.qzeros)
+                            qweight, scales, qzeros = _convert_optimum_format_to_desired(module.qweight,
+                                                                                          module.scales,
+                                                                                            module.qzeros)
 
                             weight_dtype = {
                                 4: ipex.quantization.WoqWeightDtype.INT4,
