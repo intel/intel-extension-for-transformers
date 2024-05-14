@@ -208,7 +208,6 @@ quantization_config = None
 if args.woq:
     if args.woq_algo == "Rtn":
         quantization_config = RtnConfig(
-            tokenizer=tokenizer,
             bits=args.bits,
             sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
