@@ -183,7 +183,7 @@ def _replace_linear(
                         or device == torch.device("cpu")
                         or device == "auto"
                     ):
-                        if is_ipex_available() and quantization_config.use_ipex_cpu:
+                        if is_ipex_available() and quantization_config.use_ipex:
                             from intel_extension_for_pytorch.nn.modules import WeightOnlyQuantizedLinear as ipex_linear
                             from intel_extension_for_pytorch.utils.weight_only_quantization import _convert_optimum_format_to_desired
 
@@ -307,7 +307,7 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                if quantization_config.use_ipex_cpu:
+                if quantization_config.use_ipex:
                     pass
                 elif (device == "cpu" or device == torch.device("cpu") or device == "auto"):
                     if quantization_config.weight_dtype in [
@@ -604,10 +604,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
             if config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
-                if config.use_ipex_cpu:
+                if config.use_ipex:
                     optimum_format_state_dict = inc_model.state_dict()
                 q_model = replace_linear(inc_model, None, None, config, device=device)
-                if config.use_ipex_cpu:
+                if config.use_ipex:
                     setattr(q_model, "optimum_format_state_dict", optimum_format_state_dict)
             else:
                 q_model = replace_linear(

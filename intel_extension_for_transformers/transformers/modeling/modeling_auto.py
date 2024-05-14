@@ -186,7 +186,7 @@ def convert_model_to_public(model):
                     module.qweight.data = module.qweight.t_().contiguous()
                     module.scales.data = module.scales.t_().contiguous()
                     module.weight_transposed = False
-    elif model.quantization_config.use_ipex_cpu:
+    elif model.quantization_config.use_ipex:
         pass
     elif model.quantization_config.weight_dtype not in [
         "fp8_e5m2",
@@ -234,7 +234,7 @@ def save_low_bit(
         save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
     )
 
-    if self.quantization_config.use_ipex_cpu:
+    if self.quantization_config.use_ipex:
         def save_linear_parameters(model, save_directory):
             # only can save to pytorch model.bin due to ipex.
             weights_file = os.path.join(
@@ -1843,7 +1843,7 @@ class _BaseQBitsAutoModelClass:
         if dtype_orig is not None:
             torch.set_default_dtype(dtype_orig)
 
-        if is_ipex_available() and quantization_config.use_ipex_cpu:
+        if is_ipex_available() and quantization_config.use_ipex:
             import intel_extension_for_pytorch as ipex
             from intel_extension_for_pytorch.nn.modules import WeightOnlyQuantizedLinear as ipex_linear
             def replace_ipex_cpu_woq_linear(model, current_name=[]):
@@ -1928,7 +1928,7 @@ class _BaseQBitsAutoModelClass:
             "nf4",
             "fp4",
             "int4_fullrange",
-        ] and not quantization_config.use_ipex_cpu:
+        ] and not quantization_config.use_ipex:
             model = replace_linear(
                 model,
                 quantization_config=quantization_config,

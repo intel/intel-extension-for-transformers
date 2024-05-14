@@ -28,7 +28,7 @@ parser.add_argument(
     "--max_new_tokens", default=32, type=int, help="output max new tokens"
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
-parser.add_argument("--use_ipex_cpu", action="store_true")
+parser.add_argument("--use_ipex", action="store_true")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--iters", default=100, type=int, help="num iter")
@@ -216,7 +216,7 @@ if args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             layer_wise=args.layer_wise,
-            use_ipex_cpu=args.use_ipex_cpu,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "Awq":
         quantization_config = AwqConfig(
@@ -230,6 +230,7 @@ if args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "Teq":
         quantization_config = TeqConfig(
@@ -243,6 +244,7 @@ if args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "GPTQ":
         quantization_config = GPTQConfig(
@@ -262,6 +264,7 @@ if args.woq:
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
             layer_wise=args.layer_wise,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "AutoRound":
         quantization_config = AutoRoundConfig(
@@ -279,6 +282,7 @@ if args.woq:
             lr=args.lr,
             minmax_lr=args.minmax_lr,
             use_quant_input=args.use_quant_input,
+            use_ipex=args.use_ipex,
         )
     else:
         assert False, "Please set the correct '--woq_algo'"
