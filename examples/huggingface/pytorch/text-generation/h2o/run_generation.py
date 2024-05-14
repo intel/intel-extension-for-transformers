@@ -39,17 +39,16 @@ parser.add_argument("--iters", default=100, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
 # ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--batch_size", default=56, type=int, help="batch size num.")
+parser.add_argument("--batch_size", default=16, type=int, help="batch size num.")
 parser.add_argument(
     "--save_accuracy_path", default=None, help="Save accuracy results path."
 )
-parser.add_argument(
-    "--tasks",
-    nargs="+",
-    default=["lambada_openai"],
-    type=str,
-    help="tasks list for accuracy validation",
-)
+parser.add_argument("--output_excel", default=None, type=str)
+parser.add_argument("--eval_bs", default=4, type=int,
+                        help="eval batch size")
+parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
+                    "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
+                    help="tasks list for accuracy validation")
 # ============MixedPrecision configs==============
 parser.add_argument("--mixed_precision", action="store_true")
 
@@ -89,7 +88,8 @@ if config.model_type == "chatglm":
 if config.model_type == "llama":
     from transformers import LlamaTokenizer
 
-    tokenizer = LlamaTokenizer.from_pretrained(args.model)
+    # tokenizer = LlamaTokenizer.from_pretrained(args.model)
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
 else:
     tokenizer = AutoTokenizer.from_pretrained(
         args.model, trust_remote_code=args.trust_remote_code
@@ -121,9 +121,9 @@ if args.enable_small_cache:
     print("converted model: ", user_model)
 
 # save model
-if args.output_dir is not None:
-    tokenizer.save_pretrained(args.output_dir)
-    user_model.save_pretrained(args.output_dir)
+# if args.output_dir is not None:
+#     tokenizer.save_pretrained(args.output_dir)
+#     user_model.save_pretrained(args.output_dir)
 
 if args.benchmark:
     user_model = (
@@ -184,36 +184,24 @@ if args.benchmark:
 if args.accuracy:
     user_model = (user_model.eval() if (not (args.int8 or args.int8_bf16_mixed) and hasattr(user_model, "eval")) \
                   else user_model)
-    args.model = (peft_config.base_model_name_or_path if args.peft_model_id else args.model)
-    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate
-    pretrained = ',pretrained=' + args.model
-    args._commit_hash = "main" if args._commit_hash is None else args._commit_hash
-    eval_args = "tokenizer=" + args.model + ",dtype=float32" + ",_commit_hash=" + \
-                args._commit_hash + ",trust_remote_code=" + str(args.trust_remote_code)
-    if args.use_neural_speed:
-        eval_args += pretrained
-        q_conf = user_model.config.quantization_config
-        if isinstance(q_conf, dict):
-            q_algo = q_conf.get("quant_method", None)
-        else:
-            q_algo = q_conf.quant_method.value
-        if q_algo.upper() in ["AWQ", "GPTQ", "AUTOROUND"]:
-            eval_args += ",use_gptq=True"
-    results = evaluate(
-        model="hf-causal",
-        model_args=eval_args,
-        user_model=user_model,
-        batch_size=args.batch_size,
-        tasks=args.tasks,
-        model_format="neural_speed" if args.use_neural_speed else "torch",
-        device=device
-    )
-    dumped = json.dumps(results, indent=2)
-    if args.save_accuracy_path:
-        with open(args.save_accuracy_path, "w") as f:
-            f.write(dumped)
-    for task_name in args.tasks:
-        if task_name == "wikitext":
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
-        else:
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
+    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+    model_args="pretrained="+args.model+",trust_remote_code="+str(args.trust_remote_code)
+    args.tasks = ",".join(args.tasks)
+    eval_args = LMEvalParser(model = "hf", 
+                        user_model=user_model,
+                        tokenizer=tokenizer,
+                        model_args=model_args,
+                        tasks = args.tasks,
+                        device = device,
+                        output_path=args.save_accuracy_path,
+                        batch_size = args.batch_size)
+    results = evaluate(eval_args)
+    # dumped = json.dumps(results, indent=2)
+    # if args.save_accuracy_path:
+    #     with open(args.save_accuracy_path, "w") as f:
+    #         f.write(dumped)
+    # for task_name in args.tasks.split(","):
+    #     if task_name == "wikitext":
+    #         print("Perplexity for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
+    #     else:
+    #         print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))

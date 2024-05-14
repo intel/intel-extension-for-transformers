@@ -83,7 +83,7 @@ class H2OLlamaAttention(nn.Module):
         self.recent_ratio = recent_ratio
         self.h2o_min_seqlen = h2o_min_seqlen
 
-        self.h2o_kv_cache = H2OKVCache()
+        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio)
 
     def forward(
         self,
@@ -147,7 +147,7 @@ class H2OLlamaAttention(nn.Module):
         # get hh mask
         if q_len > self.h2o_min_seqlen:
             if self.real_drop:
-                pass
+                past_key_value = self.h2o_kv_cache(past_key_value, attn_weights.detach().clone())
             else:
                 mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
                 attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min

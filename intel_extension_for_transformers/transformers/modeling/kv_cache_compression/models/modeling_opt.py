@@ -32,6 +32,7 @@ class H2OOPTAttention(nn.Module):
         heavy_ratio,
         recent_ratio,
         h2o_min_seqlen=1024,
+        real_drop=False
     ):
         super().__init__()
         self.config = config
@@ -60,6 +61,7 @@ class H2OOPTAttention(nn.Module):
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.h2o_min_seqlen = h2o_min_seqlen
+        self.real_drop = real_drop
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()

@@ -67,7 +67,7 @@ def get_module(model, op_name):
     return module
 
 
-def convert_model(model, heavy_ratio, recent_ratio, h2o_min_seqlen=1024):
+def convert_model(model, heavy_ratio, recent_ratio, h2o_min_seqlen=1024, real_drop=True):
     device = model.device
     model_type = model.config.model_type
     model_name = model_type.replace("-", "_")
@@ -80,7 +80,7 @@ def convert_model(model, heavy_ratio, recent_ratio, h2o_min_seqlen=1024):
 
     for layer_name in atten_layers:
         module = get_module(model, layer_name)
-        module = h2o_cls(module, model.config, heavy_ratio, recent_ratio, h2o_min_seqlen)
+        module = h2o_cls(module, model.config, heavy_ratio, recent_ratio, h2o_min_seqlen, real_drop)
         set_module(model, layer_name, module)
     model = model.to(device)
     return model
@@ -141,7 +141,6 @@ def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=No
 def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
     heavy_budget = int(heavy_budget_ratio * attn_weights.shape[-1])
     recent_budget = int(recent_budget_ratio * attn_weights.shape[-1])
-    print(heavy_budget, recent_budget)
     if heavy_budget > 0:
         mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None) # Default: No padding applied to input
     else:
@@ -163,21 +162,21 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
 class H2OKVCache:
     def __init__(
         self,
-        hh_size=4,
-        recent_size=512,
+        heavy_ratio=0.2,
+        recent_ratio=0.2,
         k_seq_dim=2,
         v_seq_dim=2,
     ):
-        self.hh_size = hh_size
-        self.recent_size = recent_size
-        self.cache_size = hh_size + recent_size
+        self.heavy_ratio = heavy_ratio
+        self.recent_ratio = recent_ratio
         self.k_seq_dim = k_seq_dim
         self.v_seq_dim = v_seq_dim
         self.hh_score = None
 
     def __call__(self, past_key_values, attn_score_cache):
-
         self._update_hh_score(attn_score_cache)
+        heavy_budget = int(self.heavy_budget_ratio * self.hh_score.shape[-1])
+        recent_budget = int(self.recent_budget_ratio * self.hh_score.shape[-1])
 
         if past_key_values is None:
             return None
@@ -188,12 +187,12 @@ class H2OKVCache:
         # hh-selection
         bsz, num_heads, _, head_dim = past_key_values[0].shape
 
-        select_hh_scores = self.hh_score[:, :seq_len - self.recent_size]
-        _, keep_topk = torch.topk(select_hh_scores, self.hh_size, dim=-1)
+        select_hh_scores = self.hh_score[:, :seq_len - recent_budget]
+        _, keep_topk = torch.topk(select_hh_scores, heavy_budget, dim=-1)
         keep_topk = keep_topk.sort().values
 
         # keep_recent = torch.arange(seq_len - self.recent_size, seq_len).expand(keep_topk.shape[0], 1).to(keep_topk.device)
-        keep_recent = torch.arange(seq_len - self.recent_size, seq_len, device=keep_topk.device).repeat(keep_topk.shape[0], 1)
+        keep_recent = torch.arange(seq_len - recent_budget, seq_len, device=keep_topk.device).repeat(keep_topk.shape[0], 1)
         keep_idx = torch.cat([keep_topk, keep_recent], dim=-1)
 
         mask = torch.zeros(self.hh_score.shape, dtype=torch.bool).to(past_key_values[0].device)
@@ -207,6 +206,8 @@ class H2OKVCache:
         return (k_hh_recent, v_hh_recent)
 
     def evict_for_space(self, past_key_values, num_coming):
+        heavy_budget = int(self.heavy_budget_ratio * num_coming.shape[-1])
+        recent_budget = int(self.recent_budget_ratio * num_coming.shape[-1])
         if past_key_values is None:
             return None
         seq_len = past_key_values[0][0].size(self.k_seq_dim)
@@ -216,12 +217,12 @@ class H2OKVCache:
         # hh-selection
         bsz, num_heads, _, head_dim = past_key_values[0].shape
 
-        select_hh_scores = self.hh_score[:, :seq_len - self.recent_size + num_coming]
-        _, keep_topk = torch.topk(select_hh_scores, self.hh_size, dim=-1)
+        select_hh_scores = self.hh_score[:, :seq_len - recent_budget + num_coming]
+        _, keep_topk = torch.topk(select_hh_scores, heavy_budget, dim=-1)
         keep_topk = keep_topk.sort().values
 
         # keep_recent = torch.arange(seq_len - self.recent_size, seq_len).expand(keep_topk.shape[0], 1).to(keep_topk.device)
-        keep_recent = torch.arange(seq_len - self.recent_size + num_coming, seq_len, device=keep_topk.device).repeat(keep_topk.shape[0], 1)
+        keep_recent = torch.arange(seq_len - recent_budget + num_coming, seq_len, device=keep_topk.device).repeat(keep_topk.shape[0], 1)
         keep_idx = torch.cat([keep_topk, keep_recent], dim=-1)
 
         mask = torch.zeros(self.hh_score.shape, dtype=torch.bool).to(past_key_values[0].device)
@@ -236,7 +237,7 @@ class H2OKVCache:
 
     def _update_hh_score(self, attn_score_cache):
 
-        num_new_tokens = attn_score_cache.shape[2]
+        num_new_tokens = attn_score_cache.shape[-2]
 
         if self.hh_score is None:
             self.hh_score = attn_score_cache.sum(0).sum(1)
