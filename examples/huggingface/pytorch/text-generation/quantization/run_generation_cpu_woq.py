@@ -74,7 +74,7 @@ parser.add_argument(
     "--scale_dtype",
     type=str,
     default="fp32",
-    choices=["fp32", "fp8"],
+    choices=["fp32", "bf16", "fp8"],
 )
 parser.add_argument(
     "--compute_dtype",
