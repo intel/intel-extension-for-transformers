@@ -1,4 +1,4 @@
-""" PyTorch ChatGLM model. """
+"""PyTorch ChatGLM model."""
 
 import math
 import copy
@@ -659,10 +659,8 @@ class GLMTransformer(torch.nn.Module):
 
 
 class ChatGLMPreTrainedModel(PreTrainedModel):
-    """
-    An abstract class to handle weights initialization and
-    a simple interface for downloading and loading pretrained models.
-    """
+    """An abstract class to handle weights initialization and
+    a simple interface for downloading and loading pretrained models."""
 
     is_parallelizable = False
     supports_gradient_checkpointing = True
@@ -722,7 +720,7 @@ class Embedding(torch.nn.Module):
         # Embeddings.
         words_embeddings = self.word_embeddings(input_ids)
         embeddings = words_embeddings
-        # Data format change to avoid explicit tranposes : [b s h] --> [s b h].
+        # Data format change to avoid explicit transposes : [b s h] --> [s b h].
         embeddings = embeddings.transpose(0, 1).contiguous()
         # If the input flag for fp32 residual connection is set, convert for float.
         if self.fp32_residual_connection:
@@ -983,8 +981,7 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
     def _reorder_cache(
             past: Tuple[Tuple[torch.Tensor, torch.Tensor], ...], beam_idx: torch.LongTensor
     ) -> Tuple[Tuple[torch.Tensor, torch.Tensor], ...]:
-        """
-        This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
+        """This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
         [`~PreTrainedModel.beam_sample`] is called. This is required to match `past_key_values` with the correct
         beam_idx at every generation step.
 

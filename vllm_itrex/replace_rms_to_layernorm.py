@@ -52,7 +52,7 @@ for idx in range(28):
     print("modified!!!-----------------", idx)
     model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['self_attention']._modules['query_key_value'] = copy.deepcopy(original_linear)
     model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['self_attention']._modules['dense'] = copy.deepcopy(dense_linear)
-    model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['mlp']._modules['dense_h_to_4h'] = copy.deepcopy(dense_h_to_4h)   
+    model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['mlp']._modules['dense_h_to_4h'] = copy.deepcopy(dense_h_to_4h)
     model._modules['transformer']._modules['encoder']._modules['layers']._modules[str(idx)]._modules['mlp']._modules['dense_4h_to_h'] = copy.deepcopy(dense_4h_to_h)
 print("modified model ---------------------------------------------------------------------------------= ", model)
 

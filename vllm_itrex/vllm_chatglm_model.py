@@ -306,11 +306,11 @@ class ChatGLMModel(nn.Module):
         kv_caches: List[torch.Tensor],
         attn_metadata: AttentionMetadata,
     ) -> torch.Tensor:
-        
+
         print("Register ChatGLMModel OK!!!!!!!!!!!!!!!!!!!!")
         print("Register ChatGLMModel OK!!!!!!!!!!!!!!!!!!!!")
         inputs_embeds = self.embedding(input_ids)
-       
+
         # Run encoder.
         # import pdb;pdb.set_trace()
         hidden_states = self.encoder(
@@ -388,7 +388,7 @@ class ChatGLMForCausalLM(nn.Module):
             # Skip loading extra bias for GPTQ models.
             if name.endswith(".bias") and name not in params_dict:
                 continue
-            
+
             param = params_dict[name]
             #import pdb;pdb.set_trace()
             weight_loader = getattr(param, "weight_loader",
@@ -409,6 +409,6 @@ class ChatGLMForCausalLM(nn.Module):
             #     print("  ")
             #     print("  ")
             #     print("--------------------------------------")
-            
+
 
                 #import pdb;pdb.set_trace()

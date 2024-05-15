@@ -352,16 +352,16 @@ class ChatGLMForCausalLM(nn.Module):
         attn_metadata: AttentionMetadata,
     ) -> torch.Tensor:
 
-        print("resgister OK!!!!!!!!!!!!!!!!!!!!")
-        print("resgister OK!!!!!!!!!!!!!!!!!!!!")
-        print("resgister OK!!!!!!!!!!!!!!!!!!!!")
+        print("register OK!!!!!!!!!!!!!!!!!!!!")
+        print("register OK!!!!!!!!!!!!!!!!!!!!")
+        print("register OK!!!!!!!!!!!!!!!!!!!!")
         hidden_states = self.transformer(input_ids, positions, kv_caches,
                                          attn_metadata)
-        
-        print("resgister OK!!!!!!!!!!!!!!!!!!!!")
-        print("resgister OK!!!!!!!!!!!!!!!!!!!!")
-        print("resgister OK!!!!!!!!!!!!!!!!!!!!")
-        print("resgister OK!!!!!!!!!!!!!!!!!!!!")
+
+        print("register OK!!!!!!!!!!!!!!!!!!!!")
+        print("register OK!!!!!!!!!!!!!!!!!!!!")
+        print("register OK!!!!!!!!!!!!!!!!!!!!")
+        print("register OK!!!!!!!!!!!!!!!!!!!!")
         return hidden_states
 
     def compute_logits(self, hidden_states: torch.Tensor,
