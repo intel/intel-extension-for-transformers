@@ -127,7 +127,7 @@ jobs:
           cd ${{ env.OUT_SCRIPT_PATH }}
           /usr/bin/bash generate_report.sh --workflow=deploy
         env:
-          RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
+          RUN_DISPLAY_URL: https://github.com/intel/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
           BUILD_NUMBER: ${{ github.run_id }}
           JOB_STATUS: succeed
           MR_source_branch: ${{ github.event.pull_request._links.html.href }}
