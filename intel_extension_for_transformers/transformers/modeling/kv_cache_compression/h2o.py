@@ -14,6 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import math
 from collections import OrderedDict
 import importlib
 
@@ -159,98 +160,90 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
     # mask_bottom = torch.logical_or(mask_bottom, ones)
     return mask_bottom
 
+def _get_attn_weights(query_states, key_states, value_states, **kwargs):
+    head_dim = query_states.size(-1)
+    attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(head_dim)
+    if "attention_mask" in kwargs:
+        attention_mask = kwargs["attention_mask"]
+        if attention_mask is not None:
+            causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+            attn_weights = attn_weights + causal_mask
+    return attn_weights
+
 class H2OKVCache:
     def __init__(
         self,
         heavy_ratio=0.2,
         recent_ratio=0.2,
-        k_seq_dim=2,
-        v_seq_dim=2,
     ):
+        ## bsz, num_heads, seq_len, head_dim | num_heads, seq_len, head_dim
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
-        self.k_seq_dim = k_seq_dim
-        self.v_seq_dim = v_seq_dim
         self.hh_score = None
+        self.score_func = _get_attn_weights 
+        self.idx = 0
+        
 
-    def __call__(self, past_key_values, attn_score_cache):
-        self._update_hh_score(attn_score_cache)
-        heavy_budget = int(self.heavy_budget_ratio * self.hh_score.shape[-1])
-        recent_budget = int(self.recent_budget_ratio * self.hh_score.shape[-1])
+    def __call__(self, query_states, key_states, value_states, **kwargs):
+        self.idx += 1
+        attn_score = self.score_func(query_states, key_states, value_states, **kwargs)
+        self._update_hh_score(attn_score, mean=False)
+        heavy_budget = int(self.heavy_ratio * self.hh_score.shape[-1])
+        recent_budget = int(self.recent_ratio * self.hh_score.shape[-1])
+        cache_size = heavy_budget + recent_budget
 
-        if past_key_values is None:
-            return None
-        seq_len = past_key_values[0].size(self.k_seq_dim)
-        if seq_len <= self.cache_size:
-            return past_key_values
+        seq_len = key_states.size(-2)
+        if seq_len <= cache_size:
+            return key_states, value_states
 
         # hh-selection
-        bsz, num_heads, _, head_dim = past_key_values[0].shape
+        if len(self.hh_score) == 2:
+            select_hh_scores = self.hh_score[:, :seq_len - recent_budget]
+        else:
+            select_hh_scores = self.hh_score[:, :, :seq_len - recent_budget]
 
-        select_hh_scores = self.hh_score[:, :seq_len - recent_budget]
         _, keep_topk = torch.topk(select_hh_scores, heavy_budget, dim=-1)
         keep_topk = keep_topk.sort().values
 
         # keep_recent = torch.arange(seq_len - self.recent_size, seq_len).expand(keep_topk.shape[0], 1).to(keep_topk.device)
-        keep_recent = torch.arange(seq_len - recent_budget, seq_len, device=keep_topk.device).repeat(keep_topk.shape[0], 1)
+        repeat_shape = list(keep_topk.shape)
+        repeat_shape[-1] = 1
+        keep_recent = torch.arange(seq_len - recent_budget, seq_len, device=keep_topk.device).repeat(repeat_shape)
         keep_idx = torch.cat([keep_topk, keep_recent], dim=-1)
 
-        mask = torch.zeros(self.hh_score.shape, dtype=torch.bool).to(past_key_values[0].device)
+        mask = torch.zeros(self.hh_score.shape, dtype=torch.bool).to(key_states.device)
         mask = mask.scatter(-1, keep_idx, 1)
 
-        k_hh_recent = past_key_values[0].squeeze()[mask].view(bsz, num_heads, -1, head_dim)
-        v_hh_recent = past_key_values[1].squeeze()[mask].view(bsz, num_heads, -1, head_dim)
+        states_shape = list(key_states.shape)
+        states_shape[-2] = cache_size
+        k_hh_recent = key_states[mask].view(*states_shape)
+        states_shape[-1] = -1
+        v_hh_recent = value_states[mask].view(*states_shape)
 
-        self.hh_score= self.hh_score[mask].view(num_heads, self.cache_size)
+        tmp_shape = list(self.hh_score.shape)
+        tmp_shape[-1] = cache_size
+        self.hh_score = self.hh_score[mask].view(*tmp_shape)
+        return k_hh_recent, v_hh_recent
 
-        return (k_hh_recent, v_hh_recent)
-
-    def evict_for_space(self, past_key_values, num_coming):
-        heavy_budget = int(self.heavy_budget_ratio * num_coming.shape[-1])
-        recent_budget = int(self.recent_budget_ratio * num_coming.shape[-1])
-        if past_key_values is None:
-            return None
-        seq_len = past_key_values[0][0].size(self.k_seq_dim)
-        if seq_len + num_coming <= self.cache_size:
-            return past_key_values
-
-        # hh-selection
-        bsz, num_heads, _, head_dim = past_key_values[0].shape
-
-        select_hh_scores = self.hh_score[:, :seq_len - recent_budget + num_coming]
-        _, keep_topk = torch.topk(select_hh_scores, heavy_budget, dim=-1)
-        keep_topk = keep_topk.sort().values
-
-        # keep_recent = torch.arange(seq_len - self.recent_size, seq_len).expand(keep_topk.shape[0], 1).to(keep_topk.device)
-        keep_recent = torch.arange(seq_len - recent_budget + num_coming, seq_len, device=keep_topk.device).repeat(keep_topk.shape[0], 1)
-        keep_idx = torch.cat([keep_topk, keep_recent], dim=-1)
-
-        mask = torch.zeros(self.hh_score.shape, dtype=torch.bool).to(past_key_values[0].device)
-        mask = mask.scatter(-1, keep_idx, 1)
-
-        k_hh_recent = past_key_values[0].squeeze()[mask].view(bsz, num_heads, -1, head_dim)
-        v_hh_recent = past_key_values[1].squeeze()[mask].view(bsz, num_heads, -1, head_dim)
-
-        self.hh_score= self.hh_score[mask].view(num_heads, self.cache_size)
-
-        return (k_hh_recent, v_hh_recent)
-
-    def _update_hh_score(self, attn_score_cache):
-
+    def _update_hh_score(self, attn_score_cache, mean=False):
+        # hh_score size (bsz, num_heads, seq_len) or (num_heads, seq_len)
         num_new_tokens = attn_score_cache.shape[-2]
 
-        if self.hh_score is None:
-            self.hh_score = attn_score_cache.sum(0).sum(1)
-        else:
-            attn_score_cache = attn_score_cache.sum(0).sum(1)
-            attn_score_cache[:, :-num_new_tokens] += self.hh_score
-            self.hh_score = attn_score_cache
+        attn_score_cache = attn_score_cache.sum(-2)
+        if self.hh_score is not None:
+            if len(attn_score_cache) == 3:
+                attn_score_cache[:, :self.hh_score.shape[-1]] += self.hh_score / (1 if not mean else self.idx)
+            else:
+                attn_score_cache[:, :, :self.hh_score.shape[-1]] += self.hh_score / (1 if not mean else self.idx)
+
+        self.hh_score = attn_score_cache
+
+        # if self.hh_score is None:
+        #     self.hh_score = attn_score_cache.sum(-2)
+        # else:
+        #     attn_score_cache = attn_score_cache.sum(-2)
+        #     attn_score_cache[:, :-num_new_tokens] += self.hh_score
+        #     self.hh_score = attn_score_cache
 
     def _clean_scores(self):
         self.hh_score = None
-
-if __name__ == "__main__":
-    a = torch.randn(1, 10,10)
-    print(a)
-    mask = get_hh_mask(0, 0.7, a)
-    print(mask)

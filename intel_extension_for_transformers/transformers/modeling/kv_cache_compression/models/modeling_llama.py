@@ -90,14 +90,13 @@ class H2OLlamaAttention(nn.Module):
         hidden_states: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
-        past_key_value: Optional[Cache] = None,
+        past_key_value: Optional[Cache] = None, # transformers.cache_utils.DynamicCache
         output_attentions: bool = False,
         use_cache: bool = False,
         cache_position: Optional[torch.LongTensor] = None,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
-
         if self.config.pretraining_tp > 1:
             key_value_slicing = (self.num_key_value_heads * self.head_dim) // self.config.pretraining_tp
             query_slices = self.q_proj.weight.split(
@@ -132,22 +131,29 @@ class H2OLlamaAttention(nn.Module):
             # sin and cos are specific to RoPE models; cache_position needed for the static cache
             cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
             key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
-
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
 
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
 
         if attention_mask is not None:  # no matter the length, we just slice it
-            causal_mask = attention_mask
-            if cache_position is not None:
-                causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
+            causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
             attn_weights = attn_weights + causal_mask
 
-        # get hh mask
+        # H2O
         if q_len > self.h2o_min_seqlen:
-            if self.real_drop:
-                past_key_value = self.h2o_kv_cache(past_key_value, attn_weights.detach().clone())
+            if self.real_drop and past_key_value is not None:
+                if len(past_key_value.key_cache) == self.layer_idx + 1:
+                    self.h2o_kv_cache._clean_scores()
+                new_key_states, new_value_states = self.h2o_kv_cache(
+                    query_states,
+                    past_key_value.key_cache[self.layer_idx],
+                    past_key_value.value_cache[self.layer_idx],
+                    attention_mask=attention_mask
+                    )
+                cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
+                past_key_value.key_cache[self.layer_idx] = new_key_states
+                past_key_value.value_cache[self.layer_idx] = new_value_states
             else:
                 mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
                 attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min

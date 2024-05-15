@@ -49,11 +49,13 @@ parser.add_argument("--eval_bs", default=4, type=int,
 parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
                     "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
                     help="tasks list for accuracy validation")
+parser.add_argument("--num_fewshot", default=0, type=int, help="num few shot.")
 # ============MixedPrecision configs==============
 parser.add_argument("--mixed_precision", action="store_true")
 
 # ============h2o configs==============
 parser.add_argument('--enable_small_cache', action='store_true')
+parser.add_argument('--real_drop', action='store_true')
 parser.add_argument("--heavy_ratio", type=float, default=0.1)
 parser.add_argument("--recent_ratio", type=float, default=0.1)
 parser.add_argument("--device", type=str, default='cpu')
@@ -117,7 +119,7 @@ if args.enable_small_cache:
     # checkpoint = copy.deepcopy(model.state_dict())
     # model = ENABLE_Heavy_Hitter_FUNCTIONS[args.model_type](model, config)
     from intel_extension_for_transformers.transformers.modeling.kv_cache_compression import convert_model
-    user_model = convert_model(user_model, heavy_ratio=args.heavy_ratio, recent_ratio=args.recent_ratio, h2o_min_seqlen=args.h2o_min_seqlen)
+    user_model = convert_model(user_model, heavy_ratio=args.heavy_ratio, recent_ratio=args.recent_ratio, h2o_min_seqlen=args.h2o_min_seqlen, real_drop=args.read_drop)
     print("converted model: ", user_model)
 
 # save model
@@ -193,15 +195,8 @@ if args.accuracy:
                         model_args=model_args,
                         tasks = args.tasks,
                         device = device,
+                        num_fewshot=args.num_fewshot,
                         output_path=args.save_accuracy_path,
                         batch_size = args.batch_size)
+    print("using device:", device)
     results = evaluate(eval_args)
-    # dumped = json.dumps(results, indent=2)
-    # if args.save_accuracy_path:
-    #     with open(args.save_accuracy_path, "w") as f:
-    #         f.write(dumped)
-    # for task_name in args.tasks.split(","):
-    #     if task_name == "wikitext":
-    #         print("Perplexity for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
-    #     else:
-    #         print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
