@@ -180,9 +180,9 @@ class H2OKVCache:
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.hh_score = None
-        self.score_func = _get_attn_weights 
+        self.score_func = _get_attn_weights
         self.idx = 0
-        
+
 
     def __call__(self, query_states, key_states, value_states, **kwargs):
         self.idx += 1
