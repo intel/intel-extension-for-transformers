@@ -42,7 +42,7 @@ function generate_html_overview {
 <body>
     <div id="main">
         <h1 align="center">Sparse Lib Tests ${PR_TITLE}
-        [ <a href="https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${BUILD_ID}">Job-${BUILD_NUMBER}</a> ]</h1>
+        [ <a href="https://github.com/intel/intel-extension-for-transformers/actions/runs/${BUILD_ID}">Job-${BUILD_NUMBER}</a> ]</h1>
       <h1 align="center">Test Status: ${github_actions_job_status}</h1>
         <h2>Summary</h2>
         ${pr_comment_opt}
