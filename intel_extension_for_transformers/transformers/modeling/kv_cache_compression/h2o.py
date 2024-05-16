@@ -187,25 +187,24 @@ class H2OKVCache:
             return key_states, value_states
 
         # hh-selection
+        mask = torch.zeros(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
         if len(self.hh_score.shape) == 2:
+            if not recent_budget == 0:
+                mask[:,-recent_budget:] = 1 
             select_hh_scores = self.hh_score[:, :seq_len - recent_budget]
         else:
-            select_hh_scores = self.hh_score[:, :, :seq_len - recent_budget]
+            if not recent_budget == 0:
+                mask[:,:,-recent_budget:] = 1 
+            select_hh_scores = self.hh_score[:,:,:seq_len - recent_budget]
 
-        _, keep_topk = torch.topk(select_hh_scores, heavy_budget, dim=-1)
-        keep_topk = keep_topk.sort().values
+        if not heavy_budget == 0:
+            _, keep_topk = torch.topk(select_hh_scores, heavy_budget, dim=-1, largest=True)
+            mask = mask.scatter(-1, keep_topk, 1)
 
-        # keep_recent = torch.arange(seq_len - self.recent_size, seq_len).expand(keep_topk.shape[0], 1).to(keep_topk.device)
-        repeat_shape = list(keep_topk.shape)
-        repeat_shape[-1] = 1
-        keep_recent = torch.arange(seq_len - recent_budget, seq_len, device=keep_topk.device).repeat(repeat_shape)
-        keep_idx = torch.cat([keep_topk, keep_recent], dim=-1)
-
-        mask = torch.zeros(self.hh_score.shape, dtype=torch.bool).to(key_states.device)
-        mask = mask.scatter(-1, keep_idx, 1)
         if not self.real_drop:
             return mask
 
+        mask = mask.bool()
         states_shape = list(key_states.shape)
         states_shape[-2] = cache_size
         k_hh_recent = key_states[mask].view(*states_shape)
