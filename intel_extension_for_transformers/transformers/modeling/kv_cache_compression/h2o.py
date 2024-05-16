@@ -190,11 +190,11 @@ class H2OKVCache:
         mask = torch.zeros(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
         if len(self.hh_score.shape) == 2:
             if not recent_budget == 0:
-                mask[:,-recent_budget:] = 1 
+                mask[:,-recent_budget:] = 1
             select_hh_scores = self.hh_score[:, :seq_len - recent_budget]
         else:
             if not recent_budget == 0:
-                mask[:,:,-recent_budget:] = 1 
+                mask[:,:,-recent_budget:] = 1
             select_hh_scores = self.hh_score[:,:,:seq_len - recent_budget]
 
         if not heavy_budget == 0:

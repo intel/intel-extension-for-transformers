@@ -169,7 +169,7 @@ class H2OOPTAttention(nn.Module):
             attn_weights = attn_weights_reshaped.view(bsz * self.num_heads, tgt_len, src_len)
         else:
             attn_weights_reshaped = None
-        
+
         # get hh mask
         if tgt_len > self.h2o_min_seqlen:
             if not self.is_gen:
