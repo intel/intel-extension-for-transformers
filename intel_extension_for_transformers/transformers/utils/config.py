@@ -281,7 +281,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             )
 
         if self.bits == 4 and self.weight_dtype not in [
-            "int4_fullrange",
             "int4_clip",
             "nf4",
             "fp4_e2m1_bnb",
@@ -300,7 +299,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
 
         elif self.weight_dtype not in [
             "int8",
-            "int4_fullrange",
             "int4_clip",
             "nf4",
             "fp4_e2m1_bnb",
@@ -310,15 +308,16 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         ]:
             raise ValueError(
                 f"weight_dtype must be a string in "
-                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+                f"'int8', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
             )
 
         if self.scale_dtype is not None and self.scale_dtype not in [
             "fp32",
             "fp8_e8m0",
+            "bf16"
         ]:
             raise ValueError(
-                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
+                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0', 'bf16' "
                 f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
             )
         elif self.scale_dtype is None:
@@ -340,15 +339,15 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             raise ValueError("scheme must be a string")
 
         if self.scheme == "asym" and (
-            self.compute_dtype == "int8"
+            (self.compute_dtype == "int8" and self.weight_dtype == "int8")
             or self.weight_dtype.startswith("fp")
             or self.weight_dtype.startswith("nf")
             or self.scale_dtype != "fp32"
         ):
             raise ValueError(
-                "WeightOnlyQuantization doesn't support asym with \
-                                compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, \
-                                please use sym scheme"
+                f"WeightOnlyQuantization doesn't support asym with "
+                f"compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, "
+                f"please use sym scheme"
             )
 
         self.use_neural_speed = False
@@ -776,6 +775,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.dataset = None
         self.calib_func = None
         self.calib_iters = None
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes
@@ -875,6 +875,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.use_ipex = kwargs.pop("use_ipex", False)
         self.post_init_gptq()
 
     def post_init_gptq(self):
@@ -953,6 +954,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
         self.sym = True if not self.zero_point else False
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes
@@ -1014,6 +1016,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes
@@ -1107,6 +1110,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
             )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes

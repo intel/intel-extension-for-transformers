@@ -1,13 +1,14 @@
-Full Publications/Events (48)
+Full Publications/Events (49)
 ==========
 
-## 2024 (8)
-* Blod published on Intel NewsRoom: [Intel Welcomes Open Platform for Enterprise AI](https://www.intel.com/content/www/us/en/newsroom/news/intel-welcomes-open-platform-enterprise-ai.html#gs.89490l) (April 2024)
+## 2024 (9)
+* Blog published on Intel Developer News: [Efficient Natural Language Embedding Models with Intel® Extension for Transformers](https://www.intel.com/content/www/us/en/developer/articles/technical/efficient-natural-language-embedding-models.html) (May 2024)
+* Blog published on Intel NewsRoom: [Intel Welcomes Open Platform for Enterprise AI](https://www.intel.com/content/www/us/en/newsroom/news/intel-welcomes-open-platform-enterprise-ai.html#gs.89490l) (April 2024)
 * Blog published on Intel Developer News: [Weight-only Quantization in LLM Inference Using Intel® Extension for PyTorch* on Intel® Core™ Ultra Processors for AI PCs](https://www.intel.com/content/www/us/en/developer/articles/technical/weight-only-quantization-in-llm-inference.html) (Apr 2024)
 * Blog published on Techcrunch: [Intel and others commit to building open generative AI tools for the enterprise](https://techcrunch.com/2024/04/16/intel-and-others-commit-to-building-open-generative-ai-tools-for-the-enterprise) (Apr 2024)
 * Video on YouTube: [Intel Vision Keynotes 2024](https://www.youtube.com/watch?v=QB7FoIpx8os&t=2280s) (Apr 2024)
 * Blog published on Vectara: [Do Smaller Models Hallucinate More?](https://vectara.com/blog/do-smaller-models-hallucinate-more) (Apr 2024)
-* Blod published on Intel NewsRoom: [Intel Gaudi 2 Remains Only Benchmarked Alternative to NV H100 for GenAI Performance](https://www.intel.com/content/www/us/en/newsroom/news/new-gaudi-2-xeon-performance-ai-inference.html#gs.858z19) (March 2024)
+* Blog published on Intel NewsRoom: [Intel Gaudi 2 Remains Only Benchmarked Alternative to NV H100 for GenAI Performance](https://www.intel.com/content/www/us/en/newsroom/news/new-gaudi-2-xeon-performance-ai-inference.html#gs.858z19) (March 2024)
 * Blog published on Intel Developer News: [Use the neural-chat-7b Model for Advanced Fraud Detection: An AI-Driven Approach in Cybersecurity](https://www.intel.com/content/www/us/en/developer/articles/technical/bilics-approach-cybersecurity-using-neuralchat-7b.html) (March 2024)
 * CES 2024: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
 

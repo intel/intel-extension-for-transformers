@@ -5,7 +5,7 @@ evaluate
 fastapi
 fschat==0.2.32
 huggingface_hub
-intel_extension_for_pytorch==2.2.0
+intel_extension_for_pytorch==2.3.0
 lm-eval
 neural-compressor
 neural_speed==1.0a0
@@ -21,8 +21,8 @@ sacremoses
 shortuuid
 starlette
 tiktoken==0.4.0
-torch==2.2.0
-torchaudio==2.2.0
+torch==2.3.0
+torchaudio==2.3.0
 transformers>=4.35.2
 transformers_stream_generator
 uvicorn

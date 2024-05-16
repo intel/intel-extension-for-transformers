@@ -2,7 +2,7 @@
 accelerate==0.21.0
 datasets==2.11.0
 intel-extension-for-transformers==1.0.0
-intel_extension_for_pytorch==2.2.0
+intel_extension_for_pytorch==2.3.0
 neural-compressor==2.1
-torch==2.2.0
+torch==2.3.0
 transformers
