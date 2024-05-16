@@ -804,6 +804,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         bits: int = 4,
         tokenizer: Any = None,
         dataset: str = "NeelNanda/pile-10k",
+        batch_size: int = 8,
         group_size: int = 32,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
@@ -833,6 +834,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.bits = bits
         self.tokenizer = tokenizer
         self.dataset = dataset
+        self.batch_size = batch_size
         self.compute_dtype = compute_dtype
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
@@ -1052,6 +1054,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
         sym: bool = True,
+        max_input_length: int = 2048,
         lr: float = 0.0025,
         minmax_lr: float = 0.0025,
         use_quant_input: bool = True,
@@ -1082,7 +1085,6 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.lr = lr
         self.minmax_lr = minmax_lr
         self.use_quant_input = use_quant_input
-        self.iters = iters
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
@@ -1090,7 +1092,8 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_len = kwargs.get("calib_len", None)
+        self.batch_size = kwargs.get("batch_size", 1)
+        self.max_input_length = max_input_length
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"

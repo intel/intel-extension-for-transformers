@@ -297,6 +297,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             for i in range(value_range):
                 for j in range(blocksize):
                     g_idx[ret_idx[i * blocksize + j]] = i
+                    print(ret_idx[i * blocksize + j])
             return g_idx
 
         def recover_int_weight(g_idx, int_weight):

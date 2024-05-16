@@ -24,7 +24,8 @@ from ...utils import CpuInfo
 from accelerate import init_empty_weights
 from datasets import load_dataset
 from neural_compressor import quantization
-from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
+#from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
+from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
 from neural_compressor.utils.utility import LazyImport
 from neural_compressor.torch.algorithms.weight_only.autoround import get_autoround_default_run_fn
 from neural_compressor.torch.quantization import (
@@ -110,7 +111,7 @@ def unpack_weight(qweight, scales, qzeros, q_config):
         # change it to int8 with offset 128
         if not sym:
             weight = (weight.to(torch.int32) - 128).to(torch.int8)
-    return weight, scales, zeros
+    return weight.contiguous(), scales.contiguous(), zeros.contiguous()
 
 
 def replace_linear(
@@ -345,7 +346,6 @@ def _replace_linear(
                             quantization_config,
                         )
                         int_weight = int_weight.view(-1, int_weight.shape[-1])
-
                         model._modules[name].set_weights_bias(
                             int_weight,
                             scales,
@@ -387,6 +387,82 @@ def _replace_linear(
     return model, is_replaced
 
 
+def default_run_fn(model, tokenizer, dataset, max_length=512, n_samples=100, batch_size=8, algo="GPTQ"):
+    from datasets import load_dataset
+    from torch.utils.data import DataLoader
+
+    if isinstance(dataset, (str, bytes, os.PathLike)):
+        calib_dataset = load_dataset(dataset, split="train")
+    calib_dataset = calib_dataset.shuffle(seed=42)
+    if tokenizer is None:
+        logger.error(
+            "Please provide the tokenizer in quantization_config."
+        )
+        exit(0)
+
+    def tokenize_function(examples):
+        if algo == "teq":
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+        if "prompt" in examples:
+            if algo == "teq":
+                example = tokenizer(examples["prompt"], padding="max_length", max_length=max_length)
+            else:
+                example = tokenizer(examples["prompt"])
+        elif "code" in examples:
+            if algo == "teq":
+                example = tokenizer(examples["code"], padding="max_length", max_length=max_length)
+            else:
+                example = tokenizer(examples["code"])
+        elif "text" in examples:
+            if algo == "teq":
+                example = tokenizer(examples["text"], padding="max_length", max_length=max_length)
+            else:
+                example = tokenizer(examples["text"])
+        else:
+            logger.error(
+                "Please check dataset prompt identifier,"
+                + " NeelNanda/pile-10k is default used calibration dataset."
+            )
+            exit(0)
+        return example
+
+    tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
+    tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+
+    def collate_batch(batch):
+        input_ids_padded = []
+        for text in batch:
+            input_ids = text["input_ids"]
+            if len(input_ids) >= max_length:
+                input_ids = input_ids[:max_length]
+            else:
+                continue
+            input_ids_padded.append(input_ids)
+
+        return torch.vstack(input_ids_padded)
+
+    calib_dataloader = DataLoader(
+        tokenized_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_batch,
+    )
+    total_cnt = 0
+    for i, (input_ids) in enumerate(calib_dataloader):
+        if total_cnt + input_ids.shape[0] > n_samples:
+            input_ids = input_ids[: n_samples - total_cnt, ...]
+        total_cnt += input_ids.shape[0]
+        if total_cnt >= n_samples:
+            break
+
+        try:
+            model(
+                input_ids=input_ids,
+            )
+        except ValueError:
+            pass
+   
 def convert_to_quantized_model(model, config, device="cpu"):
     if device == "xpu" or device == torch.device("xpu"):
         import intel_extension_for_pytorch
@@ -394,101 +470,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
         assert (
             hasattr(torch, "xpu") and torch.xpu.is_available()
         ), "There is no xpu device in this system!"
-    calib_iters = config.calib_iters
-    calib_dataset = config.dataset
+
     model_device = next(model.parameters()).device
-
-    if (
-        calib_dataloader is None
-        and config.quant_method.value not in ["rtn"]
-        and calib_dataset is not None
-    ):
-        from datasets import load_dataset
-        from torch.utils.data import DataLoader
-
-        if isinstance(calib_dataset, (str, bytes, os.PathLike)):
-            calib_dataset = load_dataset(calib_dataset, split="train")
-        calib_dataset = calib_dataset.shuffle(seed=42)
-        if config.tokenizer is None:
-            logger.error(
-                "Please provide the tokenizer or provide calib_func directly,"
-                + " the following is how to get tokenizer. \n"
-                + " from transformer import AutoTokenizer \n"
-                + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
-            )
-            exit(0)
-
-        def tokenize_function(examples):
-            if "prompt" in examples:
-                example = config.tokenizer(examples["prompt"])
-            elif "code" in examples:
-                example = config.tokenizer(examples["code"])
-            elif "text" in examples:
-                example = config.tokenizer(examples["text"])
-            else:
-                logger.error(
-                    "Please check dataset prompt identifier,"
-                    + " NeelNanda/pile-10k is default used calibration dataset."
-                )
-                exit(0)
-            return example
-
-        tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
-        tokenized_dataset.set_format(type="torch", columns=["input_ids"])
-
-        def collate_batch(batch):
-            input_ids_padded = []
-            for text in batch:
-                input_ids = text["input_ids"]
-                input_ids = (
-                    input_ids[:512]
-                    if (len(input_ids) > 512 and config.quant_method.value != "gptq")
-                    else input_ids
-                )
-                input_ids_padded.append(input_ids)
-            return torch.vstack(input_ids_padded)
-
-        def collate_batch_for_autoround(batch):
-            input_ids_padded = []
-            for text in batch:
-                input_ids = text["input_ids"]
-                if input_ids.shape[0] < config.calib_len:
-                    continue
-                input_ids = input_ids[: config.calib_len]
-                input_ids_list = input_ids.tolist()
-                if input_ids_list.count(input_ids_list[-1]) > config.calib_len // 2:
-                    continue
-                input_ids_padded.append(input_ids)
-            if len(input_ids_padded) == 0:
-                return None
-
-            return torch.vstack(input_ids_padded)
-
-
-        calib_dataloader = DataLoader(
-            tokenized_dataset,
-            batch_size=1,
-            shuffle=False,
-            collate_fn=collate_batch,
-        )
-    if calib_func is None and config.quant_method.value == "awq":
-
-        def default_calib_func(model):
-            """This is the default calibration function, the dataset is NeelNanda/pile-10k,
-            the default calib_iters is 100."""
-            for i, (input_ids) in enumerate(calib_dataloader):
-                if i >= calib_iters:
-                    break
-                model(
-                    input_ids=input_ids,
-                )
-
-        calib_func = default_calib_func
-        logger.info(
-            "The default calibration function is used, "
-            + "the calibration dataset is NeelNanda/pile-10k,"
-            + "batchsize is 1 and calibration iteration is 100."
-        )
     orig_dtype = torch.float32
     for param in model.parameters():
         orig_dtype = param.dtype
@@ -520,63 +503,74 @@ def convert_to_quantized_model(model, config, device="cpu"):
             ) 
         elif config.quant_method.value == "teq":
             quant_config = TEQConfig(
+                dtype=dtype,
+                bits=config.bits,
+                use_sym=config.sym,
 
             )
         elif config.quant_method.value == "gptq":
             quant_config = GPTQConfig(
-
+                dtype=dtype,
+                bits=config.bits,
+                use_sym=config.sym,
+                group_size=config.group_size,
+                use_layer_wise=config.layer_wise,
+                act_order=config.desc_act,
+                percdamp=config.damp_percent,
+                block_size=config.blocksize,
+                static_groups=config.static_groups,
             )
+            quant_config.set_local(".*lm_head", GPTQConfig(dtype="fp32"))
+            quant_config.set_local(".*output_layer", GPTQConfig(dtype="fp32"))
+            quant_config.set_local(".*embed_out", GPTQConfig(dtype="fp32"))
+            logger.info(f"Do GPTQ with config {quant_config}")
+            run_fn = default_run_fn
+            run_args = (
+                config.tokenizer,
+                config.dataset,
+                config.max_input_length, # max_length
+                config.nsamples, # n_samples
+                config.batch_size, # batch_size
+                config.quant_method.value # algo
+            )
+            model = prepare(model=model, quant_config=quant_config)
+            run_fn(model, *run_args)
+            model = convert(model)    
         elif config.quant_method.value == "autoround":
             quant_config = AutoRoundConfig(
-                dtype=config.dtype,
+                dtype=dtype,
                 bits=config.bits,
-                use_sym=config.use_sym,
+                use_sym=config.sym,
                 group_size=config.group_size,
-                enable_full_range=config.enable_full_range,
-                batch_size=config.batch_size,
-                lr_scheduler=config.lr_scheduler,
                 use_quant_input=config.use_quant_input,
-                enable_minmax_tuning=config.enable_minmax_tuning,
                 lr=config.lr,
                 minmax_lr=config.minmax_lr,
-                low_gpu_mem_usage=config.low_gpu_mem_usage,
-                iters=config.iters,
-                seqlen=config.seq_len,
-                n_samples=config.n_samples,
-                sampler=config.sampler,
-                seed=config.seed,
-                n_blocks=config.n_blocks,
-                gradient_accumulate_steps=config.gradient_accumulate_steps,
-                not_use_best_mse=config.not_use_best_mse,
-                dynamic_max_gap=config.dynamic_max_gap,
+                seqlen=config.max_input_length,
+                n_samples=config.nsamples,
                 scale_dtype=config.scale_dtype,
-                white_list=config.white_list,
             )
-            quant_config.set_local(".*lm_head", AutoRoundConfig(w_dtype="fp32", act_dtype="fp32"))
-            quant_config.set_local(".*output_layer", AutoRoundConfig(w_dtype="fp32", act_dtype="fp32"))
-            quant_config.set_local(".*embed_out", AutoRoundConfig(w_dtype="fp32", act_dtype="fp32"))
+            quant_config.set_local(".*lm_head", AutoRoundConfig(dtype="fp32"))
+            quant_config.set_local(".*output_layer", AutoRoundConfig(dtype="fp32"))
+            quant_config.set_local(".*embed_out", AutoRoundConfig(dtype="fp32"))
             logger.info(f"Do AutoRound with config {quant_config}")
-
             run_fn = get_autoround_default_run_fn
             run_args = (
-                tokenizer,
-                dataset,
+                config.tokenizer,
+                config.dataset,
                 quant_config.n_samples,
-                quant_config.seq_len,
+                quant_config.seqlen,
                 quant_config.seed,
                 quant_config.batch_size,
                 "train"
             )
-            inc_model = prepare(model=model, quant_config=quant_config)
+            model = prepare(model=model, quant_config=quant_config)
             run_fn(model, *run_args)
-            inc_model = convert(inc_model)
-            inc_model.eval()
-
+            model = convert(model)
         else:
             assert False, "The Supported algorithm are RTN, AWQ, TEQ, GPTQ, AUTOROUND"
 
         if device == "xpu" or device == torch.device("xpu"):
-            model = inc_model.export_compressed_model(
+            model = model.export_compressed_model(
                 compression_dtype=torch.int8,
                 compression_dim=0,
                 use_optimum_format=False,
@@ -586,18 +580,9 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
             q_model = replace_linear(model, None, None, config, device=device)
         else:
-            if config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
-                inc_model = inc_model.export_compressed_model(use_optimum_format=True)
-                inc_model.eval()
-                if config.use_ipex:
-                    optimum_format_state_dict = inc_model.state_dict()
-                q_model = replace_linear(inc_model, None, None, config, device=device)
-                if config.use_ipex:
-                    setattr(q_model, "optimum_format_state_dict", optimum_format_state_dict)
-            else:
-                q_model = replace_linear(
-                    inc_model.model, None, None, config, device=device
-                )
+            model.eval()
+
+            q_model = replace_linear(model, None, None, config, device=device)
 
         if orig_dtype != torch.float32:
             q_model.to(dtype=orig_dtype)
