@@ -172,7 +172,7 @@ class H2OOPTAttention(nn.Module):
             attn_weights = attn_weights_reshaped.view(bsz * self.num_heads, tgt_len, src_len)
         else:
             attn_weights_reshaped = None
-        
+
         # get hh mask
         if not self.is_gen:
             self.h2o_kv_cache.clean_scores()
