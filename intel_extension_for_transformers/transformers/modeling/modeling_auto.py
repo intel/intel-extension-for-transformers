@@ -186,6 +186,8 @@ def convert_model_to_public(model):
                     module.qweight.data = module.qweight.t_().contiguous()
                     module.scales.data = module.scales.t_().contiguous()
                     module.weight_transposed = False
+    elif model.quantization_config.use_ipex:
+        pass
     elif model.quantization_config.weight_dtype not in [
         "fp8_e5m2",
         "fp8_e4m3",
@@ -194,7 +196,6 @@ def convert_model_to_public(model):
         "int4_fullrange",
     ]:
         model = recover_export_model(model)
-
 
 def make_contiguous(model):
     for param in model.parameters():
@@ -223,6 +224,7 @@ def save_low_bit(
                     os.path.abspath(os.path.expanduser(save_directory)), WEIGHTS_NAME)
         torch.save(self.quantized_state_dict(), weights_file)
         return
+
     convert_model_to_public(self)
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
@@ -231,6 +233,33 @@ def save_low_bit(
     self.save_pretrained(
         save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
     )
+
+    if self.quantization_config.use_ipex:
+        def save_linear_parameters(model, save_directory):
+            # only can save to pytorch model.bin due to ipex.
+            weights_file = os.path.join(
+            os.path.abspath(os.path.expanduser(save_directory)), SAFE_WEIGHTS_NAME)
+            os.remove(weights_file)
+            weights_file = os.path.join(
+            os.path.abspath(os.path.expanduser(save_directory)), WEIGHTS_NAME)
+            linear_parameters = {}
+            from intel_extension_for_pytorch.nn.modules import WeightOnlyQuantizedLinear as ipex_cpu_linear
+            for name, module in model.named_modules():
+                if isinstance(module, ipex_cpu_linear):
+                    linear_parameters[name + ".ipex_scales"] = module._op_context.get_scales().contiguous()
+                    linear_parameters[name + ".ipex_weight"] = \
+                        module._op_context.to_public(module._op_context.get_weight()).contiguous()
+                    linear_parameters[name + ".ipex_zeros"] = module._op_context.get_zero_points().contiguous()
+                    if module._op_context.get_bias() is not None:
+                        linear_parameters[name + ".ipex_bias"] = module._op_context.get_bias().contiguous()
+                    if module._op_context.get_g_idx() is not None:
+                        linear_parameters[name + ".ipex_g_idx"] = module._op_context.get_g_idx().contiguous()
+            others_parameters = model.state_dict()
+            linear_parameters.update(others_parameters)
+
+            torch.save(linear_parameters, weights_file)
+
+        save_linear_parameters(self, save_directory)
     self.save_pretrained = types.MethodType(save_low_bit, self)
     # We conveniently save all the keys of the model to have them on hand,
     # so that when using 'low_cpumem load',
@@ -1814,42 +1843,96 @@ class _BaseQBitsAutoModelClass:
         # restore default dtype
         if dtype_orig is not None:
             torch.set_default_dtype(dtype_orig)
-        (
-            model,
-            missing_keys,
-            unexpected_keys,
-            mismatched_keys,
-            offload_index,
-            error_msgs,
-        ) = model_class._load_pretrained_model(
-            model,
-            None,
-            loaded_state_dict_keys,  # XXX: rename?
-            resolved_archive_file,
-            pretrained_model_name_or_path,
-            sharded_metadata=sharded_metadata,
-            _fast_init=_fast_init,
-            low_cpu_mem_usage=True,
-            offload_folder=offload_folder,
-            offload_state_dict=offload_state_dict,
-            dtype=torch_dtype,
-            keep_in_fp32_modules=[],
-        )
+
+        if is_ipex_available() and quantization_config.use_ipex:
+            import intel_extension_for_pytorch as ipex
+            from intel_extension_for_pytorch.nn.modules import WeightOnlyQuantizedLinear as ipex_linear
+            def replace_ipex_cpu_woq_linear(model, current_name=[]):
+                for name, module in model.named_children():
+                    current_name.append(name)
+                    if isinstance(module, WeightOnlyLinear):
+                        weight_dtype = {
+                            4: ipex.quantization.WoqWeightDtype.INT4,
+                            8: ipex.quantization.WoqWeightDtype.INT8,
+                        }
+                        compute_dtype = {
+                            "fp32": ipex.quantization.WoqLowpMode.NONE, # follow the activation datatype.
+                            "bf16": ipex.quantization.WoqLowpMode.BF16,
+                            "fp16": ipex.quantization.WoqLowpMode.FP16,
+                            "int8": ipex.quantization.WoqLowpMode.INT8,
+
+                        }
+
+                        ipex_qconfig_mapping = (
+                            ipex.quantization.get_weight_only_quant_qconfig_mapping(
+                                weight_dtype=weight_dtype[quantization_config.bits],
+                                lowp_mode=compute_dtype[quantization_config.compute_dtype],
+                                act_quant_mode=ipex.quantization.WoqActQuantMode.PER_IC_BLOCK,
+                                group_size=quantization_config.group_size,
+                            )
+                        )
+                        tmp_linear = torch.nn.Linear(
+                            module.in_features,
+                            module.out_features,
+                            True if hasattr(module, "bias") else False
+                            )
+                        tmp_linear.qconfig = ipex_qconfig_mapping.global_qconfig
+                        target_linear = ipex_linear.from_float_and_int4_weight(
+                            mod = tmp_linear,
+                            qweight = state_dict.pop('.'.join(current_name) + ".ipex_weight"),
+                            scales = state_dict.pop('.'.join(current_name) + ".ipex_scales"),
+                            zero_points = state_dict.pop('.'.join(current_name) + ".ipex_zeros"),
+                            bias = state_dict.pop('.'.join(current_name) + ".ipex_bias") \
+                                if '.'.join(current_name) + ".ipex_bias" in state_dict else None,
+                            group_size = quantization_config.group_size,
+                            g_idx = state_dict.pop('.'.join(current_name) + ".ipex_g_idx") \
+                                if '.'.join(current_name) + ".ipex_g_idx" in state_dict else None,
+                        )
+                        setattr(model, name, target_linear)
+                    else:
+                        replace_ipex_cpu_woq_linear(module, current_name)
+                    current_name.pop()
+
+            replace_ipex_cpu_woq_linear(model)
+            model.load_state_dict(state_dict, strict=False, assign=True)
+        else:
+            (
+                model,
+                missing_keys,
+                unexpected_keys,
+                mismatched_keys,
+                offload_index,
+                error_msgs,
+            ) = model_class._load_pretrained_model(
+                model,
+                None,
+                loaded_state_dict_keys,  # XXX: rename?
+                resolved_archive_file,
+                pretrained_model_name_or_path,
+                sharded_metadata=sharded_metadata,
+                _fast_init=_fast_init,
+                low_cpu_mem_usage=True,
+                offload_folder=offload_folder,
+                offload_state_dict=offload_state_dict,
+                dtype=torch_dtype,
+                keep_in_fp32_modules=[],
+            )
 
         # make sure token embedding weights are still tied if needed
         model.tie_weights()
 
         # Set model in evaluation mode to deactivate DropOut modules by default
         model.eval()
+
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
             "nf4",
             "fp4",
             "int4_fullrange",
-        ]:
+        ] and not quantization_config.use_ipex:
             model = replace_linear(
-                model.float(),
+                model,
                 quantization_config=quantization_config,
                 device="cpu" if device_map == "auto" else device_map,
                 empty_weights=True,
