@@ -71,7 +71,7 @@ def convert_model(
     for name, module in model.named_modules():
         if "Attention" in module.__class__.__name__:
             atten_layers.append(name)
-    
+
     for layer_name in atten_layers:
         module = get_module(model, layer_name)
         h2o_cls = getattr(
