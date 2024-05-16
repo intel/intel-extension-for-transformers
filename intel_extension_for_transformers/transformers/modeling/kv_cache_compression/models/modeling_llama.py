@@ -42,7 +42,8 @@ class H2OLlamaAttention(nn.Module):
             heavy_ratio,
             recent_ratio,
             h2o_min_seqlen=1024,
-            real_drop=False
+            real_drop=False,
+            is_gen=False
             ):
         super().__init__()
         self.config = config
@@ -78,6 +79,7 @@ class H2OLlamaAttention(nn.Module):
 
         # for h2o
         self.real_drop = real_drop
+        self.is_gen = is_gen
 
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
@@ -143,8 +145,8 @@ class H2OLlamaAttention(nn.Module):
         # H2O
         if q_len > self.h2o_min_seqlen:
             if self.real_drop and past_key_value is not None:
-                if len(past_key_value.key_cache) == self.layer_idx + 1:
-                    self.h2o_kv_cache._clean_scores()
+                if not self.is_gen:
+                    self.h2o_kv_cache.clean_scores()
                 new_key_states, new_value_states = self.h2o_kv_cache(
                     query_states,
                     past_key_value.key_cache[self.layer_idx],

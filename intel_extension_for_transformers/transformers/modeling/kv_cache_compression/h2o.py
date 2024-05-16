@@ -68,7 +68,7 @@ def get_module(model, op_name):
     return module
 
 
-def convert_model(model, heavy_ratio, recent_ratio, h2o_min_seqlen=1024, real_drop=True):
+def convert_model(model, heavy_ratio, recent_ratio, h2o_min_seqlen=1024, real_drop=True, is_gen=False):
     device = model.device
     model_type = model.config.model_type
     model_name = model_type.replace("-", "_")
@@ -81,7 +81,7 @@ def convert_model(model, heavy_ratio, recent_ratio, h2o_min_seqlen=1024, real_dr
 
     for layer_name in atten_layers:
         module = get_module(model, layer_name)
-        module = h2o_cls(module, model.config, heavy_ratio, recent_ratio, h2o_min_seqlen, real_drop)
+        module = h2o_cls(module, model.config, heavy_ratio, recent_ratio, h2o_min_seqlen, real_drop, is_gen)
         set_module(model, layer_name, module)
     model = model.to(device)
     return model
@@ -160,34 +160,24 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
     # mask_bottom = torch.logical_or(mask_bottom, ones)
     return mask_bottom
 
-def _get_attn_weights(query_states, key_states, value_states, **kwargs):
-    head_dim = query_states.size(-1)
-    attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(head_dim)
-    if "attention_mask" in kwargs:
-        attention_mask = kwargs["attention_mask"]
-        if attention_mask is not None:
-            causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
-            attn_weights = attn_weights + causal_mask
-    return attn_weights
-
 class H2OKVCache:
     def __init__(
         self,
         heavy_ratio=0.2,
         recent_ratio=0.2,
+        real_drop=True
     ):
         ## bsz, num_heads, seq_len, head_dim | num_heads, seq_len, head_dim
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.hh_score = None
-        self.score_func = _get_attn_weights
+        self.real_drop = real_drop
         self.idx = 0
 
 
-    def __call__(self, query_states, key_states, value_states, **kwargs):
+    def __call__(self, attn_score, key_states, value_states, mean=False, **kwargs):
         self.idx += 1
-        attn_score = self.score_func(query_states, key_states, value_states, **kwargs)
-        self._update_hh_score(attn_score, mean=False)
+        self._update_hh_score(attn_score, mean=mean)
         heavy_budget = int(self.heavy_ratio * self.hh_score.shape[-1])
         recent_budget = int(self.recent_ratio * self.hh_score.shape[-1])
         cache_size = heavy_budget + recent_budget
@@ -197,7 +187,7 @@ class H2OKVCache:
             return key_states, value_states
 
         # hh-selection
-        if len(self.hh_score) == 2:
+        if len(self.hh_score.shape) == 2:
             select_hh_scores = self.hh_score[:, :seq_len - recent_budget]
         else:
             select_hh_scores = self.hh_score[:, :, :seq_len - recent_budget]
@@ -213,6 +203,8 @@ class H2OKVCache:
 
         mask = torch.zeros(self.hh_score.shape, dtype=torch.bool).to(key_states.device)
         mask = mask.scatter(-1, keep_idx, 1)
+        if not self.real_drop:
+            return mask
 
         states_shape = list(key_states.shape)
         states_shape[-2] = cache_size
@@ -227,23 +219,19 @@ class H2OKVCache:
 
     def _update_hh_score(self, attn_score_cache, mean=False):
         # hh_score size (bsz, num_heads, seq_len) or (num_heads, seq_len)
-        num_new_tokens = attn_score_cache.shape[-2]
 
         attn_score_cache = attn_score_cache.sum(-2)
         if self.hh_score is not None:
-            if len(attn_score_cache) == 3:
+        # clean self.hh_score if not generation mode
+            if attn_score_cache.shape[-1] < self.hh_score:
+                self.clean_scores()
+            elif len(attn_score_cache.shape) == 2:
                 attn_score_cache[:, :self.hh_score.shape[-1]] += self.hh_score / (1 if not mean else self.idx)
             else:
                 attn_score_cache[:, :, :self.hh_score.shape[-1]] += self.hh_score / (1 if not mean else self.idx)
 
         self.hh_score = attn_score_cache
 
-        # if self.hh_score is None:
-        #     self.hh_score = attn_score_cache.sum(-2)
-        # else:
-        #     attn_score_cache = attn_score_cache.sum(-2)
-        #     attn_score_cache[:, :-num_new_tokens] += self.hh_score
-        #     self.hh_score = attn_score_cache
 
-    def _clean_scores(self):
+    def clean_scores(self):
         self.hh_score = None

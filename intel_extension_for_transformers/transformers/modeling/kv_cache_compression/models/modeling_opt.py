@@ -20,7 +20,7 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 
-from ..h2o import get_hh_mask
+from ..h2o import get_hh_mask, H2OKVCache
 
 class H2OOPTAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper."""
@@ -32,7 +32,8 @@ class H2OOPTAttention(nn.Module):
         heavy_ratio,
         recent_ratio,
         h2o_min_seqlen=1024,
-        real_drop=False
+        real_drop=False,
+        is_gen=False
     ):
         super().__init__()
         self.config = config
@@ -58,10 +59,14 @@ class H2OOPTAttention(nn.Module):
         self.out_proj = model.out_proj
 
         # for h2o
+        self.is_gen = is_gen
+        self.real_drop = real_drop
+
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.h2o_min_seqlen = h2o_min_seqlen
-        self.real_drop = real_drop
+
+        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, real_drop)
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
@@ -142,8 +147,29 @@ class H2OOPTAttention(nn.Module):
 
         # get hh mask
         if tgt_len > self.h2o_min_seqlen:
-            mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
-            attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min
+            if not self.is_gen:
+                self.h2o_kv_cache.clean_scores()
+            if self.real_drop:
+                new_key_states, new_value_states = self.h2o_kv_cache(
+                    attn_weights,
+                    past_key_value[0],
+                    past_key_value[1],
+                    attention_mask=attention_mask
+                )
+                past_key_value = (new_key_states, new_value_states)
+            else:
+                mask = self.h2o_kv_cache(
+                    attn_weights,
+                    past_key_value[0],
+                    past_key_value[1],
+                    attention_mask=attention_mask
+                )
+                mask = mask.unsqueeze(1)
+                attn_weights = attn_weights * mask + ~mask * torch.finfo(attn_weights.dtype).min
+
+                # sim
+                # mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
+                # attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min
 
         # upcast to fp32 if the weights are in fp16. Please see https://github.com/huggingface/transformers/pull/17437
         if attn_weights.dtype == torch.float16:
