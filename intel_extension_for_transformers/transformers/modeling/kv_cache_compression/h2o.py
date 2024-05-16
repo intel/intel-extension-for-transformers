@@ -21,16 +21,6 @@ import importlib
 import torch
 from torch import nn
 
-ATTENTION_MAPPING_NAMES = OrderedDict(
-    [
-        ("opt", "OPTAttention"),
-        ("llama", "LlamaAttention"),
-        ("gpt_neox", "GPTNeoXAttention"),
-        ("mistral", "MistralAttention"),
-        ("bloom", "BloomAttention"),
-    ]
-)
-
 def set_module(model, op_name, new_module):
     """Set module with a given op name.
 
@@ -67,21 +57,30 @@ def get_module(model, op_name):
             module = module
     return module
 
-
-def convert_model(model, heavy_ratio, recent_ratio, h2o_min_seqlen=1024, real_drop=True, is_gen=False):
-    device = model.device
+def convert_model(
+        model,
+        heavy_ratio,
+        recent_ratio,
+        h2o_min_seqlen=1024,
+        real_drop=True,
+        is_gen=False
+        ):
     model_type = model.config.model_type
-    model_name = model_type.replace("-", "_")
-    atten_cls = getattr(importlib.import_module(f".{model_name}.modeling_{model_name}", "transformers.models"), ATTENTION_MAPPING_NAMES[model_type])
-    h2o_cls = getattr(importlib.import_module(f".models.modeling_{model_name}", "intel_extension_for_transformers.transformers.modeling.kv_cache_compression"), "H2O" + ATTENTION_MAPPING_NAMES[model_type])
+    device = model.device
     atten_layers = []
     for name, module in model.named_modules():
-        if isinstance(module, atten_cls):
+        if "Attention" in module.__class__.__name__:
             atten_layers.append(name)
-
+    
     for layer_name in atten_layers:
         module = get_module(model, layer_name)
-        module = h2o_cls(module, model.config, heavy_ratio, recent_ratio, h2o_min_seqlen, real_drop, is_gen)
+        h2o_cls = getattr(
+            importlib.import_module(
+                f".models.modeling_{model_type}",
+                "intel_extension_for_transformers.transformers.modeling.kv_cache_compression"
+                ),
+            "H2O" + module.__class__.__name__)
+        module = h2o_cls(module, module.config, heavy_ratio, recent_ratio, h2o_min_seqlen, real_drop, is_gen)
         set_module(model, layer_name, module)
     model = model.to(device)
     return model
@@ -165,17 +164,24 @@ class H2OKVCache:
         self,
         heavy_ratio=0.2,
         recent_ratio=0.2,
-        real_drop=True
+        real_drop=False,
+        min_seqlen=-1
     ):
         ## bsz, num_heads, seq_len, head_dim | num_heads, seq_len, head_dim
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.hh_score = None
         self.real_drop = real_drop
+        self.min_seqlen = min_seqlen
         self.idx = 0
 
 
     def __call__(self, attn_score, key_states, value_states, mean=False, **kwargs):
+        if key_states.shape[-2] <= self.min_seqlen:
+            if self.real_drop:
+                return key_states, value_states
+            else:
+                return torch.ones(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
         self.idx += 1
         self._update_hh_score(attn_score, mean=mean)
         heavy_budget = int(self.heavy_ratio * self.hh_score.shape[-1])

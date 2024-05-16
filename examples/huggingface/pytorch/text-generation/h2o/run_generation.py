@@ -54,7 +54,8 @@ parser.add_argument("--num_fewshot", default=0, type=int, help="num few shot.")
 parser.add_argument("--mixed_precision", action="store_true")
 
 # ============h2o configs==============
-parser.add_argument('--enable_small_cache', action='store_true')
+parser.add_argument('--h2o', action='store_true')
+parser.add_argument('--is_gen', action='store_true')
 parser.add_argument('--real_drop', action='store_true')
 parser.add_argument("--heavy_ratio", type=float, default=0.1)
 parser.add_argument("--recent_ratio", type=float, default=0.1)
@@ -114,12 +115,19 @@ user_model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=
 user_model.to(device)
 
 # get optimized model
-if args.enable_small_cache:
+if args.h2o:
     print('Enable Small Cache Size')
     # checkpoint = copy.deepcopy(model.state_dict())
     # model = ENABLE_Heavy_Hitter_FUNCTIONS[args.model_type](model, config)
     from intel_extension_for_transformers.transformers.modeling.kv_cache_compression import convert_model
-    user_model = convert_model(user_model, heavy_ratio=args.heavy_ratio, recent_ratio=args.recent_ratio, h2o_min_seqlen=args.h2o_min_seqlen, real_drop=args.read_drop)
+    user_model = convert_model(
+        user_model,
+        heavy_ratio=args.heavy_ratio,
+        recent_ratio=args.recent_ratio,
+        h2o_min_seqlen=args.h2o_min_seqlen,
+        real_drop=args.real_drop,
+        is_gen=args.is_gen
+        )
     print("converted model: ", user_model)
 
 # save model
