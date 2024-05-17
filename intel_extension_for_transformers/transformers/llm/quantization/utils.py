@@ -607,11 +607,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             if config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
-                if config.use_ipex:
-                    optimum_format_state_dict = inc_model.state_dict()
                 q_model = replace_linear(inc_model, None, None, config, device=device)
-                if config.use_ipex:
-                    setattr(q_model, "optimum_format_state_dict", optimum_format_state_dict)
             else:
                 q_model = replace_linear(
                     inc_model.model, None, None, config, device=device
