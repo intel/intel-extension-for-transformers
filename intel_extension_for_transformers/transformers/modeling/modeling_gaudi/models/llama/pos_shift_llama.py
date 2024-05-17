@@ -32,6 +32,10 @@
 
 """
 Adapted from https://github.com/tomaarsen/attention_sinks
+Note (accelerate inference with hpu graphs in V1.15.1):
+  1. avoid using data dependent dynamic flow
+  2. avoid updating tensor by in-place view (a[:, idx] = c)
+  3. make all shapes static
 """
 
 
@@ -80,41 +84,17 @@ def gaudi_llama_pos_shift_kv_cache_allocate(self, inp_seq_len, dtype, device, sh
         self.inp_seq_len = inp_seq_len
 
 def gaudi_llama_pos_shift_kv_cache_update(self, prev, cur, dim, idx, inp_seq_len):
-    orig_cur = cur
-    if not hasattr(self, "update_count"):
-        self.update_count = 0
-    self.update_count += 1
-    if cur.shape[2] >= 1 and cur.shape[2] <= prev.shape[2] and self.update_count == 1:
-        # Initialize
-        prev[:, :, :inp_seq_len, :].copy_(cur)
-        return orig_cur
-    elif idx is not None:
-        if idx  + cur.shape[2] <= self.window_size:
-            prev[:, :, idx:idx + cur.shape[2], :] = cur
-        else:
-            prev[:, :, -cur.shape[2]:, :] = cur
+    if idx is not None:
+        prev.index_copy_(dim, idx, cur)
         return prev
     else:
         return torch.cat((prev, cur), dim=dim)
 
-def gaudi_llama_pos_shift_kv_cache_forward(self, cur, dim, idx, kv_past_seq_len):
-    def prune_window(cache, attention_sink_size, prune_num):
-        if cache is None:
-            return None
-        # kv_seq_len will not exceed window_size (first prune then concat)
-        window_size = cache.shape[-2]
-        if kv_past_seq_len + prune_num <= window_size:
-            return cache
-        return torch.cat(
-            [
-                cache[:, :, 0:attention_sink_size, ...],
-                cache[:, :, attention_sink_size + prune_num:window_size, ...],
-                cache[:, :, attention_sink_size: attention_sink_size + prune_num, ...],
-            ],
-                dim=2,
-        )
-
-    self.cache = prune_window(self.cache, self.attention_sink_size, cur.shape[2])
+def gaudi_llama_pos_shift_kv_cache_forward(self, cur, dim, idx, prune_num):
+    update_idx = torch.arange(self.attention_sink_size, self.window_size - prune_num, device=idx.device)
+    shift_idx = torch.arange(self.attention_sink_size + prune_num, self.window_size, device=idx.device)
+    shift_cache = torch.index_select(self.cache, dim, shift_idx)
+    self.cache.index_copy_(dim, update_idx, shift_cache)
     return self.update(self.cache, cur, dim, idx, self.inp_seq_len)
 
 def gaudi_llama_pos_shift_pre_attn_forward(
@@ -133,6 +113,7 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     flash_attention_recompute: Optional[bool] = False,
     flash_attention_causal_mask: Optional[bool] = False,
     cache_idx: int = None,
+    cache_prune_num: int = 0,
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
     """
@@ -145,12 +126,9 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     - add new args use_flash_attention
     - add new arg flash_attention_recompute
     - add new arg flash_attention_causal_mask
-    In streaming-llm (attention sinks), reuse_cache=False, self.k_cache=None, self.v_cache=None, and
-    the token_idx will not be used inside the function.
+    - add new arg cache_prune_num for attention_sinks
     """
     bsz, q_len, _ = hidden_states.size()
-    if not hasattr(self, "kv_past_total_tokens"):
-        self.kv_past_total_tokens = 0
 
     if self.config.pretraining_tp > 1:
         key_value_slicing = (self.num_key_value_heads * self.head_dim) // self.config.pretraining_tp
@@ -178,7 +156,7 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     key_states = key_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
     value_states = value_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
 
-    kv_seq_len = key_states.shape[-2] if self.kv_past_total_tokens == 0 else self.kv_cache_max_sl
+    kv_seq_len = self.kv_cache_max_sl
     if past_key_value is not None:
         if token_idx is None:
             if reuse_cache:
@@ -194,28 +172,13 @@ def gaudi_llama_pos_shift_pre_attn_forward(
                 kv_seq_len = past_key_value[0].shape[-2]
 
     cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-    ### Shift Pos: query pos is min(cache_size, idx)
-    if reuse_cache:
-        # shift position_ids
-        # for next model.generate round
-        if token_idx is not None and token_idx < self.kv_past_total_tokens:
-            position_ids = torch.arange(self.kv_past_total_tokens,
-                                        self.kv_past_total_tokens + q_len,
-                                        device=position_ids.device).unsqueeze(0)
-        # exceed cache window size
-        if self.kv_past_total_tokens >= self.kv_cache_max_sl:
-            position_ids =  position_ids - (
-                                            self.kv_past_total_tokens - self.kv_cache_max_sl # truncate num
-                                            + position_ids.shape[-1]                             # prune_num
-                                            )
     query_states = gaudi_apply_rotary_pos_emb_single(query_states, cos, sin, position_ids)
 
     if use_cache:
         # reuse k, v, self_attention
         if reuse_cache:
-            kv_past_seq_len = min(self.kv_past_total_tokens, self.kv_cache_max_sl)
-            key_states = self.k_cache(key_states, 2, self.kv_past_total_tokens, kv_past_seq_len)
-            value_states = self.v_cache(value_states, 2, self.kv_past_total_tokens, kv_past_seq_len)
+            key_states = self.k_cache(key_states, 2, position_ids.squeeze(0), cache_prune_num)
+            value_states = self.v_cache(value_states, 2, position_ids.squeeze(0), cache_prune_num)
             past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())
         else:
             if past_key_value is None:
@@ -238,43 +201,9 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     else:
         past_key_value = None
 
-    if attention_mask is not None and self.kv_past_total_tokens > 0:
-        # fill the former mask for multi-round model.generate
-        updated_attention_mask = torch.full((attention_mask.shape[0], attention_mask.shape[1], q_len, kv_seq_len),
-                                            0,
-                                            dtype=attention_mask.dtype,
-                                            device=attention_mask.device)
-        if self.kv_past_total_tokens < kv_seq_len:
-            updated_attention_mask[:, :, :, self.kv_past_total_tokens:] = torch.finfo(attention_mask.dtype).min
-        first_token = (attention_mask.shape[-1] == attention_mask.shape[-2])
-        if first_token:
-            if self.kv_past_total_tokens + q_len <= kv_seq_len:
-                updated_attention_mask[:, :, :, self.kv_past_total_tokens:
-                                                self.kv_past_total_tokens + q_len] = attention_mask
-            else:
-                updated_attention_mask[:, :, :, -q_len:] = attention_mask
-        else:
-            if self.kv_past_total_tokens + q_len <= self.kv_cache_max_sl:
-                updated_attention_mask[:, :, :, self.kv_past_total_tokens:
-                                                self.kv_past_total_tokens + q_len] = 0
-        attention_mask = updated_attention_mask
-
-    if attention_mask is None and q_len == 1 and kv_seq_len > self.kv_past_total_tokens:
-        attention_mask = torch.full((1, 1, 1, kv_seq_len),
-                                    torch.finfo(query_states.dtype).min,
-                                    dtype=query_states.dtype,
-                                    device=query_states.device)
-        attention_mask[:, :, :, 0:self.kv_past_total_tokens + q_len] = 0
-
-    self.kv_past_total_tokens += q_len
-
     ### Shift Pos: key pos is the pos in cache
     key_position_ids = torch.arange(kv_seq_len, device=position_ids.device).unsqueeze(0)
     key_states = gaudi_apply_rotary_pos_emb_single(key_states, cos, sin, key_position_ids)
-
-    # TODO it will accelerate inference?
-    import habana_frameworks.torch.core as htcore
-    htcore.mark_step()
 
     if use_flash_attention and FusedSDPA:
         import habana_frameworks.torch.hpu as ht

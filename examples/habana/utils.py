@@ -334,6 +334,13 @@ def setup_generation_config(args, model, tokenizer):
     bad_words_ids = None
     force_words_ids = None
 
+    attention_sink_size = None
+    attention_sink_window_size = None
+    if hasattr(args, "attention_sink_size"):
+        attention_sink_size = args.attention_sink_size
+    if hasattr(args, "attention_sink_window_size"):
+        attention_sink_window_size = args.attention_sink_window_size
+
     is_optimized = model_is_optimized(model.config)
     # Generation configuration
     generation_config = copy.deepcopy(model.generation_config)
@@ -360,6 +367,9 @@ def setup_generation_config(args, model, tokenizer):
         assert generation_config.bucket_size > 0
     # TODO this will also influence
     generation_config.use_flash_attention = False
+    # attention_sinks
+    generation_config.attention_sink_size = attention_sink_size
+    generation_config.attention_sink_window_size = attention_sink_window_size
     return generation_config
 
 

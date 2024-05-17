@@ -70,7 +70,6 @@ def compute_perplexity(
 
     logs = defaultdict(list)
     loss_fn = CrossEntropyLoss(reduction="none")
-    past_key_values = None
     num_processed_tokens = 0
 
     # allocate kv cache
@@ -85,15 +84,26 @@ def compute_perplexity(
         for idx in pbar:
             start_t = time.time()
             input_ids = encodings.input_ids[:, idx : idx + 1].to(model.device)
-            pos_ids = torch.full((1,1), idx, dtype=torch.int64, device=model.device)
+            attention_mask = torch.full((1, 1, 1, kv_window_size),
+                                        1,
+                                        dtype=torch.int64,
+                                        device="cpu")
+            n_past = min(idx, kv_window_size -1)
+            attention_mask[:, :, :, n_past + 1:] = 0
+            attention_mask = attention_mask.to(model.device)
+            pos_ids = torch.full((1,1), n_past, dtype=torch.int64, device=model.device)
+            cache_prune_num = 0 if idx < kv_window_size else 1
             with torch.no_grad():
                 outputs = model(input_ids,
                                 position_ids=pos_ids,
-                                past_key_values=past_key_values,
+                                attention_mask=attention_mask,
+                                attn_softmax_bf16=True,
                                 use_cache=True,
-                                reuse_cache=True)
-                logits = outputs.logits.view(-1, model.config.vocab_size)
-                past_key_values = outputs.past_key_values
+                                reuse_cache=True,
+                                cache_prune_num = cache_prune_num,
+                                )
+                logits = outputs.logits.view(-1, model.config.vocab_size).cpu()
+                logits = logits.to(torch.float32)
                 label = encodings.input_ids[:, idx + 1 : idx + 2].to(logits.device).view(-1)
                 neg_log_likelihood = loss_fn(logits, label)
                 perplexity = neg_log_likelihood.exp()

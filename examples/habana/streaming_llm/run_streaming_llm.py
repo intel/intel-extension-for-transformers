@@ -41,7 +41,6 @@ from datasets import load_dataset
 from transformers import TextStreamer
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import adapt_transformers_to_gaudi
 from run_generation import setup_parser
 from utils import print_memory_stats, initialize_model
 
@@ -65,6 +64,8 @@ def greedy_generate(model, tokenizer, dataset, args, generation_config, max_new_
     generation_config.reuse_cache = True
     generation_config.ignore_eos=False
     generation_config.bucket_size = -1
+    generation_config.attention_sink_size = args.attention_sink_size
+    generation_config.attention_sink_window_size = args.attention_sink_window_size
     print(generation_config)
     use_lazy_mode = True
     if args.torch_compile and model.config.model_type == "llama":
