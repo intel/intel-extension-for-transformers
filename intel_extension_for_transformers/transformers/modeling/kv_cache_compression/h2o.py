@@ -57,6 +57,11 @@ def get_module(model, op_name):
             module = module
     return module
 
+def clean_cache(model):
+    for _, module in model.named_modules():
+        if "H2O" in module.__class__.__name__:
+            module.h2o_kv_cache.clean_scores()
+
 def convert_model(
         model,
         heavy_ratio,
@@ -80,8 +85,9 @@ def convert_model(
                 "intel_extension_for_transformers.transformers.modeling.kv_cache_compression"
                 ),
             "H2O" + module.__class__.__name__)
-        module = h2o_cls(module, module.config, heavy_ratio, recent_ratio, h2o_min_seqlen, real_drop, is_gen)
+        module = h2o_cls(module, model.config, heavy_ratio, recent_ratio, h2o_min_seqlen, real_drop, is_gen)
         set_module(model, layer_name, module)
+    model.clean_cache = lambda: clean_cache(model)
     model = model.to(device)
     return model
 
@@ -167,7 +173,7 @@ class H2OKVCache:
         real_drop=False,
         min_seqlen=-1
     ):
-        ## bsz, num_heads, seq_len, head_dim | num_heads, seq_len, head_dim
+        ## bsz, num_heads, seq_len, head_dim 
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.hh_score = None
@@ -177,65 +183,51 @@ class H2OKVCache:
 
 
     def __call__(self, attn_score, key_states, value_states, mean=False, **kwargs):
-        if key_states.shape[-2] <= self.min_seqlen:
-            if self.real_drop:
-                return key_states, value_states
-            else:
-                return torch.ones(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
-        self.idx += 1
-        self._update_hh_score(attn_score, mean=mean)
-        heavy_budget = int(self.heavy_ratio * self.hh_score.shape[-1])
-        recent_budget = int(self.recent_ratio * self.hh_score.shape[-1])
-        cache_size = heavy_budget + recent_budget
-
         seq_len = key_states.size(-2)
-        if seq_len <= cache_size:
+        heavy_budget = int(self.heavy_ratio * seq_len)
+        recent_budget = int(self.recent_ratio * seq_len)
+        cache_size = heavy_budget + recent_budget
+        if seq_len <= self.min_seqlen or seq_len <= cache_size:
             if self.real_drop:
                 return key_states, value_states
             else:
-                return torch.ones(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
+                return torch.ones(self.attn_score.shape, dtype=attn_score.dtype).to(key_states.device)
+        self.idx += 1
+        mask_shape = list(attn_score.shape)
+        mask_shape.pop(-1)
+        # attn_score shape (bsz, num_heads, seq_len, head_dim)
+        if len(attn_score.shape) == 3:
+            attn_score = attn_score.unsqueeze(0)
+        self._update_hh_score(attn_score, mean=mean)
 
         # hh-selection
         mask = torch.zeros(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
-        if len(self.hh_score.shape) == 2:
-            if not recent_budget == 0:
-                mask[:,-recent_budget:] = 1
-            select_hh_scores = self.hh_score[:, :seq_len - recent_budget]
-        else:
-            if not recent_budget == 0:
-                mask[:,:,-recent_budget:] = 1
-            select_hh_scores = self.hh_score[:,:,:seq_len - recent_budget]
+        if not recent_budget == 0:
+            mask[:,:,-recent_budget:] = 1
+        select_hh_scores = self.hh_score[:,:,:seq_len - recent_budget]
 
         if not heavy_budget == 0:
             _, keep_topk = torch.topk(select_hh_scores, heavy_budget, dim=-1, largest=True)
             mask = mask.scatter(-1, keep_topk, 1)
 
         if not self.real_drop:
-            return mask
+            return mask.view(mask_shape)
 
         mask = mask.bool()
-        states_shape = list(key_states.shape)
-        states_shape[-2] = cache_size
-        k_hh_recent = key_states[mask].view(*states_shape)
-        states_shape[-1] = -1
-        v_hh_recent = value_states[mask].view(*states_shape)
+        k_hh_recent = key_states[mask].view(key_states.shape[0], key_states.shape[1], cache_size, key_states.shape[3])
+        v_hh_recent = value_states[mask].view(value_states.shape[0], value_states.shape[1], cache_size, value_states.shape[3])
 
-        tmp_shape = list(self.hh_score.shape)
-        tmp_shape[-1] = cache_size
-        self.hh_score = self.hh_score[mask].view(*tmp_shape)
+        self.hh_score = self.hh_score[mask].view(self.hh_score.shape[0], self.hh_score.shape[1], cache_size)
         return k_hh_recent, v_hh_recent
 
     def _update_hh_score(self, attn_score_cache, mean=False):
-        # hh_score size (bsz, num_heads, seq_len) or (num_heads, seq_len)
+        # hh_score size (bsz, num_heads, head_dim)
 
         attn_score_cache = attn_score_cache.sum(-2)
         if self.hh_score is not None:
         # clean self.hh_score if not generation mode
-            if attn_score_cache.shape[-1] < self.hh_score:
+            if attn_score_cache.size(-1) < self.hh_score.size(-1):
                 self.clean_scores()
-            elif len(attn_score_cache.shape) == 2:
-                attn_score_cache[:, :self.hh_score.shape[-1]] += self.hh_score / (1 if not mean else self.idx)
-            else:
                 attn_score_cache[:, :, :self.hh_score.shape[-1]] += self.hh_score / (1 if not mean else self.idx)
 
         self.hh_score = attn_score_cache
