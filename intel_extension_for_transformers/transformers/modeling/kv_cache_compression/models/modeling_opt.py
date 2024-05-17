@@ -36,7 +36,8 @@ class H2OOPTAttention(nn.Module):
         recent_ratio,
         h2o_min_seqlen=1024,
         real_drop=False,
-        is_gen=False
+        is_gen=False,
+        mean=False
     ):
         super().__init__()
         self.config = config
@@ -64,6 +65,7 @@ class H2OOPTAttention(nn.Module):
         # for h2o
         self.is_gen = is_gen
         self.real_drop = real_drop
+        self.mean = mean
 
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
@@ -181,8 +183,7 @@ class H2OOPTAttention(nn.Module):
                 attn_weights,
                 past_key_value[0],
                 past_key_value[1],
-                attention_mask=attention_mask,
-                mean=False
+                mean=self.mean
             )
             past_key_value = (new_key_states, new_value_states)
         else:
@@ -190,8 +191,7 @@ class H2OOPTAttention(nn.Module):
                 attn_weights,
                 past_key_value[0],
                 past_key_value[1],
-                attention_mask=attention_mask,
-                mean=False
+                mean=self.mean
             )
             attn_weights = attn_weights * mask.unsqueeze(1)
 
@@ -373,8 +373,7 @@ class H2OOptFlashAttention2(H2OOPTAttention):
                 attn_weights,
                 past_key_value[0],
                 past_key_value[1],
-                attention_mask=attention_mask,
-                mean=False
+                mean=self.mean
             )
             past_key_value = (new_key_states, new_value_states)
         else:
@@ -382,8 +381,7 @@ class H2OOptFlashAttention2(H2OOPTAttention):
                 attn_weights,
                 past_key_value[0],
                 past_key_value[1],
-                attention_mask=attention_mask,
-                mean=False
+                mean=self.mean
             )
             key_states = key_states * mask.unsqueeze(-1)
             value_states = value_states * mask.unsqueeze(-1)

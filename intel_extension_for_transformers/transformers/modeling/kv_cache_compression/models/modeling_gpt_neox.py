@@ -15,12 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from typing import List, Optional, Tuple, Union
+import logging
 
 import torch
 import torch.nn as nn
 
-from ..h2o import get_hh_mask
+from ..h2o import H2OKVCache
 
+logger = logging.getLogger(__name__)
 
 class GPTNeoXAttention(nn.Module):
     def __init__(
@@ -30,6 +32,9 @@ class GPTNeoXAttention(nn.Module):
             heavy_ratio,
             recent_ratio,
             h2o_min_seqlen=1024,
+            real_drop=False,
+            is_gen=False,
+            mean=False
             ):
         super().__init__()
         self.config = config
@@ -53,9 +58,18 @@ class GPTNeoXAttention(nn.Module):
         self.is_causal = True
 
         # for h2o
+        if real_drop:
+            real_drop = False
+            logger.error("BloomAttention not support for kv cache, usning simulation mode.")
+        self.real_drop = real_drop
+        self.is_gen = is_gen
+        self.mean = mean
+
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.h2o_min_seqlen = h2o_min_seqlen
+
+        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, real_drop, h2o_min_seqlen)
 
     def forward(
         self,
@@ -185,9 +199,24 @@ class GPTNeoXAttention(nn.Module):
         attn_weights = attn_weights.to(value.dtype)
 
         # get hh mask
-        if query_length > self.h2o_min_seqlen:
-            mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
-            attn_weights[~mask_bottom] = torch.min(attention_mask)
+        if not self.is_gen:
+            self.h2o_kv_cache.clean_scores()
+        if self.real_drop:
+            new_key_states, new_value_states = self.h2o_kv_cache(
+                attn_weights,
+                key,
+                value,
+                mean=self.mean
+            )
+            past_key_value = (new_key_states, new_value_states)
+        else:
+            mask = self.h2o_kv_cache(
+                attn_weights,
+                key,
+                value,
+                mean=self.mean
+            )
+            attn_weights = attn_weights * mask.unsqueeze(1)
 
         # Mask heads if we want to
         if head_mask is not None:

@@ -190,7 +190,10 @@ class H2OKVCache:
 
         seq_len = key_states.size(-2)
         if seq_len <= cache_size:
-            return key_states, value_states
+            if self.real_drop:
+                return key_states, value_states
+            else:
+                return torch.ones(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
 
         # hh-selection
         mask = torch.zeros(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)

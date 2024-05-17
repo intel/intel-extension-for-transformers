@@ -48,7 +48,8 @@ class H2OLlamaAttention(nn.Module):
             recent_ratio,
             h2o_min_seqlen=1024,
             real_drop=False,
-            is_gen=False
+            is_gen=False,
+            mean=False
             ):
         super().__init__()
         self.config = config
@@ -85,6 +86,7 @@ class H2OLlamaAttention(nn.Module):
         # for h2o
         self.real_drop = real_drop
         self.is_gen = is_gen
+        self.mean = mean
 
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
@@ -159,20 +161,18 @@ class H2OLlamaAttention(nn.Module):
                 query_states,
                 past_key_value.key_cache[self.layer_idx],
                 past_key_value.value_cache[self.layer_idx],
-                attention_mask=attention_mask,
-                mean=False
+                mean=self.mean
                 )
             past_key_value.key_cache[self.layer_idx] = new_key_states
             past_key_value.value_cache[self.layer_idx] = new_value_states
         else:
             mask = self.h2o_kv_cache(
                 attn_weights,
-                past_key_value[0],
-                past_key_value[1],
-                attention_mask=attention_mask,
-                mean=False
+                past_key_value.key_cache[self.layer_idx],
+                past_key_value.value_cache[self.layer_idx],
+                mean=self.mean
             )
-            attn_weights = attn_weights * mask.unsqueeze(2)
+            attn_weights = attn_weights * mask.unsqueeze(-2)
             value_states = value_states * mask.unsqueeze(-1)
             # mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
             # attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min
@@ -303,18 +303,16 @@ class H2OLlamaFlashAttention2(H2OLlamaAttention):
                 query_states,
                 past_key_value.key_cache[self.layer_idx],
                 past_key_value.value_cache[self.layer_idx],
-                attention_mask=attention_mask,
-                mean=False
+                mean=self.mean
                 )
             past_key_value.key_cache[self.layer_idx] = new_key_states
             past_key_value.value_cache[self.layer_idx] = new_value_states
         else:
             mask = self.h2o_kv_cache(
                 attn_weights,
-                past_key_value[0],
-                past_key_value[1],
-                attention_mask=attention_mask,
-                mean=False
+                past_key_value.key_cache[self.layer_idx],
+                past_key_value.value_cache[self.layer_idx],
+                mean=self.mean
             )
             key_states = key_states * mask.unsqueeze(-1)
             value_states = value_states * mask.unsqueeze(-1)
@@ -515,18 +513,16 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
                 query_states,
                 past_key_value.key_cache[self.layer_idx],
                 past_key_value.value_cache[self.layer_idx],
-                attention_mask=attention_mask,
-                mean=False
+                mean=self.mean
                 )
             past_key_value.key_cache[self.layer_idx] = new_key_states
             past_key_value.value_cache[self.layer_idx] = new_value_states
         else:
             mask = self.h2o_kv_cache(
                 attn_weights,
-                past_key_value[0],
-                past_key_value[1],
-                attention_mask=attention_mask,
-                mean=False
+                past_key_value.key_cache[self.layer_idx],
+                past_key_value.value_cache[self.layer_idx],
+                mean=self.mean
             )
             key_states = key_states * mask.unsqueeze(-1)
             value_states = value_states * mask.unsqueeze(-1)

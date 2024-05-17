@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import math
+import logging
 from torch.nn import functional as F
 
 from typing import List, Optional, Tuple, Union
@@ -22,7 +23,9 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 
-from ..h2o import get_hh_mask
+from ..h2o import H2OKVCache
+
+logger = logging.getLogger(__name__)
 
 class H2OBloomAttention(nn.Module):
     def __init__(
@@ -32,6 +35,9 @@ class H2OBloomAttention(nn.Module):
             heavy_ratio,
             recent_ratio,
             h2o_min_seqlen=1024,
+            real_drop=False,
+            is_gen=False,
+            mean=False
             ):
         super().__init__()
 
@@ -59,9 +65,18 @@ class H2OBloomAttention(nn.Module):
         self.attention_dropout = model.attention_dropout
 
         # for h2o
+        if real_drop:
+            real_drop = False
+            logger.error("BloomAttention not support for kv cache, usning simulation mode.")
+        self.real_drop = real_drop
+        self.is_gen = is_gen
+        self.mean = mean
+
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.h2o_min_seqlen = h2o_min_seqlen
+
+        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, real_drop, h2o_min_seqlen)
 
     def _split_heads(self, fused_qkv: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Split the last dimension into (num_heads, head_dim) without making any copies, results share same memory
@@ -156,12 +171,28 @@ class H2OBloomAttention(nn.Module):
         if input_dtype == torch.float16:
             attention_scores = attention_scores.to(torch.float)
         attn_weights = torch.masked_fill(attention_scores, attention_mask, torch.finfo(attention_scores.dtype).min)
-        # get hh mask
-        if q_length > self.h2o_min_seqlen:
-            mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
-            attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min
 
         attention_probs = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(input_dtype)
+
+        # get hh mask
+        if not self.is_gen:
+            self.h2o_kv_cache.clean_scores()
+        if self.real_drop:
+            new_key_states, new_value_states = self.h2o_kv_cache(
+                attention_probs,
+                key_layer,
+                value_layer,
+                mean=self.mean
+            )
+            past_key_value = (new_key_states, new_value_states)
+        else:
+            mask = self.h2o_kv_cache(
+                attention_probs,
+                key_layer,
+                value_layer,
+                mean=self.mean
+            )
+            attention_probs = attention_probs * mask.unsqueeze(-2)
 
         # [batch_size, num_heads, q_length, kv_length]
         attention_probs = self.attention_dropout(attention_probs)
