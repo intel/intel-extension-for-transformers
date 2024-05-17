@@ -738,14 +738,20 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self,
         bits: int = 4,
         group_size: int = 32,
+        group_dim: int = 1,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
+        use_full_range: bool = False,
         mse_range: bool = False,
         use_double_quant=False,
-        double_quant_scale_dtype=None,  # reserve for double quant
+        double_quant_dtype: str = "int",
+        double_quant_bits: int = 8,
+        double_quant_use_sym: bool = False,
+        double_quant_group_size: int = 256,
         sym: bool = True,
         layer_wise: bool = False,
+        model_path: str = "",
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
@@ -754,16 +760,22 @@ class RtnConfig(ITREXQuantizationConfigMixin):
     ):
         self.quant_method = QuantizationMethod.RTN
         self.bits = bits
+        self.use_full_range = use_full_range
         self.mse_range = mse_range
         self.compute_dtype = compute_dtype
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
         self.group_size = group_size
+        self.group_dim = group_dim
         self.layer_wise = layer_wise
+        self.model_path = model_path
         self.sym = sym
         self.scheme = "sym" if self.sym else "asym"
         self.use_double_quant = use_double_quant
-        self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.double_quant_dtype = double_quant_dtype
+        self.double_quant_bits = double_quant_bits
+        self.double_quant_use_sym = double_quant_use_sym
+        self.double_quant_group_size = double_quant_group_size
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )

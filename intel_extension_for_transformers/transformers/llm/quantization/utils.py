@@ -462,7 +462,7 @@ def default_run_fn(model, tokenizer, dataset, max_length=512, n_samples=100, bat
             )
         except ValueError:
             pass
-   
+
 def convert_to_quantized_model(model, config, device="cpu"):
     if device == "xpu" or device == torch.device("xpu"):
         import intel_extension_for_pytorch
@@ -490,9 +490,29 @@ def convert_to_quantized_model(model, config, device="cpu"):
             dtype = config.weight_dtype
         # mapping to INC config
         if config.quant_method.value == "rtn":
+            export_compressed_model = False
+            if (device == "cpu" or device == torch.device("cpu")) \
+                and config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
+                export_compressed_model = True
             quant_config = RTNConfig(
-
+                 dtype=config.weight_dtype,
+                 bits=config.bits,
+                 use_sym=config.sym,
+                 group_size=config.group_size,
+                 group_dim=config.group_dim,
+                 use_full_range=config.use_full_range,
+                 use_mse_search=config.mse_range,
+                 export_compressed_model=export_compressed_model,
+                 use_layer_wise=config.layer_wise,
+                 model_path=config.model_path,
+                 use_double_quant=config.use_double_quant,
+                 double_quant_dtype=config.double_quant_dtype,
+                 double_quant_bits=config.double_quant_bits,
+                 double_quant_use_sym=config.double_quant_use_sym,
+                 double_quant_group_size=config.double_quant_group_size,
             )
+            model = prepare(model, quant_config)
+            model = convert(model)
         elif config.quant_method.value == "hqq":
             quant_config = HQQConfig(
 
@@ -500,7 +520,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         elif config.quant_method.value == "awq":
             quant_config = AWQConfig(
 
-            ) 
+            )
         elif config.quant_method.value == "teq":
             quant_config = TEQConfig(
                 dtype=dtype,
@@ -535,7 +555,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             )
             model = prepare(model=model, quant_config=quant_config)
             run_fn(model, *run_args)
-            model = convert(model)    
+            model = convert(model)
         elif config.quant_method.value == "autoround":
             quant_config = AutoRoundConfig(
                 dtype=dtype,
