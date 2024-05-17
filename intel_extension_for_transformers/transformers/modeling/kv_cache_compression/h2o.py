@@ -173,7 +173,7 @@ class H2OKVCache:
         real_drop=False,
         min_seqlen=-1
     ):
-        ## bsz, num_heads, seq_len, head_dim 
+        ## bsz, num_heads, seq_len, head_dim
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.hh_score = None
