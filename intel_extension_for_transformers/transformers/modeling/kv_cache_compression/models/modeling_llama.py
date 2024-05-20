@@ -136,9 +136,9 @@ class H2OLlamaAttention(nn.Module):
         value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
 
         past_key_value = getattr(self, "past_key_value", past_key_value)
-        try:
+        try: # pylint: disable=E1120
             cos, sin = self.rotary_emb(value_states, position_ids)
-        except: # for old version
+        except: # for old version 
             kv_seq_len = key_states.shape[-2]
             if past_key_value is not None:
                 kv_seq_len += past_key_value[0].shape[-2]
@@ -146,7 +146,7 @@ class H2OLlamaAttention(nn.Module):
             if not position_ids.nelement() > 1:
                 if position_length < position_ids.item()+1:
                     position_length = position_ids.item()+1
-            cos, sin = self.rotary_emb(value_states, seq_len=position_length)
+            cos, sin = self.rotary_emb(value_states, seq_len=position_length) # pylint: disable=E1120
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
         if past_key_value is not None:
@@ -460,7 +460,6 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
         cache_position: Optional[torch.LongTensor] = None,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         if output_attentions:
-            # TODO: Improve this warning with e.g. `model.config.attn_implementation = "manual"` once this is implemented.
             logger.warning_once(
                 "LlamaModel is using LlamaSdpaAttention, but `torch.nn.functional.scaled_dot_product_attention` "
                 "does not support `output_attentions=True`. Falling back to the manual attention implementation, "
@@ -488,7 +487,7 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
         value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
 
         try:
-            cos, sin = self.rotary_emb(value_states, position_ids)
+            cos, sin = self.rotary_emb(value_states, position_ids) # pylint: disable=E1120
         except:
             kv_seq_len = key_states.shape[-2]
             if past_key_value is not None:
@@ -497,7 +496,7 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
             if not position_ids.nelement() > 1:
                 if position_length < position_ids.item()+1:
                     position_length = position_ids.item()+1
-            cos, sin = self.rotary_emb(value_states, seq_len=position_length)
+            cos, sin = self.rotary_emb(value_states, seq_len=position_length) # pylint: disable=E1120
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
         # In case static cache is used, it is an instance attribute.
