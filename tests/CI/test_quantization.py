@@ -518,7 +518,7 @@ class TestQuantization(unittest.TestCase):
         woq_model.eval()
         output = woq_model(dummy_input)
         if CpuInfo().bf16:
-            self.assertTrue(isclose(float(output[0][0][0][0]), 0.1709238588809967, rel_tol=1e-04))
+            self.assertTrue(isclose(float(output[0][0][0][0]), 0.171875, rel_tol=1e-04))
 
     def test_export(self):
         # test model with model_id

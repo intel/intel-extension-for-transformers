@@ -388,9 +388,9 @@ def convert_to_quantized_model(model, config, device="cpu"):
     model_device = next(model.parameters()).device
 
     if config.quant_method.value == "autoround":
-        from neural_compressor.adaptor.torch_utils.auto_round import get_dataloader
+        from auto_round.calib_dataset import get_dataloader
         calib_dataloader = get_dataloader(config.tokenizer,
-                                    config.calib_len,
+                                    seqlen=config.calib_len,
                                     dataset_name=config.dataset,
                                     seed=42,
                                     bs=8,
@@ -523,7 +523,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             recipes = {
                 "autoround_args": {
                     "n_samples": config.nsamples,
-                    "seq_len": config.calib_len,
+                    "seqlen": config.calib_len,
                     "iters": config.calib_iters,
                     "scale_dtype": config.scale_dtype,
                     "enable_quanted_input": config.enable_quanted_input,
