@@ -30,12 +30,9 @@ from transformers.utils import logging, is_flash_attn_greater_or_equal_2_10, is_
 
 logger = logging.get_logger(__name__)
 
-if is_flash_attn_2_available():
-    try:
-        from flash_attn import flash_attn_func, flash_attn_varlen_func
-        from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
-    except:
-        logging.error("Unable to import flash_attn. Make sure it is installed.")
+if is_flash_attn_2_available(): # pylint: disable=E0401
+    from flash_attn import flash_attn_func, flash_attn_varlen_func
+    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
 
 from ..h2o import H2OKVCache
 
