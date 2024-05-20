@@ -14,7 +14,7 @@
 # limitations under the License.
 
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
-log_dir=/GenAIExamples/.github/workflows/script/formatScan
+log_dir=/intel-extension-for-transformers/.github/workflows/script/formatScan
 
 find . -type f \( -name "Dockerfile*" \) -print -exec hadolint --ignore DL3006 --ignore DL3007 --ignore DL3008 {} \; 2>&1 | tee ${log_dir}/hadolint.log
 
