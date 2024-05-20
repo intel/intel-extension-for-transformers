@@ -22,7 +22,7 @@ from transformers.utils import logging
 
 from ..h2o import H2OKVCache
 
-logger = logging.getLogger(__name__)
+logger = logging.get_logger(__name__)
 
 class GPTNeoXAttention(nn.Module):
     def __init__(

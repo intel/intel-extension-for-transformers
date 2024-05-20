@@ -66,7 +66,8 @@ def convert_model(
         recent_ratio,
         h2o_min_seqlen=1024,
         real_drop=True,
-        is_gen=False
+        is_gen=False,
+        mean=False
         ):
     model_type = model.config.model_type
     device = model.device
@@ -83,7 +84,16 @@ def convert_model(
                 "intel_extension_for_transformers.transformers.modeling.kv_cache_compression"
                 ),
             "H2O" + module.__class__.__name__)
-        module = h2o_cls(module, model.config, heavy_ratio, recent_ratio, h2o_min_seqlen, real_drop, is_gen)
+        module = h2o_cls(
+            module,
+            model.config,
+            heavy_ratio,
+            recent_ratio,
+            h2o_min_seqlen=h2o_min_seqlen,
+            real_drop=real_drop,
+            is_gen=is_gen,
+            mean=mean
+            )
         set_module(model, layer_name, module)
     model.clean_cache = lambda: clean_cache(model)
     model = model.to(device)
@@ -94,7 +104,8 @@ def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=No
 
     # attn_weights (head, query, keys) or (BS, head, query, keys)
     attn_shape_len = len(attn_weights.shape)
-    assert attn_shape_len in [3,4], "Wrong shape of attn_weights. Should be (head, query, keys) or (BS, head, query, keys)"
+    assert attn_shape_len in [3,4], \
+        "Wrong shape of attn_weights. Should be (head, query, keys) or (BS, head, query, keys)"
     dtype_attn_weights = attn_weights.dtype
     seq_length = attn_weights.shape[-1]
     if no_padding_seq_length is None:
@@ -106,25 +117,31 @@ def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=No
     tmp_attn = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(dtype_attn_weights)
 
     if len(attn_weights.shape) == 3:
-        accumulated_attention_score = torch.sum(tmp_attn[:,padding_length:heavy_budget+padding_length,:], dim=-2) #(head, keys)
+        accumulated_attention_score = torch.sum(
+            tmp_attn[:,padding_length:heavy_budget+padding_length,:], dim=-2) #(head, keys)
         accumulated_attention_score[:,heavy_budget+padding_length:] = 0
         if padding_length > 0:
             accumulated_attention_score[:,:padding_length] = 0
         mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
-        mask_bottom[:, padding_length:heavy_budget+padding_length, padding_length:heavy_budget+padding_length] = True
+        mask_bottom[:,padding_length:heavy_budget+padding_length,
+                    padding_length:heavy_budget+padding_length] = True
     else:
-        accumulated_attention_score = torch.sum(tmp_attn[:,:,padding_length:heavy_budget+padding_length,:], dim=-2) #(head, keys)
+        accumulated_attention_score = torch.sum(
+            tmp_attn[:,:,padding_length:heavy_budget+padding_length,:], dim=-2) #(head, keys)
         accumulated_attention_score[:,:,heavy_budget+padding_length:] = 0
         accumulated_attention_score[:,:,:padding_length] = 0
 
         mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
-        mask_bottom[:,:, padding_length:heavy_budget+padding_length, padding_length:heavy_budget+padding_length] = True
+        mask_bottom[:,:, padding_length:heavy_budget+padding_length,
+                    padding_length:heavy_budget+padding_length] = True
     for token_index in range(heavy_budget+padding_length, seq_length):
 
         if attn_shape_len == 3:
-            tmp_attn_index = nn.functional.softmax(attn_weights[:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
+            tmp_attn_index = nn.functional.softmax(
+                attn_weights[:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
         else:
-            tmp_attn_index = nn.functional.softmax(attn_weights[:,:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
+            tmp_attn_index = nn.functional.softmax(
+                attn_weights[:,:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
         _, tmp_topk_index = accumulated_attention_score.topk(k=heavy_budget-1, dim=-1)
         zeros_index = torch.zeros_like(tmp_attn_index, dtype=torch.bool)
         mask_bottom_index = zeros_index.scatter(-1, tmp_topk_index, True) #(head, keys)
@@ -146,7 +163,8 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
     heavy_budget = int(heavy_budget_ratio * attn_weights.shape[-1])
     recent_budget = int(recent_budget_ratio * attn_weights.shape[-1])
     if heavy_budget > 0:
-        mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None) # Default: No padding applied to input
+        # Default: No padding applied to input
+        mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None)
     else:
         mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
 
@@ -157,10 +175,6 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
     # Combine h2o+recent and apply casual mask
     mask_bottom = torch.tril(mask_bottom, diagonal=0)
 
-    # ones = torch.ones_like(attn_weights, dtype=torch.bool)
-    # ones = torch.tril(ones, diagonal=recent_budget)
-    # ones = torch.triu(ones, diagonal=-recent_budget)
-    # mask_bottom = torch.logical_or(mask_bottom, ones)
     return mask_bottom
 
 class H2OKVCache:
@@ -189,7 +203,7 @@ class H2OKVCache:
             if self.real_drop:
                 return key_states, value_states
             else:
-                return torch.ones(self.attn_score.shape, dtype=attn_score.dtype).to(key_states.device)
+                return torch.ones(attn_score.shape, dtype=attn_score.dtype).to(key_states.device)
         self.idx += 1
         mask_shape = attn_score.shape[-1]
         # attn_score shape (bsz, num_heads, seq_len, head_dim)
@@ -216,11 +230,13 @@ class H2OKVCache:
         # if use repeat_kv, need to reshape mask
         n_rep = mask.size(1) / key_states.size(1)
         if n_rep > 1:
-            drop_mask = torch.tensor([True if i % n_rep == 0 else False for i in range(0, mask.size(1))]).repeat(mask.size(0), 1).to(mask.device)
+            drop_mask = torch.tensor(
+                [True if i % n_rep == 0 else False for i in range(0, mask.size(1))]
+                ).repeat(mask.size(0), 1).to(mask.device)
             mask = mask[drop_mask].view(key_states.shape[:-1])
 
-        k_hh_recent = key_states[mask].view(key_states.shape[0], key_states.shape[1], cache_size, key_states.shape[3])
-        v_hh_recent = value_states[mask].view(value_states.shape[0], value_states.shape[1], cache_size, value_states.shape[3])
+        k_hh_recent = key_states[mask].view(key_states.shape[0], key_states.shape[1], cache_size, -1)
+        v_hh_recent = value_states[mask].view(value_states.shape[0], value_states.shape[1], cache_size, -1)
 
         return k_hh_recent, v_hh_recent
 

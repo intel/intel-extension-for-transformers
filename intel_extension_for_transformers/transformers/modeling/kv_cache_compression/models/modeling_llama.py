@@ -23,18 +23,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers.cache_utils import Cache, logging
+from transformers.cache_utils import Cache
 from transformers.models.llama.configuration_llama import LlamaConfig
 from transformers.models.llama.modeling_llama import apply_rotary_pos_emb, repeat_kv, _get_unpad_data
-from transformers.utils import is_flash_attn_greater_or_equal_2_10, is_flash_attn_2_available
-
-if is_flash_attn_2_available():
-    from flash_attn import flash_attn_func, flash_attn_varlen_func
-    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
-
-from ..h2o import get_hh_mask, H2OKVCache
+from transformers.utils import logging, is_flash_attn_greater_or_equal_2_10, is_flash_attn_2_available
 
 logger = logging.get_logger(__name__)
+
+if is_flash_attn_2_available():
+    try:
+        from flash_attn import flash_attn_func, flash_attn_varlen_func
+        from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
+    except:
+        logging.error("Unable to import flash_attn. Make sure it is installed.")
+
+from ..h2o import H2OKVCache
+
 
 class H2OLlamaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper."""
@@ -132,7 +136,17 @@ class H2OLlamaAttention(nn.Module):
         value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
 
         past_key_value = getattr(self, "past_key_value", past_key_value)
-        cos, sin = self.rotary_emb(value_states, position_ids)
+        try:
+            cos, sin = self.rotary_emb(value_states, position_ids)
+        except: # for old version
+            kv_seq_len = key_states.shape[-2]
+            if past_key_value is not None:
+                kv_seq_len += past_key_value[0].shape[-2]
+            position_length = kv_seq_len
+            if not position_ids.nelement() > 1:
+                if position_length < position_ids.item()+1:
+                    position_length = position_ids.item()+1
+            cos, sin = self.rotary_emb(value_states, seq_len=position_length)
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
         if past_key_value is not None:
@@ -212,8 +226,11 @@ class H2OLlamaFlashAttention2(H2OLlamaAttention):
         super().__init__(*args, **kwargs)
 
         # TODO: Should be removed once Flash Attention for RoCm is bumped to 2.1.
-        # flash_attn<2.1 generates top-left aligned causal mask, while what is needed here is bottom-right alignment, that was made default for flash_attn>=2.1. This attribute is used to handle this difference. Reference: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.1.0.
-        # Beware that with flash_attn<2.1, using q_seqlen != k_seqlen (except for the case q_seqlen == 1) produces a wrong mask (top-left).
+        # flash_attn<2.1 generates top-left aligned causal mask, while what is needed here is bottom-right alignment,
+        # that was made default for flash_attn>=2.1. This attribute is used to handle this difference.
+        # Reference: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.1.0.
+        # Beware that with flash_attn<2.1,
+        # using q_seqlen != k_seqlen (except for the case q_seqlen == 1) produces a wrong mask (top-left).
         self._flash_attn_uses_top_left_mask = not is_flash_attn_greater_or_equal_2_10()
 
     def forward(
@@ -252,8 +269,6 @@ class H2OLlamaFlashAttention2(H2OLlamaAttention):
             cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
             key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
-        # TODO: These transpose are quite inefficient but Flash Attention requires the layout [batch_size, sequence_length, num_heads, head_dim]. We would need to refactor the KV cache
-        # to be able to avoid many of these transpose/reshape/view.
         query_states = query_states.transpose(1, 2)
         key_states = key_states.transpose(1, 2)
         value_states = value_states.transpose(1, 2)
@@ -354,7 +369,6 @@ class H2OLlamaFlashAttention2(H2OLlamaAttention):
         if not self._flash_attn_uses_top_left_mask:
             causal = self.is_causal
         else:
-            # TODO: Remove the `query_length != 1` check once Flash Attention for RoCm is bumped to 2.1. For details, please see the comment in LlamaFlashAttention2 __init__.
             causal = self.is_causal and query_length != 1
 
         # Contains at least one padding token in the sequence
@@ -448,8 +462,10 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
         if output_attentions:
             # TODO: Improve this warning with e.g. `model.config.attn_implementation = "manual"` once this is implemented.
             logger.warning_once(
-                "LlamaModel is using LlamaSdpaAttention, but `torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True`. Falling back to the manual attention implementation, "
-                'but specifying the manual implementation will be required from Transformers version v5.0.0 onwards. This warning can be removed using the argument `attn_implementation="eager"` when loading the model.'
+                "LlamaModel is using LlamaSdpaAttention, but `torch.nn.functional.scaled_dot_product_attention` "
+                "does not support `output_attentions=True`. Falling back to the manual attention implementation, "
+                'but specifying the manual implementation will be required from Transformers version v5.0.0 onwards.'
+                '"This warning can be removed using the argument `attn_implementation="eager"` when loading the model.'
             )
             return super().forward(
                 hidden_states=hidden_states,
@@ -471,7 +487,17 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
         key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
         value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
 
-        cos, sin = self.rotary_emb(value_states, position_ids)
+        try:
+            cos, sin = self.rotary_emb(value_states, position_ids)
+        except:
+            kv_seq_len = key_states.shape[-2]
+            if past_key_value is not None:
+                kv_seq_len += past_key_value[0].shape[-2]
+            position_length = kv_seq_len
+            if not position_ids.nelement() > 1:
+                if position_length < position_ids.item()+1:
+                    position_length = position_ids.item()+1
+            cos, sin = self.rotary_emb(value_states, seq_len=position_length)
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
         # In case static cache is used, it is an instance attribute.
@@ -489,8 +515,6 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
         if attention_mask is not None:
             causal_mask = causal_mask[:, :, :, : key_states.shape[-2]]
 
-        # SDPA with memory-efficient backend is currently (torch==2.1.2) bugged with non-contiguous inputs with custom attn_mask,
-        # Reference: https://github.com/pytorch/pytorch/issues/112577.
         if query_states.device.type == "cuda" and causal_mask is not None:
             query_states = query_states.contiguous()
             key_states = key_states.contiguous()
@@ -527,7 +551,8 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
             key_states = key_states * mask.unsqueeze(-1)
             value_states = value_states * mask.unsqueeze(-1)
 
-        # In case we are not compiling, we may set `causal_mask` to None, which is required to dispatch to SDPA's Flash Attention 2 backend, rather
+        # In case we are not compiling, we may set `causal_mask` to None,
+        # which is required to dispatch to SDPA's Flash Attention 2 backend, rather
         # relying on the `is_causal` argument.
         attn_output = torch.nn.functional.scaled_dot_product_attention(
             query_states,

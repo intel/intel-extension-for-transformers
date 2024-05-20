@@ -165,7 +165,6 @@ class H2OBloomAttention(nn.Module):
         # change view to [batch_size, num_heads, q_length, kv_length]
         attention_scores = matmul_result.view(batch_size, self.num_heads, q_length, kv_length)
 
-        # cast attention scores to fp32, compute scaled softmax and cast back to initial dtype - [batch_size, num_heads, q_length, kv_length]
         input_dtype = attention_scores.dtype
         # `float16` has a minimum value of -65504.0, whereas `bfloat16` and `float32` have a minimum value of `-3.4e+38`
         if input_dtype == torch.float16:
