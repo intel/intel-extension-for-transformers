@@ -379,7 +379,7 @@ class _BaseQBitsAutoModelClass:
                         module_traversal = module_traversal._modules[sub_module_name]
 
                     module_traversal._modules[all_module_names[-1]] = copy.deepcopy(torch_linear)
-            
+
             logger.debug("Optimized model = ", model)
             loader = get_model_loader(llm.llm_engine.load_config)
             model.load_weights(
@@ -391,7 +391,7 @@ class _BaseQBitsAutoModelClass:
             model = convert_to_quantized_model(model, config)
 
             return llm
-        
+
         # use for neuralspeed gguf
         model_file = kwargs.pop("model_file", None)
         if model_file is not None:
