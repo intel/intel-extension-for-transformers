@@ -104,7 +104,7 @@ class MixtralAttention(nn.Module):
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         if "padding_mask" in kwargs:
             logger.warn(
-                "Passing `padding_mask` is deprecated and will be removed in v4.37." 
+                "Passing `padding_mask` is deprecated and will be removed in v4.37."
                 "Please make sure use `attention_mask` instead.`"
             )
         bsz, q_len, _ = hidden_states.size()
