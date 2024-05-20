@@ -74,7 +74,7 @@ function prepare() {
     fi
     if [[ ${model} == "gpt-j-6b" ]] || [[ model == "gpt-j-6b-pruned" ]]; then
         conda install mkl mkl-include -y
-        conda install gperftools jemalloc==5.2.1 -c miniforge -y
+        conda install gperftools jemalloc==5.2.1 -c conda-forge -y
         pip install transformers==4.27.4
     fi
     if [[ $precision == "bf16" ]] || [[ $precision == "fp8" ]]; then

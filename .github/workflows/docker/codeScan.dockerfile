@@ -38,4 +38,8 @@ RUN python -m pip install --no-cache-dir pylint==2.17.5\
     pyspelling\
     pydocstyle
 
+RUN python -m pip install --no-cache-dir bandit==1.7.8
+RUN wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+RUN chmod +x /bin/hadolint
+
 WORKDIR /
