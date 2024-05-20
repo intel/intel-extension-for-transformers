@@ -387,7 +387,15 @@ def convert_to_quantized_model(model, config, device="cpu"):
     calib_dataset = config.dataset
     model_device = next(model.parameters()).device
 
-    if (
+    if config.quant_method.value == "autoround":
+        from neural_compressor.adaptor.torch_utils.auto_round import get_dataloader
+        calib_dataloader = get_dataloader(config.tokenizer,
+                                    config.calib_len,
+                                    dataset_name=config.dataset,
+                                    seed=42,
+                                    bs=8,
+                                    n_samples=config.nsamples)
+    elif (
         calib_dataloader is None
         and config.quant_method.value not in ["rtn"]
         and calib_dataset is not None
@@ -437,36 +445,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 input_ids_padded.append(input_ids)
             return torch.vstack(input_ids_padded)
 
-        def collate_batch_for_autoround(batch):
-            input_ids_padded = []
-            for text in batch:
-                input_ids = text["input_ids"]
-                if input_ids.shape[0] < config.calib_len:
-                    continue
-                input_ids = input_ids[: config.calib_len]
-                input_ids_list = input_ids.tolist()
-                if input_ids_list.count(input_ids_list[-1]) > config.calib_len // 2:
-                    continue
-                input_ids_padded.append(input_ids)
-            if len(input_ids_padded) == 0:
-                return None
-
-            return torch.vstack(input_ids_padded)
-
-        if config.quant_method.value == "autoround":
-            calib_dataloader = DataLoader(
-                tokenized_dataset,
-                batch_size=8,
-                shuffle=False,
-                collate_fn=collate_batch_for_autoround,
-            )
-        else:
-            calib_dataloader = DataLoader(
-                tokenized_dataset,
-                batch_size=1,
-                shuffle=False,
-                collate_fn=collate_batch,
-            )
+        calib_dataloader = DataLoader(
+            tokenized_dataset,
+            batch_size=1,
+            shuffle=False,
+            collate_fn=collate_batch,
+        )
     if calib_func is None and config.quant_method.value == "awq":
 
         def default_calib_func(model):
@@ -542,7 +526,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     "seq_len": config.calib_len,
                     "iters": config.calib_iters,
                     "scale_dtype": config.scale_dtype,
-                    "use_quant_input": config.use_quant_input,
+                    "enable_quanted_input": config.enable_quanted_input,
                     "lr": config.lr,
                     "minmax_lr": config.minmax_lr,
                 }

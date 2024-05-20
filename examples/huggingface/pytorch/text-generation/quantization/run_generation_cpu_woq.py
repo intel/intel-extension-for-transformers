@@ -392,9 +392,7 @@ if args.accuracy:
     if args.use_neural_speed:
         model_args += ",model_format=neural_speed"
     args = LMEvalParser(model = "hf", 
-                        model_args=model_args,
-                        #user_model=user_model,
-                        #tokenizer=tokenizer,
+                        model_args = model_args,
                         tasks = args.tasks,
                         device = "cpu",
                         batch_size = args.batch_size)
