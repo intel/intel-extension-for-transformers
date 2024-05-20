@@ -159,7 +159,7 @@ class H2OMistralAttention(nn.Module):
             self.h2o_kv_cache.clean_scores()
         if self.real_drop and past_key_value is not None:
             new_key_states, new_value_states = self.h2o_kv_cache(
-                query_states,
+                attn_weights,
                 past_key_value.key_cache[self.layer_idx],
                 past_key_value.value_cache[self.layer_idx],
                 mean=self.mean

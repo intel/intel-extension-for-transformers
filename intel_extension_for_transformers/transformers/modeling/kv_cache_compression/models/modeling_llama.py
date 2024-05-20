@@ -18,13 +18,12 @@
 
 import math
 from typing import List, Optional, Tuple, Union
-import logging
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers.cache_utils import Cache
+from transformers.cache_utils import Cache, logging
 from transformers.models.llama.configuration_llama import LlamaConfig
 from transformers.models.llama.modeling_llama import apply_rotary_pos_emb, repeat_kv, _get_unpad_data
 from transformers.utils import is_flash_attn_greater_or_equal_2_10, is_flash_attn_2_available
@@ -35,7 +34,7 @@ if is_flash_attn_2_available():
 
 from ..h2o import get_hh_mask, H2OKVCache
 
-logger = logging.getLogger(__name__)
+logger = logging.get_logger(__name__)
 
 class H2OLlamaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper."""
@@ -158,7 +157,7 @@ class H2OLlamaAttention(nn.Module):
             self.h2o_kv_cache.clean_scores()
         if self.real_drop and past_key_value is not None:
             new_key_states, new_value_states = self.h2o_kv_cache(
-                query_states,
+                attn_weights,
                 past_key_value.key_cache[self.layer_idx],
                 past_key_value.value_cache[self.layer_idx],
                 mean=self.mean
@@ -301,7 +300,7 @@ class H2OLlamaFlashAttention2(H2OLlamaAttention):
             self.h2o_kv_cache.clean_scores()
         if self.real_drop and past_key_value is not None:
             new_key_states, new_value_states = self.h2o_kv_cache(
-                query_states,
+                attn_weights,
                 past_key_value.key_cache[self.layer_idx],
                 past_key_value.value_cache[self.layer_idx],
                 mean=self.mean
@@ -506,13 +505,12 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
 
         # upcast attention to fp32
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
-        attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
 
         if not self.is_gen:
             self.h2o_kv_cache.clean_scores()
         if self.real_drop and past_key_value is not None:
             new_key_states, new_value_states = self.h2o_kv_cache(
-                query_states,
+                attn_weights,
                 past_key_value.key_cache[self.layer_idx],
                 past_key_value.value_cache[self.layer_idx],
                 mean=self.mean
@@ -546,9 +544,3 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
         attn_output = self.o_proj(attn_output)
 
         return attn_output, None, past_key_value
-
-ATTENTION_CLASSES = {
-    "eager": H2OLlamaAttention,
-    "flash_attention_2": H2OLlamaFlashAttention2,
-    "sdpa": H2OLlamaSdpaAttention,
-}

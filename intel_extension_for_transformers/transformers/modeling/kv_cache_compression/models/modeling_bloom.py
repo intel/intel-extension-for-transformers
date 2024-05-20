@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import math
-import logging
 from torch.nn import functional as F
 
 from typing import List, Optional, Tuple, Union
@@ -24,8 +23,9 @@ import torch
 import torch.nn as nn
 
 from ..h2o import H2OKVCache
+from transformers.utils import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.get_logger(__name__)
 
 class H2OBloomAttention(nn.Module):
     def __init__(
@@ -67,7 +67,7 @@ class H2OBloomAttention(nn.Module):
         # for h2o
         if real_drop:
             real_drop = False
-            logger.error("BloomAttention not support for kv cache, usning simulation mode.")
+            logger.warning_once("BloomAttention not support for kv cache, usning simulation mode.")
         self.real_drop = real_drop
         self.is_gen = is_gen
         self.mean = mean

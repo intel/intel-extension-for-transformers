@@ -14,8 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import math
-from collections import OrderedDict
 import importlib
 
 import torch
@@ -193,8 +191,7 @@ class H2OKVCache:
             else:
                 return torch.ones(self.attn_score.shape, dtype=attn_score.dtype).to(key_states.device)
         self.idx += 1
-        mask_shape = list(attn_score.shape)
-        mask_shape.pop(-1)
+        mask_shape = attn_score.shape[-1]
         # attn_score shape (bsz, num_heads, seq_len, head_dim)
         if len(attn_score.shape) == 3:
             attn_score = attn_score.unsqueeze(0)
@@ -214,10 +211,17 @@ class H2OKVCache:
             return mask.view(mask_shape)
 
         mask = mask.bool()
+        self.hh_score = self.hh_score[mask].view(self.hh_score.shape[0], self.hh_score.shape[1], cache_size)
+
+        # if use repeat_kv, need to reshape mask
+        n_rep = mask.size(1) / key_states.size(1)
+        if n_rep > 1:
+            drop_mask = torch.tensor([True if i % n_rep == 0 else False for i in range(0, mask.size(1))]).repeat(mask.size(0), 1).to(mask.device)
+            mask = mask[drop_mask].view(key_states.shape[:-1])
+
         k_hh_recent = key_states[mask].view(key_states.shape[0], key_states.shape[1], cache_size, key_states.shape[3])
         v_hh_recent = value_states[mask].view(value_states.shape[0], value_states.shape[1], cache_size, value_states.shape[3])
 
-        self.hh_score = self.hh_score[mask].view(self.hh_score.shape[0], self.hh_score.shape[1], cache_size)
         return k_hh_recent, v_hh_recent
 
     def _update_hh_score(self, attn_score_cache, mean=False):

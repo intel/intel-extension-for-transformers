@@ -15,10 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from typing import List, Optional, Tuple, Union
-import logging
 
 import torch
 import torch.nn as nn
+from transformers.utils import logging
 
 from ..h2o import H2OKVCache
 
@@ -60,7 +60,7 @@ class GPTNeoXAttention(nn.Module):
         # for h2o
         if real_drop:
             real_drop = False
-            logger.error("BloomAttention not support for kv cache, usning simulation mode.")
+            logger.warning_once("BloomAttention not support for kv cache, usning simulation mode.")
         self.real_drop = real_drop
         self.is_gen = is_gen
         self.mean = mean
