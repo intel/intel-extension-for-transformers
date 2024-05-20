@@ -27,7 +27,7 @@ python plot_perplexity.py \
 python plot_perplexity.py \
     --features perplexity latency \
     --output_dir benchmark/bf16_streaming_outputs \
-    --title "Log perplexity & latency of bf16 model in streaming_llm" \
+    --title "Log perplexity & latency of BF16 model in streaming_llm" \
     --log_perplexity_limit 5.0 \
     --skip_first 100 \
     --figure_dir bf16_streaming_ppl_latency.svg

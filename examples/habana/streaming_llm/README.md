@@ -19,7 +19,7 @@ python setup.py install
 ```
 
 ## Run
-We provide [01-ai/Yi-34B](https://huggingface.co/01-ai/Yi-34B) as an model example by default for demonstrating streaming outputs.
+We provide [01-ai/Yi-34B-Chat](https://huggingface.co/01-ai/Yi-34B-Chat) as an model example by default for demonstrating streaming outputs.
 
 1. bf16 data type:
 ```shell
@@ -37,7 +37,7 @@ You can change the input args values (like `attention_sink_window_size`, `num_sa
 
 We follow the one token by one token ppl evaluation way in [streaming llm](https://github.com/mit-han-lab/streaming-llm/blob/main/examples/eval_long_ppl.py#L81-L91).
 
-1. test `llama2-13b` ppl to align paper's result.
+1. test `llama2-13b` ppl to align with paper's result.
 
 ```shell
 HF_TOKEN=<your HF account token> MODEL=meta-llama/Llama-2-13b-hf bash eval_bf16_streaming.sh
