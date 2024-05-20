@@ -3,7 +3,7 @@ name: Trellix Command Line Scanner
 on:
   workflow_dispatch:
 
-permissions: write-all 
+permissions: write-all
 jobs:
   Trellix:
     runs-on: inner-source
