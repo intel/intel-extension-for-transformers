@@ -1,6 +1,4 @@
 import argparse
-import sys
-sys.path.insert(0, '/home/hengguo/code/intel-extension-for-transformers')
 import time
 import json
 import torch
