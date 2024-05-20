@@ -338,6 +338,60 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        use_vllm = kwargs.pop("use_vllm", None)
+        if use_vllm is not None:
+            from vllm import LLM
+            from intel_extension_for_transformers.transformers.utils import RtnConfig
+            from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
+            from vllm.model_executor.model_loader import get_model_loader
+            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear, QKVParallelLinear, RowParallelLinear)
+            os.environ["backend"] = "use_vllm"
+            llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
+            model = llm.llm_engine.model_executor.driver_worker.model_runner.model
+
+            logger.debug("Original model = ", model)
+            class linear_adaptor(torch.nn.Linear):
+                def __init__(self, in_features: int, out_features: int, bias: bool = True, device=None, dtype=None) -> None:
+                    super().__init__(in_features, out_features, bias, device, dtype)
+
+                def forward(self, input: torch.Tensor) -> tuple[torch.Tensor, None]:
+                    return F.linear(input, self.weight, self.bias), None
+
+
+            for name, module in model.named_modules():
+                bias_flag = False
+                if isinstance(module, QKVParallelLinear) or isinstance(module, MergedColumnParallelLinear) or isinstance(
+                        module, RowParallelLinear):
+                    out_feature = module.weight.shape[0]
+                    in_feature = module.weight.shape[1]
+                    if getattr(module, "bias", False) != None:
+                        bias_flag = True
+                    weight_dtype = module.weight.dtype
+
+                    torch_linear = linear_adaptor(in_features=in_feature,
+                                                out_features=out_feature,
+                                                bias=bias_flag,
+                                                dtype=weight_dtype)
+                    module_traversal = model
+                    all_module_names = name.split('.')
+                    all_module_names_except_last = all_module_names[:-1]
+                    for sub_module_name in all_module_names_except_last:
+                        module_traversal = module_traversal._modules[sub_module_name]
+
+                    module_traversal._modules[all_module_names[-1]] = copy.deepcopy(torch_linear)
+            
+            logger.debug("Optimized model = ", model)
+            loader = get_model_loader(llm.llm_engine.load_config)
+            model.load_weights(
+                loader._get_weights_iterator(llm.llm_engine.model_config.model,
+                                            llm.llm_engine.model_config.revision,
+                                            fall_back_to_pt=True))
+
+            config = RtnConfig(compute_dtype="fp32", group_size=128, scale_dtype="fp32", weight_dtype="int4_clip", bits=4)
+            model = convert_to_quantized_model(model, config)
+
+            return llm
+        
         # use for neuralspeed gguf
         model_file = kwargs.pop("model_file", None)
         if model_file is not None:

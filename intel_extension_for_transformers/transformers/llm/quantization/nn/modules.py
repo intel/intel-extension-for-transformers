@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import torch
 from ..utils import DTYPE_BITS_MAPPING
 from functools import reduce
@@ -23,19 +24,19 @@ from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
 from peft.tuners.lora import LoraLayer, LoraModel
 from peft.utils.other import transpose
 from intel_extension_for_transformers.transformers.llm.quantization.autograd import (
-    matmul_kbit,
-)
+    matmul_kbit, )
 import intel_extension_for_transformers.qbits as qbits  # pylint: disable=E0611, E0401
 
 
 class DropoutQBits_(torch.autograd.Function):
+
     @staticmethod
     def forward(ctx, input, probability):
         mask = qbits.dropout_fwd(input, probability)
         if any(ctx.needs_input_grad[:1]):
-            ctx.tensors = (mask,)
+            ctx.tensors = (mask, )
         else:
-            ctx.tensors = (None,)
+            ctx.tensors = (None, )
         return input
 
     @staticmethod
@@ -51,6 +52,7 @@ class DropoutQBits_(torch.autograd.Function):
 
 
 class DropoutQBits(torch.nn.Module):
+
     def __init__(self, p=0.0):
         super().__init__()
         self.p = p
@@ -63,6 +65,7 @@ class DropoutQBits(torch.nn.Module):
 
 
 class ParamsQBits(torch.nn.Parameter):
+
     def __new__(
         cls,
         data=None,
@@ -87,6 +90,7 @@ class ParamsQBits(torch.nn.Parameter):
 
 
 class QuantizedLinearQBits(torch.nn.Linear):
+
     def __init__(
         self,
         input_features,
@@ -155,6 +159,9 @@ class QuantizedLinearQBits(torch.nn.Linear):
         )
         shape[-1] = self.out_features
         out = out.view(shape)
+
+        if os.environ["backend"] == "use_vllm":
+            return out, None
 
         return out
 
@@ -264,33 +271,24 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if zp is not None:
             zp = zp.to(device)
         if group_size == -1:
-            return (
-                weight.div_(scale).round_()
-                if zp is None
-                else weight.div_(scale).add_(zp).round_()
-            )
+            return (weight.div_(scale).round_() if zp is None else weight.div_(scale).add_(zp).round_())
         int_weight = torch.zeros(weight.shape).to(device)
         leng = weight.shape[1] // group_size
         tail_flag = False if weight.shape[1] % group_size == 0 else True
         for i in range(leng):
-            int_weight_tmp = weight[:, i * group_size : (i + 1) * group_size].div_(
-                scale[:, i].unsqueeze(1)
-            )
+            int_weight_tmp = weight[:, i * group_size:(i + 1) * group_size].div_(scale[:, i].unsqueeze(1))
             if zp is not None:
                 int_weight_tmp.add_(zp[:, i].unsqueeze(1))
-            int_weight[:, i * group_size : (i + 1) * group_size].copy_(
-                int_weight_tmp.round_()
-            )
+            int_weight[:, i * group_size:(i + 1) * group_size].copy_(int_weight_tmp.round_())
         if tail_flag:
-            int_weight_tmp = weight[:, leng * group_size :].div_(
-                scale[:, -1].unsqueeze(1)
-            )
+            int_weight_tmp = weight[:, leng * group_size:].div_(scale[:, -1].unsqueeze(1))
             if zp is not None:
                 int_weight_tmp.add_(zp[:, -1].unsqueeze(1))
-            int_weight[:, leng * group_size :].copy_(int_weight_tmp.round_())
+            int_weight[:, leng * group_size:].copy_(int_weight_tmp.round_())
         return int_weight
 
     def recover_qparms(self):
+
         def recover_idx(ret_idx, k, blocksize):
             g_idx = torch.zeros(k, dtype=int)
             value_range = (k + blocksize - 1) // blocksize
@@ -328,18 +326,12 @@ class QuantizedLinearQBits(torch.nn.Linear):
         else:
             g_idx = None
         weight_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 6)
-        weight_dtype = "".join(
-            chr(ascii_code) for ascii_code in weight_dtype_ascii.tolist()
-        )
+        weight_dtype = "".join(chr(ascii_code) for ascii_code in weight_dtype_ascii.tolist())
         bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4", "int4_fullrange"] else 8
         compute_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 7)
-        compute_dtype = "".join(
-            chr(ascii_code) for ascii_code in compute_dtype_ascii.tolist()
-        )
+        compute_dtype = "".join(chr(ascii_code) for ascii_code in compute_dtype_ascii.tolist())
         scales_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 8)
-        scales_dtype = "".join(
-            chr(ascii_code) for ascii_code in scales_dtype_ascii.tolist()
-        )
+        scales_dtype = "".join(chr(ascii_code) for ascii_code in scales_dtype_ascii.tolist())
         if scales_dtype is None:
             assert False, "scales dtype only support fp32."
         scales = qbits.acquire_packed_weight_info(self.weight, 9)
@@ -356,9 +348,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
         revert_wei = torch.zeros(in_features, out_features, dtype=torch.float)
 
-        qbits.dequantize_packed_weight(
-            self.weight, revert_wei, False, compute_dtype, weight_dtype, scales_dtype
-        )
+        qbits.dequantize_packed_weight(self.weight, revert_wei, False, compute_dtype, weight_dtype, scales_dtype)
 
         int_weight = self.quant_weight_w_scale(
             revert_wei.t(),
@@ -426,9 +416,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
         except:
             qbits_customop_available = False
         if lora_dropout > 0 and qbits_customop_available:
-            self.lora_dropout = torch.nn.ModuleDict(
-                {adapter_name: DropoutQBits(p=lora_dropout)}
-            )
+            self.lora_dropout = torch.nn.ModuleDict({adapter_name: DropoutQBits(p=lora_dropout)})
 
     def merge(self, safe_merge: bool = False) -> None:
         """Merge the active adapter weights into the base weights.
@@ -440,10 +428,8 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                 NaNs. Defaults to `False`.
         """
         if self.merged:
-            print(
-                f"Already following adapters were merged {','.join(self.merged_adapters)}. "
-                f"You are now additionally merging {','.join(self.active_adapters)}."
-            )
+            print(f"Already following adapters were merged {','.join(self.merged_adapters)}. "
+                  f"You are now additionally merging {','.join(self.active_adapters)}.")
         w_dequant = torch.zeros(
             self.out_features,
             self.in_features,
@@ -468,8 +454,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
 
                     if not torch.isfinite(orig_weights).all():
                         raise ValueError(
-                            f"NaNs detected in the merged weights. The adapter {active_adapter} seems to be broken"
-                        )
+                            f"NaNs detected in the merged weights. The adapter {active_adapter} seems to be broken")
 
                     w_data = orig_weights
                 else:
@@ -541,13 +526,10 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
         )
 
     def get_delta_weight(self, adapter) -> torch.Tensor:
-        return (
-            transpose(
-                self.lora_B[adapter].weight @ self.lora_A[adapter].weight,
-                False,
-            )
-            * self.scaling[adapter]
-        )
+        return (transpose(
+            self.lora_B[adapter].weight @ self.lora_A[adapter].weight,
+            False,
+        ) * self.scaling[adapter])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.disable_adapters:
@@ -602,10 +584,8 @@ class QBitsLoraModel(LoraModel):
             bias = kwargs.pop("bias", False)
             in_features, out_features = target.in_features, target.out_features
             if kwargs["fan_in_fan_out"]:
-                print(
-                    "fan_in_fan_out is set to True but the target module is `torch.nn.Linear`. "
-                    "Setting fan_in_fan_out to False."
-                )
+                print("fan_in_fan_out is set to True but the target module is `torch.nn.Linear`. "
+                      "Setting fan_in_fan_out to False.")
                 kwargs["fan_in_fan_out"] = lora_config.fan_in_fan_out = False
             kwargs["compute_dtype"] = target.compute_dtype
             kwargs["compress_statistics"] = target.compress_statistics
@@ -613,13 +593,9 @@ class QBitsLoraModel(LoraModel):
             kwargs["scale_dtype"] = target.scale_dtype
             kwargs["blocksize"] = target.blocksize
             kwargs["scheme"] = target.scheme
-            new_module = QuantizedLoraLinearQBits(
-                adapter_name, in_features, out_features, bias=bias, **kwargs
-            )
+            new_module = QuantizedLoraLinearQBits(adapter_name, in_features, out_features, bias=bias, **kwargs)
         else:
-            new_module = QBitsLoraModel._create_new_module_(
-                lora_config, adapter_name, target, **kwargs
-            )
+            new_module = QBitsLoraModel._create_new_module_(lora_config, adapter_name, target, **kwargs)
         return new_module
 
 
