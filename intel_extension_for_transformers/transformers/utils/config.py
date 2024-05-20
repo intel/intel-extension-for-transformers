@@ -688,50 +688,42 @@ class StaticQuantConfig(ITREXQuantizationConfigMixin):
         self.excluded_precisions = excluded_precisions
         self.example_inputs = example_inputs
 
-class SmoothQuantConfig(StaticQuantConfig):
+class SmoothQuantConfig(ITREXQuantizationConfigMixin):
     def __init__(
             self,
-            backend="ipex",
             tokenizer=None,
-            calib_dataset="NeelNanda/pile-10k",
-            calib_dataloader=None,
-            calib_func=None,
-            calib_shuffle=True,
-            calib_iters=100,
-            calib_padding=False,
-            calib_len=512,
-            calib_pad_val=1,
-            op_name_dict=None,
-            op_type_dict=None,
-            excluded_precisions=[],
-            example_inputs=None,
-            ipex_opt_llm=None,
+            dataset="NeelNanda/pile-10k",
             alpha=0.5,
-            num_beams=1,
-            recipes={"smooth_quant": True, "smooth_quant_args":{"alpha":0.5}},
-            **kwargs,
+            scale_sharing = False,
+            init_alpha = 0.5,
+            alpha_min = 0.0,
+            alpha_max = 1.0,
+            alpha_step = 0.1,
+            shared_criterion = "max",
+            do_blockwise = False,
+            auto_alpha_args = None,
+            nsamples=100,
+            excluded_precisions=[],
+            ipex_opt_llm=None,
+            num_beams=1,        
+
     ):
-        super().__init__(
-            backend=backend,
-            tokenizer=tokenizer,
-            calib_dataset=calib_dataset,
-            calib_dataloader=calib_dataloader,
-            calib_func=calib_func,
-            calib_shuffle=calib_shuffle,
-            calib_iters=calib_iters,
-            calib_padding=calib_padding,
-            calib_len=calib_len,
-            calib_pad_val=calib_pad_val,
-            op_name_dict=op_name_dict,
-            op_type_dict=op_type_dict,
-            excluded_precisions=excluded_precisions,
-            example_inputs=example_inputs,
-        )
         self.quant_method = QuantizationMethod.SmoothQuant
-        self.ipex_opt_llm = ipex_opt_llm
+        self.dataset = dataset
+        self.tokenizer=tokenizer
         self.alpha = alpha
+        self.scale_sharing = scale_sharing
+        self.init_alpha = init_alpha
+        self.alpha_min = alpha_min
+        self.alpha_max = alpha_max
+        self.alpha_step = alpha_step
+        self.shared_criterion = shared_criterion
+        self.do_blockwise = do_blockwise
+        self.auto_alpha_args = auto_alpha_args
+        self.nsamples=nsamples
+        self.ipex_opt_llm = ipex_opt_llm
         self.num_beams = num_beams
-        self.recipes = recipes
+        self.excluded_precisions = excluded_precisions
 
 class RtnConfig(ITREXQuantizationConfigMixin):
     def __init__(

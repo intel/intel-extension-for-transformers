@@ -194,6 +194,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
         if q_config.quant_method.value == "gptq":
             if q_config.desc_act:
+                print("before qbits g_idx")
+                print(g_idx)
                 if not q_config.static_groups:
                     int_weight2 = int_weight.clone()
                     group_size = q_config.group_size
@@ -325,7 +327,11 @@ class QuantizedLinearQBits(torch.nn.Linear):
         desc_act = qbits.acquire_packed_weight_info(self.weight, 4)[0] != 0
         if desc_act:
             g_idx = qbits.acquire_packed_weight_info(self.weight, 5)
+            print("qbits recover g_idx")
+            print(g_idx)
             g_idx = recover_idx(g_idx, in_features, group_size)
+            print("postprocess recover g_idx")
+            print(g_idx)
         else:
             g_idx = None
         weight_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 6)

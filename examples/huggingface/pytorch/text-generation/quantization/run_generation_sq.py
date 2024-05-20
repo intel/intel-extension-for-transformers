@@ -58,33 +58,16 @@ parser.add_argument(
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
-parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
-parser.add_argument(
-    "--calib_padding", action="store_true", help="Calibration dataset do padding."
-)
-parser.add_argument(
-    "--calib_shuffle",
-    default=True,
-    type=str2bool,
-    help="Calibration dataset do shuffle.",
-)
-parser.add_argument(
-    "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
-)
-parser.add_argument(
-    "--calib_len",
-    default=512,
-    type=int,
-    help="Calibration dataset max or padding max length.",
-)
-parser.add_argument(
-    "--recipes", type=str, help="A dictionary as a string, recipes for smoothquant."
-)
-parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
-parser.add_argument(
-    "--fallback_add", action="store_true", help="Whether to fallback add ops to FP32"
-)
-
+parser.add_argument("--alpha", default=0.5, help="Smooth quant parameter.")
+parser.add_argument("--nsamples", default=100, help="Smooth quant calibration samples.")
+# sq alpha "auto" parameters
+parser.add_argument("--scale_sharing", action="store_true")
+parser.add_argument("--init_alpha", default="0.5", help="Smooth quant parameter.")
+parser.add_argument("--alpha_min", default="0.0", help="Smooth quant parameter.")
+parser.add_argument("--alpha_max", default="1.0", help="Smooth quant parameter.")
+parser.add_argument("--alpha_step", default="0.1", help="Smooth quant parameter.")
+parser.add_argument("--shared_criterion", default="max", type=str)
+parser.add_argument("--do_blockwise", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--_commit_hash", default=None, type=str)
 parser.add_argument("--trust_remote_code", action="store_true")
@@ -142,56 +125,19 @@ quantization_config = None
 if args.mixed_precision:
     quantization_config = MixedPrecisionConfig(dtype="bfloat16")  # default is bfloat16
 elif args.sq:
-    if re.search("gptj", config.model_type) or re.search("gpt_neox", config.model_type):
-        op_type_dict = {
-            "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-        }
-    elif re.search("mpt", config.model_type):
-        op_type_dict = {
-            "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-            "<built-in function linear>": {
-                "weight": {"dtype": ["fp32"]},
-                "activation": {"dtype": ["fp32"]},
-            },
-        }
-    elif re.search("mistral", config.model_type) or re.search(
-        "baichuan", config.model_type
-    ):
-        op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
-    else:
-        op_type_dict = {}
-    if args.fallback_add:
-        op_type_dict["add"] = {
-            "weight": {"dtype": ["fp32"]},
-            "activation": {"dtype": ["fp32"]},
-        }
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    if args.recipes:
-        try:
-            import ast
-
-            recipes = ast.literal_eval(args.recipes)
-            print("Parsed recipes dictionary:", recipes)
-        except ValueError as e:
-            print("Error parsing recipes dictionary:", e)
-    else:
-        recipes = {
-            "smooth_quant": True,
-            "smooth_quant_args": {
-                "alpha": args.alpha if args.alpha == "auto" else float(args.alpha)
-            },
-        }
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        recipes=recipes,
-        op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
+        alpha = args.alpha,
+        scale_sharing = args.scale_sharing,
+        init_alpha=args.init_alpha,
+        alpha_min=args.alpha_min,
+        alpha_max=args.alpha_max,
+        alpha_step=args.alpha_step,
+        shared_criterion=args.shared_criterion,
+        do_blockwise = args.do_blockwise,
         num_beams=generate_kwargs["num_beams"],
-        calib_shuffle=args.calib_shuffle,
-        calib_iters=args.calib_iters,
-        calib_padding=args.calib_padding,
-        calib_len=args.calib_len,
-        calib_pad_val=args.calib_pad_val,
     )
 else:
     print("The quantization_config is None.")
@@ -210,7 +156,7 @@ if quantization_config is not None:
         tokenizer.save_pretrained(args.output_dir)
         if args.sq:
             config.save_pretrained(args.output_dir)
-            user_model.save(args.output_dir)
+            torch.jit.save(user_model, args.output_dir + "/pytorch_model.bin")
         elif args.mixed_precision:
             user_model.save_pretrained(args.output_dir)
         args.model = args.output_dir

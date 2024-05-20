@@ -276,11 +276,10 @@ if args.woq:
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
-            calib_len=args.calib_len,
             lr=args.lr,
             minmax_lr=args.minmax_lr,
             use_quant_input=args.use_quant_input,
+            max_input_length=args.max_input_length,
             use_ipex=args.use_ipex,
         )
     else:
@@ -316,11 +315,11 @@ else:
     print("Didn't do Weight Only Quantization.")
 
 # save model
-if args.output_dir is not None and ((args.woq or args.load_in_4bit or args.load_in_8bit) and not args.use_neural_speed):
-    user_model.save_pretrained(args.output_dir)
-    tokenizer.save_pretrained(args.output_dir)
-    # to validate woq model accuracy 
-    args.model = args.output_dir
+# if args.output_dir is not None and ((args.woq or args.load_in_4bit or args.load_in_8bit) and not args.use_neural_speed):
+#     user_model.save_pretrained(args.output_dir)
+#     tokenizer.save_pretrained(args.output_dir)
+#     # to validate woq model accuracy 
+#     args.model = args.output_dir
 
 if args.benchmark:
     print("Loading model from: ", args.model)
@@ -392,9 +391,9 @@ if args.accuracy:
     if args.use_neural_speed:
         model_args += ",model_format=neural_speed"
     args = LMEvalParser(model = "hf", 
-                        model_args=model_args,
-                        #user_model=user_model,
-                        #tokenizer=tokenizer,
+                        #model_args=model_args,
+                        user_model=user_model,
+                        tokenizer=tokenizer,
                         tasks = args.tasks,
                         device = "cpu",
                         batch_size = args.batch_size)

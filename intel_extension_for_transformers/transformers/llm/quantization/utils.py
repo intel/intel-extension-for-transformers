@@ -24,7 +24,6 @@ from ...utils import CpuInfo
 from accelerate import init_empty_weights
 from datasets import load_dataset
 from neural_compressor import quantization
-#from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
 from neural_compressor.utils.utility import LazyImport
 from neural_compressor.torch.algorithms.weight_only.autoround import get_autoround_default_run_fn
@@ -34,19 +33,24 @@ from neural_compressor.torch.quantization import (
     GPTQConfig,
     AWQConfig,
     TEQConfig,
-    StaticQuantConfig,
     SmoothQuantConfig,
     HQQConfig,
     convert,
-    get_default_AutoRound_config,
-    prepare
+    prepare,
+    quantize
+)
+from .sq_utils import (
+    IPEX_OPT_LLM_SUPPORTED_DICT,
+    MODEL_TYPES_REQUIRING_POSITION_IDS,
+    generate_dummy_past_key_values_for_opt_llm,
+    generate_dummy_past_key_values,
+    get_dataloader
 )
 from intel_extension_for_transformers.tools.utils import (
     is_ipex_available,
     is_autoround_available,
 )
 from transformers import AutoTokenizer
-
 if is_ipex_available():
     import intel_extension_for_pytorch as ipex
 
@@ -387,7 +391,7 @@ def _replace_linear(
     return model, is_replaced
 
 
-def default_run_fn(model, tokenizer, dataset, max_length=512, n_samples=100, batch_size=8, algo="GPTQ"):
+def default_run_fn(model, tokenizer, dataset, max_length=512, n_samples=100, batch_size=8, algo="rtn"):
     from datasets import load_dataset
     from torch.utils.data import DataLoader
 
@@ -647,3 +651,107 @@ def get_bits(config):
             config.weight_dtype
         )
     return bits
+
+def convert_to_smoothquant_model(model, quantization_config):
+    if ipex.__version__ == "2.2.0+cpu":
+        logger.info("ipex.llm.optimize by 2.2.0 version supported model family: ", ",".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.2"]))
+        logger.info("The recommended transformers version is 4.35.2 if you used IPEX 2.2.0 version.")
+        IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.2"]
+    elif  ipex.__version__ == "2.3.0+cpu":
+        logger.info("ipex.llm.optimize by 2.3.0 version supported model family: ", ",".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]))
+        logger.info("The recommended transformers version is 4.38.1 if you used IPEX 2.3.0 version.")
+        IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]
+    else:
+        logger.warning("Please check the intel_extension_for_pytorch version is 2.3.0+cpu.")
+        IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]
+    model_type = model.config.model_type.replace("_", "-")
+    # ipex.optimize_transformers
+    if quantization_config.ipex_opt_llm is None:
+        if model_type in IPEX_OPT_LLM_SUPPORTED:
+            quantization_config.ipex_opt_llm = True
+            logger.info(
+                "quantization_config.ipex_opt_llm set to True and ipex.llm.optimize is used."
+            )
+        else:
+            quantization_config.ipex_opt_llm = False
+    if quantization_config.ipex_opt_llm:
+        qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5)
+        model = ipex.llm.optimize(
+            model.eval(),
+            quantization_config=qconfig,
+            dtype=torch.float32,
+            inplace=True,
+            deployment_mode=False,
+        )
+        model.eval()
+    # past_key_values
+    num_beams = quantization_config.num_beams
+    if quantization_config.ipex_opt_llm:
+        past_key_values = generate_dummy_past_key_values_for_opt_llm(
+            config=model.config, input_bs=1, num_beams=num_beams
+        )
+    else:
+        past_key_values = generate_dummy_past_key_values(
+            config=model.config, input_bs=1
+        )
+    # get calibration dataloader
+    if quantization_config.alpha == "auto" and model_type == "llama":
+        calib_dataloader = get_dataloader(model_type, quantization_config, past_key_values=past_key_values, shuffle=True, padding=True, max_input_lenth=2048, pad_val=1)
+    else:
+        calib_dataloader = get_dataloader(model_type, quantization_config, past_key_values=past_key_values)
+ 
+    def calib_func(model):
+        with torch.no_grad():
+            for i, (inputs, last_ind) in enumerate(calib_dataloader):
+                if i >= quantization_config.nsamples:
+                    break
+                if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                    model(
+                        input_ids=inputs["input_ids"],
+                        past_key_values=inputs["past_key_values"],
+                        position_ids=inputs["position_ids"],
+                        attention_mask=inputs["attention_mask"],
+                    )
+                else:
+                    model(
+                        input_ids=inputs["input_ids"],
+                        past_key_values=inputs["past_key_values"],
+                        attention_mask=inputs["attention_mask"],
+                    )
+
+    # example_inputs
+    for i, (inputs, last_ind) in enumerate(calib_dataloader):
+        if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+            example_inputs = {
+                "input_ids": inputs["input_ids"],
+                "attention_mask": inputs["attention_mask"],
+                "position_ids": inputs["position_ids"],
+                "past_key_values": inputs["past_key_values"],
+            }
+        else:
+            example_inputs = {
+                "input_ids": inputs["input_ids"],
+                "attention_mask": inputs["attention_mask"],
+                "past_key_values": inputs["past_key_values"],
+            }
+        break
+    quant_config = SmoothQuantConfig(
+        alpha=quantization_config.alpha,
+        init_alpha=quantization_config.init_alpha,
+        alpha_min=quantization_config.alpha_min,
+        alpha_max=quantization_config.alpha_max,
+        alpha_step=quantization_config.alpha_step,
+        shared_criterion=quantization_config.shared_criterion,
+        do_blockwise=quantization_config.do_blockwise,
+
+    )
+    # fallback
+    if model_type in ["gptj", "gpt_neox", "mpt"]:
+        quant_config = quant_config.set_local(torch.add, SmoothQuantConfig(w_dtype="fp32", act_dtype="fp32"))
+    q_model = quantize(model, quant_config=quant_config, run_fn=calib_func, example_inputs=example_inputs)
+    with torch.no_grad():
+        q_model = torch.jit.trace(q_model.eval(), example_kwarg_inputs=example_inputs, strict=False, check_trace=False)
+        q_model = torch.jit.freeze(q_model.eval())
+        q_model(**example_inputs)
+        q_model(**example_inputs)
+    return q_model
