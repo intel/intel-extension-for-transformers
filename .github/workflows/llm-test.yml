@@ -52,7 +52,7 @@ jobs:
           cd ${{ github.workspace }}
           conda activate llm-test || source activate llm-test
           compiler_version=11.1.0
-          conda install --update-deps -c conda-forge gxx==${compiler_version} gcc==${compiler_version} gxx_linux-64==${compiler_version} libstdcxx-ng sysroot_linux-64 libxcrypt -y
+          conda install --update-deps -c miniforge gxx==${compiler_version} gcc==${compiler_version} gxx_linux-64==${compiler_version} libstdcxx-ng sysroot_linux-64 libxcrypt -y
           python setup.py sdist bdist_wheel
           pip install dist/intel_extension_for_transformers*.whl
           pip list
