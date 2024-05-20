@@ -210,7 +210,11 @@ if user_model is not None:
     user_model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
 
-enable_optimize_transformers = True
+enable_optimize_transformers = False
+opt_gpu_model_type_list = ["llama", "gptj", "mistral", "qwen"]
+
+if config.model_type in opt_gpu_model_type_list:
+    enable_optimize_transformers = True
 
 if args.benchmark:
     if config.model_type == "qwen":
