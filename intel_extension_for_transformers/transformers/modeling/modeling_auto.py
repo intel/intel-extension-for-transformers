@@ -342,13 +342,14 @@ class _BaseQBitsAutoModelClass:
         if use_vllm is not None:
             logger.info("The backend is vLLM.")
             from vllm import LLM
-            from intel_extension_for_transformers.transformers.utils import RtnConfig
             from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
             from vllm.model_executor.model_loader import get_model_loader
             from vllm.model_executor.model_loader.weight_utils import default_weight_loader
             from vllm.model_executor.layers.linear import (MergedColumnParallelLinear, QKVParallelLinear, RowParallelLinear)
 
             os.environ["backend"] = "use_vllm"
+            os.environ["VLLM_CONFIGURE_LOGGING"] = 0
+
             llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
             model = llm.llm_engine.model_executor.driver_worker.model_runner.model
             print("Original model =", model)
