@@ -12,10 +12,13 @@ Validate in Habana version 1.15.1 with its Pytorch-2.2.0 docker.
 docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host -v <workfloder>:<docker workfolder>  --name "streaming_llm" vault.habana.ai/gaudi-docker/1.15.1/ubuntu22.04/habanalabs/pytorch-installer-2.2.0:latest
 
 # install related packages in docker
+# install optimum-habana
 pip install git+https://github.com/huggingface/optimum-habana.git@753da20f98ad6f874075701995428072159ba600
+# install intel-extension-for-transformers
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
-cd itrex && git switch yzt/gaudi_streaming_llm
-python setup.py install
+cd itrex && python setup.py install
+# or just install from PyPI
+pip install intel-extension-for-transformers
 ```
 
 ## Run
@@ -23,17 +26,17 @@ We provide [01-ai/Yi-34B-Chat](https://huggingface.co/01-ai/Yi-34B-Chat) as an m
 
 1. bf16 data type:
 ```shell
-bash run_yi_34b_bf16_streaming.sh
+bash run_bf16_streaming.sh
 ```
 
 2. fp8 data type:
 ```shell
-bash run_yi_34b_fp8_streaming.sh
+bash run_fp8_streaming.sh
 ```
 
-You can change the input args values (like `attention_sink_window_size`, `num_sample` for fp8 calibration, etc.) to implement more experiments.
+You can change the input args values (like `attention_sink_window_size`, `num_sample` for fp8 calibration, etc.) or set env var `MODEL=<model_name_or_path>` to implement more experiments.
 
-## Evaluation (ppl)
+## Evaluation (PPL)
 
 We follow the one token by one token ppl evaluation way in [streaming llm](https://github.com/mit-han-lab/streaming-llm/blob/main/examples/eval_long_ppl.py#L81-L91).
 
