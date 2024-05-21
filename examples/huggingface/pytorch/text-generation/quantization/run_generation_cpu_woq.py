@@ -149,7 +149,7 @@ parser.add_argument(
     help="minmax learning rate, if None,it will beset to be the same with lr",
 )
 parser.add_argument(
-    "--use_quant_input",
+    "--enable_quanted_input",
     action="store_true",
     help="whether to use the output of quantized block to tune the next block",
 )
