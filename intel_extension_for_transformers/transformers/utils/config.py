@@ -817,6 +817,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         nsamples: int = 128,
         max_input_length: Optional[int] = None,
         static_groups: bool = False,
+        true_sequential: bool = True,
         layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
@@ -845,6 +846,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.damp_percent = damp_percent
         self.desc_act = desc_act
         self.static_groups = static_groups
+        self.true_sequential = true_sequential
         self.layer_wise = layer_wise
         self.max_input_length = max_input_length
         self.llm_int8_skip_modules = (
