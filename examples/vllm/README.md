@@ -1,18 +1,20 @@
 # vLLM Acceleration with ITREX
 
-This guide explains how to leverage Intel extension for transformers(ITREX) for transformers to accelerate vLLM inference on CPUs. ITREX integrates the vLLM CPU backend and offers optional [QBits acceleration](../../docs/qbits.md) for supported models.
+Intel extension for transformers(ITREX) integrates the vLLM CPU backend and offers optional [QBits Module](../../docs/qbits.md) to accelerate the vLLM inference on CPUs.
 
 ## Installation Methods
 
 1. vLLM Installation with CPU: Install vLLM from source code following the instructions provided [here](https://docs.vllm.ai/en/latest/getting_started/cpu-installation.html).
 
-2. ITREX and Dependencies: Install the ITREX and its dependencies in the local directory.
+2. ITREX Installation: Install the ITREX following the [link](../../docs/get_started.md)
+
+3. Dependencies: Install some additional dependencies that may be used. The dependencies are listed in the current directory.
 
 Note: torch==2.3.0+cpu is required and vllm==0.4.2+cpu is validated.
 
 ## Usage Example
 
-ITREX provides a script (vllm_acceleration_example.py) demonstrating accelerated vLLM inference. Run it with the following command:
+ITREX provides a script that demonstrates the vLLM inference acceleration. Run it with the following command:
 ```bash
 numactl -m 0 -C 0-55 python vllm_acceleration_example.py --model_path=/home/model/chatglm2-6b --prompt=你好
 ```
