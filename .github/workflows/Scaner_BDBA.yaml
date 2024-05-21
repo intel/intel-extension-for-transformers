@@ -9,7 +9,8 @@ jobs:
     name: BDBA Scan
     uses: intel-innersource/frameworks.ai.infrastructure.code-scan-tools/.github/workflows/Scanner_Bdba.yml@one-ci-cd
     with:
-      repos: ${{ github.event.repository.name }}
+      org: "intel-innersource"
+      repo: ${{ github.event.repository.name }}
       refs: ${{ github.ref_name }}
       group: "22"
       runners: "['inner-source']"
