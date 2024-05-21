@@ -16,6 +16,7 @@
 # limitations under the License.
 """PyTorch llama model."""
 
+import os
 import math
 from typing import List, Optional, Tuple, Union
 
@@ -25,17 +26,45 @@ import torch.nn.functional as F
 
 from transformers.cache_utils import Cache
 from transformers.models.llama.configuration_llama import LlamaConfig
-from transformers.models.llama.modeling_llama import apply_rotary_pos_emb, repeat_kv, _get_unpad_data
-from transformers.utils import logging, is_flash_attn_greater_or_equal_2_10, is_flash_attn_2_available
+from transformers.models.llama.modeling_llama import rotate_half, repeat_kv, _get_unpad_data
 
 logger = logging.get_logger(__name__)
 
-if is_flash_attn_2_available(): # pylint: disable=E0401
-    from flash_attn import flash_attn_func, flash_attn_varlen_func
-    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
+from packaging import version
+import transformers
+if version.parse(transformers.__version__) > version.parse("4.33.0"):
+    from transformers.utils import logging, is_flash_attn_greater_or_equal_2_10, is_flash_attn_2_available
+    if is_flash_attn_2_available():
+        from flash_attn import flash_attn_func, flash_attn_varlen_func
+        from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
 
 from ..h2o import H2OKVCache
 
+def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
+    """Applies Rotary Position Embedding to the query and key tensors.
+
+    Args:
+        q (`torch.Tensor`): The query tensor.
+        k (`torch.Tensor`): The key tensor.
+        cos (`torch.Tensor`): The cosine part of the rotary embedding.
+        sin (`torch.Tensor`): The sine part of the rotary embedding.
+        position_ids (`torch.Tensor`, *optional*):
+            Deprecated and unused.
+        unsqueeze_dim (`int`, *optional*, defaults to 1):
+            The 'unsqueeze_dim' argument specifies the dimension along which to unsqueeze cos[position_ids] and
+            sin[position_ids] so that they can be properly broadcasted to the dimensions of q and k. For example, note
+            that cos[position_ids] and sin[position_ids] have the shape [batch_size, seq_len, head_dim]. Then, if q and
+            k have the shape [batch_size, heads, seq_len, head_dim], then setting unsqueeze_dim=1 makes
+            cos[position_ids] and sin[position_ids] broadcastable to the shapes of q and k. Similarly, if q and k have
+            the shape [batch_size, seq_len, heads, head_dim], then set unsqueeze_dim=2.
+    Returns:
+        `tuple(torch.Tensor)` comprising of the query and key tensors rotated using the Rotary Position Embedding.
+    """
+    cos = cos.unsqueeze(unsqueeze_dim)
+    sin = sin.unsqueeze(unsqueeze_dim)
+    q_embed = (q * cos) + (rotate_half(q) * sin)
+    k_embed = (k * cos) + (rotate_half(k) * sin)
+    return q_embed, k_embed
 
 class H2OLlamaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper."""
@@ -144,7 +173,7 @@ class H2OLlamaAttention(nn.Module):
                 if position_length < position_ids.item()+1:
                     position_length = position_ids.item()+1
             cos, sin = self.rotary_emb(value_states, seq_len=position_length) # pylint: disable=E1120
-        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
 
         if past_key_value is not None:
             # sin and cos are specific to RoPE models; cache_position needed for the static cache
