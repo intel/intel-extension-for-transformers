@@ -249,9 +249,9 @@ class H2OKVCache:
             if attn_score_cache.size(-1) < self.hh_score.size(-1):
                 self.clean_scores()
             if not mean:
-                attn_score_cache[:, :, :self.hh_score.shape[-1]] += self.hh_score 
+                attn_score_cache[:, :, :self.hh_score.shape[-1]] += self.hh_score
             else:
-                attn_score_cache[:, :, :self.hh_score.shape[-1]] = attn_score_cache[:, :, :self.hh_score.shape[-1]] * (self.idx - 1) + self.hh_score 
+                attn_score_cache[:, :, :self.hh_score.shape[-1]] = attn_score_cache[:, :, :self.hh_score.shape[-1]] * (self.idx - 1) + self.hh_score
                 attn_score_cache /= self.idx
 
         self.hh_score = attn_score_cache
