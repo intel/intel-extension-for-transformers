@@ -252,7 +252,7 @@ class H2OKVCache:
                 attn_score_cache[:, :, :self.hh_score.shape[-1]] += self.hh_score
             else:
                 attn_score_cache[:,:,:self.hh_score.shape[-1]] = attn_score_cache[:,:,:self.hh_score.shape[-1]] \
-                    * (self.idx - 1) + self.hh_score 
+                    * (self.idx - 1) + self.hh_score
                 attn_score_cache /= self.idx
 
         self.hh_score = attn_score_cache
