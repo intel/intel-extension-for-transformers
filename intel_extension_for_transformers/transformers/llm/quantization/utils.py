@@ -389,7 +389,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
     if config.quant_method.value == "autoround":
         from neural_compressor.adaptor.torch_utils.auto_round import get_dataloader
-        calib_dataloader = get_dataloader(config.tokenizer,
+        calib_dataloader = get_dataloader(config.tokenizer,  # pylint: disable=E1123
                                     seqlen=config.calib_len,
                                     dataset_name=config.dataset,
                                     seed=42,
