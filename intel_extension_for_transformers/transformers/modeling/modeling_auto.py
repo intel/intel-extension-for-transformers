@@ -420,7 +420,6 @@ class _BaseQBitsAutoModelClass:
                         setattr(params, "weight_loader", original_params[2])
                     else:
                         setattr(params, "weight_loader", default_weight_loader)
-                print("external = ", name, params.weight_loader)
 
             model.load_weights(weights_iterator)
 

@@ -39,16 +39,16 @@ def main(args_in: Optional[List[str]] = None) -> None:
         from vllm import LLM
         llm = LLM(model=args.model_path, trust_remote_code=True)
         T1 = time.time()
-        outputs = llm.generate(args.prompt)  # Generate texts from the prompts.
-        print("original outputs = ", outputs)
+        original_outputs = llm.generate(args.prompt)  # Generate texts from the prompts.
+        print("original outputs = ", original_outputs)
         T2 = time.time()
 
         T3 = time.time()
-        output = model.generate(args.prompt)
-        print("optimized outputs = ", outputs)
+        optimized_output = model.generate(args.prompt)
+        print("optimized outputs = ", optimized_output)
         T4 = time.time()
-        print("input_tokens_length) = ", len(outputs[0].prompt_token_ids))
-        print("output_tokens_length) = ", len(outputs[0].outputs[0].token_ids))
+        print("input_tokens_length) = ", len(optimized_output[0].prompt_token_ids))
+        print("output_tokens_length) = ", len(optimized_output[0].outputs[0].token_ids))
         qbits_latency = (T4 - T3) * 1000
         vllm_latency =  (T2 - T1) * 1000
         print('The qbits optimized latency:%.2f ms' % qbits_latency)
