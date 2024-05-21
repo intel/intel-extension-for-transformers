@@ -95,6 +95,14 @@ class TestLLMRUNTIME(unittest.TestCase):
         assert(output[0][0:15] == [1, 5713, 3714, 264, 727, 28725, 736, 403, 264, 1628, 2746, 693, 6045, 298, 1220])
 
 
+    def test_use_vllm_api(self):
+        model_name = "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
+        prompt = "Once upon a time"
+        model = AutoModelForCausalLM.from_pretrained(model_name, use_vllm = True)
+        output = model.generate(prompt)
+        print("output = ", output)
+
+
     def test_beam_search(self):
         model_name = "/tf_dataset2/models/pytorch/gpt-j-6B"  # or local path to model
         prompts = [
