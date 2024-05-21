@@ -83,12 +83,13 @@ class TestWeightOnly(unittest.TestCase):
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.workspace, ignore_errors=True)
         shutil.rmtree('tmp', ignore_errors=True)
+        shutil.rmtree('saved_results', ignore_errors=True)
 
     def test_woq_config(self):
         config = RtnConfig(
-            bits=4, weight_dtype="int4_fullrange", group_size=32)
+            bits=4, weight_dtype="int4_clip", group_size=32)
         diff_res = config.to_diff_dict()
-        ref_config = {'weight_dtype': 'int4_fullrange'}
+        ref_config = {'weight_dtype': 'int4_clip'}
         self.assertEqual(diff_res, ref_config)
         print(diff_res)
         print(config.to_dict())
@@ -133,10 +134,10 @@ class TestWeightOnly(unittest.TestCase):
     def test_int4(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
         compress_wei = qbits.quantize_to_packed_weight(
-            raw_wei, True, 32, "fp32", "int4_fullrange", "fp32", False)
+            raw_wei, True, 32, "fp32", "nf4", "fp32", False)
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
         qbits.dequantize_packed_weight(compress_wei, revert_wei, True,
-                             "fp32", "int4_fullrange", "fp32")
+                             "fp32", "nf4", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
@@ -146,13 +147,33 @@ class TestWeightOnly(unittest.TestCase):
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(raw_wei)
             config = RtnConfig(
-                bits=4, weight_dtype="int4_fullrange", group_size=32)
+                bits=4, weight_dtype="nf4", group_size=32)
             config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
             print(output_quant)
             assert torch.allclose(output, output_quant, rtol=0.01)
+
+    def test_woq_with_ipex_cpu(self):
+        model_name_or_path = "facebook/opt-125m"
+        config = RtnConfig(bits=4, use_ipex=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path,
+            quantization_config=config,
+            use_llm_runtime=False
+        )
+        input_ids = model.dummy_inputs["input_ids"]
+        output = model(input_ids)
+        model.save_pretrained("./saved_results")
+        model = AutoModelForCausalLM.from_pretrained(
+            "saved_results",
+            use_llm_runtime=False
+        )
+        output_loading = model(input_ids)
+        assert torch.allclose(output.logits, output_loading.logits, rtol=0.01)
+
+
 
     def test_auto_model(self):
         model = AutoModelForCausalLM.from_pretrained(

@@ -17,15 +17,14 @@
 
 from ut_utils import *
 
-cmpt_configs = {"int8": {"int8", "bf16", "fp32"}, "int4_clip": {"int8", "fp32", "bf16"}, "int4_fullrange": {
-    "int8", "fp32", "bf16"}, "fp4_e2m1_bnb": {"fp32", "bf16"}, "fp4_e2m1": {"fp32", "bf16"}, "nf4": {"fp32", "bf16"},
-    "fp8_e5m2": {"fp32", "bf16"}, "fp8_e4m3": {"fp32", "bf16"}
-}
+cmpt_configs = {"int8": {"int8", "bf16", "fp32"}, "int4_clip": {"int8", "fp32", "bf16"}, "int3_clip": {"int8", "fp32", "bf16"}, "int2_clip": {"int8", "fp32", "bf16"},  "fp4_e2m1_bnb": {"fp32", "bf16"}, "fp4_e2m1": {"fp32", "bf16"}, "nf4": {"fp32", "bf16"},
+                "fp8_e5m2": {"fp32", "bf16"}, "fp8_e4m3": {"fp32", "bf16"}
+                }
 
-scale_configs = {"int8": {"fp32", "bf16"}, "int4_clip": {"fp32", "bf16"}, "int4_fullrange": {"fp32", "bf16"}, "fp4_e2m1_bnb": {"fp32", "bf16"}, "fp4_e2m1": {"fp32", "bf16"}, "nf4": {"fp32", "bf16"},
+scale_configs = {"int8": {"fp32", "bf16"}, "int4_clip": {"fp32", "bf16"}, "int3_clip": {"fp32", "bf16"}, "int2_clip": {"fp32", "bf16"}, "fp4_e2m1_bnb": {"fp32", "bf16"}, "fp4_e2m1": {"fp32", "bf16"}, "nf4": {"fp32", "bf16"},
                  "fp8_e5m2": {"fp32", "fp8_e8m0"}, "fp8_e4m3": {"fp32", "fp8_e8m0"}}
 
-asym_configs = {"int8", "int4_clip", "int4_fullrange"}
+asym_configs = {"int8", "int4_clip", "int3_clip", "int2_clip"}
 
 
 @capture_args
@@ -34,7 +33,7 @@ asym_configs = {"int8", "int4_clip", "int4_fullrange"}
 @pytest.mark.parametrize("k", [512])
 @pytest.mark.parametrize("blocksize", [128, -1])
 @pytest.mark.parametrize("compute_type", ["int8", "bf16", "fp32"])
-@pytest.mark.parametrize("weight_type", ["int8", "int4_clip", "int4_fullrange", "nf4", "fp4_e2m1_bnb", "fp4_e2m1", "fp8_e5m2", "fp8_e4m3"])
+@pytest.mark.parametrize("weight_type", ["int8", "int4_clip", "int3_clip", "int2_clip", "nf4", "fp4_e2m1_bnb", "fp4_e2m1", "fp8_e5m2", "fp8_e4m3"])
 @pytest.mark.parametrize("scale_type", ["fp32", "bf16", "fp8_e8m0"])
 @pytest.mark.parametrize("asym", [True, False])
 @pytest.mark.parametrize("transpose", [True, False])
@@ -42,9 +41,11 @@ asym_configs = {"int8", "int4_clip", "int4_fullrange"}
 @pytest.mark.parametrize("src_dt", ["fp32", "bf16"])
 @pytest.mark.parametrize("dst_dt", ["fp32", "bf16"])
 def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transpose, add_bias, src_dt, dst_dt, dump_tensor_info=True):
+    if compute_type == "int8" and weight_type == "int8" and (not qbits.check_isa_supported("AVX_VNNI")):
+        pytest.skip()
     if compute_type not in cmpt_configs[weight_type] or scale_type not in scale_configs[weight_type]:
         pytest.skip()
-    if asym and (weight_type not in asym_configs or compute_type == "int8" or scale_type != "fp32"):
+    if asym and (weight_type not in asym_configs or (compute_type == "int8" and weight_type == "int8")):
         pytest.skip()
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float)

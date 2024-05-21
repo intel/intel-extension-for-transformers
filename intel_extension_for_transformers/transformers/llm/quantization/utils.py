@@ -183,34 +183,79 @@ def _replace_linear(
                         or device == torch.device("cpu")
                         or device == "auto"
                     ):
-                        from .nn.modules import (
-                            QuantizedLinearQBits,
-                        )  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
+                        if is_ipex_available() and quantization_config.use_ipex:
+                            from intel_extension_for_pytorch.nn.modules import WeightOnlyQuantizedLinear as ipex_linear
+                            from intel_extension_for_pytorch.utils.weight_only_quantization import \
+                                  _convert_optimum_format_to_desired
 
-                        use_optimum_format = getattr(module, "use_optimum_format", False) or \
-                            quantization_config.weight_dtype not in [
-                                "fp8_e5m2",
-                                "fp8_e4m3",
-                                "fp4",
-                                "nf4",
-                                "int4_fullrange",
-                            ]
+                            qweight, scales, qzeros = _convert_optimum_format_to_desired(module.qweight,
+                                                                                          module.scales,
+                                                                                            module.qzeros)
 
-                        model._modules[name] = QuantizedLinearQBits(
-                            in_features,
-                            out_features,
-                            module.bias is not None,
-                            compute_dtype=quantization_config.compute_dtype,
-                            compress_statistics=False,
-                            weight_dtype=quantization_config.weight_dtype,
-                            scale_dtype=quantization_config.scale_dtype,
-                            blocksize=quantization_config.group_size,
-                            scheme=quantization_config.scheme,
-                            compression_dtype=getattr(module, "compression_dtype", torch.int32),
-                            compression_dim=getattr(module, "compression_dim", 1),
-                            device=device,
-                            use_optimum_format=use_optimum_format,
-                        )
+                            weight_dtype = {
+                                4: ipex.quantization.WoqWeightDtype.INT4,
+                                8: ipex.quantization.WoqWeightDtype.INT8,
+                            }
+                            compute_dtype = {
+                                "fp32": ipex.quantization.WoqLowpMode.NONE, # follow the activation datatype.
+                                "bf16": ipex.quantization.WoqLowpMode.BF16,
+                                "fp16": ipex.quantization.WoqLowpMode.FP16,
+                                "int8": ipex.quantization.WoqLowpMode.INT8,
+
+                            }
+
+                            ipex_qconfig_mapping = (
+                                ipex.quantization.get_weight_only_quant_qconfig_mapping(
+                                    weight_dtype=weight_dtype[quantization_config.bits],
+                                    lowp_mode=compute_dtype[quantization_config.compute_dtype],
+                                    act_quant_mode=ipex.quantization.WoqActQuantMode.PER_IC_BLOCK,
+                                    group_size=quantization_config.group_size,
+                                )
+                            )
+                            tmp_linear = torch.nn.Linear(
+                                in_features,
+                                out_features,
+                                True if hasattr(module, "bias") else False
+                                )
+                            tmp_linear.qconfig = ipex_qconfig_mapping.global_qconfig
+                            model._modules[name] = ipex_linear.from_float_and_int4_weight(
+                                mod = tmp_linear,
+                                qweight = qweight,
+                                scales = scales,
+                                zero_points = qzeros,
+                                bias = module.bias if hasattr(module, "bias") else None,
+                                group_size = quantization_config.group_size,
+                                g_idx = module.g_idx if hasattr(module, "g_idx") else None,
+                            )
+                        else:
+                            from .nn.modules import (
+                                QuantizedLinearQBits,
+                            )  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
+
+                            use_optimum_format = getattr(module, "use_optimum_format", False) or \
+                                quantization_config.weight_dtype not in [
+                                    "fp8_e5m2",
+                                    "fp8_e4m3",
+                                    "fp4",
+                                    "nf4",
+                                    "int4_fullrange",
+                                ]
+
+                            model._modules[name] = QuantizedLinearQBits(
+                                in_features,
+                                out_features,
+                                module.bias is not None,
+                                compute_dtype=quantization_config.compute_dtype,
+                                compress_statistics=False,
+                                weight_dtype=quantization_config.weight_dtype,
+                                scale_dtype=quantization_config.scale_dtype,
+                                blocksize=quantization_config.group_size,
+                                scheme=quantization_config.scheme,
+                                compression_dtype=getattr(module, "compression_dtype", torch.int32),
+                                compression_dim=getattr(module, "compression_dim", 1),
+                                device=device,
+                                use_optimum_format=use_optimum_format,
+                            )
                     elif device == "xpu" or device == torch.device("xpu"):
                         from intel_extension_for_pytorch.nn.utils._quantize_convert \
                             import WeightOnlyQuantizedLinear as ipex_linear  # pylint: disable=E0401
@@ -265,7 +310,9 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                if device == "cpu" or device == torch.device("cpu") or device == "auto":
+                if quantization_config.use_ipex:
+                    pass
+                elif (device == "cpu" or device == torch.device("cpu") or device == "auto"):
                     if quantization_config.weight_dtype in [
                         "fp8_e5m2",
                         "fp8_e4m3",

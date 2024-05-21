@@ -104,7 +104,7 @@ pip install -r requirements_cpu_woq.txt
 > ```
 
 ### Run
-We provide compression technologies such as `WeightOnlyQuant` with `Rtn/Awq/Teq/GPTQ/AutoRound` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, besides we provided use [neural-speed](https://github.com/intel/neural-speed) by `--use_neural_speed` to accelerate the optimized model, [here](https://github.com/intel/neural-speed/blob/main/docs/supported_models.md) is neural-speed supported list.
+We provide compression technologies such as `WeightOnlyQuant` with `Rtn/Awq/Teq/GPTQ/AutoRound` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, besides we provide use ipex by `--use_ipex` to use intel extension for pytorch to accelerate the model, also provided use [neural-speed](https://github.com/intel/neural-speed) by `--use_neural_speed` to accelerate the optimized model, [here](https://github.com/intel/neural-speed/blob/main/docs/supported_models.md) is neural-speed supported list.
 The followings are command to show how to use it.
 #### Performance
 ```shell
