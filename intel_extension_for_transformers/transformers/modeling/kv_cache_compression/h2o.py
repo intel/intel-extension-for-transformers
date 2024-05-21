@@ -248,10 +248,15 @@ class H2OKVCache:
         # clean self.hh_score if not generation mode
             if attn_score_cache.size(-1) < self.hh_score.size(-1):
                 self.clean_scores()
-                attn_score_cache[:, :, :self.hh_score.shape[-1]] += self.hh_score / (1 if not mean else self.idx)
+            if not mean:
+                attn_score_cache[:, :, :self.hh_score.shape[-1]] += self.hh_score 
+            else:
+                attn_score_cache[:, :, :self.hh_score.shape[-1]] = attn_score_cache[:, :, :self.hh_score.shape[-1]] * (self.idx - 1) + self.hh_score 
+                attn_score_cache /= self.idx
 
         self.hh_score = attn_score_cache
 
 
     def clean_scores(self):
+        self.idx = 0
         self.hh_score = None

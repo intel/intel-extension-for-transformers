@@ -24,7 +24,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers.cache_utils import Cache
+from transformers.cache_utils import Cache, logging
 from transformers.models.llama.configuration_llama import LlamaConfig
 from transformers.models.llama.modeling_llama import rotate_half, repeat_kv, _get_unpad_data
 
