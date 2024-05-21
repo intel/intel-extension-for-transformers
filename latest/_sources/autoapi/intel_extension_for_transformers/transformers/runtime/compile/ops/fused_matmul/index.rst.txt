@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.fused_matmul`
-========================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.fused_matmul
+==============================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.fused_matmul
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.fused_matmul.FusedMatMul
 
 
-
+Module Contents
+---------------
 
 .. py:class:: FusedMatMul
 
 
 
-
    Parse the FusedMatMul operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

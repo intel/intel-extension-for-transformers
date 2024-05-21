@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.layer_normalization`
-===============================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.layer_normalization
+=====================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.layer_normalization
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -21,14 +18,15 @@ Classes
    intel_extension_for_transformers.transformers.runtime.compile.ops.layer_normalization.LayerNorm
 
 
-
+Module Contents
+---------------
 
 .. py:class:: LayerNormalization
 
 
 
-
    Parse the LayerNormalization operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 
@@ -37,7 +35,6 @@ Classes
 
 
 .. py:class:: LayerNorm
-
 
 
 

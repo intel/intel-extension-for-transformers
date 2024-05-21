@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.tf_utils`
-================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.tf_utils
+======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.tf_utils
 
@@ -9,12 +9,16 @@
 
 
 
-Module Contents
----------------
+Attributes
+----------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.runtime.compile.tf_utils.TF_DTYPE_ID
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -24,14 +28,8 @@ Functions
    intel_extension_for_transformers.transformers.runtime.compile.tf_utils.tf_extract_operator
 
 
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.transformers.runtime.compile.tf_utils.TF_DTYPE_ID
-
+Module Contents
+---------------
 
 .. py:function:: create_tf_node(op, name, inputs)
 

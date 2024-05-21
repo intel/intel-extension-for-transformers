@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.utils.utility`
-=====================================================================
+intel_extension_for_transformers.transformers.utils.utility
+===========================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.utils.utility
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -27,6 +23,8 @@ Functions
    intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json
 
 
+Module Contents
+---------------
 
 .. py:function:: distributed_init(backend='gloo', world_size=1, rank=-1, init_method=None, master_addr='127.0.0.1', master_port='12345')
 

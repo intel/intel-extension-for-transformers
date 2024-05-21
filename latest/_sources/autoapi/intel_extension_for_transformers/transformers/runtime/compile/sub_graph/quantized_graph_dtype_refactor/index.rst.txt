@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quantized_graph_dtype_refactor`
-================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quantized_graph_dtype_refactor
+======================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quantized_graph_dtype_refactor
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quantized_graph_dtype_refactor.QuantizedGraphDtypeCheck
 
 
-
+Module Contents
+---------------
 
 .. py:class:: QuantizedGraphDtypeCheck
-
 
 
 

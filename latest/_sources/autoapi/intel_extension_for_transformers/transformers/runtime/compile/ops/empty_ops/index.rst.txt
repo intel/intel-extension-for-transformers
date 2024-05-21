@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops`
-=====================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops
+===========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -83,10 +80,10 @@ Classes
    intel_extension_for_transformers.transformers.runtime.compile.ops.empty_ops.Zeros
 
 
-
+Module Contents
+---------------
 
 .. py:class:: AddV2
-
 
 
 
@@ -97,12 +94,10 @@ Classes
 
 
 
-
    Register the Add operator.
 
 
 .. py:class:: BinaryAdd
-
 
 
 
@@ -113,12 +108,10 @@ Classes
 
 
 
-
    Register the ConstantOfShape operator.
 
 
 .. py:class:: DequantizeLinear
-
 
 
 
@@ -129,12 +122,10 @@ Classes
 
 
 
-
    Register the DequantizeLinear operator.
 
 
 .. py:class:: Erf
-
 
 
 
@@ -145,12 +136,10 @@ Classes
 
 
 
-
    Register the Expand operator.
 
 
 .. py:class:: Fill
-
 
 
 
@@ -161,12 +150,10 @@ Classes
 
 
 
-
    Register the FlatMapDataset operator.
 
 
 .. py:class:: Identity
-
 
 
 
@@ -177,12 +164,10 @@ Classes
 
 
 
-
    Register the InnerProduct operator.
 
 
 .. py:class:: Input
-
 
 
 
@@ -193,12 +178,10 @@ Classes
 
 
 
-
    Register the MakeIterator operator.
 
 
 .. py:class:: MatMulWithBiasAdd
-
 
 
 
@@ -209,12 +192,10 @@ Classes
 
 
 
-
    Register the MatMulWithBiasGelu operator.
 
 
 .. py:class:: MatMulWithBiasTanh
-
 
 
 
@@ -225,12 +206,10 @@ Classes
 
 
 
-
    Register the MatMulWithBias operator.
 
 
 .. py:class:: Output
-
 
 
 
@@ -241,12 +220,10 @@ Classes
 
 
 
-
    Register the QLinearMatMul operator.
 
 
 .. py:class:: QLinearAdd
-
 
 
 
@@ -257,12 +234,10 @@ Classes
 
 
 
-
    Register the QLinearMul operator.
 
 
 .. py:class:: RealDiv
-
 
 
 
@@ -273,12 +248,10 @@ Classes
 
 
 
-
    Register the Rsqrt operator.
 
 
 .. py:class:: Sqrt
-
 
 
 
@@ -289,12 +262,10 @@ Classes
 
 
 
-
    Register the Square operator.
 
 
 .. py:class:: SquaredDifference
-
 
 
 
@@ -305,12 +276,10 @@ Classes
 
 
 
-
    Register the StopGradient operator.
 
 
 .. py:class:: Tanh
-
 
 
 
@@ -321,12 +290,10 @@ Classes
 
 
 
-
    Register the TensorSliceDataset operator.
 
 
 .. py:class:: TransposeBatchMatMul
-
 
 
 
@@ -337,12 +304,10 @@ Classes
 
 
 
-
    Register the Range operator.
 
 
 .. py:class:: Relu
-
 
 
 
@@ -353,12 +318,10 @@ Classes
 
 
 
-
    Register the MatMulWithBiasRelu operator.
 
 
 .. py:class:: Matmul
-
 
 
 
@@ -369,12 +332,10 @@ Classes
 
 
 
-
    Register the CumSum operator.
 
 
 .. py:class:: Onehot
-
 
 
 
@@ -385,12 +346,10 @@ Classes
 
 
 
-
    Register the TokenTypeIds operator.
 
 
 .. py:class:: PositionIds
-
 
 
 
@@ -401,12 +360,10 @@ Classes
 
 
 
-
    Register the Loop operator.
 
 
 .. py:class:: Sigmoid
-
 
 
 
@@ -417,12 +374,10 @@ Classes
 
 
 
-
    Register the MatMulWithBiasSigmoid operator.
 
 
 .. py:class:: EmbeddingBag
-
 
 
 
@@ -433,12 +388,10 @@ Classes
 
 
 
-
    Register the Flatten operator.
 
 
 .. py:class:: MergedEmbeddingbag
-
 
 
 
@@ -449,12 +402,10 @@ Classes
 
 
 
-
    Register the Convolution operator.
 
 
 .. py:class:: ExpandIndices
-
 
 
 
@@ -465,12 +416,10 @@ Classes
 
 
 
-
    Register the Tile operator.
 
 
 .. py:class:: OpAny
-
 
 
 
@@ -481,12 +430,10 @@ Classes
 
 
 
-
    Register the SequenceLength operator.
 
 
 .. py:class:: Arange
-
 
 
 
@@ -497,12 +444,10 @@ Classes
 
 
 
-
    Register the Tile operator.
 
 
 .. py:class:: Einsum
-
 
 
 
@@ -513,12 +458,10 @@ Classes
 
 
 
-
    Register the Tile operator.
 
 
 .. py:class:: Stack
-
 
 
 
@@ -529,12 +472,10 @@ Classes
 
 
 
-
    Register the Tile operator.
 
 
 .. py:class:: ListConstruct
-
 
 
 
@@ -545,12 +486,10 @@ Classes
 
 
 
-
    Register the Tile operator.
 
 
 .. py:class:: Masked_fill
-
 
 
 
@@ -561,12 +500,10 @@ Classes
 
 
 
-
    Register the Tile operator.
 
 
 .. py:class:: Max
-
 
 
 
@@ -577,7 +514,6 @@ Classes
 
 
 
-
    Register the Tile operator.
 
 
@@ -585,12 +521,10 @@ Classes
 
 
 
-
    Register the Tile operator.
 
 
 .. py:class:: Zeros
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torchpaddingsquence`
-=====================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torchpaddingsquence
+===========================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torchpaddingsquence
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torchpaddingsquence.TorchPaddingSequence
 
 
-
+Module Contents
+---------------
 
 .. py:class:: TorchPaddingSequence
-
 
 
 

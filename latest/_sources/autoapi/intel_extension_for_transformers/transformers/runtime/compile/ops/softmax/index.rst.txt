@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.softmax`
-===================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.softmax
+=========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.softmax
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.softmax.Softmax
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Softmax
 
 
 
-
    Parse the Softmax operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

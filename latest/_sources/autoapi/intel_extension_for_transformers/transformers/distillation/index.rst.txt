@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.distillation`
-====================================================================
+intel_extension_for_transformers.transformers.distillation
+==========================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.distillation
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -21,10 +18,10 @@ Classes
    intel_extension_for_transformers.transformers.distillation.DistillationCriterionMode
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Criterion(name: str = 'KNOWLEDGELOSS', temperature: float = 1.0, loss_types: List = ['CE', 'CE'], loss_weight_ratio: List = [0.5, 0.5], layer_mappings: List = None, add_origin_loss: bool = False)
-
 
 
 
@@ -32,7 +29,6 @@ Classes
 
 
 .. py:class:: DistillationCriterionMode
-
 
 
 

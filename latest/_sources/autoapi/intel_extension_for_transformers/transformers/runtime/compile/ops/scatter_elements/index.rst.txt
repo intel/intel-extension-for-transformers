@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.scatter_elements`
-============================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.scatter_elements
+==================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.scatter_elements
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.scatter_elements.ScatterElements
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ScatterElements
 
 
 
-
    Parse the ScatterElements operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

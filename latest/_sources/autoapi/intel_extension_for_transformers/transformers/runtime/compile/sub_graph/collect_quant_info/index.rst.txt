@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.collect_quant_info`
-====================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.collect_quant_info
+==========================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.collect_quant_info
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.collect_quant_info.CollectQuantInfo
 
 
-
+Module Contents
+---------------
 
 .. py:class:: CollectQuantInfo
-
 
 
 

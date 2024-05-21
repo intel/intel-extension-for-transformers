@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_gelu`
-=======================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_gelu
+=============================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_gelu
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_gelu.MatMulWithBiasGelu
 
 
-
+Module Contents
+---------------
 
 .. py:class:: MatMulWithBiasGelu
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.dynamic`
-===============================================================
+intel_extension_for_transformers.transformers.dynamic
+=====================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.dynamic
 
@@ -11,11 +11,11 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   drop_and_restore_utils/index.rst
-   evolution/index.rst
+   /autoapi/intel_extension_for_transformers/transformers/dynamic/drop_and_restore_utils/index
+   /autoapi/intel_extension_for_transformers/transformers/dynamic/evolution/index
 
 

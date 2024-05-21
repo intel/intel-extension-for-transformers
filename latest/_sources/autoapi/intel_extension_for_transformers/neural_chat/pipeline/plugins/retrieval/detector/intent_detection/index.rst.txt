@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.intent_detection`
-===========================================================================================================
+intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.intent_detection
+=================================================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.intent_detection
 

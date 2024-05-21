@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.insert_bf16_node`
-==================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.insert_bf16_node
+========================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.insert_bf16_node
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.insert_bf16_node.InsertBF16Node
 
 
-
+Module Contents
+---------------
 
 .. py:class:: InsertBF16Node
-
 
 
 

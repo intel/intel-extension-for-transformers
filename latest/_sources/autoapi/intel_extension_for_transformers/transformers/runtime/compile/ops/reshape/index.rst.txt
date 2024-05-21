@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.reshape`
-===================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.reshape
+=========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.reshape
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.reshape.Reshape
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Reshape
 
 
 
-
    Parse the Reshape operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

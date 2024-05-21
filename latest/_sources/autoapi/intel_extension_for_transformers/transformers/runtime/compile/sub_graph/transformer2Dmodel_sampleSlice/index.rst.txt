@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_sampleSlice`
-================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_sampleSlice
+======================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_sampleSlice
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_sampleSlice.Transformer2Dmodel_SampleSlice
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Transformer2Dmodel_SampleSlice
-
 
 
 

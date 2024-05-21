@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.reduce_sum`
-======================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.reduce_sum
+============================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.reduce_sum
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.reduce_sum.ReduceSum
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ReduceSum
 
 
 
-
    Parse the ReduceSum operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

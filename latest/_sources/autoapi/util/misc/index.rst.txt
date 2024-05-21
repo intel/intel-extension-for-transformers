@@ -1,5 +1,5 @@
-:py:mod:`util.misc`
-===================
+util.misc
+=========
 
 .. py:module:: util.misc
 
@@ -11,20 +11,16 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    util.misc.SmoothedValue
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -35,14 +31,16 @@ Functions
    util.misc.interpolate
 
 
+Module Contents
+---------------
 
 .. py:class:: SmoothedValue(window_size=20, fmt=None)
 
 
 
-
    Track a series of values and provide access to smoothed values over a
    window or the global series average.
+
 
    .. py:method:: synchronize_between_processes()
 

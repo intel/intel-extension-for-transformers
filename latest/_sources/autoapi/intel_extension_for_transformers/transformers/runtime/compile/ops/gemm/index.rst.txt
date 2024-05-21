@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.gemm`
-================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.gemm
+======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.gemm
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.gemm.Gemm
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Gemm
 
 
 
-
    Parse the Gemm operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

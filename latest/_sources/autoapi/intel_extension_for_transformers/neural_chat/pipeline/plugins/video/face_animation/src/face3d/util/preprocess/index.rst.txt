@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.preprocess`
-=======================================================================================================================
+intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.preprocess
+=============================================================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.preprocess
 
@@ -9,18 +9,16 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.preprocess.align_img
 
 
+Module Contents
+---------------
 
 .. py:function:: align_img(img, lm, lm3D, mask=None, target_size=224.0, rescale_factor=102.0)
 

@@ -1,5 +1,5 @@
-:py:mod:`util.box_ops`
-======================
+util.box_ops
+============
 
 .. py:module:: util.box_ops
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -22,6 +18,8 @@ Functions
    util.box_ops.masks_to_boxes
 
 
+Module Contents
+---------------
 
 .. py:function:: generalized_box_iou(boxes1, boxes2)
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image.instructpix2pix_pipeline`
-============================================================================================================
+intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image.instructpix2pix_pipeline
+==================================================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image.instructpix2pix_pipeline
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image.instructpix2pix_pipeline.StableDiffusionInstructPix2PixPipeline
 
 
-
+Module Contents
+---------------
 
 .. py:class:: StableDiffusionInstructPix2PixPipeline(vae: diffusers.models.AutoencoderKL, text_encoder: transformers.CLIPTextModel, tokenizer: transformers.CLIPTokenizer, unet: diffusers.models.UNet2DConditionModel, scheduler: diffusers.schedulers.KarrasDiffusionSchedulers, safety_checker: diffusers.pipelines.stable_diffusion.safety_checker.StableDiffusionSafetyChecker, feature_extractor: transformers.CLIPFeatureExtractor, requires_safety_checker: bool = True)
-
 
 
 
@@ -52,6 +49,7 @@ Classes
    :type safety_checker: [`StableDiffusionSafetyChecker`]
    :param feature_extractor: Model that extracts features from generated images to be used as inputs for the `safety_checker`.
    :type feature_extractor: [`CLIPFeatureExtractor`]
+
 
    .. py:method:: enable_sequential_cpu_offload(gpu_id=0)
 

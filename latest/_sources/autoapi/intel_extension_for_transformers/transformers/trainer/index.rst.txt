@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.trainer`
-===============================================================
+intel_extension_for_transformers.transformers.trainer
+=====================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.trainer
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -22,12 +19,13 @@ Classes
    intel_extension_for_transformers.transformers.trainer.NLPSeq2SeqTrainer
 
 
-
+Module Contents
+---------------
 
 .. py:class:: BaseTrainer(*args, **kwargs)
 
-
    The base class of trainer.
+
 
    .. py:method:: builtin_eval_func(model)
 
@@ -39,6 +37,7 @@ Classes
       :rtype: [float]
 
 
+
    .. py:method:: builtin_train_func(model)
 
       Custom training function to train the model on training dataset.
@@ -47,6 +46,7 @@ Classes
 
       :returns: evaluation result, the larger is better.
       :rtype: [float]
+
 
 
    .. py:method:: init_quantizer(quant_config, provider: str = Provider.INC.value)
@@ -60,6 +60,7 @@ Classes
       :returns: An objective of neural_compressor Quantization class, which can automativally searches for
                 optimal quantization recipes for low precision model inference and achieving best tuning
                 objectives.
+
 
 
    .. py:method:: quantize(quant_config: intel_extension_for_transformers.transformers.QuantizationConfig = None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, calib_dataloader=None)
@@ -80,6 +81,7 @@ Classes
                 objectives.
 
 
+
    .. py:method:: init_pruner(pruning_config=None, provider: str = Provider.INC.value)
 
       Initialize the pruner.
@@ -90,6 +92,7 @@ Classes
       :param provider: The provider used to quantize.
 
       :returns: An objective of neural_compressor Pruning class.
+
 
 
    .. py:method:: prune(pruning_config=None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
@@ -109,6 +112,7 @@ Classes
       :returns: An objective of neural_compressor Pruning class.
 
 
+
    .. py:method:: init_distiller(distillation_config, teacher_model: Union[transformers.PreTrainedModel, torch], provider: str = Provider.INC.value)
 
       The main entry point of automatic distillation tuning.
@@ -121,6 +125,7 @@ Classes
       :type provider: str
 
       :returns: An objective of neural_compressor Distillation class.
+
 
 
    .. py:method:: distill(distillation_config, teacher_model: Union[transformers.PreTrainedModel, torch], provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
@@ -141,6 +146,7 @@ Classes
       :returns: An objective of neural_compressor Distillation class.
 
 
+
    .. py:method:: orchestrate_optimizations(config_list, teacher_model: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
 
       Main entry point for orchestrate optimizations.
@@ -155,6 +161,7 @@ Classes
       :type train_func: :obj:`Callable`, optional
 
 
+
    .. py:method:: create_optimizer_builtin(config_list, teacher_model=None)
 
       The function to create optimizer.
@@ -163,6 +170,7 @@ Classes
       :param teacher_model: The model(torch.nn.Module) transfers knowledge
                             to a smaller model.
       :type teacher_model: :obj:`Callable`, optional
+
 
 
    .. py:method:: train(component: Optional[neural_compressor.experimental.Component] = None, resume_from_checkpoint: Optional[Union[str, bool]] = None, trial: Union[optuna, Dict[str, Any]] = None, ignore_keys_for_eval: Optional[List[str]] = None, **kwargs)
@@ -187,6 +195,7 @@ Classes
       :param kwargs: Additional keyword arguments used to hide deprecated arguments
 
 
+
    .. py:method:: training_step(model: torch, inputs: Dict[str, Union[torch, Any]]) -> torch
 
       Perform a training step on a batch of inputs.
@@ -203,6 +212,7 @@ Classes
 
       :returns: The tensor with training loss on this batch.
       :rtype: :obj:`torch.Tensor`
+
 
 
    .. py:method:: training_step_length_adaptive(model: torch, inputs: Dict[str, Union[torch, Any]]) -> torch
@@ -222,6 +232,7 @@ Classes
       :rtype: :obj:`torch.Tensor`
 
 
+
    .. py:method:: compute_loss(model, inputs, return_outputs=False)
 
       How the loss is computed by Trainer.
@@ -234,6 +245,7 @@ Classes
       :type model: :obj:`nn.Module`
       :param inputs: The inputs and targets of the model.
       :type inputs: :obj:`Dict[str, Union[torch.Tensor, Any]]`
+
 
 
    .. py:method:: nas(nas_config, provider: str = Provider.INC.value, model_builder: Optional[Callable] = None, model_cls: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
@@ -261,6 +273,7 @@ Classes
       :type eval_func: :obj:`Callabel`, optional
       :param train_func: The function to train the model.
       :type train_func: :obj:`Callabel`, optional
+
 
 
    .. py:method:: autodistillation(autodistillation_config, teacher_model: Union[transformers.PreTrainedModel, torch], provider: str = Provider.INC.value, model_builder: Optional[Callable] = None, model_cls: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
@@ -294,12 +307,14 @@ Classes
       :type train_func: :obj:`Callabel`, optional
 
 
+
    .. py:method:: model_builder_builtin(arch_paras=None, model_cls=None)
 
       The function to use specified method to build model.
 
       :param arch_paras: Parameters of the architecture to build a new model.
       :param model_cls: Class for the model.
+
 
 
    .. py:method:: auto_distil_evaluation_loop(dataloader: torch, description: str, prediction_loss_only: Optional[bool] = None, ignore_keys: Optional[List[str]] = None, metric_key_prefix: str = 'eval') -> transformers.trainer_utils.EvalLoopOutput
@@ -318,12 +333,14 @@ Classes
       :param metric_key_prefix: the prefix of the evaluation metric.
 
 
+
    .. py:method:: export_to_onnx(*args, **kwargs)
 
       The function to transfer model into onnx model.
 
       :param args: defined parameters.
       :param kwargs: additional keyword arguments used to hide deprecated arguments.
+
 
 
    .. py:method:: export_to_fp32_onnx(save_path=None, opset_version=14, do_constant_folding=True, verbose=True)
@@ -336,6 +353,7 @@ Classes
       :param verbose: save onnx model.
 
 
+
    .. py:method:: export_to_bf16_onnx(save_path=None, opset_version=14, do_constant_folding=True, verbose=True)
 
       The function to transfer model into bf16 onnx model.
@@ -344,6 +362,7 @@ Classes
       :param opset_version: the onnx op version of the exported model.
       :param do_constant_folding: select to do constant folding or not.
       :param verbose: save onnx model.
+
 
 
    .. py:method:: export_to_int8_onnx(save_path=None, quant_format='QDQ', dtype='S8S8', opset_version=14, sample_size=100, calibrate_method='minmax', scale_mapping=False)
@@ -359,9 +378,11 @@ Classes
       :param scale_mapping: make scale mapping of pytorch model and onnx model.
 
 
+
    .. py:method:: export_to_jit()
 
       The function to transfer model into jit model.
+
 
 
    .. py:method:: get_export_args(model)
@@ -369,9 +390,11 @@ Classes
       Get input name, output names and axes for export.
 
 
+
    .. py:method:: infer_task(model)
 
       Infer task.
+
 
 
    .. py:method:: benchmark(model_name_or_path=None, backend: str = 'torch', batch_size: int = 8, cores_per_instance: int = 4, num_of_instance: int = -1, torchscript: bool = False, generate: bool = False, **kwargs)
@@ -390,11 +413,13 @@ Classes
       :type generate: bool, optional
 
 
+
    .. py:method:: set_dynamic_config(dynamic_config: intel_extension_for_transformers.transformers.DynamicLengthConfig)
 
       The function to set dynamic config.
 
       :param dynamic_config: the settings of the dynamic config.
+
 
 
    .. py:method:: run_evolutionary_search()
@@ -407,7 +432,6 @@ Classes
 
 
 
-
    Trainer for nlp base on class BaseTrainer and Trainer form Transformers.
 
 
@@ -415,8 +439,8 @@ Classes
 
 
 
-
    Trainer for seq2seq model.
+
 
    .. py:method:: builtin_eval_func(model)
 

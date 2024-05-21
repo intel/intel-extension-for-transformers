@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_insertQuantNode`
-=================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_insertQuantNode
+=======================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_insertQuantNode
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_insertQuantNode.StableDiffusion_InsertQuantNode
 
 
-
+Module Contents
+---------------
 
 .. py:class:: StableDiffusion_InsertQuantNode
-
 
 
 

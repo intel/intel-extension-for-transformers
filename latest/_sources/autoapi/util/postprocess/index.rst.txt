@@ -1,5 +1,5 @@
-:py:mod:`util.postprocess`
-==========================
+util.postprocess
+================
 
 .. py:module:: util.postprocess
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -48,6 +44,8 @@ Functions
    util.postprocess.remove_supercell_overlap
 
 
+Module Contents
+---------------
 
 .. py:function:: apply_threshold(objects, threshold)
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_MHAReshape`
-============================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_MHAReshape
+==================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_MHAReshape
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_MHAReshape.StableDiffusion_MHAReshape
 
 
-
+Module Contents
+---------------
 
 .. py:class:: StableDiffusion_MHAReshape
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.repr_tools`
-============================================================================
+intel_extension_for_transformers.neural_chat.tools.rome.repr_tools
+==================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.repr_tools
 
@@ -12,12 +12,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -26,8 +22,10 @@ Functions
    intel_extension_for_transformers.neural_chat.tools.rome.repr_tools.get_reprs_at_idxs
 
 
+Module Contents
+---------------
 
-.. py:function:: get_reprs_at_word_tokens(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, context_templates: List[str], words: List[str], layer: int, module_template: str, subtoken: str, track: Optional[Literal[in, out, both]] = 'in', batch_first: Optional[bool] = True) -> torch.Tensor
+.. py:function:: get_reprs_at_word_tokens(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, context_templates: List[str], words: List[str], layer: int, module_template: str, subtoken: str, track: Optional[Literal['in', 'out', 'both']] = 'in', batch_first: Optional[bool] = True) -> torch.Tensor
 
    Retrieves the last token representation of `word` in `context_template`
    when `word` is substituted into `context_template`.
@@ -45,7 +43,7 @@ Functions
    We use left-padding so the words idxs are negative numbers.
 
 
-.. py:function:: get_reprs_at_idxs(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, contexts: List[str], idxs: List[List[int]], layer: int, module_template: str, track: Optional[Literal[in, out, both]] = 'in', batch_first: Optional[bool] = True) -> torch.Tensor
+.. py:function:: get_reprs_at_idxs(model: transformers.PreTrainedModel, tokenizer: transformers.PreTrainedTokenizer, contexts: List[str], idxs: List[List[int]], layer: int, module_template: str, track: Optional[Literal['in', 'out', 'both']] = 'in', batch_first: Optional[bool] = True) -> torch.Tensor
 
    Runs input through model and returns averaged representations of the tokens
    at each index in `idxs`.

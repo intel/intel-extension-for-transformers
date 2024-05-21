@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.chatbot`
-==============================================================
+intel_extension_for_transformers.neural_chat.chatbot
+====================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.chatbot
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -23,6 +19,8 @@ Functions
    intel_extension_for_transformers.neural_chat.chatbot.optimize_model
 
 
+Module Contents
+---------------
 
 .. py:function:: build_chatbot(config: intel_extension_for_transformers.neural_chat.config.PipelineConfig = None)
 

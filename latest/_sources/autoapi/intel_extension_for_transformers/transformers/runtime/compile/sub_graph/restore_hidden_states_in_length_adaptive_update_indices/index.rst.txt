@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices`
-=========================================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices
+===============================================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices.RestoreHiddenStatesInLengthAdaptive
 
 
-
+Module Contents
+---------------
 
 .. py:class:: RestoreHiddenStatesInLengthAdaptive
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.pipeline`
-================================================================
+intel_extension_for_transformers.transformers.pipeline
+======================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.pipeline
 
@@ -9,18 +9,16 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.pipeline.infer_framework_load_model
 
 
+Module Contents
+---------------
 
 .. py:function:: infer_framework_load_model(model, config: transformers.AutoConfig, model_classes: Optional[Dict[str, Tuple[type]]] = None, task: Optional[str] = None, framework: Optional[str] = None, **model_kwargs)
 

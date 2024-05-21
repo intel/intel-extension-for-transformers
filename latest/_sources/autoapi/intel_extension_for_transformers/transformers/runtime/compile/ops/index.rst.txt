@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops`
-===========================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops
+=================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops
 
@@ -11,105 +11,73 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   all/index.rst
-   assert/index.rst
-   baddbmm/index.rst
-   batch_matmul/index.rst
-   batch_matmul_v2/index.rst
-   bias_add/index.rst
-   cast/index.rst
-   concat/index.rst
-   conv/index.rst
-   cos/index.rst
-   empty_ops/index.rst
-   expand_dims/index.rst
-   fused_batch_matmul_v2/index.rst
-   fused_batch_norm_v3/index.rst
-   fused_gemm/index.rst
-   fused_matmul/index.rst
-   gather/index.rst
-   gather_elements/index.rst
-   gelu/index.rst
-   gemm/index.rst
-   iterator_get_next/index.rst
-   iterator_v2/index.rst
-   layer_normalization/index.rst
-   log_softmax/index.rst
-   map_and_batch_dataset/index.rst
-   matmul/index.rst
-   mean/index.rst
-   mkl_layer_norm/index.rst
-   model_dataset/index.rst
-   one_hot/index.rst
-   onnx_input/index.rst
-   op/index.rst
-   optimize_dataset/index.rst
-   pack/index.rst
-   padding_sequence/index.rst
-   placeholder/index.rst
-   pos_embed/index.rst
-   pow/index.rst
-   quantize_linear/index.rst
-   quantize_v2/index.rst
-   quantized_fused_matmul_and_dequantize/index.rst
-   quantized_matmul_with_bias_and_dequantize/index.rst
-   reduce_mean/index.rst
-   reduce_sum/index.rst
-   reorder/index.rst
-   reshape/index.rst
-   resize/index.rst
-   rsub/index.rst
-   scatter_elements/index.rst
-   shape/index.rst
-   sin/index.rst
-   size/index.rst
-   slice_position_ids/index.rst
-   softmax/index.rst
-   split/index.rst
-   squeeze/index.rst
-   strided_slice/index.rst
-   tensor/index.rst
-   top_k/index.rst
-   transpose/index.rst
-   unpack/index.rst
-   unsqueeze/index.rst
-   view/index.rst
-   where/index.rst
-
-
-Package Contents
-----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.transformers.runtime.compile.ops.Operator
-
-
-
-Functions
-~~~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.transformers.runtime.compile.ops.operator_registry
-
-
-
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.transformers.runtime.compile.ops.OPERATORS
-
-
-
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/all/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/assert/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/baddbmm/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/batch_matmul/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/batch_matmul_v2/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/bias_add/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/cast/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/concat/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/conv/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/cos/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/empty_ops/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/expand_dims/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/fused_batch_matmul_v2/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/fused_batch_norm_v3/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/fused_gemm/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/fused_matmul/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/gather/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/gather_elements/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/gelu/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/gemm/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/iterator_get_next/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/iterator_v2/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/layer_normalization/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/log_softmax/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/map_and_batch_dataset/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/matmul/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/mean/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/mkl_layer_norm/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/model_dataset/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/one_hot/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/onnx_input/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/op/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/optimize_dataset/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/pack/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/padding_sequence/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/placeholder/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/pos_embed/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/pow/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/quantize_linear/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/quantize_v2/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/quantized_fused_matmul_and_dequantize/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/quantized_matmul_with_bias_and_dequantize/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/reduce_mean/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/reduce_sum/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/reorder/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/reshape/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/resize/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/rsub/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/scatter_elements/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/shape/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/sin/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/size/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/slice_position_ids/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/softmax/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/split/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/squeeze/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/strided_slice/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/tensor/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/top_k/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/transpose/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/unpack/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/unsqueeze/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/view/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/where/index
 
 

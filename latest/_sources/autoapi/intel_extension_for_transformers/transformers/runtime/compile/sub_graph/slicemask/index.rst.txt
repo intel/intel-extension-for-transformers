@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.slicemask`
-===========================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.slicemask
+=================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.slicemask
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.slicemask.SliceMask
 
 
-
+Module Contents
+---------------
 
 .. py:class:: SliceMask
-
 
 
 

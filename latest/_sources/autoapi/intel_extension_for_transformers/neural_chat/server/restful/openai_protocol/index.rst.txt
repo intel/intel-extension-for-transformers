@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.server.restful.openai_protocol`
-=====================================================================================
+intel_extension_for_transformers.neural_chat.server.restful.openai_protocol
+===========================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.server.restful.openai_protocol
 
@@ -11,21 +11,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.neural_chat.server.restful.openai_protocol.ApiErrorCode
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ApiErrorCode
-
 
 
 

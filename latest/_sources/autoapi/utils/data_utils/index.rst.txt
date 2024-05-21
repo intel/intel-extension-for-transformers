@@ -1,5 +1,5 @@
-:py:mod:`utils.data_utils`
-==========================
+utils.data_utils
+================
 
 .. py:module:: utils.data_utils
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -22,6 +18,8 @@ Functions
    utils.data_utils.save_jsonl
 
 
+Module Contents
+---------------
 
 .. py:function:: get_multi_choice_info(options)
 

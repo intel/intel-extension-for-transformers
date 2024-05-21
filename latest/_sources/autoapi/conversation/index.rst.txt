@@ -1,5 +1,5 @@
-:py:mod:`conversation`
-======================
+conversation
+============
 
 .. py:module:: conversation
 
@@ -19,11 +19,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -31,10 +28,10 @@ Classes
    conversation.Conversation
 
 
-
+Module Contents
+---------------
 
 .. py:class:: SeparatorStyle
-
 
 
 
@@ -42,7 +39,6 @@ Classes
 
 
 .. py:class:: Conversation
-
 
    A class that keeps all conversation history.
 

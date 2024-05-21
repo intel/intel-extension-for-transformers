@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_mask_length_adaptive_keep_indices`
-=============================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_mask_length_adaptive_keep_indices
+===================================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_mask_length_adaptive_keep_indices
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_mask_length_adaptive_keep_indices.AttentionMaskLengthAdaptiveExpandIndices
 
 
-
+Module Contents
+---------------
 
 .. py:class:: AttentionMaskLengthAdaptiveExpandIndices
-
 
 
 

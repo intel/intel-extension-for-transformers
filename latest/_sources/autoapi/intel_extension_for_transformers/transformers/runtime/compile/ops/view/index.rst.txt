@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.view`
-================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.view
+======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.view
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.view.View
 
 
-
+Module Contents
+---------------
 
 .. py:class:: View
 
 
 
-
    Register the View operator.
+
 
    .. py:method:: set_attr(framework, node)
 

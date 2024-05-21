@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.gather_elements`
-===========================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.gather_elements
+=================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.gather_elements
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.gather_elements.GatherElements
 
 
-
+Module Contents
+---------------
 
 .. py:class:: GatherElements
 
 
 
-
    Parse the GatherElements operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_QKVReshape`
-===========================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_QKVReshape
+=================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_QKVReshape
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_QKVReshape.AttentionBlock_QKVReshape
 
 
-
+Module Contents
+---------------
 
 .. py:class:: AttentionBlock_QKVReshape
-
 
 
 

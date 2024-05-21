@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.gelu`
-================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.gelu
+======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.gelu
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.gelu.Gelu
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Gelu
 
 
 
-
    Parse the Gelu operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

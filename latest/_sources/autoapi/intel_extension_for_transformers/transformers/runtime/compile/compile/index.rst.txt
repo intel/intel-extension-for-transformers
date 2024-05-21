@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.compile`
-===============================================================================
+intel_extension_for_transformers.transformers.runtime.compile.compile
+=====================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.compile
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -22,6 +18,8 @@ Functions
    intel_extension_for_transformers.transformers.runtime.compile.compile.compile
 
 
+Module Contents
+---------------
 
 .. py:function:: start_pipeline(model, config=None)
 

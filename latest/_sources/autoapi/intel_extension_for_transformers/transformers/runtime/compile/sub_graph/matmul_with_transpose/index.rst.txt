@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_transpose`
-=======================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_transpose
+=============================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_transpose
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_transpose.MatMulWithTranspose
 
 
-
+Module Contents
+---------------
 
 .. py:class:: MatMulWithTranspose
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.util`
-=================================================================================================================
+intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.util
+=======================================================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.util
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -23,6 +19,8 @@ Functions
    intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.util.draw_landmarks
 
 
+Module Contents
+---------------
 
 .. py:function:: mkdirs(paths)
 

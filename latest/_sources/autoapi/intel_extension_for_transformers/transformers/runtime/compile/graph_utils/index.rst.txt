@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.graph_utils`
-===================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.graph_utils
+=========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.graph_utils
 
@@ -9,20 +9,16 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.graph_utils.LazyImport
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -54,6 +50,8 @@ Functions
    intel_extension_for_transformers.transformers.runtime.compile.graph_utils.del_environ_vars
 
 
+Module Contents
+---------------
 
 .. py:function:: names_from_input(name)
 
@@ -372,7 +370,6 @@ Functions
 
 
 .. py:class:: LazyImport(module_name)
-
 
 
 

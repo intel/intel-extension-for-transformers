@@ -1,5 +1,5 @@
-:py:mod:`util.plot_utils`
-=========================
+util.plot_utils
+===============
 
 .. py:module:: util.plot_utils
 
@@ -9,18 +9,16 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    util.plot_utils.plot_logs
 
 
+Module Contents
+---------------
 
 .. py:function:: plot_logs(logs, fields=('class_error', 'loss_bbox_unscaled', 'mAP'), ewm_col=0, log_name='log.txt')
 

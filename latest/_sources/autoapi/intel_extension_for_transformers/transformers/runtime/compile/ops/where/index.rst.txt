@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.where`
-=================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.where
+=======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.where
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.where.Where
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Where
 
 
 
-
    Parse the Cos operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

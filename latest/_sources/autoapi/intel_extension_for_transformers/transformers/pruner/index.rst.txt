@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.pruner`
-==============================================================
+intel_extension_for_transformers.transformers.pruner
+====================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.pruner
 
@@ -11,10 +11,10 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   pruning/index.rst
+   /autoapi/intel_extension_for_transformers/transformers/pruner/pruning/index
 
 

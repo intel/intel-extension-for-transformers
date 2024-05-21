@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.slice_position_ids`
-==============================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.slice_position_ids
+====================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.slice_position_ids
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.slice_position_ids.SlicePositionIds
 
 
-
+Module Contents
+---------------
 
 .. py:class:: SlicePositionIds
 
 
 
-
    Register the SlicePositionIds operator.
+
 
    .. py:method:: set_attr(framework, node)
 

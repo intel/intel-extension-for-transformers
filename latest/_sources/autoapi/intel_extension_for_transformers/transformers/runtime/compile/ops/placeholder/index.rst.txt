@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.placeholder`
-=======================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.placeholder
+=============================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.placeholder
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.placeholder.Placeholder
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Placeholder
 
 
 
-
    Parse the Placeholder operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_AttentionMaskAddReshape`
-============================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_AttentionMaskAddReshape
+==================================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_AttentionMaskAddReshape
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_AttentionMaskAddReshape.Transformer2Dmodel_AttentionMaskAddReshape
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Transformer2Dmodel_AttentionMaskAddReshape
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.mixture`
-===============================================================
+intel_extension_for_transformers.transformers.mixture
+=====================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.mixture
 
@@ -11,10 +11,10 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   auto_distillation/index.rst
+   /autoapi/intel_extension_for_transformers/transformers/mixture/auto_distillation/index
 
 

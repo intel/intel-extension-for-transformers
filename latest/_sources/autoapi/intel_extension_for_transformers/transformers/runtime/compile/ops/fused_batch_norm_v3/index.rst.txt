@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.fused_batch_norm_v3`
-===============================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.fused_batch_norm_v3
+=====================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.fused_batch_norm_v3
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.fused_batch_norm_v3.FusedBatchNormV3
 
 
-
+Module Contents
+---------------
 
 .. py:class:: FusedBatchNormV3
 
 
 
-
    Parse the FusedBatchNormV3 operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

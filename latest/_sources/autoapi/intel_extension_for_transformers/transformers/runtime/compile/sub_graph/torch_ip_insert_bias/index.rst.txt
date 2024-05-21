@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_ip_insert_bias`
-======================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_ip_insert_bias
+============================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_ip_insert_bias
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_ip_insert_bias.TorchInnerProductInsertBias
 
 
-
+Module Contents
+---------------
 
 .. py:class:: TorchInnerProductInsertBias
-
 
 
 

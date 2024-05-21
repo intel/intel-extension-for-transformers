@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.resize`
-==================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.resize
+========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.resize
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.resize.Resize
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Resize
 
 
 
-
    Parse the Resize operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

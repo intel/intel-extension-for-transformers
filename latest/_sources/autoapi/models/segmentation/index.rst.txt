@@ -1,5 +1,5 @@
-:py:mod:`models.segmentation`
-=============================
+models.segmentation
+===================
 
 .. py:module:: models.segmentation
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -22,9 +19,8 @@ Classes
    models.segmentation.PostProcessPanoptic
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -32,9 +28,10 @@ Functions
    models.segmentation.sigmoid_focal_loss
 
 
+Module Contents
+---------------
 
 .. py:class:: MaskHeadSmallConv(dim, fpn_dims, context_dim)
-
 
 
 
@@ -44,7 +41,6 @@ Functions
 
 
 .. py:class:: MHAttentionMap(query_dim, hidden_dim, num_heads, dropout=0.0, bias=True)
-
 
 
 
@@ -83,9 +79,9 @@ Functions
 
 
 
-
    This class converts the output of the model to the final panoptic result, in the format expected by the
    coco panoptic API.
+
 
    .. py:method:: forward(outputs, processed_sizes, target_sizes=None)
 

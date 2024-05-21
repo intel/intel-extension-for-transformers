@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.int8_bf16_mixed_precision_checker`
-===================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.int8_bf16_mixed_precision_checker
+=========================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.int8_bf16_mixed_precision_checker
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.int8_bf16_mixed_precision_checker.Int8BF16MixedPrecisionChecker
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Int8BF16MixedPrecisionChecker
-
 
 
 

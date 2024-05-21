@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.conv`
-================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.conv
+======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.conv
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.conv.Conv
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Conv
 
 
 
-
    Parse the Conv operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

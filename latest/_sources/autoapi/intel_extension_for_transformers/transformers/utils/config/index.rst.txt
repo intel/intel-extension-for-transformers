@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.utils.config`
-====================================================================
+intel_extension_for_transformers.transformers.utils.config
+==========================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.utils.config
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -30,10 +27,10 @@ Classes
    intel_extension_for_transformers.transformers.utils.config.AutoRoundConfig
 
 
-
+Module Contents
+---------------
 
 .. py:class:: QuantizationMethod
-
 
 
 
@@ -53,8 +50,8 @@ Classes
 
 
 
-
    Mixin class for quantization config.
+
 
    .. py:method:: update(**kwargs)
 
@@ -68,9 +65,11 @@ Classes
       :rtype: `Dict[str, Any]`
 
 
+
    .. py:method:: post_init_cpu()
 
       Safety checker that arguments are correct.
+
 
 
    .. py:method:: post_init_xpu()
@@ -78,9 +77,11 @@ Classes
       Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
 
 
+
    .. py:method:: post_init_runtime()
 
       Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
+
 
 
    .. py:method:: to_json_file(json_file_path: Union[str, os.PathLike], use_diff: bool = True)
@@ -89,6 +90,7 @@ Classes
 
       :param json_file_path: Path to the JSON file in which this configuration instance's parameters will be saved.
       :type json_file_path: `str` or `os.PathLike`
+
 
 
    .. py:method:: save_pretrained(save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs)
@@ -111,12 +113,10 @@ Classes
 
 
 
-
    Mixin class for quantization config.
 
 
 .. py:class:: DynamicQuantConfig(excluded_precisions=[], op_name_dict=None, op_type_dict=None, **kwargs)
-
 
 
 
@@ -127,12 +127,10 @@ Classes
 
 
 
-
    Mixin class for quantization config.
 
 
 .. py:class:: SmoothQuantConfig(backend='ipex', tokenizer=None, calib_dataset='NeelNanda/pile-10k', calib_dataloader=None, calib_func=None, calib_shuffle=True, calib_iters=100, calib_padding=False, calib_len=512, calib_pad_val=1, op_name_dict=None, op_type_dict=None, excluded_precisions=[], example_inputs=None, ipex_opt_llm=None, alpha=0.5, num_beams=1, recipes={'smooth_quant': True, 'smooth_quant_args': {'alpha': 0.5}}, **kwargs)
-
 
 
 
@@ -143,8 +141,8 @@ Classes
 
 
 
-
    Mixin class for quantization config.
+
 
    .. py:method:: to_diff_dict() -> Dict[str, Any]
 
@@ -160,12 +158,13 @@ Classes
 
 
 
-
    Mixin class for quantization config.
+
 
    .. py:method:: post_init_gptq()
 
       Safety checker that arguments are correct.
+
 
 
    .. py:method:: to_diff_dict() -> Dict[str, Any]
@@ -182,8 +181,8 @@ Classes
 
 
 
-
    Mixin class for quantization config.
+
 
    .. py:method:: to_diff_dict() -> Dict[str, Any]
 
@@ -199,8 +198,8 @@ Classes
 
 
 
-
    Mixin class for quantization config.
+
 
    .. py:method:: to_diff_dict() -> Dict[str, Any]
 
@@ -216,8 +215,8 @@ Classes
 
 
 
-
    Mixin class for quantization config.
+
 
    .. py:method:: to_diff_dict() -> Dict[str, Any]
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.utils`
-=============================================================
+intel_extension_for_transformers.transformers.utils
+===================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.utils
 
@@ -11,15 +11,15 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   config/index.rst
-   get_throughput/index.rst
-   metrics/index.rst
-   objectives/index.rst
-   utility/index.rst
-   utility_tf/index.rst
+   /autoapi/intel_extension_for_transformers/transformers/utils/config/index
+   /autoapi/intel_extension_for_transformers/transformers/utils/get_throughput/index
+   /autoapi/intel_extension_for_transformers/transformers/utils/metrics/index
+   /autoapi/intel_extension_for_transformers/transformers/utils/objectives/index
+   /autoapi/intel_extension_for_transformers/transformers/utils/utility/index
+   /autoapi/intel_extension_for_transformers/transformers/utils/utility_tf/index
 
 

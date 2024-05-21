@@ -1,5 +1,5 @@
-:py:mod:`utils.eval_utils`
-==========================
+utils.eval_utils
+================
 
 .. py:module:: utils.eval_utils
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -29,6 +25,8 @@ Functions
    utils.eval_utils.calculate_ins_level_acc
 
 
+Module Contents
+---------------
 
 .. py:function:: parse_multi_choice_response(response, all_choices, index2ans)
 

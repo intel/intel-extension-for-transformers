@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.onnx_input`
-======================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.onnx_input
+============================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.onnx_input
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.onnx_input.ONNXINPUT
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ONNXINPUT
 
 
 
-
    Parse the ONNXINPUT operator to the neural engine.
+
 
    .. py:method:: extract(framework, node, framework_model, nodes_dict, engine_graph=None)
 

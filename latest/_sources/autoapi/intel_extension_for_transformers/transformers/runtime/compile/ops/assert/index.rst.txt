@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.assert`
-==================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.assert
+========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.assert
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.assert.Assert
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Assert
 
 
 
-
    Parse the Assert operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

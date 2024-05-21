@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.squeeze`
-===================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.squeeze
+=========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.squeeze
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.squeeze.Squeeze
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Squeeze
 
 
 
-
    Parse the Squeeze operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

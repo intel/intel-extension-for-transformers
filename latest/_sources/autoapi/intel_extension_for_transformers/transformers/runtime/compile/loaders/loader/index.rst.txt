@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.loaders.loader`
-======================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.loaders.loader
+============================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.loaders.loader
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.loaders.loader.Loader
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Loader
-
 
 
 

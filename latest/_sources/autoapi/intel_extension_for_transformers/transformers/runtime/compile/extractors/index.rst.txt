@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.extractors`
-==================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.extractors
+========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.extractors
 
@@ -11,13 +11,13 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   extractor/index.rst
-   onnx_extractor/index.rst
-   tf_extractor/index.rst
-   torch_extractor/index.rst
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/extractors/extractor/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/extractors/onnx_extractor/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/extractors/tf_extractor/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/extractors/torch_extractor/index
 
 

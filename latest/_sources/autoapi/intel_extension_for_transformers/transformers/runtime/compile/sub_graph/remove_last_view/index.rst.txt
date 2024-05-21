@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_last_view`
-==================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_last_view
+========================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_last_view
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_last_view.RemoveLastView
 
 
-
+Module Contents
+---------------
 
 .. py:class:: RemoveLastView
-
 
 
 

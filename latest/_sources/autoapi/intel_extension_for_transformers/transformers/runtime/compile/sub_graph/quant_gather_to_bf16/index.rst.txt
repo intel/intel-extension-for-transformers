@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quant_gather_to_bf16`
-======================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quant_gather_to_bf16
+============================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quant_gather_to_bf16
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quant_gather_to_bf16.TorchInsertBF16Node
 
 
-
+Module Contents
+---------------
 
 .. py:class:: TorchInsertBF16Node
-
 
 
 

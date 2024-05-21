@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.last_layer_shape`
-==================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.last_layer_shape
+========================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.last_layer_shape
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.last_layer_shape.LastLayerShape
 
 
-
+Module Contents
+---------------
 
 .. py:class:: LastLayerShape
-
 
 
 

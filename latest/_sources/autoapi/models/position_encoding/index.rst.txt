@@ -1,5 +1,5 @@
-:py:mod:`models.position_encoding`
-==================================
+models.position_encoding
+========================
 
 .. py:module:: models.position_encoding
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -21,10 +18,10 @@ Classes
    models.position_encoding.PositionEmbeddingLearned
 
 
-
+Module Contents
+---------------
 
 .. py:class:: PositionEmbeddingSine(num_pos_feats=64, temperature=10000, normalize=False, scale=None)
-
 
 
 
@@ -33,7 +30,6 @@ Classes
 
 
 .. py:class:: PositionEmbeddingLearned(num_pos_feats=256)
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_AttentionMaskAddReshape`
-========================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_AttentionMaskAddReshape
+==============================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_AttentionMaskAddReshape
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_AttentionMaskAddReshape.AttentionBlock_AttentionMaskAddReshape
 
 
-
+Module Contents
+---------------
 
 .. py:class:: AttentionBlock_AttentionMaskAddReshape
-
 
 
 

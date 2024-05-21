@@ -1,5 +1,5 @@
-:py:mod:`models.detr`
-=====================
+models.detr
+===========
 
 .. py:module:: models.detr
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -23,14 +20,15 @@ Classes
    models.detr.MLP
 
 
-
+Module Contents
+---------------
 
 .. py:class:: DETR(backbone, transformer, num_classes, num_queries, aux_loss=False)
 
 
 
-
    This is the DETR module that performs object detection.
+
 
    .. py:method:: forward(samples: util.misc.NestedTensor)
 
@@ -55,17 +53,18 @@ Classes
 
 
 
-
    This class computes the loss for DETR.
 
    The process happens in two steps:
        1) we compute hungarian assignment between ground truth boxes and the outputs of the model
        2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
 
+
    .. py:method:: loss_labels(outputs, targets, indices, num_boxes, log=True)
 
       Classification loss (Negative Log Likelihood)
       targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
+
 
 
    .. py:method:: loss_cardinality(outputs, targets, indices, num_boxes)
@@ -76,6 +75,7 @@ Classes
       It doesn't propagate gradients
 
 
+
    .. py:method:: loss_boxes(outputs, targets, indices, num_boxes)
 
       Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
@@ -83,10 +83,12 @@ Classes
       The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
 
 
+
    .. py:method:: loss_masks(outputs, targets, indices, num_boxes)
 
       Compute the losses related to the masks: the focal loss and the dice loss.
       targets dicts must contain the key "masks" containing a tensor of dim [nb_target_boxes, h, w]
+
 
 
    .. py:method:: forward(outputs, targets)
@@ -103,8 +105,8 @@ Classes
 
 
 
-
    This module converts the model's output into the format expected by the coco api.
+
 
    .. py:method:: forward(outputs, target_sizes)
 
@@ -117,7 +119,6 @@ Classes
 
 
 .. py:class:: MLP(input_dim, hidden_dim, output_dim, num_layers)
-
 
 
 

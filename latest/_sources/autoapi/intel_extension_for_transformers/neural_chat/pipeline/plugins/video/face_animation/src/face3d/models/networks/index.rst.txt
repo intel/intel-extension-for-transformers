@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.models.networks`
-=======================================================================================================================
+intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.models.networks
+=============================================================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.models.networks
 
@@ -9,20 +9,8 @@
 
 
 
-Module Contents
----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.models.networks.ResNet
-
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -37,7 +25,8 @@ Functions
    intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.models.networks.wide_resnet101_2
 
 
-
+Module Contents
+---------------
 
 .. py:function:: resnet18(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet
 

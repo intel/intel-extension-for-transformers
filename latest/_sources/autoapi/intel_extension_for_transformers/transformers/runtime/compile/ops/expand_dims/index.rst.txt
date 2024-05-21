@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.expand_dims`
-=======================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.expand_dims
+=============================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.expand_dims
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.expand_dims.ExpandDims
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ExpandDims
 
 
 
-
    Parse the ExpandDims operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

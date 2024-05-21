@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.rms_norm`
-==========================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.rms_norm
+================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.rms_norm
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.rms_norm.RmsNorm
 
 
-
+Module Contents
+---------------
 
 .. py:class:: RmsNorm
-
 
 
 

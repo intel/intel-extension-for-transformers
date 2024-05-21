@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook`
-===============================================================================
+intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook
+=====================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook
 
@@ -15,11 +15,16 @@
 
 
 
-Module Contents
----------------
+Exceptions
+----------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.StopForward
+
 
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -27,9 +32,8 @@ Classes
    intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.TraceDict
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -43,9 +47,10 @@ Functions
    intel_extension_for_transformers.neural_chat.tools.rome.utils.nethook.invoke_with_optional_args
 
 
+Module Contents
+---------------
 
 .. py:class:: Trace(module, layer=None, retain_output=True, retain_input=False, clone=False, detach=False, retain_grad=False, edit_output=None, stop=False)
-
 
 
 
@@ -82,7 +87,6 @@ Functions
 
 
 
-
    To retain the output of multiple named layers during the computation
    of the given network:
 
@@ -100,7 +104,6 @@ Functions
 
 
 .. py:exception:: StopForward
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.config`
-=============================================================
+intel_extension_for_transformers.neural_chat.config
+===================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.config
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -26,10 +23,10 @@ Classes
    intel_extension_for_transformers.neural_chat.config.FinetuningArguments
 
 
-
+Module Contents
+---------------
 
 .. py:class:: DeviceOptions
-
 
 
 
@@ -42,14 +39,12 @@ Classes
 
 
 
-
    Generic enumeration.
 
    Derive from this class to define new enumerations.
 
 
 .. py:class:: AudioLanguageOptions
-
 
 
 
@@ -62,7 +57,6 @@ Classes
 
 
 
-
    Generic enumeration.
 
    Derive from this class to define new enumerations.
@@ -70,18 +64,15 @@ Classes
 
 .. py:class:: ModelArguments
 
-
    Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
 
 
 .. py:class:: DataArguments
 
-
    Arguments pertaining to what data we are going to input our model for training and eval.
 
 
 .. py:class:: FinetuningArguments
-
 
    Arguments of finetune we are going to apply on the model.
 

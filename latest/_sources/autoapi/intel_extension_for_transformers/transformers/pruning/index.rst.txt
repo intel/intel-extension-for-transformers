@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.pruning`
-===============================================================
+intel_extension_for_transformers.transformers.pruning
+=====================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.pruning
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -21,10 +18,10 @@ Classes
    intel_extension_for_transformers.transformers.pruning.PrunerConfig
 
 
-
+Module Contents
+---------------
 
 .. py:class:: PruningMode
-
 
 
 
@@ -32,7 +29,6 @@ Classes
 
 
 .. py:class:: PrunerConfig(epoch_range: List = [0, 4], initial_sparsity_ratio: float = 0.0, target_sparsity_ratio: float = 0.97, update_frequency: int = 1, prune_type: str = 'BasicMagnitude', method: str = 'per_tensor', names: List = [], parameters: Dict = None)
-
 
 
 

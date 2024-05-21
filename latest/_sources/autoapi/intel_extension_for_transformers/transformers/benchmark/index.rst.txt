@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.benchmark`
-=================================================================
+intel_extension_for_transformers.transformers.benchmark
+=======================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.benchmark
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -24,6 +20,8 @@ Functions
    intel_extension_for_transformers.transformers.benchmark.benchmark
 
 
+Module Contents
+---------------
 
 .. py:function:: refactor_batch_size(value, batch_size, old_batch_size=-1)
 

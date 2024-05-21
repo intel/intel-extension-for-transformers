@@ -1,5 +1,5 @@
-:py:mod:`models.matcher`
-========================
+models.matcher
+==============
 
 .. py:module:: models.matcher
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    models.matcher.HungarianMatcher
 
 
-
+Module Contents
+---------------
 
 .. py:class:: HungarianMatcher(cost_class: float = 1, cost_bbox: float = 1, cost_giou: float = 1)
-
 
 
 
@@ -32,6 +29,7 @@ Classes
    For efficiency reasons, the targets don't include the no_object. Because of this, in general,
    there are more predictions than targets. In this case, we do a 1-to-1 matching of the best predictions,
    while the others are un-matched (and thus treated as non-objects).
+
 
    .. py:method:: forward(outputs, targets)
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_before_restore_hidden_states`
-======================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_before_restore_hidden_states
+============================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_before_restore_hidden_states
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_before_restore_hidden_states.ReshapeBeforeRestoreHiddenStates
 
 
-
+Module Contents
+---------------
 
 .. py:class:: ReshapeBeforeRestoreHiddenStates
-
 
 
 

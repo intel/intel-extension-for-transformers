@@ -1,5 +1,5 @@
-:py:mod:`main_eval_only`
-========================
+main_eval_only
+==============
 
 .. py:module:: main_eval_only
 

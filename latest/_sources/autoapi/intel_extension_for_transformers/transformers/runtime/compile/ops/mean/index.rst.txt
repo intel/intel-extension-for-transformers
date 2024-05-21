@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.mean`
-================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.mean
+======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.mean
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.mean.Mean
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Mean
 
 
 
-
    Parse the Mean operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

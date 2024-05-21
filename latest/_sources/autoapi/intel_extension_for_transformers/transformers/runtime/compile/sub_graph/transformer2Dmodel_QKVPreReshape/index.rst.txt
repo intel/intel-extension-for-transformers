@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVPreReshape`
-==================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVPreReshape
+========================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVPreReshape
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVPreReshape.Transformer2Dmodel_QKVPreReshape
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Transformer2Dmodel_QKVPreReshape
-
 
 
 

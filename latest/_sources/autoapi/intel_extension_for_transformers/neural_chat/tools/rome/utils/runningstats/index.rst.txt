@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats`
-====================================================================================
+intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats
+==========================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats
 
@@ -48,11 +48,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -75,9 +72,8 @@ Classes
    intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.FixedRandomSubsetSampler
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -94,6 +90,8 @@ Functions
    intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.make_loader
 
 
+Module Contents
+---------------
 
 .. py:function:: tally(stat, dataset, cache=None, quiet=False, **kwargs)
 
@@ -143,15 +141,14 @@ Functions
 
 .. py:class:: cache_load_enabled(enabled=True)
 
-
    When used as a context manager, cache_load_enabled(False) will prevent
    tally from loading cached statsitics, forcing them to be recomputed.
 
 
 .. py:class:: Stat(state)
 
-
    Abstract base class for a running pytorch statistic.
+
 
    .. py:method:: add(x, *args, **kwargs)
 
@@ -161,10 +158,12 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: load_state_dict(d)
 
       Loads this Stat from a dictionary of numpy arrays as saved
       by state_dict.
+
 
 
    .. py:method:: state_dict()
@@ -173,9 +172,11 @@ Functions
       stored in an npz or reloaded later using load_state_dict.
 
 
+
    .. py:method:: save(filename)
 
       Saves this stat as an npz file containing the state_dict.
+
 
 
    .. py:method:: load(filename)
@@ -183,14 +184,17 @@ Functions
       Loads this stat from an npz file containing a saved state_dict.
 
 
+
    .. py:method:: to_(device)
 
       Moves this Stat to the given device.
 
 
+
    .. py:method:: cpu_()
 
       Moves this Stat to the cpu device.
+
 
 
    .. py:method:: cuda_()
@@ -203,8 +207,8 @@ Functions
 
 
 
-
    Running mean.
+
 
    .. py:method:: add(a)
 
@@ -214,15 +218,18 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: to_(device)
 
       Moves this Stat to the given device.
+
 
 
    .. py:method:: load_state_dict(state)
 
       Loads this Stat from a dictionary of numpy arrays as saved
       by state_dict.
+
 
 
    .. py:method:: state_dict()
@@ -236,8 +243,8 @@ Functions
 
 
 
-
    Running average of the norm of input vectors.
+
 
    .. py:method:: add(a)
 
@@ -252,11 +259,11 @@ Functions
 
 
 
-
    Running computation of mean and variance.
 
    Use this when you just need
    basic stats without covariance.
+
 
    .. py:method:: add(a)
 
@@ -266,15 +273,18 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: to_(device)
 
       Moves this Stat to the given device.
+
 
 
    .. py:method:: load_state_dict(state)
 
       Loads this Stat from a dictionary of numpy arrays as saved
       by state_dict.
+
 
 
    .. py:method:: state_dict()
@@ -288,12 +298,12 @@ Functions
 
 
 
-
    Running computation. Use this when the entire covariance matrix is needed,
    and when the whole covariance matrix fits in the GPU.
 
    Chan-style numerically stable update of mean and full covariance matrix.
    Chan, Golub. LeVeque. 1983. http://www.jstor.org/stable/2683386
+
 
    .. py:method:: add(a)
 
@@ -303,15 +313,18 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: to_(device)
 
       Moves this Stat to the given device.
+
 
 
    .. py:method:: state_dict()
 
       Saves this Stat as a dictionary of numpy arrays that can be
       stored in an npz or reloaded later using load_state_dict.
+
 
 
    .. py:method:: load_state_dict(state)
@@ -325,12 +338,12 @@ Functions
 
 
 
-
    Running computation.
 
    Use this when the entire non-centered 2nd-moment
    'covariance-like' matrix is needed, and when the whole matrix fits
    in the GPU.
+
 
    .. py:method:: add(a)
 
@@ -340,15 +353,18 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: to_(device)
 
       Moves this Stat to the given device.
+
 
 
    .. py:method:: state_dict()
 
       Saves this Stat as a dictionary of numpy arrays that can be
       stored in an npz or reloaded later using load_state_dict.
+
 
 
    .. py:method:: load_state_dict(state)
@@ -362,11 +378,11 @@ Functions
 
 
 
-
    Running bincount.
 
    The counted array should be an integer type with
    non-negative integers.
+
 
    .. py:method:: add(a, size=None)
 
@@ -376,15 +392,18 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: to_(device)
 
       Moves this Stat to the given device.
+
 
 
    .. py:method:: state_dict()
 
       Saves this Stat as a dictionary of numpy arrays that can be
       stored in an npz or reloaded later using load_state_dict.
+
 
 
    .. py:method:: load_state_dict(dic)
@@ -398,13 +417,13 @@ Functions
 
 
 
-
    Covariance. Use this when an off-diagonal block of the covariance
    matrix is needed (e.g., when the whole covariance matrix does
    not fit in the GPU, this could use a quarter of the memory).
 
    Chan-style numerically stable update of mean and full covariance matrix.
    Chan, Golub. LeVeque. 1983. http://www.jstor.org/stable/2683386
+
 
    .. py:method:: add(a, b)
 
@@ -414,15 +433,18 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: to_(device)
 
       Moves this Stat to the given device.
+
 
 
    .. py:method:: state_dict()
 
       Saves this Stat as a dictionary of numpy arrays that can be
       stored in an npz or reloaded later using load_state_dict.
+
 
 
    .. py:method:: load_state_dict(state)
@@ -436,8 +458,8 @@ Functions
 
 
 
-
    Running computation of intersections and unions of all features.
+
 
    .. py:method:: add(a)
 
@@ -447,15 +469,18 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: to_(_device)
 
       Moves this Stat to the given device.
+
 
 
    .. py:method:: state_dict()
 
       Saves this Stat as a dictionary of numpy arrays that can be
       stored in an npz or reloaded later using load_state_dict.
+
 
 
    .. py:method:: load_state_dict(state)
@@ -469,8 +494,8 @@ Functions
 
 
 
-
    Running computation of intersections and unions of two binary vectors.
+
 
    .. py:method:: add(a, b)
 
@@ -480,15 +505,18 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: to_(_device)
 
       Moves this Stat to the given device.
+
 
 
    .. py:method:: state_dict()
 
       Saves this Stat as a dictionary of numpy arrays that can be
       stored in an npz or reloaded later using load_state_dict.
+
 
 
    .. py:method:: load_state_dict(state)
@@ -499,7 +527,6 @@ Functions
 
 
 .. py:class:: Quantile(r=3 * 1024, buffersize=None, seed=None, state=None)
-
 
 
 
@@ -520,9 +547,11 @@ Functions
    Based on the optimal KLL quantile algorithm by Karnin, Lang, and Liberty
    from FOCS 2016.  http://ieee-focs.org/FOCS-2016-Papers/3933a071.pdf
 
+
    .. py:method:: to_(device)
 
       Switches internal storage to specified device.
+
 
 
    .. py:method:: add(incoming)
@@ -533,16 +562,19 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: state_dict()
 
       Saves this Stat as a dictionary of numpy arrays that can be
       stored in an npz or reloaded later using load_state_dict.
 
 
+
    .. py:method:: load_state_dict(state)
 
       Loads this Stat from a dictionary of numpy arrays as saved
       by state_dict.
+
 
 
    .. py:method:: normalize(data)
@@ -563,7 +595,6 @@ Functions
 
 .. py:class:: TopK(k=100, largest=True, state=None)
 
-
    A class to keep a running tally of the the top k values (and indexes)
    of any number of torch feature components.  Will work on the GPU if
    the data is on the GPU.  Tracks largest by default, but tracks smallest
@@ -571,12 +602,14 @@ Functions
 
    This version flattens all arrays to avoid crashes.
 
+
    .. py:method:: add(data, index=None)
 
       Adds a batch of data to be considered for the running top k.
 
       The zeroth dimension enumerates the observations.  All other
       dimensions enumerate different features.
+
 
 
    .. py:method:: topk(sorted=True, flat=False)
@@ -590,8 +623,8 @@ Functions
 
 
 
-
    Accumulates the concatenation of all the added data.
+
 
    .. py:method:: add(d)
 
@@ -601,16 +634,19 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: load_state_dict(state)
 
       Loads this Stat from a dictionary of numpy arrays as saved
       by state_dict.
 
 
+
    .. py:method:: state_dict()
 
       Saves this Stat as a dictionary of numpy arrays that can be
       stored in an npz or reloaded later using load_state_dict.
+
 
 
    .. py:method:: to_(device)
@@ -620,7 +656,6 @@ Functions
 
 
 .. py:class:: CombinedStat(state=None, **kwargs)
-
 
 
 
@@ -635,6 +670,7 @@ Functions
    print(cs.m.mean())
    print(cs.q.median())
 
+
    .. py:method:: add(d, *args, **kwargs)
 
       Observes a batch of samples to be incorporated into the statistic.
@@ -643,16 +679,19 @@ Functions
       be the feature dimension of the pytorch tensor x.
 
 
+
    .. py:method:: load_state_dict(state)
 
       Loads this Stat from a dictionary of numpy arrays as saved
       by state_dict.
 
 
+
    .. py:method:: state_dict()
 
       Saves this Stat as a dictionary of numpy arrays that can be
       stored in an npz or reloaded later using load_state_dict.
+
 
 
    .. py:method:: to_(device)
@@ -711,10 +750,10 @@ Functions
 
 
 
-
    Represents a fixed sequence of data set indices.
 
    Subsets can be created by specifying a subset of output indexes.
+
 
    .. py:method:: dereference(indices)
 
@@ -727,7 +766,6 @@ Functions
 
 
 
-
    Samples a fixed number of samples from the dataset, deterministically.
 
    :param data_source:
@@ -736,6 +774,7 @@ Functions
    :param :
    :param seed:
    :type seed: optional
+
 
    .. py:method:: class_subset(class_filter)
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.loaders`
-===============================================================================
+intel_extension_for_transformers.transformers.runtime.compile.loaders
+=====================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.loaders
 
@@ -11,10 +11,10 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   loader/index.rst
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/loaders/loader/index
 
 

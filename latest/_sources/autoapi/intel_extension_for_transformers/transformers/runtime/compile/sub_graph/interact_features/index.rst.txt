@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.interact_features`
-===================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.interact_features
+=========================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.interact_features
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.interact_features.InteractFeatures
 
 
-
+Module Contents
+---------------
 
 .. py:class:: InteractFeatures
-
 
 
 

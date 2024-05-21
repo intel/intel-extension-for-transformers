@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.size`
-================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.size
+======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.size
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.size.Size
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Size
 
 
 
-
    Parse the PrimConstant operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

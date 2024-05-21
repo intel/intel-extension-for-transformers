@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile`
-=======================================================================
+intel_extension_for_transformers.transformers.runtime.compile
+=============================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile
 
@@ -11,29 +11,29 @@
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   extractors/index.rst
-   graph/index.rst
-   loaders/index.rst
-   ops/index.rst
-   sub_graph/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/extractors/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/graph/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/loaders/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/ops/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/sub_graph/index
 
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   compile/index.rst
-   graph_utils/index.rst
-   logger/index.rst
-   onnx_utils/index.rst
-   optimizer/index.rst
-   tf_utils/index.rst
-   torch_utils/index.rst
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/compile/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/graph_utils/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/logger/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/onnx_utils/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/optimizer/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/tf_utils/index
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/torch_utils/index
 
 

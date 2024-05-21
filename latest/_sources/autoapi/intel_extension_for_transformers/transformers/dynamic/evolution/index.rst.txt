@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.dynamic.evolution`
-=========================================================================
+intel_extension_for_transformers.transformers.dynamic.evolution
+===============================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.dynamic.evolution
 
@@ -9,20 +9,16 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.dynamic.evolution.Evolution
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -31,6 +27,8 @@ Functions
    intel_extension_for_transformers.transformers.dynamic.evolution.store2str
 
 
+Module Contents
+---------------
 
 .. py:function:: approx_ratio(x, n=12, l=384)
 
@@ -51,12 +49,13 @@ Functions
 
 
 
-
    Class of Evolution supports for evolutionary searching.
+
 
    .. py:method:: load_store(store_file)
 
       Load from a store file.
+
 
 
    .. py:method:: save_store(store_file)
@@ -64,9 +63,11 @@ Functions
       Save into a store file.
 
 
+
    .. py:method:: get_store()
 
       Get store.
+
 
 
    .. py:method:: set_lower_constraint(constraint)
@@ -74,9 +75,11 @@ Functions
       Setter of lower constraint.
 
 
+
    .. py:method:: set_upper_constraint(constraint)
 
       Setter of upper constraint.
+
 
 
    .. py:method:: save_population(population_file, population)
@@ -84,9 +87,11 @@ Functions
       Save population into a file.
 
 
+
    .. py:method:: convex_hull()
 
       The function to calculate convex_hull.
+
 
 
    .. py:method:: pareto_frontier()
@@ -94,14 +99,17 @@ Functions
       The function to calculate population and are.
 
 
+
    .. py:method:: add_gene(gene, macs=None, score=None, method=0, parents=None)
 
       Add gene to evolution.
 
 
+
    .. py:method:: mutate(mutation_prob, ray=False)
 
       Do the mutate.
+
 
 
    .. py:method:: crossover(ray=False)

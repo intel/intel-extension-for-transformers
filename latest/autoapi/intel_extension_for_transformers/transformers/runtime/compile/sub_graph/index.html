@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.transformers.runtime.compile.sub_graph &mdash; Intel® Extension for Transformers 0.1.dev1+g61bee27 documentation</title>
+  <title>intel_extension_for_transformers.transformers.runtime.compile.sub_graph &mdash; Intel® Extension for Transformers 0.1.dev1+gf4b3a7b documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=fd3f3429" />
@@ -78,7 +78,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph</span></code></li>
+      <li class="breadcrumb-item active">intel_extension_for_transformers.transformers.runtime.compile.sub_graph</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../../../../_sources/autoapi/intel_extension_for_transformers/transformers/runtime/compile/sub_graph/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -89,163 +89,127 @@
            <div itemprop="articleBody">
              
   <section id="module-intel_extension_for_transformers.transformers.runtime.compile.sub_graph">
-<span id="intel-extension-for-transformers-transformers-runtime-compile-sub-graph"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.transformers.runtime.compile.sub_graph" title="intel_extension_for_transformers.transformers.runtime.compile.sub_graph"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.transformers.runtime.compile.sub_graph" title="Link to this heading"></a></h1>
+<span id="intel-extension-for-transformers-transformers-runtime-compile-sub-graph"></span><h1>intel_extension_for_transformers.transformers.runtime.compile.sub_graph<a class="headerlink" href="#module-intel_extension_for_transformers.transformers.runtime.compile.sub_graph" title="Link to this heading"></a></h1>
 <p>The neural engine sub_graph module.</p>
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="InnerproductReshapeFusion/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.InnerproductReshapeFusion</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="add_cls_token/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.add_cls_token</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="add_embeddings/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.add_embeddings</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="arangewithreciprocal/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.arangewithreciprocal</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="attentionBlock_AttentionMaskAddReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_AttentionMaskAddReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="attentionBlock_ConstantOfShapeWithMul/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_ConstantOfShapeWithMul</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="attentionBlock_QKVPreReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_QKVPreReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="attentionBlock_QKVReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_QKVReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="attentionBlock_WeightReshapeTo4D/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_WeightReshapeTo4D</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="attention_mask_length_adaptive_keep_indices/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_mask_length_adaptive_keep_indices</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="attention_output_layer_norm_length_adaptive_keep_indices/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="attention_reshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_reshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="cast_to/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.cast_to</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="collect_quant_info/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.collect_quant_info</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="conv_reshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.conv_reshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="decoder_attn_reshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.decoder_attn_reshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="einsumwitharange/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.einsumwitharange</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="embeddingbag/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.embeddingbag</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="embeddings_to_2d_before_inner_product/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.embeddings_to_2d_before_inner_product</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="gelu/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.gelu</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="generate_sequence/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.generate_sequence</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="innerproductwithbiasgelu/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.innerproductwithbiasgelu</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="innerproductwithslice/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.innerproductwithslice</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="innerproductwithswish/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.innerproductwithswish</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="input_data/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.input_data</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="input_file/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.input_file</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="insert_bf16_node/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.insert_bf16_node</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="insert_quant_node/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.insert_quant_node</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="int8_bf16_mixed_precision_checker/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.int8_bf16_mixed_precision_checker</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="interact_features/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.interact_features</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="last_layer_shape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.last_layer_shape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="layer_norm/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.layer_norm</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="layer_norm_with_reduce_mean/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.layer_norm_with_reduce_mean</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="layer_norm_with_transpose/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.layer_norm_with_transpose</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="llama_embeding/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.llama_embeding</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="llama_matmulwithtranspose/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.llama_matmulwithtranspose</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="llama_postprocess/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.llama_postprocess</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="llama_rotary_pos_emb/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.llama_rotary_pos_emb</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="lower_all_tuples/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.lower_all_tuples</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_add/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_add</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_gelu/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_gelu</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_relu/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_relu</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_sigmoid/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_sigmoid</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_tanh/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_tanh</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_unsqueeze/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_unsqueeze</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="matmul_with_transpose/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_transpose</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="matmul_with_transpose_scale_add/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_transpose_scale_add</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="merged_embeddingbag/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.merged_embeddingbag</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="neox_reorder_change/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.neox_reorder_change</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="neox_rotary_pos_emb/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.neox_rotary_pos_emb</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="operator_adaptor/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.operator_adaptor</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="output_data/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.output_data</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="padding_sequence/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.padding_sequence</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="pattern/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.pattern</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="position_embeddings/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.position_embeddings</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="position_embeddings_v1/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.position_embeddings_v1</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="qkv_merge/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.qkv_merge</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="qkv_reshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.qkv_reshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="quant_gather_to_bf16/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quant_gather_to_bf16</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="quantize_fusion/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quantize_fusion</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="quantized_graph_dtype_refactor/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quantized_graph_dtype_refactor</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="remove_constant_op/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_constant_op</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="remove_last_view/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_last_view</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="remove_range/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_range</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="remove_unused_operator/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_unused_operator</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="remove_zeros/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_zeros</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="removeslice/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.removeslice</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="reshape_after_restore_hidden_states/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_after_restore_hidden_states</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="reshape_before_and_after_attention_out_layer_norm_gather_elements/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_before_and_after_attention_out_layer_norm_gather_elements</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="reshape_before_restore_hidden_states/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_before_restore_hidden_states</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="reshape_fusion/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_fusion</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="restore_hidden_states_in_length_adaptive_update_indices/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="rms_norm/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.rms_norm</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="rotary_pos_emb/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.rotary_pos_emb</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="slicemask/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.slicemask</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_ExplicitNHWCTranspose/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_ExplicitNHWCTranspose</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_ExplicitNHWCTransposeQAT/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_ExplicitNHWCTransposeQAT</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_MHAReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_MHAReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_QuantizeFusion/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_QuantizeFusion</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_ReshapeFusion/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_ReshapeFusion</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_bf16Convert/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_bf16Convert</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_collectQDQInfo/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_collectQDQInfo</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_insertQuantNode/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_insertQuantNode</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="start_end_logits/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.start_end_logits</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="subgraph_matcher/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.subgraph_matcher</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="textEncdoer_word_embedding/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncdoer_word_embedding</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="textEncoder_AttentionMaskAddReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_AttentionMaskAddReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="textEncoder_AttentionReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_AttentionReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="textEncoder_KVReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_KVReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="textEncoder_MulReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_MulReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="textEncoder_QReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_QReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="textEncoder_SoftmaxReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_SoftmaxReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="textEncoder_causal_attention_mask/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_causal_attention_mask</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="token_type_embeddings/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.token_type_embeddings</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="token_type_embeddings_v1/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.token_type_embeddings_v1</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="torch_embedding/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_embedding</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="torch_ip_insert_bias/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_ip_insert_bias</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="torch_unpack_baddbmm/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_unpack_baddbmm</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="torchinsertbf16node/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torchinsertbf16node</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="torchpaddingsquence/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torchpaddingsquence</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_AttentionMaskAddReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_AttentionMaskAddReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_ConstantOfShapeWithMul/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_ConstantOfShapeWithMul</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_FFNSlice/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_FFNSlice</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_FFNSlice_1/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_FFNSlice_1</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_QKVPreReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVPreReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_QKVReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_QKVReshape4D/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVReshape4D</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_encoderHiddenStatesReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_encoderHiddenStatesReshape</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_getSampleBatch/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_getSampleBatch</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_sampleSlice/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_sampleSlice</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="transpose_batch_matmul/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transpose_batch_matmul</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="word_embeddings/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.word_embeddings</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="InnerproductReshapeFusion/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.InnerproductReshapeFusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="add_cls_token/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.add_cls_token</a></li>
+<li class="toctree-l1"><a class="reference internal" href="add_embeddings/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.add_embeddings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="arangewithreciprocal/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.arangewithreciprocal</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attentionBlock_AttentionMaskAddReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_AttentionMaskAddReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attentionBlock_ConstantOfShapeWithMul/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_ConstantOfShapeWithMul</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attentionBlock_QKVPreReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_QKVPreReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attentionBlock_QKVReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_QKVReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attentionBlock_WeightReshapeTo4D/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attentionBlock_WeightReshapeTo4D</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attention_mask_length_adaptive_keep_indices/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_mask_length_adaptive_keep_indices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attention_output_layer_norm_length_adaptive_keep_indices/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="attention_reshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.attention_reshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cast_to/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.cast_to</a></li>
+<li class="toctree-l1"><a class="reference internal" href="collect_quant_info/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.collect_quant_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conv_reshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.conv_reshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="decoder_attn_reshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.decoder_attn_reshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="einsumwitharange/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.einsumwitharange</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embeddingbag/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.embeddingbag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embeddings_to_2d_before_inner_product/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.embeddings_to_2d_before_inner_product</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gelu/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.gelu</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generate_sequence/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.generate_sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="innerproductwithbiasgelu/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.innerproductwithbiasgelu</a></li>
+<li class="toctree-l1"><a class="reference internal" href="innerproductwithslice/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.innerproductwithslice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="innerproductwithswish/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.innerproductwithswish</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input_data/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.input_data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input_file/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.input_file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="insert_bf16_node/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.insert_bf16_node</a></li>
+<li class="toctree-l1"><a class="reference internal" href="insert_quant_node/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.insert_quant_node</a></li>
+<li class="toctree-l1"><a class="reference internal" href="int8_bf16_mixed_precision_checker/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.int8_bf16_mixed_precision_checker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interact_features/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.interact_features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="last_layer_shape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.last_layer_shape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layer_norm/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.layer_norm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layer_norm_with_reduce_mean/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.layer_norm_with_reduce_mean</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layer_norm_with_transpose/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.layer_norm_with_transpose</a></li>
+<li class="toctree-l1"><a class="reference internal" href="llama_embeding/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.llama_embeding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="llama_matmulwithtranspose/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.llama_matmulwithtranspose</a></li>
+<li class="toctree-l1"><a class="reference internal" href="llama_postprocess/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.llama_postprocess</a></li>
+<li class="toctree-l1"><a class="reference internal" href="llama_rotary_pos_emb/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.llama_rotary_pos_emb</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lower_all_tuples/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.lower_all_tuples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_add/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_add</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_gelu/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_gelu</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_relu/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_relu</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_sigmoid/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_sigmoid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_tanh/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_tanh</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_unsqueeze/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_unsqueeze</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_transpose/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_transpose</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_transpose_scale_add/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_transpose_scale_add</a></li>
+<li class="toctree-l1"><a class="reference internal" href="merged_embeddingbag/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.merged_embeddingbag</a></li>
+<li class="toctree-l1"><a class="reference internal" href="neox_reorder_change/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.neox_reorder_change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="neox_rotary_pos_emb/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.neox_rotary_pos_emb</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operator_adaptor/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.operator_adaptor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output_data/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.output_data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="padding_sequence/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.padding_sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pattern/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.pattern</a></li>
+<li class="toctree-l1"><a class="reference internal" href="position_embeddings/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.position_embeddings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="position_embeddings_v1/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.position_embeddings_v1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="qkv_merge/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.qkv_merge</a></li>
+<li class="toctree-l1"><a class="reference internal" href="qkv_reshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.qkv_reshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quant_gather_to_bf16/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quant_gather_to_bf16</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantize_fusion/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quantize_fusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantized_graph_dtype_refactor/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.quantized_graph_dtype_refactor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="remove_constant_op/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_constant_op</a></li>
+<li class="toctree-l1"><a class="reference internal" href="remove_last_view/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_last_view</a></li>
+<li class="toctree-l1"><a class="reference internal" href="remove_range/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_range</a></li>
+<li class="toctree-l1"><a class="reference internal" href="remove_unused_operator/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_unused_operator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="remove_zeros/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.remove_zeros</a></li>
+<li class="toctree-l1"><a class="reference internal" href="removeslice/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.removeslice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reshape_after_restore_hidden_states/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_after_restore_hidden_states</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reshape_before_and_after_attention_out_layer_norm_gather_elements/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_before_and_after_attention_out_layer_norm_gather_elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reshape_before_restore_hidden_states/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_before_restore_hidden_states</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reshape_fusion/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.reshape_fusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="restore_hidden_states_in_length_adaptive_update_indices/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rms_norm/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.rms_norm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rotary_pos_emb/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.rotary_pos_emb</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slicemask/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.slicemask</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_ExplicitNHWCTranspose/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_ExplicitNHWCTranspose</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_ExplicitNHWCTransposeQAT/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_ExplicitNHWCTransposeQAT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_MHAReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_MHAReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_QuantizeFusion/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_QuantizeFusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_ReshapeFusion/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_ReshapeFusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_bf16Convert/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_bf16Convert</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_collectQDQInfo/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_collectQDQInfo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stableDiffusion_insertQuantNode/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.stableDiffusion_insertQuantNode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="start_end_logits/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.start_end_logits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subgraph_matcher/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.subgraph_matcher</a></li>
+<li class="toctree-l1"><a class="reference internal" href="textEncdoer_word_embedding/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncdoer_word_embedding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="textEncoder_AttentionMaskAddReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_AttentionMaskAddReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="textEncoder_AttentionReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_AttentionReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="textEncoder_KVReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_KVReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="textEncoder_MulReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_MulReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="textEncoder_QReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_QReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="textEncoder_SoftmaxReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_SoftmaxReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="textEncoder_causal_attention_mask/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.textEncoder_causal_attention_mask</a></li>
+<li class="toctree-l1"><a class="reference internal" href="token_type_embeddings/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.token_type_embeddings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="token_type_embeddings_v1/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.token_type_embeddings_v1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torch_embedding/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_embedding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torch_ip_insert_bias/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_ip_insert_bias</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torch_unpack_baddbmm/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torch_unpack_baddbmm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torchinsertbf16node/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torchinsertbf16node</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torchpaddingsquence/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.torchpaddingsquence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_AttentionMaskAddReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_AttentionMaskAddReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_ConstantOfShapeWithMul/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_ConstantOfShapeWithMul</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_FFNSlice/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_FFNSlice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_FFNSlice_1/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_FFNSlice_1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_QKVPreReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVPreReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_QKVReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_QKVReshape4D/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_QKVReshape4D</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_encoderHiddenStatesReshape/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_encoderHiddenStatesReshape</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_getSampleBatch/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_getSampleBatch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer2Dmodel_sampleSlice/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_sampleSlice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transpose_batch_matmul/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transpose_batch_matmul</a></li>
+<li class="toctree-l1"><a class="reference internal" href="word_embeddings/index.html">intel_extension_for_transformers.transformers.runtime.compile.sub_graph.word_embeddings</a></li>
 </ul>
 </div>
-</section>
-<section id="package-contents">
-<h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading"></a></h2>
-<section id="classes">
-<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pattern</span></code></p></td>
-<td><p>The bass pattern class.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">SubGraphMatcher</span></code></p></td>
-<td><p>The SubGraphMatcher class.</p></td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="functions">
-<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pattern_registry</span></code>(pattern_type)</p></td>
-<td><p>The class decorator used to register all Algorithm subclasses.</p></td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="attributes">
-<h3>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">PATTERNS</span></code></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
-</section>
 </section>
 </section>
 
@@ -263,7 +227,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fcf004ff610> 
+   <jinja2.runtime.BlockReference object at 0x7fc220cf91b0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.generate_sequence`
-===================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.generate_sequence
+=========================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.generate_sequence
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.generate_sequence.GenerateSequence
 
 
-
+Module Contents
+---------------
 
 .. py:class:: GenerateSequence
-
 
 
 

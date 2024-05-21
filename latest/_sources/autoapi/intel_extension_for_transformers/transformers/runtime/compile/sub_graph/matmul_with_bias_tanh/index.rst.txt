@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_tanh`
-=======================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_tanh
+=============================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_tanh
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.matmul_with_bias_tanh.MatmulWithBiasTanh
 
 
-
+Module Contents
+---------------
 
 .. py:class:: MatmulWithBiasTanh
-
 
 
 

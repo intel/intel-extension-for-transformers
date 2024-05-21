@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.split`
-=================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.split
+=======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.split
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.split.Split
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Split
 
 
 
-
    Parse the Split operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util`
-============================================================================================================
+intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util
+==================================================================================================
 
 .. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util
 
@@ -11,12 +11,12 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   load_mats/index.rst
-   preprocess/index.rst
-   util/index.rst
+   /autoapi/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/face3d/util/load_mats/index
+   /autoapi/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/face3d/util/preprocess/index
+   /autoapi/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/face3d/util/util/index
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils`
-======================================================================================
+intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils
+============================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -22,6 +18,8 @@ Functions
    intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_layer_configuration
 
 
+Module Contents
+---------------
 
 .. py:function:: sample_length_configuration(max_seq_length, num_hidden_layers, layer_config=None, length_drop_prob=None, length_drop_ratio=None, length_drop_ratio_bound=None, min_length=2)
 

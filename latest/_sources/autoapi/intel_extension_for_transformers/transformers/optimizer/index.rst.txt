@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.optimizer`
-=================================================================
+intel_extension_for_transformers.transformers.optimizer
+=======================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.optimizer
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -21,16 +18,18 @@ Classes
    intel_extension_for_transformers.transformers.optimizer.NoTrainerOptimizer
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Orchestrate_optimizer(model, components: Optional[List[neural_compressor.experimental.Component]] = [], eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, output_dir: Optional[str] = 'saved_results')
 
-
    Orchestrate_optimizer aggregates and orchestrates components such as Quantization, Pruning and Distillation.
+
 
    .. py:method:: fit()
 
       Run the scheduler.
+
 
 
    .. py:method:: save_model(output_dir, tokenizer=None)
@@ -46,8 +45,8 @@ Classes
 
 .. py:class:: NoTrainerOptimizer(model, output_dir: Optional[str] = 'saved_results')
 
-
    Optimizer without using Trainer.
+
 
    .. py:method:: init_quantizer(quant_config, provider: str = Provider.INC.value)
 
@@ -55,6 +54,7 @@ Classes
 
       :param quant_config: quantization config.
       :param provider: define the quantization provider.
+
 
 
    .. py:method:: quantize(quant_config: intel_extension_for_transformers.transformers.QuantizationConfig = None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, calib_func: Optional[Callable] = None, calib_dataloader=None)
@@ -69,12 +69,14 @@ Classes
       :param calib_dataloader: calibration dataloader.
 
 
+
    .. py:method:: init_pruner(pruning_config=None, provider: str = Provider.INC.value)
 
       Init a Pruning object with config.
 
       :param pruning_config: pruning config.
       :param provider: define the pruning provider.
+
 
 
    .. py:method:: prune(pruning_config=None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
@@ -87,6 +89,7 @@ Classes
       :param train_func: train function.
 
 
+
    .. py:method:: init_distiller(distillation_config, teacher_model, provider: str = Provider.INC.value)
 
       Init a Distillation object with config and the teacher model.
@@ -94,6 +97,7 @@ Classes
       :param distillation_config: distillation config.
       :param teacher_model: set the teacher model.
       :param provider: define the distillation provider.
+
 
 
    .. py:method:: distill(distillation_config, teacher_model, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
@@ -105,6 +109,7 @@ Classes
       :param provider: define the distillation provider.
       :param eval_func: evaluation function.
       :param train_func: train function.
+
 
 
    .. py:method:: save_model(output_dir, tokenizer=None)

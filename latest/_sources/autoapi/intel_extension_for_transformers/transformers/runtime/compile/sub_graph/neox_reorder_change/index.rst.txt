@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.neox_reorder_change`
-=====================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.neox_reorder_change
+===========================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.neox_reorder_change
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.neox_reorder_change.NeoxReorderChange
 
 
-
+Module Contents
+---------------
 
 .. py:class:: NeoxReorderChange
-
 
 
 

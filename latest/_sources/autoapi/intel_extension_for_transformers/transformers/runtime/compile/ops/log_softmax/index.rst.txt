@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.log_softmax`
-=======================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.log_softmax
+=============================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.log_softmax
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.log_softmax.LogSoftmax
 
 
-
+Module Contents
+---------------
 
 .. py:class:: LogSoftmax
 
 
 
-
    Parse the LogSoftmax operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

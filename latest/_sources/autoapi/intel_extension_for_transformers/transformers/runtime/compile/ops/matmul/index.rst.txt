@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.matmul`
-==================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.matmul
+========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.matmul
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.matmul.MatMul
 
 
-
+Module Contents
+---------------
 
 .. py:class:: MatMul
 
 
 
-
    Parse the MatMul operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

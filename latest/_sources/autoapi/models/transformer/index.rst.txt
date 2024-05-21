@@ -1,5 +1,5 @@
-:py:mod:`models.transformer`
-============================
+models.transformer
+==================
 
 .. py:module:: models.transformer
 

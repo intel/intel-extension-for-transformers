@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.graph`
-=============================================================================
+intel_extension_for_transformers.transformers.runtime.compile.graph
+===================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.graph
 
@@ -11,10 +11,10 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   graph/index.rst
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/graph/graph/index
 
 

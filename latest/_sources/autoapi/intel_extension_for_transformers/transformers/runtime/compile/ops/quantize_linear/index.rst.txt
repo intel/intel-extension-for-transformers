@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.quantize_linear`
-===========================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.quantize_linear
+=================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.quantize_linear
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -21,14 +18,15 @@ Classes
    intel_extension_for_transformers.transformers.runtime.compile.ops.quantize_linear.Quantize
 
 
-
+Module Contents
+---------------
 
 .. py:class:: QuantizeLinear
 
 
 
-
    Parse the QuantizeLinear operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 
@@ -40,8 +38,8 @@ Classes
 
 
 
-
    Register the Quantize operator.
+
 
    .. py:method:: set_attr(framework, node)
 

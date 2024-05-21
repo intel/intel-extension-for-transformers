@@ -1,5 +1,5 @@
-:py:mod:`main_parse_and_eval`
-=============================
+main_parse_and_eval
+===================
 
 .. py:module:: main_parse_and_eval
 

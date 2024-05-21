@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.optimize_dataset`
-============================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.optimize_dataset
+==================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.optimize_dataset
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.optimize_dataset.OptimizeDataset
 
 
-
+Module Contents
+---------------
 
 .. py:class:: OptimizeDataset
 
 
 
-
    Parse the OptimizeDataset operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

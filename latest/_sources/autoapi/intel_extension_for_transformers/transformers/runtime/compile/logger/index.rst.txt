@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.logger`
-==============================================================================
+intel_extension_for_transformers.transformers.runtime.compile.logger
+====================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.logger
 
@@ -9,20 +9,16 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.logger.Logger
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -35,13 +31,15 @@ Functions
    intel_extension_for_transformers.transformers.runtime.compile.logger.warning
 
 
+Module Contents
+---------------
 
 .. py:class:: Logger
 
 
 
-
    The logger class.
+
 
    .. py:method:: get_logger()
 

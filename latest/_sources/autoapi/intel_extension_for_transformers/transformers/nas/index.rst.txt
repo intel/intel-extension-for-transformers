@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.nas`
-===========================================================
+intel_extension_for_transformers.transformers.nas
+=================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.nas
 
@@ -11,11 +11,11 @@
 
 Submodules
 ----------
+
 .. toctree::
-   :titlesonly:
    :maxdepth: 1
 
-   basic_nas/index.rst
-   nas/index.rst
+   /autoapi/intel_extension_for_transformers/transformers/nas/basic_nas/index
+   /autoapi/intel_extension_for_transformers/transformers/nas/nas/index
 
 

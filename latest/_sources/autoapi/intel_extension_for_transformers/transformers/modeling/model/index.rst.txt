@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.modeling.model`
-======================================================================
+intel_extension_for_transformers.transformers.modeling.model
+============================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.modeling.model
 
@@ -9,26 +9,25 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.modeling.model.OptimizedModel
 
 
-
+Module Contents
+---------------
 
 .. py:class:: OptimizedModel(*args, **kwargs)
 
-
    Provide the from_pretrained function.
+
 
    .. py:method:: from_pretrained(model_name_or_path: str, **kwargs)
       :classmethod:
+
 
       Instantiate a quantized pytorch model from a given Intel Neural Compressor (INC) configuration file.
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.sin`
-===============================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.sin
+=====================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.sin
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.sin.Sin
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Sin
 
 
 
-
    Parse the Sin operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

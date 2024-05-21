@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.embeddings_to_2d_before_inner_product`
-=======================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.embeddings_to_2d_before_inner_product
+=============================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.embeddings_to_2d_before_inner_product
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.embeddings_to_2d_before_inner_product.EmbeddingsTo2DBeforeInnerProduct
 
 
-
+Module Contents
+---------------
 
 .. py:class:: EmbeddingsTo2DBeforeInnerProduct
-
 
 
 

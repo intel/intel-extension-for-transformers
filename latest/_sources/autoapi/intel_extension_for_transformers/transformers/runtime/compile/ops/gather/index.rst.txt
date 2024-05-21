@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.gather`
-==================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.gather
+========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.gather
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -21,14 +18,15 @@ Classes
    intel_extension_for_transformers.transformers.runtime.compile.ops.gather.GatherV2
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Gather
 
 
 
-
    Parse the Gather operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 
@@ -40,8 +38,8 @@ Classes
 
 
 
-
    Parse the GatherV2 operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

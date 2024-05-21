@@ -1,5 +1,5 @@
-:py:mod:`gaudi_spawn`
-=====================
+gaudi_spawn
+===========
 
 .. py:module:: gaudi_spawn
 
@@ -21,18 +21,16 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    gaudi_spawn.parse_args
 
 
+Module Contents
+---------------
 
 .. py:function:: parse_args()
 

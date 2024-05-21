@@ -1,5 +1,5 @@
-:py:mod:`models.backbone`
-=========================
+models.backbone
+===============
 
 .. py:module:: models.backbone
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -21,10 +18,10 @@ Classes
    models.backbone.Backbone
 
 
-
+Module Contents
+---------------
 
 .. py:class:: FrozenBatchNorm2d(n)
-
 
 
 
@@ -36,7 +33,6 @@ Classes
 
 
 .. py:class:: Backbone(name: str, train_backbone: bool, return_interm_layers: bool, dilation: bool)
-
 
 
 

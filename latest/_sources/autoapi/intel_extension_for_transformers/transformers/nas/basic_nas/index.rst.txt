@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.nas.basic_nas`
-=====================================================================
+intel_extension_for_transformers.transformers.nas.basic_nas
+===========================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.nas.basic_nas
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.nas.basic_nas.BasicNAS
 
 
-
+Module Contents
+---------------
 
 .. py:class:: BasicNAS(conf_fname_or_obj, search_space=None, model_builder=None)
-
 
 
 
@@ -39,11 +36,13 @@ Classes
                          model architecture parameters.
    :type model_builder: function obj
 
+
    .. py:method:: execute(res_save_path=None)
 
       Execute the search process.
 
       :returns: Best model architectures found in the search process.
+
 
 
    .. py:method:: estimate(model)
@@ -53,6 +52,7 @@ Classes
       Depends on specific NAS algorithm. Here we use train and evaluate.
 
       :returns: Evaluated metrics of the model.
+
 
 
    .. py:method:: init_by_cfg(conf_fname_or_obj)

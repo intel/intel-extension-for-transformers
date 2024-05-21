@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.op`
-==============================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.op
+====================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.op
 
@@ -9,26 +9,24 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.op.Operator
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.op.operator_registry
 
 
+Module Contents
+---------------
 
 .. py:function:: operator_registry(operator_type)
 
@@ -47,17 +45,19 @@ Functions
 
 
 
-
    The class of neural engine operator.
+
 
    .. py:method:: set_attr(framework, node)
 
       Attr initialization.
 
 
+
    .. py:method:: extract(framework, node, framework_model, nodes_dict, engine_graph=None)
 
       Extract the op from framework.
+
 
 
    .. py:method:: construct(name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict())

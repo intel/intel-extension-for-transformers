@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.pos_embed`
-=====================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.pos_embed
+===========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.pos_embed
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.pos_embed.PackagePositionEmbedding
 
 
-
+Module Contents
+---------------
 
 .. py:class:: PackagePositionEmbedding
 
 
 
-
    Parse the Reshape operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.onnx_utils`
-==================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.onnx_utils
+========================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.onnx_utils
 
@@ -9,12 +9,8 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -29,6 +25,8 @@ Functions
    intel_extension_for_transformers.transformers.runtime.compile.onnx_utils.onnx_extract_operator
 
 
+Module Contents
+---------------
 
 .. py:function:: get_children(node, input_name_to_nodes=None)
 

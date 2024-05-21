@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_ConstantOfShapeWithMul`
-===========================================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_ConstantOfShapeWithMul
+=================================================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_ConstantOfShapeWithMul
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.transformer2Dmodel_ConstantOfShapeWithMul.Transformer2Dmodel_ConstantOfShapeWithMul
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Transformer2Dmodel_ConstantOfShapeWithMul
-
 
 
 

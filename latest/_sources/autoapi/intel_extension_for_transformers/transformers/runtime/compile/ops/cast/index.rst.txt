@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.cast`
-================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.cast
+======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.cast
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.cast.Cast
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Cast
 
 
 
-
    Parse the Cast operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

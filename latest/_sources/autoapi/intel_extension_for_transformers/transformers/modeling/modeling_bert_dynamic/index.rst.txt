@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.modeling.modeling_bert_dynamic`
-======================================================================================
+intel_extension_for_transformers.transformers.modeling.modeling_bert_dynamic
+============================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_bert_dynamic
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -44,9 +41,8 @@ Classes
    intel_extension_for_transformers.transformers.modeling.modeling_bert_dynamic.BertForQuestionAnswering
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -54,6 +50,8 @@ Functions
    intel_extension_for_transformers.transformers.modeling.modeling_bert_dynamic.expand_gather
 
 
+Module Contents
+---------------
 
 .. py:function:: load_tf_weights_in_bert(model, config, tf_checkpoint_path)
 
@@ -64,8 +62,8 @@ Functions
 
 
 
-
    Construct the embeddings from word, position and token_type embeddings.
+
 
    .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, past_key_values_length: int = 0) -> torch.Tensor
 
@@ -77,12 +75,13 @@ Functions
 
 
 
-
    Bert self attention.
+
 
    .. py:method:: transpose_for_scores(x: torch.Tensor) -> torch.Tensor
 
       Transpose for scores.
+
 
 
    .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_value: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, output_attentions: Optional[bool] = False) -> Tuple[torch.Tensor]
@@ -95,8 +94,8 @@ Functions
 
 
 
-
    Bert self output.
+
 
    .. py:method:: forward(hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor
 
@@ -108,12 +107,13 @@ Functions
 
 
 
-
    Bert attention.
+
 
    .. py:method:: prune_heads(heads)
 
       Pruning for heads.
+
 
 
    .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_value: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, output_attentions: Optional[bool] = False) -> Tuple[torch.Tensor]
@@ -126,8 +126,8 @@ Functions
 
 
 
-
    Bert intermediate.
+
 
    .. py:method:: forward(hidden_states: torch.Tensor) -> torch.Tensor
 
@@ -139,8 +139,8 @@ Functions
 
 
 
-
    Bert output.
+
 
    .. py:method:: forward(hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor
 
@@ -152,12 +152,13 @@ Functions
 
 
 
-
    Bert layer.
+
 
    .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_value: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, output_attentions: Optional[bool] = False, output_length=None, always_keep_cls_token: Optional[bool] = True) -> Tuple[torch.Tensor]
 
       The main entry point for the class.
+
 
 
    .. py:method:: feed_forward_chunk(attention_output)
@@ -170,8 +171,8 @@ Functions
 
 
 
-
    Bert encoder.
+
 
    .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = False, output_hidden_states: Optional[bool] = False, return_dict: Optional[bool] = True, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.BaseModelOutputWithPastAndCrossAttentions]
 
@@ -183,8 +184,8 @@ Functions
 
 
 
-
    Bert pooler.
+
 
    .. py:method:: forward(hidden_states: torch.Tensor) -> torch.Tensor
 
@@ -196,8 +197,8 @@ Functions
 
 
 
-
    Bert prediction head transform.
+
 
    .. py:method:: forward(hidden_states: torch.Tensor) -> torch.Tensor
 
@@ -209,8 +210,8 @@ Functions
 
 
 
-
    Bert language modeling prediction head.
+
 
    .. py:method:: forward(hidden_states)
 
@@ -222,8 +223,8 @@ Functions
 
 
 
-
    Bert only for masked language modeling head.
+
 
    .. py:method:: forward(sequence_output: torch.Tensor) -> torch.Tensor
 
@@ -235,8 +236,8 @@ Functions
 
 
 
-
    Bert only for next sequence prediction head.
+
 
    .. py:method:: forward(pooled_output)
 
@@ -248,8 +249,8 @@ Functions
 
 
 
-
    Bert pretraining heads.
+
 
    .. py:method:: forward(sequence_output, pooled_output)
 
@@ -261,13 +262,11 @@ Functions
 
 
 
-
    An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
    models.
 
 
 .. py:class:: BertForPreTrainingOutput
-
 
 
 
@@ -300,7 +299,6 @@ Functions
 
 
 
-
    The model can behave as an encoder (with only self-attention) as well as a decoder, in which case a layer of
    cross-attention is added between the self-attention layers, following the architecture described in [Attention is
    all you need](https://arxiv.org/abs/1706.03762) by Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit,
@@ -310,9 +308,11 @@ Functions
    to `True`. To be used in a Seq2Seq model, the model needs to initialized with both `is_decoder` argument and
    `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
 
+
    .. py:method:: get_input_embeddings()
 
       Getter of input embeddings.
+
 
 
    .. py:method:: set_input_embeddings(value)
@@ -320,14 +320,17 @@ Functions
       Setter of input embeddings.
 
 
+
    .. py:method:: set_length_config(length_config)
 
       Setter of length config.
 
 
+
    .. py:method:: set_output_attentions(value)
 
       Setter of output attentions.
+
 
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, past_key_values: Optional[List[torch.FloatTensor]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.BaseModelOutputWithPoolingAndCrossAttentions]
@@ -359,17 +362,19 @@ Functions
 
 
 
-
    Bert for pretrained model.
+
 
    .. py:method:: get_output_embeddings()
 
       Getter of output embeddings.
 
 
+
    .. py:method:: set_output_embeddings(new_embeddings)
 
       Setter of output embeddings.
+
 
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, next_sentence_label: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], BertForPreTrainingOutput]
@@ -411,17 +416,19 @@ Functions
 
 
 
-
    Bert language modeling head model.
+
 
    .. py:method:: get_output_embeddings()
 
       Getter of output embeddings.
 
 
+
    .. py:method:: set_output_embeddings(new_embeddings)
 
       Setter of output embeddings.
+
 
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, past_key_values: Optional[List[torch.Tensor]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.CausalLMOutputWithCrossAttentions]
@@ -452,6 +459,7 @@ Functions
           `past_key_values`).
 
 
+
    .. py:method:: prepare_inputs_for_generation(input_ids, past=None, attention_mask=None, **model_kwargs)
 
       Prepare inputs for generation.
@@ -462,17 +470,19 @@ Functions
 
 
 
-
    Bert for masked language modeling.
+
 
    .. py:method:: get_output_embeddings()
 
       Getter of output embeddings.
 
 
+
    .. py:method:: set_output_embeddings(new_embeddings)
 
       Setter of output embeddings.
+
 
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.MaskedLMOutput]
@@ -482,6 +492,7 @@ Functions
       Labels for computing the masked language modeling loss. Indices should be in `[-100, 0, ...,
       config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are ignored (masked), the
       loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`
+
 
 
    .. py:method:: prepare_inputs_for_generation(input_ids, attention_mask=None, **model_kwargs)
@@ -494,8 +505,8 @@ Functions
 
 
 
-
    Bert for next sentence prediction.
+
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, **kwargs) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.NextSentencePredictorOutput]
 
@@ -532,8 +543,8 @@ Functions
 
 
 
-
    Bert for sequence classification.
+
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.SequenceClassifierOutput]
 
@@ -549,8 +560,8 @@ Functions
 
 
 
-
    Bert for multiple choice.
+
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.MultipleChoiceModelOutput]
 
@@ -566,8 +577,8 @@ Functions
 
 
 
-
    Bert for token classification.
+
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.TokenClassifierOutput]
 
@@ -581,8 +592,8 @@ Functions
 
 
 
-
    Bert for question answering.
+
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, start_positions: Optional[torch.Tensor] = None, end_positions: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=False) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.QuestionAnsweringModelOutput]
 

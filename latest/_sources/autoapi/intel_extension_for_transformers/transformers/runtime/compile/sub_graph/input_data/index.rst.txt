@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.input_data`
-============================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.input_data
+==================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.input_data
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.input_data.InputData
 
 
-
+Module Contents
+---------------
 
 .. py:class:: InputData
-
 
 
 

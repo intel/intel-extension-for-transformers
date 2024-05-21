@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.fused_batch_matmul_v2`
-=================================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.fused_batch_matmul_v2
+=======================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.fused_batch_matmul_v2
 

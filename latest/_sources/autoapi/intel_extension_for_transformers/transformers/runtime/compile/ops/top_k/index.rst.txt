@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.top_k`
-=================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.top_k
+=======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.top_k
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.top_k.TopK
 
 
-
+Module Contents
+---------------
 
 .. py:class:: TopK
 
 
 
-
    Parse the TopK operator to the neural engine.
+
 
    .. py:method:: set_attr(framework, node)
 

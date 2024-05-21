@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime`
-===============================================================
+intel_extension_for_transformers.transformers.runtime
+=====================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime
 
@@ -11,25 +11,23 @@
 
 Subpackages
 -----------
+
 .. toctree::
-   :titlesonly:
-   :maxdepth: 3
+   :maxdepth: 1
 
-   compile/index.rst
-
-
-Package Contents
-----------------
+   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/index
 
 
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.neural_engine_bin
 
 
+Package Contents
+----------------
 
 .. py:function:: neural_engine_bin()
 

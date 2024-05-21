@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats &mdash; Intel® Extension for Transformers 0.1.dev1+g61bee27 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats &mdash; Intel® Extension for Transformers 0.1.dev1+gf4b3a7b documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/graphviz.css?v=fd3f3429" />
@@ -78,7 +78,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats</span></code></li>
+      <li class="breadcrumb-item active">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../../../../../_sources/autoapi/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -89,7 +89,7 @@
            <div itemprop="articleBody">
              
   <section id="module-intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats">
-<span id="intel-extension-for-transformers-neural-chat-tools-rome-utils-runningstats"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats" title="Link to this heading"></a></h1>
+<span id="intel-extension-for-transformers-neural-chat-tools-rome-utils-runningstats"></span><h1>intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats<a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats" title="Link to this heading"></a></h1>
 <p>To use a runningstats object,</p>
 <blockquote>
 <div><ol class="arabic simple">
@@ -129,10 +129,8 @@ this pattern.  It takes a statistic, a dataset, and a cache filename
 and sets up a data loader that can be run (or not, if cached) to
 compute the statistic, adopting the convention that cached stats are
 saved to and loaded from numpy npz files.</p>
-<section id="module-contents">
-<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
 <section id="classes">
-<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.cache_load_enabled" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.cache_load_enabled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cache_load_enabled</span></code></a></p></td>
@@ -190,7 +188,7 @@ saved to and loaded from numpy npz files.</p>
 </table>
 </section>
 <section id="functions">
-<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.tally" title="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.tally"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tally</span></code></a>(stat, dataset[, cache, quiet])</p></td>
@@ -228,6 +226,9 @@ saved to and loaded from numpy npz files.</p>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.tally">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.</span></span><span class="sig-name descname"><span class="pre">tally</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/tools/rome/utils/runningstats.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.tools.rome.utils.runningstats.tally" title="Link to this definition"></a></dt>
@@ -899,7 +900,6 @@ to input sample indices (larger number indexing the original full set)</p>
 
 </section>
 </section>
-</section>
 
 
            </div>
@@ -915,7 +915,7 @@ to input sample indices (larger number indexing the original full set)</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fcf196025c0> 
+   <jinja2.runtime.BlockReference object at 0x7fc226392710> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

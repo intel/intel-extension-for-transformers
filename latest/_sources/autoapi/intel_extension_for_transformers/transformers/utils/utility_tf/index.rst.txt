@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.utils.utility_tf`
-========================================================================
+intel_extension_for_transformers.transformers.utils.utility_tf
+==============================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.utils.utility_tf
 
@@ -9,20 +9,16 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.utils.utility_tf.TFDataloader
 
 
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
@@ -31,9 +27,10 @@ Functions
    intel_extension_for_transformers.transformers.utils.utility_tf.keras2SavedModel
 
 
+Module Contents
+---------------
 
 .. py:class:: TFDataloader(dataset, batch_size=None)
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.langchain.langchain_community.retrievers.child_parent_retriever`
-==========================================================================================================
+intel_extension_for_transformers.langchain.langchain_community.retrievers.child_parent_retriever
+================================================================================================
 
 .. py:module:: intel_extension_for_transformers.langchain.langchain_community.retrievers.child_parent_retriever
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -21,22 +18,26 @@ Classes
    intel_extension_for_transformers.langchain.langchain_community.retrievers.child_parent_retriever.ChildParentRetriever
 
 
-
+Module Contents
+---------------
 
 .. py:class:: SearchType
 
 
 
-
    Enumerator of the types of search to perform.
+
 
    .. py:attribute:: similarity
       :value: 'similarity'
 
+
       Similarity search.
+
 
    .. py:attribute:: mmr
       :value: 'mmr'
+
 
       Maximal Marginal Relevance reranking of similarity search.
 
@@ -45,16 +46,17 @@ Classes
 
 
 
-
    Retrieve from a set of multiple embeddings for the same document.
 
+
    .. py:attribute:: search_kwargs
-      :type: dict
+      :type:  dict
 
       Keyword arguments to pass to the search function.
 
+
    .. py:attribute:: search_type
-      :type: SearchType
+      :type:  SearchType
 
       Type of search to perform (similarity / mmr)
 

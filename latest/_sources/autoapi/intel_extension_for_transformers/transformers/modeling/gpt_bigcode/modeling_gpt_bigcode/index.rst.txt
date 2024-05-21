@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode`
-=================================================================================================
+intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode
+=======================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode
 
@@ -9,11 +9,8 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
@@ -24,10 +21,10 @@ Classes
    intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeForTokenClassification
 
 
-
+Module Contents
+---------------
 
 .. py:class:: GPTBigCodePreTrainedModel(*inputs, **kwargs)
-
 
 
 
@@ -39,7 +36,6 @@ Classes
 
 
 
-
    An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
    models.
 
@@ -48,9 +44,9 @@ Classes
 
 
 
-
    An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
    models.
+
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.CausalLMOutputWithCrossAttentions]
 
@@ -66,9 +62,9 @@ Classes
 
 
 
-
    An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
    models.
+
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.SequenceClassifierOutputWithPast]
 
@@ -84,9 +80,9 @@ Classes
 
 
 
-
    An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
    models.
+
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.TokenClassifierOutput]
 

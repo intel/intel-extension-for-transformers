@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.sub_graph.add_cls_token`
-===============================================================================================
+intel_extension_for_transformers.transformers.runtime.compile.sub_graph.add_cls_token
+=====================================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.sub_graph.add_cls_token
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.sub_graph.add_cls_token.AddClsToken
 
 
-
+Module Contents
+---------------
 
 .. py:class:: AddClsToken
-
 
 
 

@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.runtime.compile.ops.pow`
-===============================================================================
+intel_extension_for_transformers.transformers.runtime.compile.ops.pow
+=====================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.runtime.compile.ops.pow
 
@@ -9,25 +9,23 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.runtime.compile.ops.pow.Pow
 
 
-
+Module Contents
+---------------
 
 .. py:class:: Pow
 
 
 
-
    Register the Pow operator.
+
 
    .. py:method:: set_attr(framework, node)
 

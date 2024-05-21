@@ -1,5 +1,5 @@
-:py:mod:`intel_extension_for_transformers.transformers.mixture.auto_distillation`
-=================================================================================
+intel_extension_for_transformers.transformers.mixture.auto_distillation
+=======================================================================
 
 .. py:module:: intel_extension_for_transformers.transformers.mixture.auto_distillation
 
@@ -9,21 +9,18 @@
 
 
 
-Module Contents
----------------
-
 Classes
-~~~~~~~
+-------
 
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.mixture.auto_distillation.AutoDistillation
 
 
-
+Module Contents
+---------------
 
 .. py:class:: AutoDistillation(model_builder, conf_fname_or_obj, framework='pytorch')
-
 
 
 
@@ -37,11 +34,13 @@ Classes
    In Evaluation stage, the trained model will be evaluated to measure its performances (e.g.
    the prediction accuracy, the hardware performance etc.) in order to select the best model architecture.
 
+
    .. py:method:: search(res_save_path=None, model_cls=None)
 
       Auto distillation search process.
 
       :returns: Best model architecture found in search process.
+
 
 
    .. py:method:: estimate(model)
@@ -51,6 +50,7 @@ Classes
       :returns: Evaluated metrics of the model.
 
 
+
    .. py:method:: load_search_results(path)
 
       Load previous search results.
@@ -58,9 +58,11 @@ Classes
       :param path: The file path which stores the previous results.
 
 
+
    .. py:method:: init_by_cfg(conf_fname_or_obj)
 
       Use auto distillation config to init the instance of autodistillation.
+
 
 
    .. py:method:: create_distillers()
