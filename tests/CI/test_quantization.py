@@ -508,7 +508,7 @@ class TestQuantization(unittest.TestCase):
                                     weight_dtype="int4_clip",
                                      nsamples=128,
                                      calib_len=32,
-                                     calib_iters=5,
+                                     iters=5,
                                      tokenizer=tokenizer
                                         )
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
