@@ -280,7 +280,7 @@ if args.woq:
             calib_len=args.calib_len,
             lr=args.lr,
             minmax_lr=args.minmax_lr,
-            use_quant_input=args.use_quant_input,
+            enable_quanted_input=args.enable_quanted_input,
             use_ipex=args.use_ipex,
         )
     else:
