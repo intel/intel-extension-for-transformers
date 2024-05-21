@@ -205,7 +205,7 @@ class H2OKVCache:
             else:
                 return torch.ones(attn_score.shape, dtype=attn_score.dtype).to(key_states.device)
         self.idx += 1
-        mask_shape = attn_score.shape[-1]
+        mask_shape = attn_score.shape[:-1]
         # attn_score shape (bsz, num_heads, seq_len, head_dim)
         if len(attn_score.shape) == 3:
             attn_score = attn_score.unsqueeze(0)
@@ -251,7 +251,8 @@ class H2OKVCache:
             if not mean:
                 attn_score_cache[:, :, :self.hh_score.shape[-1]] += self.hh_score 
             else:
-                attn_score_cache[:, :, :self.hh_score.shape[-1]] = attn_score_cache[:, :, :self.hh_score.shape[-1]] * (self.idx - 1) + self.hh_score 
+                attn_score_cache[:,:,:self.hh_score.shape[-1]] = attn_score_cache[:,:,:self.hh_score.shape[-1]] \
+                    * (self.idx - 1) + self.hh_score 
                 attn_score_cache /= self.idx
 
         self.hh_score = attn_score_cache
