@@ -1,0 +1,12 @@
+name: Trivy Scan for Containers
+
+on:
+    workflow_dispatch:
+permissions: write-all
+jobs:
+  trivy_container_job:
+    uses: "intel-innersource/frameworks.ai.infrastructure.code-scan-tools/.github/workflows/Scanner_Trivy.yml@one-ci-cd"
+    with:
+      container: ${{ vars.TRIVY_CONTAINER_NAME }}
+      runners: "['inner-source']"
+      lmc: false
