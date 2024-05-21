@@ -1,6 +1,8 @@
 import argparse
 import json
 import os.path
+import sys
+sys.path.insert(0, '/home/hengguo/code/intel-extension-for-transformers')
 
 import tqdm
 import torch
@@ -23,8 +25,7 @@ def set_seed(args):
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-
-if __name__ == '__main__':
+def main():
 
     parser = argparse.ArgumentParser()
 
@@ -39,6 +40,7 @@ if __name__ == '__main__':
     parser.add_argument("--recent_ratio", type=float, default=0.1)
     parser.add_argument("--h2o_min_seqlen", type=int, default=0)
     parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument('--mean', action='store_true')
 
 
     parser.add_argument("--sample_num", type=int, default=100)
@@ -78,7 +80,8 @@ if __name__ == '__main__':
             recent_ratio=args.recent_ratio,
             h2o_min_seqlen=args.h2o_min_seqlen,
             real_drop=True,
-            is_gen=True)
+            is_gen=True,
+            mean=args.mean)
         model.clean_cache()
 
     model = model.half().eval().to(device_str)
@@ -156,8 +159,11 @@ if __name__ == '__main__':
             }
             
             results.append(result)
-            print('rouge-1: {:.6f}, rouge-2: {:.6f}, rouge-l: {:.6f}'.format(np.mean(rouge1_score_list), np.mean(rouge2_score_list), np.mean(rougel_score_list)))
+            print('rouge-1: {:.6f}, rouge-2: {:.6f}, rouge-l: {:.6f}, prompt length: {}, generate text length: {}'.format(np.mean(rouge1_score_list), np.mean(rouge2_score_list), np.mean(rougel_score_list), input_ids.size(-1), output_sequences['sequences'].size(-1)))
 
     with open(output_path, 'w') as f:
         for result in results:
             f.write(json.dumps(result) + '\n')
+
+if __name__ == "__main__":
+    main()

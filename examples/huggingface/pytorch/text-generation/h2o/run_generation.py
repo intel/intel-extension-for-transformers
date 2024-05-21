@@ -1,4 +1,6 @@
 import argparse
+import sys
+sys.path.insert(0, '/home/hengguo/code/intel-extension-for-transformers')
 import time
 import json
 import torch
@@ -195,6 +197,7 @@ if args.accuracy:
     from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
     model_args="pretrained="+args.model+",trust_remote_code="+str(args.trust_remote_code)
     args.tasks = ",".join(args.tasks)
+    tokenizer.pad_token = tokenizer.eos_token
     eval_args = LMEvalParser(model = "hf", 
                         user_model=user_model,
                         tokenizer=tokenizer,
