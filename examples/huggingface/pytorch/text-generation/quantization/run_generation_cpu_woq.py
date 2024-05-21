@@ -276,7 +276,7 @@ if args.woq:
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
+            iters=args.calib_iters,
             calib_len=args.calib_len,
             lr=args.lr,
             minmax_lr=args.minmax_lr,
