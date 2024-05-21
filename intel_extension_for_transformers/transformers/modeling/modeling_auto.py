@@ -352,6 +352,20 @@ class _BaseQBitsAutoModelClass:
             llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
             model = llm.llm_engine.model_executor.driver_worker.model_runner.model
             print("Original model =", model)
+
+            original_parameter_memo = dict()
+            original_params_dict = dict(model.named_parameters(remove_duplicate=False))
+            for name in original_params_dict.keys():
+                params = original_params_dict[name]
+                if "qkv_proj" in name:
+                    input_dim = params.input_dim
+                    output_dim = params.output_dim
+                    original_parameter_memo[name] = (input_dim, output_dim, params.weight_loader)
+                if "gate_up_proj" in name:
+                    input_dim = params.input_dim
+                    output_dim = params.output_dim
+                    original_parameter_memo[name] = (input_dim, output_dim, params.weight_loader)
+
             class linear_adaptor(torch.nn.Linear):
                 def __init__(self, in_features: int, out_features: int, bias: bool = True, device=None, dtype=None) -> None:
                     super().__init__(in_features, out_features, bias, device, dtype)
@@ -362,9 +376,8 @@ class _BaseQBitsAutoModelClass:
 
             for name, module in model.named_modules():
                 bias_flag = False
-                if isinstance(module, QKVParallelLinear) or isinstance(module, RowParallelLinear):
-                # if isinstance(module, QKVParallelLinear) or isinstance(module, MergedColumnParallelLinear) or isinstance(
-                #         module, RowParallelLinear):
+                if isinstance(module, QKVParallelLinear) or isinstance(module, MergedColumnParallelLinear) or isinstance(
+                        module, RowParallelLinear):
                     out_feature = module.weight.shape[0]
                     in_feature = module.weight.shape[1]
                     if getattr(module, "bias", False) != None:
@@ -390,13 +403,28 @@ class _BaseQBitsAutoModelClass:
                                             llm.llm_engine.model_config.revision,
                                             fall_back_to_pt=True)
 
-            # params_dict = dict(model.named_parameters(remove_duplicate=False))
-            # for name in params_dict.keys():
-            #     params = params_dict[name]
-            #     getattr(params, "weight_loader", default_weight_loader)
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader
+            params_dict = dict(model.named_parameters(remove_duplicate=False))
+            for name in params_dict.keys():
+                params = params_dict[name]
+                if hasattr(params, "weight_loader") == False:
+                    if "qkv_proj" in name:
+                        original_params = original_parameter_memo[name]
+                        setattr(params, "input_dim", original_params[0])
+                        setattr(params, "output_dim", original_params[1])
+                        setattr(params, "weight_loader", original_params[2])
+                    elif "gate_up_proj" in name:
+                        original_params = original_parameter_memo[name]
+                        setattr(params, "input_dim", original_params[0])
+                        setattr(params, "output_dim", original_params[1])
+                        setattr(params, "weight_loader", original_params[2])
+                    else:
+                        setattr(params, "weight_loader", default_weight_loader)
+                print("extenal = ", name, params.weight_loader)
 
             model.load_weights(weights_iterator)
 
+            print("INC quantizing...")
             config = RtnConfig(compute_dtype="fp32", group_size=128, scale_dtype="fp32", weight_dtype="int4_clip", bits=4)
             model = convert_to_quantized_model(model, config)
 

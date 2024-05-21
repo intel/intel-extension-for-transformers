@@ -40,10 +40,12 @@ def main(args_in: Optional[List[str]] = None) -> None:
         llm = LLM(model=args.model_path, trust_remote_code=True)
         T1 = time.time()
         outputs = llm.generate(args.prompt)  # Generate texts from the prompts.
+        print("original outputs = ", outputs)
         T2 = time.time()
 
         T3 = time.time()
         output = model.generate(args.prompt)
+        print("optimized outputs = ", outputs)
         T4 = time.time()
         print("input_tokens_length) = ", len(outputs[0].prompt_token_ids))
         print("output_tokens_length) = ", len(outputs[0].outputs[0].token_ids))
