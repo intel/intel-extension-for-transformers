@@ -388,7 +388,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
     model_device = next(model.parameters()).device
 
     if config.quant_method.value == "autoround":
-        from auto_round.calib_dataset import get_dataloader
+        from neural_compressor.adaptor.torch_utils.auto_round import get_dataloader
         calib_dataloader = get_dataloader(config.tokenizer,
                                     seqlen=config.calib_len,
                                     dataset_name=config.dataset,
