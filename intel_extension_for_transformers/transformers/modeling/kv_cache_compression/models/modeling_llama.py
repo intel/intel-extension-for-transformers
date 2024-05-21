@@ -164,7 +164,7 @@ class H2OLlamaAttention(nn.Module):
         past_key_value = getattr(self, "past_key_value", past_key_value)
         try: # pylint: disable=E1120
             cos, sin = self.rotary_emb(value_states, position_ids)
-        except: # for old version 
+        except: # for old version
             kv_seq_len = key_states.shape[-2]
             if past_key_value is not None:
                 kv_seq_len += past_key_value[0].shape[-2]
