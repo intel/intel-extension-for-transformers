@@ -329,6 +329,7 @@ class GaudiLlamaAttention(LlamaAttention):
         flash_attention_recompute: Optional[bool] = False,
         flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
+        cache_prune_num: int = 0,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """
@@ -341,6 +342,7 @@ class GaudiLlamaAttention(LlamaAttention):
         - add new args use_flash_attention
         - add new arg flash_attention_recompute
         - add new arg flash_attention_causal_mask
+        - add new arg cache_prune_num for attention_sinks
         """
         bsz, q_len, _ = hidden_states.size()
 
@@ -521,6 +523,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         flash_attention_recompute: Optional[bool] = False,
         flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
+        cache_prune_num: int = 0,
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
@@ -532,6 +535,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         - add new args use_flash_attention
         - add new arg flash_attention_recompute
         - add new arg flash_attention_causal_mask
+        - add new arg cache_prune_num for attention_sinks
         """
         if "padding_mask" in kwargs:
             warnings.warn(
@@ -554,6 +558,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
             flash_attention_recompute=flash_attention_recompute,
             flash_attention_causal_mask=flash_attention_causal_mask,
             cache_idx=cache_idx,
+            cache_prune_num = cache_prune_num,
             **kwargs,
         )
         self.self_attn.attention_all_reduce(hidden_states)
@@ -586,6 +591,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         flash_attention_recompute: Optional[bool] = False,
         flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
+        cache_prune_num: int = 0,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         hidden_states = self.input_layernorm(hidden_states)
         hidden_states, attn_weights, present_key_value = self.self_attn.pre_attn_forward(
@@ -603,6 +609,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
             flash_attention_recompute,
             flash_attention_causal_mask,
             cache_idx=cache_idx,
+            cache_prune_num = cache_prune_num,
         )
         return hidden_states, attn_weights, present_key_value
 
@@ -697,6 +704,7 @@ class GaudiLlamaModel(LlamaModel):
         flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
         lazy_mode: Optional[bool] = True,
+        cache_prune_num: int = 0,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         """
         Copied from LlamaModel.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py
@@ -708,6 +716,7 @@ class GaudiLlamaModel(LlamaModel):
         - add new arg flash_attention_recompute
         - add new arg flash_attention_causal_mask
         - add new arg lazy_mode
+        - add new arg cache_prune_num for attention_sinks
         """
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -768,6 +777,9 @@ class GaudiLlamaModel(LlamaModel):
 
         # HPU specific mask generation
         if ignore_cache_position:
+            # workaround for attention_sinks attention_mask which has fixed seq_len at dim -1
+            if hasattr(self, "attention_sink_size") and hasattr(self, "attention_sink_window_size"):
+                past_seen_tokens = self.attention_sink_size + self.attention_sink_window_size - seq_length
             causal_mask = _gaudi_prepare_4d_causal_attention_mask(
                 attention_mask,
                 input_ids.shape if input_ids is not None else (batch_size, seq_length),
@@ -831,6 +843,7 @@ class GaudiLlamaModel(LlamaModel):
                     flash_attention_recompute=flash_attention_recompute,
                     flash_attention_causal_mask=flash_attention_causal_mask,
                     cache_idx=cache_idx,
+                    cache_prune_num = cache_prune_num,
                 )
             hidden_states = layer_outputs[0]
 
@@ -871,6 +884,7 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
     - from step2 when enable KV cache, slice next_position_ids from position_ids base on the token_idx
     - add new args attn_softmax_bf16
     - add new args reuse_cache
+    - add new arg cache_prune_num for attention_sinks
     """
 
     def allocate_kv_cache(self, batch_size, max_seq_len, inp_seq_len):
@@ -904,6 +918,7 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
         flash_attention_causal_mask: Optional[bool] = False,
         cache_idx: int = None,
         lazy_mode: Optional[bool] = True,
+        cache_prune_num: int = 0,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -934,6 +949,7 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
             flash_attention_causal_mask=flash_attention_causal_mask,
             cache_idx=cache_idx,
             lazy_mode=lazy_mode,
+            cache_prune_num=cache_prune_num,
         )
         hidden_states = outputs[0]
         _, seq_len, _ = hidden_states.shape
@@ -980,6 +996,10 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
         self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, token_idx=None, **kwargs
     ):
         past_length = 0
+        if not hasattr(self, "kv_past_token_length"):
+            self.kv_past_token_length = 0
+        using_attention_sinks = (hasattr(self, "attention_sink_size") and
+                                 hasattr(self, "attention_sink_window_size"))
 
         reuse_cache = kwargs.get("reuse_cache")
         if past_key_values is not None:
@@ -1018,8 +1038,32 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
             input_ids = input_ids[:, :token_idx]
             attention_mask = attention_mask[:, :token_idx]
 
+        # prepare postion_ids and attention_mask for attention_sinks
+        cache_prune_num = 0
+        kv_cache_len = kwargs.get("kv_cache_len", None)
         position_ids = kwargs.get("position_ids", None)
-        if attention_mask is not None and position_ids is None:
+        q_len = input_ids.shape[-1]
+        if using_attention_sinks:
+            assert (kv_cache_len and kv_cache_len == self.attention_sink_size + self.attention_sink_window_size)
+            self.kv_past_token_length = min(self.kv_past_token_length, kv_cache_len)
+            position_ids = torch.arange(self.kv_past_token_length,
+                                        self.kv_past_token_length + q_len,
+                                        device=input_ids.device)
+            attn_sink_mask = torch.ones((q_len, kv_cache_len), device=input_ids.device)
+            if self.kv_past_token_length < kv_cache_len:
+                attn_sink_mask[:, self.kv_past_token_length:] = 0
+            mask = torch.zeros((q_len, q_len), device=input_ids.device)
+            mask_cond = torch.arange(mask.size(-1), device=mask.device)
+            mask.masked_fill_(mask_cond < (mask_cond + 1).view(mask.size(-1), 1), 1)
+            if self.kv_past_token_length + q_len > kv_cache_len:
+                cache_prune_num = (self.kv_past_token_length + q_len) - kv_cache_len
+                position_ids = position_ids - cache_prune_num
+            attn_sink_mask.index_copy_(-1, position_ids, mask)
+            attention_mask= attn_sink_mask[None, None, :, :].expand(input_ids.shape[0], 1, q_len, kv_cache_len)
+            position_ids = position_ids.unsqueeze(0)
+        self.kv_past_token_length += q_len
+
+        if attention_mask is not None and position_ids is None and not using_attention_sinks:
             # create position_ids on the fly for batch generation
             position_ids = attention_mask.long().cumsum(-1) - 1
             position_ids.masked_fill_(attention_mask == 0, 1)
@@ -1069,9 +1113,36 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
                 "flash_attention_causal_mask": kwargs.get("flash_attention_causal_mask"),
                 "cache_idx": kwargs.get("cache_idx"),
                 "lazy_mode": kwargs.get("lazy_mode"),
+                "cache_prune_num": cache_prune_num,
             }
         )
         return model_inputs
+
+    @classmethod
+    def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        # Separate Attention Sink kwargs from regular kwargs
+        attention_sink_kwargs = {key: value for key, value in kwargs.items() if key.startswith("attention_sink")}
+        for key in attention_sink_kwargs:
+            v = kwargs.pop(key)
+            assert isinstance(v, int)
+
+        model = super().from_pretrained(
+            pretrained_model_name_or_path,
+            *model_args,
+            **kwargs,
+        )
+
+        if len(attention_sink_kwargs) > 0:
+            from intel_extension_for_transformers.transformers.modeling.modeling_gaudi.streaming_llm \
+            import enable_streaming_llm
+
+            enable_streaming_llm(model, **attention_sink_kwargs)
+            model.attention_sink_size = attention_sink_kwargs.get("attention_sink_size")
+            model.attention_sink_window_size = attention_sink_kwargs.get("attention_sink_window_size")
+            model.model.attention_sink_size = attention_sink_kwargs.get("attention_sink_size")
+            model.model.attention_sink_window_size = attention_sink_kwargs.get("attention_sink_window_size")
+
+        return model
 
 
 def apply_customized_rope(q, k, cos, sin, position_ids):

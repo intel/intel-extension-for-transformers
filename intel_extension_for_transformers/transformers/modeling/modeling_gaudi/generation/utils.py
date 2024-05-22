@@ -744,6 +744,12 @@ class GaudiGenerationMixin(GenerationMixin):
                 calculated_max_length = input_ids.shape[-1] + generation_config.max_new_tokens
             if generation_config.use_cache and generation_config.reuse_cache:
                 bs, _ = input_ids.shape
+                # attention_sinks has fixed kv_cache_len
+                if generation_config.attention_sink_size is not None and \
+                    generation_config.attention_sink_window_size is not None:
+                    attn_window_len = generation_config.attention_sink_size + \
+                            generation_config.attention_sink_window_size
+                    calculated_max_length = max(calculated_max_length, attn_window_len)
                 if not is_greedy_or_beam_and_bucket:
                     unwrap_deepspeed_model(self).allocate_kv_cache(
                         bs * generation_config.num_beams, calculated_max_length, token_idx
