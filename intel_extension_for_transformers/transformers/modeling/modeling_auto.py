@@ -345,7 +345,8 @@ class _BaseQBitsAutoModelClass:
             from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
             from vllm.model_executor.model_loader import get_model_loader
             from vllm.model_executor.model_loader.weight_utils import default_weight_loader
-            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear, QKVParallelLinear, RowParallelLinear)
+            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear, QKVParallelLinear, RowParallelLinear,
+                                                        ColumnParallelLinear)
 
             os.environ["backend"] = "use_vllm"
             llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
@@ -356,27 +357,23 @@ class _BaseQBitsAutoModelClass:
             original_params_dict = dict(model.named_parameters(remove_duplicate=False))
             for name in original_params_dict.keys():
                 params = original_params_dict[name]
-                if "qkv_proj" in name:
-                    input_dim = params.input_dim
-                    output_dim = params.output_dim
-                    original_parameter_memo[name] = (input_dim, output_dim, params.weight_loader)
-                if "gate_up_proj" in name:
-                    input_dim = params.input_dim
-                    output_dim = params.output_dim
+                if "qkv_proj" in name or "gate_up_proj" in name:
+                    input_dim = getattr(params, "input_dim", None)
+                    output_dim = getattr(params, "output_dim", None)
                     original_parameter_memo[name] = (input_dim, output_dim, params.weight_loader)
 
             class linear_adaptor(torch.nn.Linear):
+
                 def __init__(self, in_features: int, out_features: int, bias: bool = True, device=None, dtype=None) -> None:
                     super().__init__(in_features, out_features, bias, device, dtype)
 
                 def forward(self, input: torch.Tensor) -> tuple[torch.Tensor, None]:
                     return F.linear(input, self.weight, self.bias), None
 
-
             for name, module in model.named_modules():
                 bias_flag = False
                 if isinstance(module, QKVParallelLinear) or isinstance(module, MergedColumnParallelLinear) or isinstance(
-                        module, RowParallelLinear):
+                        module, RowParallelLinear) or isinstance(module, ColumnParallelLinear):
                     out_feature = module.weight.shape[0]
                     in_feature = module.weight.shape[1]
                     if getattr(module, "bias", False) != None:
@@ -399,20 +396,15 @@ class _BaseQBitsAutoModelClass:
             loader = get_model_loader(llm.llm_engine.load_config)
 
             weights_iterator = loader._get_weights_iterator(llm.llm_engine.model_config.model,
-                                            llm.llm_engine.model_config.revision,
-                                            fall_back_to_pt=True)
+                                                            llm.llm_engine.model_config.revision,
+                                                            fall_back_to_pt=True)
 
             from vllm.model_executor.model_loader.weight_utils import default_weight_loader
             params_dict = dict(model.named_parameters(remove_duplicate=False))
             for name in params_dict.keys():
                 params = params_dict[name]
                 if hasattr(params, "weight_loader") == False:
-                    if "qkv_proj" in name:
-                        original_params = original_parameter_memo[name]
-                        setattr(params, "input_dim", original_params[0])
-                        setattr(params, "output_dim", original_params[1])
-                        setattr(params, "weight_loader", original_params[2])
-                    elif "gate_up_proj" in name:
+                    if "qkv_proj" in name or "gate_up_proj" in name:
                         original_params = original_parameter_memo[name]
                         setattr(params, "input_dim", original_params[0])
                         setattr(params, "output_dim", original_params[1])

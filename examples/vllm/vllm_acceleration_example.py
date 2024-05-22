@@ -15,7 +15,7 @@
 import argparse
 import time
 import os
-
+from vllm import LLM, SamplingParams
 from typing import List, Optional
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig
 from transformers import AutoTokenizer
@@ -37,7 +37,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     print(args)
 
     if args.benchmark:
-        from vllm import LLM, SamplingParams
         if args.use_neural_speed:
             os.environ["NEURAL_SPEED_VERBOSE"] = "1"
             woq_config = RtnConfig(bits=4, weight_dtype="int4", compute_dtype="int8", scale_dtype="bf16")
@@ -46,9 +45,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
             tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
             inputs = tokenizer(args.prompt, return_tensors="pt").input_ids
 
-            T4 = time.time()
-            output = model_with_ns.generate(inputs, max_new_tokens=32)
             T5 = time.time()
+            output = model_with_ns.generate(inputs, max_new_tokens=32)
+            T6 = time.time()
             print("neural speed output = ", output)
 
         llm = LLM(model=args.model_path, trust_remote_code=True)
