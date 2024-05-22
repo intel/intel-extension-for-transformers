@@ -86,6 +86,7 @@ from transformers.utils import (
     has_file,
 )
 
+import torch.nn.functional as F
 from typing import Union
 
 if is_ipex_available() and is_intel_gpu_available():
@@ -345,8 +346,8 @@ class _BaseQBitsAutoModelClass:
             from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
             from vllm.model_executor.model_loader import get_model_loader
             from vllm.model_executor.model_loader.weight_utils import default_weight_loader
-            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear, QKVParallelLinear, RowParallelLinear,
-                                                        ColumnParallelLinear)
+            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear, QKVParallelLinear,
+                                                        ColumnParallelLinear, RowParallelLinear)
 
             os.environ["backend"] = "use_vllm"
             llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
@@ -364,7 +365,8 @@ class _BaseQBitsAutoModelClass:
 
             class linear_adaptor(torch.nn.Linear):
 
-                def __init__(self, in_features: int, out_features: int, bias: bool = True, device=None, dtype=None) -> None:
+                def __init__(self, in_features: int, out_features: int, bias: bool = True, \
+                             device=None, dtype=None) -> None:
                     super().__init__(in_features, out_features, bias, device, dtype)
 
                 def forward(self, input: torch.Tensor) -> tuple[torch.Tensor, None]:
@@ -372,8 +374,8 @@ class _BaseQBitsAutoModelClass:
 
             for name, module in model.named_modules():
                 bias_flag = False
-                if isinstance(module, QKVParallelLinear) or isinstance(module, MergedColumnParallelLinear) or isinstance(
-                        module, RowParallelLinear) or isinstance(module, ColumnParallelLinear):
+                if isinstance(module, QKVParallelLinear) or isinstance(module, MergedColumnParallelLinear) or \
+                    isinstance(module, RowParallelLinear) or isinstance(module, ColumnParallelLinear):
                     out_feature = module.weight.shape[0]
                     in_feature = module.weight.shape[1]
                     if getattr(module, "bias", False) != None:
@@ -415,7 +417,11 @@ class _BaseQBitsAutoModelClass:
             model.load_weights(weights_iterator)
 
             print("INC quantizing...")
-            config = RtnConfig(compute_dtype="fp32", group_size=128, scale_dtype="fp32", weight_dtype="int4_clip", bits=4)
+            config = RtnConfig(compute_dtype="fp32",
+                            group_size=128,
+                            scale_dtype="fp32",
+                            weight_dtype="int4_clip",
+                            bits=4)
             model = convert_to_quantized_model(model, config)
 
             return llm
