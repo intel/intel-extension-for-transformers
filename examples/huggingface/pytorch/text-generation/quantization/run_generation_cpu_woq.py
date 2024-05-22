@@ -154,7 +154,7 @@ parser.add_argument(
     help="minmax learning rate, if None,it will beset to be the same with lr",
 )
 parser.add_argument(
-    "--use_quant_input",
+    "--enable_quanted_input",
     action="store_true",
     help="whether to use the output of quantized block to tune the next block",
 )
@@ -282,11 +282,11 @@ if args.woq:
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
+            iters=args.calib_iters,
             calib_len=args.calib_len,
             lr=args.lr,
             minmax_lr=args.minmax_lr,
-            use_quant_input=args.use_quant_input,
+            enable_quanted_input=args.enable_quanted_input,
             use_ipex=args.use_ipex,
         )
     else:
