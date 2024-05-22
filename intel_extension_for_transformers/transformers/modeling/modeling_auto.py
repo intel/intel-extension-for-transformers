@@ -342,12 +342,14 @@ class _BaseQBitsAutoModelClass:
         use_vllm = kwargs.pop("use_vllm", None)
         if use_vllm is not None:
             logger.info("The backend is vLLM.")
-            from vllm import LLM
+            from vllm import LLM # pylint: disable=E1101
             from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
-            from vllm.model_executor.model_loader import get_model_loader
-            from vllm.model_executor.model_loader.weight_utils import default_weight_loader
-            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear, QKVParallelLinear,
-                                                        ColumnParallelLinear, RowParallelLinear)
+            from vllm.model_executor.model_loader import get_model_loader  # pylint: disable=E1101
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E1101
+            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear,
+                                                        QKVParallelLinear,
+                                                        ColumnParallelLinear,
+                                                        RowParallelLinear)  # pylint: disable=E1101
 
             os.environ["backend"] = "use_vllm"
             llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
@@ -401,7 +403,7 @@ class _BaseQBitsAutoModelClass:
                                                             llm.llm_engine.model_config.revision,
                                                             fall_back_to_pt=True)
 
-            from vllm.model_executor.model_loader.weight_utils import default_weight_loader
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader # pylint: disable=E1101
             params_dict = dict(model.named_parameters(remove_duplicate=False))
             for name in params_dict.keys():
                 params = params_dict[name]
