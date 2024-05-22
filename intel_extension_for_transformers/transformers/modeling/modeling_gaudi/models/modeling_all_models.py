@@ -37,7 +37,7 @@ def gaudi_invert_attention_mask(self, encoder_attention_mask: torch.Tensor) -> t
     # encoder_extended_attention_mask = (encoder_extended_attention_mask ==
     # encoder_extended_attention_mask.transpose(-1, -2))
     # torch.finfo must take the dtype of encoder_extended_attention_mask
-    encoder_extended_attention_mask = encoder_extended_attention_mask.to(dtype=self.dtype)  # bf16 compatibility
+    encoder_extended_attention_mask = encoder_extended_attention_mask.to(dtype=self.dtype)  # pylint: disable=E0601
     encoder_extended_attention_mask = 1.0 - encoder_extended_attention_mask
     #  Fixes issue where the model is not in bf16 and mul is casting it to values out of range resulting in nan
     with torch.autocast(enabled=False, device_type="hpu"):
@@ -122,7 +122,7 @@ def gaudi_check_and_enable_sdpa(cls, config, hard_check_only: bool = False) -> P
     # Otherwise, fallback to original implementation
 
     if hard_check_only:
-        if not cls._supports_sdpa:
+        if not cls._supports_sdpa: # pylint: disable=E1101
             raise ValueError(
                 f"{cls.__name__} does not support an attention implementation through "
                 "torch.nn.functional.scaled_dot_product_attention yet."
@@ -134,7 +134,7 @@ def gaudi_check_and_enable_sdpa(cls, config, hard_check_only: bool = False) -> P
         if not is_torch_sdpa_available():
             raise ImportError("PyTorch SDPA requirements in Transformers are not met. Please install torch>=2.1.1.")
 
-    if not is_torch_sdpa_available() or not cls._supports_sdpa:
+    if not is_torch_sdpa_available() or not cls._supports_sdpa: # pylint: disable=E1101
         return config
 
     _is_bettertransformer = getattr(cls, "use_bettertransformer", False)

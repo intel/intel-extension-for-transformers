@@ -1450,7 +1450,7 @@ class GaudiGenerationMixin(GenerationMixin):
 
             if bucket_size > 0 and not bucket_internal:
                 # it will not have been padded if bucket_size > 0
-                params = next(inc)
+                params = next(inc) # pylint: disable=E0601
                 input_ids, model_kwargs = self.update_model_kwargs_for_bucketing(
                     params, input_ids, model_kwargs, pad_token_id, bucket_size, reduce_recompile
                 )
@@ -1517,7 +1517,8 @@ class GaudiGenerationMixin(GenerationMixin):
             if not ignore_eos and eos_token_id is not None:
                 if pad_token_id is None:
                     raise ValueError("If `eos_token_id` is defined, make sure that `pad_token_id` is defined.")
-                next_tokens = next_tokens * unfinished_sequences + pad_token_id * (1 - unfinished_sequences)
+                next_tokens = next_tokens * unfinished_sequences + \
+                        pad_token_id * (1 - unfinished_sequences) # pylint: disable=E0606
 
             # update generated ids, model inputs, and length for next step
             if token_idx is not None:
@@ -2252,7 +2253,7 @@ class GaudiGenerationMixin(GenerationMixin):
 
             if bucket_size > 0:
                 # it will not have been padded if bucket_size > 0
-                params = next(inc)
+                params = next(inc) # pylint: disable=E0606
                 input_ids, model_kwargs = self.update_model_kwargs_for_bucketing(
                     params, input_ids, model_kwargs, pad_token_id, bucket_size, reduce_recompile
                 )

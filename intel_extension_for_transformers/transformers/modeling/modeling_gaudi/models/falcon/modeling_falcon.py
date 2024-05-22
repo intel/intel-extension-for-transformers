@@ -358,7 +358,7 @@ def gaudi_falcon_decoder_layer_forward(
     outputs = attn_outputs[1:]
 
     # MLP.
-    mlp_output = self.mlp(mlp_layernorm_out)
+    mlp_output = self.mlp(mlp_layernorm_out) # pylint: disable=E0606
 
     if self.config.new_decoder_architecture or self.config.parallel_attn:
         mlp_output += attention_output

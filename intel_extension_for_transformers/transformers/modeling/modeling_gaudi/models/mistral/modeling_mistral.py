@@ -507,7 +507,8 @@ class GaudiMistralModel(MistralModel):
             next_cache = (
                 next_decoder_cache
                 if not use_new_cache
-                else (next_decoder_cache.to_legacy_cache() if use_legacy_cache else next_decoder_cache)
+                else (next_decoder_cache.to_legacy_cache() # pylint: disable=E1101
+                    if use_legacy_cache else next_decoder_cache)
             )
         if not return_dict:
             return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)

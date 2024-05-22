@@ -228,7 +228,7 @@ def gaudi_wav2vec2_encoder_forward(
     output_hidden_states: bool = False,
     return_dict: bool = True,
 ):
-    """The only difference is that torch.rand device is set to 'hpu' (required to capture operation as part of HPU graph)"""
+    """The only difference is that torch.rand device is set to 'hpu'"""
     all_hidden_states = () if output_hidden_states else None
     all_self_attentions = () if output_attentions else None
 
