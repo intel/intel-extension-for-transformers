@@ -1042,20 +1042,20 @@ class TeqConfig(ITREXQuantizationConfigMixin):
 class AutoRoundConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
-        bits: int = 8,
+        bits: int = 4,
         tokenizer: Any = None,
         dataset: str = "NeelNanda/pile-10k",
-        group_size: int = 32,
+        group_size: int = 128,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
-        sym: bool = True,
-        lr: float = 0.0025,
-        minmax_lr: float = 0.0025,
-        use_quant_input: bool = True,
-        nsamples: int = 128,
+        sym: bool = False,
+        lr: float = None,
+        minmax_lr: float = None,
+        enable_quanted_input: bool = True,
+        nsamples: int = 512,
         iters: int = 200,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
@@ -1081,7 +1081,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.group_size = group_size
         self.lr = lr
         self.minmax_lr = minmax_lr
-        self.use_quant_input = use_quant_input
+        self.enable_quanted_input = enable_quanted_input
         self.iters = iters
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
@@ -1090,7 +1090,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_len = kwargs.get("calib_len", None)
+        self.calib_len = kwargs.get("calib_len", 2048)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"

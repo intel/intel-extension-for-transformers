@@ -9,3 +9,4 @@ transformers
 intel_extension_for_pytorch==2.3.0
 tiktoken
 transformers_stream_generator
+zipfile38
