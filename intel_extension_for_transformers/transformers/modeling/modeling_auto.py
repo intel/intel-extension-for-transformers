@@ -344,8 +344,8 @@ class _BaseQBitsAutoModelClass:
             logger.info("The backend is vLLM.")
             from vllm import LLM # pylint: disable=E1101
             from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
-            from vllm.model_executor.model_loader import get_model_loader  # pylint: disable=E1101
-            from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E1101
+            from vllm.model_executor.model_loader import get_model_loader  # pylint: disable=E0611
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E0401
             from vllm.model_executor.layers.linear import (MergedColumnParallelLinear,
                                                         QKVParallelLinear,
                                                         ColumnParallelLinear,
@@ -353,7 +353,7 @@ class _BaseQBitsAutoModelClass:
 
             os.environ["backend"] = "use_vllm"
             llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
-            model = llm.llm_engine.model_executor.driver_worker.model_runner.model
+            model = llm.llm_engine.model_executor.driver_worker.model_runner.model  # pylint: disable=E1101
             print("Original model =", model)
 
             original_parameter_memo = dict()
@@ -403,7 +403,7 @@ class _BaseQBitsAutoModelClass:
                                                             llm.llm_engine.model_config.revision,
                                                             fall_back_to_pt=True)
 
-            from vllm.model_executor.model_loader.weight_utils import default_weight_loader # pylint: disable=E1101
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader # pylint: disable=E0401
             params_dict = dict(model.named_parameters(remove_duplicate=False))
             for name in params_dict.keys():
                 params = params_dict[name]
@@ -419,6 +419,7 @@ class _BaseQBitsAutoModelClass:
             model.load_weights(weights_iterator)
 
             print("INC quantizing...")
+            import pdb;pdb.set_trace()
             config = RtnConfig(compute_dtype="fp32",
                             group_size=128,
                             scale_dtype="fp32",
