@@ -199,7 +199,7 @@ def gaudi_bloom_attention_forward(
         slices = self.hidden_size / self.pretraining_tp
         output_tensor = torch.zeros_like(context_layer)
         for i in range(self.pretraining_tp):
-            output_tensor = output_tensor + F.linear(
+            output_tensor = output_tensor + F.linear( # pylint: disable=E1102
                 context_layer[:, :, int(i * slices) : int((i + 1) * slices)],
                 self.dense.weight[:, int(i * slices) : int((i + 1) * slices)],
             )
@@ -468,7 +468,7 @@ def gaudi_bloom_model_forward(
 class GaudiBloomForCausalLM(BloomForCausalLM):
     inference_tp_size = None
 
-    def set_tp_for_inference(tp_for_inference: int):
+    def set_tp_for_inference(self, tp_for_inference: int):
         world = int(os.environ.get("WORLD_SIZE", 1))
         assert tp_for_inference == 1 or tp_for_inference == world, "only setting 1 (no tp) or world size is supported"
         GaudiBloomForCausalLM.inference_tp_size = tp_for_inference
@@ -594,7 +594,7 @@ class GaudiBloomForCausalLM(BloomForCausalLM):
 
         Output shares the same memory storage as `past`.
         """
-        standardized_past = self._convert_to_standard_cache(past, batch_size=len(beam_idx), training=self.training)
+        standardized_past = self._convert_to_standard_cache(past, batch_size=len(beam_idx))
 
         # Get a copy of `beam_idx` on all the devices where we need those indices.
         device_to_beam_idx = {

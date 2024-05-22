@@ -342,7 +342,7 @@ def gaudi_BartEncoder_forward(
         inputs_embeds = self.embed_tokens(input_ids) * self.embed_scale
 
     embed_pos = self.embed_positions(input)
-    import habana_frameworks.torch.core as htcore
+    import habana_frameworks.torch.core as htcore # pylint: disable=E0401 # pylint: disable=E0401
 
     htcore.mark_step()
     embed_pos = embed_pos.to(inputs_embeds.device)
@@ -493,7 +493,7 @@ def gaudi_BartDecoder_forward(
             )
 
     # embed positions
-    import habana_frameworks.torch.core as htcore
+    import habana_frameworks.torch.core as htcore # pylint: disable=E0401 # pylint: disable=E0401
 
     htcore.mark_step()
     positions = self.embed_positions(input, tensor_past_key_values_length)

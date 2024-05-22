@@ -59,7 +59,7 @@ except ImportError:
     print("Not using HPU fused scaled dot-product attention kernel.")
     FusedSDPA = None
 
-import habana_frameworks.torch.core as htcore
+import habana_frameworks.torch.core as htcore # pylint: disable=E0401
 
 
 def gaudi_llama_rmsnorm_forward(self, hidden_states):
@@ -94,14 +94,15 @@ class GaudiLlamaMLP(LlamaMLP):
             down_proj_slices = self.down_proj.weight.split(slice, dim=1)
 
             gate_proj = torch.cat(
-                [F.linear(x, gate_proj_slices[i]) for i in range(self.config.pretraining_tp)], dim=-1
-            )
-            up_proj = torch.cat([F.linear(x, up_proj_slices[i]) for i in range(self.config.pretraining_tp)], dim=-1)
+                [F.linear(x, gate_proj_slices[i]) \
+                    for i in range(self.config.pretraining_tp)], dim=-1) # pylint: disable=E1102
+            up_proj = torch.cat([F.linear(x, up_proj_slices[i]) \
+                    for i in range(self.config.pretraining_tp)], dim=-1) # pylint: disable=E1102
 
             intermediate_states = (self.act_fn(gate_proj) * up_proj).split(slice, dim=2)
             down_proj = [
-                F.linear(intermediate_states[i], down_proj_slices[i]) for i in range(self.config.pretraining_tp)
-            ]
+                F.linear(intermediate_states[i], down_proj_slices[i]) \
+                    for i in range(self.config.pretraining_tp)] # pylint: disable=E1102
             output = sum(down_proj)
         else:
             input = self.act_fn(self.gate_proj(x)) * self.up_proj(x)
@@ -358,13 +359,16 @@ class GaudiLlamaAttention(LlamaAttention):
             key_slices = self.k_proj.weight.split(key_value_slicing, dim=0)
             value_slices = self.v_proj.weight.split(key_value_slicing, dim=0)
 
-            query_states = [F.linear(hidden_states, query_slices[i]) for i in range(self.config.pretraining_tp)]
+            query_states = [F.linear(hidden_states, query_slices[i]) \
+                    for i in range(self.config.pretraining_tp)] # pylint: disable=E1102
             query_states = torch.cat(query_states, dim=-1)
 
-            key_states = [F.linear(hidden_states, key_slices[i]) for i in range(self.config.pretraining_tp)]
+            key_states = [F.linear(hidden_states, key_slices[i]) \
+                    for i in range(self.config.pretraining_tp)] # pylint: disable=E1102
             key_states = torch.cat(key_states, dim=-1)
 
-            value_states = [F.linear(hidden_states, value_slices[i]) for i in range(self.config.pretraining_tp)]
+            value_states = [F.linear(hidden_states, value_slices[i]) \
+                    for i in range(self.config.pretraining_tp)] # pylint: disable=E1102
             value_states = torch.cat(value_states, dim=-1)
 
         else:
@@ -492,7 +496,7 @@ class GaudiLlamaAttention(LlamaAttention):
 
 class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: LlamaConfig, layer_idx: int):
-        super(GaudiLlamaDecoderLayer, self).__init__()
+        super(GaudiLlamaDecoderLayer, self).__init__(config, layer_idx)
         self.hidden_size = config.hidden_size
 
         self.self_attn = GaudiLlamaAttention(config=config, layer_idx=layer_idx)
@@ -956,7 +960,8 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
 
         if self.config.pretraining_tp > 1:
             lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
-            logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
+            logits = [F.linear(hidden_states, lm_head_slices[i]) \
+                    for i in range(self.config.pretraining_tp)] # pylint: disable=E1102
             logits = torch.cat(logits, dim=-1)
         else:
             logits = self.lm_head(hidden_states)
@@ -1030,7 +1035,7 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
                     and attention_mask is not None
                     and cache_length + input_ids.shape[1] > max_cache_length
                 ):
-                    attention_mask = attention_mask[:, -max_cache_length:]
+                    attention_mask = attention_mask[:, -max_cache_length:] # pylint: disable=E1130
         elif reuse_cache and token_idx is not None:
             # With reuse_cache, KV cache is pre allocated hence for the 1st token
             # we can slice the inputs till token idx for the fwd pass

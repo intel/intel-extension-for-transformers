@@ -433,7 +433,7 @@ def gaudi_generate_speech(
                     https://huggingface.co/datasets/Matthijs/cmu-arctic-xvectors
                     """
         )
-    from habana_frameworks.torch.hpu import wrap_in_hpu_graph
+    from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0401
 
     if not hasattr(model.speecht5.encoder, "clear_cache"):
         model.speecht5.encoder = wrap_in_hpu_graph(model.speecht5.encoder)

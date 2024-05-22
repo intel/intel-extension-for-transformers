@@ -810,7 +810,7 @@ class GaudiGenerationMixin(GenerationMixin):
 
         # In lazy mode, import Habana torch to be able to add mark_step()
         if lazy_mode:
-            import habana_frameworks.torch.core as htcore
+            import habana_frameworks.torch.core as htcore # pylint: disable=E0401
 
             self.htcore_generation = htcore
 
@@ -1462,7 +1462,7 @@ class GaudiGenerationMixin(GenerationMixin):
             hpu_graphs_kwargs = self._get_hpu_graphs_kwargs(model_kwargs)
 
             # forward pass to get next token
-            outputs = self(
+            outputs = self( # pylint: disable=E1102
                 **model_inputs,
                 return_dict=True,
                 output_attentions=output_attentions,
@@ -1816,7 +1816,7 @@ class GaudiGenerationMixin(GenerationMixin):
             hpu_graphs_kwargs = self._get_hpu_graphs_kwargs(model_kwargs)
 
             # forward pass to get next token
-            outputs = self(
+            outputs = self( # pylint: disable=E1102
                 **model_inputs,
                 return_dict=True,
                 output_attentions=output_attentions,
@@ -2285,7 +2285,7 @@ class GaudiGenerationMixin(GenerationMixin):
                     model_inputs, split_size=batch_size, full_batch_size=batch_beam_size
                 )
                 outputs_per_sub_batch = [
-                    self(
+                    self( # pylint: disable=E1102
                         **inputs_per_sub_batch,
                         return_dict=True,
                         output_attentions=output_attentions,
@@ -2297,7 +2297,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 outputs = stack_model_outputs(outputs_per_sub_batch)
             else:
                 hpu_graphs_kwargs = self._get_hpu_graphs_kwargs(model_kwargs)
-                outputs = self(
+                outputs = self( # pylint: disable=E1102
                     **model_inputs,
                     return_dict=True,
                     output_attentions=output_attentions,
@@ -3050,7 +3050,7 @@ class GaudiGenerationMixin(GenerationMixin):
 
             hpu_graphs_kwargs = self._get_hpu_graphs_kwargs(model_kwargs)
 
-            outputs = self(
+            outputs = self( #pylint: disable=E1102
                 **model_inputs,
                 return_dict=True,
                 output_attentions=output_attentions,

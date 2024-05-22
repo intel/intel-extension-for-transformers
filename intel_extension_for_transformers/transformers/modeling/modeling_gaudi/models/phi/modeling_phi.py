@@ -446,7 +446,7 @@ class GaudiPhiForCausalLM(PhiForCausalLM):
                     and attention_mask is not None
                     and cache_length + input_ids.shape[1] > max_cache_length
                 ):
-                    attention_mask = attention_mask[:, -max_cache_length:]
+                    attention_mask = attention_mask[:, -max_cache_length:] # pylint: disable=E1130
             else:
                 input_ids = torch.index_select(input_ids, 1, token_idx - 1)
 

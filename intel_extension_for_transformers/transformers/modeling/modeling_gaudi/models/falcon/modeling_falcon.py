@@ -27,7 +27,7 @@ except ImportError:
     FusedSDPA = None
 
 try:
-    from habana_frameworks.torch.hpu import sdp_kernel
+    from habana_frameworks.torch.hpu import sdp_kernel # pylint: disable=E0401
 
     SDPContext = True
 except ImportError:
@@ -40,7 +40,7 @@ except ImportError:
     FusedRoPE = None
 
 
-import habana_frameworks.torch.core as htcore
+import habana_frameworks.torch.core as htcore # pylint: disable=E0401
 from torch.nn import CrossEntropyLoss
 from torch.nn import functional as F
 from transformers.modeling_attn_mask_utils import _prepare_4d_causal_attention_mask_for_sdpa
@@ -213,7 +213,7 @@ def gaudi_falcon_attention_forward(
                 if self.training is True and query_layer.shape != key_layer.shape:
                     key_layer = torch.broadcast_to(key_layer, query_layer.shape)
                     value_layer = torch.broadcast_to(value_layer, query_layer.shape)
-                attn_output = F.scaled_dot_product_attention(
+                attn_output = F.scaled_dot_product_attention( # pylint: disable=E1102
                     query_layer,
                     key_layer,
                     value_layer,
@@ -253,7 +253,7 @@ def gaudi_falcon_attention_forward(
                         self.is_causal and attention_mask is None and query_length > 1,
                     )
             else:
-                attn_output = F.scaled_dot_product_attention(
+                attn_output = F.scaled_dot_product_attention( # pylint: disable=E1102
                     query_layer,
                     key_layer,
                     value_layer,

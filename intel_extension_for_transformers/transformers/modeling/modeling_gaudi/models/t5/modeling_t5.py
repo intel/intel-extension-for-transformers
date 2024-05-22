@@ -15,7 +15,7 @@
 import warnings
 from typing import Optional, Tuple, Union
 
-import habana_frameworks.torch.core as htcore
+import habana_frameworks.torch.core as htcore # pylint: disable=E0401
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss

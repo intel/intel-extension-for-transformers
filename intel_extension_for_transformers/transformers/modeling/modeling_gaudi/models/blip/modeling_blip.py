@@ -34,7 +34,7 @@ def gaudi_BlipForConditionalGeneration_generate(
         - wrap hpu graph for each part
     """
     if generate_kwargs.get("hpu_graphs", True):
-        from habana_frameworks.torch.hpu import wrap_in_hpu_graph
+        from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0401 # pylint: disable=E0401
 
         if not hasattr(self.vision_model, "clear_cache"):
             self.vision_model = wrap_in_hpu_graph(self.vision_model)
@@ -88,7 +88,7 @@ def gaudi_BlipForQuestionAnswering_generate(
         lead to coredump in embedding layer
     """
     if generate_kwargs.get("hpu_graphs", True):
-        from habana_frameworks.torch.hpu import wrap_in_hpu_graph
+        from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0401 # pylint: disable=E0401
 
         if not hasattr(self.vision_model, "clear_cache"):
             self.vision_model = wrap_in_hpu_graph(self.vision_model)

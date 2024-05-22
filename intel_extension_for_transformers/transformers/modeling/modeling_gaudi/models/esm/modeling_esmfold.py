@@ -58,7 +58,7 @@ def gaudi_esmfolding_trunk_forward(self, seq_feats, pair_feats, true_aa, residx,
         for block in self.blocks:
             s, z = block(s, z, mask=mask, residue_index=residx, chunk_size=self.chunk_size)
             if s.device.type == "hpu":
-                import habana_frameworks.torch.core as htcore
+                import habana_frameworks.torch.core as htcore # pylint: disable=E0401
 
                 htcore.mark_step()
         return s, z
