@@ -50,9 +50,7 @@ tts_multilang:
     enable: false
     args:
         device: "cpu"
-        spk_id: 0
-        stream_mode: false
-        output_audio_path: "./output_audio.wav"
+        precision: "bf16"
 
 retrieval:
     enable: false

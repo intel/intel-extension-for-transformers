@@ -1,5 +1,6 @@
 accelerate
 datasets >= 2.0
+diffusers
 peft
 protobuf
 sentencepiece != 0.1.92
@@ -11,6 +12,6 @@ bitsandbytes  #baichuan
 transformers_stream_generator
 tiktoken  #qwen
 einops  #qwen
-auto-round
+git+https://github.com/intel/auto-round.git@ecca5349981044e1278773a251b3fc5c0a11fe7b
 git+https://github.com/intel/neural-compressor.git
-git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
+lm-eval==0.4.2

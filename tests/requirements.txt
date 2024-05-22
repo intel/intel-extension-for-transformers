@@ -1,17 +1,18 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 accelerate
 auto-gptq
-auto-round
 bitsandbytes
-datasets==2.14.7
+datasets==2.16.1
 einops
 evaluate
 gguf
+git+https://github.com/intel/auto-round.git@ecca5349981044e1278773a251b3fc5c0a11fe7b
 git+https://github.com/intel/neural-compressor.git
-intel-extension-for-pytorch==2.2.0
+git+https://github.com/intel/neural-speed.git
+intel-extension-for-pytorch==2.3.0
 intel-tensorflow==2.14.0
+lm-eval==0.4.2
 mlflow
-neural-speed==1.0a0
 nlpaug==1.1.9
 onnx
 onnxruntime
@@ -21,11 +22,11 @@ py-cpuinfo
 sacremoses
 sentencepiece != 0.1.92
 tiktoken
-tokenizers
-torch==2.2.0+cpu
+tokenizers==0.15.2
+torch==2.3.0+cpu
 torchprofile
-torchvision==0.17.0+cpu
-transformers==4.36.2
+torchvision==0.18.0+cpu
+transformers==4.37.2
 transformers_stream_generator
 tyro
 wget

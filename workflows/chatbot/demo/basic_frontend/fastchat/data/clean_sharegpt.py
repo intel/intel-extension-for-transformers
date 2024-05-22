@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 - Convert html to markdown with basic data cleaning.
 - Deduplication.
@@ -120,9 +119,7 @@ def clean_html_one_sample(sample):
 
 
 def clean_html_all(content, begin, end):
-    """
-    Clean the source html files.
-    """
+    """Clean the source html files."""
     cnt_skip = 0
     cnt_blocked_words = 0
     cnt_wrong_format = 0

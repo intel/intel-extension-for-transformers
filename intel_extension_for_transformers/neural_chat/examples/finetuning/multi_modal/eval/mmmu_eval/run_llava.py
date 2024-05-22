@@ -206,8 +206,7 @@ def run_model(args, samples, model, call_model_engine_fn=None,
     return out_samples
 
 def set_seed(seed_value):
-    """
-    Set the seed for PyTorch (both CPU and CUDA), Python, and NumPy for reproducible results.
+    """Set the seed for PyTorch (both CPU and CUDA), Python, and NumPy for reproducible results.
 
     :param seed_value: An integer value to be used as the seed.
     """

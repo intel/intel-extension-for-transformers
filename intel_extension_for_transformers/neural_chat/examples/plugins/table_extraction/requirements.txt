@@ -1,0 +1,17 @@
+Cython
+editdistance
+matplotlib
+numpy
+pandas
+pdf2image
+Pillow
+pycocotools
+PyMuPDF
+pytesseract
+requests
+scikit-image
+scikit-learn
+scipy
+torch
+torchvision
+tqdm

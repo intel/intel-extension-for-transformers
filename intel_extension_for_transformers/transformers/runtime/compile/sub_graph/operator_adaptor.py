@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The OperatorAdaptor pattern."""
 
 from .pattern import Pattern, pattern_registry
@@ -28,7 +27,6 @@ import copy
 
 @pattern_registry(pattern_type='OperatorAdaptor')
 class OperatorAdaptor(Pattern):
-
     """The OperatorAdaptor pattern.
 
     Modify some operators after all fusion patterns. For example, sweep input tensors to make

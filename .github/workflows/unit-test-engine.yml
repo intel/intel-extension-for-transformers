@@ -14,7 +14,7 @@ on:
       - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
       - "!intel_extension_for_transformers/transformers/runtime/docs/**"
   workflow_dispatch:
-
+permissions: write-all
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -84,9 +84,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
-          && pip install torch==2.0 --extra-index-url https://download.pytorch.org/whl/cpu \
-          && bash install_binary.sh \
-          && pip install onnx"
+          && bash install_binary.sh"
 
       - name: Run UT
         run: |

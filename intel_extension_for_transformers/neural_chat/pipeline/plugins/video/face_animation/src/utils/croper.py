@@ -34,9 +34,8 @@ class Preprocessor:
         self.predictor = KeypointExtractor(device)
 
     def get_landmark(self, img_np):
-        """get landmark with dlib
-        :return: np.array shape=(68, 2)
-        """
+        """Get landmark with dlib
+        :return: np.array shape=(68, 2)"""
         with torch.no_grad():
             dets = self.predictor.det_net.detect_faces(img_np, 0.97)
 

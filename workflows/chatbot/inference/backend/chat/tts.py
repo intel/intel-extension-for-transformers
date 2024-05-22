@@ -29,7 +29,7 @@ from torch.utils.data import DataLoader
 import tempfile
 
 class TextToSpeech:
-    """Convert text to speech with a driven speaker embedding
+    """Convert text to speech with a driven speaker embedding.
 
     1) Default voice (Original model + Proved good default speaker embedding from trained dataset)
     2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)
@@ -69,7 +69,7 @@ class TextToSpeech:
         self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
 
     def create_speaker_embedding(self, driven_audio_path):
-        """Create the speaker's embedding
+        """Create the speaker's embedding.
 
         driven_audio_path: the driven audio of that speaker e.g. vgjwo-5bunm.mp3
         """

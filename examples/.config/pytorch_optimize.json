@@ -1365,7 +1365,6 @@
         "topology": "gpt_j",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1389,15 +1388,17 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "llama2_7b_int4_gptq",
+        "topology": "llama2_7b_gptq",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "llama2_7b_int4_gptq",
+        "topology": "llama2_7b_gptq",
         "task": "generation",
         "mode": "benchmark",
         "batch_size": "112",
@@ -1414,7 +1415,9 @@
       "params": {
         "topology": "gpt_j_woq_bab",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1437,7 +1440,9 @@
       "params": {
         "topology": "gpt_j_woq_rtn",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
       }
     },
     "benchmark": {
@@ -1460,7 +1465,8 @@
       "params": {
         "topology": "gpt_j_woq_load4bit",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip"
       }
     },
     "benchmark": {
@@ -1483,7 +1489,8 @@
       "params": {
         "topology": "gpt_j_woq_load8bit",
         "task": "generation",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "weight_dtype": "int8"
       }
     },
     "benchmark": {
@@ -1530,7 +1537,6 @@
         "topology": "llama_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1557,7 +1563,6 @@
         "topology": "llama_13b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1576,6 +1581,291 @@
       }
     }
   },
+  "mistral_7b_autoround_neuralspeed": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_autoround",
+        "task": "generation",
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_autoround",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "mode": "benchmark",
+        "batch_size": "10",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_gptq_neuralspeed": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_gptq",
+        "task": "generation",
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_gptq",
+        "task": "generation",
+        "mode": "benchmark",
+        "backend": "neuralspeed",
+        "batch_size": "10",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  
+  "mistral_7b_rtn_neuralspeed": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_rtn",
+        "task": "generation",
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_rtn",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "mode": "benchmark",
+        "batch_size": "10",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_autoround": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_autoround",
+        "task": "generation",
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_autoround",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_gptq": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_gptq",
+        "task": "generation",
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_gptq",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  
+  "mistral_7b_rtn": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mistral_7b_rtn",
+        "task": "generation",
+        "output_model": "saved_results",
+        "weight_dtype": "int4_clip",
+        "bits": 4
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_rtn",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "mistralai/Mistral-7B-v0.1",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "mistralai/Mistral-7B-v0.1",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/mistral_7b_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "llama2_7b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "meta-llama/Llama-2-7b-hf",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "meta-llama/Llama-2-7b-hf",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/llama2_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "qwen_7b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "Qwen/Qwen-7B-Chat",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "Qwen/Qwen-7B-Chat",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/qwen_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "mistral_7b_autoround_neuralspeed_hf": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{},
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_autoround",
+        "task": "generation",
+        "backend": "neuralspeed",
+        "mode": "benchmark",
+        "batch_size": "10",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "model_source": "huggingface"
+      }
+    }
+  },
+  "mistral_7b_gptq_neuralspeed_hf": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{},
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_gptq",
+        "task": "generation",
+        "mode": "benchmark",
+        "backend": "neuralspeed",
+        "batch_size": "10",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "model_source": "huggingface"
+      }
+    }
+  },
+  "mistral_7b_autoround_hf": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{},
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_autoround",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "model_source": "huggingface"
+      }
+    }
+  },
+  "mistral_7b_gptq_hf": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{},
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mistral_7b_gptq",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "model_source": "huggingface"
+      }
+    }
+  },
   "dolly_v2_3b_gen_ipex_static": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "tune":{
@@ -1584,7 +1874,6 @@
         "topology": "dolly_v2_3b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1611,7 +1900,6 @@
         "topology": "mpt_7b_chat",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1638,7 +1926,6 @@
         "topology": "bloom_7b1",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1663,7 +1950,6 @@
         "topology": "bloom_1b7",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1688,7 +1974,6 @@
         "topology": "opt_1.3b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1715,7 +2000,6 @@
         "topology": "opt_2.7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1742,7 +2026,6 @@
         "topology": "opt_6.7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1769,7 +2052,6 @@
         "topology": "chatglm3_6b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1796,7 +2078,6 @@
         "topology": "chatglm2_6b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1823,7 +2104,6 @@
         "topology": "chatglm_6b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1850,7 +2130,6 @@
         "topology": "falcon_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1877,7 +2156,6 @@
         "topology": "baichuan_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1904,7 +2182,6 @@
         "topology": "baichuan2_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1931,7 +2208,6 @@
         "topology": "baichuan_13b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1958,7 +2234,6 @@
         "topology": "baichuan2_13b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -1985,7 +2260,6 @@
         "topology": "qwen_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2004,7 +2278,7 @@
       }
     }
   },
-  "mistral_7b_gen_ipex_static": {
+  "neural-chat-7b-v3_gen_ipex_static": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
@@ -2012,7 +2286,6 @@
         "topology": "mistral_7b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2039,7 +2312,6 @@
         "topology": "phi_1b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
@@ -2066,7 +2338,6 @@
         "topology": "phi_1_5b",
         "task": "generation",
         "approach": "static",
-        "backend": "ipex",
         "output_model": "saved_results"
       }
     },

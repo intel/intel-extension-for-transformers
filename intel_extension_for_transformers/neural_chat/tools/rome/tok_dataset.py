@@ -21,9 +21,10 @@ from torch.utils.data import Dataset
 
 
 class TokenizedDataset(Dataset):
-    """
-    Converts a dataset of text samples into a dataset of token sequences,
-    as converted by a supplied tokenizer. The tokens come along with position
+    """Converts a dataset of text samples into a dataset of token sequences,
+    as converted by a supplied tokenizer.
+
+    The tokens come along with position
     ids and attention masks, they can be supplied directly to the model.
     """
 
@@ -55,18 +56,17 @@ class TokenizedDataset(Dataset):
 
 
 def dict_to_(data, device):
-    """
-    Moves a dictionary of tensors to the specified device.
-    """
+    """Moves a dictionary of tensors to the specified device."""
     for k in data:
         data[k] = data[k].to(device)
     return data
 
 
 def length_collation(token_size):
-    """
-    Sorts a batch of sequences and breaks it up into subbatches
-    of same-sized sequences, padding as needed.  Each batch
+    """Sorts a batch of sequences and breaks it up into subbatches
+    of same-sized sequences, padding as needed.
+
+    Each batch
     has no more than token_size total tokens (or a single
     sequence, if the sequence happens to be larger).
     """
@@ -95,9 +95,7 @@ def length_collation(token_size):
 
 
 def make_padded_batch(items):
-    """
-    Pads sequences in a batch, so they are all the same length as the longest.
-    """
+    """Pads sequences in a batch, so they are all the same length as the longest."""
     max_len = max(len(d["input_ids"]) for d in items)
     if max_len == 0:
         return {k: torch.zeros((0, 0), dtype=torch.long) for k in items[0]}
@@ -108,9 +106,7 @@ def make_padded_batch(items):
 
 
 def flatten_masked_batch(data, mask):
-    """
-    Flattens feature data, ignoring items that are masked out of attention.
-    """
+    """Flattens feature data, ignoring items that are masked out of attention."""
     flat_data = data.view(-1, data.size(-1))
     attended_tokens = mask.view(-1).nonzero()[:, 0]
     return flat_data[attended_tokens]

@@ -14,8 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""The wrapper for Child-Parent retriever based on langchain"""
+"""The wrapper for Child-Parent retriever based on langchain."""
 from langchain_core.vectorstores import VectorStore
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.pydantic_v1 import Field
@@ -46,6 +45,7 @@ class ChildParentRetriever(BaseRetriever):
 
     def _get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRun) -> List[Document]:
         """Get documents relevant to a query.
+
         Args:
             query: String to find relevant documents for
             run_manager: The callbacks handler to use

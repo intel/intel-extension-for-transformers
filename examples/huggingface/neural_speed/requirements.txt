@@ -1,11 +1,12 @@
 intel_extension_for_transformers
-neural-speed==1.0a0
-git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
+neural-speed
+lm-eval
 sentencepiece
 gguf
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.2.0+cpu
+torch==2.3.0+cpu
 transformers
-intel_extension_for_pytorch==2.2.0
+intel_extension_for_pytorch==2.3.0
 tiktoken
 transformers_stream_generator
+zipfile38

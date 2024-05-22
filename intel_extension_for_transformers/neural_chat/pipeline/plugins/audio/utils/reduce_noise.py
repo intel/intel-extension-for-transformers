@@ -32,8 +32,7 @@ logging.basicConfig(
 
 @torch.no_grad()
 def amp_to_db(x: torch.Tensor, eps=torch.finfo(torch.float64).eps, top_db=40) -> torch.Tensor:
-    """
-    Convert the input tensor from amplitude to decibel scale.
+    """Convert the input tensor from amplitude to decibel scale.
 
     Arguments:
         x {[torch.Tensor]} -- [Input tensor.]
@@ -53,8 +52,7 @@ def amp_to_db(x: torch.Tensor, eps=torch.finfo(torch.float64).eps, top_db=40) ->
 
 @torch.no_grad()
 def temperature_sigmoid(x: torch.Tensor, x0: float, temp_coeff: float) -> torch.Tensor:
-    """
-    Apply a sigmoid function with temperature scaling.
+    """Apply a sigmoid function with temperature scaling.
 
     Arguments:
         x {[torch.Tensor]} -- [Input tensor.]
@@ -69,8 +67,7 @@ def temperature_sigmoid(x: torch.Tensor, x0: float, temp_coeff: float) -> torch.
 
 @torch.no_grad()
 def linspace(start: Number, stop: Number, num: int = 50, endpoint: bool = True, **kwargs) -> torch.Tensor:
-    """
-    Generate a linearly spaced 1-D tensor.
+    """Generate a linearly spaced 1-D tensor.
 
     Arguments:
         start {[Number]} -- [The starting value of the sequence.]
@@ -95,8 +92,7 @@ def linspace(start: Number, stop: Number, num: int = 50, endpoint: bool = True, 
 
 
 class TorchGate(torch.nn.Module):
-    """
-    A PyTorch module that applies a spectral gate to an input signal.
+    """A PyTorch module that applies a spectral gate to an input signal.
 
     Arguments:
         sr {int} -- Sample rate of the input signal.
@@ -162,8 +158,7 @@ class TorchGate(torch.nn.Module):
 
     @torch.no_grad()
     def _generate_mask_smoothing_filter(self) -> Union[torch.Tensor, None]:
-        """
-        A PyTorch module that applies a spectral gate to an input signal using the STFT.
+        """A PyTorch module that applies a spectral gate to an input signal using the STFT.
 
         Returns:
             smoothing_filter (torch.Tensor): a 2D tensor representing the smoothing filter,
@@ -217,8 +212,7 @@ class TorchGate(torch.nn.Module):
     def _stationary_mask(
         self, X_db: torch.Tensor, xn: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
-        """
-        Computes a stationary binary mask to filter out noise in a log-magnitude spectrogram.
+        """Computes a stationary binary mask to filter out noise in a log-magnitude spectrogram.
 
         Arguments:
             X_db (torch.Tensor): 2D tensor of shape (frames, freq_bins) containing the log-magnitude spectrogram.
@@ -256,8 +250,7 @@ class TorchGate(torch.nn.Module):
 
     @torch.no_grad()
     def _nonstationary_mask(self, X_abs: torch.Tensor) -> torch.Tensor:
-        """
-        Computes a non-stationary binary mask to filter out noise in a log-magnitude spectrogram.
+        """Computes a non-stationary binary mask to filter out noise in a log-magnitude spectrogram.
 
         Arguments:
             X_abs (torch.Tensor): 2D tensor of shape (frames, freq_bins) containing the magnitude spectrogram.
@@ -290,8 +283,7 @@ class TorchGate(torch.nn.Module):
     def forward(
         self, x: torch.Tensor, xn: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
-        """
-        Apply the proposed algorithm to the input signal.
+        """Apply the proposed algorithm to the input signal.
 
         Arguments:
             x (torch.Tensor): The input audio signal, with shape (batch_size, signal_length).

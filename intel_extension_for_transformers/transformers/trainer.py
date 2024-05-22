@@ -1382,8 +1382,6 @@ class BaseTrainer():
         Args:
             model (:obj:`nn.Module`): The target model to compute the loss.
             inputs (:obj:`Dict[str, Union[torch.Tensor, Any]]`): The inputs and targets of the model.
-
-
         """
         labels = inputs.pop("labels") \
             if self.label_smoother is not None and "labels" in inputs else None
@@ -1548,7 +1546,6 @@ class BaseTrainer():
             """Take a train step with NAS.
 
             Args:
-
             """
             trainer.model_wrapped = model
             trainer.model = model
@@ -1820,7 +1817,6 @@ class BaseTrainer():
             (if it is a dictionary) that should be ignored when gathering predictions for evaluation
             during the training.
             metric_key_prefix: the prefix of the evaluation metric.
-
         """
         # pylint: disable=E1101
         prediction_loss_only = (prediction_loss_only if prediction_loss_only is not None else
@@ -2567,7 +2563,7 @@ class BaseTrainer():
         generate: bool = False,
         **kwargs
     ):
-        """get performance of model
+        """Get performance of model.
 
         Args:
             backend (str, optional): Defaults to "torch".

@@ -20,7 +20,7 @@ from typing import List, Tuple
 def chatglm_generate_stream(
     model, tokenizer, params, device, context_len=2048, stream_interval=2
 ):
-    """Generate text using model's chat api"""
+    """Generate text using model's chat api."""
     messages = params["prompt"]
     max_new_tokens = int(params.get("max_new_tokens", 256))
     temperature = float(params.get("temperature", 1.0))

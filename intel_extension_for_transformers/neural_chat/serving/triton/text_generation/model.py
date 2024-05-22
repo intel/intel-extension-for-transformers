@@ -27,7 +27,9 @@ import triton_python_backend_utils as pb_utils
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 
 class TritonPythonModel:
-    """Your Python model must use the same class name. Every Python model
+    """Your Python model must use the same class name.
+
+    Every Python model
     that is created must have "TritonPythonModel" as the class name.
     """
 
@@ -69,7 +71,7 @@ class TritonPythonModel:
         Batching) used, `requests` may contain multiple requests. Every
         Python model, must create one pb_utils.InferenceResponse for every
         pb_utils.InferenceRequest in `requests`. If there is an error, you can
-        set the error argument when creating a pb_utils.InferenceResponse
+        set the error argument when creating a pb_utils.InferenceResponse.
 
         Parameters
         ----------
@@ -123,6 +125,7 @@ class TritonPythonModel:
 
     def finalize(self):
         """`finalize` is called only once when the model is being unloaded.
+
         Implementing `finalize` function is OPTIONAL. This function allows
         the model to perform any necessary clean ups before exit.
         """

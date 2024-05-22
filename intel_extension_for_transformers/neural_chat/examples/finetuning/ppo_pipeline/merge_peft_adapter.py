@@ -26,10 +26,8 @@ from transformers import AutoModelForCausalLM, AutoModelForSequenceClassificatio
 
 @dataclass
 class ScriptArguments:
-    """
-    The input names representing the Adapter and Base model fine-tuned with PEFT, and the output name representing the
-    merged model.
-    """
+    """The input names representing the Adapter and Base model fine-tuned with PEFT, and the output name representing the
+    merged model."""
 
     adapter_model_name: Optional[str] = field(default=None, metadata={"help": "the adapter name"})
     output_name: Optional[str] = field(default=None, metadata={"help": "the merged model name"})

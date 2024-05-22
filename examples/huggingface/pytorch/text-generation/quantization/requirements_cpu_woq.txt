@@ -1,0 +1,17 @@
+accelerate
+datasets >= 2.0
+peft
+protobuf
+sentencepiece != 0.1.92
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.3.0+cpu
+transformers
+bitsandbytes  #baichuan
+transformers_stream_generator
+tiktoken  #qwen
+einops  #qwen
+git+https://github.com/intel/neural-speed.git
+git+https://github.com/intel/auto-round.git@ecca5349981044e1278773a251b3fc5c0a11fe7b
+git+https://github.com/intel/neural-compressor.git
+lm-eval==0.4.2
+huggingface_hub

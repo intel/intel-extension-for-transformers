@@ -81,7 +81,7 @@ To make our audio service compatible to OpenAI [endpoints](https://platform.open
 
 To test whether the talkingbot server can serve your requests correctly, you can use `curl` as follows:
 
-```
+```shell
 curl http://localhost:8888/v1/audio/translations \
   -H "Content-Type: multipart/form-data" \
   -F file="@sample_1.wav"
@@ -95,6 +95,18 @@ curl http://localhost:8888/v1/audio/speech \
   -d '{
     "model": "speecht5",
     "input": "The quick brown fox jumped over the lazy dog.",
+    "voice": "default"
+  }' \
+  --output speech.mp3
+
+# To use multi-language TTS, please
+# 1) set `enable: false` under tts in talkingbot.yaml
+# 2) set `enable: true` under tts_multilang in talkingbot.yaml
+curl http://localhost:8888/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "bert-vits2",
+    "input": "欢迎来到英特尔。",
     "voice": "default"
   }' \
   --output speech.mp3

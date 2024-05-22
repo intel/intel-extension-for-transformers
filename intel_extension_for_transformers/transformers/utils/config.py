@@ -32,31 +32,27 @@ torch = LazyImport("torch")
 class MixedPrecisionConfig:
     dtype: str = "bfloat16"
 
+if transformers.__version__ >= "4.32.0":
+    from transformers.utils.quantization_config import QuantizationConfigMixin
+    QuantizationConfig = QuantizationConfigMixin
+else:
+    QuantizationConfig = PretrainedConfig
+from enum import Enum
 
-@dataclass
-class SmoothQuantConfig:
-    backend: str = "ipex"
-    ipex_opt_llm: bool = None
-    tokenizer: Any = None
-    calib_func: Any = None
-    calib_dataset: str = "NeelNanda/pile-10k"
-    calib_shuffle: bool = True
-    calib_iters: int = 100
-    calib_padding: bool = False
-    calib_len: int = 512
-    calib_pad_val: int = 1
-    alpha: float = 0.5
-    op_type_dict: dict = None
-    op_name_dict: dict = None
-    excluded_precisions: list = field(default_factory=list)
-    example_inputs: Any = None
-    num_beams: int = 1
-    recipes: dict = field(
-        default_factory=lambda: {
-            "smooth_quant": True,
-            "smooth_quant_args": {"alpha": 0.5},
-        }
-    )
+
+class QuantizationMethod(str, Enum):
+    BITS_AND_BYTES = "bitsandbytes"
+    GPTQ = "gptq"
+    AWQ = "awq"
+    AQLM = "aqlm"
+    RTN = "rtn"
+    AUTOROUND = "autoround"
+    TEQ = "teq"
+    DYNAMIC = "dynamic"
+    STATIC = "static"
+    SmoothQuant = "sq"
+    QuantAwareTraining = "qat"
+
 
 
 class SparsityConfig(PretrainedConfig):
@@ -83,8 +79,7 @@ class SparsityConfig(PretrainedConfig):
 
     @classmethod
     def from_dict(cls, config_dict, return_unused_kwargs=False, **kwargs):
-        """
-        Instantiates a [`SparsityConfig`] from a Python dictionary of parameters.
+        """Instantiates a [`SparsityConfig`] from a Python dictionary of parameters.
 
         Args:
             config_dict (`Dict[str, Any]`):
@@ -123,8 +118,7 @@ class SparsityConfig(PretrainedConfig):
     def to_json_file(
         self, json_file_path: Union[str, os.PathLike], use_diff: bool = True
     ):
-        """
-        Save this instance to a JSON file.
+        """Save this instance to a JSON file.
 
         Args:
             json_file_path (`str` or `os.PathLike`):
@@ -134,9 +128,10 @@ class SparsityConfig(PretrainedConfig):
             writer.write(self.to_json_string(use_diff=use_diff))
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Serializes this instance to a Python dictionary. Returns:
-            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance.
+        """Serializes this instance to a Python dictionary.
+
+        Returns:
+        `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance.
         """
 
         output = copy.deepcopy(self.__dict__)
@@ -146,8 +141,7 @@ class SparsityConfig(PretrainedConfig):
         return f"{self.__class__.__name__} {self.to_json_string()}"
 
     def to_json_string(self, use_diff: bool = True) -> str:
-        """
-        Serializes this instance to a JSON string.
+        """Serializes this instance to a JSON string.
 
         Args:
             use_diff (`bool`, *optional*, defaults to `True`):
@@ -166,9 +160,8 @@ class SparsityConfig(PretrainedConfig):
         return json.dumps(config_dict, indent=2, sort_keys=True) + "\n"
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes for better
+        readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -193,8 +186,7 @@ class SparsityConfig(PretrainedConfig):
         push_to_hub: bool = False,
         **kwargs,
     ):
-        """
-        Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
+        """Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
         [`~PretrainedConfig.from_pretrained`] class method.
 
         Args:
@@ -245,32 +237,11 @@ class SparsityConfig(PretrainedConfig):
             pretrained_model_name_or_path, _configuration_file=SPARSITY_CONFIG, **kwargs
         )
 
-if transformers.__version__ >= "4.32.0":
-    from transformers.utils.quantization_config import QuantizationConfigMixin
-    QuantizationConfig = QuantizationConfigMixin
-else:
-    QuantizationConfig = PretrainedConfig
-from enum import Enum
-
-
-class QuantizationMethod(str, Enum):
-    BITS_AND_BYTES = "bitsandbytes"
-    GPTQ = "gptq"
-    AWQ = "awq"
-    AQLM = "aqlm"
-    RTN = "rtn"
-    AUTOROUND = "autoround"
-    TEQ = "teq"
-
-
 class ITREXQuantizationConfigMixin(QuantizationConfig):
-    """
-    Mixin class for quantization config
-    """
+    """Mixin class for quantization config."""
 
     def update(self, **kwargs):
-        """
-        Updates attributes of this class instance with attributes from `kwargs` if they match existing atributtes,
+        """Updates attributes of this class instance with attributes from `kwargs` if they match existing atributtes,
         returning all the unused kwargs.
 
         Args:
@@ -291,9 +262,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         return unused_kwargs
 
     def post_init_cpu(self):
-        r"""
-        Safety checker that arguments are correct
-        """
+        r"""Safety checker that arguments are correct."""
 
         if self.compute_dtype is not None and self.compute_dtype not in [
             "fp32",
@@ -312,7 +281,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             )
 
         if self.bits == 4 and self.weight_dtype not in [
-            "int4_fullrange",
             "int4_clip",
             "nf4",
             "fp4_e2m1_bnb",
@@ -331,7 +299,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
 
         elif self.weight_dtype not in [
             "int8",
-            "int4_fullrange",
             "int4_clip",
             "nf4",
             "fp4_e2m1_bnb",
@@ -341,15 +308,16 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         ]:
             raise ValueError(
                 f"weight_dtype must be a string in "
-                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+                f"'int8', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
             )
 
         if self.scale_dtype is not None and self.scale_dtype not in [
             "fp32",
             "fp8_e8m0",
+            "bf16"
         ]:
             raise ValueError(
-                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
+                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0', 'bf16' "
                 f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
             )
         elif self.scale_dtype is None:
@@ -371,15 +339,15 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             raise ValueError("scheme must be a string")
 
         if self.scheme == "asym" and (
-            self.compute_dtype == "int8"
+            (self.compute_dtype == "int8" and self.weight_dtype == "int8")
             or self.weight_dtype.startswith("fp")
             or self.weight_dtype.startswith("nf")
             or self.scale_dtype != "fp32"
         ):
             raise ValueError(
-                "WeightOnlyQuantization doesn't support asym with \
-                                compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, \
-                                please use sym scheme"
+                f"WeightOnlyQuantization doesn't support asym with "
+                f"compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, "
+                f"please use sym scheme"
             )
 
         self.use_neural_speed = False
@@ -442,6 +410,8 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         runtime_supported_compute_dtype = ["fp32", "fp16", "bf16", "int8"]
         runtime_supported_weight_dtype = [
             "int4",
+            "int4_clip",  # int4_clip will merge to int4 in next release.
+            "int4_fullrange", # int4_fullrange will merge to int4 in next release.
             "int8",
             "fp8",
             "fp8_e5m2",
@@ -473,6 +443,12 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
+        elif self.weight_dtype == "int4_clip":
+            self.weight_dtype == "int4"
+        elif self.weight_dtype == "int4_fullrange":
+            self.weight_dtype == "int4"
+        elif self.weight_dtype == "fp8":
+            self.weight_dtype == "fp8_e4m3"
         elif self.weight_dtype == "fp8":
             self.weight_dtype == "fp8_e4m3"
         elif self.weight_dtype == "fp4":
@@ -544,8 +520,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
     def to_json_file(
         self, json_file_path: Union[str, os.PathLike], use_diff: bool = True
     ):
-        """
-        Save this instance to a JSON file.
+        """Save this instance to a JSON file.
 
         Args:
             json_file_path (`str` or `os.PathLike`):
@@ -563,7 +538,10 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         remove_parameters = ["calib_dataloader", "dataset", "calib_func", "calib_iters", "calib_len",
         "double_quant_scale_dtype", "use_double_quant", "mse_range", "scheme", "tokenizer", "use_ggml",
         "use_neural_speed", "use_quant", "layer_wise", "blocksize", "nsamples", "max_input_length", "static_groups",
-        "lr", "minmax_lr", "iters", "use_quant_input", "device"]
+        "lr", "minmax_lr", "iters", "use_quant_input", "device", "calib_dataset", "calib_pad_val", "calib_shuffle",
+        "calib_padding", "example_inputs", "excluded_precisions", "op_name_dict", "op_type_dict", "train_dataloader",
+        "train_func", "train_iters", "train_len", "train_padding", "train_dataset", "train_pad_val", "train_shuffle",
+        "train_batch_size"]
         for parameter in remove_parameters:
             if hasattr(self, parameter):
                 delattr(self, parameter)
@@ -576,8 +554,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         push_to_hub: bool = False,
         **kwargs,
     ):
-        """
-        Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
+        """Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
         [`~PretrainedConfig.from_pretrained`] class method.
 
         Args:
@@ -627,6 +604,134 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             pretrained_model_name_or_path, _configuration_file=cf, **kwargs
         )
 
+class QuantAwareTrainingConfig(ITREXQuantizationConfigMixin):
+    def __init__(
+            self,
+            backend="default",
+            tokenizer=None,
+            train_dataset="NeelNanda/pile-10k",
+            train_dataloader=None,
+            train_func=None,
+            train_shuffle=True,
+            train_iters=100,
+            train_padding=True,
+            train_batch_size=8,
+            train_len=512,
+            train_pad_val=1,
+            op_name_dict=None,
+            op_type_dict=None,
+            excluded_precisions=[],
+            **kwargs,
+    ):
+        self.quant_method = QuantizationMethod.QuantAwareTraining
+        self.backend = backend
+        self.tokenizer = tokenizer
+        self.train_dataset = train_dataset
+        self.train_dataloader = train_dataloader
+        self.train_func = train_func
+        self.train_shuffle = train_shuffle
+        self.train_iters = train_iters
+        self.train_padding = train_padding
+        self.train_len = train_len
+        self.train_pad_val = train_pad_val
+        self.train_batch_size = train_batch_size
+        self.op_name_dict = op_name_dict
+        self.op_type_dict = op_type_dict
+        self.excluded_precisions = excluded_precisions
+
+
+class DynamicQuantConfig(ITREXQuantizationConfigMixin):
+    def __init__(
+            self,
+            excluded_precisions=[],
+            op_name_dict=None,
+            op_type_dict=None,
+            **kwargs,
+    ):
+        self.quant_method = QuantizationMethod.DYNAMIC
+        self.excluded_precisions = excluded_precisions
+        self.op_name_dict = op_name_dict
+        self.op_type_dict = op_type_dict
+
+class StaticQuantConfig(ITREXQuantizationConfigMixin):
+    def __init__(
+            self,
+            backend="default",
+            tokenizer=None,
+            calib_dataset="NeelNanda/pile-10k",
+            calib_dataloader=None,
+            calib_func=None,
+            calib_shuffle=True,
+            calib_iters=100,
+            calib_padding=False,
+            calib_len=512,
+            calib_pad_val=1,
+            op_name_dict=None,
+            op_type_dict=None,
+            excluded_precisions=[],
+            example_inputs=None,
+            **kwargs,
+    ):
+        self.quant_method = QuantizationMethod.STATIC
+        self.backend = backend
+        self.tokenizer = tokenizer
+        self.calib_dataset = calib_dataset
+        self.calib_dataloader = calib_dataloader
+        self.calib_func = calib_func
+        self.calib_shuffle = calib_shuffle
+        self.calib_iters = calib_iters
+        self.calib_padding = calib_padding
+        self.calib_len = calib_len
+        self.calib_pad_val = calib_pad_val
+        self.op_name_dict = op_name_dict
+        self.op_type_dict = op_type_dict
+        self.excluded_precisions = excluded_precisions
+        self.example_inputs = example_inputs
+
+class SmoothQuantConfig(StaticQuantConfig):
+    def __init__(
+            self,
+            backend="ipex",
+            tokenizer=None,
+            calib_dataset="NeelNanda/pile-10k",
+            calib_dataloader=None,
+            calib_func=None,
+            calib_shuffle=True,
+            calib_iters=100,
+            calib_padding=False,
+            calib_len=512,
+            calib_pad_val=1,
+            op_name_dict=None,
+            op_type_dict=None,
+            excluded_precisions=[],
+            example_inputs=None,
+            ipex_opt_llm=None,
+            alpha=0.5,
+            num_beams=1,
+            recipes={"smooth_quant": True, "smooth_quant_args":{"alpha":0.5}},
+            **kwargs,
+    ):
+        super().__init__(
+            backend=backend,
+            tokenizer=tokenizer,
+            calib_dataset=calib_dataset,
+            calib_dataloader=calib_dataloader,
+            calib_func=calib_func,
+            calib_shuffle=calib_shuffle,
+            calib_iters=calib_iters,
+            calib_padding=calib_padding,
+            calib_len=calib_len,
+            calib_pad_val=calib_pad_val,
+            op_name_dict=op_name_dict,
+            op_type_dict=op_type_dict,
+            excluded_precisions=excluded_precisions,
+            example_inputs=example_inputs,
+        )
+        self.quant_method = QuantizationMethod.SmoothQuant
+        self.ipex_opt_llm = ipex_opt_llm
+        self.alpha = alpha
+        self.num_beams = num_beams
+        self.recipes = recipes
 
 class RtnConfig(ITREXQuantizationConfigMixin):
     def __init__(
@@ -670,11 +775,11 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.dataset = None
         self.calib_func = None
         self.calib_iters = None
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -770,12 +875,11 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.use_ipex = kwargs.pop("use_ipex", False)
         self.post_init_gptq()
 
     def post_init_gptq(self):
-        r"""
-        Safety checker that arguments are correct
-        """
+        r"""Safety checker that arguments are correct."""
 
         if self.bits not in [4, 8]:
             raise ValueError(
@@ -786,9 +890,8 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             raise ValueError("damp_percent must between 0 and 1.")
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -851,11 +954,11 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
         self.sym = True if not self.zero_point else False
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -913,11 +1016,11 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
@@ -939,20 +1042,20 @@ class TeqConfig(ITREXQuantizationConfigMixin):
 class AutoRoundConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
-        bits: int = 8,
+        bits: int = 4,
         tokenizer: Any = None,
         dataset: str = "NeelNanda/pile-10k",
-        group_size: int = 32,
+        group_size: int = 128,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
-        sym: bool = True,
-        lr: float = 0.0025,
-        minmax_lr: float = 0.0025,
-        use_quant_input: bool = True,
-        nsamples: int = 128,
+        sym: bool = False,
+        lr: float = None,
+        minmax_lr: float = None,
+        enable_quanted_input: bool = True,
+        nsamples: int = 512,
         iters: int = 200,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
@@ -978,7 +1081,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.group_size = group_size
         self.lr = lr
         self.minmax_lr = minmax_lr
-        self.use_quant_input = use_quant_input
+        self.enable_quanted_input = enable_quanted_input
         self.iters = iters
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
@@ -987,7 +1090,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_len = kwargs.get("calib_len", None)
+        self.calib_len = kwargs.get("calib_len", 2048)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"
@@ -1007,11 +1110,11 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
             )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
-        """
-        Removes all attributes from config which correspond to the default config attributes for better readability and
-        serializes to a Python dictionary.
+        """Removes all attributes from config which correspond to the default config attributes
+        for better readability and serializes to a Python dictionary.
 
         Returns:
             `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,

@@ -177,8 +177,11 @@ def enhancer_generator_with_len(images, method="gfpgan", bg_upsampler="realesrga
 
 def enhancer_generator_no_len(images, method="gfpgan", bg_upsampler="realesrgan"):
     """Provide a generator function so that all of the enhanced images don't need
-    to be stored in memory at the same time. This can save tons of RAM compared to
-    the enhancer function."""
+    to be stored in memory at the same time.
+
+    This can save tons of RAM compared to
+    the enhancer function.
+    """
 
     print("face enhancer....")
     if not isinstance(images, list) and os.path.isfile(images):  # handle video to images

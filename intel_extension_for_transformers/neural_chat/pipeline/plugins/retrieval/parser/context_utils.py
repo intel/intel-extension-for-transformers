@@ -51,7 +51,7 @@ def uni_pro(text):
 def read_pdf(pdf_path):
     """Read the pdf file."""
     doc = fitz.open(pdf_path)
-    reader = easyocr.Reader(['en'])
+    reader = easyocr.Reader(['en'], gpu=False)
     result =''
     for i in range(doc.page_count):
         page = doc.load_page(i)
@@ -189,7 +189,7 @@ def load_xlsx(input):
     return all_data
 
 def load_csv(input):
-    """ Load the csv file."""
+    """Load the csv file."""
     df = pd.read_csv(input)
     all_data = []
     documents = []
@@ -255,3 +255,25 @@ def get_chuck_data(content, max_length, min_length, input):
             current_length = sentence_length
 
     return paragraphs
+
+
+def clean_filename(url):
+    # Characters to be removed or replaced
+    invalid_chars = {
+        "/": "_",
+        "\\": "_",
+        ":": "_",
+        "*": "_",
+        "?": "_",
+        "\"": "_",
+        "<": "_",
+        ">": "_",
+        "|": "_",
+        " ": "_",
+        ".": "_",
+        "=": "_",
+    }
+    for char, replacement in invalid_chars.items():
+        url = url.replace(char, replacement)
+
+    return url

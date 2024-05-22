@@ -18,7 +18,6 @@
 # Length-Adaptive Transformer
 # Copyright (c) 2020-present NAVER Corp.
 # Apache License v2.0
-
 """Evolustion: Provide the evolustionary search for pytorch."""
 
 import csv

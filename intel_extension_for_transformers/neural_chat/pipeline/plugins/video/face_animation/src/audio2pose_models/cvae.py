@@ -63,11 +63,9 @@ class CVAE(nn.Module):
         return self.decoder(batch)
 
     def test(self, batch):
-        """
-        class_id = batch['class']
+        """class_id = batch['class']
         z = torch.randn([class_id.size(0), self.latent_size]).to(class_id.device)
-        batch['z'] = z
-        """
+        batch['z'] = z."""
         return self.decoder(batch)
 
 

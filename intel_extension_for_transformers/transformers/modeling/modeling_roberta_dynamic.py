@@ -805,7 +805,6 @@ class RobertaModel(RobertaPreTrainedModel):
     `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
 
     .. _*Attention is all you need*: https://arxiv.org/abs/1706.03762
-
     """
 
     _keys_to_ignore_on_load_missing = [r"position_ids"]
@@ -1726,7 +1725,6 @@ def create_position_ids_from_input_ids(input_ids, padding_idx, past_key_values_l
 
     Position numbers begin at padding_idx+1. Padding symbols are ignored.
     This is modified from fairseq's `utils.make_positions`.
-
     """
     # The series of casts and type-conversions here are carefully balanced to both work with ONNX export and XLA.
     mask = input_ids.ne(padding_idx).int()
