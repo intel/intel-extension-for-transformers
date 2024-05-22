@@ -702,10 +702,11 @@ class SmoothQuantConfig(ITREXQuantizationConfigMixin):
             shared_criterion = "max",
             do_blockwise = False,
             auto_alpha_args = None,
-            nsamples=100,
+            n_samples=100,
             excluded_precisions=[],
             ipex_opt_llm=None,
-            num_beams=1,        
+            num_beams=1,
+            **kwargs,
 
     ):
         self.quant_method = QuantizationMethod.SmoothQuant
@@ -720,7 +721,7 @@ class SmoothQuantConfig(ITREXQuantizationConfigMixin):
         self.shared_criterion = shared_criterion
         self.do_blockwise = do_blockwise
         self.auto_alpha_args = auto_alpha_args
-        self.nsamples=nsamples
+        self.n_samples=n_samples
         self.ipex_opt_llm = ipex_opt_llm
         self.num_beams = num_beams
         self.excluded_precisions = excluded_precisions

@@ -413,7 +413,11 @@ class _BaseQBitsAutoModelClass:
 
                 )
 
-        if kwargs.get("use_llm_runtime", None) is not None:
+        if quantization_config is not None and quantization_config.quant_method in ["sq"]:
+            use_neural_speed = False
+        elif hasattr(config, "quantization_config") and isinstance(config.quantization_config, dict) and "quant_method" in config.quantization_config and config.quantization_config["quant_method"] in ["sq"]:
+            use_neural_speed = False
+        elif kwargs.get("use_llm_runtime", None) is not None:
             use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
             logger.warning(
                 "use_llm_runtime is deprecated in version 1.3.2, please use_neural_speed instead."
@@ -1226,6 +1230,8 @@ class _BaseQBitsAutoModelClass:
             quantization_config = DynamicQuantConfig.from_dict(quantization_config)
         elif quantization_config["quant_method"] == "qat":
             quantization_config = QuantAwareTrainingConfig.from_dict(quantization_config)
+        elif quantization_config["quant_method"] == "sq":
+            quantization_config = SmoothQuantConfig.from_dict(quantization_config)
         assert (
             quantization_config is not None
         ), "Detect this model is not a low-bit model."
@@ -1478,7 +1484,17 @@ class _BaseQBitsAutoModelClass:
             q_model = load(weights_file, model, dataloader=None)
             del model
             return q_model
-
+        if quantization_config.quant_method in ["sq"]:
+            print("Loading SmoothQuant model from: ", pretrained_model_name_or_path)
+            from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import (
+                TSModelCausalLMForITREX,
+            )
+            q_model = TSModelCausalLMForITREX.from_pretrained(
+                pretrained_model_name_or_path,
+                file_name=WEIGHTS_NAME,
+                trust_remote_code=trust_remote_code,
+            )
+            return q_model
         dtype_orig = None
         if torch_dtype is not None:
             if isinstance(torch_dtype, str):

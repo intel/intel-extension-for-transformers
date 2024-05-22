@@ -164,6 +164,7 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             "attention_mask": attention_mask,
         }
         input_bs, input_len = input_ids.shape
+        import pdb;pdb.set_trace();
         if self.use_cache and past_key_values is None:
             if model_type in IPEX_OPT_LLM_SUPPORTED:
                 if model_type == "llama" and transformers.__version__ >= "4.36":

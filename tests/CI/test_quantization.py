@@ -502,7 +502,6 @@ class TestQuantization(unittest.TestCase):
                                                 )
         woq_model.eval()
         output = woq_model(dummy_input)
-        import pdb;pdb.set_trace();
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.17126554250717163, rel_tol=1e-04))
 
         # AUTOROUND

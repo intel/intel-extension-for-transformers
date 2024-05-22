@@ -59,7 +59,7 @@ parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default=0.5, help="Smooth quant parameter.")
-parser.add_argument("--nsamples", default=100, help="Smooth quant calibration samples.")
+parser.add_argument("--n_samples", default=100, help="Smooth quant calibration samples.")
 # sq alpha "auto" parameters
 parser.add_argument("--scale_sharing", action="store_true")
 parser.add_argument("--init_alpha", default="0.5", help="Smooth quant parameter.")
@@ -90,10 +90,8 @@ config = AutoConfig.from_pretrained(
     args.model,
     torchscript=(
         True
-        if (
+        if 
             args.sq
-            or (args.int8 or args.int8_bf16_mixed)
-        )
         else False
     ),  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
@@ -149,45 +147,39 @@ if quantization_config is not None:
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
-        use_neural_speed=False
     )
     # save model
     if args.output_dir is not None and (args.sq or args.mixed_precision):
         tokenizer.save_pretrained(args.output_dir)
         if args.sq:
+            quantization_config.remove_redundant_parameters()
+            config.quantization_config = quantization_config
             config.save_pretrained(args.output_dir)
             torch.jit.save(user_model, args.output_dir + "/pytorch_model.bin")
+            #validate loading
+            user_model = AutoModelForCausalLM.from_pretrained(
+                args.output_dir,
+                trust_remote_code=args.trust_remote_code,
+                _commit_hash=args._commit_hash,
+            )
         elif args.mixed_precision:
             user_model.save_pretrained(args.output_dir)
-        args.model = args.output_dir
 
-if args.int8 or args.int8_bf16_mixed:
-    print("Loading SmoothQuant model from: ", args.model)
-    import intel_extension_for_pytorch as ipex
-    from intel_extension_for_transformers.transformers.llm.evaluation.models import (
-        TSModelCausalLMForITREX,
+if args.restore:
+    from intel_extension_for_transformers.transformers.utils.utility import (
+        recover_model_from_json,
     )
-    if args.restore:
-        from intel_extension_for_transformers.transformers.utils.utility import (
-            recover_model_from_json,
-        )
-        user_model = recover_model_from_json(
-            args.model,
-            os.path.join(args.output_dir, "best_configure.json"),
-            args.trust_remote_code,
-        )
-    else:
-        user_model = TSModelCausalLMForITREX.from_pretrained(
-            args.model,
-            file_name="best_model.pt",
-            trust_remote_code=args.trust_remote_code,
-        )
+    user_model = recover_model_from_json(
+        args.model,
+        os.path.join(args.output_dir, "best_configure.json"),
+        args.trust_remote_code,
+    )
+
 elif not (args.sq or args.mixed_precision):
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
-        use_neural_speed=False
     )
 
 

@@ -36,7 +36,6 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --model <MODEL_NAME_OR_PATH> \
     --sq \
     --output_dir <SQ_MODEL_SAVE_PATH> \ # Default is "./saved_results."
-    --int8 \
     --benchmark \
     --batch_size 1
 # load SQ model quantied by itrex and do benchmark.

@@ -40,7 +40,7 @@ from neural_compressor.torch.quantization import (
     quantize
 )
 from .sq_utils import (
-    IPEX_OPT_LLM_SUPPORTED_DICT,
+    IPEX_OPT_LLM_SUPPORTED,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
     generate_dummy_past_key_values_for_opt_llm,
     generate_dummy_past_key_values,
@@ -653,17 +653,6 @@ def get_bits(config):
     return bits
 
 def convert_to_smoothquant_model(model, quantization_config):
-    if ipex.__version__ == "2.2.0+cpu":
-        logger.info("ipex.llm.optimize by 2.2.0 version supported model family: ", ",".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.2"]))
-        logger.info("The recommended transformers version is 4.35.2 if you used IPEX 2.2.0 version.")
-        IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.2"]
-    elif  ipex.__version__ == "2.3.0+cpu":
-        logger.info("ipex.llm.optimize by 2.3.0 version supported model family: ", ",".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]))
-        logger.info("The recommended transformers version is 4.38.1 if you used IPEX 2.3.0 version.")
-        IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]
-    else:
-        logger.warning("Please check the intel_extension_for_pytorch version is 2.3.0+cpu.")
-        IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]
     model_type = model.config.model_type.replace("_", "-")
     # ipex.optimize_transformers
     if quantization_config.ipex_opt_llm is None:
@@ -699,11 +688,11 @@ def convert_to_smoothquant_model(model, quantization_config):
         calib_dataloader = get_dataloader(model_type, quantization_config, past_key_values=past_key_values, shuffle=True, padding=True, max_input_lenth=2048, pad_val=1)
     else:
         calib_dataloader = get_dataloader(model_type, quantization_config, past_key_values=past_key_values)
- 
+
     def calib_func(model):
         with torch.no_grad():
             for i, (inputs, last_ind) in enumerate(calib_dataloader):
-                if i >= quantization_config.nsamples:
+                if i >= quantization_config.n_samples:
                     break
                 if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                     model(
