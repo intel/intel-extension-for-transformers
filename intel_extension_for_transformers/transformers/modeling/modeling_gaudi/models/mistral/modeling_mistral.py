@@ -68,7 +68,7 @@ def update(prev, cur, dim, idx):
 
 def gaudi_mistral_rmsnorm_forward(self, hidden_states):
     """
-    
+
     The only differences are:
         - override RMSNorm with Habana fused RMSNorm
     """
@@ -97,14 +97,14 @@ def gaudi_mistral_repeat_kv(
     n_rep: int,
 ):
     """
-    
+
     The only differences are:
-        - Append num_key_value_heads == 1 check as kv states can be broadcasted during 
+        - Append num_key_value_heads == 1 check as kv states can be broadcasted during
           matmuls so need to expand and reshape them.
         - Add new args query_states, key_states, value_states and attention_mask and update the logic for expansion.
-    The query states go from (batch, num_heads, seqlen, head_dim) to 
+    The query states go from (batch, num_heads, seqlen, head_dim) to
     (batch, num_key_value_heads, n_rep, seqlen, head_dim)
-    The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to 
+    The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to
     (batch, num_key_value_heads, 1, seqlen, head_dim)
     """
     batch, num_key_value_heads, kv_len, head_dim = key_states.shape
@@ -176,7 +176,7 @@ class GaudiMistralAttention(MistralAttention):
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """
-         
+
          The only differences are:
          - add new args token_idx
          - add new args reuse_cache
@@ -314,7 +314,7 @@ class GaudiMistralDecoderLayer(MistralDecoderLayer):
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         """
@@ -380,7 +380,7 @@ class GaudiMistralModel(MistralModel):
         attn_softmax_bf16: Optional[bool] = False,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         """
@@ -548,7 +548,7 @@ class GaudiMistralForCausalLM(MistralForCausalLM):
         attn_softmax_bf16: Optional[bool] = False,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         """
@@ -614,7 +614,7 @@ class GaudiMistralForCausalLM(MistralForCausalLM):
         self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs
     ):
         """
-        
+
         The only differences are:
         - add new args token_idx
         - add token_idx into model_inputs
@@ -637,7 +637,7 @@ class GaudiMistralForCausalLM(MistralForCausalLM):
                 # Keep only the unprocessed tokens:
                 # 1 - If the length of the attention_mask exceeds the length of input_ids,
                 # then we are in a setting where
-                # some of the inputs are exclusively passed as part of the cache 
+                # some of the inputs are exclusively passed as part of the cache
                 # (e.g. when passing input_embeds as input)
                 if attention_mask is not None and attention_mask.shape[1] > input_ids.shape[1]:
                     input_ids = input_ids[:, -(attention_mask.shape[1] - past_length) :]

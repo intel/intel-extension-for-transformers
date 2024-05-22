@@ -39,7 +39,7 @@ def gaudi_gpt_bigcode_attention_forward(
     Tuple[torch.Tensor, Optional[torch.Tensor], Tuple[torch.Tensor, ...]],
 ]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     - optimize KV cache
@@ -109,7 +109,7 @@ def gaudi_gpt_bigcode_block_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor], Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -183,7 +183,7 @@ def gaudi_gpt_bigcode_model_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPastAndCrossAttentions]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     - if token_idx and past_key_values are passed, set self_attention_mask based on the static shape of past_key_values
@@ -259,7 +259,7 @@ def gaudi_gpt_bigcode_model_forward(
 
         if query_length > 1 and attention_mask is not None:
             # From PyTorch 2.1 onwards, F.scaled_dot_product_attention with the memory-efficient attention backend
-            # 
+            #
             self_attention_mask = GaudiAttentionMaskConverter._unmask_unattended(
                 self_attention_mask, attention_mask, unmasked_value=True
             )
@@ -372,7 +372,7 @@ def gaudi_gpt_bigcode_model_forward(
 
 class GaudiGPTBigCodeForCausalLM(GPTBigCodeForCausalLM):
     """
-    
+
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs

@@ -64,7 +64,7 @@ import habana_frameworks.torch.core as htcore
 
 def gaudi_llama_rmsnorm_forward(self, hidden_states):
     """
-    
+
     The only differences are:
         - override RMSNorm with Habana fused RMSNorm
     """
@@ -128,13 +128,13 @@ def gaudi_llama_repeat_kv(
     n_rep: int,
 ):
     """
-    
+
     The only differences are:
-        - Append num_key_value_heads == 1 check as kv states can be broadcasted during 
+        - Append num_key_value_heads == 1 check as kv states can be broadcasted during
           matmuls so need to expand and reshape them.
         - Add new args query_states, key_states, value_states and attention_mask and
           update the logic for expansion.
-    The query states go from (batch, num_heads, seqlen, head_dim) to 
+    The query states go from (batch, num_heads, seqlen, head_dim) to
     (batch, num_key_value_heads, n_rep, seqlen, head_dim)
     The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to
     (batch, num_key_value_heads, 1, seqlen, head_dim)
@@ -337,7 +337,7 @@ class GaudiLlamaAttention(LlamaAttention):
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         - optimize KV cache
@@ -530,7 +530,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         - add new args attn_softmax_bf16
@@ -639,13 +639,11 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
 
 
 class GaudiLlamaModel(LlamaModel):
-    """
-    
-    """
+    """"""
 
     def __init__(self, config: LlamaConfig):
         """
-        
+
         1. set fill_value to 1 instead of True
         2. add device=self.device
         """
@@ -704,7 +702,7 @@ class GaudiLlamaModel(LlamaModel):
         cache_prune_num: int = 0,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         - add new args attn_softmax_bf16
@@ -873,7 +871,7 @@ class GaudiLlamaModel(LlamaModel):
 
 class GaudiLlamaForCausalLM(LlamaForCausalLM):
     """
-    
+
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs
@@ -1012,9 +1010,9 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
                     max_cache_length = None
 
                 # Keep only the unprocessed tokens:
-                # 1 - If the length of the attention_mask exceeds the length of input_ids, 
+                # 1 - If the length of the attention_mask exceeds the length of input_ids,
                 # then we are in a setting where
-                # some of the inputs are exclusively passed as part of the cache 
+                # some of the inputs are exclusively passed as part of the cache
                 # (e.g. when passing input_embeds as input)
                 if attention_mask is not None and attention_mask.shape[1] > input_ids.shape[1]:
                     input_ids = input_ids[:, -(attention_mask.shape[1] - past_length) :]
@@ -1022,7 +1020,7 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
                 # then input_ids holds all input tokens. We can discard input_ids based on the past_length.
                 elif past_length < input_ids.shape[1]:
                     input_ids = input_ids[:, past_length:]
-                # 3 - Otherwise (past_length >= input_ids.shape[1]), 
+                # 3 - Otherwise (past_length >= input_ids.shape[1]),
                 # let's assume input_ids only has unprocessed tokens.
 
                 # If we are about to go beyond the maximum cache length,

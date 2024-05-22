@@ -94,7 +94,7 @@ def apply_customized_rope(q, k, cos, sin, position_ids):
 
 def gaudi_mixtral_rmsnorm_forward(self, hidden_states):
     """
-    
+
     The only differences are:
         - override RMSNorm with Habana fused RMSNorm
     """
@@ -123,7 +123,7 @@ def gaudi_mixtral_repeat_kv(
     n_rep: int,
 ):
     """
-    
+
     The only differences are:
     - Append num_key_value_heads == 1 check as kv states can be broadcasted during matmuls
       so need to expand and reshape them.
@@ -192,7 +192,7 @@ def gaudi_mixtral_attention_forward(
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     - optimize KV cache
@@ -279,7 +279,7 @@ def gaudi_mixtral_attention_forward(
 
 def gaudi_mixtral_block_sparse_moe_forward(self, hidden_states: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    
+
     The only differences are:
     - optimize expert forward, remove dynamic control and dynamic shape
     """
@@ -339,7 +339,7 @@ def gaudi_mixtral_decoder_layer_forward(
     **kwargs,
 ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -397,7 +397,7 @@ def gaudi_mixtral_model_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, MoeModelOutputWithPast]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -553,7 +553,7 @@ def gaudi_mixtral_model_forward(
 
 class GaudiMixtralForCausalLM(MixtralForCausalLM):
     """
-    
+
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs

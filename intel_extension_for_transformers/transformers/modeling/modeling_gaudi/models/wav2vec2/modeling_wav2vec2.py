@@ -31,10 +31,7 @@ def _gaudi_wav2vec2_compute_mask_indices(
     attention_mask: Optional[torch.LongTensor] = None,
     min_masks: int = 0,
 ) -> torch.Tensor:
-    """
-    
-    The only difference is that the processing is performed with PyTorch on HPUs (Numpy is used in Transformers).
-    """
+    """The only difference is that the processing is performed with PyTorch on HPUs (Numpy is used in Transformers)."""
     batch_size, sequence_length = shape
 
     if mask_length < 1:
@@ -134,10 +131,7 @@ def _gaudi_wav2vec2_compute_mask_indices(
 def _gaudi_wav2vec2_sample_negative_indices(
     features_shape: Tuple, num_negatives: int, mask_time_indices: Optional[torch.Tensor] = None
 ):
-    """
-    
-    The only difference is that the processing is performed with PyTorch on HPUs (Numpy is used in Transformers).
-    """
+    """The only difference is that the processing is performed with PyTorch on HPUs (Numpy is used in Transformers)."""
     batch_size, sequence_length = features_shape
 
     # generate indices of the positive vectors themselves, repeat them `num_negatives` times
@@ -178,10 +172,9 @@ def _gaudi_wav2vec2_mask_hidden_states(
     mask_time_indices: Optional[torch.FloatTensor] = None,
     attention_mask: Optional[torch.LongTensor] = None,
 ):
-    """
-    
-    Differences are that (1) `mask_time_indices` is not moved to the current device and 
+    """Differences are that (1) `mask_time_indices` is not moved to the current device and
     converted into boolean because this is already done in _compute_mask_indices.
+
     (2) index_put operation on hidden_states is replaced by combination of simpler ops (more suitable for HPU graphs)
     """
 
@@ -235,10 +228,7 @@ def gaudi_wav2vec2_encoder_forward(
     output_hidden_states: bool = False,
     return_dict: bool = True,
 ):
-    """
-    
-    The only difference is that torch.rand device is set to 'hpu' (required to capture operation as part of HPU graph)
-    """
+    """The only difference is that torch.rand device is set to 'hpu' (required to capture operation as part of HPU graph)"""
     all_hidden_states = () if output_hidden_states else None
     all_self_attentions = () if output_attentions else None
 
@@ -311,10 +301,7 @@ def gaudi_wav2vec2_forward(
     output_hidden_states: Optional[bool] = None,
     return_dict: Optional[bool] = None,
 ) -> Union[Tuple, Wav2Vec2BaseModelOutput]:
-    """
-    
-    The only difference is that a clone of `hidden_states` is given to _mask_hidden_states to avoid an error.
-    """
+    """The only difference is that a clone of `hidden_states` is given to _mask_hidden_states to avoid an error."""
     output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
     output_hidden_states = (
         output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -360,10 +347,7 @@ def gaudi_wav2vec2_forward(
 
 
 def gaudi_wav2vec2_tdnnlayer_forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-    """
-    
-    v4.38.2 implementation caused accuracy issue to run pytest Wav2Vec2RobustModelTest.
-    """
+    """v4.38.2 implementation caused accuracy issue to run pytest Wav2Vec2RobustModelTest."""
     hidden_states = hidden_states.unsqueeze(1)
     hidden_states = torch.nn.functional.unfold(
         hidden_states,

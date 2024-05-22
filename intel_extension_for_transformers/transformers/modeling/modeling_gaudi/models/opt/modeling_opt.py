@@ -24,7 +24,7 @@ from ..modeling_attn_mask_utils import _gaudi_prepare_4d_causal_attention_mask
 
 class GaudiOPTLearnedPositionalEmbedding(OPTLearnedPositionalEmbedding):
     """
-    
+
     The only differences are:
     - add new args token_idx
     - compute embedding using token_idx if past_key_values_length not 0
@@ -44,7 +44,7 @@ class GaudiOPTLearnedPositionalEmbedding(OPTLearnedPositionalEmbedding):
             positions = positions[:, past_key_values_length:]
             return torch.nn.Embedding.forward(self, positions + self.offset)
         else:
-            # if not 0, kv cache is enabled and from step = 2, 
+            # if not 0, kv cache is enabled and from step = 2,
             # past_key_values_length is equal to the final length of outputs
             return torch.nn.Embedding.forward(self, token_idx + self.offset)
 
@@ -60,7 +60,7 @@ def gaudi_opt_attention_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     - optimize KV cache
@@ -188,7 +188,7 @@ def gaudi_opt_decoder_layer_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -260,7 +260,7 @@ def gaudi_opt_decoder_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     - update calculation of mask_seq_length
@@ -413,7 +413,7 @@ def gaudi_opt_model_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -451,7 +451,7 @@ def gaudi_opt_model_forward(
 
 class GaudiOPTForCausalLM(OPTForCausalLM):
     """
-    
+
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs

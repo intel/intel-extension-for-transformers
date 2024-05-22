@@ -211,7 +211,7 @@ class GaudiGenerationMixin(GenerationMixin):
                     torch.ones((batch_size, 1), dtype=torch.long, device=device) * decoder_start_token_id
                 )
         else:
-            # creating padded decoder_input_ids to achieve static shapes. 
+            # creating padded decoder_input_ids to achieve static shapes.
             # Later new tokens once generated are copied in to decoder_input_ids based on token_idx
             max_length = max_new_tokens + 1 if max_new_tokens is not None else self.generation_config.max_length
             decoder_input_ids_start = (
@@ -252,9 +252,7 @@ class GaudiGenerationMixin(GenerationMixin):
         is_encoder_decoder: bool = False,
         standardize_cache_format: bool = False,
     ) -> Dict[str, Any]:
-        """
-        Adds support for `token_idx`, which is necessary for using static shapes.
-        """
+        """Adds support for `token_idx`, which is necessary for using static shapes."""
         # mark to identify starting from second token
         model_kwargs["first_token"] = False
         # update past_key_values
@@ -310,7 +308,7 @@ class GaudiGenerationMixin(GenerationMixin):
         self, params, input_ids, model_kwargs, pad_token_id, bucket_size, reduce_recompile=False
     ):
         if params["need_expansion"]:
-            # Pad inputs to have static shapes during generation, 
+            # Pad inputs to have static shapes during generation,
             # this gives better performance than dynamic shapes on HPUs
             pad_amount = params["allocated_space"] - input_ids.shape[-1]
             input_ids = torch.nn.functional.pad(input_ids, (0, pad_amount), value=pad_token_id)
@@ -359,9 +357,9 @@ class GaudiGenerationMixin(GenerationMixin):
                             pad_tuple = create_pad_arg(pad_amount, i, j)
                             # Different models might have different shapes of kv-cache
                             # create_pad_arg handles them on a per-model basis
-                            # This is a necessary (but not sufficient) condition: 
+                            # This is a necessary (but not sufficient) condition:
                             # what ever dimension we are padding, should be a multiple of bucket_size
-                            # This check is added in case we get a new model with a new kv-cache structure, 
+                            # This check is added in case we get a new model with a new kv-cache structure,
                             # and we attempt to pad some wrong dimension
                             assert (
                                 model_kwargs["past_key_values"][i][j].shape[-(len(pad_tuple) // 2)] % bucket_size == 0
@@ -399,8 +397,8 @@ class GaudiGenerationMixin(GenerationMixin):
 
         <Tip warning={true}>
 
-        Most generation-controlling parameters are set in [`transformers.generation.generation_config`] 
-        which, if not passed, will be set to the model's default generation configuration. 
+        Most generation-controlling parameters are set in [`transformers.generation.generation_config`]
+        which, if not passed, will be set to the model's default generation configuration.
         You can override any `generation_config` by passing the corresponding
         parameters to generate, e.g. `.generate(inputs, num_beams=4, do_sample=True)`.
 
@@ -472,10 +470,10 @@ class GaudiGenerationMixin(GenerationMixin):
                 specific kwargs should not be prefixed and decoder specific kwargs should be prefixed with *decoder_*.
 
         Return:
-            [`transformers.utils.ModelOutput`] or `torch.LongTensor`: 
+            [`transformers.utils.ModelOutput`] or `torch.LongTensor`:
             A [`transformers.generationutils.ModelOutput`] (if `return_dict_in_generate=True`
             or when `config.return_dict_in_generate=True`) or a `torch.FloatTensor`.
-                If the model is *not* an encoder-decoder model (`model.config.is_encoder_decoder=False`), 
+                If the model is *not* an encoder-decoder model (`model.config.is_encoder_decoder=False`),
             the possible [`transformers.generationutils.ModelOutput`] types are:
                     - [`transformers.generation.GenerateDecoderOnlyOutput`],
                     - [`transformers.generation.GenerateBeamDecoderOnlyOutput`]
@@ -605,12 +603,12 @@ class GaudiGenerationMixin(GenerationMixin):
                 assert generation_config.bucket_size >= 0, "please set valid bucket_size to use bucket_internal"
 
         if generation_config.static_shapes:
-            # Pad inputs to have static shapes during generation, 
+            # Pad inputs to have static shapes during generation,
             # this gives better performance than dynamic shapes on HPUs
             # In encoder_decoder models, Inputs are already padded
 
             if not self.config.is_encoder_decoder:
-                # only pad if bucket_size < -1. If we are bucketing (bucket_size > 0), 
+                # only pad if bucket_size < -1. If we are bucketing (bucket_size > 0),
                 # then that is taken care in greedy_search()
                 if not is_greedy_or_beam_and_bucket:
                     # token_idx is the current index in the generation process,
@@ -1147,7 +1145,7 @@ class GaudiGenerationMixin(GenerationMixin):
         profiling_steps: Optional[int] = 0,
         **model_kwargs,
     ) -> Union[GenerateNonBeamOutput, torch.LongTensor]:
-        r"""Generates sequences of token ids for models with a language modeling head using **contrastive search** 
+        r"""Generates sequences of token ids for models with a language modeling head using **contrastive search**
         and can be used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
 
         <Tip warning={true}>
@@ -1325,7 +1323,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 If model is an encoder-decoder model the kwargs should include `encoder_outputs`.
 
         Return:
-            [`transformers.generation.GenerateDecoderOnlyOutput`], 
+            [`transformers.generation.GenerateDecoderOnlyOutput`],
             [`transformers.generation.GenerateEncoderDecoderOutput`]
             or `torch.LongTensor`: A `torch.LongTensor` containing the generated tokens (default behaviour) or a
             [`transformers.generation.GenerateDecoderOnlyOutput`] if `model.config.is_encoder_decoder=False` and
@@ -2750,11 +2748,11 @@ class GaudiGenerationMixin(GenerationMixin):
         Return:
             [`transformers.generation.GenerateBeamDecoderOnlyOutput`],
             [`transformers.generation.GenerateBeamEncoderDecoderOutput`] or
-            `torch.LongTensor`: 
+            `torch.LongTensor`:
             A `torch.LongTensor` containing the generated tokens (default behaviour) or a
-            [`transformers.generation.GenerateBeamDecoderOnlyOutput`] if 
+            [`transformers.generation.GenerateBeamDecoderOnlyOutput`] if
             [`transformers.generation.BeamSearchDecoderOnlyOutput`] if
-            `model.config.is_encoder_decoder=False` and `return_dict_in_generate=True` or 
+            `model.config.is_encoder_decoder=False` and `return_dict_in_generate=True` or
             a [`transformers.generation.GenerateBeamEncoderDecoderOutput`]
             if `model.config.is_encoder_decoder=True`.
 

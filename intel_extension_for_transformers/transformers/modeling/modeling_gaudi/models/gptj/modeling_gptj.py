@@ -87,7 +87,7 @@ class GaudiGPTJAttention(GPTJAttention):
         Optional[Tuple[torch.Tensor, Tuple[torch.Tensor], Tuple[torch.Tensor, ...]]],
     ]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         - remove is_torch_fx_proxy
@@ -171,7 +171,7 @@ def gaudi_gptj_block_forward(
     cos: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor], Optional[Tuple[torch.Tensor, Tuple[torch.FloatTensor, ...]]]]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     - pass sin and cos from upper level as they are identical for each attn block
@@ -222,7 +222,7 @@ def gaudi_gptj_model_forward(
     cos: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     - pass sin and cos from upper level as they are identical for each attn block
@@ -403,7 +403,7 @@ def gaudi_gptj_model_forward(
 
 class GaudiGPTJForCausalLM(GPTJForCausalLM):
     """
-    
+
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs

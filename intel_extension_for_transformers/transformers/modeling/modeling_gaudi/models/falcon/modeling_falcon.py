@@ -82,7 +82,7 @@ def gaudi_falcon_attention_split_heads(
     self, fused_qkv: torch.Tensor
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
-    Changing index operation of qkv[:::] to use torch.index_select to work around gradient 
+    Changing index operation of qkv[:::] to use torch.index_select to work around gradient
     accuracy issue and improve performance.
     """
     if self.new_decoder_architecture:
@@ -203,8 +203,8 @@ def gaudi_falcon_attention_forward(
                         value_layer,
                         attention_mask,
                         0.0,
-                        # The query_length > 1 is necessary to match with 
-                        # AttentionMaskConverter.to_causal_4d that does not create a 
+                        # The query_length > 1 is necessary to match with
+                        # AttentionMaskConverter.to_causal_4d that does not create a
                         # causal mask in case query_length == 1.
                         self.is_causal and attention_mask is None and query_length > 1,
                     )
@@ -219,7 +219,7 @@ def gaudi_falcon_attention_forward(
                     value_layer,
                     attention_mask,
                     0.0,
-                    # The query_length > 1 is necessary to match with 
+                    # The query_length > 1 is necessary to match with
                     # AttentionMaskConverter.to_causal_4d that does not create a causal
                     #  mask in case query_length == 1.
                     is_causal=self.is_causal and attention_mask is None and query_length > 1,
@@ -274,7 +274,7 @@ def gaudi_falcon_attention_forward(
             # cast attention scores to fp32, compute scaled softmax and cast back to initial dtype
             # - [batch_size, num_heads, q_length, kv_length]
             input_dtype = attention_scores.dtype
-            # `float16` has a minimum value of -65504.0, whereas `bfloat16` and `float32` 
+            # `float16` has a minimum value of -65504.0, whereas `bfloat16` and `float32`
             # have a minimum value of `-3.4e+38`
             if input_dtype == torch.float16 or input_dtype == torch.bfloat16:
                 attention_scores = attention_scores.to(torch.float32)
@@ -319,7 +319,7 @@ def gaudi_falcon_decoder_layer_forward(
     **kwargs,
 ):
     """
-    
+
     The only differences are:
     - add new args token_idx and position_ids
     - add token_idx and position_ids into attention inputs
@@ -375,7 +375,7 @@ def gaudi_falcon_decoder_layer_forward(
 
 class GaudiFalconModel(FalconModel):
     """
-    
+
     The only differences are:
     - add new args token_idx and position_ids
     - add token_idx and position_ids into decoder inputs
@@ -472,7 +472,7 @@ class GaudiFalconModel(FalconModel):
                 alibi = alibi.reshape(batch_size, -1, *alibi.shape[1:])
 
                 attention_mask_2d = attention_mask
-                # We don't call _prepare_4d_causal_attention_mask_for_sdpa as 
+                # We don't call _prepare_4d_causal_attention_mask_for_sdpa as
                 # we need to mask alibi using the 4D attention_mask untouched.
                 attention_mask = _gaudi_prepare_4d_causal_attention_mask(
                     attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
@@ -488,7 +488,7 @@ class GaudiFalconModel(FalconModel):
                         torch.finfo(alibi.dtype).min,
                     )
 
-                    # From PyTorch 2.1 onwards, F.scaled_dot_product_attention with 
+                    # From PyTorch 2.1 onwards, F.scaled_dot_product_attention with
                     # the memory-efficient attention backend
                     if seq_length > 1:
                         attention_mask = GaudiAttentionMaskConverter._unmask_unattended(
@@ -567,7 +567,7 @@ class GaudiFalconModel(FalconModel):
 
 class GaudiFalconForCausalLM(FalconForCausalLM):
     """
-    
+
     The only differences are:
     - add new args token_idx and position_ids
     - add token_idx and position_ids into model inputs

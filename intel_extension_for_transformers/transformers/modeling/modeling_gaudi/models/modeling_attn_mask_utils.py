@@ -22,7 +22,7 @@ from transformers.modeling_attn_mask_utils import AttentionMaskConverter
 class GaudiAttentionMaskConverter(AttentionMaskConverter):
     """
     Differences:
-    - replace `triu` with similar logic here: 
+    - replace `triu` with similar logic here:
 
     """
 

@@ -19,10 +19,7 @@ from transformers.models.swin.modeling_swin import window_partition
 
 
 def gaudi_swin_get_attn_mask(self, height, width, dtype):
-    """
-    
-    The only difference is moving img_mask to hpu for performance
-    """
+    """The only difference is moving img_mask to hpu for performance."""
     if self.shift_size > 0:
         # calculate attention mask for SW-MSA
         img_mask = torch.zeros((1, height, width, 1), dtype=dtype, device="hpu")

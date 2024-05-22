@@ -40,7 +40,7 @@ def gaudi_gpt_neox_attention_forward(
     token_idx: Optional[torch.Tensor] = None,
 ):
     """
-    
+
     The only differences are:
     - add new args token_idx
     - optimize KV cache
@@ -124,7 +124,7 @@ def gaudi_gpt_neox_layer_forward(
     token_idx: Optional[torch.Tensor] = None,
 ):
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -180,7 +180,7 @@ def gaudi_gpt_neox_model_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -306,7 +306,7 @@ def gaudi_gpt_neox_model_forward(
 
 class GaudiGPTNeoXForCausalLM(GPTNeoXForCausalLM):
     """
-    
+
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs

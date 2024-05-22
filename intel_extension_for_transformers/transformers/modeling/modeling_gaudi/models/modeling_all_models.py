@@ -98,9 +98,7 @@ def gaudi_get_extended_attention_mask(
 
 
 def gaudi_conv1d_forward(self, x):
-    """
-    but moves reshape before view for tpc auto fusion.
-    """
+    """But moves reshape before view for tpc auto fusion."""
     size_out = x.size()[:-1] + (self.nf,)
     x = torch.mm(x.view(-1, x.size(-1)), self.weight)
     x = x.view(size_out)

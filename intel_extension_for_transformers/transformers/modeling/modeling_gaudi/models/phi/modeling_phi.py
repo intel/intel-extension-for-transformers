@@ -50,7 +50,7 @@ def gaudi_phi_attention_forward(
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -170,7 +170,7 @@ def gaudi_phi_decoder_layer_forward(
     **kwargs,
 ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -218,7 +218,7 @@ def gaudi_phi_model_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -346,7 +346,7 @@ class GaudiPhiForCausalLM(PhiForCausalLM):
         token_idx: Optional[torch.Tensor] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         """
@@ -404,7 +404,7 @@ class GaudiPhiForCausalLM(PhiForCausalLM):
         self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs
     ):
         """
-        
+
         The only differences are:
         - add new args token_idx
         - add token_idx into model_inputs

@@ -39,7 +39,7 @@ def gaudi_mpt_attention_forward(
     token_idx: Optional[torch.Tensor] = None,
 ):
     """
-    
+
     The only differences are:
     - add new args token_idx
     - optimize KV cache
@@ -112,7 +112,7 @@ def gaudi_mpt_block_forward(
     token_idx: Optional[torch.Tensor] = None,
 ):
     """
-    
+
     The only differences are:
     - add new args token_idx
     """
@@ -165,7 +165,7 @@ class GaudiMptModel(MptModel):
         token_idx: Optional[torch.Tensor] = None,
     ) -> Union[Tuple[torch.Tensor, ...], BaseModelOutputWithPastAndCrossAttentions]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         """
@@ -284,7 +284,7 @@ class GaudiMptForCausalLM(MptForCausalLM):
         **kwargs,
     ) -> dict:
         """
-        
+
         The only differences are:
         - add new args token_idx
         - add token_idx into model_inputs
@@ -336,7 +336,7 @@ class GaudiMptForCausalLM(MptForCausalLM):
         token_idx: Optional[torch.Tensor] = None,
     ) -> Union[Tuple[torch.Tensor], CausalLMOutputWithCrossAttentions]:
         """
-        
+
         The only differences are:
         - add new args token_idx
         """
