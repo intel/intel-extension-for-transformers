@@ -104,6 +104,11 @@ parser.add_argument(
     help="Percent of the average Hessian diagonal to use for dampening.",
 )
 parser.add_argument(
+    "--true_sequential",
+    action="store_true",
+    help="Whether to quantize layers within a transformer block in their original order.",
+)
+parser.add_argument(
     "--blocksize",
     type=int,
     default=128,
@@ -263,6 +268,7 @@ if args.woq:
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
             layer_wise=args.layer_wise,
+            true_sequential=args.true_sequential,
             use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "AutoRound":
@@ -392,7 +398,7 @@ if args.accuracy:
     if args.use_neural_speed:
         model_args += ",model_format=neural_speed"
     args = LMEvalParser(model = "hf", 
-                        model_args = model_args,
+                        model_args=model_args,
                         tasks = args.tasks,
                         device = "cpu",
                         batch_size = args.batch_size)
