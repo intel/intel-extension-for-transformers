@@ -348,8 +348,6 @@ class _BaseQBitsAutoModelClass:
             from vllm.model_executor.layers.linear import (MergedColumnParallelLinear, QKVParallelLinear, RowParallelLinear)
 
             os.environ["backend"] = "use_vllm"
-            os.environ["VLLM_CONFIGURE_LOGGING"] = 0
-
             llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
             model = llm.llm_engine.model_executor.driver_worker.model_runner.model
             print("Original model =", model)
