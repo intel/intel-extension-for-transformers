@@ -64,7 +64,7 @@ import habana_frameworks.torch.core as htcore
 
 def gaudi_llama_rmsnorm_forward(self, hidden_states):
     """
-    Copied from LlamaRMSNorm.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py
+    
     The only differences are:
         - override RMSNorm with Habana fused RMSNorm
     """
@@ -128,12 +128,16 @@ def gaudi_llama_repeat_kv(
     n_rep: int,
 ):
     """
-    Copied from repeat_kv: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py
+    
     The only differences are:
-        - Append num_key_value_heads == 1 check as kv states can be broadcasted during matmuls so need to expand and reshape them.
-        - Add new args query_states, key_states, value_states and attention_mask and update the logic for expansion.
-    The query states go from (batch, num_heads, seqlen, head_dim) to (batch, num_key_value_heads, n_rep, seqlen, head_dim)
-    The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to (batch, num_key_value_heads, 1, seqlen, head_dim)
+        - Append num_key_value_heads == 1 check as kv states can be broadcasted during 
+          matmuls so need to expand and reshape them.
+        - Add new args query_states, key_states, value_states and attention_mask and
+          update the logic for expansion.
+    The query states go from (batch, num_heads, seqlen, head_dim) to 
+    (batch, num_key_value_heads, n_rep, seqlen, head_dim)
+    The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to
+    (batch, num_key_value_heads, 1, seqlen, head_dim)
     """
     batch, num_key_value_heads, kv_len, head_dim = key_states.shape
     if n_rep == 1 or num_key_value_heads == 1:
@@ -295,7 +299,7 @@ class GaudiLlamaAttention(LlamaAttention):
         # Call rotary emb forward() to update cos/sin cache when inferring more than self.max_position_embeddings
         # This helps in avoiding creation of these caches during actual model forward pass and
         # reduce memory consumption and improve performance.
-        if seq_len > self.max_position_embeddings:
+        if seq_len > self.max_position_embeddings: # pylint: disable=E0203
             self.max_position_embeddings = seq_len
             _, _ = self.rotary_emb(self.k_proj.weight, seq_len=seq_len)
 
@@ -333,7 +337,7 @@ class GaudiLlamaAttention(LlamaAttention):
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """
-        Copied from LlamaAttention.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py
+        
         The only differences are:
         - add new args token_idx
         - optimize KV cache
@@ -368,7 +372,6 @@ class GaudiLlamaAttention(LlamaAttention):
             key_states = self.k_proj(hidden_states)
             value_states = self.v_proj(hidden_states)
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-        # TODO: update when auto mp params is enabled in DeepSpeed (cf. https://github.com/HabanaAI/DeepSpeed/blob/94309c7b5dfc1a69858f5c9f25737b2f81a332a5/deepspeed/module_inject/replace_module.py#L440)
         key_states = key_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
         value_states = value_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
 
@@ -489,7 +492,7 @@ class GaudiLlamaAttention(LlamaAttention):
 
 class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: LlamaConfig, layer_idx: int):
-        super(LlamaDecoderLayer, self).__init__()
+        super(GaudiLlamaDecoderLayer, self).__init__()
         self.hidden_size = config.hidden_size
 
         self.self_attn = GaudiLlamaAttention(config=config, layer_idx=layer_idx)
@@ -527,7 +530,7 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
-        Copied from LlamaDecoderLayer.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py
+        
         The only differences are:
         - add new args token_idx
         - add new args attn_softmax_bf16
@@ -537,11 +540,6 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
         - add new arg flash_attention_causal_mask
         - add new arg cache_prune_num for attention_sinks
         """
-        if "padding_mask" in kwargs:
-            warnings.warn(
-                "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
-            )
-
         residual = hidden_states
         hidden_states, self_attn_weights, present_key_value = self.pre_attn(
             hidden_states,
@@ -642,16 +640,16 @@ class GaudiLlamaDecoderLayer(LlamaDecoderLayer):
 
 class GaudiLlamaModel(LlamaModel):
     """
-    Copied from https://github.com/huggingface/transformers/blob/v4.38.2/src/transformers/models/llama/modeling_llama.py#L909
+    
     """
 
     def __init__(self, config: LlamaConfig):
         """
-        Copied from https://github.com/huggingface/transformers/blob/v4.38.2/src/transformers/models/llama/modeling_llama.py#L917
+        
         1. set fill_value to 1 instead of True
         2. add device=self.device
         """
-        super(LlamaModel, self).__init__(config)
+        super(GaudiLlamaModel, self).__init__(config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
 
@@ -663,7 +661,6 @@ class GaudiLlamaModel(LlamaModel):
         self.gradient_checkpointing = False
 
         # Register a causal mask to separate causal and padding mask creation. Merging happens in the attention class.
-        # NOTE: This is not friendly with TorchScript, ONNX, ExportedProgram serialization for very large `max_position_embeddings`.
         causal_mask = torch.full(
             (config.max_position_embeddings, config.max_position_embeddings),
             fill_value=1,
@@ -707,7 +704,7 @@ class GaudiLlamaModel(LlamaModel):
         cache_prune_num: int = 0,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         """
-        Copied from LlamaModel.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py
+        
         The only differences are:
         - add new args token_idx
         - add new args attn_softmax_bf16
@@ -876,7 +873,7 @@ class GaudiLlamaModel(LlamaModel):
 
 class GaudiLlamaForCausalLM(LlamaForCausalLM):
     """
-    Inherits from LlamaForCausalLM: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py
+    
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs
@@ -1015,18 +1012,21 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
                     max_cache_length = None
 
                 # Keep only the unprocessed tokens:
-                # 1 - If the length of the attention_mask exceeds the length of input_ids, then we are in a setting where
-                # some of the inputs are exclusively passed as part of the cache (e.g. when passing input_embeds as
-                # input)
+                # 1 - If the length of the attention_mask exceeds the length of input_ids, 
+                # then we are in a setting where
+                # some of the inputs are exclusively passed as part of the cache 
+                # (e.g. when passing input_embeds as input)
                 if attention_mask is not None and attention_mask.shape[1] > input_ids.shape[1]:
                     input_ids = input_ids[:, -(attention_mask.shape[1] - past_length) :]
-                # 2 - If the past_length is smaller than input_ids', then input_ids holds all input tokens. We can discard
-                # input_ids based on the past_length.
+                # 2 - If the past_length is smaller than input_ids',
+                # then input_ids holds all input tokens. We can discard input_ids based on the past_length.
                 elif past_length < input_ids.shape[1]:
                     input_ids = input_ids[:, past_length:]
-                # 3 - Otherwise (past_length >= input_ids.shape[1]), let's assume input_ids only has unprocessed tokens.
+                # 3 - Otherwise (past_length >= input_ids.shape[1]), 
+                # let's assume input_ids only has unprocessed tokens.
 
-                # If we are about to go beyond the maximum cache length, we need to crop the input attention mask.
+                # If we are about to go beyond the maximum cache length,
+                # we need to crop the input attention mask.
                 if (
                     max_cache_length is not None
                     and attention_mask is not None
@@ -1034,7 +1034,8 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
                 ):
                     attention_mask = attention_mask[:, -max_cache_length:]
         elif reuse_cache and token_idx is not None:
-            # With reuse_cache, KV cache is pre allocated hence for the 1st token we can slice the inputs till token idx for the fwd pass
+            # With reuse_cache, KV cache is pre allocated hence for the 1st token
+            # we can slice the inputs till token idx for the fwd pass
             input_ids = input_ids[:, :token_idx]
             attention_mask = attention_mask[:, :token_idx]
 
@@ -1093,7 +1094,6 @@ class GaudiLlamaForCausalLM(LlamaForCausalLM):
             model_inputs = {"inputs_embeds": inputs_embeds}
         else:
             # The `contiguous()` here is necessary to have a static stride during decoding. torchdynamo otherwise
-            # recompiles graphs as the stride of the inputs is a guard. Ref: https://github.com/huggingface/transformers/pull/29114
             # TODO: use `next_tokens` directly instead.
             model_inputs = {"input_ids": input_ids.contiguous()}
 
@@ -1154,5 +1154,5 @@ def apply_customized_rope(q, k, cos, sin, position_ids):
             k, cos.unsqueeze(0).unsqueeze(0).clone(), sin.unsqueeze(0).unsqueeze(0).clone(), position_ids
         )
     else:
-        # keep the same implementation as Transformers v4.37.2
+
         return apply_rotary_pos_emb(q, k, cos[position_ids], sin[position_ids])

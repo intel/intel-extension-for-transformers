@@ -39,7 +39,7 @@ def gaudi_mpt_attention_forward(
     token_idx: Optional[torch.Tensor] = None,
 ):
     """
-    Copied from MptAttention.forward: https://github.com/huggingface/transformers/blob/v4.32.0/src/transformers/models/mpt/modeling_mpt.py
+    
     The only differences are:
     - add new args token_idx
     - optimize KV cache
@@ -112,7 +112,7 @@ def gaudi_mpt_block_forward(
     token_idx: Optional[torch.Tensor] = None,
 ):
     """
-    Copied from MptBlock.forward: https://github.com/huggingface/transformers/blob/v4.32.0/src/transformers/models/mpt/modeling_mpt.py
+    
     The only differences are:
     - add new args token_idx
     """
@@ -165,7 +165,7 @@ class GaudiMptModel(MptModel):
         token_idx: Optional[torch.Tensor] = None,
     ) -> Union[Tuple[torch.Tensor, ...], BaseModelOutputWithPastAndCrossAttentions]:
         """
-        Copied from MptModel.forward: https://github.com/huggingface/transformers/blob/v4.32.0/src/transformers/models/mpt/modeling_mpt.py
+        
         The only differences are:
         - add new args token_idx
         """
@@ -284,7 +284,7 @@ class GaudiMptForCausalLM(MptForCausalLM):
         **kwargs,
     ) -> dict:
         """
-        Inherits from MptForCausalLM: https://github.com/huggingface/transformers/blob/v4.32.0/src/transformers/models/mpt/modeling_mpt.py
+        
         The only differences are:
         - add new args token_idx
         - add token_idx into model_inputs
@@ -336,7 +336,7 @@ class GaudiMptForCausalLM(MptForCausalLM):
         token_idx: Optional[torch.Tensor] = None,
     ) -> Union[Tuple[torch.Tensor], CausalLMOutputWithCrossAttentions]:
         """
-        Inherits from MptForCausalLM: https://github.com/huggingface/transformers/blob/v4.32.0/src/transformers/models/mpt/modeling_mpt.py
+        
         The only differences are:
         - add new args token_idx
         """

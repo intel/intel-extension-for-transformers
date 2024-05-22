@@ -173,7 +173,8 @@ def gaudi_bloom_attention_forward(
     # change view to [batch_size, num_heads, q_length, kv_length]
     attention_scores = matmul_result.view(batch_size, self.num_heads, q_length, kv_length)
 
-    # cast attention scores to fp32, compute scaled softmax and cast back to initial dtype - [batch_size, num_heads, q_length, kv_length]
+    # cast attention scores to fp32, compute scaled softmax and cast back to initial dtype 
+    # - [batch_size, num_heads, q_length, kv_length]
     input_dtype = attention_scores.dtype
     attn_weights = torch.masked_fill(attention_scores, attention_mask, torch.finfo(attention_scores.dtype).min)
     attention_probs = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(input_dtype)
@@ -334,7 +335,8 @@ def gaudi_bloom_model_forward(
     **deprecated_arguments,
 ) -> Union[Tuple[torch.Tensor, ...], BaseModelOutputWithPastAndCrossAttentions]:
     if deprecated_arguments.pop("position_ids", False) is not False:
-        # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to `False` allows to detect if users were passing explicitly `None`
+        # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to 
+        # `False` allows to detect if users were passing explicitly `None`
         warnings.warn(
             "`position_ids` have no functionality in BLOOM and will be removed in v5.0.0. You can safely ignore"
             " passing `position_ids`.",
@@ -529,7 +531,8 @@ class GaudiBloomForCausalLM(BloomForCausalLM):
         are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
         """
         if deprecated_arguments.pop("position_ids", False) is not False:
-            # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to `False` allows to detect if users were passing explicitly `None`
+            # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to
+            # `False` allows to detect if users were passing explicitly `None`
             warnings.warn(
                 "`position_ids` have no functionality in BLOOM and will be removed in v5.0.0. You can safely ignore"
                 " passing `position_ids`.",

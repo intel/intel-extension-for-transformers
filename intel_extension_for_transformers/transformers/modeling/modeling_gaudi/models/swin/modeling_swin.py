@@ -20,7 +20,7 @@ from transformers.models.swin.modeling_swin import window_partition
 
 def gaudi_swin_get_attn_mask(self, height, width, dtype):
     """
-    Copied from SwinLayer.get_attn_mask : https://github.com/huggingface/transformers/blob/main/src/transformers/models/swin/modeling_swin.py
+    
     The only difference is moving img_mask to hpu for performance
     """
     if self.shift_size > 0:

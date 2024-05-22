@@ -82,8 +82,8 @@ def gaudi_falcon_attention_split_heads(
     self, fused_qkv: torch.Tensor
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
-    Copied from FalconAttention._split_heads https://github.com/huggingface/transformers/blob/v4.33.2/src/transformers/models/falcon/modeling_falcon.py
-    Changing index operation of qkv[:::] to use torch.index_select to work around gradient accuracy issue and improve performance.
+    Changing index operation of qkv[:::] to use torch.index_select to work around gradient 
+    accuracy issue and improve performance.
     """
     if self.new_decoder_architecture:
         batch, seq_len, _ = fused_qkv.shape
@@ -139,16 +139,10 @@ def gaudi_falcon_attention_forward(
     **kwargs,
 ):
     """
-    Copied from FalconAttention.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/falcon/modeling_falcon.py
     The only differences are:
     - add new args token_idx and position_ids
     - replace F.scaled_dot_product_attention with Habana torch's version
     """
-    if "padding_mask" in kwargs:
-        warnings.warn(
-            "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
-        )
-
     fused_qkv = self.query_key_value(hidden_states)  # [batch_size, seq_length, 3 x hidden_size]
     # 3 x [batch_size, seq_length, num_heads, head_dim]
     (query_layer, key_layer, value_layer) = self._split_heads(fused_qkv)
@@ -209,7 +203,9 @@ def gaudi_falcon_attention_forward(
                         value_layer,
                         attention_mask,
                         0.0,
-                        # The query_length > 1 is necessary to match with AttentionMaskConverter.to_causal_4d that does not create a causal mask in case query_length == 1.
+                        # The query_length > 1 is necessary to match with 
+                        # AttentionMaskConverter.to_causal_4d that does not create a 
+                        # causal mask in case query_length == 1.
                         self.is_causal and attention_mask is None and query_length > 1,
                     )
             else:
@@ -223,7 +219,9 @@ def gaudi_falcon_attention_forward(
                     value_layer,
                     attention_mask,
                     0.0,
-                    # The query_length > 1 is necessary to match with AttentionMaskConverter.to_causal_4d that does not create a causal mask in case query_length == 1.
+                    # The query_length > 1 is necessary to match with 
+                    # AttentionMaskConverter.to_causal_4d that does not create a causal
+                    #  mask in case query_length == 1.
                     is_causal=self.is_causal and attention_mask is None and query_length > 1,
                 )
             # Performance improvement for HPU
@@ -273,9 +271,11 @@ def gaudi_falcon_attention_forward(
             # change view to [batch_size, num_heads, q_length, kv_length]
             attention_scores = matmul_result.view(batch_size, self.num_heads, query_length, kv_length)
 
-            # cast attention scores to fp32, compute scaled softmax and cast back to initial dtype - [batch_size, num_heads, q_length, kv_length]
+            # cast attention scores to fp32, compute scaled softmax and cast back to initial dtype
+            # - [batch_size, num_heads, q_length, kv_length]
             input_dtype = attention_scores.dtype
-            # `float16` has a minimum value of -65504.0, whereas `bfloat16` and `float32` have a minimum value of `-3.4e+38`
+            # `float16` has a minimum value of -65504.0, whereas `bfloat16` and `float32` 
+            # have a minimum value of `-3.4e+38`
             if input_dtype == torch.float16 or input_dtype == torch.bfloat16:
                 attention_scores = attention_scores.to(torch.float32)
 
@@ -319,16 +319,11 @@ def gaudi_falcon_decoder_layer_forward(
     **kwargs,
 ):
     """
-    Copied from FalconDecoderLayer.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/falcon/modeling_falcon.py
+    
     The only differences are:
     - add new args token_idx and position_ids
     - add token_idx and position_ids into attention inputs
     """
-    if "padding_mask" in kwargs:
-        warnings.warn(
-            "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
-        )
-
     residual = hidden_states
 
     if self.config.new_decoder_architecture:
@@ -380,7 +375,7 @@ def gaudi_falcon_decoder_layer_forward(
 
 class GaudiFalconModel(FalconModel):
     """
-    Inherits from FalconModel: https://github.com/huggingface/transformers/blob/main/src/transformers/models/falcon/modeling_falcon.py
+    
     The only differences are:
     - add new args token_idx and position_ids
     - add token_idx and position_ids into decoder inputs
@@ -477,7 +472,8 @@ class GaudiFalconModel(FalconModel):
                 alibi = alibi.reshape(batch_size, -1, *alibi.shape[1:])
 
                 attention_mask_2d = attention_mask
-                # We don't call _prepare_4d_causal_attention_mask_for_sdpa as we need to mask alibi using the 4D attention_mask untouched.
+                # We don't call _prepare_4d_causal_attention_mask_for_sdpa as 
+                # we need to mask alibi using the 4D attention_mask untouched.
                 attention_mask = _gaudi_prepare_4d_causal_attention_mask(
                     attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
                 )
@@ -492,8 +488,8 @@ class GaudiFalconModel(FalconModel):
                         torch.finfo(alibi.dtype).min,
                     )
 
-                    # From PyTorch 2.1 onwards, F.scaled_dot_product_attention with the memory-efficient attention backend
-                    # produces nans if sequences are completely unattended in the attention mask. Details: https://github.com/pytorch/pytorch/issues/110213
+                    # From PyTorch 2.1 onwards, F.scaled_dot_product_attention with 
+                    # the memory-efficient attention backend
                     if seq_length > 1:
                         attention_mask = GaudiAttentionMaskConverter._unmask_unattended(
                             attention_mask, attention_mask_2d, unmasked_value=0.0
@@ -571,7 +567,7 @@ class GaudiFalconModel(FalconModel):
 
 class GaudiFalconForCausalLM(FalconForCausalLM):
     """
-    Inherits from FalconForCausalLM: https://github.com/huggingface/transformers/blob/main/src/transformers/models/falcon/modeling_falcon.py
+    
     The only differences are:
     - add new args token_idx and position_ids
     - add token_idx and position_ids into model inputs

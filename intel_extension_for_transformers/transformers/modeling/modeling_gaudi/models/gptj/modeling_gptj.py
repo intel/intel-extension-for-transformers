@@ -87,7 +87,7 @@ class GaudiGPTJAttention(GPTJAttention):
         Optional[Tuple[torch.Tensor, Tuple[torch.Tensor], Tuple[torch.Tensor, ...]]],
     ]:
         """
-        Copied from GPTJAttention.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gptj/modeling_gptj.py
+        
         The only differences are:
         - add new args token_idx
         - remove is_torch_fx_proxy
@@ -108,7 +108,9 @@ class GaudiGPTJAttention(GPTJAttention):
 
             q_rot = query[:, :, :, : self.rotary_dim]
             q_pass = query[:, :, :, self.rotary_dim :]
-            # Note: it appears that if we use bf16 RoPE(whether use fused kernel or not), there could be acc issue, hence use fp32 RoPE here Fused kernel feasibility needs to be confirmed in the future
+            # Note: it appears that if we use bf16 RoPE(whether use fused kernel or not),
+            # there could be acc issue, hence use fp32 RoPE here Fused kernel feasibility
+            # needs to be confirmed in the future
             k_rot = apply_rotary_pos_emb(k_rot.to(torch.float32), sin, cos).to(torch.bfloat16)
             q_rot = apply_rotary_pos_emb(q_rot.to(torch.float32), sin, cos).to(torch.bfloat16)
 
@@ -135,8 +137,8 @@ class GaudiGPTJAttention(GPTJAttention):
                 value = torch.cat([past_value, value], dim=-2)
 
         if use_cache is True:
-            # Note that this cast is quite ugly, but is not implemented before ROPE as the original codebase keeps the key in float32 all along the computation.
-            # Reference: https://github.com/kingoflolz/mesh-transformer-jax/blob/f8315e3003033b23f21d78361b288953064e0e76/mesh_transformer/layers.py#L128
+            # Note that this cast is quite ugly, but is not implemented before ROPE as the
+            # original codebase keeps the key in float32 all along the computation.
             present = (key.to(hidden_states.dtype), value)
         else:
             present = None
@@ -169,7 +171,7 @@ def gaudi_gptj_block_forward(
     cos: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor], Optional[Tuple[torch.Tensor, Tuple[torch.FloatTensor, ...]]]]:
     """
-    Copied from GPTJBlock.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gptj/modeling_gptj.py
+    
     The only differences are:
     - add new args token_idx
     - pass sin and cos from upper level as they are identical for each attn block
@@ -220,7 +222,7 @@ def gaudi_gptj_model_forward(
     cos: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
     """
-    Copied from GPTJModel.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gptj/modeling_gptj.py
+    
     The only differences are:
     - add new args token_idx
     - pass sin and cos from upper level as they are identical for each attn block
@@ -401,7 +403,7 @@ def gaudi_gptj_model_forward(
 
 class GaudiGPTJForCausalLM(GPTJForCausalLM):
     """
-    Inherits from GPTJForCausalLM: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gptj/modeling_gptj.py
+    
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs

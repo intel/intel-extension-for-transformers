@@ -68,7 +68,7 @@ def update(prev, cur, dim, idx):
 
 def gaudi_mistral_rmsnorm_forward(self, hidden_states):
     """
-    Copied from MistralRMSNorm.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/mistral/modeling_mistral.py
+    
     The only differences are:
         - override RMSNorm with Habana fused RMSNorm
     """
@@ -97,12 +97,15 @@ def gaudi_mistral_repeat_kv(
     n_rep: int,
 ):
     """
-    Copied from repeat_kv: https://github.com/huggingface/transformers/blob/v4.38.2/src/transformers/models/mistral/modeling_mistral.py
+    
     The only differences are:
-        - Append num_key_value_heads == 1 check as kv states can be broadcasted during matmuls so need to expand and reshape them.
+        - Append num_key_value_heads == 1 check as kv states can be broadcasted during 
+          matmuls so need to expand and reshape them.
         - Add new args query_states, key_states, value_states and attention_mask and update the logic for expansion.
-    The query states go from (batch, num_heads, seqlen, head_dim) to (batch, num_key_value_heads, n_rep, seqlen, head_dim)
-    The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to (batch, num_key_value_heads, 1, seqlen, head_dim)
+    The query states go from (batch, num_heads, seqlen, head_dim) to 
+    (batch, num_key_value_heads, n_rep, seqlen, head_dim)
+    The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to 
+    (batch, num_key_value_heads, 1, seqlen, head_dim)
     """
     batch, num_key_value_heads, kv_len, head_dim = key_states.shape
     if n_rep == 1 or num_key_value_heads == 1:
@@ -122,7 +125,6 @@ def gaudi_mistral_repeat_kv(
 
     return query_states, key_states, value_states, attention_mask
 
-
 class GaudiMistralAttention(MistralAttention):
     def __init__(self, config: MistralConfig, layer_idx: Optional[int] = None):
         super().__init__(config, layer_idx)
@@ -141,7 +143,7 @@ class GaudiMistralAttention(MistralAttention):
         # Call rotary emb forward() to update cos/sin cache when inferring more than self.max_position_embeddings
         # This helps in avoiding creation of these caches during actual model forward pass and
         # reduce memory consumption and improve performance.
-        if seq_len > self.max_position_embeddings:
+        if seq_len > self.max_position_embeddings: # pylint: disable=E0203
             self.max_position_embeddings = seq_len
             _, _ = self.rotary_emb(self.k_proj.weight, seq_len=seq_len)
 
@@ -174,7 +176,7 @@ class GaudiMistralAttention(MistralAttention):
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """
-         Copied from MistralAttention.forward: https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/models/mistral/modeling_mistral.py
+         
          The only differences are:
          - add new args token_idx
          - add new args reuse_cache
@@ -251,8 +253,8 @@ class GaudiMistralAttention(MistralAttention):
         if attention_mask is not None:
             if attention_mask.size() not in [(bsz, 1, q_len, kv_seq_len), (bsz, 1, 1, q_len, kv_seq_len)]:
                 raise ValueError(
-                    f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)} or {(bsz, 1, 1, q_len, kv_seq_len)},"
-                    f" but is {attention_mask.size()}"
+                    f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)} or "
+                    f"{(bsz, 1, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
                 )
 
             attn_weights = attn_weights + attention_mask
@@ -312,7 +314,7 @@ class GaudiMistralDecoderLayer(MistralDecoderLayer):
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
-        Copied from MistralDecoderLayer.forward: https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/models/mistral/modeling_mistral.py
+        
         The only differences are:
         - add new args token_idx
         """
@@ -378,7 +380,7 @@ class GaudiMistralModel(MistralModel):
         attn_softmax_bf16: Optional[bool] = False,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         """
-        Copied from MistralModel.forward: https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/models/mistral/modeling_mistral.py
+        
         The only differences are:
         - add new args token_idx
         """
@@ -546,7 +548,7 @@ class GaudiMistralForCausalLM(MistralForCausalLM):
         attn_softmax_bf16: Optional[bool] = False,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         """
-        Inherits from MistralForCausalLM: https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/models/mistral/modeling_mistral.py
+        
         The only differences are:
         - add new args token_idx
         """
@@ -612,7 +614,7 @@ class GaudiMistralForCausalLM(MistralForCausalLM):
         self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs
     ):
         """
-        Inherits from MistralForCausalLM: https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/models/mistral/modeling_mistral.py
+        
         The only differences are:
         - add new args token_idx
         - add token_idx into model_inputs
@@ -633,18 +635,22 @@ class GaudiMistralForCausalLM(MistralForCausalLM):
                     max_cache_length = None
 
                 # Keep only the unprocessed tokens:
-                # 1 - If the length of the attention_mask exceeds the length of input_ids, then we are in a setting where
-                # some of the inputs are exclusively passed as part of the cache (e.g. when passing input_embeds as
-                # input)
+                # 1 - If the length of the attention_mask exceeds the length of input_ids,
+                # then we are in a setting where
+                # some of the inputs are exclusively passed as part of the cache 
+                # (e.g. when passing input_embeds as input)
                 if attention_mask is not None and attention_mask.shape[1] > input_ids.shape[1]:
                     input_ids = input_ids[:, -(attention_mask.shape[1] - past_length) :]
-                # 2 - If the past_length is smaller than input_ids', then input_ids holds all input tokens. We can discard
+                # 2 - If the past_length is smaller than input_ids',
+                # then input_ids holds all input tokens. We can discard
                 # input_ids based on the past_length.
                 elif past_length < input_ids.shape[1]:
                     input_ids = input_ids[:, past_length:]
-                # 3 - Otherwise (past_length >= input_ids.shape[1]), let's assume input_ids only has unprocessed tokens.
+                # 3 - Otherwise (past_length >= input_ids.shape[1]),
+                # let's assume input_ids only has unprocessed tokens.
 
-                # If we are about to go beyond the maximum cache length, we need to crop the input attention mask.
+                # If we are about to go beyond the maximum cache length,
+                # we need to crop the input attention mask.
                 if (
                     max_cache_length is not None
                     and attention_mask is not None

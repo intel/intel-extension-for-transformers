@@ -42,7 +42,6 @@ def gaudi_BlipTextSelfAttention_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor]:
     """
-    Copied from BlipTextSelfAttention.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip_text.py#L143
     The only differences are:
         - add token_idx
     """
@@ -135,7 +134,6 @@ def gaudi_BlipTextAttention_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor]:
     """
-    Copied from BlipTextAttention.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip_text.py#L265
     The only differences are:
         - add token_idx
     """
@@ -166,7 +164,6 @@ def gaudi_BlipTextLayer_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor]:
     """
-    Copied from BlipTextLayer.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip_text.py#L333
     The only differences are:
         - add token_idx
     """
@@ -220,7 +217,6 @@ def gaudi_BlipTextEncoder_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor], BaseModelOutputWithPastAndCrossAttentions]:
     """
-    Copied from BlipTextEncoder.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip_text.py#L391
     The only differences are:
         - add token_idx
     """
@@ -317,7 +313,6 @@ def gaudi_BlipTextModel_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor], BaseModelOutputWithPoolingAndCrossAttentions]:
     """
-    Copied from BlipTextModel.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip_text.py#L666
     The only differences are:
         - add token_idx
     """
@@ -448,7 +443,6 @@ def gaudi_BlipTextLMHead_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor], CausalLMOutputWithCrossAttentions]:
     """
-    Copied from BlipTextLMHeadModel.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip_text.py#L820
     The only differences are:
         - add token_idx
     """
@@ -507,7 +501,6 @@ def gaudi_BlipTextLMHead_prepare_inputs_for_generation(
     self, input_ids, past_key_values=None, attention_mask=None, token_idx=None, **model_kwargs
 ):
     """
-    Copied from BlipTextLMHeadModel.prepare_inputs_for_generation: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip_text.py#L910
     The only differences are:
         - add token_idx support, add position_ids
     """

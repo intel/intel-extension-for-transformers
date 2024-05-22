@@ -37,7 +37,7 @@ def gaudi_SpeechT5SpeechDecoderPrenet_forward(
     speaker_embeddings: Optional[torch.Tensor] = None,
 ):
     """
-    Copied from SpeechT5SpeechDecoderPrenet.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/speecht5/modeling_speecht5.py
+    
     The only differences are:
     - disable dropout in inference, or else hpu graph could not be used
     """
@@ -72,7 +72,7 @@ def gaudi_SpeechT5Attention_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
     """
-    Copied from SpeechT5Attention.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/speecht5/modeling_speecht5.py
+    
     The only differences are:
     - add new args token_idx
     """
@@ -209,7 +209,7 @@ def gaudi_SpeechT5DecoderLayer_forward(
     token_idx: Optional[torch.Tensor] = None,
 ):
     """
-    Copied from SpeechT5DecoderLayer.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/speecht5/modeling_speecht5.py
+    
     The only differences are:
     - add token_idx in self-attention
     """
@@ -285,7 +285,7 @@ def gaudi_SpeechT5Decoder_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPastAndCrossAttentions]:
     """
-    Copied from SpeechT5Decoder.forward: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/speecht5/modeling_speecht5.py
+    
     The only differences are:
     - add token_idx args
     - use _gaudi_prepare_4d_causal_attention_mask
@@ -420,7 +420,7 @@ def gaudi_generate_speech(
     return_output_lengths: bool = False,
 ) -> Union[torch.FloatTensor, Tuple[torch.FloatTensor, torch.FloatTensor]]:
     """
-    Copied from _generate_speech: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/speecht5/modeling_speecht5.py
+    
     The only differences are:
     - add hpu graph wrap
     - add static shape support in kv-cache in _generate_speech

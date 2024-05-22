@@ -41,7 +41,7 @@ except ImportError:
 
 def gaudi_t5_layernorm_forward(self, hidden_states):
     """
-    Copied from T5LayerNorm.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/t5/modeling_t5.py
+    
     The only differences are:
         - override RMSNorm with Habana fused RMSNorm
     """
@@ -313,7 +313,7 @@ def gaudi_T5Block_forward(
     else:
         outputs = outputs + attention_outputs
 
-    return outputs  # hidden-states, present_key_value_states, (self-attention position bias), (self-attention weights), (cross-attention position bias), (cross-attention weights)
+    return outputs
 
 
 def gaudi_T5Stack_forward(
@@ -452,7 +452,8 @@ def gaudi_T5Stack_forward(
             )
 
         # layer_outputs is a tuple with:
-        # hidden-states, key-value-states, (self-attention position bias), (self-attention weights), (cross-attention position bias), (cross-attention weights)
+        # hidden-states, key-value-states, (self-attention position bias), 
+        # (self-attention weights), (cross-attention position bias), (cross-attention weights)
         if use_cache is False:
             layer_outputs = layer_outputs[:1] + (None,) + layer_outputs[1:]
 
@@ -576,7 +577,6 @@ def gaudi_T5ForConditionalGeneration_forward(
 
     if self.config.tie_word_embeddings:
         # Rescale output before projecting on vocab
-        # See https://github.com/tensorflow/mesh/blob/fa19d69eafc9a482aff0b59ddd96b025c0cb207d/mesh_tensorflow/transformer/transformer.py#L586
         sequence_output = sequence_output * (self.model_dim**-0.5)
 
     lm_logits = self.lm_head(sequence_output)
@@ -587,7 +587,6 @@ def gaudi_T5ForConditionalGeneration_forward(
         # move labels to correct device to enable PP
         labels = labels.to(lm_logits.device)
         loss = loss_fct(lm_logits.view(-1, lm_logits.size(-1)), labels.view(-1))
-        # TODO(thom): Add z_loss https://github.com/tensorflow/mesh/blob/fa19d69eafc9a482aff0b59ddd96b025c0cb207d/mesh_tensorflow/layers.py#L666
 
     if not return_dict:
         output = (lm_logits,) + decoder_outputs[1:] + encoder_outputs

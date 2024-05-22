@@ -32,7 +32,7 @@ def _gaudi_wav2vec2_compute_mask_indices(
     min_masks: int = 0,
 ) -> torch.Tensor:
     """
-    Copied from Transformers: https://github.com/huggingface/transformers/blob/bd469c40659ce76c81f69c7726759d249b4aef49/src/transformers/models/wav2vec2/modeling_wav2vec2.py#L135
+    
     The only difference is that the processing is performed with PyTorch on HPUs (Numpy is used in Transformers).
     """
     batch_size, sequence_length = shape
@@ -135,7 +135,7 @@ def _gaudi_wav2vec2_sample_negative_indices(
     features_shape: Tuple, num_negatives: int, mask_time_indices: Optional[torch.Tensor] = None
 ):
     """
-    Copied from Transformers: https://github.com/huggingface/transformers/blob/bd469c40659ce76c81f69c7726759d249b4aef49/src/transformers/models/wav2vec2/modeling_wav2vec2.py#L254
+    
     The only difference is that the processing is performed with PyTorch on HPUs (Numpy is used in Transformers).
     """
     batch_size, sequence_length = features_shape
@@ -179,8 +179,9 @@ def _gaudi_wav2vec2_mask_hidden_states(
     attention_mask: Optional[torch.LongTensor] = None,
 ):
     """
-    Copied from Transformers: https://github.com/huggingface/transformers/blob/bd469c40659ce76c81f69c7726759d249b4aef49/src/transformers/models/wav2vec2/modeling_wav2vec2.py#L1227
-    Differences are that (1) `mask_time_indices` is not moved to the current device and converted into boolean because this is already done in _compute_mask_indices.
+    
+    Differences are that (1) `mask_time_indices` is not moved to the current device and 
+    converted into boolean because this is already done in _compute_mask_indices.
     (2) index_put operation on hidden_states is replaced by combination of simpler ops (more suitable for HPU graphs)
     """
 
@@ -203,7 +204,8 @@ def _gaudi_wav2vec2_mask_hidden_states(
             min_masks=self.config.mask_time_min_masks,
         )
         # replacement of index_put with combination of simpler ops. Assumption made about sizes of hidden_states (3d),
-        # mask_time_indices (2d), self.masked_spec_embed (1d), for any other combination better to go back to original code using index_put.
+        # mask_time_indices (2d), self.masked_spec_embed (1d),
+        # for any other combination better to go back to original code using index_put.
         # hidden_states[mask_time_indices] = self.masked_spec_embed.to(hidden_states.dtype)
         inverse_mask_time_indices = torch.bitwise_not(mask_time_indices)
         hidden_states = hidden_states * inverse_mask_time_indices.unsqueeze(2) + self.masked_spec_embed.to(
@@ -234,7 +236,7 @@ def gaudi_wav2vec2_encoder_forward(
     return_dict: bool = True,
 ):
     """
-    Copied from Transformers: https://github.com/huggingface/transformers/blob/7790943c91411f4234d11dfbf4c2f21ce7caf088/src/transformers/models/wav2vec2/modeling_wav2vec2.py#L755
+    
     The only difference is that torch.rand device is set to 'hpu' (required to capture operation as part of HPU graph)
     """
     all_hidden_states = () if output_hidden_states else None
@@ -310,7 +312,7 @@ def gaudi_wav2vec2_forward(
     return_dict: Optional[bool] = None,
 ) -> Union[Tuple, Wav2Vec2BaseModelOutput]:
     """
-    Copied from Transformers: https://github.com/huggingface/transformers/blob/bd469c40659ce76c81f69c7726759d249b4aef49/src/transformers/models/wav2vec2/modeling_wav2vec2.py#L1282
+    
     The only difference is that a clone of `hidden_states` is given to _mask_hidden_states to avoid an error.
     """
     output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
@@ -359,7 +361,7 @@ def gaudi_wav2vec2_forward(
 
 def gaudi_wav2vec2_tdnnlayer_forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
     """
-    Copied from Transformers: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/wav2vec2/modeling_wav2vec2.py#L2290
+    
     v4.38.2 implementation caused accuracy issue to run pytest Wav2Vec2RobustModelTest.
     """
     hidden_states = hidden_states.unsqueeze(1)

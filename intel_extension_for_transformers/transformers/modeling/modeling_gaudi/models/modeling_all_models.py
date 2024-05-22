@@ -24,7 +24,6 @@ from transformers.utils.import_utils import is_torch_sdpa_available
 
 def gaudi_invert_attention_mask(self, encoder_attention_mask: torch.Tensor) -> torch.Tensor:
     """
-    Same as https://github.com/huggingface/transformers/blob/a9eee2ffecc874df7dd635b2c6abb246fdb318cc/src/transformers/modeling_utils.py#L640
     except that mixed precision is disabled for computing:
         encoder_extended_attention_mask = (1.0 - encoder_extended_attention_mask) * torch.finfo(self.dtype).min
     """
@@ -53,7 +52,6 @@ def gaudi_get_extended_attention_mask(
     self, attention_mask: torch.Tensor, input_shape: Tuple[int], device: torch.device = None, dtype: torch.float = None
 ) -> torch.Tensor:
     """
-    Same as https://github.com/huggingface/transformers/blob/a9eee2ffecc874df7dd635b2c6abb246fdb318cc/src/transformers/modeling_utils.py#L692
     except that mixed precision is disabled for computing:
         extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(dtype).min
     """
@@ -101,7 +99,6 @@ def gaudi_get_extended_attention_mask(
 
 def gaudi_conv1d_forward(self, x):
     """
-    Same as https://github.com/huggingface/transformers/blob/3335724376319a0c453049d0cd883504f530ff52/src/transformers/pytorch_utils.py#L100
     but moves reshape before view for tpc auto fusion.
     """
     size_out = x.size()[:-1] + (self.nf,)
@@ -125,13 +122,16 @@ def gaudi_check_and_enable_sdpa(cls, config, hard_check_only: bool = False) -> P
         return config
 
     # Otherwise, fallback to original implementation
-    # https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/modeling_utils.py#L1542
+
     if hard_check_only:
         if not cls._supports_sdpa:
             raise ValueError(
-                f"{cls.__name__} does not support an attention implementation through torch.nn.functional.scaled_dot_product_attention yet."
-                " Please request the support for this architecture: https://github.com/huggingface/transformers/issues/28005. If you believe"
-                ' this error is a bug, please open an issue in Transformers GitHub repository and load your model with the argument `attn_implementation="eager"` meanwhile. Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="eager")`'
+                f"{cls.__name__} does not support an attention implementation through "
+                "torch.nn.functional.scaled_dot_product_attention yet."
+                " Please request support: https://github.com/huggingface/transformers/issues/28005. "
+                'this error is a bug, please open an issue in Transformers GitHub repository.'
+                'load your model with the argument `attn_implementation="eager"` meanwhile.'
+                ' Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="eager")`'
             )
         if not is_torch_sdpa_available():
             raise ImportError("PyTorch SDPA requirements in Transformers are not met. Please install torch>=2.1.1.")

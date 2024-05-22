@@ -17,7 +17,8 @@ from transformers.generation import GenerationConfig
 
 class GaudiGenerationConfig(GenerationConfig):
     """
-    This class extends [`transformers.generation.GenerationConfig`](https://github.com/huggingface/transformers/blob/main/src/transformers/generation/configuration_utils.py)
+    This class extends [`transformers.generation.GenerationConfig`]
+    (https://github.com/huggingface/transformers/blob/main/src/transformers/generation/configuration_utils.py)
     to add HPU-specific arguments for generation.
 
     Arg:

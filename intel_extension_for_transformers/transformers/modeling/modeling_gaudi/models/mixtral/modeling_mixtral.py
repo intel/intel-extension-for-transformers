@@ -94,7 +94,7 @@ def apply_customized_rope(q, k, cos, sin, position_ids):
 
 def gaudi_mixtral_rmsnorm_forward(self, hidden_states):
     """
-    Copied from MixtralRMSNorm.forward: https://github.com/huggingface/transformers/blob/v4.37.0/src/transformers/models/mixtral/modeling_mixtral.py
+    
     The only differences are:
         - override RMSNorm with Habana fused RMSNorm
     """
@@ -123,12 +123,16 @@ def gaudi_mixtral_repeat_kv(
     n_rep: int,
 ):
     """
-    Copied from repeat_kv: https://github.com/huggingface/transformers/blob/v4.37.0/src/transformers/models/mixtral/modeling_mixtral.py
+    
     The only differences are:
-    - Append num_key_value_heads == 1 check as kv states can be broadcasted during matmuls so need to expand and reshape them.
-    - Add new args query_states, key_states, value_states and attention_mask and update the logic for expansion.
-    The query states go from (batch, num_heads, seqlen, head_dim) to (batch, num_key_value_heads, n_rep, seqlen, head_dim)
-    The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to (batch, num_key_value_heads, 1, seqlen, head_dim)
+    - Append num_key_value_heads == 1 check as kv states can be broadcasted during matmuls
+      so need to expand and reshape them.
+    - Add new args query_states, key_states, value_states and attention_mask and
+      update the logic for expansion.
+    The query states go from (batch, num_heads, seqlen, head_dim) to
+    (batch, num_key_value_heads, n_rep, seqlen, head_dim)
+    The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to
+    (batch, num_key_value_heads, 1, seqlen, head_dim)
     """
     batch, num_key_value_heads, kv_len, head_dim = key_states.shape
     if n_rep == 1 or num_key_value_heads == 1:
@@ -188,15 +192,11 @@ def gaudi_mixtral_attention_forward(
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
     """
-    Copied from MixtralAttention.forward: https://github.com/huggingface/transformers/blob/v4.37.0/src/transformers/models/mixtral/modeling_mixtral.py
+    
     The only differences are:
     - add new args token_idx
     - optimize KV cache
     """
-    if "padding_mask" in kwargs:
-        warnings.warn(
-            "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
-        )
     bsz, q_len, _ = hidden_states.size()
 
     query_states = self.q_proj(hidden_states)
@@ -279,7 +279,7 @@ def gaudi_mixtral_attention_forward(
 
 def gaudi_mixtral_block_sparse_moe_forward(self, hidden_states: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    Copied from MixtralSparseMoeBlock.forward: https://github.com/huggingface/transformers/blob/v4.37.0/src/transformers/models/mixtral/modeling_mixtral.py
+    
     The only differences are:
     - optimize expert forward, remove dynamic control and dynamic shape
     """
@@ -339,15 +339,10 @@ def gaudi_mixtral_decoder_layer_forward(
     **kwargs,
 ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
     """
-    Copied from MixtralDecoderLayer.forward: https://github.com/huggingface/transformers/blob/v4.37.0/src/transformers/models/mixtral/modeling_mixtral.py
+    
     The only differences are:
     - add new args token_idx
     """
-    if "padding_mask" in kwargs:
-        warnings.warn(
-            "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
-        )
-
     htcore.mark_step()
     residual = hidden_states
 
@@ -402,7 +397,7 @@ def gaudi_mixtral_model_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, MoeModelOutputWithPast]:
     """
-    Copied from MixtralModel.forward: https://github.com/huggingface/transformers/blob/v4.37.0/src/transformers/models/mixtral/modeling_mixtral.py#L1069
+    
     The only differences are:
     - add new args token_idx
     """
@@ -558,7 +553,7 @@ def gaudi_mixtral_model_forward(
 
 class GaudiMixtralForCausalLM(MixtralForCausalLM):
     """
-    Inherits from MixtralForCausalLM: https://github.com/huggingface/transformers/blob/v4.37.0/src/transformers/models/mixtral/modeling_mixtral.py#L1231
+    
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs
@@ -667,16 +662,19 @@ class GaudiMixtralForCausalLM(MixtralForCausalLM):
                     max_cache_length = None
 
                 # Keep only the unprocessed tokens:
-                # 1 - If the length of the attention_mask exceeds the length of input_ids, then we are in a setting where
-                # some of the inputs are exclusively passed as part of the cache (e.g. when passing input_embeds as
-                # input)
+                # 1 - If the length of the attention_mask exceeds the length of input_ids,
+                # then we are in a setting where
+                # some of the inputs are exclusively passed as part of the cache
+                # (e.g. when passing input_embeds as input)
                 if attention_mask is not None and attention_mask.shape[1] > input_ids.shape[1]:
                     input_ids = input_ids[:, -(attention_mask.shape[1] - past_length) :]
-                # 2 - If the past_length is smaller than input_ids', then input_ids holds all input tokens. We can discard
+                # 2 - If the past_length is smaller than input_ids',
+                # then input_ids holds all input tokens. We can discard
                 # input_ids based on the past_length.
                 elif past_length < input_ids.shape[1]:
                     input_ids = input_ids[:, past_length:]
-                # 3 - Otherwise (past_length >= input_ids.shape[1]), let's assume input_ids only has unprocessed tokens.
+                # 3 - Otherwise (past_length >= input_ids.shape[1]),
+                # let's assume input_ids only has unprocessed tokens.
 
                 # If we are about to go beyond the maximum cache length, we need to crop the input attention mask.
                 if (

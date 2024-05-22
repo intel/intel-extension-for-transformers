@@ -21,10 +21,9 @@ from transformers.modeling_attn_mask_utils import AttentionMaskConverter
 @dataclass
 class GaudiAttentionMaskConverter(AttentionMaskConverter):
     """
-    Adapted from: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/modeling_attn_mask_utils.py#L21
-
     Differences:
-    - replace `triu` with similar logic here: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/modeling_attn_mask_utils.py#L169
+    - replace `triu` with similar logic here: 
+
     """
 
     @staticmethod
@@ -70,8 +69,6 @@ def _gaudi_prepare_4d_causal_attention_mask(
     sliding_window: Optional[int] = None,
 ):
     """
-    Adapted from: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/modeling_attn_mask_utils.py#L278
-
     Differences:
     - replace `AttentionMaskConverter` by `GaudiAttentionMaskConverter`
     """

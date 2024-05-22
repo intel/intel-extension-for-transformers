@@ -39,7 +39,7 @@ def gaudi_gpt_bigcode_attention_forward(
     Tuple[torch.Tensor, Optional[torch.Tensor], Tuple[torch.Tensor, ...]],
 ]:
     """
-    Copied from GPTBigCodeAttention.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_bigcode/modeling_gpt_bigcode.py
+    
     The only differences are:
     - add new args token_idx
     - optimize KV cache
@@ -109,7 +109,7 @@ def gaudi_gpt_bigcode_block_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor], Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """
-    Copied from GPTBigCodeBlock.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_bigcode/modeling_gpt_bigcode.py
+    
     The only differences are:
     - add new args token_idx
     """
@@ -183,7 +183,7 @@ def gaudi_gpt_bigcode_model_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPastAndCrossAttentions]:
     """
-    Copied from GPTBigCodeModel.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_bigcode/modeling_gpt_bigcode.py
+    
     The only differences are:
     - add new args token_idx
     - if token_idx and past_key_values are passed, set self_attention_mask based on the static shape of past_key_values
@@ -259,12 +259,13 @@ def gaudi_gpt_bigcode_model_forward(
 
         if query_length > 1 and attention_mask is not None:
             # From PyTorch 2.1 onwards, F.scaled_dot_product_attention with the memory-efficient attention backend
-            # produces nans if sequences are completely unattended in the attention mask. Details: https://github.com/pytorch/pytorch/issues/110213
+            # 
             self_attention_mask = GaudiAttentionMaskConverter._unmask_unattended(
                 self_attention_mask, attention_mask, unmasked_value=True
             )
 
-        # SDPA with a custom mask is much faster in fp16/fp32 dtype rather than bool. Cast here to floating point instead of at every layer.
+        # SDPA with a custom mask is much faster in fp16/fp32 dtype rather than bool.
+        # Cast here to floating point instead of at every layer.
         dtype = self.wte.weight.dtype
         self_attention_mask = torch.where(
             self_attention_mask,
@@ -371,7 +372,7 @@ def gaudi_gpt_bigcode_model_forward(
 
 class GaudiGPTBigCodeForCausalLM(GPTBigCodeForCausalLM):
     """
-    Inherits from GPTBigCodeForCausalLM: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_bigcode/modeling_gpt_bigcode.py
+    
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs

@@ -30,7 +30,6 @@ def gaudi_BlipForConditionalGeneration_generate(
     **generate_kwargs,
 ) -> torch.LongTensor:
     """
-    Copied from BlipForQuestionAnswering.generate: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip.py#L1022
     The only differences are:
         - wrap hpu graph for each part
     """
@@ -83,10 +82,10 @@ def gaudi_BlipForQuestionAnswering_generate(
     **generate_kwargs,
 ) -> torch.LongTensor:
     """
-    Copied from BlipForQuestionAnswering.generate: https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/blip/modeling_blip.py#L1236
     The only differences are:
         - wrap hpu graph for each part
-        - torch.full add dtype=torch.int64, or else the default type is torch.float32. lead to coredump in embedding layer
+        - torch.full add dtype=torch.int64, or else the default type is torch.float32.
+        lead to coredump in embedding layer
     """
     if generate_kwargs.get("hpu_graphs", True):
         from habana_frameworks.torch.hpu import wrap_in_hpu_graph

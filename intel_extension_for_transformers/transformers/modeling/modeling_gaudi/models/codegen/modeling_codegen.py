@@ -42,7 +42,6 @@ class GaudiCodeGenAttention(CodeGenAttention):
         Optional[Tuple[torch.Tensor, Tuple[torch.Tensor], Tuple[torch.Tensor, ...]]],
     ]:
         """
-        Copied from CodeGenAttention.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/codegen/modeling_codegen.py
         The only differences are:
         - add new args token_idx
         - optimize KV cache
@@ -59,7 +58,7 @@ class GaudiCodeGenAttention(CodeGenAttention):
         value = self._split_heads(value, self.num_attention_heads, self.head_dim, mp_num=mp_num)
         value = value.permute(0, 2, 1, 3)
 
-        embed_positions = self.embed_positions
+        embed_positions = self.embed_positions # pylint: disable=E0203
         if embed_positions.device != position_ids.device:
             embed_positions = embed_positions.to(position_ids.device)
             self.embed_positions = embed_positions
@@ -129,7 +128,6 @@ def gaudi_codegen_block_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor], Optional[Tuple[torch.Tensor, Tuple[torch.FloatTensor, ...]]]]:
     """
-    Copied from CodeGenBlock.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/codegen/modeling_codegen.py
     The only differences are:
     - add new args token_idx
     """
@@ -175,7 +173,6 @@ def gaudi_codegen_model_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
     """
-    Copied from CodeGenBlock.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/codegen/modeling_codegen.py
     The only differences are:
     - add new args token_idx
     """
@@ -319,7 +316,6 @@ def gaudi_codegen_model_forward(
 
 class GaudiCodeGenForCausalLM(CodeGenForCausalLM):
     """
-    Inherits from CodeGenForCausalLM: https://github.com/huggingface/transformers/blob/main/src/transformers/models/codegen/modeling_codegen.py
     The only differences are:
     - add new args token_idx
     - add token_idx into model_inputs

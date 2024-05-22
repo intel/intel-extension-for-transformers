@@ -22,7 +22,7 @@ from transformers.models.gpt2.modeling_gpt2 import GPT2Attention, GPT2LMHeadMode
 
 class GaudiGPT2Attention(GPT2Attention):
     """
-    Copied from GPT2Attention: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py
+    
     The only differences are:
     - optimize KV cache
     """
@@ -195,7 +195,7 @@ def gaudi_gpt2_block_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor], Optional[Tuple[torch.Tensor, Tuple[torch.FloatTensor, ...]]]]:
     """
-    Copied from GPT2Block.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py
+    
     The only differences are:
     - add new args token_idx
     """
@@ -272,7 +272,7 @@ def gaudi_gpt2_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPastAndCrossAttentions]:
     """
-    Copied from GPT2Model.forward: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py
+    
     The only differences are:
     - disable autocast for attention_mask
     - add new args token_idx
@@ -456,7 +456,7 @@ def gaudi_gpt2_forward(
 
 class GaudiGPT2LMHeadModel(GPT2LMHeadModel):
     """
-    Copied from GPT2LMHeadModel: https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py
+    
     The only differences are:
     - add new args token_idx
     """

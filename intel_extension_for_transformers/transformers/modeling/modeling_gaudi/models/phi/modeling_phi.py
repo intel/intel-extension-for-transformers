@@ -50,7 +50,7 @@ def gaudi_phi_attention_forward(
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
     """
-    Copied from PhiAttention.forward: https://github.com/huggingface/transformers/blob/v4.37.1/src/transformers/models/phi/modeling_phi.py
+    
     The only differences are:
     - add new args token_idx
     """
@@ -170,7 +170,7 @@ def gaudi_phi_decoder_layer_forward(
     **kwargs,
 ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
     """
-    Copied from PhiDecoderLayer.forward: https://github.com/huggingface/transformers/blob/v4.37.1/src/transformers/models/phi/modeling_phi.py
+    
     The only differences are:
     - add new args token_idx
     """
@@ -218,7 +218,7 @@ def gaudi_phi_model_forward(
     token_idx: Optional[torch.Tensor] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
     """
-    Copied from PhiModel.forward: https://github.com/huggingface/transformers/blob/v4.37.1/src/transformers/models/phi/modeling_phi.py
+    
     The only differences are:
     - add new args token_idx
     """
@@ -346,7 +346,7 @@ class GaudiPhiForCausalLM(PhiForCausalLM):
         token_idx: Optional[torch.Tensor] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         """
-        Inherits from PhiForCausalLM: https://github.com/huggingface/transformers/blob/v4.37.1/src/transformers/models/phi/modeling_phi.py
+        
         The only differences are:
         - add new args token_idx
         """
@@ -404,7 +404,7 @@ class GaudiPhiForCausalLM(PhiForCausalLM):
         self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs
     ):
         """
-        Inherits from PhiForCausalLM: https://github.com/huggingface/transformers/blob/v4.37.1/src/transformers/models/phi/modeling_phi.py
+        
         The only differences are:
         - add new args token_idx
         - add token_idx into model_inputs
@@ -425,18 +425,22 @@ class GaudiPhiForCausalLM(PhiForCausalLM):
                     max_cache_length = None
 
                 # Keep only the unprocessed tokens:
-                # 1 - If the length of the attention_mask exceeds the length of input_ids, then we are in a setting where
-                # some of the inputs are exclusively passed as part of the cache (e.g. when passing input_embeds as
-                # input)
+                # 1 - If the length of the attention_mask exceeds the length of input_ids,
+                # then we are in a setting where
+                # some of the inputs are exclusively passed as part of the cache
+                # (e.g. when passing input_embeds as input)
                 if attention_mask is not None and attention_mask.shape[1] > input_ids.shape[1]:
                     input_ids = input_ids[:, -(attention_mask.shape[1] - past_length) :]
-                # 2 - If the past_length is smaller than input_ids', then input_ids holds all input tokens. We can discard
+                # 2 - If the past_length is smaller than input_ids',
+                # then input_ids holds all input tokens. We can discard
                 # input_ids based on the past_length.
                 elif past_length < input_ids.shape[1]:
                     input_ids = input_ids[:, past_length:]
-                # 3 - Otherwise (past_length >= input_ids.shape[1]), let's assume input_ids only has unprocessed tokens.
+                # 3 - Otherwise (past_length >= input_ids.shape[1]),
+                # let's assume input_ids only has unprocessed tokens.
 
-                # If we are about to go beyond the maximum cache length, we need to crop the input attention mask.
+                # If we are about to go beyond the maximum cache length,
+                # we need to crop the input attention mask.
                 if (
                     max_cache_length is not None
                     and attention_mask is not None
