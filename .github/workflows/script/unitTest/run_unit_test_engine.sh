@@ -22,7 +22,6 @@ done
 function pytest() {
     local coverage_log_dir=$1
     JOB_NAME=unit_test
-    pip instal onnxruntime==1.13.1
     cd ${WORKING_DIR}/test/pytest
     engine_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
     engine_path="${engine_path}/transformers/runtime"
