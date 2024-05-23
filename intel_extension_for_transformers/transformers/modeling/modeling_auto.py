@@ -343,7 +343,6 @@ class _BaseQBitsAutoModelClass:
         if use_vllm is not None:
             logger.info("The backend is vLLM.")
             from vllm import LLM # pylint: disable=E1101
-            from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
             from vllm.model_executor.model_loader import get_model_loader  # pylint: disable=E0611
             from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E0401 disable=E0611
             from vllm.model_executor.layers.linear import (MergedColumnParallelLinear,
