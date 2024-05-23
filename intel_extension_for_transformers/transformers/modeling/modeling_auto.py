@@ -339,14 +339,14 @@ class _BaseQBitsAutoModelClass:
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
         # use for neuralspeed gguf
-        model_file = kwargs.pop("model_file", None)
-        if model_file is not None:
+        gguf_file = kwargs.pop("gguf_file", None)
+        if gguf_file is not None:
             from neural_speed import Model
 
             logger.info("Using Neural Speed to load the GGUF model...")
 
             gguf_model_file = hf_hub_download(
-                pretrained_model_name_or_path, filename=model_file
+                pretrained_model_name_or_path, filename=gguf_file
             )
 
             if kwargs.get("model_type", False):
