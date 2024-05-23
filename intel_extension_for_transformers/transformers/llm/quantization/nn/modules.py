@@ -139,7 +139,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
         out = torch.zeros(m, self.out_features, dtype=x.dtype)
-        bias = None if self.bias is None else self.bias.data
+        bias = None if self.bias is None else self.bias.data.float()
         if not x.is_contiguous():
             x = x.contiguous()
         out = matmul_kbit(

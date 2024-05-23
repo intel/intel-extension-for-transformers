@@ -643,7 +643,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
             q_model = replace_linear(model, None, None, config, device=device)
         else:
             model.eval()
-
             q_model = replace_linear(model, None, None, config, device=device)
 
         if orig_dtype != torch.float32:

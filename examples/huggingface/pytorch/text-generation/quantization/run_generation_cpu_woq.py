@@ -104,6 +104,11 @@ parser.add_argument(
     help="Percent of the average Hessian diagonal to use for dampening.",
 )
 parser.add_argument(
+    "--true_sequential",
+    action="store_true",
+    help="Whether to quantize layers within a transformer block in their original order.",
+)
+parser.add_argument(
     "--blocksize",
     type=int,
     default=128,
@@ -149,7 +154,7 @@ parser.add_argument(
     help="minmax learning rate, if None,it will beset to be the same with lr",
 )
 parser.add_argument(
-    "--use_quant_input",
+    "--enable_quanted_input",
     action="store_true",
     help="whether to use the output of quantized block to tune the next block",
 )
@@ -263,6 +268,7 @@ if args.woq:
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
             layer_wise=args.layer_wise,
+            true_sequential=args.true_sequential,
             use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "AutoRound":
@@ -276,10 +282,11 @@ if args.woq:
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
+            iters=args.calib_iters,
+            calib_len=args.calib_len,
             lr=args.lr,
             minmax_lr=args.minmax_lr,
-            use_quant_input=args.use_quant_input,
-            max_input_length=args.max_input_length,
+            enable_quanted_input=args.enable_quanted_input,
             use_ipex=args.use_ipex,
         )
     else:
@@ -391,9 +398,7 @@ if args.accuracy:
     if args.use_neural_speed:
         model_args += ",model_format=neural_speed"
     args = LMEvalParser(model = "hf", 
-                        #model_args=model_args,
-                        user_model=user_model,
-                        tokenizer=tokenizer,
+                        model_args=model_args,
                         tasks = args.tasks,
                         device = "cpu",
                         batch_size = args.batch_size)

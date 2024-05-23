@@ -37,6 +37,7 @@ jobs:
             "cpplint",
             # "pydocstyle",
             #"pyspelling",
+            "hadolint"
           ]
       fail-fast: false
     steps:
