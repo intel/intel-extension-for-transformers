@@ -423,7 +423,7 @@ class GaudiLlamaAttention(LlamaAttention):
             past_key_value = None
 
         if use_flash_attention and FusedSDPA:
-            import habana_frameworks.torch.hpu as ht
+            import habana_frameworks.torch.hpu as ht # pylint: disable=E0401
 
             if q_len == 1:
                 # next token

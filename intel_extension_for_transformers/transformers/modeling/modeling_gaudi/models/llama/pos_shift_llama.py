@@ -57,7 +57,8 @@ __all__ = ["enable_gaudi_llama_pos_shift_attention", "enable_gaudi_llama_pos_shi
 def gaudi_apply_rotary_pos_emb_single(x, cos, sin, position_ids):
     # TODO shape dimension check
     if x.device.type == "hpu" and has_fused_rope:
-        from habana_frameworks.torch.hpex.kernels import RotaryPosEmbeddingHelperV2 as FusedRoPE
+        from habana_frameworks.torch.hpex.kernels import RotaryPosEmbeddingHelperV2 \
+            as FusedRoPE # pylint: disable=E0401
         return FusedRoPE.apply(
             x, cos.unsqueeze(0).unsqueeze(0).clone(), sin.unsqueeze(0).unsqueeze(0).clone(), position_ids
         )
@@ -206,7 +207,7 @@ def gaudi_llama_pos_shift_pre_attn_forward(
     key_states = gaudi_apply_rotary_pos_emb_single(key_states, cos, sin, key_position_ids)
 
     if use_flash_attention and FusedSDPA:
-        import habana_frameworks.torch.hpu as ht
+        import habana_frameworks.torch.hpu as ht # pylint: disable=E0401
 
         if q_len == 1:
             # next token

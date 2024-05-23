@@ -67,7 +67,7 @@ logger = logging.get_logger(__name__)
 def update(prev, cur, dim, idx, inp_seq_len):
     orig_cur = cur
     if prev.dtype == torch.float8_e4m3fn:
-        from habana_frameworks.torch.hpex.kernels.Fp8Ops import cast_to_fp8_v2
+        from habana_frameworks.torch.hpex.kernels.Fp8Ops import cast_to_fp8_v2 # pylint: disable=E0401
 
         cur = cast_to_fp8_v2(cur, None, False, False, prev.dtype)[0]
     if cur.shape[2] > 1 and cur.shape[2] <= prev.shape[2]:
@@ -238,7 +238,7 @@ def gaudi_mixtral_attention_forward(
             key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
     if FusedSDPA:
-        import habana_frameworks.torch.hpu as ht
+        import habana_frameworks.torch.hpu as ht # pylint: disable=E0401
 
         if q_len == 1:
             # next token
