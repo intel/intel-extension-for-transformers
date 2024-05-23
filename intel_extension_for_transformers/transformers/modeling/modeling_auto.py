@@ -345,7 +345,7 @@ class _BaseQBitsAutoModelClass:
             from vllm import LLM # pylint: disable=E1101
             from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
             from vllm.model_executor.model_loader import get_model_loader  # pylint: disable=E0611
-            from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E0401
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E0401 disable=E0611
             from vllm.model_executor.layers.linear import (MergedColumnParallelLinear,
                                                         QKVParallelLinear,
                                                         ColumnParallelLinear,
@@ -397,13 +397,13 @@ class _BaseQBitsAutoModelClass:
                     module_traversal._modules[all_module_names[-1]] = copy.deepcopy(torch_linear)
 
             print("Optimized model =", model)
-            loader = get_model_loader(llm.llm_engine.load_config)
+            loader = get_model_loader(llm.llm_engine.load_config)  # pylint: disable=E1101
 
             weights_iterator = loader._get_weights_iterator(llm.llm_engine.model_config.model,
                                                             llm.llm_engine.model_config.revision,
                                                             fall_back_to_pt=True)
 
-            from vllm.model_executor.model_loader.weight_utils import default_weight_loader # pylint: disable=E0401
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader # pylint: disable=E0401 disable=E0611
             params_dict = dict(model.named_parameters(remove_duplicate=False))
             for name in params_dict.keys():
                 params = params_dict[name]
