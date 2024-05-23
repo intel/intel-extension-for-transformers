@@ -26,5 +26,10 @@ We have validated the majority of existing models using vLLM==0.4.2+cpu:
 * [THUDM/chatglm2-6b](https://hf-mirror.com/THUDM/chatglm2-6b)
 * [meta-llama/Llama-2-7b-chat-hf](https://hf-mirror.com/meta-llama/Llama-2-7b-chat-hf)
 * [baichuan-inc/Baichuan2-7B-Chat](https://hf-mirror.com/baichuan-inc/Baichuan2-7B-Chat)
+* [tiiuae/falcon-7b](https://huggingface.co/tiiuae/falcon-7b)
+* [meta-llama/Meta-Llama-3-8B](https://huggingface.co/meta-llama/Meta-Llama-3-8B)
+* [mistralai/Mistral-7B-Instruct-v0.1](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1)
+* [microsoft/phi-2](https://huggingface.co/microsoft/phi-2)
+* [Qwen/CodeQwen1.5-7B-Chat](https://huggingface.co/Qwen/CodeQwen1.5-7B-Chat)
 
 If you encounter any problems, please let us know.

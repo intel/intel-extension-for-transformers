@@ -160,7 +160,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         shape[-1] = self.out_features
         out = out.view(shape)
 
-        if os.environ["backend"] == "use_vllm":
+        if os.environ.get("backend", None) == "use_vllm":
             return out, None
 
         return out

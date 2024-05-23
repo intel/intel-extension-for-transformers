@@ -22,7 +22,7 @@ from transformers import AutoTokenizer
 
 
 def main(args_in: Optional[List[str]] = None) -> None:
-    parser = argparse.ArgumentParser(description="Convert a PyTorch model to a NE compatible file")
+    parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, help="Model name: String", required=True)
     parser.add_argument(
         "-p",
