@@ -625,7 +625,7 @@ class GaudiMixtralForCausalLM(MixtralForCausalLM):
                 self.num_experts,
                 self.num_experts_per_tok,
                 attention_mask,
-            ) 
+            )
             if labels is not None:
                 loss += self.router_aux_loss_coef * aux_loss.to(loss.device)  # make sure to reside in the same device
 
