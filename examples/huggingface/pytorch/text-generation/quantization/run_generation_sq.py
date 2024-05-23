@@ -1,21 +1,21 @@
 import argparse
+import json
 import os
 import re
 import time
-import json
+
 import torch
-from transformers import AutoConfig, AutoTokenizer
-from intel_extension_for_transformers.transformers import (
-    AutoModelForCausalLM,
-    AutoModel,
-)
-from transformers.utils import check_min_version
-from intel_extension_for_transformers.transformers.utils import str2bool
 from optimum.intel.generation.modeling import TSModelForCausalLM
+from transformers import AutoConfig, AutoTokenizer
+from transformers.utils import check_min_version
+
 from intel_extension_for_transformers.transformers import (
+    AutoModel,
+    AutoModelForCausalLM,
     MixedPrecisionConfig,
     SmoothQuantConfig,
 )
+from intel_extension_for_transformers.transformers.utils import str2bool
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default=None)
@@ -34,7 +34,7 @@ parser.add_argument(
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument(
-    "--restore",
+    "--restore_sq_model_from_json",
     action="store_true",
     help="restore ipex quantized model from output_dir/best_configure.json",
 )
@@ -59,13 +59,26 @@ parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default=0.5, help="Smooth quant parameter.")
-parser.add_argument("--n_samples", default=100, help="Smooth quant calibration samples.")
+parser.add_argument(
+    "--n_samples", default=100, type=int, help="Smooth quant calibration samples."
+)
+parser.add_argument(
+    "--seq_len", default=512, type=int, help="Smooth quant calibration input length."
+)
 # sq alpha "auto" parameters
 parser.add_argument("--scale_sharing", action="store_true")
-parser.add_argument("--init_alpha", default="0.5", help="Smooth quant parameter.")
-parser.add_argument("--alpha_min", default="0.0", help="Smooth quant parameter.")
-parser.add_argument("--alpha_max", default="1.0", help="Smooth quant parameter.")
-parser.add_argument("--alpha_step", default="0.1", help="Smooth quant parameter.")
+parser.add_argument(
+    "--init_alpha", default=0.5, type=float, help="Smooth quant parameter."
+)
+parser.add_argument(
+    "--alpha_min", default=0.0, type=float, help="Smooth quant parameter."
+)
+parser.add_argument(
+    "--alpha_max", default=1.0, type=float, help="Smooth quant parameter."
+)
+parser.add_argument(
+    "--alpha_step", default=0.1, type=float, help="Smooth quant parameter."
+)
 parser.add_argument("--shared_criterion", default="max", type=str)
 parser.add_argument("--do_blockwise", action="store_true")
 # ============AutoModel parameters==============
@@ -89,10 +102,7 @@ if args.peft_model_id:
 config = AutoConfig.from_pretrained(
     args.model,
     torchscript=(
-        True
-        if 
-            args.sq
-        else False
+        True if args.sq else False
     ),  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
     trust_remote_code=args.trust_remote_code,
@@ -123,18 +133,20 @@ quantization_config = None
 if args.mixed_precision:
     quantization_config = MixedPrecisionConfig(dtype="bfloat16")  # default is bfloat16
 elif args.sq:
-    excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+    excluded_precisions = ["bf16"]
     quantization_config = SmoothQuantConfig(
-        tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        excluded_precisions=excluded_precisions,  # default is []
-        alpha = args.alpha,
-        scale_sharing = args.scale_sharing,
+        tokenizer=tokenizer,
+        seq_len=args.seq_len,
+        n_samples=args.n_samples,
+        excluded_precisions=excluded_precisions,
+        alpha=args.alpha if args.alpha == "auto" else float(args.alpha),
+        scale_sharing=args.scale_sharing,
         init_alpha=args.init_alpha,
         alpha_min=args.alpha_min,
         alpha_max=args.alpha_max,
         alpha_step=args.alpha_step,
         shared_criterion=args.shared_criterion,
-        do_blockwise = args.do_blockwise,
+        do_blockwise=args.do_blockwise,
         num_beams=generate_kwargs["num_beams"],
     )
 else:
@@ -156,7 +168,9 @@ if quantization_config is not None:
             config.quantization_config = quantization_config
             config.save_pretrained(args.output_dir)
             torch.jit.save(user_model, args.output_dir + "/pytorch_model.bin")
-            #validate loading
+            with open(args.output_dir + "/best_configure.json", "w") as f:
+                json.dump(user_model.tune_cfg, f, indent=4)
+            # validate loading
             user_model = AutoModelForCausalLM.from_pretrained(
                 args.output_dir,
                 trust_remote_code=args.trust_remote_code,
@@ -165,8 +179,8 @@ if quantization_config is not None:
         elif args.mixed_precision:
             user_model.save_pretrained(args.output_dir)
 
-if args.restore:
-    from intel_extension_for_transformers.transformers.utils.utility import (
+if args.restore_sq_model_from_json:
+    from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import (
         recover_model_from_json,
     )
     user_model = recover_model_from_json(
@@ -181,7 +195,6 @@ elif not (args.sq or args.mixed_precision):
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
     )
-
 
 
 if args.benchmark:
@@ -242,18 +255,32 @@ if args.benchmark:
 
 if args.accuracy:
 
-    args.model = (peft_config.base_model_name_or_path if args.peft_model_id else args.model)
+    args.model = (
+        peft_config.base_model_name_or_path if args.peft_model_id else args.model
+    )
 
-    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-    args = LMEvalParser(model = "hf", 
-                        tokenizer = tokenizer,
-                        user_model = user_model,
-                        tasks = args.tasks,
-                        device = "cpu",
-                        batch_size = args.batch_size)
+    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import (
+        LMEvalParser,
+        evaluate,
+    )
+
+    args = LMEvalParser(
+        model="hf",
+        tokenizer=tokenizer,
+        user_model=user_model,
+        tasks=args.tasks,
+        device="cpu",
+        batch_size=args.batch_size,
+    )
     results = evaluate(args)
     for task_name in args.tasks.split(","):
         if task_name == "wikitext":
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity,none"]))
+            print(
+                "Accuracy for %s is: %s"
+                % (task_name, results["results"][task_name]["word_perplexity,none"])
+            )
         else:
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc,none"]))
+            print(
+                "Accuracy for %s is: %s"
+                % (task_name, results["results"][task_name]["acc,none"])
+            )

@@ -249,9 +249,9 @@ function run_benchmark {
         fi
     fi
     if [[ ${int8} == "true" ]] && [[ "$model_source" != "huggingface" ]]; then
-        if [[ "${script}" == "run_generation_sq.py" ]] && [[ "${topology}" != "gpt_j_mp" ]];then
-            extra_cmd=$extra_cmd" --int8"
-        fi
+        # if [[ "${script}" == "run_generation_sq.py" ]] && [[ "${topology}" != "gpt_j_mp" ]];then
+        #     extra_cmd=$extra_cmd" --int8"
+        # fi
         model_name_or_path=$tuned_checkpoint
     fi
     if [[ $backend == "neuralspeed" ]]; then

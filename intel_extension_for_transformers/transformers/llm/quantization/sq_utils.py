@@ -14,32 +14,60 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from ...utils import (
-    logger,
-    LazyImport,
-)
-from datasets import load_dataset
-from torch.utils.data import DataLoader
-from torch.nn.functional import pad
 import re
-import transformers
 from typing import Optional, Tuple
-from transformers.modeling_outputs import CausalLMOutputWithPast
+
+import transformers
+from datasets import load_dataset
 from optimum.intel.generation.modeling import TSModelForCausalLM
+from torch.nn.functional import pad
+from torch.utils.data import DataLoader
+from transformers.modeling_outputs import CausalLMOutputWithPast
+
 from intel_extension_for_transformers.tools.utils import is_ipex_available
+
+from ...utils import LazyImport, logger
+
 if is_ipex_available():
     import intel_extension_for_pytorch as ipex
 torch = LazyImport("torch")
 
-IPEX_OPT_LLM_SUPPORTED_DICT = {"2.2": ["gptj", "opt", "llama", "falcon", "chatglm", "baichuan", "gpt-neox"],
-                          "2.3": ["gptj", "opt", "llama", "falcon", "chatglm", "baichuan", "bloom", "codegen", "gptbigcode", "t5", "mixtral", "mpt"]}
+IPEX_OPT_LLM_SUPPORTED_DICT = {
+    "2.2": ["gptj", "opt", "llama", "falcon", "chatglm", "baichuan", "gpt-neox"],
+    "2.3": [
+        "gptj",
+        "opt",
+        "llama",
+        "falcon",
+        "chatglm",
+        "baichuan",
+        "bloom",
+        "codegen",
+        "gptbigcode",
+        "t5",
+        "mixtral",
+        "mpt",
+    ],
+}
 if is_ipex_available() and ipex.__version__ == "2.2.0+cpu":
-    logger.info("ipex.llm.optimize by 2.2.0 version supported model family: ", ",".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.2"]))
-    logger.info("The recommended transformers version is 4.35.2 if you used IPEX 2.2.0 version.")
+    logger.info(
+        "ipex.llm.optimize by 2.2.0 version supported model family: {}".format(
+            ",".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.2"])
+            )
+    )
+    logger.info(
+        "The recommended transformers version is 4.35.2 if you used IPEX 2.2.0 version."
+    )
     IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.2"]
 elif is_ipex_available() and ipex.__version__ == "2.3.0+cpu":
-    logger.info("ipex.llm.optimize by 2.3.0 version supported model family: ", ",".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]))
-    logger.info("The recommended transformers version is 4.38.1 if you used IPEX 2.3.0 version.")
+    logger.info(
+        "ipex.llm.optimize by 2.3.0 version supported model family: {}".format(
+            ", ".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.3"])
+        )
+    )
+    logger.info(
+        "The recommended transformers version is 4.38.1 if you used IPEX 2.3.0 version."
+    )
     IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]
 else:
     logger.warning("Please check the intel_extension_for_pytorch version is 2.3.0+cpu.")
@@ -56,18 +84,35 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "llama",
     "mistral",
     "chatglm",
-    "baichuan"
+    "baichuan",
 }
+
 
 def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
+
     if config.model_type == "qwen":
-        new_shape = [input_bs, 1, config.num_attention_heads, normalized_config.hidden_size//config.num_attention_heads]
+        new_shape = [
+            input_bs,
+            1,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+        ]
     elif config.model_type == "baichuan":
-        new_shape = [input_bs, config.num_attention_heads, 1, normalized_config.hidden_size//config.num_attention_heads]
+        new_shape = [
+            input_bs,
+            config.num_attention_heads,
+            1,
+            config.hidden_size // config.num_attention_heads,
+        ]
     elif config.model_type == "chatglm":
-        new_shape = [1, input_bs, config.num_attention_heads, normalized_config.hidden_size//config.num_attention_heads]
+        new_shape = [
+            1,
+            input_bs,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+        ]
     else:
         normalized_config = NormalizedConfigManager.get_normalized_config_class(
             config.model_type
@@ -105,15 +150,32 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     ]
     return tuple(past_key_values)
 
+
 def generate_dummy_past_key_values(config, input_bs):
     """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
+
     if config.model_type == "qwen":
-        new_shape = [input_bs, 1, config.num_attention_heads, normalized_config.hidden_size//config.num_attention_heads]
+        new_shape = [
+            input_bs,
+            1,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+        ]
     elif config.model_type == "baichuan":
-        new_shape = [input_bs, config.num_attention_heads, 1, normalized_config.hidden_size//config.num_attention_heads]
+        new_shape = [
+            input_bs,
+            config.num_attention_heads,
+            1,
+            config.hidden_size // config.num_attention_heads,
+        ]
     elif config.model_type == "chatglm":
-        new_shape = [1, input_bs, config.num_attention_heads, normalized_config.hidden_size//config.num_attention_heads]
+        new_shape = [
+            1,
+            input_bs,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+        ]
     else:
         normalized_config = NormalizedConfigManager.get_normalized_config_class(
             config.model_type
@@ -157,15 +219,23 @@ def generate_dummy_past_key_values(config, input_bs):
     ]
     return tuple(past_key_values)
 
-def get_dataloader(model_type, quantization_config, past_key_values, shuffle=False, padding=False, max_input_length=512, pad_val=None):
+
+def get_dataloader(
+    model_type,
+    quantization_config,
+    past_key_values,
+    shuffle=False,
+    padding=False,
+    seq_len=512,
+):
     calib_dataset = load_dataset(
-    quantization_config.dataset,
-    split=(
-        "test"
-        if quantization_config.dataset in ["mbpp", "openai_humaneval"]
-        else "train"
-    ),
-)
+        quantization_config.dataset,
+        split=(
+            "test"
+            if quantization_config.dataset in ["mbpp", "openai_humaneval"]
+            else "train"
+        ),
+    )
     if shuffle:
         calib_dataset = calib_dataset.shuffle(seed=42)
 
@@ -193,15 +263,13 @@ def get_dataloader(model_type, quantization_config, past_key_values, shuffle=Fal
             input_ids = text["input_ids"]
             if not padding:
                 input_ids = (
-                    input_ids[: int(max_input_length)]
-                    if len(input_ids) > int(max_input_length)
+                    input_ids[: int(seq_len)]
+                    if len(input_ids) > int(seq_len)
                     else input_ids
                 )  # no_padding
             else:
-                pad_len = max_input_length - input_ids.shape[0]
-                input_ids = pad(
-                    input_ids, (0, pad_len), value=max_input_length
-                )
+                pad_len = seq_len - input_ids.shape[0]
+                input_ids = pad(input_ids, (0, pad_len), value=seq_len)
 
             last_ind.append(input_ids.shape[0] - 1)
             attention_mask = torch.ones(len(input_ids))
@@ -239,6 +307,7 @@ def get_dataloader(model_type, quantization_config, past_key_values, shuffle=Fal
         collate_fn=collate_batch,
     )
     return calib_dataloader
+
 
 class TSModelCausalLMForITREX(TSModelForCausalLM):
     def _reorder_cache(
@@ -345,3 +414,96 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             logits = outputs["logits"]
             past_key_values = outputs["past_key_values"] if self.use_cache else None
         return CausalLMOutputWithPast(logits=logits, past_key_values=past_key_values)
+
+def loading_configure_file(model, json_file_path, example_inputs):
+    """Recover ipex model from JSON file.
+
+    Args:
+        model (object): fp32 model need to do quantization.
+        json_file_path (json): configuration JSON file for ipex.
+        example_inputs (tuple or torch.Tensor or dict): example inputs that will be passed to the ipex function.
+
+    Returns:
+        (object): quantized model
+    """
+
+    ipex = LazyImport("intel_extension_for_pytorch")
+    from torch.ao.quantization.observer import MinMaxObserver
+
+    if ipex.__version__ >= "2.1.100":
+        qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5, act_observer=MinMaxObserver)
+    else:
+        qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5, act_observer=MinMaxObserver())
+    if isinstance(example_inputs, dict):
+        model = ipex.quantization.prepare(model, qconfig, example_kwarg_inputs=example_inputs, inplace=True)
+    else:
+        model = ipex.quantization.prepare(model, qconfig, example_inputs=example_inputs, inplace=True)
+    model.load_qconf_summary(qconf_summary=json_file_path)
+    model = ipex.quantization.convert(model, inplace=True)
+    model.eval()
+    with torch.no_grad():
+        model = torch.jit.trace(model, example_kwarg_inputs=example_inputs, strict=False, check_trace=False)
+        model = torch.jit.freeze(model.eval())
+
+    model(**example_inputs)
+    model(**example_inputs)
+    return model
+
+def recover_model_from_json(fp32_model_name_or_path, json_file_path, trust_remote_code=False):
+    """Recover ipex model from JSON file.
+
+    Args:
+        model (object): fp32 model need to do quantization.
+        json_file_path (json): configuration JSON file for ipex saved.
+        trust_remote_code (bool): trust remote code.
+
+    Returns:
+        (object): quantized model
+    """
+    from transformers import AutoModelForCausalLM
+    model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path, trust_remote_code=trust_remote_code)
+    if model.config.model_type in IPEX_OPT_LLM_SUPPORTED:
+        qconfig = ipex.quantization.default_static_qconfig_mapping
+        model = ipex.llm.optimize(
+            model.eval(),
+            dtype=torch.float,
+            inplace=True,
+            quantization_config=qconfig,
+            deployment_mode=False,
+        )
+    # config
+    model.config.torchscript = True
+    config = model.config
+
+    # example_inputs
+
+    input_ids= model.dummy_inputs["input_ids"]
+    input_bs, input_len = input_ids.shape
+    attention_mask = torch.ones_like(input_ids)
+    position_ids = torch.arange(input_len).repeat(input_bs, 1)
+    num_beams = 1
+    if config.model_type in IPEX_OPT_LLM_SUPPORTED:
+        past_key_values = generate_dummy_past_key_values_for_opt_llm(
+            config=config, input_bs=input_bs, num_beams=num_beams
+        )
+    else:
+        past_key_values = generate_dummy_past_key_values(
+            config=config, input_bs=input_bs
+        )
+    if config.model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+        example_inputs = {
+                    "input_ids": input_ids,
+                    "attention_mask": attention_mask,
+                    "position_ids": position_ids,
+                    "past_key_values": past_key_values
+                }
+    else:
+        example_inputs = {
+                    "input_ids": input_ids,
+                    "attention_mask": attention_mask,
+                    "past_key_values": past_key_values
+                }
+
+    model = loading_configure_file(model, json_file_path, example_inputs)
+    model = TSModelCausalLMForITREX(model, config=config)
+    return model
