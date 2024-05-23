@@ -24,13 +24,13 @@ import torch
 import torch.distributed as dist
 from transformers.generation.beam_constraints import DisjunctiveConstraint, PhrasalConstraint
 from transformers.generation.beam_search import BeamScorer, BeamSearchScorer, ConstrainedBeamSearchScorer
-from transformers.generation.candidate_generator import CandidateGenerator # pylint: disable=E0611
+from transformers.generation.candidate_generator import CandidateGenerator # pylint: disable=E0401
 from transformers.generation.logits_process import LogitsProcessorList
 from transformers.generation.stopping_criteria import (
     StoppingCriteriaList,
     validate_stopping_criteria,
 )
-from transformers.generation.utils import (
+from transformers.generation.utils import ( # pylint: disable=E0611
     NEED_SETUP_CACHE_CLASSES_MAPPING,
     GenerateBeamDecoderOnlyOutput,
     GenerateBeamEncoderDecoderOutput,
@@ -43,14 +43,14 @@ from transformers.generation.utils import (
     GenerationMode,
     _split_model_inputs,
     stack_model_outputs,
-) # pylint: disable=E0611
+)
 from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
 from transformers.utils import ModelOutput
 
 from optimum.utils import logging
 
 from optimum.habana.utils import HabanaProfile # pylint: disable=E0611
-from optimum.habana.transformers.integrations.deepspeed import unwrap_deepspeed_model
+from optimum.habana.transformers.integrations.deepspeed import unwrap_deepspeed_model # pylint: disable=E0611
 from .configuration_utils import GaudiGenerationConfig
 
 
@@ -1755,8 +1755,8 @@ class GaudiGenerationMixin(GenerationMixin):
             eos_token_id = [eos_token_id]
         eos_token_id_tensor = torch.tensor(eos_token_id).to(input_ids.device) if eos_token_id is not None else None
         output_scores = output_scores if output_scores is not None else self.generation_config.output_scores
-        output_logits = output_logits if output_logits is not None else \
-            self.generation_config.output_logits # pylint: disable=E1101
+        if output_logits is None:
+            output_logits = self.generation_config.output_logits # pylint: disable=E1101
         output_attentions = (
             output_attentions if output_attentions is not None else self.generation_config.output_attentions
         )
@@ -2089,8 +2089,8 @@ class GaudiGenerationMixin(GenerationMixin):
         if isinstance(eos_token_id, int):
             eos_token_id = [eos_token_id]
         output_scores = output_scores if output_scores is not None else self.generation_config.output_scores
-        output_logits = output_logits if output_logits is not None else \
-            self.generation_config.output_logits# pylint: disable=E1101
+        if output_logits is None:
+            output_logits = self.generation_config.output_logits # pylint: disable=E1101
         output_attentions = (
             output_attentions if output_attentions is not None else self.generation_config.output_attentions
         )
@@ -2981,8 +2981,8 @@ class GaudiGenerationMixin(GenerationMixin):
         if isinstance(eos_token_id, int):
             eos_token_id = [eos_token_id]
         output_scores = output_scores if output_scores is not None else self.generation_config.output_scores
-        output_logits = output_logits if output_logits is not None else \
-            self.generation_config.output_logits # pylint: disable=E1101
+        if output_logits is None:
+            output_logits = self.generation_config.output_logits # pylint: disable=E1101
         output_attentions = (
             output_attentions if output_attentions is not None else self.generation_config.output_attentions
         )
