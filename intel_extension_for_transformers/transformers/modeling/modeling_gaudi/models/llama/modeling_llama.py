@@ -18,7 +18,7 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from transformers.cache_utils import Cache, DynamicCache, StaticCache
+from transformers.cache_utils import Cache, DynamicCache, StaticCache # pylint: disable=E0611
 from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
 from transformers.models.llama.configuration_llama import LlamaConfig
 from transformers.models.llama.modeling_llama import (
@@ -1158,4 +1158,4 @@ def apply_customized_rope(q, k, cos, sin, position_ids):
         )
     else:
 
-        return apply_rotary_pos_emb(q, k, cos[position_ids], sin[position_ids])
+        return apply_rotary_pos_emb(q, k, cos[position_ids], sin[position_ids]) # pylint: disable=E1120
