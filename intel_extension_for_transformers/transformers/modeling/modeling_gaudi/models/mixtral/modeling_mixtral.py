@@ -620,7 +620,8 @@ class GaudiMixtralForCausalLM(MixtralForCausalLM):
 
         aux_loss = None
         if output_router_logits:
-            aux_loss = load_balancing_loss_func( # pylint: disable=E1121
+            # pylint: disable=E1121
+            aux_loss = load_balancing_loss_func(
                 outputs.router_logits if return_dict else outputs[-1],
                 self.num_experts,
                 self.num_experts_per_tok,
