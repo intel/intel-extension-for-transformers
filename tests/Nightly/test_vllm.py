@@ -18,10 +18,10 @@
 import shutil
 import torch
 import unittest
-
+import neural_compressor.adaptor.pytorch as nc_torch
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-
+PT_VERSION = nc_torch.get_torch_version()
 
 class TestVLLM(unittest.TestCase):
 
@@ -32,7 +32,9 @@ class TestVLLM(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         shutil.rmtree("./runtime_outs", ignore_errors=True)
-
+    
+    @unittest.skipIf(PT_VERSION.release < Version("2.3.0").release,
+            "Please use PyTroch 2.3.0 or higher version for vllm")
     def test_use_vllm_api(self):
         model_name = "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
         prompt = "Once upon a time"
