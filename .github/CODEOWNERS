@@ -35,6 +35,7 @@
 /intel_extension_for_transformers/neural_chat liang1.lv@intel.com
 /workflows/chatbot liang1.lv@intel.com
 /intel_extension_for_transformers/transformers/llm/quantization penghui.cheng@intel.com
+/intel_extension_for_transformers/transformers/modeling/modeling_gaudi xi2.chen@intel.com
 /intel_extension_for_transformers/transformers penghui.cheng@intel.com
 /intel_extension_for_transformers/utils penghui.cheng@intel.com
 /docs wenxin.zhang@intel.com

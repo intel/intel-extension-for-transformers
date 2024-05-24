@@ -467,7 +467,7 @@ def load_model(
         # Tweak generation so that it runs faster on Gaudi
         # pylint: disable=E0401
         # pylint: disable=E0611
-        from optimum.habana.transformers.modeling_utils import (
+        from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import (
             adapt_transformers_to_gaudi,
         )
 
