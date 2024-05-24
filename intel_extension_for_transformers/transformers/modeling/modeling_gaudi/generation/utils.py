@@ -24,7 +24,8 @@ import torch
 import torch.distributed as dist
 from transformers.generation.beam_constraints import DisjunctiveConstraint, PhrasalConstraint
 from transformers.generation.beam_search import BeamScorer, BeamSearchScorer, ConstrainedBeamSearchScorer
-from transformers.generation.candidate_generator import CandidateGenerator # pylint: disable=E0401
+# pylint: disable=E0401,E0611
+from transformers.generation.candidate_generator import CandidateGenerator
 from transformers.generation.logits_process import LogitsProcessorList
 from transformers.generation.stopping_criteria import (
     StoppingCriteriaList,
@@ -50,7 +51,8 @@ from transformers.utils import ModelOutput
 from optimum.utils import logging
 
 from optimum.habana.utils import HabanaProfile # pylint: disable=E0611
-from optimum.habana.transformers.integrations.deepspeed import unwrap_deepspeed_model # pylint: disable=E0611
+# pylint: disable=E0401,E0611
+from optimum.habana.transformers.integrations.deepspeed import unwrap_deepspeed_model
 from .configuration_utils import GaudiGenerationConfig
 
 
