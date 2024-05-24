@@ -373,6 +373,7 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 https://github.com/intel/intel-extension-for-transformers/assets/88082706/9d9bdb7e-65db-47bb-bbed-d23b151e8b31
 
 ## 📃Selected Publications/Events
+* Blog published on Huggingface: [Building Cost-Efficient Enterprise RAG applications with Intel Gaudi 2 and Intel Xeon](https://huggingface.co/blog/cost-efficient-rag-applications-with-intel) (May 2024)
 * Blog published on Intel Developer News: [Efficient Natural Language Embedding Models with Intel® Extension for Transformers](https://www.intel.com/content/www/us/en/developer/articles/technical/efficient-natural-language-embedding-models.html) (May 2024)
 * Blog published on Techcrunch: [Intel and others commit to building open generative AI tools for the enterprise](https://techcrunch.com/2024/04/16/intel-and-others-commit-to-building-open-generative-ai-tools-for-the-enterprise) (Apr 2024)
 * Video on YouTube: [Intel Vision Keynotes 2024](https://www.youtube.com/watch?v=QB7FoIpx8os&t=2280s) (Apr 2024)
