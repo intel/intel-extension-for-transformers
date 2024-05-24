@@ -418,9 +418,9 @@ class _BaseQBitsAutoModelClass:
             model.load_weights(weights_iterator)
 
             print("INC quantizing...")
-            config = RtnConfig(compute_dtype="fp32",
+            config = RtnConfig(compute_dtype="bf16",
                             group_size=128,
-                            scale_dtype="fp32",
+                            scale_dtype="bf16",
                             weight_dtype="int4_clip",
                             bits=4)
             model = convert_to_quantized_model(model, config)
