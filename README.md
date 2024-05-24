@@ -219,7 +219,7 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs)
 ```
-You can also load GGUF format model from Huggingface, and we will use [NeuralSpeed](https://github.com/intel/neural-speed) to accelerate the inference on CPUs.
+You can also load GGUF format model from Huggingface, we only support Q4_0 gguf format for now.
 ```python
 from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
