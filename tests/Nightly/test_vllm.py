@@ -32,7 +32,7 @@ class TestVLLM(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         shutil.rmtree("./runtime_outs", ignore_errors=True)
-    
+
     @unittest.skipIf(PT_VERSION.release < Version("2.3.0").release,
             "Please use PyTroch 2.3.0 or higher version for vllm")
     def test_use_vllm_api(self):
