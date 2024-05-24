@@ -418,7 +418,6 @@ class _BaseQBitsAutoModelClass:
             model.load_weights(weights_iterator)
 
             print("INC quantizing...")
-            import pdb;pdb.set_trace()
             config = RtnConfig(compute_dtype="fp32",
                             group_size=128,
                             scale_dtype="fp32",
