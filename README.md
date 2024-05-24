@@ -222,7 +222,7 @@ outputs = model.generate(inputs)
 You can also load GGUF format Model from Huggingface, and we will use [NeuralSpeed](https://github.com/intel/neural-speed) to accelerate the inference on CPUs.
 ```python
 from transformers import AutoTokenizer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 
 # Specify the GGUF repo on the Hugginface
 model_name = "TheBloke/Llama-2-7B-Chat-GGUF"
