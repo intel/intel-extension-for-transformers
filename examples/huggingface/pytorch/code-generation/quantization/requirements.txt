@@ -11,5 +11,5 @@ tiktoken #code_gen
 neural-compressor
 intel_extension_for_pytorch==2.3.0
 optimum-intel
-auto-round
+git+https://github.com/intel/auto-round.git@ecca5349981044e1278773a251b3fc5c0a11fe7b
 git+https://github.com/bigcode-project/bigcode-evaluation-harness@094c7cc197d13a53c19303865e2056f1c7488ac1

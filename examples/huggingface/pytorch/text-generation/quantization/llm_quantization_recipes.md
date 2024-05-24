@@ -56,11 +56,10 @@ pip install intel-extension-for-pytorch==2.3.0
 python run_generation_sq.py \
     --model EleutherAI/gpt-j-6b \
     --output_dir ./saved_results \
-    --trust_remote_code \
-    --fallback_add \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.85
 ```
 
@@ -111,10 +110,10 @@ python run_generation_cpu_woq.py \
 python run_generation_sq.py \
     --model facebook/opt-1.3b \
     --output_dir ./saved_results \
-    --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.9
 ```
 
@@ -166,8 +165,9 @@ python run_generation_sq.py \
     --output_dir ./saved_results \
     --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.5
 ```
 
@@ -217,14 +217,17 @@ python run_generation_cpu_woq.py \
 python run_generation_sq.py \
     --model meta-llama/Llama-2-7b-hf \
     --output_dir ./saved_results \
-    --trust_remote_code \
-    --calib_len 2048 \
-    --fallback_add \
-    --calib_shuffle False \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
+    --sq \
+    --accuracy \
     --batch_size 1 \
-    --recipes "{'smooth_quant': True, 'smooth_quant_args': {'alpha': 'auto', 'folding': False, 'default_alpha': 0.8, 'auto_alpha_args': {'alpha_min': 0.8, 'alpha_max': 0.99, 'alpha_step': 0.01, 'shared_criterion': 'mean'}}}"
+    --init_alpha 0.8 \
+    --alpha_min 0.8 \
+    --alpha_max 0.99 \
+    --alpha_step 0.01 \
+    --shared_criterion mean \
+    --seq_len 2048 \
+    --alpha auto
 ```
 
 ### Weight-Only Quantization
@@ -273,14 +276,17 @@ python run_generation_cpu_woq.py \
 python run_generation_sq.py \
     --model meta-llama/Llama-2-13b-hf \
     --output_dir ./saved_results \
-    --trust_remote_code \
-    --calib_len 1024 \
-    --fallback_add \
-    --calib_padding \
+    --seq_len 1024 \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
+    --sq \
+    --accuracy \
     --batch_size 1 \
-    --recipes "{'smooth_quant': True, 'smooth_quant_args': {'alpha': 'auto', 'folding': False, 'default_alpha': 0.8, 'auto_alpha_args': {'alpha_min': 0.75, 'alpha_max': 0.99, 'alpha_step': 0.01, 'shared_criterion': 'max'}}}"
+    --init_alpha 0.8 \
+    --alpha_min 0.75 \
+    --alpha_max 0.99 \
+    --alpha_step 0.01 \
+    --shared_criterion max \
+    --alpha auto
 ```
 
 ### Weight-Only Quantization
@@ -329,10 +335,10 @@ python run_generation_cpu_woq.py \
 python run_generation_sq.py \
     --model meta-llama/Llama-2-70b-hf \
     --output_dir ./saved_results \
-    --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.8
 ```
 
@@ -384,8 +390,9 @@ python run_generation_sq.py \
     --output_dir ./saved_results \
     --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.9
 ```
 
@@ -437,7 +444,7 @@ python run_generation_sq.py \
     --output_dir ./saved_results \
     --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
+    --sq --accuracy \
     --batch_size 1 \
     --alpha 0.95
 ```
@@ -489,8 +496,9 @@ python run_generation_sq.py \
     --output_dir ./saved_results \
     --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.95
 ```
 
@@ -542,8 +550,9 @@ python run_generation_sq.py \
     --output_dir ./saved_results \
     --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.65
 ```
 
@@ -595,7 +604,7 @@ python run_generation_sq.py \
     --output_dir ./saved_results \
     --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
+    --sq --accuracy \
     --batch_size 1 \
     --alpha 0.5
 ```
@@ -649,8 +658,9 @@ python run_generation_sq.py \
     --output_dir ./saved_results \
     --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.75
 ```
 
@@ -701,8 +711,9 @@ python run_generation_sq.py \
     --output_dir ./saved_results \
     --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.9
 ```
 
@@ -752,10 +763,10 @@ python run_generation_cpu_woq.py \
 python run_generation_sq.py \
     --model bigscience/bloom-1b7 \
     --output_dir ./saved_results \
-    --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.6
 ```
 
@@ -805,10 +816,10 @@ python run_generation_cpu_woq.py \
 python run_generation_sq.py \
     --model EleutherAI/gpt-neox-20b \
     --output_dir ./saved_results \
-    --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.7
 ```
 
@@ -859,8 +870,9 @@ python run_generation_sq.py \
     --output_dir ./saved_results \
     --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.75
 ```
 
@@ -910,10 +922,10 @@ python run_generation_cpu_woq.py \
 python run_generation_sq.py \
     --model databricks/dolly-v2-12b \
     --output_dir ./saved_results \
-    --trust_remote_code \
     --tasks lambada_openai \
-    --int8 --sq --accuracy \
-    --batch_size 1 \
+    --sq \
+    --accuracy \
+    --batch_size 56 \
     --alpha 0.75
 ```
 
