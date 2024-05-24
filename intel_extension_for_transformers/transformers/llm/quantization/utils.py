@@ -490,10 +490,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
             dtype = config.weight_dtype
         # mapping to INC config
         if config.quant_method.value == "rtn":
-            export_compressed_model = False
-            if (device == "cpu" or device == torch.device("cpu")) \
-                and config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
-                export_compressed_model = True
             quant_config = RTNConfig(
                  dtype=config.weight_dtype,
                  bits=config.bits,
@@ -502,7 +498,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
                  group_dim=config.group_dim,
                  use_full_range=config.use_full_range,
                  use_mse_search=config.mse_range,
-                 export_compressed_model=export_compressed_model,
                  use_layer_wise=config.layer_wise,
                  model_path=config.model_path,
                  use_double_quant=config.use_double_quant,
@@ -515,8 +510,16 @@ def convert_to_quantized_model(model, config, device="cpu"):
             model = convert(model)
         elif config.quant_method.value == "hqq":
             quant_config = HQQConfig(
-
+                bits=config.bits,
+                group_size=config.group_size,
+                quant_zero=config.quant_zero,
+                quant_scale=config.quant_scale,
+                scale_quant_group_size=config.scale_quant_group_size,
+                skip_lm_head=config.skip_lm_head,
             )
+            model = prepare(model, quant_config)
+            model = convert(model)
+            return model
         elif config.quant_method.value == "awq":
             quant_config = AWQConfig(
 

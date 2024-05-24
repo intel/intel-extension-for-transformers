@@ -25,6 +25,7 @@ from .config import (
     QuantAwareTrainingConfig,
     SparsityConfig,
     RtnConfig,
+    HQQConfig,
     AwqConfig,
     TeqConfig,
     GPTQConfig,

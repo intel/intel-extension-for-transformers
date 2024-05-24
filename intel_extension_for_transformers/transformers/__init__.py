@@ -48,6 +48,7 @@ from .utils import (
     DynamicQuantConfig,
     QuantAwareTrainingConfig,
     RtnConfig,
+    HQQConfig,
     AwqConfig,
     TeqConfig,
     GPTQConfig,
