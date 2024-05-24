@@ -602,7 +602,7 @@ def load_model(
 
     if gguf_model_path:
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-        model = AutoModelForCausalLM.from_pretrained(model_name, model_file = gguf_model_path)
+        model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file = gguf_model_path)
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
         MODELS[model_name]["model"] = model
