@@ -86,6 +86,7 @@ from transformers.utils import (
     has_file,
 )
 
+import torch.nn.functional as F
 from typing import Union
 
 if is_ipex_available() and is_intel_gpu_available():
@@ -338,6 +339,94 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        use_vllm = kwargs.pop("use_vllm", None)
+        if use_vllm is not None:
+            logger.info("The backend is vLLM.")
+            from vllm import LLM # pylint: disable=E1101
+            from vllm.model_executor.model_loader import get_model_loader  # pylint: disable=E0611
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E0401 disable=E0611
+            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear,
+                                                        QKVParallelLinear,
+                                                        ColumnParallelLinear,
+                                                        RowParallelLinear)  # pylint: disable=E1101
+
+            os.environ["backend"] = "use_vllm"
+            llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
+            model = llm.llm_engine.model_executor.driver_worker.model_runner.model  # pylint: disable=E1101
+            print("Original model =", model)
+
+            original_parameter_memo = dict()
+            original_params_dict = dict(model.named_parameters(remove_duplicate=False))
+            for name in original_params_dict.keys():
+                params = original_params_dict[name]
+                if "qkv_proj" in name or "gate_up_proj" in name:
+                    input_dim = getattr(params, "input_dim", None)
+                    output_dim = getattr(params, "output_dim", None)
+                    original_parameter_memo[name] = (input_dim, output_dim, params.weight_loader)
+
+            class linear_adaptor(torch.nn.Linear):
+
+                def __init__(self, in_features: int, out_features: int, bias: bool = True, \
+                             device=None, dtype=None) -> None:
+                    super().__init__(in_features, out_features, bias, device, dtype)
+
+                def forward(self, input: torch.Tensor) -> tuple[torch.Tensor, None]:
+                    return F.linear(input, self.weight, self.bias), None
+
+            for name, module in model.named_modules():
+                bias_flag = False
+                if isinstance(module, QKVParallelLinear) or isinstance(module, MergedColumnParallelLinear) or \
+                    isinstance(module, RowParallelLinear) or isinstance(module, ColumnParallelLinear):
+                    out_feature = module.weight.shape[0]
+                    in_feature = module.weight.shape[1]
+                    if getattr(module, "bias", False) != None:
+                        bias_flag = True
+                    weight_dtype = module.weight.dtype
+
+                    torch_linear = linear_adaptor(in_features=in_feature,
+                                                out_features=out_feature,
+                                                bias=bias_flag,
+                                                dtype=weight_dtype)
+                    module_traversal = model
+                    all_module_names = name.split('.')
+                    all_module_names_except_last = all_module_names[:-1]
+                    for sub_module_name in all_module_names_except_last:
+                        module_traversal = module_traversal._modules[sub_module_name]
+
+                    module_traversal._modules[all_module_names[-1]] = copy.deepcopy(torch_linear)
+
+            print("Optimized model =", model)
+            loader = get_model_loader(llm.llm_engine.load_config)  # pylint: disable=E1101
+
+            weights_iterator = loader._get_weights_iterator(llm.llm_engine.model_config.model,
+                                                            llm.llm_engine.model_config.revision,
+                                                            fall_back_to_pt=True)
+
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader # pylint: disable=E0401 disable=E0611
+            params_dict = dict(model.named_parameters(remove_duplicate=False))
+            for name in params_dict.keys():
+                params = params_dict[name]
+                if hasattr(params, "weight_loader") == False:
+                    if "qkv_proj" in name or "gate_up_proj" in name:
+                        original_params = original_parameter_memo[name]
+                        setattr(params, "input_dim", original_params[0])
+                        setattr(params, "output_dim", original_params[1])
+                        setattr(params, "weight_loader", original_params[2])
+                    else:
+                        setattr(params, "weight_loader", default_weight_loader)
+
+            model.load_weights(weights_iterator)
+
+            print("INC quantizing...")
+            config = RtnConfig(compute_dtype="bf16",
+                            group_size=128,
+                            scale_dtype="bf16",
+                            weight_dtype="int4_clip",
+                            bits=4)
+            model = convert_to_quantized_model(model, config)
+
+            return llm
+
         # use for neuralspeed gguf
         gguf_file = kwargs.pop("gguf_file", None)
         if gguf_file is not None:
