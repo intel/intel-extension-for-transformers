@@ -219,6 +219,25 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs)
 ```
+You can also load GGUF format model from Huggingface, and we will use [NeuralSpeed](https://github.com/intel/neural-speed) to accelerate the inference on CPUs.
+```python
+from transformers import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+
+# Specify the GGUF repo on the Hugginface
+model_name = "TheBloke/Llama-2-7B-Chat-GGUF"
+# Download the the specific gguf model file from the above repo
+gguf_file = "llama-2-7b-chat.Q4_0.gguf"
+# make sure you are granted to access this model on the Huggingface.
+tokenizer_name = "meta-llama/Llama-2-7b-chat-hf"
+prompt = "Once upon a time, there existed a little girl,"
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+
+model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file = gguf_file)
+outputs = model.generate(inputs)
+```
+
 
 You can also load PyTorch Model from Modelscope
 >**Note**:require modelscope
