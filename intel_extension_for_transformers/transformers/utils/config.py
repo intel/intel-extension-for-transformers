@@ -1056,7 +1056,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         sym: bool = False,
         lr: float = None,
         minmax_lr: float = None,
-        enable_quanted_input: bool = True,
+        disable_quanted_input: bool = False,
         nsamples: int = 512,
         iters: int = 200,
         use_ggml: bool = False,
@@ -1083,7 +1083,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.group_size = group_size
         self.lr = lr
         self.minmax_lr = minmax_lr
-        self.enable_quanted_input = enable_quanted_input
+        self.disable_quanted_input = disable_quanted_input
         self.iters = iters
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
