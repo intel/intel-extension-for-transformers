@@ -527,7 +527,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     "seqlen": config.calib_len,
                     "iters": config.iters,
                     "scale_dtype": config.scale_dtype,
-                    "enable_quanted_input": False if config.disable_quanted_input else True,
+                    "enable_quanted_input": not config.disable_quanted_input,
                     "lr": config.lr,
                     "minmax_lr": config.minmax_lr,
                 }
