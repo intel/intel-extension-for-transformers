@@ -28,6 +28,7 @@ parser.add_argument(
     "--max_new_tokens", default=32, type=int, help="output max new tokens"
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
+parser.add_argument("--use_ipex", action="store_true")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--iters", default=100, type=int, help="num iter")
@@ -74,7 +75,7 @@ parser.add_argument(
     "--scale_dtype",
     type=str,
     default="fp32",
-    choices=["fp32", "fp8"],
+    choices=["fp32", "bf16", "fp8"],
 )
 parser.add_argument(
     "--compute_dtype",
@@ -101,6 +102,11 @@ parser.add_argument(
     type=float,
     default=0.01,
     help="Percent of the average Hessian diagonal to use for dampening.",
+)
+parser.add_argument(
+    "--true_sequential",
+    action="store_true",
+    help="Whether to quantize layers within a transformer block in their original order.",
 )
 parser.add_argument(
     "--blocksize",
@@ -148,7 +154,7 @@ parser.add_argument(
     help="minmax learning rate, if None,it will beset to be the same with lr",
 )
 parser.add_argument(
-    "--use_quant_input",
+    "--disable_quanted_input",
     action="store_true",
     help="whether to use the output of quantized block to tune the next block",
 )
@@ -207,7 +213,6 @@ quantization_config = None
 if args.woq:
     if args.woq_algo == "Rtn":
         quantization_config = RtnConfig(
-            tokenizer=tokenizer,
             bits=args.bits,
             sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
@@ -215,6 +220,7 @@ if args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             layer_wise=args.layer_wise,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "Awq":
         quantization_config = AwqConfig(
@@ -228,6 +234,7 @@ if args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "Teq":
         quantization_config = TeqConfig(
@@ -241,6 +248,7 @@ if args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "GPTQ":
         quantization_config = GPTQConfig(
@@ -260,6 +268,8 @@ if args.woq:
             weight_dtype=args.weight_dtype,
             calib_iters=args.calib_iters,
             layer_wise=args.layer_wise,
+            true_sequential=args.true_sequential,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "AutoRound":
         quantization_config = AutoRoundConfig(
@@ -272,11 +282,12 @@ if args.woq:
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
+            iters=args.calib_iters,
             calib_len=args.calib_len,
             lr=args.lr,
             minmax_lr=args.minmax_lr,
-            use_quant_input=args.use_quant_input,
+            disable_quanted_input=args.disable_quanted_input,
+            use_ipex=args.use_ipex,
         )
     else:
         assert False, "Please set the correct '--woq_algo'"

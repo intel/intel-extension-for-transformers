@@ -281,7 +281,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             )
 
         if self.bits == 4 and self.weight_dtype not in [
-            "int4_fullrange",
             "int4_clip",
             "nf4",
             "fp4_e2m1_bnb",
@@ -300,7 +299,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
 
         elif self.weight_dtype not in [
             "int8",
-            "int4_fullrange",
             "int4_clip",
             "nf4",
             "fp4_e2m1_bnb",
@@ -310,15 +308,16 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         ]:
             raise ValueError(
                 f"weight_dtype must be a string in "
-                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+                f"'int8', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
             )
 
         if self.scale_dtype is not None and self.scale_dtype not in [
             "fp32",
             "fp8_e8m0",
+            "bf16"
         ]:
             raise ValueError(
-                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
+                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0', 'bf16' "
                 f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
             )
         elif self.scale_dtype is None:
@@ -340,15 +339,15 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             raise ValueError("scheme must be a string")
 
         if self.scheme == "asym" and (
-            self.compute_dtype == "int8"
+            (self.compute_dtype == "int8" and self.weight_dtype == "int8")
             or self.weight_dtype.startswith("fp")
             or self.weight_dtype.startswith("nf")
             or self.scale_dtype != "fp32"
         ):
             raise ValueError(
-                "WeightOnlyQuantization doesn't support asym with \
-                                compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, \
-                                please use sym scheme"
+                f"WeightOnlyQuantization doesn't support asym with "
+                f"compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, "
+                f"please use sym scheme"
             )
 
         self.use_neural_speed = False
@@ -776,6 +775,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.dataset = None
         self.calib_func = None
         self.calib_iters = None
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes
@@ -817,6 +817,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         nsamples: int = 128,
         max_input_length: Optional[int] = None,
         static_groups: bool = False,
+        true_sequential: bool = False,
         layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
@@ -845,6 +846,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.damp_percent = damp_percent
         self.desc_act = desc_act
         self.static_groups = static_groups
+        self.true_sequential = true_sequential
         self.layer_wise = layer_wise
         self.max_input_length = max_input_length
         self.llm_int8_skip_modules = (
@@ -875,6 +877,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
             )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.use_ipex = kwargs.pop("use_ipex", False)
         self.post_init_gptq()
 
     def post_init_gptq(self):
@@ -953,6 +956,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
         self.sym = True if not self.zero_point else False
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes
@@ -1014,6 +1018,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes
@@ -1039,20 +1044,20 @@ class TeqConfig(ITREXQuantizationConfigMixin):
 class AutoRoundConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
-        bits: int = 8,
+        bits: int = 4,
         tokenizer: Any = None,
         dataset: str = "NeelNanda/pile-10k",
-        group_size: int = 32,
+        group_size: int = 128,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
-        sym: bool = True,
-        lr: float = 0.0025,
-        minmax_lr: float = 0.0025,
-        use_quant_input: bool = True,
-        nsamples: int = 128,
+        sym: bool = False,
+        lr: float = None,
+        minmax_lr: float = None,
+        disable_quanted_input: bool = False,
+        nsamples: int = 512,
         iters: int = 200,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
@@ -1078,7 +1083,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.group_size = group_size
         self.lr = lr
         self.minmax_lr = minmax_lr
-        self.use_quant_input = use_quant_input
+        self.disable_quanted_input = disable_quanted_input
         self.iters = iters
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
@@ -1087,7 +1092,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_len = kwargs.get("calib_len", None)
+        self.calib_len = kwargs.get("calib_len", 2048)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"
@@ -1107,6 +1112,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
             )
         else:
             self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
         """Removes all attributes from config which correspond to the default config attributes

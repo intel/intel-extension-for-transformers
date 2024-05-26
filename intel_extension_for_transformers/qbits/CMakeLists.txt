@@ -37,11 +37,14 @@ find_package(PythonLibs 3 REQUIRED)
 endif()
 
 include(FindOpenMP)
+set(BTLA_ENABLE_OPENMP ON CACHE BOOL "BesTLA enable compiling OpenMP threading")
 add_subdirectory(dispatcher)
 add_subdirectory(../transformers/runtime/third_party/pybind11 pybind11)
 
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp)
 file(GLOB qbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+
+add_compile_options(-flto=auto)
 
 # Link against LibTorch
 pybind11_add_module(qbits_py ${qbits_src})

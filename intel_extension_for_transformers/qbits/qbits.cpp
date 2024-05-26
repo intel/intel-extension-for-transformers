@@ -144,6 +144,8 @@ static void set_woq_workspace(const torch::Tensor& workspace) {
   woq::set_woq_workspace(const_cast<torch::Tensor*>(&workspace));
 }
 
+static void set_qbits_threads(int64_t thread_num) { dispatcher_utils::qbits_threading::set_threads(thread_num); }
+
 static void bestlaop_gemm(const torch::Tensor& matA, const torch::Tensor& matB, const torch::Tensor& matC,
                           bool matB_trans) {
   TORCH_CHECK(matA.dim() == 2 && matB.dim() == 2 && matC.dim() == 2,
@@ -185,6 +187,7 @@ PYBIND11_MODULE(qbits_py, m) {
   m.def("repack_quantized_weight", &repack_quantized_weight);
   m.def("get_packed_weight_size", &get_packed_weight_size);
   m.def("set_woq_workspace", &set_woq_workspace);
+  m.def("set_qbits_threads", &set_qbits_threads);
   m.def("matmul", &bestlaop_gemm);
   m.def("acquire_packed_weight_info", &acquire_packed_weight_info);
   m.def("dropout_fwd", &qbits_dropout_fwd);

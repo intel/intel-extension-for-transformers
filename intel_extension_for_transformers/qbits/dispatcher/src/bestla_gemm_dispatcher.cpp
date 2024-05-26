@@ -40,17 +40,17 @@ void do_gemm(bestla_gemm_runtime_ctx* ctx) {
   packw.assign(tmpbuf);
   if (ctx->matB_trans) {
     launcher.mProB.packWeightTranspose(ctx->n, ctx->k, {reinterpret_cast<DT*>(ctx->matB->data_ptr()), ctx->k, &packw},
-                                       &dispatcher_utils::DefaultThreading);
+                                       dispatcher_utils::qbits_threading::get());
   } else {
     launcher.mProB.packWeight(ctx->n, ctx->k, {reinterpret_cast<DT*>(ctx->matB->data_ptr()), ctx->n, &packw},
-                              &dispatcher_utils::DefaultThreading);
+                              dispatcher_utils::qbits_threading::get());
   }
   bestla::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k);
   typename Launcher::Param args{gp,
                                 {reinterpret_cast<DT*>(ctx->matA->data_ptr()), ctx->k},
                                 {reinterpret_cast<DT*>(ctx->matB->data_ptr()), ctx->n, &packw},
                                 {reinterpret_cast<DT*>(ctx->matC->data_ptr()), ctx->n}};
-  bestla::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+  bestla::parallel::GemmRun<Parallel>(launcher, args, dispatcher_utils::qbits_threading::get());
   bestla::utils::afree(tmpbuf);
 }
 

@@ -104,7 +104,7 @@ pip install -r requirements_cpu_woq.txt
 > ```
 
 ### Run
-We provide compression technologies such as `WeightOnlyQuant` with `Rtn/Awq/Teq/GPTQ/AutoRound` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, besides we provided use [neural-speed](https://github.com/intel/neural-speed) by `--use_neural_speed` to accelerate the optimized model, [here](https://github.com/intel/neural-speed/blob/main/docs/supported_models.md) is neural-speed supported list.
+We provide compression technologies such as `WeightOnlyQuant` with `Rtn/Awq/Teq/GPTQ/AutoRound` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, besides we provide use ipex by `--use_ipex` to use intel extension for pytorch to accelerate the model, also provided use [neural-speed](https://github.com/intel/neural-speed) by `--use_neural_speed` to accelerate the optimized model, [here](https://github.com/intel/neural-speed/blob/main/docs/supported_models.md) is neural-speed supported list.
 The followings are command to show how to use it.
 #### Performance
 ```shell
@@ -250,6 +250,7 @@ python run_generation_gpu_woq.py \
 python run_generation_gpu_woq.py \
     --model EleutherAI/gpt-j-6b \
     --woq \
+    --woq_algo <ALGORITHM_NAME> \  # Default is "Rtn", "GPTQ", "AutoRound" are provided.
     --benchmark
 ```
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
@@ -258,6 +259,7 @@ python run_generation_gpu_woq.py \
 python run_generation_gpu_woq.py \
     --model EleutherAI/gpt-j-6b \
     --woq \ # default quantize method is Rtn
+    --woq_algo <ALGORITHM_NAME> \  # Default is "Rtn", "GPTQ", "AutoRound" are provided.
     --output_dir "saved_dir"
 
 # Second step: Load model and inference
@@ -268,7 +270,6 @@ python run_generation_gpu_woq.py \
 
 ### 2. Accuracy
 ```bash
-# fp16
 # quantized model by following the steps above
 python run_generation_gpu_woq.py \
     --model "saved_dir" \
