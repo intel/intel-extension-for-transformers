@@ -410,7 +410,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
 async def authenticated_route(user: User = Depends(current_active_user)):
     return {"message": f"Hello {user.email}!"}
 
-
+from sjcl import SJCL
+import json
 @app.post("/intel/login")
 async def login(
     credentials: dict,
@@ -418,59 +419,70 @@ async def login(
 ):
     try:
         username = credentials.get("account")
-        password = credentials.get("password")
+        with open('/mnt/localdisk/yuxiang/askgm/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/server/people.txt', 'r') as file:
+            data_list = file.readlines()
+        data_list = [x for x in data_list if x != '']
+        data_list = [x.strip() for x in data_list]
 
-        from LDAPclient import IntelLDAP # pylint: disable=E0611, E0401
-        ldap_client = IntelLDAP(user=username, password=password)
-        user = None
-        idsid = username[len("CCR\\"):]
-        user = ldap_client.get_user(idsid)
+        if username in data_list:
+            #password = credentials.get("password")
+            decrypted_password  = credentials.get("password")
+            decrypted_password_json = json.loads(decrypted_password)
+            password = SJCL().decrypt(decrypted_password_json, "ASK_GM_PASSWORD").decode()
 
-        if user is None:
-            raise HTTPException(status_code=401, detail="LDAP authentication failed")
 
-        # Authenticate the user with the UserManager
-        try:
+            from LDAPclient import IntelLDAP # pylint: disable=E0611, E0401
+            ldap_client = IntelLDAP(user=username, password=password)
+            user = None
+            idsid = username[len("CCR\\"):]
+            user = ldap_client.get_user(idsid)
+
+            if user is None:
+                raise HTTPException(status_code=401, detail="LDAP authentication failed")
+
             # Authenticate the user with the UserManager
-            user = await user_manager.get_by_email(user["email_address"])
-        except exceptions.UserNotExists:
-            user_create = UserCreate(account=username,
-                                     password=password,
-                                     wwid=user["wwid"],
-                                     email=user["email_address"],
-                                     idsid=user["idsid"],
-                                     name=user["name"],
-                                     given_name=user["given_name"],
-                                     distinguished_name=user["distinguished_name"],
-                                     generic=user["generic"],
-                                     SuperGroup=user["SuperGroup"],
-                                     Group=user["Group"],
-                                     Division=user["Division"],
-                                     DivisionLong=user["DivisionLong"],
-                                     CostCenterLong=user["CostCenterLong"],
-                                     mgrWWID=user["mgrWWID"],
-                                     )
-            user = await user_manager.create(user_create)
+            try:
+                # Authenticate the user with the UserManager
+                user = await user_manager.get_by_email(user["email_address"])
+            except exceptions.UserNotExists:
+                user_create = UserCreate(account=username,
+                                        password=password,
+                                        wwid=user["wwid"],
+                                        email=user["email_address"],
+                                        idsid=user["idsid"],
+                                        name=user["name"],
+                                        given_name=user["given_name"],
+                                        distinguished_name=user["distinguished_name"],
+                                        generic=user["generic"],
+                                        SuperGroup=user["SuperGroup"],
+                                        Group=user["Group"],
+                                        Division=user["Division"],
+                                        DivisionLong=user["DivisionLong"],
+                                        CostCenterLong=user["CostCenterLong"],
+                                        mgrWWID=user["mgrWWID"],
+                                        )
+                user = await user_manager.create(user_create)
 
-        user_dict = {
-            "id": str(user.id),
-            "role": user.role,
-            "is_vipuser": user.is_vipuser,
-            "wwid": user.wwid,
-            "email_address": user.email,
-            "account": user.account,
-            "name": user.name,
-            "given_name": user.given_name,
-            "distinguished_name": user.distinguished_name,
-            "idsid": user.idsid,
-            "generic": user.generic,
-            "SuperGroup": user.SuperGroup,
-            "Group": user.Group,
-            "Division": user.Division,
-            "DivisionLong": user.DivisionLong,
-            "CostCenterLong": user.CostCenterLong,
-            "mgrWWID": user.mgrWWID,
-        }
-        return {"msg": "Login successful", "user_info": user_dict}
+            user_dict = {
+                "id": str(user.id),
+                "role": user.role,
+                "is_vipuser": user.is_vipuser,
+                "wwid": user.wwid,
+                "email_address": user.email,
+                "account": user.account,
+                "name": user.name,
+                "given_name": user.given_name,
+                "distinguished_name": user.distinguished_name,
+                "idsid": user.idsid,
+                "generic": user.generic,
+                "SuperGroup": user.SuperGroup,
+                "Group": user.Group,
+                "Division": user.Division,
+                "DivisionLong": user.DivisionLong,
+                "CostCenterLong": user.CostCenterLong,
+                "mgrWWID": user.mgrWWID,
+            }
+            return {"msg": "Login successful", "user_info": user_dict}
     except HTTPException as e:
         return {"msg": "Login failed", "error_detail": e.detail}
+
