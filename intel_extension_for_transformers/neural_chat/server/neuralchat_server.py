@@ -286,9 +286,10 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                                                         bnb_4bit_use_double_quant=bnb_4bit_use_double_quant,
                                                         bnb_4bit_compute_dtype=bnb_4bit_compute_dtype)
 
-            plugins.retrieval.args['search_type'] = "similarity_score_threshold"
-            plugins.retrieval.args['search_kwargs'] = {"score_threshold": 0.7, "k": 4}
-
+            plugins.retrieval.args['search_type'] = "mmr"
+            plugins.retrieval.args['search_kwargs'] = {"k":10, "fetch_k":20}
+            plugins.retrieval.args['enable_rerank'] = True
+            plugins.retrieval.args['top_n'] = 3
             logger.info(f"============== retrieval args: {plugins.retrieval.args}")
 
             # Create a dictionary of parameters for PipelineConfig
