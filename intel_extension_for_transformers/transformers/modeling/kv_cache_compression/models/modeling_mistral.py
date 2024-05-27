@@ -197,8 +197,9 @@ class H2OMistralAttention(nn.Module):
         return attn_output, attn_weights, past_key_value
 
 class H2OMistralSdpaAttention(H2OMistralAttention):
-    """
-    Mistral attention module using torch.nn.functional.scaled_dot_product_attention. This module inherits from
+    """Mistral attention module using torch.nn.functional.scaled_dot_product_attention.
+
+    This module inherits from
     `MistralAttention` as the weights of the module stays untouched. The only changes are on the forward pass to adapt to
     SDPA API.
     """
@@ -260,7 +261,7 @@ class H2OMistralSdpaAttention(H2OMistralAttention):
 
         # SDPA with memory-efficient backend is currently (torch==2.1.2) bugged with non-contiguous inputs with custom attn_mask,
         # Reference: https://github.com/pytorch/pytorch/issues/112577.
-        
+
 
         # h2o
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
