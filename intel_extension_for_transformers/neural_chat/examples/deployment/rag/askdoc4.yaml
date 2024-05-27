@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is the parameter configuration file for NeuralChat Serving.
+
+#################################################################################
+#                             SERVER SETTING                                    #
+#################################################################################
+host: 0.0.0.0
+port: 8902
+
+model_name_or_path: "Intel/neural-chat-7b-v3-1"
+device: "auto"
+
+#################### for int4 model ####################
+tokenizer_name_or_path: "Intel/neural-chat-7b-v3-1"
+use_neural_speed: true
+use_woq: true
+
+optimization:
+    use_neural_speed: true
+    optimization_type: "weight_only"
+    compute_dtype: "fp32"
+    weight_dtype: "int4"
+######################### end #########################
+
+retrieval:
+    enable: true
+    args:
+        input_path: "/home/lvl/yuxiang/xuhui_doc"
+        persist_directory: "./persist_dir"
+        response_template: "We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com."
+        append: False
+
+safety_checker:
+    enable: true
+    args:
+        dict_path: "./pipeline/plugins/security"
+
+tasks_list: ['textchat', 'retrieval']
