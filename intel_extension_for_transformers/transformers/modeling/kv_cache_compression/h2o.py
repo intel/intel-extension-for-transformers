@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import importlib
+from functools import partial
 
 import torch
 from torch import nn
@@ -60,6 +61,14 @@ def clean_cache(model):
         if "H2O" in module.__class__.__name__:
             module.h2o_kv_cache.clean_scores()
 
+def generate(model, **kwargs):
+    for _, module in model.named_modules():
+        if "H2O" in module.__class__.__name__:
+            module.is_gen = True
+    result = model.ori_generate(**kwargs)
+    clean_cache(model)
+    return result
+
 def convert_model(
         model,
         heavy_ratio,
@@ -91,11 +100,12 @@ def convert_model(
             recent_ratio,
             h2o_min_seqlen=h2o_min_seqlen,
             real_drop=real_drop,
-            is_gen=is_gen,
             mean=mean
             )
         set_module(model, layer_name, module)
     model.clean_cache = lambda: clean_cache(model)
+    model.ori_generate = model.generate
+    model.generate = partial(generate, model)
     model = model.to(device)
     return model
 
@@ -203,9 +213,8 @@ class H2OKVCache:
             if self.real_drop:
                 return key_states, value_states
             else:
-                return torch.ones(attn_score.shape, dtype=attn_score.dtype).to(key_states.device)
+                return torch.ones(attn_score.shape[:-1], dtype=attn_score.dtype).to(key_states.device)
         self.idx += 1
-        mask_shape = attn_score.shape[:-1]
         # attn_score shape (bsz, num_heads, seq_len, head_dim)
         if len(attn_score.shape) == 3:
             attn_score = attn_score.unsqueeze(0)
@@ -222,7 +231,7 @@ class H2OKVCache:
             mask = mask.scatter(-1, keep_topk, 1)
 
         if not self.real_drop:
-            return mask.view(mask_shape)
+            return mask
 
         mask = mask.bool()
         self.hh_score = self.hh_score[mask].view(self.hh_score.shape[0], self.hh_score.shape[1], cache_size)
@@ -241,6 +250,7 @@ class H2OKVCache:
         return k_hh_recent, v_hh_recent
 
     def _update_hh_score(self, attn_score_cache, mean=False):
+        # attn_score_cache (bsz, num_heads, seq_len, head_dim)
         # hh_score size (bsz, num_heads, head_dim)
 
         attn_score_cache = attn_score_cache.sum(-2)

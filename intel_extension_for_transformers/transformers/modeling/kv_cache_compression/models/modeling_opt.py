@@ -193,7 +193,7 @@ class H2OOPTAttention(nn.Module):
                 past_key_value[1],
                 mean=self.mean
             )
-            attn_weights = attn_weights * mask.unsqueeze(1)
+            attn_weights = attn_weights * mask.squeeze(0).unsqueeze(1)
 
             # sim
             # mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
