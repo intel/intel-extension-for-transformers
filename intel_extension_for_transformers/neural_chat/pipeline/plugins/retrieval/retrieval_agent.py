@@ -335,4 +335,5 @@ class Agent_QA():
                 prompt = generate_qa_prompt(query, context)
         else:
             logging.error("The selected generation mode is invalid!")
+        links = list(set(links))
         return prompt, links
