@@ -1116,7 +1116,7 @@ def predict_stream(**params):
                                             "codellama" in model_name.lower() or \
                                             "starcoder" in model_name.lower() or \
                                             "codegen" in model_name.lower()) else 1024
-
+    logging.info(f"[ model_utils - predict_stream ] =========== prompt: {prompt}")
     if is_llm_runtime_model(model, device):
         if "chatglm" in model_name.lower():
             prompt = tokenizer.build_prompt(prompt)
