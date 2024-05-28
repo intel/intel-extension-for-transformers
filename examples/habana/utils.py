@@ -179,14 +179,24 @@ def get_torch_compiled_model(model):
 
 
 def setup_model(args, model_dtype, model_kwargs):
-    model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs)
+
+    config = AutoConfig.from_pretrained(
+            args.model_name_or_path,
+            torch_dtype=model_dtype,
+            **model_kwargs)
+    # config.max_position_embeddings = max(config.max_position_embeddings, 20000)
+    config.tensor_split = True
+    model = AutoModelForCausalLM.from_pretrained(
+            args.model_name_or_path,
+            config=config,
+            torch_dtype=model_dtype,
+            **model_kwargs)
     if args.quant_config:
         import habana_quantization_toolkit
 
         habana_quantization_toolkit.prep_model(model)
 
     model = model.eval()
-    # import pdb; pdb.set_trace()
     model = model.to("hpu")
 
     if args.use_hpu_graphs:
