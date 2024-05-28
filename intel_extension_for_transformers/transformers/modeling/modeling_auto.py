@@ -1490,11 +1490,12 @@ class _BaseQBitsAutoModelClass:
             from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import (
                 TSModelCausalLMForITREX,
             )
-            q_model = TSModelCausalLMForITREX.from_pretrained(
-                pretrained_model_name_or_path,
-                file_name=WEIGHTS_NAME,
-                trust_remote_code=trust_remote_code,
-            )
+            q_model = torch.jit.load(os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME))
+            origin_model_type = config.model_type
+            if origin_model_type in ["chatglm", "qwen", "baichuan"]:
+                config.model_type = "qwen2"
+            q_model = TSModelCausalLMForITREX(q_model, config=config)
+            q_model.config.model_type = origin_model_type
             return q_model
         dtype_orig = None
         if torch_dtype is not None:

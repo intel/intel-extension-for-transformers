@@ -99,6 +99,7 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
             config.num_attention_heads,
             config.hidden_size // config.num_attention_heads,
         ]
+        num_layers = config.num_layers
     elif config.model_type == "baichuan":
         new_shape = [
             input_bs,
@@ -106,6 +107,7 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
             1,
             config.hidden_size // config.num_attention_heads,
         ]
+        num_layers = config.num_layers
     elif config.model_type == "chatglm":
         new_shape = [
             1,
@@ -113,6 +115,7 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
             config.num_attention_heads,
             config.hidden_size // config.num_attention_heads,
         ]
+        num_layers = config.num_layers
     else:
         normalized_config = NormalizedConfigManager.get_normalized_config_class(
             config.model_type
