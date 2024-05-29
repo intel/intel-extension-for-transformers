@@ -244,6 +244,7 @@ python run_generation_gpu_woq.py \
 python run_generation_gpu_woq.py \
     --model EleutherAI/gpt-j-6b \
     --woq \
+    --woq_algo <ALGORITHM_NAME> \  # Default is "Rtn", "GPTQ", "AutoRound" are provided.
     --benchmark
 ```
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
@@ -252,6 +253,7 @@ python run_generation_gpu_woq.py \
 python run_generation_gpu_woq.py \
     --model EleutherAI/gpt-j-6b \
     --woq \ # default quantize method is Rtn
+    --woq_algo <ALGORITHM_NAME> \  # Default is "Rtn", "GPTQ", "AutoRound" are provided.
     --output_dir "saved_dir"
 
 # Second step: Load model and inference
@@ -262,7 +264,6 @@ python run_generation_gpu_woq.py \
 
 ### 2. Accuracy
 ```bash
-# fp16
 # quantized model by following the steps above
 python run_generation_gpu_woq.py \
     --model "saved_dir" \

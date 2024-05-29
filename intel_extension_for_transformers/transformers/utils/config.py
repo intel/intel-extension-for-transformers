@@ -923,7 +923,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         n_samples: int = 128,
         seq_len: Optional[int] = 2048,
         static_groups: bool = False,
-        true_sequential: bool = True,
+        true_sequential: bool = False,
         layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
@@ -1176,9 +1176,9 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         sym: bool = False,
         lr: float = None,
         minmax_lr: float = None,
-        enable_quanted_input: bool = True,
+        disable_quanted_input: bool = True,
         n_samples: int = 512,
-        batch_size: int = 200,
+        iters: int = 200,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
         llm_int8_skip_modules=None,
@@ -1203,18 +1203,15 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.group_size = group_size
         self.lr = lr
         self.minmax_lr = minmax_lr
-        self.enable_quanted_input = enable_quanted_input
-        self.batch_size = batch_size
+        self.disable_quanted_input = disable_quanted_input
+        self.iters = iters
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
         self.use_ggml = use_ggml
         self.use_neural_speed = use_neural_speed
+        self.batch_size = kwargs.pop("batch_size", 8)
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_len = kwargs.get("calib_len", 2048)
-        self.calib_func = kwargs.get("calib_func", None)
-        self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"
         if isinstance(compute_dtype, torch.dtype):
             self.compute_dtype = convert_dtype_torch2str(compute_dtype)
