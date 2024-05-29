@@ -185,7 +185,7 @@ def setup_model(args, model_dtype, model_kwargs):
             torch_dtype=model_dtype,
             **model_kwargs)
     # config.max_position_embeddings = max(config.max_position_embeddings, 20000)
-    config.tensor_split = True
+    config.tensor_split = False
     model = AutoModelForCausalLM.from_pretrained(
             args.model_name_or_path,
             config=config,
@@ -218,6 +218,7 @@ def setup_distributed_model(args, model_dtype, model_kwargs):
 
     deepspeed.init_distributed(dist_backend="hccl")
     config = AutoConfig.from_pretrained(args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs)
+    config.tensor_split = False
     load_to_meta = model_on_meta(config)
 
     if load_to_meta:
@@ -229,29 +230,27 @@ def setup_distributed_model(args, model_dtype, model_kwargs):
         checkpoints_json = tempfile.NamedTemporaryFile(suffix=".json", mode="+w")
 
         # For PEFT models, write the merged model on disk to be able to load it on the meta device
-        if args.peft_model is not None:
-            merged_model_dir = "/tmp/text_generation_merged_peft_model"
-            if args.local_rank == 0:
-                if Path(merged_model_dir).is_dir():
-                    shutil.rmtree(merged_model_dir)
-                peft_model(args, model_dtype, **model_kwargs).save_pretrained(merged_model_dir)
-            torch.distributed.barrier()
+        # if args.peft_model is not None:
+        #     merged_model_dir = "/tmp/text_generation_merged_peft_model"
+        #     if args.local_rank == 0:
+        #         if Path(merged_model_dir).is_dir():
+        #             shutil.rmtree(merged_model_dir)
+        #         peft_model(args, model_dtype, **model_kwargs).save_pretrained(merged_model_dir)
+        #     torch.distributed.barrier()
 
         write_checkpoints_json(
-            merged_model_dir if args.peft_model is not None else args.model_name_or_path,
+            args.model_name_or_path,
+            # merged_model_dir if args.peft_model is not None else args.model_name_or_path,
             args.local_rank,
             checkpoints_json,
-            token=args.token,
+            token=None,
         )
     else:
         # TODO: revisit placement on CPU when auto-injection is possible
         with deepspeed.OnDevice(dtype=model_dtype, device="cpu"):
-            if args.peft_model is not None:
-                model = peft_model(args, model_dtype, **model_kwargs)
-            else:
-                model = AutoModelForCausalLM.from_pretrained(
-                    args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs
-                )
+            model = AutoModelForCausalLM.from_pretrained(
+                args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs
+            )
     model.eval()
 
     # Initialize the model
