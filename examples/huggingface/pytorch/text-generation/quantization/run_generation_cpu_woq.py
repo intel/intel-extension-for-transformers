@@ -32,11 +32,12 @@ parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 parser.add_argument("--use_ipex", action="store_true")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
-parser.add_argument("--iters", default=100, type=int, help="num iter")
+parser.add_argument("--benchmark_iters", default=100, type=int, help="num iters for benchmark")
+parser.add_argument("--benchmark_batch_size", default=1, type=int, help="batch size for benchmark")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
 # ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--batch_size", default=56, type=int, help="batch size num.")
+parser.add_argument("--eval_batch_size", default=56, type=int, help="batch size num for evaluation.")
 parser.add_argument(
     "--tasks",
     default="lambada_openai",
@@ -91,7 +92,21 @@ parser.add_argument(
     action="store_true",
     help="Use layer wise to do quantization",
 )
-parser.add_argument("--woq_loading", action="store_true")
+parser.add_argument(
+    "--n_samples", type=int, default=512, help="Number of calibration data samples."
+)
+parser.add_argument(
+    "--seq_len",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
+parser.add_argument(
+    "--batch_size",
+    type=int,
+    default=8,
+    help="Calibration batchsize.",
+)
 # ============GPTQ configs==============
 parser.add_argument(
     "--desc_act",
@@ -116,32 +131,11 @@ parser.add_argument(
     help="Block size. sub weight matrix size to run GPTQ.",
 )
 parser.add_argument(
-    "--n_samples", type=int, default=512, help="Number of calibration data samples."
-)
-parser.add_argument(
-    "--seq_len",
-    type=int,
-    default=2048,
-    help="Calibration dataset sequence max length, this should align with your model config",
-)
-parser.add_argument(
     "--static_groups",
     action="store_true",
     help="Use determined group to do quantization",
 )
 # ============AUTOROUND configs==============
-parser.add_argument(
-    "--calib_len",
-    type=int,
-    default=2048,
-    help="Calibration dataset sequence max length, this should align with your model config",
-)
-parser.add_argument(
-    "--calib_iters",
-    type=int,
-    default=200,
-    help="Calibration inference iterations",
-)
 parser.add_argument(
     "--lr",
     type=float,
@@ -154,6 +148,7 @@ parser.add_argument(
     default=None,
     help="minmax learning rate, if None,it will beset to be the same with lr",
 )
+parser.add_argument("--autoround_iters", default=200, type=int, help="num iters for autoround calibration.")
 parser.add_argument(
     "--enable_quanted_input",
     action="store_true",
@@ -236,11 +231,12 @@ if args.woq:
             bits=args.bits,
             zero_point=False if args.scheme == "sym" else True,
             group_size=args.group_size,
-            max_input_length=args.max_input_length,
+            seq_len=args.seq_len,
+            n_samples=args.n_samples,
+            batch_size=args.batch_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
             use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "Teq":
@@ -250,11 +246,12 @@ if args.woq:
             bits=args.bits,
             sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
-            max_input_length=args.max_input_length,
+            seq_len=args.seq_len,
+            batch_size=args.batch_size,
+            n_samples=args.n_samples,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
             use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "GPTQ":
@@ -266,14 +263,14 @@ if args.woq:
             damp_percent=args.damp_percent,
             sym=True if args.scheme == "sym" else False,
             blocksize=args.blocksize,
-            n_samples=args.n_samples,
             static_groups=args.static_groups,
             group_size=args.group_size,
+            n_samples=args.n_samples,
             seq_len=args.seq_len,
+            batch_size=args.batch_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
             layer_wise=args.layer_wise,
             true_sequential=args.true_sequential,
             use_ipex=args.use_ipex,
@@ -289,8 +286,8 @@ if args.woq:
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            iters=args.calib_iters,
-            calib_len=args.calib_len,
+            iters=args.autoround_iters,
+            seq_len=args.seq_len,
             lr=args.lr,
             minmax_lr=args.minmax_lr,
             enable_quanted_input=args.enable_quanted_input,
@@ -329,11 +326,11 @@ else:
     print("Didn't do Weight Only Quantization.")
 
 # save model
-# if args.output_dir is not None and ((args.woq or args.load_in_4bit or args.load_in_8bit) and not args.use_neural_speed):
-#     user_model.save_pretrained(args.output_dir)
-#     tokenizer.save_pretrained(args.output_dir)
-#     # to validate woq model accuracy 
-#     args.model = args.output_dir
+if args.output_dir is not None and ((args.woq or args.load_in_4bit or args.load_in_8bit) and not args.use_neural_speed):
+    user_model.save_pretrained(args.output_dir)
+    tokenizer.save_pretrained(args.output_dir)
+    # to validate woq model accuracy 
+    args.model = args.output_dir
 
 if args.benchmark:
     print("Loading model from: ", args.model)
@@ -351,7 +348,7 @@ if args.benchmark:
 
     # start
     total_time = 0.0
-    num_iter = args.iters
+    num_iter = args.benchmark_iters
     num_warmup = args.num_warmup
     total_token_num = 0
     eos_token_id = tokenizer.eos_token_id
@@ -361,7 +358,7 @@ if args.benchmark:
             # tokenizer for chatglm2.
             if hasattr(tokenizer, "build_chat_input"):
                 input_ids = tokenizer.build_chat_input(prompt)["input_ids"]
-                input_ids = input_ids.repeat(args.batch_size, 1)
+                input_ids = input_ids.repeat(args.benchmark_batch_size, 1)
                 eos_token_id = [
                     tokenizer.eos_token_id,
                     tokenizer.get_command("<|user|>"),
@@ -371,11 +368,11 @@ if args.benchmark:
             elif hasattr(tokenizer, "build_prompt"):
                 build_prompt = tokenizer.build_prompt(prompt)
                 input_ids = tokenizer(
-                    [build_prompt] * args.batch_size, return_tensors="pt"
+                    [build_prompt] * args.benchmark_batch_size, return_tensors="pt"
                 ).input_ids
             else:
                 input_ids = tokenizer(
-                    [prompt] * args.batch_size, return_tensors="pt"
+                    [prompt] * args.benchmark_benchmark_batch_size, return_tensors="pt"
                 ).input_ids
             gen_ids = user_model.generate(
                 input_ids,
@@ -408,7 +405,7 @@ if args.accuracy:
                         model_args=model_args,
                         tasks = args.tasks,
                         device = "cpu",
-                        batch_size = args.batch_size)
+                        batch_size = args.eval_batch_size)
     results = evaluate(args)
     for task_name in args.tasks.split(","):
         if task_name == "wikitext":

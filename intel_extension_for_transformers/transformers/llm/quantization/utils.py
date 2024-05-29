@@ -474,7 +474,7 @@ def default_run_fn(
 
     tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
     tokenized_dataset.set_format(type="torch", columns=["input_ids"])
-    tokenized_dataset = tokenized_dataset.filter(lambda x: x['input_ids'].shape[-1] >= max_length)
+    tokenized_dataset = tokenized_dataset.filter(lambda x: x["input_ids"].shape[-1] >= max_length)
 
     def collate_batch(batch):
         input_ids_padded = []
@@ -520,7 +520,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
             hasattr(torch, "xpu") and torch.xpu.is_available()
         ), "There is no xpu device in this system!"
 
-    model_device = next(model.parameters()).device
     orig_dtype = torch.float32
     for param in model.parameters():
         orig_dtype = param.dtype
@@ -570,13 +569,59 @@ def convert_to_quantized_model(model, config, device="cpu"):
             model = convert(model)
             return model
         elif config.quant_method.value == "awq":
-            quant_config = AWQConfig()
+            quant_config = AWQConfig(
+                dtype=dtype,
+                bits=config.bits,
+                use_sym=config.sym,
+                group_size=config.group_size,
+                use_layer_wise=config.layer_wise,
+                use_auto_scale=config.auto_scale,
+                use_auto_clip=config.auto_clip,
+            )
+            quant_config.set_local(".*lm_head", AWQConfig(dtype="fp32"))
+            quant_config.set_local(".*output_layer", AWQConfig(dtype="fp32"))
+            quant_config.set_local(".*embed_out", AWQConfig(dtype="fp32"))
+            logger.info(f"Do AWQ algorithm with config {quant_config}")
+            run_fn = default_run_fn
+            run_args = (
+                config.tokenizer,
+                config.dataset,
+                config.seq_len,  # max_length
+                config.n_samples,  # n_samples
+                config.batch_size,  # batch_size
+                config.quant_method.value,  # algo
+            )
+            example_inputs = torch.ones([1, 512], dtype=torch.long).to(device)
+            model = prepare(model=model, quant_config=quant_config, example_inputs=example_inputs)
+            run_fn(model, *run_args)
+            model = convert(model)
         elif config.quant_method.value == "teq":
             quant_config = TEQConfig(
                 dtype=dtype,
                 bits=config.bits,
                 use_sym=config.sym,
+                group_size=config.group_size,
+                use_layer_wise=config.layer_wise,
+                absorb_to_layer=config.absorb_to_layer
             )
+            assert config.absorb_to_layer != {}, "absorb_to_layer is necessary for TEQ algorithm" 
+            quant_config.set_local(".*lm_head", TEQConfig(dtype="fp32"))
+            quant_config.set_local(".*output_layer", TEQConfig(dtype="fp32"))
+            quant_config.set_local(".*embed_out", TEQConfig(dtype="fp32"))
+            logger.info(f"Do TEQ algorithm with config {quant_config}")
+            run_fn = default_run_fn
+            run_args = (
+                config.tokenizer,
+                config.dataset,
+                config.seq_len,  # max_length
+                config.n_samples,  # n_samples
+                config.batch_size,  # batch_size
+                config.quant_method.value,  # algo
+            )
+            example_inputs = torch.ones([1, 512], dtype=torch.long).to(device)
+            model = prepare(model=model, quant_config=quant_config, example_inputs=example_inputs)
+            run_fn(model, *run_args)
+            model = convert(model)
         elif config.quant_method.value == "gptq":
             quant_config = GPTQConfig(
                 dtype=dtype,
@@ -592,7 +637,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             quant_config.set_local(".*lm_head", GPTQConfig(dtype="fp32"))
             quant_config.set_local(".*output_layer", GPTQConfig(dtype="fp32"))
             quant_config.set_local(".*embed_out", GPTQConfig(dtype="fp32"))
-            logger.info(f"Do GPTQ with config {quant_config}")
+            logger.info(f"Do GPTQ algorithm with config {quant_config}")
             run_fn = default_run_fn
             run_args = (
                 config.tokenizer,
@@ -621,7 +666,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             quant_config.set_local(".*lm_head", AutoRoundConfig(dtype="fp32"))
             quant_config.set_local(".*output_layer", AutoRoundConfig(dtype="fp32"))
             quant_config.set_local(".*embed_out", AutoRoundConfig(dtype="fp32"))
-            logger.info(f"Do AutoRound with config {quant_config}")
+            logger.info(f"Do AutoRound algorithm with config {quant_config}")
             run_fn = get_autoround_default_run_fn
             run_args = (
                 config.tokenizer,

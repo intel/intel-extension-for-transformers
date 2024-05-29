@@ -82,7 +82,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -96,7 +96,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -136,7 +136,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 128 \
     --accuracy
@@ -149,7 +149,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -190,7 +190,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -203,7 +203,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -249,7 +249,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -262,7 +262,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -308,7 +308,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -321,7 +321,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -361,7 +361,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -374,7 +374,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -415,7 +415,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -428,7 +428,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -467,7 +467,7 @@ python run_generation_cpu_woq.py \
     --woq_algo GPTQ \
     --bits 4 \
     --weight_dtype int4_clip \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -480,7 +480,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -521,7 +521,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -534,7 +534,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -575,7 +575,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -588,7 +588,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -629,7 +629,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -642,7 +642,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -682,7 +682,7 @@ python run_generation_cpu_woq.py \
     --woq_algo GPTQ \
     --bits 4 \
     --weight_dtype int4_clip \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme asym \
     --group_size 32 \
     --accuracy
@@ -695,7 +695,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -735,7 +735,7 @@ python run_generation_cpu_woq.py \
     --woq_algo GPTQ \
     --bits 4 \
     --weight_dtype int4_clip \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
      --nsamples 256 \
@@ -749,7 +749,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -789,7 +789,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -802,7 +802,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -841,7 +841,7 @@ python run_generation_cpu_woq.py \
     --woq_algo GPTQ \
     --bits 4 \
     --weight_dtype int4_clip \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme asym \
     --group_size 32 \
     --accuracy
@@ -854,7 +854,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -895,7 +895,7 @@ python run_generation_cpu_woq.py \
     --bits 4 \
     --weight_dtype int4_clip \
     --desc_act \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
     --accuracy
@@ -908,7 +908,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy
@@ -947,7 +947,7 @@ python run_generation_cpu_woq.py \
     --woq_algo GPTQ \
     --bits 4 \
     --weight_dtype int4_clip \
-    --max_input_length 2048 \
+    --seq_len 2048 \
     --scheme sym \
     --group_size 128 \
     --accuracy
@@ -960,7 +960,7 @@ python run_generation_cpu_woq.py \
     --woq_algo AutoRound \
     --bits 4 \
     --weight_dtype int4_clip \
-    --calib_iters 200 \
+    --autoround_iters 200 \
     --scheme asym \
     --group_size 128 \
     --accuracy

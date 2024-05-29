@@ -1030,10 +1030,14 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
+        layer_wise: bool = False,
+        n_samples: int = 128,
+        seq_len: Optional[int] = 2048,
+        auto_scale: bool = True,
+        auto_clip: bool = True,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
         zero_point: bool = True,
-        mse_range: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
@@ -1049,7 +1053,11 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.scale_dtype = scale_dtype
         self.group_size = group_size
         self.zero_point = zero_point
-        self.mse_range = mse_range
+        self.auto_scale = auto_scale
+        self.auto_clip = auto_clip
+        self.layer_wise = layer_wise
+        self.n_samples = n_samples
+        self.seq_len = seq_len
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
         self.llm_int8_skip_modules = (
@@ -1059,11 +1067,9 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_func = kwargs.get("calib_func", None)
-        self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
         self.sym = True if not self.zero_point else False
+        self.batch_size = kwargs.pop("batch_size", 8)
         self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
@@ -1098,6 +1104,9 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
+        layer_wise: bool = False,
+        n_samples: int = 128,
+        seq_len: Optional[int] = 2048,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
         sym: bool = True,
@@ -1116,6 +1125,9 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.group_size = group_size
         self.sym = sym
         self.scheme = "sym" if self.sym else "asym"
+        self.layer_wise = layer_wise
+        self.n_samples = n_samples
+        self.seq_len = seq_len
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
         self.llm_int8_skip_modules = (
@@ -1124,9 +1136,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.use_ggml = use_ggml
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_func = kwargs.get("calib_func", None)
-        self.calib_iters = kwargs.get("calib_iters", 100)
+        self.batch_size = kwargs.pop("batch_size", 8)
         self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
@@ -1167,8 +1177,8 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         lr: float = None,
         minmax_lr: float = None,
         enable_quanted_input: bool = True,
-        nsamples: int = 512,
-        iters: int = 200,
+        n_samples: int = 512,
+        batch_size: int = 200,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
         llm_int8_skip_modules=None,
@@ -1189,12 +1199,12 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.sym = sym
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.nsamples = nsamples
+        self.n_samples = n_samples
         self.group_size = group_size
         self.lr = lr
         self.minmax_lr = minmax_lr
         self.enable_quanted_input = enable_quanted_input
-        self.iters = iters
+        self.batch_size = batch_size
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
