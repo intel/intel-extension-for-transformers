@@ -182,7 +182,7 @@ def convert_model_to_public(model):
     # reorder weight and scales if they have been transposed
     if model.device == "xpu":
         for name, module in model.named_modules():
-            if isinstance(module, WeightOnlyQuantizedLinear):
+            if isinstance(module, WeightOnlyQuantizedLinear) and not module.use_optimum_format:
                 if module.weight_transposed:
                     module.qweight.data = module.qweight.t_().contiguous()
                     module.scales.data = module.scales.t_().contiguous()
@@ -197,6 +197,7 @@ def convert_model_to_public(model):
         "int4_fullrange",
     ]:
         model = recover_export_model(model)
+
 
 def make_contiguous(model):
     for param in model.parameters():
