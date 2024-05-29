@@ -656,11 +656,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 bits=config.bits,
                 use_sym=config.sym,
                 group_size=config.group_size,
-                use_quant_input=config.use_quant_input,
+                use_quant_input= not config.disable_quanted_input,
                 lr=config.lr,
                 minmax_lr=config.minmax_lr,
-                seqlen=config.max_input_length,
-                n_samples=config.nsamples,
+                seqlen=config.seq_len,
+                n_samples=config.n_samples,
+                iters=config.autoround_iters,
                 scale_dtype=config.scale_dtype,
             )
             quant_config.set_local(".*lm_head", AutoRoundConfig(dtype="fp32"))
