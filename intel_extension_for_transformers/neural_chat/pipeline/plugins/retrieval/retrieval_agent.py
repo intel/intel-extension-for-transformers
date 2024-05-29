@@ -320,7 +320,7 @@ class Agent_QA():
                 logging.info("Chat with QA Agent.")
                 if len(context) == 0:
                     return "Response with template.", links
-                prompt = generate_qa_enterprise(query, context)
+                prompt = generate_qa_enterprise(query, context, template=self.response_template)
         elif self.mode == "general":
         # For general setting, will return top-k documents.
             if 'qa' not in intent.lower() and context == '':
@@ -331,7 +331,7 @@ class Agent_QA():
                 context, links = self.retriever.get_context(query)
                 if len(context) == 0:
                     return "Response with template.", links
-                prompt = generate_qa_prompt(query, context)
+                prompt = generate_qa_prompt(query, context, template=self.response_template)
         else:
             logging.error("The selected generation mode is invalid!")
         return prompt, links

@@ -19,16 +19,18 @@ from intel_extension_for_transformers.neural_chat.prompts import PromptTemplate
 
 """The function for generating the target prompt."""
 
-def generate_qa_prompt(query, context=None, history=None):
+def generate_qa_prompt(query, context=None, history=None, template=None):
     if context and history:
         conv = PromptTemplate("rag_with_context_memory")
         conv.append_message(conv.roles[1], context)
         conv.append_message(conv.roles[2], history)
+        conv.append_message(conv.roles[4], template)
         conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[3], None)
     elif context:
         conv = PromptTemplate("rag_with_context_memory")
         conv.append_message(conv.roles[1], context)
+        conv.append_message(conv.roles[4], template)
         conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[3], None)
     else:
@@ -37,16 +39,18 @@ def generate_qa_prompt(query, context=None, history=None):
         conv.append_message(conv.roles[1], None)
     return conv.get_prompt()
 
-def generate_qa_enterprise(query, context=None, history=None):
+def generate_qa_enterprise(query, context=None, history=None, template=None):
     if context and history:
         conv = PromptTemplate("rag_with_threshold")
         conv.append_message(conv.roles[1], context)
         conv.append_message(conv.roles[2], history)
+        conv.append_message(conv.roles[4], template)
         conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[3], None)
     else:
         conv = PromptTemplate("rag_with_threshold")
         conv.append_message(conv.roles[1], context)
+        conv.append_message(conv.roles[4], template)
         conv.append_message(conv.roles[0], query)
         conv.append_message(conv.roles[3], None)
     return conv.get_prompt()
