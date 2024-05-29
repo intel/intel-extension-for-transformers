@@ -49,6 +49,6 @@ retrieval:
 safety_checker:
     enable: true
     args:
-        dict_path: "./pipeline/plugins/security"
+        dict_path: "/home/lvl/yuxiang/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/pipeline/plugins/security"
 
 tasks_list: ['textchat', 'retrieval']
