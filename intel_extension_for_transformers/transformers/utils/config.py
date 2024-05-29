@@ -920,8 +920,8 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         blocksize: int = 128,
         damp_percent: float = 0.1,
         desc_act: bool = False,
-        nsamples: int = 128,
-        max_input_length: Optional[int] = None,
+        n_samples: int = 128,
+        seq_len: Optional[int] = 2048,
         static_groups: bool = False,
         true_sequential: bool = True,
         layer_wise: bool = False,
@@ -948,14 +948,14 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
         self.blocksize = blocksize
-        self.nsamples = nsamples
+        self.n_samples = n_samples
         self.group_size = group_size
         self.damp_percent = damp_percent
         self.desc_act = desc_act
         self.static_groups = static_groups
         self.true_sequential = true_sequential
         self.layer_wise = layer_wise
-        self.max_input_length = max_input_length
+        self.seq_len = seq_len
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )

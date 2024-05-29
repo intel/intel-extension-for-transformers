@@ -474,6 +474,7 @@ def default_run_fn(
 
     tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
     tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+    tokenized_dataset = tokenized_dataset.filter(lambda x: x['input_ids'].shape[-1] >= max_length)
 
     def collate_batch(batch):
         input_ids_padded = []
@@ -481,11 +482,13 @@ def default_run_fn(
             input_ids = text["input_ids"]
             if len(input_ids) >= max_length:
                 input_ids = input_ids[:max_length]
+                input_ids_padded.append(input_ids)
             else:
                 continue
-            input_ids_padded.append(input_ids)
-
+        assert input_ids_padded != [], \
+            "The dataset does not have data that meets the required input length. Please reduce seq_len."
         return torch.vstack(input_ids_padded)
+
 
     calib_dataloader = DataLoader(
         tokenized_dataset,
@@ -594,8 +597,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
             run_args = (
                 config.tokenizer,
                 config.dataset,
-                config.max_input_length,  # max_length
-                config.nsamples,  # n_samples
+                config.seq_len,  # max_length
+                config.n_samples,  # n_samples
                 config.batch_size,  # batch_size
                 config.quant_method.value,  # algo
             )

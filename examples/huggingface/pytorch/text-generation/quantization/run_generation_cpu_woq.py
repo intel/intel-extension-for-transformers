@@ -116,10 +116,10 @@ parser.add_argument(
     help="Block size. sub weight matrix size to run GPTQ.",
 )
 parser.add_argument(
-    "--nsamples", type=int, default=512, help="Number of calibration data samples."
+    "--n_samples", type=int, default=512, help="Number of calibration data samples."
 )
 parser.add_argument(
-    "--max_input_length",
+    "--seq_len",
     type=int,
     default=2048,
     help="Calibration dataset sequence max length, this should align with your model config",
@@ -266,10 +266,10 @@ if args.woq:
             damp_percent=args.damp_percent,
             sym=True if args.scheme == "sym" else False,
             blocksize=args.blocksize,
-            nsamples=args.nsamples,
+            n_samples=args.n_samples,
             static_groups=args.static_groups,
             group_size=args.group_size,
-            max_input_length=args.max_input_length,
+            seq_len=args.seq_len,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
@@ -284,7 +284,7 @@ if args.woq:
             dataset=args.dataset,
             bits=args.bits,
             sym=True if args.scheme == "sym" else False,
-            nsamples=args.nsamples,
+            n_samples=args.n_samples,
             group_size=args.group_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
