@@ -146,8 +146,10 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias = None if self.bias is None else self.bias.data.float()
         if not x.is_contiguous():
             x = x.contiguous()
+
+        # QBits only supports the FP32 activation dtype currently.
         out = matmul_kbit(
-            x.view(m, shape[-1]),
+            x.view(m, shape[-1]).float(),
             self.weight,
             bias,
             out,
