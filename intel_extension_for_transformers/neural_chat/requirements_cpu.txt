@@ -1,3 +1,4 @@
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
 accelerate==0.28.0
 cchardet
 einops
@@ -10,6 +11,7 @@ lm-eval
 neural-compressor
 neural_speed==1.0a0
 numpy==1.23.5
+oneccl_bind_pt
 optimum
 optimum-intel
 peft==0.6.2
@@ -27,5 +29,3 @@ transformers>=4.35.2
 transformers_stream_generator
 uvicorn
 yacs
---extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
-oneccl_bind_pt
