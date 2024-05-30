@@ -17,7 +17,6 @@
 
 import os
 import torch
-from ..utils import DTYPE_BITS_MAPPING
 from functools import reduce
 from operator import mul
 from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
@@ -99,6 +98,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         compute_dtype="fp32",
         compress_statistics=True,
         weight_dtype="int4_clip",
+        bits=4,
         scale_dtype="fp32",
         blocksize=32,
         scheme="sym",
@@ -115,7 +115,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         self.blocksize = blocksize
         self.scheme = scheme
         self.weight_dtype = weight_dtype
-        self.bits = DTYPE_BITS_MAPPING[weight_dtype]
+        self.bits = bits
         self.scale_dtype = scale_dtype
         self.double_quant_scale_dtype = double_quant_scale_dtype
         self.compression_dim = compression_dim

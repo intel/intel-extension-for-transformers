@@ -71,17 +71,6 @@ torch = LazyImport("torch")
 logger = logging.getLogger(__name__)
 
 
-DTYPE_BITS_MAPPING = {
-    "nf4": 4,
-    "fp4_e2m1_bnb": 4,
-    "fp4_e2m1": 4,
-    "int4_fullrange": 4,
-    "int4_clip": 4,
-    "fp8_e5m2": 8,
-    "fp8_e4m3": 8,
-    "int8": 8,
-}
-
 
 def unpack_weight(qweight, scales, qzeros, q_config):
     sym = q_config.sym
@@ -288,6 +277,7 @@ def _replace_linear(
                                 compute_dtype=quantization_config.compute_dtype,
                                 compress_statistics=False,
                                 weight_dtype=quantization_config.weight_dtype,
+                                bits=quantization_config.bits,
                                 scale_dtype=quantization_config.scale_dtype,
                                 blocksize=quantization_config.group_size,
                                 scheme=quantization_config.scheme,
@@ -397,7 +387,7 @@ def _replace_linear(
                 else:
                     if not hasattr(module, "qweight"):
                         n_pack = (
-                            8 // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]
+                            8 // quantization_config.bits
                         )
                         weight = torch.zeros(
                             (math.ceil(out_features / n_pack), in_features),
@@ -529,7 +519,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
     if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
         return replace_linear(model, None, None, config, device=device)
     else:
-        bits = DTYPE_BITS_MAPPING[config.weight_dtype]
         if config.weight_dtype == "int8":
             dtype = "int8"
         elif "int4" in config.weight_dtype:
@@ -539,21 +528,15 @@ def convert_to_quantized_model(model, config, device="cpu"):
         # mapping to INC config
         if config.quant_method.value == "rtn":
             quant_config = RTNConfig(
-                 dtype=config.weight_dtype,
+                 dtype=dtype,
                  bits=config.bits,
                  use_sym=config.sym,
                  group_size=config.group_size,
-                 group_dim=config.group_dim,
-                 use_full_range=config.use_full_range,
-                 use_mse_search=config.mse_range,
                  use_layer_wise=config.layer_wise,
-                 model_path=config.model_path,
-                 use_double_quant=config.use_double_quant,
-                 double_quant_dtype=config.double_quant_dtype,
-                 double_quant_bits=config.double_quant_bits,
-                 double_quant_use_sym=config.double_quant_use_sym,
-                 double_quant_group_size=config.double_quant_group_size,
             )
+            quant_config.set_local(".*lm_head", RTNConfig(dtype="fp32"))
+            quant_config.set_local(".*output_layer", RTNConfig(dtype="fp32"))
+            quant_config.set_local(".*embed_out", RTNConfig(dtype="fp32"))
             model = prepare(model, quant_config)
             model = convert(model)
         elif config.quant_method.value == "hqq":
@@ -567,7 +550,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
             )
             model = prepare(model, quant_config)
             model = convert(model)
-            return model
         elif config.quant_method.value == "awq":
             quant_config = AWQConfig(
                 dtype=dtype,
@@ -604,7 +586,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 use_layer_wise=config.layer_wise,
                 absorb_to_layer=config.absorb_to_layer
             )
-            assert config.absorb_to_layer != {}, "absorb_to_layer is necessary for TEQ algorithm" 
+            assert config.absorb_to_layer != {}, "absorb_to_layer is necessary for TEQ algorithm"
             quant_config.set_local(".*lm_head", TEQConfig(dtype="fp32"))
             quant_config.set_local(".*output_layer", TEQConfig(dtype="fp32"))
             quant_config.set_local(".*embed_out", TEQConfig(dtype="fp32"))
@@ -623,6 +605,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             run_fn(model, *run_args)
             model = convert(model)
         elif config.quant_method.value == "gptq":
+            model.seqlen = config.seq_len
             quant_config = GPTQConfig(
                 dtype=dtype,
                 bits=config.bits,

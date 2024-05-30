@@ -75,7 +75,7 @@ from ..llm.quantization.utils import (
 from ...tools.utils import is_intel_gpu_available, is_ipex_available
 from accelerate import init_empty_weights
 from huggingface_hub import hf_hub_download
-from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
+from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
 from neural_compressor.model.torch_model import PyTorchFXModel
 from threading import Thread
 from transformers.configuration_utils import PretrainedConfig
@@ -127,12 +127,13 @@ def recover_export_model(model, current_key_name=None):
                 zeros,
                 int_weight,
             ) = module.recover_qparms()
+            dtype = "int4" if weight_dtype == "int4_clip" else weight_dtype
             model._modules[name] = WeightOnlyLinear(
                 in_features,
                 out_features,
+                dtype=dtype,
                 bits=bits,
-                groupsize=groupsize,
-                dtype="int",
+                group_size=groupsize,
                 zp=zp,
                 bias=module.bias is not None,
                 scale_dtype=scales_dtype,
@@ -168,9 +169,9 @@ def build_woq_model(model, quantization_config):
                 new_module = WeightOnlyLinear(
                     m.in_features,
                     m.out_features,
-                    quantization_config.bits,
-                    quantization_config.group_size,
                     dtype="int",
+                    bits=quantization_config.bits,
+                    group_size=quantization_config.group_size,
                     zp=zp,
                     bias=m.bias is not None,
                     g_idx=True,
@@ -1779,7 +1780,6 @@ class _BaseQBitsAutoModelClass:
 
         # Set model in evaluation mode to deactivate DropOut modules by default
         model.eval()
-
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",

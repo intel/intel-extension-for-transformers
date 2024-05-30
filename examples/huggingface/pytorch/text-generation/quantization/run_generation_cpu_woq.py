@@ -222,6 +222,9 @@ if args.woq:
         quantization_config = HQQConfig(
             bits=args.bits,
             group_size=args.group_size,
+            compute_dtype=args.compute_dtype,
+            scale_dtype=args.scale_dtype,
+            weight_dtype=args.weight_dtype,
             use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "Awq":
@@ -341,6 +344,7 @@ if args.benchmark:
         _commit_hash=args._commit_hash,
         use_neural_speed=args.use_neural_speed,
     )
+
     user_model = user_model.eval() if hasattr(user_model, "eval") else user_model
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -372,7 +376,7 @@ if args.benchmark:
                 ).input_ids
             else:
                 input_ids = tokenizer(
-                    [prompt] * args.benchmark_benchmark_batch_size, return_tensors="pt"
+                    [prompt] * args.benchmark_batch_size, return_tensors="pt"
                 ).input_ids
             gen_ids = user_model.generate(
                 input_ids,
@@ -401,7 +405,7 @@ if args.accuracy:
     model_args="pretrained="+args.model+",trust_remote_code="+str(args.trust_remote_code)
     if args.use_neural_speed:
         model_args += ",model_format=neural_speed"
-    args = LMEvalParser(model = "hf", 
+    args = LMEvalParser(model = "hf",
                         model_args=model_args,
                         tasks = args.tasks,
                         device = "cpu",

@@ -786,14 +786,13 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         scale_dtype: Any = None,
         use_full_range: bool = False,
         mse_range: bool = False,
-        use_double_quant=False,
+        use_double_quant: bool = False,
         double_quant_dtype: str = "int",
         double_quant_bits: int = 8,
         double_quant_use_sym: bool = False,
         double_quant_group_size: int = 256,
         sym: bool = True,
         layer_wise: bool = False,
-        model_path: str = "",
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
@@ -810,7 +809,6 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.group_size = group_size
         self.group_dim = group_dim
         self.layer_wise = layer_wise
-        self.model_path = model_path
         self.sym = sym
         self.scheme = "sym" if self.sym else "asym"
         self.use_double_quant = use_double_quant
@@ -825,10 +823,6 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = None
-        self.dataset = None
-        self.calib_func = None
-        self.calib_iters = None
         self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
@@ -857,6 +851,10 @@ class HQQConfig(ITREXQuantizationConfigMixin):
         self,
         bits: int = 4,
         group_size: int = 64,
+        sym: bool = True,
+        compute_dtype: Any = None,
+        weight_dtype: Any = None,
+        scale_dtype: Any = None,
         quant_zero: bool = True,
         quant_scale: bool = False,
         scale_quant_group_size: int = 128,
@@ -865,21 +863,18 @@ class HQQConfig(ITREXQuantizationConfigMixin):
     ):
         self.quant_method = QuantizationMethod.HQQ
         self.bits = bits
-        self.weight_dtype = None
-        self.compute_dtype = None
-        self.scale_dtype = None
+        self.weight_dtype = weight_dtype
+        self.compute_dtype = compute_dtype
+        self.scale_dtype = scale_dtype
         self.use_double_quant = False
-        self.scheme = ""
+        self.sym = sym
+        self.scheme = "sym" if self.sym else "asym"
         self.group_size = group_size
         self.quant_zero = quant_zero
         self.quant_scale = quant_scale
         self.scale_quant_group_size = scale_quant_group_size
         self.skip_lm_head = skip_lm_head
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = None
-        self.dataset = None
-        self.calib_func = None
-        self.calib_iters = None
         self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
@@ -963,9 +958,6 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_func = kwargs.get("calib_func", None)
-        self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"
 
         if isinstance(compute_dtype, torch.dtype):
