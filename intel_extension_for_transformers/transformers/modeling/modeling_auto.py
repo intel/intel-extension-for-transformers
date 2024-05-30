@@ -425,7 +425,7 @@ class _BaseQBitsAutoModelClass:
                                 scale_dtype="bf16",
                                 weight_dtype="int4_clip",
                                 bits=4)
-                print("useing default RTNConfig = ", config)
+                print("using default RTNConfig = ", config)
             print("Using customized config = ", config)
             model = convert_to_quantized_model(model, config)
 
