@@ -17,7 +17,8 @@ We have validated the majority of existing models using modelscope==1.13.1:
 * [ZhipuAI/chatglm3-6b](https://www.modelscope.cn/models/ZhipuAI/chatglm3-6b/summary)
 * [baichuan-inc/Baichuan2-7B-Chat](https://www.modelscope.cn/models/baichuan-inc/Baichuan2-7B-Chat/summary)
 * [baichuan-inc/Baichuan2-13B-Chat](https://www.modelscope.cn/models/baichuan-inc/Baichuan2-13B-Chat/summary)
-* [AI-ModelScope/phi-2](https://www.modelscope.cn/models/AI-ModelScope/phi-2/summary)
+* [LLM-Research/Phi-3-mini-4k-instruct](https://www.modelscope.cn/models/LLM-Research/Phi-3-mini-4k-instruct/summary)
+* [LLM-Research/Phi-3-mini-128k-instruct](https://www.modelscope.cn/models/LLM-Research/Phi-3-mini-128k-instruct/summary)
 * [AI-ModelScope/gemma-2b](https://www.modelscope.cn/models/AI-ModelScope/gemma-2b/summary)
 
 If you encounter any problems, please let us know.
