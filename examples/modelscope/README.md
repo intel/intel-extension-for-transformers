@@ -1,6 +1,6 @@
 # ModelScope with ITREX
 
-Intel extension for transformers(ITREX) support almost all the LLMs in Pytorch format from ModelScope such as phi,Qwen,ChatGLM,Baichuan,gemma,etc.
+Intel extension for transformers(ITREX) support almost all the LLMs in Pytorch format from ModelScope such as phi, Qwen, ChatGLM, Baichuan, gemma, etc.
 
 ## Usage Example
 
