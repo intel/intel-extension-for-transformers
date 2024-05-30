@@ -420,7 +420,7 @@ class _BaseQBitsAutoModelClass:
             print("INC quantizing...")
             config = kwargs.pop("config", None)
             if config is None:
-                config = RtnConfig(compute_dtype="bf16",
+                config = RtnConfig(compute_dtype="int8",
                                 group_size=128,
                                 scale_dtype="bf16",
                                 weight_dtype="int4_clip",
