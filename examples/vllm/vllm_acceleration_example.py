@@ -20,10 +20,6 @@ from typing import List, Optional
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, RtnConfig
 from transformers import AutoTokenizer
 
-prompt_32 = "Once upone a time, Once upone a time, Once upone a time, Once upone a time, Once upone a time, time",
-
-prompts = [prompt_32]
-
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser()
@@ -48,6 +44,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
                            weight_dtype="int4_clip",
                            bits=4)
         print(config)
+        prompts = [args.prompt]
         llm = LLM(model=args.model_path, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(args.model_path, use_vllm=True, config=config)
 
