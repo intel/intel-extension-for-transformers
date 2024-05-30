@@ -132,8 +132,9 @@ register_conv_template(
         system_message="""### You are a helpful, respectful and honest assistant to help the user with questions. \
          - Please refer to the search results obtained from the local knowledge base. But be careful to not \
          incorporate the information that you think is not relevant to the question.
-         - If you don't know the answer to a question, please don't share false information.\n""" ,
-        roles=("### Question: ", "### Search Results: ", "### Chat History: ", "### Response: "),
+         - If you don't know the answer to a question, please don't share false information.
+         - If you don't find useful information in the search results, please response with the given response template.\n""" ,
+        roles=("### Question: ", "### Search Results: ", "### Chat History: ", "### Response: ", "### Response Template: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -171,8 +172,9 @@ register_conv_template(
         system_message="""### You are a helpful, respectful and honest assistant to help the user with questions. \
          - Please refer to the search results obtained from the local knowledge base. But be careful to not \
          incorporate the information that you think is not relevant to the question.
-         - If you don't know the answer to a question, please don't share false information.\n""",
-        roles=("### Question: ", "### Search Results: ", "### Chat History: ", "### Response: "),
+         - If you don't know the answer to a question, please don't share false information.
+         - If you don't find useful information in the search results, please response with the given response template.\n""",
+        roles=("### Question: ", "### Search Results: ", "### Chat History: ", "### Response: ", "### Response Template"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
