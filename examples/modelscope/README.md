@@ -4,7 +4,7 @@ Intel extension for transformers(ITREX) support almost all the LLMs in Pytorch f
 
 ## Usage Example
 
-ITREX provides a script that demonstrates the vLLM inference acceleration. Run it with the following command:
+ITREX provides a script that demonstrates the use of modelscope. Run it with the following command:
 ```bash
 numactl -m 0 -C 0-55 python run_modelscope_example.py --model_path=qwen/Qwen-7B --prompt=你好
 ```
