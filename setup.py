@@ -9,6 +9,7 @@ from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
+__version__="v1.4.2"
 result = subprocess.Popen("pip install -r requirements.txt", shell=True)
 result.wait()
 
@@ -24,6 +25,28 @@ def is_habana_hpu_available():
         return True
     except ImportError:
         return False
+
+
+def is_commit_on_tag():
+    try:
+        result = subprocess.run(
+            ["git", "describe", "--exact-match", "--tags"], capture_output=True, text=True, check=True
+        )
+        tag_name = result.stdout.strip()
+        return tag_name
+    except subprocess.CalledProcessError:
+        return False
+
+
+def get_build_version():
+    if is_commit_on_tag():
+        return __version__
+    try:
+        result = subprocess.run(["git", "describe", "--tags"], capture_output=True, text=True, check=True)
+        _, distance, commit = result.stdout.strip().split("-")
+        return f"{__version__}.dev{distance}+{commit}"
+    except subprocess.CalledProcessError:
+        return __version__
 
 
 def check_env_flag(name: str, default: bool = False) -> bool:
@@ -291,6 +314,7 @@ if __name__ == '__main__':
         name="intel-extension-for-transformers",
         author="Intel AIA/AIPC Team",
         author_email="feng.tian@intel.com, haihao.shen@intel.com,hanwen.chang@intel.com, penghui.cheng@intel.com",
+        version=get_build_version(),
         description="Repository of Intel® Intel Extension for Transformers",
         long_description=open("README.md", "r", encoding='utf-8').read(),
         long_description_content_type="text/markdown",
@@ -323,5 +347,4 @@ if __name__ == '__main__':
             'License :: OSI Approved :: Apache Software License',
         ],
         setup_requires=['setuptools_scm'],
-        use_scm_version=True,
     )
