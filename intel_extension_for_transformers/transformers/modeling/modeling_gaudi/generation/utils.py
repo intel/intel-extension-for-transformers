@@ -1739,6 +1739,9 @@ class GaudiGenerationMixin(GenerationMixin):
         """
 
         # init values
+        import time
+        t0 = time.perf_counter()
+        t_list = []
         logits_processor = logits_processor if logits_processor is not None else LogitsProcessorList()
         stopping_criteria = stopping_criteria if stopping_criteria is not None else StoppingCriteriaList()
         if max_length is not None:
@@ -1799,6 +1802,8 @@ class GaudiGenerationMixin(GenerationMixin):
 
         # auto-regressive generation
         while True:
+            if len(t_list) > 0:
+                t0 = time.perf_counter()
             if lazy_mode:
                 self.htcore_generation.mark_step()
 
@@ -1900,9 +1905,14 @@ class GaudiGenerationMixin(GenerationMixin):
 
             hb_profer.step()
 
+            duration = time.perf_counter() - t0
+            t_list.append(duration)
+            # print("token time: {}s".format(duration))
             if this_peer_finished and not synced_gpus:
                 break
 
+        import numpy as np
+        np.save("time.npy", np.array(t_list))
         hb_profer.stop()
         if streamer is not None:
             streamer.end()
