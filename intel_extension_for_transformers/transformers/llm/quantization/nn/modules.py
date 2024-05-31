@@ -147,7 +147,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if not x.is_contiguous():
             x = x.contiguous()
 
-        # QBits only supports the FP32 activation dtype currently.
+        # Only FP32 activation supports gemv which benefits next-token.
         out = matmul_kbit(
             x.view(m, shape[-1]).float(),
             self.weight,
