@@ -12,7 +12,7 @@ from intel_extension_for_transformers.transformers import (
 from intel_extension_for_transformers.transformers import (
     BitsAndBytesConfig,
     RtnConfig,
-    HQQConfig,
+    HqqConfig,
     AwqConfig,
     TeqConfig,
     GPTQConfig,
@@ -154,6 +154,11 @@ parser.add_argument(
     action="store_true",
     help="whether to use the output of quantized block to tune the next block",
 )
+parser.add_argument(
+    "--quant_lm_head",
+    action="store_true",
+    help="whether to quant the lm head layer",
+)
 
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
@@ -219,7 +224,7 @@ if args.woq:
             use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "HQQ":
-        quantization_config = HQQConfig(
+        quantization_config = HqqConfig(
             bits=args.bits,
             group_size=args.group_size,
             compute_dtype=args.compute_dtype,
@@ -294,6 +299,7 @@ if args.woq:
             lr=args.lr,
             minmax_lr=args.minmax_lr,
             disable_quanted_input=args.disable_quanted_input,
+            quant_lm_head = args.quant_lm_head,
             use_ipex=args.use_ipex,
         )
     else:

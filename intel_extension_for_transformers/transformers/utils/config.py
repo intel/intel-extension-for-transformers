@@ -796,7 +796,6 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
         self.quant_method = QuantizationMethod.RTN
@@ -816,9 +815,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.double_quant_bits = double_quant_bits
         self.double_quant_use_sym = double_quant_use_sym
         self.double_quant_group_size = double_quant_group_size
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
@@ -846,7 +843,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
 
         return serializable_config_dict
 
-class HQQConfig(ITREXQuantizationConfigMixin):
+class HqqConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
         bits: int = 4,
@@ -874,6 +871,7 @@ class HQQConfig(ITREXQuantizationConfigMixin):
         self.quant_scale = quant_scale
         self.scale_quant_group_size = scale_quant_group_size
         self.skip_lm_head = skip_lm_head
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.device = kwargs.get("device", "auto")
         self.use_ipex = kwargs.pop("use_ipex", False)
 
@@ -916,14 +914,13 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         damp_percent: float = 0.1,
         desc_act: bool = False,
         n_samples: int = 128,
-        seq_len: Optional[int] = 2048,
+        seq_len: int = 2048,
         static_groups: bool = False,
         true_sequential: bool = False,
         layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
 
@@ -951,9 +948,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.true_sequential = true_sequential
         self.layer_wise = layer_wise
         self.seq_len = seq_len
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
@@ -1024,7 +1019,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         scale_dtype: Any = None,
         layer_wise: bool = False,
         n_samples: int = 128,
-        seq_len: Optional[int] = 2048,
+        seq_len: int = 2048,
         auto_scale: bool = True,
         auto_clip: bool = True,
         use_double_quant=False,
@@ -1033,7 +1028,6 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
         self.quant_method = QuantizationMethod.AWQ
@@ -1052,9 +1046,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.seq_len = seq_len
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
@@ -1098,13 +1090,12 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         scale_dtype: Any = None,
         layer_wise: bool = False,
         n_samples: int = 128,
-        seq_len: Optional[int] = 2048,
+        seq_len: int = 2048,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
         sym: bool = True,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
         self.quant_method = QuantizationMethod.TEQ
@@ -1122,9 +1113,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.seq_len = seq_len
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
@@ -1169,11 +1158,12 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         lr: float = None,
         minmax_lr: float = None,
         disable_quanted_input: bool = True,
-        n_samples: int = 512,
+        n_samples: int = 128,
+        seq_len: int = 2048,
         iters: int = 200,
+        quant_lm_head: bool = False,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
 
@@ -1197,9 +1187,9 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.minmax_lr = minmax_lr
         self.disable_quanted_input = disable_quanted_input
         self.iters = iters
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.seq_len = seq_len
+        self.quant_lm_head = quant_lm_head
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_neural_speed = use_neural_speed
         self.batch_size = kwargs.pop("batch_size", 8)

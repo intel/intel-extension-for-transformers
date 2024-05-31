@@ -46,7 +46,7 @@ from ..utils import (
     DynamicQuantConfig,
     QuantAwareTrainingConfig,
     RtnConfig,
-    HQQConfig,
+    HqqConfig,
     AwqConfig,
     TeqConfig,
     GPTQConfig,
@@ -714,7 +714,7 @@ class _BaseQBitsAutoModelClass:
             logger.info("Mixed Precision done.")
         elif isinstance(
             quantization_config,
-            (RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoRoundConfig, HQQConfig),
+            (RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoRoundConfig, HqqConfig),
         ):
             logger.info("Applying Weight Only Quantization.")
             if use_neural_speed:

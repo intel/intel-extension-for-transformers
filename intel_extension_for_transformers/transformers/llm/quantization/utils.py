@@ -23,10 +23,6 @@ import os
 
 from accelerate import init_empty_weights
 from datasets import load_dataset
-from neural_compressor import quantization
-from neural_compressor.torch.algorithms.weight_only.autoround import (
-    get_autoround_default_run_fn,
-)
 from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
 from neural_compressor.torch.quantization import (
     AutoRoundConfig,
@@ -64,6 +60,7 @@ if is_autoround_available():
     from auto_round.export.export_to_itrex.model_wrapper import (
         WeightOnlyLinear as auto_round_woqlinear,
     )  # pylint: disable=E0401
+    from neural_compressor.torch.algorithms.weight_only.autoround import get_dataloader as get_autoround_dataloader
 
 torch = LazyImport("torch")
 
@@ -501,6 +498,15 @@ def default_run_fn(
         except ValueError:
             pass
 
+@torch.no_grad()
+def run_fn_for_autoround(model, dataloader):
+    for data in dataloader:
+        if isinstance(data, tuple) or isinstance(data, list):
+            model(*data)
+        elif isinstance(data, dict):
+            model(**data)
+        else:
+            model(data)
 
 def convert_to_quantized_model(model, config, device="cpu"):
     if device == "xpu" or device == torch.device("xpu"):
@@ -639,28 +645,27 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 bits=config.bits,
                 use_sym=config.sym,
                 group_size=config.group_size,
-                use_quant_input= not config.disable_quanted_input,
+                enable_quanted_input=not config.disable_quanted_input,
                 lr=config.lr,
                 minmax_lr=config.minmax_lr,
                 seqlen=config.seq_len,
                 n_samples=config.n_samples,
-                iters=config.autoround_iters,
+                iters=config.iters,
                 scale_dtype=config.scale_dtype,
             )
-            quant_config.set_local(".*lm_head", AutoRoundConfig(dtype="fp32"))
-            quant_config.set_local(".*output_layer", AutoRoundConfig(dtype="fp32"))
-            quant_config.set_local(".*embed_out", AutoRoundConfig(dtype="fp32"))
+            if config.quant_lm_head is False:
+                quant_config.set_local(".*lm_head", AutoRoundConfig(dtype="fp32"))
+                quant_config.set_local(".*output_layer", AutoRoundConfig(dtype="fp32"))
+                quant_config.set_local(".*embed_out", AutoRoundConfig(dtype="fp32"))
             logger.info(f"Do AutoRound algorithm with config {quant_config}")
-            run_fn = get_autoround_default_run_fn
-            run_args = (
-                config.tokenizer,
-                config.dataset,
-                quant_config.n_samples,
-                quant_config.seqlen,
-                quant_config.seed,
-                quant_config.batch_size,
-                "train",
-            )
+            dataloader = get_autoround_dataloader(tokenizer=config.tokenizer,
+                                                  seqlen=config.seq_len,
+                                                  dataset_name="NeelNanda/pile-10k",
+                                                  seed=42,
+                                                  bs=config.batch_size,
+                                                  n_samples=config.n_samples)
+            run_fn = run_fn_for_autoround
+            run_args = (dataloader,)
             model = prepare(model=model, quant_config=quant_config)
             run_fn(model, *run_args)
             model = convert(model)
