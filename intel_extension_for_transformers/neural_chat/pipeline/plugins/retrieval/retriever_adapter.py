@@ -31,7 +31,7 @@ class RetrieverAdapter():
     """Retrieve the document database with Chroma database using dense retrieval."""
 
     def __init__(self, retrieval_type='default', document_store=None, child_document_store=None, docs=None,  \
-                 reranker_model="BAAI/bge-reranker-large", top_n = 1, enable_rerank = False, **kwargs):
+                 reranker_model="/home/lvl/yuxiang/bge-reranker-large", top_n = 1, enable_rerank = False, **kwargs):
         self.retrieval_type = retrieval_type
         if enable_rerank:
             from intel_extension_for_transformers.langchain_community.retrievers.bge_reranker import BgeReranker  # pylint: disable=E0401, E0611
