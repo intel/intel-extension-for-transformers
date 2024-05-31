@@ -63,7 +63,7 @@ class Agent_QA():
     """
     def __init__(self,
                  vector_database="Chroma",
-                 embedding_model="hkunlp/instructor-large",
+                 embedding_model="/home/lvl/yuxiang/instructor-large",
                  input_path = None,
                  response_template="Please reformat your query to regenerate the answer.",
                  asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets",
