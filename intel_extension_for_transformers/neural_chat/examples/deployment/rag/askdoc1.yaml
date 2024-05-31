@@ -23,11 +23,11 @@
 host: 0.0.0.0
 port: 8899
 
-model_name_or_path: "Intel/neural-chat-7b-v3-1"
+model_name_or_path: "/home/sihanche/neural-chat-7b-v3-1"
 device: "auto"
 
 #################### for int4 model ####################
-tokenizer_name_or_path: "Intel/neural-chat-7b-v3-1"
+tokenizer_name_or_path: "/home/sihanche/neural-chat-7b-v3-1"
 use_neural_speed: true
 use_woq: true
 
