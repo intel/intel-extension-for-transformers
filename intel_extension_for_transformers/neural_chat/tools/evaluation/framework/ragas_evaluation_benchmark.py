@@ -103,54 +103,8 @@ def ragas(answer_file, ground_truth_file, llm_model, embedding_model, use_openai
     return answer_relevancy_average, faithfulness_average, context_recall_average, context_precision_average
 
 
-def rag(text,
-        input_path,
-        vector_database="Chroma",
-        embedding_model="BAAI/bge-large-en-v1.5",
-        retrieval_type='default',
-        max_chuck_size=256,
-        search_type="similarity",
-        k=1,
-        fetch_k=5,
-        score_threshold=0.3,
-        polish=False,
-        top_n=1,
-        enable_rerank=False,
-        reranker_model="BAAI/bge-reranker-large",
-        llm_model='intel/neural-chat-7b-v3-1',
-        temperature=0.01,
-        top_k=1,
-        top_p=0.1,
-        repetition_penalty=1.0,
-        num_beams=1,
-        do_sample=True
-        ):
-    plugins.retrieval.enable=True
-    plugins.retrieval.args["input_path"]=input_path
-    plugins.retrieval.args["vector_database"]=vector_database
-    plugins.retrieval.args["embedding_model"]=embedding_model
-    plugins.retrieval.args["retrieval_type"]=retrieval_type
-    plugins.retrieval.args["max_chuck_size"]=max_chuck_size
-    plugins.retrieval.args["search_type"]=search_type
-    if search_type=="similarity":
-        plugins.retrieval.args["search_kwargs"]={"k":k}
-    elif search_type=="mmr":
-        plugins.retrieval.args["search_kwargs"]={"k":k, "fetch_k":fetch_k}
-    elif search_type=="similarity_score_threshold":
-        plugins.retrieval.args["search_kwargs"]={"k":k, "score_threshold":score_threshold}
-    plugins.retrieval.args["polish"]=polish
-    plugins.retrieval.args["top_n"]=top_n
-    plugins.retrieval.args["enable_rerank"]=enable_rerank
-    plugins.retrieval.args["reranker_model"]=reranker_model
-    config = PipelineConfig(plugins=plugins, model_name_or_path=llm_model)
-    chatbot = build_chatbot(config)
-    response = chatbot.predict(text,
-                            config=GenerationConfig(temperature=temperature,
-                                                    top_k=top_k,
-                                                    top_p=top_p,
-                                                    repetition_penalty=repetition_penalty,
-                                                    num_beams=num_beams,
-                                                    do_sample=do_sample))
+def rag(text, chatbot, generation_config):
+    response = chatbot.predict(text, config=generation_config)
     return response
 
 def result_data(ground_truth_file,
@@ -183,30 +137,35 @@ def result_data(ground_truth_file,
 
     if os.path.exists("output"):
         shutil.rmtree("output", ignore_errors=True)
+    
+    plugins.retrieval.enable=True
+    plugins.retrieval.args["input_path"]=input_path
+    plugins.retrieval.args["vector_database"]=vector_database
+    plugins.retrieval.args["embedding_model"]=embedding_model
+    plugins.retrieval.args["retrieval_type"]=retrieval_type
+    plugins.retrieval.args["max_chuck_size"]=max_chuck_size
+    plugins.retrieval.args["search_type"]=search_type
+    if search_type=="similarity":
+        plugins.retrieval.args["search_kwargs"]={"k":k}
+    elif search_type=="mmr":
+        plugins.retrieval.args["search_kwargs"]={"k":k, "fetch_k":fetch_k}
+    elif search_type=="similarity_score_threshold":
+        plugins.retrieval.args["search_kwargs"]={"k":k, "score_threshold":score_threshold}
+    plugins.retrieval.args["polish"]=polish
+    plugins.retrieval.args["top_n"]=top_n
+    plugins.retrieval.args["enable_rerank"]=enable_rerank
+    plugins.retrieval.args["reranker_model"]=reranker_model
+    config = PipelineConfig(plugins=plugins, model_name_or_path=llm_model, device="cuda")
+    chatbot = build_chatbot(config)
+    generation_config=GenerationConfig(temperature=temperature, 
+                                                    top_k=top_k, 
+                                                    top_p=top_p, 
+                                                    repetition_penalty=repetition_penalty, 
+                                                    num_beams=num_beams, 
+                                                    do_sample=do_sample)
+
     for question in question_list:
-        response = rag(
-                        question,
-                        input_path,
-                        vector_database,
-                        embedding_model,
-                        retrieval_type,
-                        max_chuck_size,
-                        search_type,
-                        k,
-                        fetch_k,
-                        score_threshold,
-                        polish,
-                        top_n,
-                        enable_rerank,
-                        reranker_model,
-                        llm_model,
-                        temperature,
-                        top_k,
-                        top_p,
-                        repetition_penalty,
-                        num_beams,
-                        do_sample
-                     )
+        response = rag(question, chatbot, generation_config)
         data = {
                 "question": question,
                 "answer": response,
