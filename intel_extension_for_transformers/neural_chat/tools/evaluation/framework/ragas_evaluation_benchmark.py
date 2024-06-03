@@ -137,7 +137,7 @@ def result_data(ground_truth_file,
 
     if os.path.exists("output"):
         shutil.rmtree("output", ignore_errors=True)
-    
+
     plugins.retrieval.enable=True
     plugins.retrieval.args["input_path"]=input_path
     plugins.retrieval.args["vector_database"]=vector_database
@@ -157,11 +157,11 @@ def result_data(ground_truth_file,
     plugins.retrieval.args["reranker_model"]=reranker_model
     config = PipelineConfig(plugins=plugins, model_name_or_path=llm_model, device="cuda")
     chatbot = build_chatbot(config)
-    generation_config=GenerationConfig(temperature=temperature, 
-                                                    top_k=top_k, 
-                                                    top_p=top_p, 
-                                                    repetition_penalty=repetition_penalty, 
-                                                    num_beams=num_beams, 
+    generation_config=GenerationConfig(temperature=temperature,
+                                                    top_k=top_k,
+                                                    top_p=top_p,
+                                                    repetition_penalty=repetition_penalty,
+                                                    num_beams=num_beams,
                                                     do_sample=do_sample)
 
     for question in question_list:
