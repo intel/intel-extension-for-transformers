@@ -43,6 +43,7 @@ jobs:
             test_name: "PR-test"
           - test_branch: "main"
             test_name: "baseline"
+      fail-fast: false
     name: optimize-unit-test-${{ matrix.test_name }}
     steps:
       - name: Docker Clean Up

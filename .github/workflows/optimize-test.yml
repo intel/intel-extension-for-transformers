@@ -32,7 +32,7 @@ jobs:
           - modelName: "bert_base_mrpc_static"
             framework: "tensorflow"
             mode: "accuracy,performance"
-      # fail-fast: true
+      fail-fast: true
     steps:
       - name: Docker Clean Up
         run: |
