@@ -565,6 +565,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 use_layer_wise=config.layer_wise,
                 use_auto_scale=config.auto_scale,
                 use_auto_clip=config.auto_clip,
+                folding=True,
             )
             quant_config.set_local(".*lm_head", AWQConfig(dtype="fp32"))
             quant_config.set_local(".*output_layer", AWQConfig(dtype="fp32"))
