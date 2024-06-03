@@ -346,5 +346,4 @@ if __name__ == '__main__':
             'Topic :: Scientific/Engineering :: Artificial Intelligence',
             'License :: OSI Approved :: Apache Software License',
         ],
-        setup_requires=['setuptools_scm'],
     )
