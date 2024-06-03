@@ -1,0 +1,22 @@
+name: Scanner Coverity PYTHON
+
+on:
+    workflow_dispatch:
+
+permissions: write-all
+jobs:
+  coverity_job:
+    name: Coverity
+    runs-on: inner-source
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+      - name: Scan
+        uses: intel-innersource/frameworks.devops.github.actions.coverity@main
+        with:
+          server: 'https://coverityent.devtools.intel.com/prod4'
+          username: ${{secrets.COVERITY_NAME }}
+          password: ${{secrets.COVERITY }}
+          project: IntelExtensionForTransformers
+          stream: 'IntelExtensionForTransformers12cpp'

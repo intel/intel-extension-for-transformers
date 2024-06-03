@@ -17,6 +17,15 @@ def is_intel_gpu_available():
     import intel_extension_for_pytorch as ipex
     return hasattr(torch, "xpu") and torch.xpu.is_available()
 
+
+def is_habana_hpu_available():
+    try:
+        import habana_frameworks.torch.hpu as hthpu
+        return True
+    except ImportError:
+        return False
+
+
 def check_env_flag(name: str, default: bool = False) -> bool:
     if default:  # if a flag meant to be true if not set / mal-formatted
         return not os.getenv(name, "").upper() in ["OFF", "0", "FALSE", "NO", "N"]
@@ -37,7 +46,7 @@ if ipex_available and is_intel_gpu_available():
     SKIP_RUNTIME = True
     RUNTIME_ONLY = False
     IS_INTEL_GPU = True
-else:
+elif not is_habana_hpu_available():
     result = subprocess.Popen(
         "pip install -r requirements-cpu.txt", shell=True)
     result.wait()
