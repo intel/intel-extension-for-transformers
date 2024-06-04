@@ -140,6 +140,10 @@ def gaudi_llama_repeat_kv(
     The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to
     (batch, num_key_value_heads, 1, seqlen, head_dim)
     """
+    query_states = query_states.to("hpu")
+    key_states = key_states.to("hpu")
+    value_states = value_states.to("hpu")
+
     batch, num_key_value_heads, kv_len, head_dim = key_states.shape
     if n_rep == 1 or num_key_value_heads == 1:
         return query_states, key_states, value_states, attention_mask
@@ -162,6 +166,7 @@ def gaudi_llama_repeat_kv_cpu(
     query_states: torch.Tensor,
     key_states: torch.Tensor,
     value_states: torch.Tensor,
+    attention_mask: torch.Tensor,
     n_rep: int,
 ):
     """
@@ -179,10 +184,11 @@ def gaudi_llama_repeat_kv_cpu(
     query_states = query_states.to("cpu")
     key_states = key_states.to("cpu")
     value_states = value_states.to("cpu")
+    attention_mask = attention_mask.to("cpu")
 
     batch, num_key_value_heads, kv_len, head_dim = key_states.shape
     if n_rep == 1 or num_key_value_heads == 1:
-        return query_states, key_states, value_states,
+        return query_states, key_states, value_states, attention_mask
 
     key_states = key_states[:, :, None, :, :].expand(batch,
                                                      num_key_value_heads,
@@ -197,7 +203,7 @@ def gaudi_llama_repeat_kv_cpu(
     key_states = key_states.reshape(batch, num_key_value_heads * n_rep, kv_len, head_dim)
     value_states = value_states.reshape(batch, num_key_value_heads * n_rep, kv_len, head_dim)
 
-    return query_states, key_states, value_states
+    return query_states, key_states, value_states, attention_mask
 
 class Matmul(torch.nn.Module):
     def __init__(self):
@@ -277,7 +283,7 @@ class KVCacheCPU(KVCache):
         assert cur.shape[2] == 1, f"Cannot update kv-cache. Unsupported shapes. prev:{prev.shape} cur:{cur.shape}"
         if idx is not None:
             prev.index_copy_(dim, idx - 1, cur)
-            return prev[:, :, :idx.item(), :]
+            return prev #[:, :, :idx.item(), :]
         else:
             return torch.cat((prev, cur), dim=dim)
 
@@ -517,49 +523,49 @@ class GaudiLlamaAttention(LlamaAttention):
                         )
 
         else:
-            # CPU SDP
-            query_states, key_states, value_states = gaudi_llama_repeat_kv_cpu(
-                query_states, key_states, value_states, self.num_key_value_groups
+            if q_len == 1:
+                # CPU SDP
+                query_states, key_states, value_states, attention_mask = gaudi_llama_repeat_kv_cpu(
+                    query_states, key_states, value_states, attention_mask, self.num_key_value_groups
+                )
+                # 1. pytorch https://pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html
+                # dispatch to flash attention implementation
+                attn_output = F.scaled_dot_product_attention(query_states,
+                                                            key_states,
+                                                            value_states,
+                                                            attn_mask=attention_mask,
+                                                            dropout_p=0.0,
+                                                            is_causal=False,
+                                                            scale=self.norm_factor)
+                attn_output = attn_output.to("hpu")
+            else:
+                query_states, key_states, value_states, attention_mask = gaudi_llama_repeat_kv(
+                    query_states, key_states, value_states, attention_mask, self.num_key_value_groups
+                )
+                attn_weights = self.matmul_qk(query_states, key_states.transpose(-2, -1)) * self.norm_factor
+
+                if attention_mask is not None:  # no matter the length, we just slice it
+                    causal_mask = attention_mask
+                    if cache_position is not None:
+                        causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
+                    attn_weights = attn_weights + causal_mask
+
+                if attn_softmax_bf16:
+                    attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=query_states.dtype)
+                else:
+                    # upcast attention to fp32
+                    attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
+                        query_states.dtype
+                    )
+                attn_weights = torch.nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
+                attn_output = self.matmul_av(attn_weights, value_states)
+                attn_output = attn_output.reshape(bsz, -1, q_len, self.head_dim)
+
+            if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
+                raise ValueError(
+                    f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is"
+                    f" {attn_output.size()}"
             )
-            # 1. pytorch https://pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html
-            # dispatch to flash attention implementation
-            # import intel_extension_for_pytorch as ipex
-            attn_output = F.scaled_dot_product_attention(query_states,
-                                                         key_states,
-                                                         value_states,
-                                                         attn_mask=None,
-                                                         dropout_p=0.0,
-                                                         is_causal=True,
-                                                         scale=self.norm_factor)
-            attn_output = attn_output.to("hpu")
-
-            # query_states, key_states, value_states, attention_mask = gaudi_llama_repeat_kv(
-            #     query_states, key_states, value_states, attention_mask, self.num_key_value_groups
-            # )
-        #     attn_weights = self.matmul_qk(query_states, key_states.transpose(-2, -1)) * self.norm_factor
-
-        #     if attention_mask is not None:  # no matter the length, we just slice it
-        #         causal_mask = attention_mask
-        #         if cache_position is not None:
-        #             causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
-        #         attn_weights = attn_weights + causal_mask
-
-        #     if attn_softmax_bf16:
-        #         attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=query_states.dtype)
-        #     else:
-        #         # upcast attention to fp32
-        #         attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
-        #             query_states.dtype
-        #         )
-        #     attn_weights = torch.nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
-        #     attn_output = self.matmul_av(attn_weights, value_states)
-        #     attn_output = attn_output.reshape(bsz, -1, q_len, self.head_dim)
-
-        # if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
-        #     raise ValueError(
-        #         f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is"
-        #         f" {attn_output.size()}"
-        #     )
 
         attn_output = attn_output.transpose(1, 2).contiguous()
 
