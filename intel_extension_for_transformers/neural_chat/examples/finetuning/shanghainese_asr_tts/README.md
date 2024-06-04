@@ -8,10 +8,10 @@ This example introduces how to do Shanghainese audio-to-text and text-to-audio c
 
 ### ASR
 
-* Conversion from the Shanghainese audio to the Shanghainese text.  
+* Conversion from the Shanghainese audio to the Shanghainese text
 Finetuned [jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn](https://huggingface.co/jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn)
 
-* Conversion from Shanghainese text to Mandarin text.  
+* Conversion from Shanghainese text to Mandarin text
 Finetuned [Helsinki-NLP/opus-mt-zh-en](https://huggingface.co/Helsinki-NLP/opus-mt-zh-en)
 
 
