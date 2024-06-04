@@ -30,7 +30,6 @@ from neural_compressor import __version__ as nc_version
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
 from intel_extension_for_transformers.transformers import (
-    AutoDistillation,
     DistillationConfig,
     Provider,
     PruningMode,
@@ -39,7 +38,6 @@ from intel_extension_for_transformers.transformers import (
     PruningConfig,
     DynamicLengthConfig,
     BenchmarkConfig,
-    NAS,
 )
 from intel_extension_for_transformers.transformers.benchmark import benchmark
 from intel_extension_for_transformers.transformers.utils.metrics import Metric
