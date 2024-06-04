@@ -16,7 +16,7 @@ mlflow
 nlpaug==1.1.9
 onnx
 onnxruntime
-optimum-intel
+optimum-intel==1.16.1
 peft==0.6.2
 py-cpuinfo
 sacremoses
