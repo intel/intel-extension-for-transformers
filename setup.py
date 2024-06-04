@@ -9,7 +9,7 @@ from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
-__version__="v1.4.2"
+__version__="v1.5"
 result = subprocess.Popen("pip install -r requirements.txt", shell=True)
 result.wait()
 
