@@ -1836,6 +1836,26 @@
       }
     }
   },
+  "codestral_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "mistralai/Codestral-22B-v0.1",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "mistralai/Codestral-22B-v0.1",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/codestral_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
   "mistral_7b_rtn_gpu": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "hf_model_name": "mistralai/Mistral-7B-v0.1",
