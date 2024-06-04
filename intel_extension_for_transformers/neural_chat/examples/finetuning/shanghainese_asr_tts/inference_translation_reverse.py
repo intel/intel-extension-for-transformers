@@ -30,7 +30,7 @@ def generate_translation(model, tokenizer, example):
     input_ids = torch.LongTensor(input_ids).view(1, -1).to(model.device)
     generated_ids = model.generate(input_ids, max_new_tokens=64)
     prediction = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
-    
+
     print('prediction: ', prediction)
 
 text = '你是公派出去还是因私出国'

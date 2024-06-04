@@ -102,10 +102,10 @@ def generate_path(duration, mask):
   mask: [b, 1, t_y, t_x]
   """
   device = duration.device
-  
+
   b, _, t_y, t_x = mask.shape
   cum_duration = torch.cumsum(duration, -1)
-  
+
   cum_duration_flat = cum_duration.view(b * t_x)
   path = sequence_mask(cum_duration_flat, t_y).to(mask.dtype)
   path = path.view(b, t_x, t_y)

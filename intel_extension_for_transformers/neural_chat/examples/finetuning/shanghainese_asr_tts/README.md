@@ -122,6 +122,3 @@ nohup python -u app.py &
 ## Acknowledgements
 
 The code is adapted from [Cosmos-Break/asr](https://github.com/Cosmos-Break/asr) and [CjangCjengh/vits](https://github.com/CjangCjengh/vits). We thanks the authors for their great work!
-
-
-

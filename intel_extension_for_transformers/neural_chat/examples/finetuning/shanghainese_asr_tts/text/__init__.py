@@ -14,19 +14,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """ from https://github.com/keithito/tacotron """
 from text import cleaners
 
 
 def text_to_sequence(text, symbols, cleaner_names):
-  '''Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
-    Args:
-      text: string to convert to a sequence
-      cleaner_names: names of the cleaner functions to run the text through
-    Returns:
-      List of integers corresponding to the symbols in the text
-  '''
+  """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
+
+  Args:
+    text: string to convert to a sequence
+    cleaner_names: names of the cleaner functions to run the text through
+  Returns:
+    List of integers corresponding to the symbols in the text
+  """
   _symbol_to_id = {s: i for i, s in enumerate(symbols)}
 
   sequence = []

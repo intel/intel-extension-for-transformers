@@ -21,7 +21,8 @@ from torch import from_numpy
 from .core import maximum_path_jit
 
 def maximum_path(neg_cent, mask):
-  """ numba optimized version.
+  """Numba optimized version.
+
   neg_cent: [b, t_t, t_s]
   mask: [b, t_t, t_s]
   """

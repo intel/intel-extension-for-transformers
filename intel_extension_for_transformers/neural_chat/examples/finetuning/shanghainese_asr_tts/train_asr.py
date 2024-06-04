@@ -33,7 +33,7 @@ def setup_seed(seed):
      np.random.seed(seed)
      random.seed(seed)
      torch.backends.cudnn.deterministic = True
-     
+
 setup_seed(42)
 
 model_path = "jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn"
@@ -113,8 +113,8 @@ model_args = ModelArguments(
 )
 
 model.finetune(
-    output_dir, 
-    train_data=train_data, 
+    output_dir,
+    train_data=train_data,
     eval_data=eval_data,
     training_args=training_args,
     model_args=model_args,

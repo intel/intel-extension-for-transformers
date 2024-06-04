@@ -22,7 +22,7 @@ from torch.nn import functional as F
 
 import commons
 from modules import LayerNorm
-   
+
 
 class Encoder(nn.Module):
   def __init__(self, hidden_channels, filter_channels, n_heads, n_layers, kernel_size=1, p_dropout=0., window_size=4, **kwargs):
@@ -104,7 +104,7 @@ class Decoder(nn.Module):
       y = self.encdec_attn_layers[i](x, h, encdec_attn_mask)
       y = self.drop(y)
       x = self.norm_layers_1[i](x + y)
-      
+
       y = self.ffn_layers[i](x, x_mask)
       y = self.drop(y)
       x = self.norm_layers_2[i](x + y)
@@ -148,12 +148,12 @@ class MultiHeadAttention(nn.Module):
       with torch.no_grad():
         self.conv_k.weight.copy_(self.conv_q.weight)
         self.conv_k.bias.copy_(self.conv_q.bias)
-      
+
   def forward(self, x, c, attn_mask=None):
     q = self.conv_q(x)
     k = self.conv_k(c)
     v = self.conv_v(c)
-    
+
     x, self.attn = self.attention(q, k, v, mask=attn_mask)
 
     x = self.conv_o(x)
@@ -258,6 +258,7 @@ class MultiHeadAttention(nn.Module):
 
   def _attention_bias_proximal(self, length):
     """Bias for self-attention to encourage attention to close positions.
+
     Args:
       length: an integer scalar.
     Returns:
@@ -297,7 +298,7 @@ class FFN(nn.Module):
     x = self.drop(x)
     x = self.conv_2(self.padding(x * x_mask))
     return x * x_mask
-  
+
   def _causal_padding(self, x):
     if self.kernel_size == 1:
       return x

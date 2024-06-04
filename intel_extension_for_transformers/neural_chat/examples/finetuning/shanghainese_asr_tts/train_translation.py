@@ -54,7 +54,7 @@ output_dir = f'./checkpoint-opus-mt-en-zh-{now}'
 def preprocess_function(examples):
     inputs = examples['sh']
     targets = examples['zh']
-    
+
     with tokenizer.as_target_tokenizer():
         model_inputs = tokenizer(inputs, max_length=64, truncation=True)
 
@@ -94,4 +94,3 @@ trainer = Seq2SeqTrainer(
 )
 
 trainer.train()
-

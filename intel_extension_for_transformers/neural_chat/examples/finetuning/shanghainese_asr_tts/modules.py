@@ -45,7 +45,7 @@ class LayerNorm(nn.Module):
     x = F.layer_norm(x, (self.channels,), self.gamma, self.beta, self.eps)
     return x.transpose(1, -1)
 
- 
+
 class ConvReluNorm(nn.Module):
   def __init__(self, in_channels, hidden_channels, out_channels, kernel_size, n_layers, p_dropout):
     super().__init__()
@@ -82,9 +82,7 @@ class ConvReluNorm(nn.Module):
 
 
 class DDSConv(nn.Module):
-  """
-  Dialted and Depth-Separable Convolution
-  """
+  """Dialted and Depth-Separable Convolution."""
   def __init__(self, channels, kernel_size, n_layers, p_dropout=0.):
     super().__init__()
     self.channels = channels
@@ -100,7 +98,7 @@ class DDSConv(nn.Module):
     for i in range(n_layers):
       dilation = kernel_size ** i
       padding = (kernel_size * dilation - dilation) // 2
-      self.convs_sep.append(nn.Conv1d(channels, channels, kernel_size, 
+      self.convs_sep.append(nn.Conv1d(channels, channels, kernel_size,
           groups=channels, dilation=dilation, padding=padding
       ))
       self.convs_1x1.append(nn.Conv1d(channels, channels, 1))
@@ -279,7 +277,7 @@ class Log(nn.Module):
     else:
       x = torch.exp(x) * x_mask
       return x
-    
+
 
 class Flip(nn.Module):
   def forward(self, x, *args, reverse=False, **kwargs):

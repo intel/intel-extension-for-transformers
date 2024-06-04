@@ -76,7 +76,7 @@ class StochasticDurationPredictor(nn.Module):
       flows = self.flows
       assert w is not None
 
-      logdet_tot_q = 0 
+      logdet_tot_q = 0
       h_w = self.post_pre(w)
       h_w = self.post_convs(h_w, x_mask)
       h_w = self.post_proj(h_w) * x_mask
@@ -85,7 +85,7 @@ class StochasticDurationPredictor(nn.Module):
       for flow in self.post_flows:
         z_q, logdet_q = flow(z_q, x_mask, g=(x + h_w))
         logdet_tot_q += logdet_q
-      z_u, z1 = torch.split(z_q, [1, 1], 1) 
+      z_u, z1 = torch.split(z_q, [1, 1], 1)
       u = torch.sigmoid(z_u) * x_mask
       z0 = (w - u) * x_mask
       logdet_tot_q += torch.sum((F.logsigmoid(z_u) + F.logsigmoid(-z_u)) * x_mask, [1,2])
@@ -167,7 +167,7 @@ class TextEncoder(nn.Module):
     self.n_layers = n_layers
     self.kernel_size = kernel_size
     self.p_dropout = p_dropout
-    
+
     if self.n_vocab!=0:
       self.emb = nn.Embedding(n_vocab, hidden_channels)
       nn.init.normal_(self.emb.weight, 0.0, hidden_channels**-0.5)
@@ -406,11 +406,9 @@ class MultiPeriodDiscriminator(torch.nn.Module):
 
 
 class SynthesizerTrn(nn.Module):
-  """
-  Synthesizer for Training
-  """
+  """Synthesizer for Training."""
 
-  def __init__(self, 
+  def __init__(self,
     n_vocab,
     spec_channels,
     segment_size,
@@ -421,11 +419,11 @@ class SynthesizerTrn(nn.Module):
     n_layers,
     kernel_size,
     p_dropout,
-    resblock, 
-    resblock_kernel_sizes, 
-    resblock_dilation_sizes, 
-    upsample_rates, 
-    upsample_initial_channel, 
+    resblock,
+    resblock_kernel_sizes,
+    resblock_dilation_sizes,
+    upsample_rates,
+    upsample_initial_channel,
     upsample_kernel_sizes,
     n_speakers=0,
     gin_channels=0,
@@ -504,7 +502,7 @@ class SynthesizerTrn(nn.Module):
     else:
       logw_ = torch.log(w + 1e-6) * x_mask
       logw = self.dp(x, x_mask, g=g)
-      l_length = torch.sum((logw - logw_)**2, [1,2]) / torch.sum(x_mask) # for averaging 
+      l_length = torch.sum((logw - logw_)**2, [1,2]) / torch.sum(x_mask) # for averaging
 
     # expand prior
     m_p = torch.matmul(attn.squeeze(1), m_p.transpose(1, 2)).transpose(1, 2)
@@ -549,4 +547,3 @@ class SynthesizerTrn(nn.Module):
     z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
     o_hat = self.dec(z_hat * y_mask, g=g_tgt)
     return o_hat, y_mask, (z, z_p, z_hat)
-

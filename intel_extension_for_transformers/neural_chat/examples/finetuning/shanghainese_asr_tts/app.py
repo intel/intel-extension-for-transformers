@@ -69,7 +69,7 @@ _ = utils.load_checkpoint("model/model.pth", net_g)
 demo = gr.Blocks()
 
 def generate_translation(model, tokenizer, example):
-    """print out the source, target and predicted raw text."""
+    """Print out the source, target and predicted raw text."""
 
     input_ids = example['input_ids']
     input_ids = torch.LongTensor(input_ids).view(1, -1).to(model.device)
@@ -96,7 +96,7 @@ def transcribe(inputs, translate=False):
             model_inputs = translate_tokenizer(txt, max_length=64, truncation=True)
         example = {}
         example['sh'] = txt
-        example['zh'] = txt    
+        example['zh'] = txt
         example['input_ids'] = model_inputs['input_ids']
         print(txt)
         print(example)
