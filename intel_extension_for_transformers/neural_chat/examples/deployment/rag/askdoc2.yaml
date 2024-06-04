@@ -42,7 +42,7 @@ retrieval:
     enable: true
     args:
         input_path: "/home/lvl/yuxiang/xuhui_doc"
-        persist_directory: "./persist_dir"
+        persist_directory: "/home/lvl/yuxiang/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/deployment/rag/persist_dir"
         response_template: "We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com."
         append: False
 
