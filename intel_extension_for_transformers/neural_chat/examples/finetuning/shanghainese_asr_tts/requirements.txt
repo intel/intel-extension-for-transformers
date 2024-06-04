@@ -1,0 +1,16 @@
+librosa
+numpy
+scipy
+torch
+torchvision
+cn2an
+opencc
+datasets
+transformers
+huggingsound
+pydub
+fastapi
+uvicorn
+sacremoses
+sentencepiece
+gradio
