@@ -231,7 +231,9 @@ class RetrievalAPIRouter(APIRouter):
 
 
 router = RetrievalAPIRouter()
-RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./retrieval_docs")+'/'
+current_working_directory = os.getcwd()
+absolute_path_cwd = os.path.abspath(current_working_directory)
+RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default=absolute_path_cwd+"/retrieval_docs")+'/'
 EXCEPT_PATTERNS = ["/xuhui_doc", "default/persist_dir"]
 
 
