@@ -29,8 +29,8 @@ device: "auto"
 retrieval:
     enable: true
     args:
-        input_path: "./docs"
-        persist_directory: "./docs_persist"
+        input_path: "/path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/deployment/rag/docs"
+        persist_directory: "/path/to/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/deployment/rag/docs_persist"
         response_template: "We cannot find suitable content to answer your query at this moment."
         append: True
 
