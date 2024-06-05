@@ -203,11 +203,11 @@ class BaseModel(ABC):
                         if plugin_name == "safety_checker":
                             sign1=plugin_instance.pre_llm_inference_actions(my_query)
                             if sign1:
-                                return "Your query contains sensitive words, please try another query.", link
+                                return "Opps, it looks like your question just went on a broader ride beyond the ASK GM ranch where we only focus on Intel Zizhu site questions. Please refine your question, or change to another.", link
                             if not my_origin_query=="":
                                 sign2=plugin_instance.pre_llm_inference_actions(my_origin_query)
                                 if sign2:
-                                    return "Your query contains sensitive words, please try another query.", link
+                                    return "Opps, it looks like your question just went on a broader ride beyond the ASK GM ranch where we only focus on Intel Zizhu site questions. Please refine your question, or change to another.", link
                         else:
                             if response != None and response != False:
                                 query = response
