@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shanghainese ASR (Audio-Speech-Recognition) and TTS (Text-To-Speech) finetuning/inference &mdash; Intel® Extension for Transformers 0.1.dev1+g50676da documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Shanghainese ASR (Audio-Speech-Recognition) and TTS (Text-To-Speech) finetuning/inference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/shanghainese_asr_tts/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="shanghainese-asr-audio-speech-recognition-and-tts-text-to-speech-finetuning-inference">
+<h1>Shanghainese ASR (Audio-Speech-Recognition) and TTS (Text-To-Speech) finetuning/inference<a class="headerlink" href="#shanghainese-asr-audio-speech-recognition-and-tts-text-to-speech-finetuning-inference" title="Link to this heading"></a></h1>
+<p>This example introduces how to do Shanghainese audio-to-text and text-to-audio conversion.</p>
+<section id="related-models">
+<h2>Related models<a class="headerlink" href="#related-models" title="Link to this heading"></a></h2>
+<section id="asr">
+<h3>ASR<a class="headerlink" href="#asr" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Conversion from the Shanghainese audio to the Shanghainese text
+Finetuned <a class="reference external" href="https://huggingface.co/jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn">jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn</a></p></li>
+<li><p>Conversion from Shanghainese text to Mandarin text
+Finetuned <a class="reference external" href="https://huggingface.co/Helsinki-NLP/opus-mt-zh-en">Helsinki-NLP/opus-mt-zh-en</a></p></li>
+</ul>
+</section>
+<section id="tts">
+<h3>TTS<a class="headerlink" href="#tts" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Conversion from Mandarin text to Shanghainese text<br />Finetuned <a class="reference external" href="https://huggingface.co/Helsinki-NLP/opus-mt-en-zh">Helsinki-NLP/opus-mt-en-zh</a></p></li>
+<li><p>Conversion from Shanghainese text to Shanghainese audio<br />Finetuned <a class="reference external" href="https://github.com/jaywalnut310/vits">VITS</a></p></li>
+</ul>
+</section>
+</section>
+<section id="prepare-environment">
+<h2>Prepare Environment<a class="headerlink" href="#prepare-environment" title="Link to this heading"></a></h2>
+</section>
+<section id="install-requirements">
+<h2>1. Install requirements<a class="headerlink" href="#install-requirements" title="Link to this heading"></a></h2>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+<span class="c1"># force to install torch 2.0+</span>
+pip<span class="w"> </span>install<span class="w"> </span><span class="nv">torch</span><span class="o">==</span><span class="m">2</span>.1.0
+</pre></div>
+</div>
+<!-- ## 2. Build monotonic alignment search
+
+```py
+cd monotonic_align
+mkdir monotonic_align
+python setup.py build_ext --inplace
+cd ..
+``` --></section>
+<section id="finetuning">
+<h2>Finetuning<a class="headerlink" href="#finetuning" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>ASR<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<section id="prepare-the-data">
+<h4>1. Prepare the data<a class="headerlink" href="#prepare-the-data" title="Link to this heading"></a></h4>
+<p>Please check this <a class="reference external" href="https://github.com/Cosmos-Break/asr">repo</a> and download the folders named like <code class="docutils literal notranslate"><span class="pre">Shanghai_*</span></code> to the current directory.</p>
+</section>
+<section id="do-finetuning-of-the-shanghainese-audio-shanghainese-text-asr-model">
+<h4>2. Do finetuning of the Shanghainese Audio -&gt; Shanghainese text ASR model<a class="headerlink" href="#do-finetuning-of-the-shanghainese-audio-shanghainese-text-asr-model" title="Link to this heading"></a></h4>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">train_asr</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+<section id="do-finetuning-of-the-shanghainese-text-mandarian-text-translation-model">
+<h4>3. Do finetuning of the Shanghainese text -&gt; Mandarian text translation model<a class="headerlink" href="#do-finetuning-of-the-shanghainese-text-mandarian-text-translation-model" title="Link to this heading"></a></h4>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">train_translation</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id2">
+<h3>TTS<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<section id="download-the-pre-finetuned-vits-model">
+<h4>1. Download the pre-finetuned VITS model<a class="headerlink" href="#download-the-pre-finetuned-vits-model" title="Link to this heading"></a></h4>
+<p>Download <a class="reference external" href="https://sjtueducn-my.sharepoint.com/:u:/g/personal/cjang_cjengh_sjtu_edu_cn/EfnEO6kW-CNNhywJmIZNPU0BUmFdSArguFETp0pjtvHZBA?e=dKJULk">model</a> (2796 epochs)</p>
+<p>Put the <code class="docutils literal notranslate"><span class="pre">model.pth</span></code> model under <code class="docutils literal notranslate"><span class="pre">model/</span></code>.</p>
+</section>
+<section id="finetune-the-mandarian-text-shanghainese-text-translation-model">
+<h4>3. Finetune the Mandarian text -&gt; Shanghainese text translation model<a class="headerlink" href="#finetune-the-mandarian-text-shanghainese-text-translation-model" title="Link to this heading"></a></h4>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">train_translation_reverse</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="inference">
+<h2>Inference<a class="headerlink" href="#inference" title="Link to this heading"></a></h2>
+<section id="id3">
+<h3>ASR<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<section id="do-inference-of-the-shanghainese-audio-shanghainese-text-asr-model">
+<h4>Do inference of the Shanghainese Audio -&gt; Shanghainese text ASR model<a class="headerlink" href="#do-inference-of-the-shanghainese-audio-shanghainese-text-asr-model" title="Link to this heading"></a></h4>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">inference_asr</span><span class="p">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+<section id="do-inference-of-the-shanghainese-text-mandarian-text-translation-model">
+<h4>Do inference of the Shanghainese text -&gt; Mandarian text translation model<a class="headerlink" href="#do-inference-of-the-shanghainese-text-mandarian-text-translation-model" title="Link to this heading"></a></h4>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">inference_translation</span><span class="p">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id4">
+<h3>TTS<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<section id="do-inference-of-the-mandarian-text-shanghainese-text-translation-model">
+<h4>Do inference of the Mandarian text -&gt; Shanghainese text translation model<a class="headerlink" href="#do-inference-of-the-mandarian-text-shanghainese-text-translation-model" title="Link to this heading"></a></h4>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">inference_translation_reverse</span><span class="p">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+<section id="do-inference-of-the-shanghainese-text-shanghainese-audio-tts-model">
+<h4>Do inference of the Shanghainese text -&gt; Shanghainese audio TTS model<a class="headerlink" href="#do-inference-of-the-shanghainese-text-shanghainese-audio-tts-model" title="Link to this heading"></a></h4>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">inference_tts</span><span class="p">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="demo">
+<h2>Demo<a class="headerlink" href="#demo" title="Link to this heading"></a></h2>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">no_proxy</span><span class="o">=</span><span class="s2">&quot;localhost,127.0.0.1&quot;</span>
+nohup<span class="w"> </span>python<span class="w"> </span>-u<span class="w"> </span>app.py<span class="w"> </span><span class="p">&amp;</span>
+</pre></div>
+</div>
+<p><img alt="asr-sh" src="https://imgur.com/dAB4vxj.png" /></p>
+<p><img alt="tts-sh" src="https://imgur.com/0i0xcVH.png" /></p>
+</section>
+<section id="acknowledgements">
+<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Link to this heading"></a></h2>
+<p>The code is adapted from <a class="reference external" href="https://github.com/Cosmos-Break/asr">Cosmos-Break/asr</a> and <a class="reference external" href="https://github.com/CjangCjengh/vits">CjangCjengh/vits</a>. We thanks the authors for their great work!</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fb59b077910> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

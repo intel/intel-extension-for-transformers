@@ -1,0 +1,32 @@
+text
+====
+
+.. py:module:: text
+
+.. autoapi-nested-parse::
+
+   from https://github.com/keithito/tacotron
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   text.text_to_sequence
+
+
+Package Contents
+----------------
+
+.. py:function:: text_to_sequence(text, symbols, cleaner_names)
+
+   Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
+
+   :param text: string to convert to a sequence
+   :param cleaner_names: names of the cleaner functions to run the text through
+
+   :returns: List of integers corresponding to the symbols in the text
+
+
