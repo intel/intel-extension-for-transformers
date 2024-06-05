@@ -186,6 +186,7 @@ config = AutoConfig.from_pretrained(
     use_cache=True,  # to use kv cache.
     trust_remote_code=args.trust_remote_code,
     _commit_hash=args._commit_hash,
+    torch_dtype="bfloat16",
 )
 
 # chatglm
@@ -195,11 +196,11 @@ if config.model_type == "chatglm":
 # tokenizer
 if hasattr(config, "auto_map") and "chatglm2" in config.auto_map["AutoConfig"]:
     tokenizer = AutoTokenizer.from_pretrained(
-        "THUDM/chatglm2-6b", trust_remote_code=True
+        "THUDM/chatglm2-6b", trust_remote_code=True, torch_dtype="bfloat16"
     )
 else:
     tokenizer = AutoTokenizer.from_pretrained(
-        args.model, trust_remote_code=args.trust_remote_code
+        args.model, trust_remote_code=args.trust_remote_code, torch_dtype="bfloat16"
     )
 
 # Generation
@@ -308,6 +309,7 @@ if quantization_config is not None:
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
         use_neural_speed=args.use_neural_speed,
+        torch_dtype="bfloat16",
     )
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
@@ -317,6 +319,7 @@ elif args.load_in_4bit or args.load_in_8bit:
         load_in_8bit=args.load_in_8bit,
         _commit_hash=args._commit_hash,
         use_neural_speed=args.use_neural_speed,
+        torch_dtype="bfloat16",
     )
 else:
     print("Didn't do Weight Only Quantization.")
@@ -336,6 +339,7 @@ if args.benchmark:
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
         use_neural_speed=args.use_neural_speed,
+        torch_dtype="bfloat16",
     )
     user_model = user_model.eval() if hasattr(user_model, "eval") else user_model
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
