@@ -101,7 +101,7 @@ def generate_dummy_past_key_values(config, input_bs):
     if config.model_type == "qwen":
         new_shape = [
             input_bs,
-            1,
+            0,
             config.num_attention_heads,
             config.hidden_size // config.num_attention_heads,
         ]
@@ -110,13 +110,13 @@ def generate_dummy_past_key_values(config, input_bs):
         new_shape = [
             input_bs,
             config.num_attention_heads,
-            1,
+            0,
             config.hidden_size // config.num_attention_heads,
         ]
         num_layers = config.num_hidden_layers
     elif config.model_type == "chatglm":
         new_shape = [
-            1,
+            0,
             input_bs,
             config.num_attention_heads,
             config.hidden_size // config.num_attention_heads,
@@ -171,7 +171,7 @@ def generate_dummy_past_key_values_for_inference(config, input_bs):
     if config.model_type == "qwen":
         new_shape = [
             input_bs,
-            1,
+            0,
             config.num_attention_heads,
             config.hidden_size // config.num_attention_heads,
         ]
@@ -180,13 +180,13 @@ def generate_dummy_past_key_values_for_inference(config, input_bs):
         new_shape = [
             input_bs,
             config.num_attention_heads,
-            1,
+            0,
             config.hidden_size // config.num_attention_heads,
         ]
         num_layers = config.num_hidden_layers
     elif config.model_type == "chatglm":
         new_shape = [
-            1,
+            0,
             input_bs,
             config.num_attention_heads,
             config.hidden_size // config.num_attention_heads,
