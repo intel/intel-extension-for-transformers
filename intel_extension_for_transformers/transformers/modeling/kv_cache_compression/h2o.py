@@ -20,6 +20,15 @@ from functools import partial
 import torch
 from torch import nn
 
+SIM_CLS_MAPPING = {
+    'llama': 'H2OLlamaAttention',
+    'opt': 'H2OOPTAttention',
+    'bloom': 'H2OBloomAttention',
+    'mistral': 'H2OMistralAttention',
+    'mixtral': 'H2OMixtralAttention',
+    'gpt_neox': 'H2OGPTNeoXAttention',
+}
+
 def set_module(model, op_name, new_module):
     """Set module with a given op name.
 
@@ -76,7 +85,8 @@ def convert_model(
         h2o_min_seqlen=1024,
         real_drop=True,
         is_gen=False,
-        mean=False
+        mean=False,
+        local=True
         ):
     model_type = model.config.model_type
     device = model.device
@@ -87,12 +97,13 @@ def convert_model(
 
     for layer_name in atten_layers:
         module = get_module(model, layer_name)
+        cls_name = "H2O" + module.__class__.__name__ if real_drop else SIM_CLS_MAPPING[model_type]
         h2o_cls = getattr(
             importlib.import_module(
                 f".models.modeling_{model_type}",
                 "intel_extension_for_transformers.transformers.modeling.kv_cache_compression"
                 ),
-            "H2O" + module.__class__.__name__)
+            cls_name)
         module = h2o_cls(
             module,
             model.config,
@@ -100,7 +111,9 @@ def convert_model(
             recent_ratio,
             h2o_min_seqlen=h2o_min_seqlen,
             real_drop=real_drop,
-            mean=mean
+            is_gen=is_gen,
+            mean=mean,
+            local=local
             )
         set_module(model, layer_name, module)
     model.clean_cache = lambda: clean_cache(model)
@@ -112,10 +125,7 @@ def convert_model(
 
 def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=None):
 
-    # attn_weights (head, query, keys) or (BS, head, query, keys)
-    attn_shape_len = len(attn_weights.shape)
-    assert attn_shape_len in [3,4], \
-        "Wrong shape of attn_weights. Should be (head, query, keys) or (BS, head, query, keys)"
+    # attn_weights (BS, head, query, keys)
     dtype_attn_weights = attn_weights.dtype
     seq_length = attn_weights.shape[-1]
     if no_padding_seq_length is None:
@@ -126,41 +136,23 @@ def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=No
     offset = torch.finfo(attn_weights.dtype).min
     tmp_attn = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(dtype_attn_weights)
 
-    if len(attn_weights.shape) == 3:
-        accumulated_attention_score = torch.sum(
-            tmp_attn[:,padding_length:heavy_budget+padding_length,:], dim=-2) #(head, keys)
-        accumulated_attention_score[:,heavy_budget+padding_length:] = 0
-        if padding_length > 0:
-            accumulated_attention_score[:,:padding_length] = 0
-        mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
-        mask_bottom[:,padding_length:heavy_budget+padding_length,
-                    padding_length:heavy_budget+padding_length] = True
-    else:
-        accumulated_attention_score = torch.sum(
-            tmp_attn[:,:,padding_length:heavy_budget+padding_length,:], dim=-2) #(head, keys)
-        accumulated_attention_score[:,:,heavy_budget+padding_length:] = 0
-        accumulated_attention_score[:,:,:padding_length] = 0
+    accumulated_attention_score = torch.sum(
+        tmp_attn[:,:,padding_length:heavy_budget+padding_length,:], dim=-2) #(head, keys)
+    accumulated_attention_score[:,:,heavy_budget+padding_length:] = 0
+    accumulated_attention_score[:,:,:padding_length] = 0
 
-        mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
-        mask_bottom[:,:, padding_length:heavy_budget+padding_length,
-                    padding_length:heavy_budget+padding_length] = True
+    mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
+    mask_bottom[:,:, padding_length:heavy_budget+padding_length,
+                padding_length:heavy_budget+padding_length] = True
     for token_index in range(heavy_budget+padding_length, seq_length):
 
-        if attn_shape_len == 3:
-            tmp_attn_index = nn.functional.softmax(
-                attn_weights[:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
-        else:
-            tmp_attn_index = nn.functional.softmax(
-                attn_weights[:,:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
+        tmp_attn_index = nn.functional.softmax(
+            attn_weights[:,:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
         _, tmp_topk_index = accumulated_attention_score.topk(k=heavy_budget-1, dim=-1)
         zeros_index = torch.zeros_like(tmp_attn_index, dtype=torch.bool)
         mask_bottom_index = zeros_index.scatter(-1, tmp_topk_index, True) #(head, keys)
-        if attn_shape_len == 3:
-            mask_bottom_index[:, token_index] = True
-            mask_bottom[:,token_index,:] = mask_bottom_index
-        else:
-            mask_bottom_index[:,:, token_index] = True
-            mask_bottom[:,:,token_index,:] = mask_bottom_index
+        mask_bottom_index[:,:, token_index] = True
+        mask_bottom[:,:,token_index,:] = mask_bottom_index
         accumulated_attention_score += tmp_attn_index
         accumulated_attention_score = accumulated_attention_score * mask_bottom_index
 
@@ -169,12 +161,21 @@ def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=No
     return mask_bottom
 
 
-def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights):
+def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights, local=True):
     heavy_budget = int(heavy_budget_ratio * attn_weights.shape[-1])
     recent_budget = int(recent_budget_ratio * attn_weights.shape[-1])
     if heavy_budget > 0:
         # Default: No padding applied to input
-        mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None)
+        if local:
+            mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None)
+        else:
+            tmp_attn = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(attn_weights.dtype)
+            tmp_sum = torch.sum(tmp_attn, dim=-2) 
+            _, tmp_topk = tmp_sum.topk(k=heavy_budget, dim=-1)
+
+            zeros = torch.zeros_like(tmp_sum, dtype=torch.bool)
+            mask_bottom = zeros.scatter(-1, tmp_topk, True).unsqueeze(2)
+            mask_bottom = mask_bottom.expand(mask_bottom.shape[0], mask_bottom.shape[1], attn_weights.shape[-2], mask_bottom.shape[-1])
     else:
         mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
 
@@ -192,14 +193,13 @@ class H2OKVCache:
         self,
         heavy_ratio=0.2,
         recent_ratio=0.2,
-        real_drop=False,
+        # real_drop=False,
         min_seqlen=-1
     ):
         ## bsz, num_heads, seq_len, head_dim
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.hh_score = None
-        self.real_drop = real_drop
         self.min_seqlen = min_seqlen
         self.idx = 0
 
@@ -229,9 +229,6 @@ class H2OKVCache:
         if not heavy_budget == 0:
             _, keep_topk = torch.topk(select_hh_scores, heavy_budget, dim=-1, largest=True)
             mask = mask.scatter(-1, keep_topk, 1)
-
-        if not self.real_drop:
-            return mask
 
         mask = mask.bool()
         self.hh_score = self.hh_score[mask].view(self.hh_score.shape[0], self.hh_score.shape[1], cache_size)

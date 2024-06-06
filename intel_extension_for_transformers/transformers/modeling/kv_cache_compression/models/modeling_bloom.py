@@ -37,7 +37,8 @@ class H2OBloomAttention(nn.Module):
             h2o_min_seqlen=1024,
             real_drop=False,
             is_gen=False,
-            mean=False
+            mean=False,
+            local=True
             ):
         super().__init__()
 
@@ -71,6 +72,7 @@ class H2OBloomAttention(nn.Module):
         self.real_drop = real_drop
         self.is_gen = is_gen
         self.mean = mean
+        self.local = local
 
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
@@ -171,28 +173,12 @@ class H2OBloomAttention(nn.Module):
             attention_scores = attention_scores.to(torch.float)
         attn_weights = torch.masked_fill(attention_scores, attention_mask, torch.finfo(attention_scores.dtype).min)
 
-        attention_probs = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(input_dtype)
-
         # get hh mask
-        if not self.is_gen:
-            self.h2o_kv_cache.clean_scores()
-        if self.real_drop:
-            new_key_states, new_value_states = self.h2o_kv_cache(
-                attention_probs,
-                key_layer,
-                value_layer,
-                mean=self.mean
-            )
-            past_key_value = (new_key_states, new_value_states)
-        else:
-            mask = self.h2o_kv_cache(
-                attention_probs,
-                key_layer,
-                value_layer,
-                mean=self.mean
-            )
-            attention_probs = attention_probs * mask.unsqueeze(-2)
+        from ..h2o import get_hh_mask
+        mask = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights.detach().clone(), local=self.local)
+        attn_weights[~mask] = torch.finfo(attn_weights.dtype).min
 
+        attention_probs = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(input_dtype)
         # [batch_size, num_heads, q_length, kv_length]
         attention_probs = self.attention_dropout(attention_probs)
 

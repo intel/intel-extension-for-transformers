@@ -37,7 +37,8 @@ class H2OOPTAttention(nn.Module):
         h2o_min_seqlen=1024,
         real_drop=False,
         is_gen=False,
-        mean=False
+        mean=False,
+        local=True
     ):
         super().__init__()
         self.config = config
@@ -66,6 +67,7 @@ class H2OOPTAttention(nn.Module):
         self.is_gen = is_gen
         self.real_drop = real_drop
         self.mean = mean
+        self.local = local
 
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
@@ -150,6 +152,26 @@ class H2OOPTAttention(nn.Module):
             )
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
 
+        # get hh mask
+        if not self.is_gen:
+            self.h2o_kv_cache.clean_scores()
+        if self.real_drop:
+            new_key_states, new_value_states = self.h2o_kv_cache(
+                attn_weights.detach().clone(),
+                past_key_value[0],
+                past_key_value[1],
+                mean=self.mean
+            )
+            past_key_value = (new_key_states, new_value_states)
+        else:
+            from ..h2o import get_hh_mask
+            mask = get_hh_mask(
+                self.heavy_ratio,
+                self.recent_ratio,
+                attn_weights.detach().clone(),
+                local=self.local)
+            attn_weights[~mask.squeeze(0)] = torch.finfo(attn_weights.dtype).min
+
         # upcast to fp32 if the weights are in fp16. Please see https://github.com/huggingface/transformers/pull/17437
         if attn_weights.dtype == torch.float16:
             attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(torch.float16)
@@ -175,29 +197,7 @@ class H2OOPTAttention(nn.Module):
         else:
             attn_weights_reshaped = None
 
-        # get hh mask
-        if not self.is_gen:
-            self.h2o_kv_cache.clean_scores()
-        if self.real_drop:
-            new_key_states, new_value_states = self.h2o_kv_cache(
-                attn_weights,
-                past_key_value[0],
-                past_key_value[1],
-                mean=self.mean
-            )
-            past_key_value = (new_key_states, new_value_states)
-        else:
-            mask = self.h2o_kv_cache(
-                attn_weights,
-                past_key_value[0],
-                past_key_value[1],
-                mean=self.mean
-            )
-            attn_weights = attn_weights * mask.squeeze(0).unsqueeze(1)
-
-            # sim
-            # mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
-            # attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min
+        
 
         attn_probs = nn.functional.dropout(attn_weights, p=self.dropout, training=self.training)
 

@@ -80,7 +80,8 @@ class H2OLlamaAttention(nn.Module):
             h2o_min_seqlen=1024,
             real_drop=False,
             is_gen=False,
-            mean=False
+            mean=False,
+            local=True
             ):
         super().__init__()
         self.config = config
@@ -118,12 +119,13 @@ class H2OLlamaAttention(nn.Module):
         self.is_gen = is_gen
         self.real_drop = real_drop
         self.mean = mean
+        self.local = local
 
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.h2o_min_seqlen = h2o_min_seqlen
 
-        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, real_drop, h2o_min_seqlen)
+        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, h2o_min_seqlen)
 
     def forward(
         self,
@@ -190,17 +192,13 @@ class H2OLlamaAttention(nn.Module):
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
             attn_weights = attn_weights + causal_mask
 
-        # upcast attention to fp32
-        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
-        attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
-
         # H2O
         if past_key_value is not None:
             if not self.is_gen:
                 self.h2o_kv_cache.clean_scores()
             if self.real_drop:
                 new_key_states, new_value_states = self.h2o_kv_cache(
-                    attn_weights,
+                    attn_weights.detach().clone(),
                     past_key_value.key_cache[self.layer_idx],
                     past_key_value.value_cache[self.layer_idx],
                     mean=self.mean
@@ -208,16 +206,17 @@ class H2OLlamaAttention(nn.Module):
                 past_key_value.key_cache[self.layer_idx] = new_key_states
                 past_key_value.value_cache[self.layer_idx] = new_value_states
             else:
-                mask = self.h2o_kv_cache(
-                    attn_weights,
-                    past_key_value.key_cache[self.layer_idx],
-                    past_key_value.value_cache[self.layer_idx],
-                    mean=self.mean
-                )
-                attn_weights = attn_weights * mask.unsqueeze(-2)
-                value_states = value_states * mask.unsqueeze(-1)
-                # mask_bottom = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights)
-                # attn_weights[~mask_bottom] = torch.finfo(attn_weights.dtype).min
+                from ..h2o import get_hh_mask
+                mask = get_hh_mask(
+                    self.heavy_ratio,
+                    self.recent_ratio,
+                    attn_weights.detach().clone(),
+                    local=self.local)
+                attn_weights[~mask] = torch.finfo(attn_weights.dtype).min
+
+        # upcast attention to fp32
+        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
+        attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
 
         attn_output = torch.matmul(attn_weights, value_states)
 
@@ -557,7 +556,7 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
             attn_weights = attn_weights + causal_mask
 
         # upcast attention to fp32
-        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
+        # attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
 
         if past_key_value is not None:
             if not self.is_gen:

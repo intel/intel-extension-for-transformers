@@ -24,7 +24,7 @@ from ..h2o import H2OKVCache
 
 logger = logging.get_logger(__name__)
 
-class GPTNeoXAttention(nn.Module):
+class H2OGPTNeoXAttention(nn.Module):
     def __init__(
             self,
             model,
@@ -34,7 +34,8 @@ class GPTNeoXAttention(nn.Module):
             h2o_min_seqlen=1024,
             real_drop=False,
             is_gen=False,
-            mean=False
+            mean=False,
+            local=True
             ):
         super().__init__()
         self.config = config
@@ -60,10 +61,11 @@ class GPTNeoXAttention(nn.Module):
         # for h2o
         if real_drop:
             real_drop = False
-            logger.warning_once("BloomAttention not support for kv cache, usning simulation mode.")
+            logger.warning_once("GPTNeoXAttention not support for kv cache, usning simulation mode.")
         self.real_drop = real_drop
         self.is_gen = is_gen
         self.mean = mean
+        self.local = local
 
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
@@ -199,24 +201,9 @@ class GPTNeoXAttention(nn.Module):
         attn_weights = attn_weights.to(value.dtype)
 
         # get hh mask
-        if not self.is_gen:
-            self.h2o_kv_cache.clean_scores()
-        if self.real_drop:
-            new_key_states, new_value_states = self.h2o_kv_cache(
-                attn_weights,
-                key,
-                value,
-                mean=self.mean
-            )
-            past_key_value = (new_key_states, new_value_states)
-        else:
-            mask = self.h2o_kv_cache(
-                attn_weights,
-                key,
-                value,
-                mean=self.mean
-            )
-            attn_weights = attn_weights * mask.unsqueeze(1)
+        from ..h2o import get_hh_mask
+        mask = get_hh_mask(self.heavy_ratio, self.recent_ratio, attn_weights.detach().clone(), local=self.local)
+        attn_weights[~mask] = torch.finfo(attn_weights.dtype).min
 
         # Mask heads if we want to
         if head_mask is not None:

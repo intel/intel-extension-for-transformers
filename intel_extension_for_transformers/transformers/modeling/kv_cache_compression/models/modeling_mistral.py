@@ -44,7 +44,8 @@ class H2OMistralAttention(nn.Module):
             h2o_min_seqlen=1024,
             real_drop=False,
             is_gen=False,
-            mean=False
+            mean=False,
+            local=True
     ):
         super().__init__()
         self.config = config
@@ -81,6 +82,7 @@ class H2OMistralAttention(nn.Module):
         self.is_gen = is_gen
         self.real_drop = real_drop
         self.mean = mean
+        self.local = local
 
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
@@ -152,15 +154,12 @@ class H2OMistralAttention(nn.Module):
 
             attn_weights = attn_weights + attention_mask
 
-        # upcast attention to fp32
-        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
-
         # H2O
         if not self.is_gen:
             self.h2o_kv_cache.clean_scores()
         if self.real_drop and past_key_value is not None:
             new_key_states, new_value_states = self.h2o_kv_cache(
-                attn_weights,
+                attn_weights.detach().clone(),
                 past_key_value.key_cache[self.layer_idx],
                 past_key_value.value_cache[self.layer_idx],
                 mean=self.mean
@@ -168,16 +167,18 @@ class H2OMistralAttention(nn.Module):
             past_key_value.key_cache[self.layer_idx] = new_key_states
             past_key_value.value_cache[self.layer_idx] = new_value_states
         else:
-            mask = self.h2o_kv_cache(
-                attn_weights,
-                past_key_value.key_cache[self.layer_idx],
-                past_key_value.value_cache[self.layer_idx],
-                mean=self.mean
-            )
-            attn_weights = attn_weights * mask.unsqueeze(-2)
-            value_states = value_states * mask.unsqueeze(-1)
+            from ..h2o import get_hh_mask
+            mask = get_hh_mask(
+                self.heavy_ratio,
+                self.recent_ratio,
+                attn_weights.detach().clone(),
+                local=self.local)
+            attn_weights[~mask] = torch.finfo(attn_weights.dtype).min
 
+        # upcast attention to fp32
+        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
+
         attn_output = torch.matmul(attn_weights, value_states)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
