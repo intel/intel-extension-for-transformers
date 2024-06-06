@@ -16,8 +16,6 @@
 
     4.1 [Knowledge Distillation](#knowledge-distillation)
 
-    4.2 [Auto Distillation (NAS Based)](#auto-distillation-nas-based)
-
 5. [Orchestrate](#orchestrate)
 
 6. [Reference Deployment on Neural Engine](#reference-deployment-on-neural-engine)
@@ -460,31 +458,6 @@ Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration det
 </tbody>
 </table>
 
-### Auto Distillation (NAS Based)
-<table>
-<thead>
-  <tr>
-    <th>Model</th>
-    <th>Task</th>
-    <th>Dataset</th>
-    <th>Distillation Teacher</th>
-  </tr>
-</thead>
-<tbody align="center">
-  <tr>
-    <td><a href="https://huggingface.co/google/mobilebert-uncased">google/mobilebert-uncased</a></td>
-    <td>language-modeling(MLM)</td>
-    <td><a href="https://huggingface.co/datasets/wikipedia">wikipedia</a></td>
-    <td><a href="https://huggingface.co/bert-large-uncased">bert-large-uncased</a></td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/prajjwal1/bert-tiny">prajjwal1/bert-tiny</a></td>
-    <td>language-modeling(MLM)</td>
-    <td><a href="https://huggingface.co/datasets/wikipedia">wikipedia</a></td>
-    <td><a href="https://huggingface.co/bert-base-uncased">bert-base-uncased</a></td>
-  </tr>
-</tbody>
-</table>
 
 ## Orchestrate
 
