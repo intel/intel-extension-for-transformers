@@ -855,7 +855,7 @@ class _BaseQBitsAutoModelClass:
                     logger.info(
                         "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
                     )
-                    logger.warning("The suggested transformers version is 4.35.2.")
+                    logger.warning("The suggested transformers version is 4.38.1.")
                 else:
                     quantization_config.ipex_opt_llm = False
             if quantization_config.ipex_opt_llm:
