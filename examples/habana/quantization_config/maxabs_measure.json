@@ -1,0 +1,9 @@
+{
+    "method": "HOOKS",
+    "mode": "MEASURE",
+    "observer": "maxabs",
+    "allowlist": {"types": [], "names":  []},
+    "blocklist": {"types": [], "names":  []},
+    "dump_stats_path": "./hqt_output/measure",
+    "dump_stats_xlsx_path": "./hqt_output/measure/fp8stats.xlsx"
+}

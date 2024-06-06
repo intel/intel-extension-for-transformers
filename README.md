@@ -219,6 +219,25 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs)
 ```
+You can also load GGUF format model from Huggingface, we only support Q4_0/Q5_0/Q8_0 gguf format for now.
+```python
+from transformers import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+
+# Specify the GGUF repo on the Hugginface
+model_name = "TheBloke/Llama-2-7B-Chat-GGUF"
+# Download the the specific gguf model file from the above repo
+gguf_file = "llama-2-7b-chat.Q4_0.gguf"
+# make sure you are granted to access this model on the Huggingface.
+tokenizer_name = "meta-llama/Llama-2-7b-chat-hf"
+prompt = "Once upon a time, there existed a little girl,"
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+
+model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file = gguf_file)
+outputs = model.generate(inputs)
+```
+
 
 You can also load PyTorch Model from Modelscope
 >**Note**:require modelscope
@@ -339,16 +358,15 @@ You can access the validated models, accuracy and performance from [Release data
     <td align="center" colspan="2"><a href="examples/huggingface/pytorch/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
   </tr>
   <tr>
-    <td align="center" colspan="2"><a href="examples/huggingface/pytorch/language-modeling/nas/README.md">Neural Architecture Search</a></td>
+    <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>
     <td align="center" colspan="2"><a href="docs/export.md">Export</a></td>
     <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a></td>
     <td align="center" colspan="2"><a href="docs/objectives.md">Objectives</a></td>
   </tr>
   <tr>
     <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
-    <td align="center" colspan="2"><a href="examples/huggingface/pytorch/question-answering/dynamic/README.md">Length Adaptive</a></td>
-    <td align="center" colspan="2"><a href="docs/examples.md#early-exit">Early Exit</a></td>
-    <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>    
+    <td align="center" colspan="3"><a href="examples/huggingface/pytorch/question-answering/dynamic/README.md">Length Adaptive</a></td>
+    <td align="center" colspan="3"><a href="docs/examples.md#early-exit">Early Exit</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">TUTORIALS & RESULTS</a></th>
@@ -373,6 +391,7 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 https://github.com/intel/intel-extension-for-transformers/assets/88082706/9d9bdb7e-65db-47bb-bbed-d23b151e8b31
 
 ## 📃Selected Publications/Events
+* Blog published on Huggingface: [Building Cost-Efficient Enterprise RAG applications with Intel Gaudi 2 and Intel Xeon](https://huggingface.co/blog/cost-efficient-rag-applications-with-intel) (May 2024)
 * Blog published on Intel Developer News: [Efficient Natural Language Embedding Models with Intel® Extension for Transformers](https://www.intel.com/content/www/us/en/developer/articles/technical/efficient-natural-language-embedding-models.html) (May 2024)
 * Blog published on Techcrunch: [Intel and others commit to building open generative AI tools for the enterprise](https://techcrunch.com/2024/04/16/intel-and-others-commit-to-building-open-generative-ai-tools-for-the-enterprise) (Apr 2024)
 * Video on YouTube: [Intel Vision Keynotes 2024](https://www.youtube.com/watch?v=QB7FoIpx8os&t=2280s) (Apr 2024)

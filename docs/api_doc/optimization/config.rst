@@ -8,4 +8,3 @@ Config
    intel_extension_for_transformers.transformers.quantization
    intel_extension_for_transformers.transformers.distillation
    intel_extension_for_transformers.transformers.pruning
-   intel_extension_for_transformers.transformers.mixture.auto_distillation

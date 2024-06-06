@@ -51,9 +51,8 @@ jobs:
         run: |
           cd ${{ github.workspace }}
           conda activate llm-test || source activate llm-test
-          pip install build --upgrade
-          pip install -r requirements.txt
-          pip install torch==2.0 --extra-index-url https://download.pytorch.org/whl/cpu
+          compiler_version=11.1.0
+          conda install --update-deps -c conda-forge gxx==${compiler_version} gcc==${compiler_version} gxx_linux-64==${compiler_version} libstdcxx-ng sysroot_linux-64 libxcrypt -y
           python setup.py sdist bdist_wheel
           pip install dist/intel_extension_for_transformers*.whl
           pip list
@@ -127,7 +126,7 @@ jobs:
           cd ${{ env.OUT_SCRIPT_PATH }}
           /usr/bin/bash generate_report.sh --workflow=deploy
         env:
-          RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
+          RUN_DISPLAY_URL: https://github.com/intel/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
           BUILD_NUMBER: ${{ github.run_id }}
           JOB_STATUS: succeed
           MR_source_branch: ${{ github.event.pull_request._links.html.href }}

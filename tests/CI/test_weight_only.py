@@ -83,6 +83,7 @@ class TestWeightOnly(unittest.TestCase):
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.workspace, ignore_errors=True)
         shutil.rmtree('tmp', ignore_errors=True)
+        shutil.rmtree('saved_results', ignore_errors=True)
 
     def test_woq_config(self):
         config = RtnConfig(
@@ -153,6 +154,26 @@ class TestWeightOnly(unittest.TestCase):
             print(output)
             print(output_quant)
             assert torch.allclose(output, output_quant, rtol=0.01)
+
+    def test_woq_with_ipex_cpu(self):
+        model_name_or_path = "facebook/opt-125m"
+        config = RtnConfig(bits=4, use_ipex=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path,
+            quantization_config=config,
+            use_llm_runtime=False
+        )
+        input_ids = model.dummy_inputs["input_ids"]
+        output = model(input_ids)
+        model.save_pretrained("./saved_results")
+        model = AutoModelForCausalLM.from_pretrained(
+            "saved_results",
+            use_llm_runtime=False
+        )
+        output_loading = model(input_ids)
+        assert torch.allclose(output.logits, output_loading.logits, rtol=0.01)
+
+
 
     def test_auto_model(self):
         model = AutoModelForCausalLM.from_pretrained(
