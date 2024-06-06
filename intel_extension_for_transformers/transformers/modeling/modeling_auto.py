@@ -950,7 +950,7 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        if model_type in ["bloom", "qwen"]:
+                        if model_type in ["bloom"]:
                             attention_mask = torch.ones(len(input_ids) + 1)
                             attention_mask[0] = 0
                         else:
@@ -1073,6 +1073,7 @@ class _BaseQBitsAutoModelClass:
                             "past_key_values": inputs["past_key_values"],
                         }
                     break
+            import pdb;pdb.set_trace();
 
             # call inc sq
             from neural_compressor import PostTrainingQuantConfig, quantization
