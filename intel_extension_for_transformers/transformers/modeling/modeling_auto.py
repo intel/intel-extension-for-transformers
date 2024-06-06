@@ -1073,7 +1073,6 @@ class _BaseQBitsAutoModelClass:
                             "past_key_values": inputs["past_key_values"],
                         }
                     break
-            import pdb;pdb.set_trace();
 
             # call inc sq
             from neural_compressor import PostTrainingQuantConfig, quantization
