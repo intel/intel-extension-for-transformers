@@ -221,6 +221,7 @@ if args.int8 or args.int8_bf16_mixed:
     from intel_extension_for_transformers.transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
+
     if args.restore:
         from intel_extension_for_transformers.transformers.utils.utility import (
             recover_model_from_json,
@@ -231,11 +232,13 @@ if args.int8 or args.int8_bf16_mixed:
             args.trust_remote_code,
         )
     else:
-        user_model = TSModelCausalLMForITREX.from_pretrained(
-            args.model,
-            file_name="best_model.pt",
-            trust_remote_code=args.trust_remote_code,
-        )
+        user_model = torch.jit.load(os.path.join( args.model, "best_model.pt"))
+        config = AutoConfig.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+        origin_model_type = config.model_type
+        if origin_model_type in ["chatglm", "qwen", "baichuan"]:
+            config.model_type = "qwen2"
+        user_model = TSModelCausalLMForITREX(user_model, config=config)
+        user_model.config.model_type = origin_model_type
 elif not (args.sq or args.mixed_precision):
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
