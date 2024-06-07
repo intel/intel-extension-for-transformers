@@ -455,5 +455,9 @@ def recover_model_from_json(fp32_model_name_or_path, json_file_path, trust_remot
     from intel_extension_for_transformers.transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
+    origin_model_type = config.model_type
+    if origin_model_type in ["chatglm", "qwen", "baichuan"]:
+        config.model_type = "qwen2"
     user_model = TSModelCausalLMForITREX(user_model, config=config)
+    user_model.config.model_type = origin_model_type
     return user_model
