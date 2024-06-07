@@ -463,7 +463,7 @@ def recover_model_from_json(fp32_model_name_or_path, json_file_path, trust_remot
         (object): quantized model
     """
     from transformers import AutoModelForCausalLM
-    user_model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path, 
+    user_model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path,
                                                       trust_remote_code=trust_remote_code).float()
     if user_model.config.model_type in IPEX_OPT_LLM_SUPPORTED:
         import intel_extension_for_pytorch as ipex
