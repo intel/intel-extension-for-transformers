@@ -73,3 +73,4 @@ If user wants to use QBits, the Pytorch version must meet ITREX requirements, he
 | :-----------: | :-------------: |
 |     v1.4      |    2.2.0+cpu    |
 |    v1.4.1     |    2.2.0+cpu    |
+|    v1.4.2     |    2.3.0+cpu    |
