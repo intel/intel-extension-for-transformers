@@ -322,6 +322,7 @@ class _BaseQBitsAutoModelClass:
         "whisper",
         "qwen2",
         "gemma",
+        "tinyllama",
     ]
 
     model_type_list_for_gptq = [
@@ -418,11 +419,15 @@ class _BaseQBitsAutoModelClass:
             model.load_weights(weights_iterator)
 
             print("INC quantizing...")
-            config = RtnConfig(compute_dtype="bf16",
-                            group_size=128,
-                            scale_dtype="bf16",
-                            weight_dtype="int4_clip",
-                            bits=4)
+            config = kwargs.pop("config", None)
+            if config is None:
+                config = RtnConfig(compute_dtype="int8",
+                                group_size=128,
+                                scale_dtype="bf16",
+                                weight_dtype="int4_clip",
+                                bits=4)
+                print("using default RTNConfig = ", config)
+            print("Using customized config = ", config)
             model = convert_to_quantized_model(model, config)
 
             return llm
