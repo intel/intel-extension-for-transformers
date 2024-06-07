@@ -87,9 +87,9 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_woq_config(self):
         config = RtnConfig(
-            bits=4, weight_dtype="int4_clip", group_size=32)
+            bits=4, weight_dtype="int4", group_size=32)
         diff_res = config.to_diff_dict()
-        ref_config = {'weight_dtype': 'int4_clip'}
+        ref_config = {'weight_dtype': 'int4'}
         self.assertEqual(diff_res, ref_config)
         print(diff_res)
         print(config.to_dict())
@@ -124,7 +124,6 @@ class TestWeightOnly(unittest.TestCase):
             output = model(activation)
 
             config = RtnConfig(bits=8, weight_dtype="int8", group_size=32)
-            config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
@@ -148,7 +147,6 @@ class TestWeightOnly(unittest.TestCase):
                 model.linear.weight = torch.nn.Parameter(raw_wei)
             config = RtnConfig(
                 bits=4, weight_dtype="nf4", group_size=32)
-            config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)

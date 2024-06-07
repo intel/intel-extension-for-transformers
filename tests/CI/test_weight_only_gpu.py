@@ -19,7 +19,6 @@ import shutil
 import intel_extension_for_pytorch as ipex
 import torch.nn.functional as F
 import torch.utils.data as data
-from intel_extension_for_transformers.transformers.llm.quantization.utils import convert_to_quantized_model
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.transformers import GPTQConfig, RtnConfig
 from math import isclose
@@ -101,7 +100,7 @@ class TestArcWeightOnly(unittest.TestCase):
         print("fp16 logits {}".format(fp16_out.shape))
 
         config = RtnConfig(
-            weight_dtype="int4_fullrange",
+            weight_dtype="int4",
             group_size=32,
             compute_dtype="fp16",
             scale_dtype="fp16")

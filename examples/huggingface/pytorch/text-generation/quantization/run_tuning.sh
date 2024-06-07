@@ -19,7 +19,7 @@ function init_params {
   approach="PostTrainingStatic"
   script="run_generation_sq.py"
   alpha=0.5
-  weight_dtype="int4_clip"
+  weight_dtype="int4"
   scheme="asym"
   for var in "$@"
   do

@@ -1744,7 +1744,7 @@
       "params": {
         "model": "mistralai/Mistral-7B-v0.1",
         "output_dir": "saved_results",
-        "weight_dtype": "int4_fullrange"
+        "weight_dtype": "int4"
       }
     },
     "benchmark": {
@@ -1764,7 +1764,7 @@
       "params": {
         "model": "meta-llama/Llama-2-7b-hf",
         "output_dir": "saved_results",
-        "weight_dtype": "int4_fullrange"
+        "weight_dtype": "int4"
       }
     },
     "benchmark": {
@@ -1784,7 +1784,7 @@
       "params": {
         "model": "Qwen/Qwen-7B-Chat",
         "output_dir": "saved_results",
-        "weight_dtype": "int4_fullrange"
+        "weight_dtype": "int4"
       }
     },
     "benchmark": {
