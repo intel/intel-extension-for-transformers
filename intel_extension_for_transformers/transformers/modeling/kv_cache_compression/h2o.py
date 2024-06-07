@@ -193,7 +193,6 @@ class H2OKVCache:
         self,
         heavy_ratio=0.2,
         recent_ratio=0.2,
-        # real_drop=False,
         min_seqlen=-1
     ):
         ## bsz, num_heads, seq_len, head_dim
@@ -210,10 +209,7 @@ class H2OKVCache:
         recent_budget = int(self.recent_ratio * seq_len)
         cache_size = heavy_budget + recent_budget
         if seq_len <= self.min_seqlen or seq_len <= cache_size:
-            if self.real_drop:
-                return key_states, value_states
-            else:
-                return torch.ones(attn_score.shape[:-1], dtype=attn_score.dtype).to(key_states.device)
+            return torch.ones(attn_score.shape[:-1], dtype=attn_score.dtype).to(key_states.device)
         self.idx += 1
         # attn_score shape (bsz, num_heads, seq_len, head_dim)
         if len(attn_score.shape) == 3:

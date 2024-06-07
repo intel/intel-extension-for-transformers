@@ -38,8 +38,13 @@ import transformers
 if version.parse(transformers.__version__) > version.parse("4.33.0"):
     from transformers.utils import is_flash_attn_greater_or_equal_2_10, is_flash_attn_2_available
     if is_flash_attn_2_available():
-        from flash_attn import flash_attn_func, flash_attn_varlen_func # pylint: disable=E1101
-        from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input # pylint: disable=E1101
+        from flash_attn import (
+            flash_attn_func,
+            flash_attn_varlen_func) # pylint: disable=E1101
+        from flash_attn.bert_padding import (
+            index_first_axis,
+            pad_input,
+            unpad_input) # pylint: disable=E1101
 
 
 def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
@@ -335,31 +340,19 @@ class H2OLlamaFlashAttention2(H2OLlamaAttention):
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
             attn_weights = attn_weights + causal_mask
 
-        # upcast attention to fp32
-        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
-        attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
 
+        # h2o
         if past_key_value is not None:
             if not self.is_gen:
                 self.h2o_kv_cache.clean_scores()
-            if self.real_drop:
-                new_key_states, new_value_states = self.h2o_kv_cache(
-                    attn_weights,
-                    past_key_value.key_cache[self.layer_idx],
-                    past_key_value.value_cache[self.layer_idx],
-                    mean=self.mean
-                    )
-                past_key_value.key_cache[self.layer_idx] = new_key_states
-                past_key_value.value_cache[self.layer_idx] = new_value_states
-            else:
-                mask = self.h2o_kv_cache(
-                    attn_weights,
-                    past_key_value.key_cache[self.layer_idx],
-                    past_key_value.value_cache[self.layer_idx],
-                    mean=self.mean
+            new_key_states, new_value_states = self.h2o_kv_cache(
+                attn_weights,
+                past_key_value.key_cache[self.layer_idx],
+                past_key_value.value_cache[self.layer_idx],
+                mean=self.mean
                 )
-                key_states = key_states * mask.unsqueeze(-1)
-                value_states = value_states * mask.unsqueeze(-1)
+            past_key_value.key_cache[self.layer_idx] = new_key_states
+            past_key_value.value_cache[self.layer_idx] = new_value_states
 
         attn_output = self._flash_attention_forward(
             query_states, key_states, value_states, attention_mask, q_len, dropout=dropout_rate
@@ -555,31 +548,17 @@ class H2OLlamaSdpaAttention(H2OLlamaAttention):
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
             attn_weights = attn_weights + causal_mask
 
-        # upcast attention to fp32
-        # attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
-
         if past_key_value is not None:
             if not self.is_gen:
                 self.h2o_kv_cache.clean_scores()
-            if self.real_drop:
-                new_key_states, new_value_states = self.h2o_kv_cache(
-                    attn_weights,
-                    past_key_value.key_cache[self.layer_idx],
-                    past_key_value.value_cache[self.layer_idx],
-                    mean=self.mean
-                    )
-                past_key_value.key_cache[self.layer_idx] = new_key_states
-                past_key_value.value_cache[self.layer_idx] = new_value_states
-            else:
-                mask = self.h2o_kv_cache(
-                    attn_weights,
-                    past_key_value.key_cache[self.layer_idx],
-                    past_key_value.value_cache[self.layer_idx],
-                    mean=self.mean
+            new_key_states, new_value_states = self.h2o_kv_cache(
+                attn_weights,
+                past_key_value.key_cache[self.layer_idx],
+                past_key_value.value_cache[self.layer_idx],
+                mean=self.mean
                 )
-                # breakpoint()
-                key_states = key_states * mask.unsqueeze(-1)
-                value_states = value_states * mask.unsqueeze(-1)
+            past_key_value.key_cache[self.layer_idx] = new_key_states
+            past_key_value.value_cache[self.layer_idx] = new_value_states
 
         # In case we are not compiling, we may set `causal_mask` to None,
         # which is required to dispatch to SDPA's Flash Attention 2 backend, rather
