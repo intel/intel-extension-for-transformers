@@ -1736,6 +1736,126 @@
       }
     }
   },
+  "opt_2.7b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "facebook/opt-2.7b",
+    "tune": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "facebook/opt-2.7b",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/opt_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "chatglm3_6b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "THUDM/chatglm3-6b",
+    "tune": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "THUDM/chatglm3-6b",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/chatglm3_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "bloom_7b1_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "bigscience/bloom-7b1",
+    "tune": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "bigscience/bloom-7b1",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/bloom_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "baichuan_7b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "baichuan-inc/Baichuan-7B",
+    "tune": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "baichuan-inc/Baichuan-7B",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/baichuan_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "baichuan2_7b_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "baichuan-inc/Baichuan2-7B-Chat",
+    "tune": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "baichuan-inc/Baichuan2-7B-Chat",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/baichuan2_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
+  "codestral_rtn_gpu": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "hf_model_name": "mistralai/Codestral-22B-v0.1",
+    "tune":{
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "mistralai/Codestral-22B-v0.1",
+        "output_dir": "saved_results",
+        "weight_dtype": "int4_fullrange"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_generation_gpu_woq.py",
+      "params": {
+        "model": "/tf_dataset2/models/nlp_toolkit/codestral_rtn",
+        "mode": "benchmark",
+        "output_dir": "saved_results"
+      }
+    }
+  },
   "mistral_7b_rtn_gpu": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "hf_model_name": "mistralai/Mistral-7B-v0.1",
