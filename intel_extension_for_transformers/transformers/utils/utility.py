@@ -421,7 +421,8 @@ def recover_model_from_json(fp32_model_name_or_path, json_file_path, trust_remot
     """
     from transformers import AutoModelForCausalLM
     # ipex recovered int8 model from configure.json requests float32 model input and on cpu device.
-    user_model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path, trust_remote_code=trust_remote_code).float()
+    user_model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path, 
+                                                      trust_remote_code=trust_remote_code).float()
     if user_model.config.model_type in IPEX_OPT_LLM_SUPPORTED:
         import intel_extension_for_pytorch as ipex
         qconfig = ipex.quantization.default_static_qconfig_mapping
