@@ -333,7 +333,6 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "llama",
     "mistral",
     "chatglm",
-    "baichuan"
 }
 
 if is_ipex_available() and ipex.__version__ == "2.2.0+cpu":
