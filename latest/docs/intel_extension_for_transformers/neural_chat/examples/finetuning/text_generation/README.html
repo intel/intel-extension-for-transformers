@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPT-J fine-tuning and inference &mdash; Intel® Extension for Transformers 0.1.dev1+g5e35e47 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">GPT-J fine-tuning and inference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/text_generation/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gpt-j-fine-tuning-and-inference">
+<h1>GPT-J fine-tuning and inference<a class="headerlink" href="#gpt-j-fine-tuning-and-inference" title="Link to this heading"></a></h1>
+<ol class="simple">
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#get-started">Get Started</a></p></li>
+</ol>
+</section>
+<section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<p>GPT-J 6B is an open-source large language model (LLM) with 6B parameters. Like GPT-3, it is an autoregressive, decoder-only transformer model designed to solve natural language processing (NLP) tasks by predicting how a piece of text will continue from a prompt. It is pre-trained on the Pile dataset, using the Mesh Transformer JAX library in JAX to handle the parallelization scheme with a vocab size of 50257 tokens.</p>
+<p>This example demonstrates an end-end LLM fine-tuning workflow using <a class="reference external" href="https://huggingface.co/datasets/glue/viewer/mnli/train">Glue MNLI</a> dataset and <a class="reference external" href="https://arxiv.org/abs/2106.09685">LoRA</a> (Low-Rank Adaptation) technique to optimize the fine-tuning time.</p>
+<p>This workflow runs on Intel Xeon CPU platform and has been verified on Intel 4th Gen Xeon CPU.</p>
+<section id="dataset">
+<h2>Dataset<a class="headerlink" href="#dataset" title="Link to this heading"></a></h2>
+<p>The MNLI dataset consists of pairs of sentences, a premise and a hypothesis. The task is to predict the relation between the premise and the hypothesis, which can be:
+Entailment: the premise entails the hypothesis,
+Contradiction: hypothesis contradicts the premise and
+Neutral: hypothesis and premise are unrelated. The prompt given to the model combines both premise and hypothesis and the fine-tuned model generates/predicts the relation as a next token.</p>
+</section>
+<section id="fine-tuning-and-inference">
+<h2>Fine-tuning and Inference<a class="headerlink" href="#fine-tuning-and-inference" title="Link to this heading"></a></h2>
+<p>GPTJ-6B model is finetuned for NLI (Natural Language Inference) task using Glue MNLI Dataset. LoRA (PEFT) technique is applied which decomposes the LLM’s weight matrices into smaller, lower-rank matrices called LoRA adapters. This significantly reduces the number of trainable parameters and thus the fine-tuning time without impacting the performance.
+The fine-tuned model is then evaluated using Hugging face pipeline API using ‘validation’ dataset achieving SOTA accuracy.</p>
+</section>
+</section>
+<section id="get-started">
+<h1>Get Started<a class="headerlink" href="#get-started" title="Link to this heading"></a></h1>
+<section id="download-the-workflow-repository">
+<h2>1. Download the Workflow Repository<a class="headerlink" href="#download-the-workflow-repository" title="Link to this heading"></a></h2>
+<p>Clone the GPT-J repo for fine-tuning</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">git</span><span class="w"> </span><span class="n">clone</span><span class="w"> </span><span class="n">https</span><span class="o">:</span><span class="c1">//github.com/intel/intel-extension-for-transformers/tree/main</span>
+<span class="n">cd</span><span class="w"> </span><span class="n">intel_extension_for_transformers</span><span class="o">/</span><span class="n">intel_extension_for_transformers</span><span class="o">/</span><span class="n">neural_chat</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">finetuning</span><span class="o">/</span><span class="n">text_generation</span>
+</pre></div>
+</div>
+</section>
+<section id="create-environment-and-install-software-packages">
+<h2>2. Create environment and install software packages<a class="headerlink" href="#create-environment-and-install-software-packages" title="Link to this heading"></a></h2>
+<p>Create miniconda environment and install the required packages</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span><span class="w"> </span><span class="n">create</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="w"> </span><span class="n">gptj_ft_env</span><span class="w"> </span><span class="n">python</span><span class="o">=</span><span class="mf">3.10</span>
+<span class="n">conda</span><span class="w"> </span><span class="n">activate</span><span class="w"> </span><span class="n">gptj_ft_env</span>
+<span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="o">-</span><span class="n">r</span><span class="w"> </span><span class="n">requirements</span><span class="p">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<p>Install the following for best performance:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="n">mkl</span><span class="w"> </span><span class="n">mkl</span><span class="o">-</span><span class="n">include</span><span class="w"> </span><span class="o">-</span><span class="n">y</span>
+<span class="n">conda</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="n">gperftools</span><span class="w"> </span><span class="n">jemalloc</span><span class="o">==</span><span class="mf">5.2.1</span><span class="w"> </span><span class="o">-</span><span class="n">c</span><span class="w"> </span><span class="n">conda</span><span class="o">-</span><span class="n">forge</span><span class="w"> </span><span class="o">-</span><span class="n">y</span>
+</pre></div>
+</div>
+</section>
+<section id="prepare-dataset">
+<h2>3. Prepare dataset<a class="headerlink" href="#prepare-dataset" title="Link to this heading"></a></h2>
+<p>We use the <a class="reference external" href="https://huggingface.co/datasets/glue/viewer/mnli/train">Glue MNLI</a> dataset from hugging face.</p>
+</section>
+<section id="fine-tuning">
+<h2>Fine-tuning<a class="headerlink" href="#fine-tuning" title="Link to this heading"></a></h2>
+<section id="single-node-fine-tuning">
+<h3>Single-node fine-tuning<a class="headerlink" href="#single-node-fine-tuning" title="Link to this heading"></a></h3>
+<p>Set the following:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="n">KMP_BLOCKTIME</span><span class="o">=</span><span class="mi">1</span>
+<span class="k">export</span><span class="w"> </span><span class="n">KMP_SETTINGS</span><span class="o">=</span><span class="mi">1</span>
+<span class="k">export</span><span class="w"> </span><span class="n">KMP_AFFINITY</span><span class="o">=</span><span class="n">granularity</span><span class="o">=</span><span class="n">fine</span><span class="p">,</span><span class="n">compact</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span>
+</pre></div>
+</div>
+<p>Set libiomp</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="n">LD_PRELOAD</span><span class="o">=</span><span class="n">$</span><span class="p">{</span><span class="n">LD_PRELOAD</span><span class="p">}</span><span class="o">:</span><span class="n">$</span><span class="p">{</span><span class="n">CONDA_PREFIX</span><span class="p">}</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">libiomp5</span><span class="p">.</span><span class="n">so</span>
+</pre></div>
+</div>
+<p>Tcmalloc is a recommended malloc implementation that emphasizes fragmentation avoidance and scalable concurrency support.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="n">LD_PRELOAD</span><span class="o">=</span><span class="n">$</span><span class="p">{</span><span class="n">LD_PRELOAD</span><span class="p">}</span><span class="o">:</span><span class="n">$</span><span class="p">{</span><span class="n">CONDA_PREFIX</span><span class="p">}</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">libtcmalloc</span><span class="p">.</span><span class="n">so</span>
+</pre></div>
+</div>
+<p>Run command or use singlenode_runscript.sh</p>
+<p>We also supported Distributed Data Parallel finetuning on single node and multi nodes settings.
+Below command is to run single node fine-tuning.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">finetune_clm</span><span class="p">.</span><span class="n">py</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">model_name_or_path</span><span class="w"> </span><span class="s">&quot;EleutherAI/gpt-j-6B&quot;</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">bf16</span><span class="w"> </span><span class="n">True</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">dataset_name</span><span class="w">  </span><span class="s">&quot;glue&quot;</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">dataset_config_name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mnli&quot;</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">dataset_concatenation</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">config_name</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">config</span><span class="p">.</span><span class="n">json</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">per_device_train_batch_size</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">per_device_eval_batch_size</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">gradient_accumulation_steps</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">do_train</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">do_eval</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">learning_rate</span><span class="w"> </span><span class="mf">3.3113761e-4</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">num_train_epochs</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">logging_steps</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">save_total_limit</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">overwrite_output_dir</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">log_level</span><span class="w"> </span><span class="n">info</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">save_strategy</span><span class="w"> </span><span class="n">epoch</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">output_dir</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">gptj_peft_finetuned_model</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">peft</span><span class="w"> </span><span class="n">lora</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">lora_alpha</span><span class="w"> </span><span class="mi">54</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">lora_target_modules</span><span class="w"> </span><span class="n">q_proj</span><span class="p">,</span><span class="n">v_proj</span><span class="p">,</span><span class="n">k_proj</span><span class="p">,</span><span class="n">out_proj</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">use_fast_tokenizer</span><span class="w"> </span><span class="nb">false</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">use_cpu</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">task</span><span class="w"> </span><span class="n">completion</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">max_train_samples</span><span class="w"> </span><span class="mi">5000</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">max_eval_samples</span><span class="w">  </span><span class="mi">500</span><span class="w">  </span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fb9b1185960> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
