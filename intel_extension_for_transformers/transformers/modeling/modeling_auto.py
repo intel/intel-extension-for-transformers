@@ -845,8 +845,7 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "llama" in model_type and transformers.__version__ >= "4.36.0":
-                quantization_config.ipex_opt_llm = False
+
             logger.info("Applying SmoothQuant.")
             # ipex.optimize_transformers
             if quantization_config.ipex_opt_llm is None:
