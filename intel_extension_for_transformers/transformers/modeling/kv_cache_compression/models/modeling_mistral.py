@@ -198,8 +198,8 @@ class H2OMistralAttention(nn.Module):
         return attn_output, attn_weights, past_key_value
 
 class H2OMistralSdpaAttention(H2OMistralAttention):
-    """
-    Mistral attention module using torch.nn.functional.scaled_dot_product_attention.
+    """Mistral attention module using torch.nn.functional.scaled_dot_product_attention.
+
     This module inherits from `MistralAttention` as the weights of the module stays untouched.
     The only changes are on the forward pass to adapt to SDPA API.
     """
