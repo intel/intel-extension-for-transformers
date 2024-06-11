@@ -37,42 +37,46 @@ def main(args_in: Optional[List[str]] = None) -> None:
     print(args)
 
     if args.benchmark:
-        if args.use_neural_speed:
-            os.environ["NEURAL_SPEED_VERBOSE"] = "1"
-            woq_config = RtnConfig(bits=4, weight_dtype="int4", compute_dtype="int8", scale_dtype="bf16")
-            model_with_ns = AutoModelForCausalLM.from_pretrained(args.model_path, quantization_config=woq_config)
-
-            tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
-            inputs = tokenizer(args.prompt, return_tensors="pt").input_ids
-
-            T5 = time.time()
-            output = model_with_ns.generate(inputs, max_new_tokens=32)
-            T6 = time.time()
-            print("neural speed output = ", output)
-
-        llm = LLM(model=args.model_path, trust_remote_code=True)
         sampling_params = SamplingParams(max_tokens=32)
-        T1 = time.time()
-        original_outputs = llm.generate(args.prompt, sampling_params)  # Generate texts from the prompts.
-        T2 = time.time()
-        vllm_latency = (T2 - T1) * 1000
+        config = RtnConfig(compute_dtype="int8",
+                           group_size=128,
+                           scale_dtype="bf16",
+                           weight_dtype="int4_clip",
+                           bits=4)
+        print(config)
+        prompts = [args.prompt]
+        llm = LLM(model=args.model_path, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(args.model_path, use_vllm=True, config=config)
 
-        model = AutoModelForCausalLM.from_pretrained(args.model_path, use_vllm=True)
-        T3 = time.time()
-        optimized_output = model.generate(args.prompt, sampling_params)
-        T4 = time.time()
-        qbits_latency = (T4 - T3) * 1000
+        for prompt in prompts:
+            vllm_outputs = llm.generate(prompt, sampling_params)  # Generate texts from the prompts.
+            qbits_output = model.generate(prompt, sampling_params)
 
-        print("original outputs = ", original_outputs)
-        print("input_tokens_length = ", len(original_outputs[0].prompt_token_ids))
-        print("output_tokens_length = ", len(original_outputs[0].outputs[0].token_ids))
+            print("vLLM input_tokens_length = ", len(vllm_outputs[0].prompt_token_ids),
+                  "output_tokens_length = ", len(vllm_outputs[0].outputs[0].token_ids))
+            print('The vLLM generate = ',
+                  vllm_outputs[0].metrics.finished_time - vllm_outputs[0].metrics.arrival_time, "s")
+            print("The vLLM first token time = ",
+                  vllm_outputs[0].metrics.first_token_time - vllm_outputs[0].metrics.first_scheduled_time)
 
-        print("optimized outputs = ", optimized_output)
-        print("input_tokens_length = ", len(optimized_output[0].prompt_token_ids))
-        print("output_tokens_length = ", len(optimized_output[0].outputs[0].token_ids))
+            print("QBits_vLLM input_tokens_length = ", len(qbits_output[0].prompt_token_ids),
+                  "output_tokens_length = ", len(qbits_output[0].outputs[0].token_ids))
+            print('The QBits optimized generate = ',
+                  qbits_output[0].metrics.finished_time - qbits_output[0].metrics.arrival_time, "s")
+            print("The QBits first token time = ",
+                  qbits_output[0].metrics.first_token_time - qbits_output[0].metrics.first_scheduled_time)
 
-        print('The qbits optimized generate:%.2f ms' % qbits_latency)
-        print('The original vLLM   generate:%.2f ms' % vllm_latency)
+            if args.use_neural_speed:
+                os.environ["NEURAL_SPEED_VERBOSE"] = "1"
+                woq_config = RtnConfig(bits=4, weight_dtype="int4", compute_dtype="int8", scale_dtype="bf16")
+                model_with_ns = AutoModelForCausalLM.from_pretrained(args.model_path,
+                                                                     quantization_config=woq_config)
+
+                tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
+                inputs = tokenizer(args.prompt, return_tensors="pt").input_ids
+
+                output = model_with_ns.generate(inputs, max_new_tokens=32)
+                print("neural speed output = ", output)
 
         return
 

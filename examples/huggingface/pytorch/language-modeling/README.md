@@ -1,53 +1,9 @@
 # Language modeling
 There are two types of language modeling, casual and masked. Causal language models are used for text generation and masked language modeling is great for tasks that require a good contextual understanding of an entire sequence. In this example, casual/masked language modeling predicts the next/masked token or word in a sequence and return the accuracy validated on dataset. Please see [text-generation](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/text-generation) if you would like to generate a sentence.
 
-We provide FP32/BF16 inference, INT8 inference, and other advanced compression techniques such as distillation, neural architecture search (NAS) for language modeling task.
-
 
 <table>
 <tbody>
-  <tr>
-    <td rowspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/language-modeling/distillation" target="_blank" rel="noopener noreferrer">AutoDistillation</a></td>
-    <td rowspan="4">Masked language modeling</td>
-    <td rowspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/language-modeling/distillation#11-mobilebert" target="_blank" rel="noopener noreferrer">MobileBERT</a></td>
-    <td>Teacher model</td>
-    <td><a href="https://huggingface.co/bert-large-uncased" target="_blank" rel="noopener noreferrer">bert-large-uncased</a></td>
-    <td rowspan="4">train dataset:<br>- English Wikipeadia<br>- BookCorpus</td>
-  </tr>
-  <tr>
-    <td>Student model</td>
-    <td><a href="https://huggingface.co/google/mobilebert-uncased" target="_blank" rel="noopener noreferrer">google/mobilebert-uncased</a></td>
-  </tr>
-  <tr>
-    <td rowspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/language-modeling/distillation#12-bert-tiny" target="_blank" rel="noopener noreferrer">BERT-Tiny</a></td>
-    <td>Teacher model</td>
-    <td><a href="https://huggingface.co/bert-base-uncased" target="_blank" rel="noopener noreferrer">bert-base-uncased</a></td>
-  </tr>
-  <tr>
-    <td>Student model</td>
-    <td><a href="https://huggingface.co/bert-base-uncased" target="_blank" rel="noopener noreferrer">prajjwal1/bert-tiny</a></td>
-  </tr>
-  <tr>
-    <td rowspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/language-modeling/nas" target="_blank" rel="noopener noreferrer">Neural architecture search</a></td>
-    <td rowspan="4">Masked language modeling</td>
-    <td rowspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/language-modeling/nas#11-mobilebert" target="_blank" rel="noopener noreferrer">MobileBERT</a></td>
-    <td>Teacher model</td>
-    <td><a href="https://huggingface.co/bert-large-uncased" target="_blank" rel="noopener noreferrer">bert-large-uncased</a></td>
-    <td rowspan="4">train dataset:<br>- English Wikipeadia<br>- BookCorpus</td>
-  </tr>
-  <tr>
-    <td>Student model</td>
-    <td><a href="https://huggingface.co/google/mobilebert-uncased" target="_blank" rel="noopener noreferrer">google/mobilebert-uncased</a></td>
-  </tr>
-  <tr>
-    <td rowspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/language-modeling/nas#12-berttiny" target="_blank" rel="noopener noreferrer">BERT-Tiny</a></td>
-    <td>Teacher model</td>
-    <td><a href="https://huggingface.co/bert-base-uncased" target="_blank" rel="noopener noreferrer">bert-base-uncased</a></td>
-  </tr>
-  <tr>
-    <td>Student model</td>
-    <td><a href="https://huggingface.co/prajjwal1/bert-tiny" target="_blank" rel="noopener noreferrer">prajjwal1/bert-tiny</a></td>
-  </tr>
   <tr>
     <td rowspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/language-modeling/inference" target="_blank" rel="noopener noreferrer">Inference</a></td>
     <td rowspan="4">Causal language modeling</td>

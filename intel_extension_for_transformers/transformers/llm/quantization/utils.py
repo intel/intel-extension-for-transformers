@@ -47,10 +47,13 @@ logger = logging.getLogger(__name__)
 
 DTYPE_BITS_MAPPING = {
     "nf4": 4,
+    "fp4": 4,  # fp4 == fp4_e2m1
     "fp4_e2m1_bnb": 4,
     "fp4_e2m1": 4,
+    "int4": 4,
     "int4_fullrange": 4,
     "int4_clip": 4,
+    "fp8": 8,  # fp8 == fp8_e4m3
     "fp8_e5m2": 8,
     "fp8_e4m3": 8,
     "int8": 8,
@@ -157,7 +160,8 @@ def _replace_linear(
             quantization_config.weight_dtype not in [
                 "fp8_e5m2",
                 "fp8_e4m3",
-                "fp4",
+                "fp4_e2m1_bnb",
+                "fp4_e2m1",
                 "nf4",
                 "int4_fullrange",
             ]
@@ -236,9 +240,9 @@ def _replace_linear(
                                 quantization_config.weight_dtype not in [
                                     "fp8_e5m2",
                                     "fp8_e4m3",
-                                    "fp4",
+                                    "fp4_e2m1_bnb",
+                                    "fp4_e2m1",
                                     "nf4",
-                                    "int4_fullrange",
                                 ]
 
                             model._modules[name] = QuantizedLinearQBits(
@@ -317,8 +321,8 @@ def _replace_linear(
                         "fp8_e5m2",
                         "fp8_e4m3",
                         "nf4",
-                        "fp4",
-                        "int4_fullrange",
+                        "fp4_e2m1_bnb",
+                        "fp4_e2m1",
                     ]:
                         model._modules[name].set_fp_weights_bias(
                             module.weight.data,
@@ -381,6 +385,9 @@ def convert_to_quantized_model(model, config, device="cpu"):
         assert (
             hasattr(torch, "xpu") and torch.xpu.is_available()
         ), "There is no xpu device in this system!"
+        config.post_init_xpu()
+    else:
+        config.post_init_cpu()
     calib_dataloader = config.calib_dataloader
     calib_func = config.calib_func
     calib_iters = config.calib_iters
@@ -589,7 +596,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
             q_model = replace_linear(model, None, None, config, device=device)
         else:
-            if config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
+            if config.weight_dtype not in ["nf4", "fp4_e2m1_bnb", "fp4_e2m1"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 q_model = replace_linear(inc_model, None, None, config, device=device)

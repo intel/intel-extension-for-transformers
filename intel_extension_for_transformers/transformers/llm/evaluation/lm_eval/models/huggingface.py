@@ -838,12 +838,20 @@ class HFLM(TemplateLM):
             else:
                 # get the HF hub name via accessor on model
                 model_name = self.model.name_or_path
-            self.tokenizer = transformers.AutoTokenizer.from_pretrained(
-                model_name,
-                revision=revision,
-                trust_remote_code=trust_remote_code,
-                use_fast=use_fast_tokenizer,
-            )
+
+            # chatglm2 tokenizer doesn't support loading from local.
+            if  hasattr(self.model, "config") and hasattr(self.model.config, "auto_map") and \
+                "chatglm2" in self.model.config.auto_map["AutoConfig"]:
+                self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+                    "THUDM/chatglm2-6b", trust_remote_code=True
+                    )
+            else:
+                self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+                    model_name,
+                    revision=revision,
+                    trust_remote_code=trust_remote_code,
+                    use_fast=use_fast_tokenizer,
+                )
         return None
 
     def _detect_batch_size(self, requests=None, pos: int = 0):

@@ -24,8 +24,6 @@ from intel_extension_for_transformers.transformers import (
     PrunerConfig,
     PruningConfig,
     QuantizationConfig,
-    AutoDistillationConfig,
-    FlashDistillationConfig,
     TFOptimization,
 )
 from intel_extension_for_transformers.transformers.distillation import Criterion as DistillationCriterion
@@ -180,38 +178,6 @@ class TestConfig(unittest.TestCase):
             metrics=metric
         )
 
-    def test_autodistillation_config(self):
-        metric = [metrics.Metric(name="eval_loss", greater_is_better=False)]
-        autodistillation_config = AutoDistillationConfig(
-            search_space={'hidden_size': [128, 256]},
-            metrics=metric,
-            knowledge_transfer=FlashDistillationConfig(
-                block_names=['mobilebert.encoder.layer.1'],
-                layer_mappings_for_knowledge_transfer=[
-                [('mobilebert.encoder.layer.1.output',
-                    'bert.encoder.layer.1.output')]
-                ],
-                train_steps=[3]),
-            regular_distillation=FlashDistillationConfig(
-                layer_mappings_for_knowledge_transfer=[
-                [('cls', '0', 'cls', '0')]
-                ],
-                loss_types=[['KL']],
-                add_origin_loss=[True],
-                train_steps=[5]
-            ),
-            max_trials=1,
-            seed=1,
-        )
-
-        self.assertEqual(autodistillation_config.framework, "pytorch")
-        self.assertEqual(autodistillation_config.search_algorithm, 'BO')
-        self.assertEqual(autodistillation_config.max_trials, 1)
-        self.assertEqual(autodistillation_config.seed, 1)
-        self.assertEqual(autodistillation_config.metrics, metric)
-        self.assertTrue(isinstance(autodistillation_config.search_space, dict))
-        self.assertTrue(isinstance(autodistillation_config.knowledge_transfer, dict))
-        self.assertTrue(isinstance(autodistillation_config.regular_distillation, dict))
 
     def test_trainer_config(self):
         model = AutoModelForPreTraining.from_pretrained(

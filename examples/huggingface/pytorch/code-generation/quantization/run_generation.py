@@ -109,11 +109,13 @@ parser.add_argument(
     default="int8",
     choices=[
         "int8",
+        "int4",  # int4 == int4_clip
         "int4_clip",
-        "int4_fullrange",
+        "fp4",  # fp4 == fp4_e2m1
         "fp4_e2m1_bnb",
         "fp4_e2m1",
         "nf4",
+        "fp8",  # fp8 == fp8_e4m3
         "fp8_e5m2",
         "fp8_e4m3",
     ],

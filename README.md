@@ -219,7 +219,7 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs)
 ```
-You can also load GGUF format model from Huggingface, we only support Q4_0 gguf format for now.
+You can also load GGUF format model from Huggingface, we only support Q4_0/Q5_0/Q8_0 gguf format for now.
 ```python
 from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
@@ -358,16 +358,15 @@ You can access the validated models, accuracy and performance from [Release data
     <td align="center" colspan="2"><a href="examples/huggingface/pytorch/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
   </tr>
   <tr>
-    <td align="center" colspan="2"><a href="examples/huggingface/pytorch/language-modeling/nas/README.md">Neural Architecture Search</a></td>
+    <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>
     <td align="center" colspan="2"><a href="docs/export.md">Export</a></td>
     <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a></td>
     <td align="center" colspan="2"><a href="docs/objectives.md">Objectives</a></td>
   </tr>
   <tr>
     <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
-    <td align="center" colspan="2"><a href="examples/huggingface/pytorch/question-answering/dynamic/README.md">Length Adaptive</a></td>
-    <td align="center" colspan="2"><a href="docs/examples.md#early-exit">Early Exit</a></td>
-    <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>    
+    <td align="center" colspan="3"><a href="examples/huggingface/pytorch/question-answering/dynamic/README.md">Length Adaptive</a></td>
+    <td align="center" colspan="3"><a href="docs/examples.md#early-exit">Early Exit</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">TUTORIALS & RESULTS</a></th>
