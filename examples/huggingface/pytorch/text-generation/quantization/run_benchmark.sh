@@ -73,7 +73,7 @@ function run_benchmark {
         extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks}"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
-        extra_cmd=$extra_cmd" --iters ${iters}"
+        extra_cmd=$extra_cmd" --benchmark_iters ${iters}"
     else
         echo "Error: No such mode: ${mode}"
         exit 1
@@ -248,7 +248,7 @@ function run_benchmark {
     elif [ "${script}" == "run_generation_cpu_woq.py" ];then
         python -u ./${script} \
             --model ${model_name_or_path} \
-            --batch_size ${batch_size} \
+            --eval_batch_size ${batch_size} \
             ${mode_cmd} \
             ${extra_cmd}
     else

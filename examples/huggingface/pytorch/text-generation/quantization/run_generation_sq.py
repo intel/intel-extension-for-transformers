@@ -43,11 +43,12 @@ parser.add_argument(
 )
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
-parser.add_argument("--iters", default=100, type=int, help="num iter")
+parser.add_argument("--benchmark_iters", default=100, type=int, help="num iter")
+parser.add_argument("--benchmark_batch_size", default=1, type=int, help="batch size for benchmark")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
 # ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--batch_size", default=56, type=int, help="batch size num.")
+parser.add_argument("--eval_batch_size", default=56, type=int, help="batch size num.")
 parser.add_argument(
     "--tasks",
     default="lambada_openai",
@@ -65,6 +66,7 @@ parser.add_argument(
 parser.add_argument(
     "--seq_len", default=512, type=int, help="Smooth quant calibration input length."
 )
+parser.add_argument("--batch_size", default=1, type=int, help="batch size num.")
 # sq alpha "auto" parameters
 parser.add_argument("--scale_sharing", action="store_true")
 parser.add_argument(
@@ -138,6 +140,7 @@ elif args.sq:
         tokenizer=tokenizer,
         seq_len=args.seq_len,
         n_samples=args.n_samples,
+        batch_size=args.batch_size,
         excluded_precisions=excluded_precisions,
         alpha=args.alpha if args.alpha == "auto" else float(args.alpha),
         scale_sharing=args.scale_sharing,
@@ -205,7 +208,7 @@ if args.benchmark:
 
     # start
     total_time = 0.0
-    num_iter = args.iters
+    num_iter = args.benchmark_iters
     num_warmup = args.num_warmup
     total_token_num = 0
     eos_token_id = tokenizer.eos_token_id
@@ -215,7 +218,7 @@ if args.benchmark:
             # for chatglm2 only
             if hasattr(tokenizer, "build_chat_input"):
                 input_ids = tokenizer.build_chat_input(prompt)["input_ids"]
-                input_ids = input_ids.repeat(args.batch_size, 1)
+                input_ids = input_ids.repeat(args.benchmark_batch_size, 1)
                 eos_token_id = [
                     tokenizer.eos_token_id,
                     tokenizer.get_command("<|user|>"),
@@ -225,11 +228,11 @@ if args.benchmark:
             elif hasattr(tokenizer, "build_prompt"):
                 build_prompt = tokenizer.build_prompt(prompt)
                 input_ids = tokenizer(
-                    [build_prompt] * args.batch_size, return_tensors="pt"
+                    [build_prompt] * args.benchmark_batch_size, return_tensors="pt"
                 ).input_ids
             else:
                 input_ids = tokenizer(
-                    [prompt] * args.batch_size, return_tensors="pt"
+                    [prompt] * args.benchmark_batch_size, return_tensors="pt"
                 ).input_ids
             gen_ids = user_model.generate(
                 input_ids,
@@ -270,7 +273,7 @@ if args.accuracy:
         user_model=user_model,
         tasks=args.tasks,
         device="cpu",
-        batch_size=args.batch_size,
+        batch_size=args.eval_batch_size,
     )
     results = evaluate(args)
     for task_name in args.tasks.split(","):

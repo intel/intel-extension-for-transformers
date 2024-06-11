@@ -61,7 +61,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.85
 ```
 
@@ -115,7 +115,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.9
 ```
 
@@ -169,7 +169,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.5
 ```
 
@@ -340,7 +340,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.8
 ```
 
@@ -394,7 +394,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.9
 ```
 
@@ -500,7 +500,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.95
 ```
 
@@ -554,7 +554,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.65
 ```
 
@@ -662,7 +662,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.75
 ```
 
@@ -715,7 +715,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.9
 ```
 
@@ -768,7 +768,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.6
 ```
 
@@ -821,7 +821,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.7
 ```
 
@@ -874,7 +874,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.75
 ```
 
@@ -927,7 +927,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 56 \
+    --eval_batch_size 56 \
     --alpha 0.75
 ```
 

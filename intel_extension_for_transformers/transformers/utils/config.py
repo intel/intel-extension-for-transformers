@@ -780,6 +780,7 @@ class SmoothQuantConfig(ITREXQuantizationConfigMixin):
         self.ipex_opt_llm = ipex_opt_llm
         self.num_beams = num_beams
         self.excluded_precisions = excluded_precisions
+        self.batch_size = kwargs.pop("batch_size", 1)
 
 
 class RtnConfig(ITREXQuantizationConfigMixin):
