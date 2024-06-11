@@ -119,14 +119,12 @@ function run_benchmark {
     elif [ "${topology}" = "llama_7b" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-chat-hf"
         script="run_generation_sq.py"
-        pip install transformers==4.35.2
     elif [ "${topology}" = "llama2_7b_gptq" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-hf"
         script="run_generation_cpu_woq.py"
     elif [ "${topology}" = "llama_13b" ]; then
         model_name_or_path="meta-llama/Llama-2-13b-chat-hf"
         script="run_generation_sq.py"
-        pip install transformers==4.35.2
     elif [ "${topology}" = "dolly_v2_3b" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
         script="run_generation_sq.py"
@@ -137,47 +135,32 @@ function run_benchmark {
         model_name_or_path="THUDM/chatglm3-6b"
         script="run_generation_sq.py"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        pip install transformers==4.35.2
     elif [ "${topology}" = "chatglm2_6b" ]; then
         model_name_or_path="THUDM/chatglm2-6b"
         script="run_generation_sq.py"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        pip install transformers==4.35.2
     elif [ "${topology}" = "chatglm_6b" ]; then
         model_name_or_path="THUDM/chatglm-6b"
         script="run_generation_sq.py"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        pip install transformers==4.33
     elif [ "${topology}" = "falcon_7b" ]; then
         model_name_or_path="tiiuae/falcon-7b-instruct"
         script="run_generation_sq.py"
-        pip install transformers==4.33
-    elif [ "${topology}" = "baichuan_7b" ]; then
-        model_name_or_path="baichuan-inc/Baichuan-7B"
-        extra_cmd=$extra_cmd" --trust_remote_code"
-        pip install transformers==4.33
-        script="run_generation_sq.py"
     elif [ "${topology}" = "baichuan_13b" ]; then
-        model_name_or_path="baichuan-inc/Baichuan-13B-Base"
+        model_name_or_path="baichuan-inc/Baichuan-13B-Chat"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        extra_cmd=$extra_cmd" --_commit_hash 14d5b0e204542744900f6fb52422c6d633bdcb00"
-        pip install transformers==4.33
         script="run_generation_sq.py"
     elif [ "${topology}" = "baichuan2_7b" ]; then
-        model_name_or_path="baichuan-inc/Baichuan2-7B-Base"
+        model_name_or_path="baichuan-inc/Baichuan2-7B-Chat"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        pip install transformers==4.33
         script="run_generation_sq.py"
     elif [ "${topology}" = "baichuan2_13b" ]; then
-        model_name_or_path="baichuan-inc/Baichuan2-13B-Base"
+        model_name_or_path="baichuan-inc/Baichuan2-13B-Chat"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        pip install transformers==4.35.2
         script="run_generation_sq.py"
     elif [ "${topology}" = "qwen_7b" ]; then
-        model_name_or_path="Qwen/Qwen-7B"
+        model_name_or_path="Qwen/Qwen-7B-Chat"
         extra_cmd=$extra_cmd" --trust_remote_code"
-        extra_cmd=$extra_cmd" --_commit_hash f7bc352f27bb1c02ee371a4576942a7d96c8bb97"
-	    pip install transformers==4.35.2
         script="run_generation_sq.py"
     elif [ "${topology}" = "mistral_7b" ]; then
         model_name_or_path="Intel/neural-chat-7b-v3"

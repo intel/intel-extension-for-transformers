@@ -12,9 +12,7 @@ omit =
  */intel_extension_for_transformers/transformers/llm/library/**
  */intel_extension_for_transformers/transformers/llm/operator/**
  */intel_extension_for_transformers/transformers/dynamic/**
- */intel_extension_for_transformers/transformers/mixture/**
  */intel_extension_for_transformers/transformers/modeling/**
- */intel_extension_for_transformers/transformers/nas/**
  */intel_extension_for_transformers/transformers/pruner/**
   */intel_extension_for_transformers/transformers/runtime/**
  */intel_extension_for_transformers/transformers/setfit/**

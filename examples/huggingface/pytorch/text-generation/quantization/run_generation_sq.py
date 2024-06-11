@@ -183,12 +183,33 @@ if args.restore_sq_model_from_json:
     from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import (
         recover_model_from_json,
     )
+<<<<<<< HEAD
     user_model = recover_model_from_json(
         args.model,
         os.path.join(args.output_dir, "best_configure.json"),
         args.trust_remote_code,
     )
 
+=======
+
+    if args.restore:
+        from intel_extension_for_transformers.transformers.utils.utility import (
+            recover_model_from_json,
+        )
+        user_model = recover_model_from_json(
+            args.model,
+            os.path.join(args.output_dir, "best_configure.json"),
+            args.trust_remote_code,
+        )
+    else:
+        user_model = torch.jit.load(os.path.join( args.model, "best_model.pt"))
+        config = AutoConfig.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+        origin_model_type = config.model_type
+        if origin_model_type in ["chatglm", "qwen", "baichuan"]:
+            config.model_type = "qwen2"
+        user_model = TSModelCausalLMForITREX(user_model, config=config)
+        user_model.config.model_type = origin_model_type
+>>>>>>> main
 elif not (args.sq or args.mixed_precision):
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,

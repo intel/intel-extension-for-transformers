@@ -68,6 +68,20 @@ torch = LazyImport("torch")
 logger = logging.getLogger(__name__)
 
 
+DTYPE_BITS_MAPPING = {
+    "nf4": 4,
+    "fp4": 4,  # fp4 == fp4_e2m1
+    "fp4_e2m1_bnb": 4,
+    "fp4_e2m1": 4,
+    "int4": 4,
+    "int4_fullrange": 4,
+    "int4_clip": 4,
+    "fp8": 8,  # fp8 == fp8_e4m3
+    "fp8_e5m2": 8,
+    "fp8_e4m3": 8,
+    "int8": 8,
+}
+
 
 def unpack_weight(qweight, scales, qzeros, q_config):
     sym = q_config.sym
@@ -165,15 +179,15 @@ def _replace_linear(
             current_key_name = []
         current_key_name.append(name)
         is_removed = False
-        use_optimum_format = getattr(
-            module, "use_optimum_format", False
-        ) or quantization_config.weight_dtype not in [
-            "fp8_e5m2",
-            "fp8_e4m3",
-            "fp4",
-            "nf4",
-            "int4_fullrange",
-        ]
+        use_optimum_format = getattr(module, "use_optimum_format", False) or \
+            quantization_config.weight_dtype not in [
+                "fp8_e5m2",
+                "fp8_e4m3",
+                "fp4_e2m1_bnb",
+                "fp4_e2m1",
+                "nf4",
+                "int4_fullrange",
+            ]
 
         if (
             isinstance(module, torch.nn.Linear)
@@ -257,15 +271,14 @@ def _replace_linear(
                                 QuantizedLinearQBits,
                             )  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
 
-                            use_optimum_format = getattr(
-                                module, "use_optimum_format", False
-                            ) or quantization_config.weight_dtype not in [
-                                "fp8_e5m2",
-                                "fp8_e4m3",
-                                "fp4",
-                                "nf4",
-                                "int4_fullrange",
-                            ]
+                            use_optimum_format = getattr(module, "use_optimum_format", False) or \
+                                quantization_config.weight_dtype not in [
+                                    "fp8_e5m2",
+                                    "fp8_e4m3",
+                                    "fp4_e2m1_bnb",
+                                    "fp4_e2m1",
+                                    "nf4",
+                                ]
 
                             model._modules[name] = QuantizedLinearQBits(
                                 in_features,
@@ -358,8 +371,8 @@ def _replace_linear(
                         "fp8_e5m2",
                         "fp8_e4m3",
                         "nf4",
-                        "fp4",
-                        "int4_fullrange",
+                        "fp4_e2m1_bnb",
+                        "fp4_e2m1",
                     ]:
                         model._modules[name].set_fp_weights_bias(
                             module.weight.data,

@@ -287,6 +287,13 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
                 f"Only support quantization to [4, 8] bits but found {self.bits}"
             )
 
+        if self.weight_dtype == "int4":
+            self.weight_dtype = "int4_clip"
+        elif self.weight_dtype == "fp8":
+            self.weight_dtype == "fp8_e4m3"
+        elif self.weight_dtype == "fp4":
+            self.weight_dtype = "fp4_e2m1"
+
         if self.bits == 4 and self.weight_dtype not in [
             "int4_clip",
             "nf4",
@@ -304,7 +311,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
                 "int8 weight_type is used due to bits is 8 but weight_dtype is not set."
             )
 
-        elif self.weight_dtype not in [
+        if self.weight_dtype not in [
             "int8",
             "int4_clip",
             "nf4",
@@ -314,8 +321,14 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             "fp8_e4m3",
         ]:
             raise ValueError(
+<<<<<<< HEAD
                 "weight_dtype must be a string in "
                 "'int8', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+=======
+                f"weight_dtype must be a string in "
+                f"'int8', 'int4', 'int4_clip', 'nf4', 'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', "
+                f"'fp8', 'fp8_e5m2, fp8_e4m3'"
+>>>>>>> main
             )
 
         if self.scale_dtype is not None and self.scale_dtype not in [
@@ -378,7 +391,8 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4_fullrange"
-
+        elif self.weight_dtype == "int4":
+            self.weight_dtype = "int4_fullrange"
         elif self.weight_dtype not in [
             "int4_fullrange",
         ]:
@@ -453,13 +467,11 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
         elif self.weight_dtype == "int4_clip":
-            self.weight_dtype == "int4"
+            self.weight_dtype = "int4"
         elif self.weight_dtype == "int4_fullrange":
-            self.weight_dtype == "int4"
+            self.weight_dtype = "int4"
         elif self.weight_dtype == "fp8":
-            self.weight_dtype == "fp8_e4m3"
-        elif self.weight_dtype == "fp8":
-            self.weight_dtype == "fp8_e4m3"
+            self.weight_dtype = "fp8_e4m3"
         elif self.weight_dtype == "fp4":
             self.weight_dtype = "fp4_e2m1"
         else:

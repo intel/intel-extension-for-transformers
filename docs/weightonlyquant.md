@@ -265,7 +265,7 @@ quantization_config = AutoRoundConfig(
     max_input_length=2048,
     compute_dtype="fp16",
     scale_dtype="fp16",
-    weight_dtype="int4_fullrange",
+    weight_dtype="int4",  # int4 == int4_clip
     calib_iters=2,
     calib_len=32,
     nsamples=2,

@@ -154,8 +154,15 @@ class Agent_QA():
             import torch
             import intel_extension_for_pytorch as ipex
             if precision == "bf16" and CpuInfo().bf16:
-                self.embeddings.client = ipex.optimize(
-                    self.embeddings.client.eval(), dtype=torch.bfloat16, inplace=True)
+                try:
+                    self.embeddings.client = ipex.optimize(
+                        self.embeddings.client.eval(), dtype=torch.bfloat16, inplace=True)
+                except AssertionError:
+                    self.embeddings.client = ipex.optimize(
+                        self.embeddings.client.eval(), dtype=torch.bfloat16, inplace=True, weights_prepack=False)
+                except Exception as e:
+                    logging.info(f"IPEX optimize failure! Skip IPEX.")
+                    self.embeddings.client = self.embeddings.client.eval()
             elif precision == "fp32":
                 self.embeddings.client = ipex.optimize(
                     self.embeddings.client.eval(), dtype=torch.float32, inplace=True)

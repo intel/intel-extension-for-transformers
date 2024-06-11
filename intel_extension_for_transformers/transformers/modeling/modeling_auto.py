@@ -196,8 +196,8 @@ def convert_model_to_public(model):
         "fp8_e5m2",
         "fp8_e4m3",
         "nf4",
-        "fp4",
-        "int4_fullrange",
+        "fp4_e2m1",
+        "fp4_e2m1_bnb",
     ]:
         model = recover_export_model(model)
 
@@ -325,6 +325,7 @@ class _BaseQBitsAutoModelClass:
         "whisper",
         "qwen2",
         "gemma",
+        "tinyllama",
     ]
 
     model_type_list_for_gptq = [
@@ -421,11 +422,15 @@ class _BaseQBitsAutoModelClass:
             model.load_weights(weights_iterator)
 
             print("INC quantizing...")
-            config = RtnConfig(compute_dtype="bf16",
-                            group_size=128,
-                            scale_dtype="bf16",
-                            weight_dtype="int4_clip",
-                            bits=4)
+            config = kwargs.pop("config", None)
+            if config is None:
+                config = RtnConfig(compute_dtype="int8",
+                                group_size=128,
+                                scale_dtype="bf16",
+                                weight_dtype="int4_clip",
+                                bits=4)
+                print("using default RTNConfig = ", config)
+            print("Using customized config = ", config)
             model = convert_to_quantized_model(model, config)
 
             return llm
@@ -663,8 +668,8 @@ class _BaseQBitsAutoModelClass:
                         "4" in quantization_config.weight_dtype
                         and convert_dtype_str2torch(quantization_config.compute_dtype)
                         == torch_dtype
-                    ), "Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
-                    f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
+                    ), "Quantization_config.weight_dtype should be 'nf4' , 'int4', 'int4_fullrange', 'int4_clip', "
+                    f"'fp4', 'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
                     if use_neural_speed:
@@ -801,10 +806,6 @@ class _BaseQBitsAutoModelClass:
                     or device_map == torch.device("cpu")
                 ) and model.config.model_type == "chatglm":
                     model = model.float()
-                if use_cpu:
-                    quantization_config.post_init_cpu()
-                elif use_xpu:
-                    quantization_config.post_init_xpu()
                 model = convert_to_quantized_model(
                     model, quantization_config, device=device_map
                 )
@@ -844,8 +845,262 @@ class _BaseQBitsAutoModelClass:
             ) and model.config.model_type == "chatglm":
                 model = model.float()
             model.eval()
+<<<<<<< HEAD
             logger.info("Applying SmoothQuant.")
             model = convert_to_smoothquant_model(model, quantization_config)
+=======
+            model_type = model.config.model_type.replace("_", "-")
+
+            logger.info("Applying SmoothQuant.")
+            # ipex.optimize_transformers
+            if quantization_config.ipex_opt_llm is None:
+                if model_type in IPEX_OPT_LLM_SUPPORTED:
+                    quantization_config.ipex_opt_llm = True
+                    logger.info(
+                        "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
+                    )
+                    logger.warning("The suggested transformers version is 4.38.1.")
+                else:
+                    quantization_config.ipex_opt_llm = False
+            if quantization_config.ipex_opt_llm:
+                qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5)
+                model = ipex.optimize_transformers(
+                    model.eval(),
+                    quantization_config=qconfig,
+                    dtype=torch.float32,
+                    inplace=True,
+                    deployment_mode=False,
+                )
+                model.eval()
+
+            # past_key_values
+            num_beams = quantization_config.num_beams
+            if quantization_config.ipex_opt_llm:
+                past_key_values = generate_dummy_past_key_values_for_opt_llm(
+                    config=model.config, input_bs=1, num_beams=num_beams
+                )
+            else:
+                past_key_values = generate_dummy_past_key_values(
+                    config=model.config, input_bs=1
+                )
+
+            # calibration function
+            calib_func = quantization_config.calib_func
+            tokenizer = quantization_config.tokenizer
+            if calib_func is None:
+                if quantization_config.tokenizer is None:
+                    logger.error(
+                        "Please provide the tokenizer or provide calib_func directly,"
+                        + " the following is how to get tokenizer. \n"
+                        + " from transformer import AutoTokenizer \n"
+                        + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
+                    )
+                    exit(0)
+
+                from datasets import load_dataset
+                from torch.utils.data import DataLoader
+
+                calib_dataset = quantization_config.calib_dataset
+                calib_shuffle = quantization_config.calib_shuffle
+                calib_iters = quantization_config.calib_iters
+                calib_padding = quantization_config.calib_padding
+                calib_len = quantization_config.calib_len
+                calib_pad_val = quantization_config.calib_pad_val
+                from torch.nn.functional import pad
+
+                calib_dataset = load_dataset(
+                    calib_dataset,
+                    split=(
+                        "test"
+                        if calib_dataset in ["mbpp", "openai_humaneval"]
+                        else "train"
+                    ),
+                )
+                if calib_shuffle:
+                    calib_dataset = calib_dataset.shuffle(seed=42)
+
+                def tokenize_function(examples):
+                    if "code" in examples:
+                        example = tokenizer(examples["code"])
+                    elif "prompt" in examples:
+                        example = tokenizer(examples["prompt"])
+                    elif "text" in examples:
+                        example = tokenizer(examples["text"])
+                    else:
+                        logger.error(
+                            "Please check dataset prompt identifier,"
+                            + " NeelNanda/pile-10k is default used calibration dataset."
+                        )
+                        exit(0)
+                    return example
+
+                def collate_batch(batch):
+                    position_ids_padded = []
+                    input_ids_padded = []
+                    last_ind = []
+                    attention_mask_padded = []
+                    for text in batch:
+                        input_ids = text["input_ids"]
+                        if not calib_padding:
+                            input_ids = (
+                                input_ids[: int(calib_len)]
+                                if len(input_ids) > int(calib_len)
+                                else input_ids
+                            )  # no_padding
+                        else:
+                            pad_len = calib_len - input_ids.shape[0]
+                            input_ids = pad(
+                                input_ids, (0, pad_len), value=calib_pad_val
+                            )
+
+                        last_ind.append(input_ids.shape[0] - 1)
+                        if model_type in ["bloom"]:
+                            attention_mask = torch.ones(len(input_ids) + 1)
+                            attention_mask[0] = 0
+                        else:
+                            attention_mask = torch.ones(len(input_ids))
+                        position_ids = torch.arange(len(input_ids))
+                        input_ids_padded.append(input_ids)
+                        attention_mask_padded.append(attention_mask)
+                        position_ids_padded.append(position_ids)
+                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                        return (
+                            {
+                                "input_ids": torch.vstack(input_ids_padded),
+                                "attention_mask": torch.vstack(attention_mask_padded),
+                                "position_ids": torch.vstack(position_ids_padded),
+                                "past_key_values": past_key_values,
+                            },
+                            torch.tensor(last_ind),
+                        )
+                    else:
+                        return (
+                            {
+                                "input_ids": torch.vstack(input_ids_padded),
+                                "attention_mask": torch.vstack(attention_mask_padded),
+                                "past_key_values": past_key_values,
+                            },
+                            torch.tensor(last_ind),
+                        )
+
+                def collate_batch_for_chatglm(batch):
+                    last_ind = []
+                    for text in batch:
+                        input_ids = torch.vstack([text["input_ids"]])
+                        if re.search(
+                            "THUDM/chatglm-6b", model.config.auto_map["AutoConfig"]
+                        ):
+                            input_ids = (
+                                input_ids[:, :calib_len]
+                                if input_ids.shape[1] > calib_len
+                                else input_ids
+                            )
+                            eos = torch.tensor([130001, 130004]).repeat(1, 1)
+                            input_ids = torch.cat((input_ids, eos), 1)
+                        else:
+                            input_ids = (
+                                input_ids[:, :calib_len]
+                                if input_ids.shape[1] > calib_len
+                                else input_ids
+                            )
+                        prepared_inputs = model.prepare_inputs_for_generation(input_ids)
+                        attention_mask = torch.ones_like(input_ids)
+                        last_ind.append(input_ids.shape[1] - 1)
+                    return (
+                        {
+                            "input_ids": input_ids,
+                            "attention_mask": attention_mask,
+                            "position_ids": prepared_inputs["position_ids"],
+                            "past_key_values": past_key_values,
+                        },
+                        torch.tensor(last_ind),
+                    )
+
+                tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
+                tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+                if model_type == "chatglm":
+                    calib_dataloader = DataLoader(
+                        tokenized_dataset,
+                        batch_size=1,
+                        shuffle=False,
+                        collate_fn=collate_batch_for_chatglm,
+                    )
+                else:
+                    calib_dataloader = DataLoader(
+                        tokenized_dataset,
+                        batch_size=1,
+                        shuffle=False,
+                        collate_fn=collate_batch,
+                    )
+
+                def calib_func(model):
+                    with torch.no_grad():
+                        for i, (inputs, last_ind) in enumerate(calib_dataloader):
+                            if i >= calib_iters:
+                                break
+                            if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                                model(
+                                    input_ids=inputs["input_ids"],
+                                    past_key_values=inputs["past_key_values"],
+                                    position_ids=inputs["position_ids"],
+                                    attention_mask=inputs["attention_mask"],
+                                )
+                            else:
+                                model(
+                                    input_ids=inputs["input_ids"],
+                                    past_key_values=inputs["past_key_values"],
+                                    attention_mask=inputs["attention_mask"],
+                                )
+
+                logger.info(
+                    "The default calibration function is used, "
+                    + "the calibration dataset is NeelNanda/pile-10k, "
+                    + "batchsize is 1 and calibration iteration is 100."
+                )
+                calib_func = calib_func
+
+            # example_inputs
+            example_inputs = quantization_config.example_inputs
+            if example_inputs is None:
+                for i, (inputs, last_ind) in enumerate(calib_dataloader):
+                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                        example_inputs = {
+                            "input_ids": inputs["input_ids"],
+                            "attention_mask": inputs["attention_mask"],
+                            "position_ids": inputs["position_ids"],
+                            "past_key_values": inputs["past_key_values"],
+                        }
+                    else:
+                        example_inputs = {
+                            "input_ids": inputs["input_ids"],
+                            "attention_mask": inputs["attention_mask"],
+                            "past_key_values": inputs["past_key_values"],
+                        }
+                    break
+
+            # call inc sq
+            from neural_compressor import PostTrainingQuantConfig, quantization
+
+            conf = PostTrainingQuantConfig(
+                backend=quantization_config.backend,  # default is ipex
+                excluded_precisions=quantization_config.excluded_precisions,
+                op_type_dict=quantization_config.op_type_dict,
+                op_name_dict=quantization_config.op_name_dict,
+                recipes=quantization_config.recipes,
+                example_inputs=example_inputs,
+            )
+            model = quantization.fit(
+                model,
+                conf,
+                calib_func=calib_func,
+                calib_dataloader=(
+                    calib_dataloader
+                    if quantization_config.recipes["smooth_quant_args"]["alpha"]
+                    == "auto"
+                    else None
+                ),
+            )
+>>>>>>> main
             logger.info("SmoothQuant done.")
         elif isinstance(quantization_config, DynamicQuantConfig):
             model = cls.ORIG_MODEL.from_pretrained(
@@ -1663,7 +1918,8 @@ class _BaseQBitsAutoModelClass:
                 logger.warning("Please provide the correct bits number or weight_dtype in config.json.")
                 raise ValueError(
                     f"weight_dtype must be a string in "
-                    f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+                    f"'int8', 'int4', 'int4_fullrange', 'int4_clip', 'nf4', "
+                    f"'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8', 'fp8_e5m2, fp8_e4m3'"
                 )
             else:
                 logger.info("{} quantization weight_dtype is used.".format(quantization_config.weight_dtype))
@@ -1677,7 +1933,8 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
-            "fp4",
+            "fp4_e2m1",
+            "fp4_e2m1_bnb",
             "nf4",
             "int4_fullrange",
         ]:
@@ -1784,7 +2041,8 @@ class _BaseQBitsAutoModelClass:
             "fp8_e5m2",
             "fp8_e4m3",
             "nf4",
-            "fp4",
+            "fp4_e2m1",
+            "fp4_e2m1_bnb",
             "int4_fullrange",
         ] and not quantization_config.use_ipex:
             model = replace_linear(

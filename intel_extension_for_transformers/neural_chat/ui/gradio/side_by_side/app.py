@@ -22,23 +22,17 @@ import json
 import os
 import time
 import uuid
-
-os.system("pip install gradio==3.34.0")
+from openai import OpenAI
 
 import gradio as gr
 import requests
 
 import sys
 sys.path.insert(0, './')
-from conversation import (
-    Conversation,
-    SeparatorStyle,
-    compute_skip_echo_len
-)
+from conversation import get_conv_template
 from fastchat.constants import LOGDIR
 from fastchat.utils import (
     build_logger,
-    violates_moderation,
 )
 
 code_highlight_css = """
@@ -129,61 +123,27 @@ no_change_btn = gr.Button.update()
 enable_btn = gr.Button.update(interactive=True)
 disable_btn = gr.Button.update(interactive=False)
 
-baseline_url = None
-optimized_url = None
-enable_moderation = False
+baseline_url = "http://10.91.60.54:8000"
+optimized_url = "http://10.91.60.54:9000"
 
-conv_template_bf16 = Conversation(
-    system="A chat between a curious human and an artificial intelligence assistant. "
-           "The assistant gives helpful, detailed, and polite answers to the human's questions.",
-    roles=("Human", "Assistant"),
-    messages=(),
-    offset=0,
-    sep_style=SeparatorStyle.SINGLE,
-    sep="\n",
-    sep2="<|endoftext|>",
+openai_api_key = "EMPTY"
+baseline_api_base = f"{baseline_url}/v1/"
+optimized_api_base = f"{optimized_url}/v1/"
+
+# Create an OpenAI client to interact with the API server
+baseline_client = OpenAI(
+    api_key=openai_api_key,
+    base_url=baseline_api_base,
+)
+optimized_client = OpenAI(
+    api_key=openai_api_key,
+    base_url=optimized_api_base,
 )
 
-conv_template_bf16 = Conversation(
-    system="",
-    roles=("### Human", "### Assistant"),
-    messages=(),
-    offset=0,
-    sep_style=SeparatorStyle.SINGLE,
-    sep="\n",
-    sep2="</s>",
-)
-# conv_template_bf16 = Conversation(
-#     system="",
-#     roles=("", ""),
-#     messages=(),
-#     offset=0,
-#     sep_style=SeparatorStyle.OASST_PYTHIA,
-#     sep=" ",
-#     sep2="<|endoftext|>",
-# )
-
-start_message = """<|im_start|>system
-- You are a helpful assistant chatbot trained by MosaicML.
-- You answer questions.
-- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>"""
-
-conv_template_bf16 = Conversation(
-    system=start_message,
-    roles=("<|im_start|>user", "<|im_start|>assistant"),
-    messages=(),
-    offset=0,
-    sep_style=SeparatorStyle.TWO,
-    sep="\n",
-    sep2="<|im_end|>",
-)
-
-def set_global_vars(baseline_url_, optimized_url_, enable_moderation_ ):
-    global baseline_url, optimized_url, enable_moderation
-    baseline_url = baseline_url_
-    optimized_url = optimized_url_
-    enable_moderation = enable_moderation_
+client_mapping = {
+    baseline_url: baseline_client,
+    optimized_url: optimized_client,
+}
 
 
 def get_conv_log_filename():
@@ -193,10 +153,9 @@ def get_conv_log_filename():
 
 
 def get_model_list(controller_url):
-    ret = requests.post(controller_url + "/refresh_all_workers")
-    assert ret.status_code == 200
-    ret = requests.post(controller_url + "/list_models")
-    models = ret.json()["models"]
+    ret = requests.post(controller_url + "/v1/models")
+    model_data = ret.json()["data"]
+    models = [model['id'] for model in model_data]
     logger.info(f"Models: {models}")
     return models
 
@@ -209,7 +168,6 @@ function() {
     return url_params;
     }
 """
-
 
 def load_demo_single(models, url_params):
     dropdown_update = gr.Dropdown.update(visible=True)
@@ -226,6 +184,7 @@ def load_demo_single(models, url_params):
         dropdown_update,
         gr.Chatbot.update(visible=True),
         gr.Chatbot.update(visible=True),
+        gr.Chatbot.update(visible=True),
         gr.Textbox.update(visible=True),
         gr.Button.update(visible=True),
         gr.Row.update(visible=True),
@@ -238,43 +197,64 @@ def load_demo(url_params, request: gr.Request):
     return load_demo_single(models, url_params)
 
 
+def vote_last_response(state, vote_type, model_selector, request: gr.Request):
+    with open(get_conv_log_filename(), "a") as fout:
+        data = {
+            "tstamp": round(time.time(), 4),
+            "type": vote_type,
+            "model": model_selector,
+            "state": state.dict(),
+            "ip": request.client.host,
+        }
+        fout.write(json.dumps(data) + "\n")
+
+
+def upvote_last_response(state, model_selector, request: gr.Request):
+    logger.info(f"upvote. ip: {request.client.host}")
+    vote_last_response(state, "upvote", model_selector, request)
+    return ("",) + (disable_btn,) * 3
+
+
+def downvote_last_response(state, model_selector, request: gr.Request):
+    logger.info(f"downvote. ip: {request.client.host}")
+    vote_last_response(state, "downvote", model_selector, request)
+    return ("",) + (disable_btn,) * 3
+
+
+def flag_last_response(state, model_selector, request: gr.Request):
+    logger.info(f"flag. ip: {request.client.host}")
+    vote_last_response(state, "flag", model_selector, request)
+    return ("",) + (disable_btn,) * 3
+
+
 def regenerate(state, request: gr.Request):
     logger.info(f"regenerate. ip: {request.client.host}")
     state.messages[-1][-1] = None
     state.skip_next = False
-    return (state, state.to_gradio_chatbot(), "") + (disable_btn,) * 2
+    return (state, state.to_gradio_chatbot(), "") + (disable_btn,) * 5
 
 
 def clear_history(request: gr.Request):
     logger.info(f"clear_history. ip: {request.client.host}")
     state = None
-    return (state, [], "") + (disable_btn,) * 2
+    return (state, [], "") + (disable_btn,) * 5
 
 
 def add_text(state, text, request: gr.Request):
     logger.info(f"add_text. ip: {request.client.host}. len: {len(text)}")
 
     if state is None:
-        state = conv_template_bf16.copy()
+        state = get_conv_template("neural-chat-7b-v2")
 
     if len(text) <= 0:
         state.skip_next = True
-        return (state, state.to_gradio_chatbot(), "") + (no_change_btn,) * 2
-    if enable_moderation:
-        flagged = violates_moderation(text)
-        if flagged:
-            logger.info(f"violate moderation. ip: {request.client.host}. text: {text}")
-            state.skip_next = True
-            return (state, state.to_gradio_chatbot(), moderation_msg) + (
-                no_change_btn,
-            ) * 2
+        return (state, state.to_gradio_chatbot(), "") + (no_change_btn,) * 5
 
-    print('text', text, text[:1536])
-    text = text[:1536]  # Hard cut-off
+    text = text[:2560]  # Hard cut-off
     state.append_message(state.roles[0], text)
     state.append_message(state.roles[1], None)
     state.skip_next = False
-    return (state, state.to_gradio_chatbot(), "") + (disable_btn,) * 2
+    return (state, state.to_gradio_chatbot(), "") + (disable_btn,) * 5
 
 
 def post_process_code(code):
@@ -288,6 +268,38 @@ def post_process_code(code):
     return code
 
 
+def openai_api_stream_iter(
+    model_name,
+    messages,
+    temperature,
+    top_p,
+    repetition_penalty,
+    max_new_tokens,
+    choice_chatbot_url
+):
+    # Make requests
+    gen_params = {
+        "model": model_name,
+        "messages": messages,
+        "temperature": temperature,
+        "top_p": top_p,
+        "max_tokens": max_new_tokens,
+        "stream": True
+    }
+    logger.info(f"==== request ====\n{gen_params}")
+
+    res = client_mapping[choice_chatbot_url].chat.completions.create(**gen_params)
+    text = ""
+    for chunk in res:
+        if len(chunk.choices) > 0:
+            text += " " + (chunk.choices[0].delta.content or "")
+            data = {
+                "text": text.strip(),
+                "error_code": 0,
+            }
+            yield data
+
+
 def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: gr.Request, choice_chatbot_url):
     logger.info(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
@@ -298,100 +310,87 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
 
     if state.skip_next:
         # This generate call is skipped due to invalid inputs
-        yield (state, state.to_gradio_chatbot()) + (no_change_btn,) * 2
+        yield (state, state.to_gradio_chatbot()) + (no_change_btn,) * 5
         return
 
     if len(state.messages) == state.offset + 2:
-        # First round of conversation
-        new_state = conv_template_bf16.copy()
-        new_state.conv_id = uuid.uuid4().hex
-        new_state.model_name = state.model_name or model_selector
+        # model conversation name: "mpt-7b-chat", "chatglm", "chatglm2", "llama-2",
+        #                          "mistral", "neural-chat-7b-v3-1", "neural-chat-7b-v3",
+        #                          "neural-chat-7b-v2", "neural-chat-7b-v1-1"
+        # First round of Conversation
+        if "Llama-2-7b-chat-hf" in model_name:
+            model_name = "llama-2"
+        elif "chatglm"  in model_name:
+            model_name = model_name.split('-')[0]
+        new_state = get_conv_template(model_name.split('/')[-1])
+        #new_state.conv_id = uuid.uuid4().hex
+        #new_state.model_name = state.model_name or model_selector
         new_state.append_message(new_state.roles[0], state.messages[-2][1])
         new_state.append_message(new_state.roles[1], None)
         state = new_state
 
-    # Query worker address
-    ret = requests.post(
-        choice_chatbot_url + "/get_worker_address", json={"model": model_name}
-    )
-
-    worker_addr = ret.json()["address"]
-    logger.info(f"model_name: {model_name}, worker_addr: {worker_addr}")
-
-    # No available worker
-    if worker_addr == "":
-        state.messages[-1][-1] = server_error_msg
-        yield (
-            state,
-            state.to_gradio_chatbot(),
-            enable_btn,
-            enable_btn,
-        )
-        return
-
     # Construct prompt
-    prompt = state.get_prompt()
-    skip_echo_len = compute_skip_echo_len(model_name, state, prompt)
-
-    # Make requests
-    pload = {
-        "model": model_name,
-        "prompt": prompt,
-        "temperature": temperature,
-        "max_new_tokens": max_new_tokens,
-        "topk": topk,
-        "stop": "<|endoftext|>"
-    }
-    logger.info(f"==== request ====\n{pload}")
+    prompt = state.to_openai_api_messages()
+    # print("prompt==============", prompt)
 
     start_time = time.time()
 
     state.messages[-1][-1] = "▌"
-    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 2
+    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
+
+    # Stream output
+    stream_iter = openai_api_stream_iter(model_name=models[0],
+                                    messages=prompt,
+                                    temperature=temperature,
+                                    top_p=0.95,
+                                    repetition_penalty = 1.0,
+                                    max_new_tokens = max_new_tokens,
+                                    choice_chatbot_url = choice_chatbot_url
+                                    )
 
     try:
-        # Stream output
-        response = requests.post(
-            controller_url + "/worker_generate_stream",
-            headers=headers,
-            json=pload,
-            stream=True,
-            timeout=20,
-        )
-        for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
-            if chunk:
-                data = json.loads(chunk.decode())
-                print("data======", data, skip_echo_len)
-                if data["error_code"] == 0:
-                    output = data["text"][skip_echo_len:].strip()
-                    output = post_process_code(output)
-                    state.messages[-1][-1] = output + "▌"
-                    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 2
-                else:
-                    output = data["text"] + f" (error_code: {data['error_code']})"
-                    state.messages[-1][-1] = output
-                    yield (state, state.to_gradio_chatbot()) + (
-                        enable_btn,
-                        enable_btn,
-                    )
-                    return
-                time.sleep(0.005)
+        for i, data in enumerate(stream_iter):
+            if data["error_code"] == 0:
+                output = data["text"].strip()
+                state.messages[-1][-1] = output + "▌"
+                yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
+            else:
+                output = data["text"] + f"\n\n(error_code: {data['error_code']})"
+                state.messages[-1][-1] = output
+                yield (state, state.to_gradio_chatbot()) + (
+                    disable_btn,
+                    disable_btn,
+                    disable_btn,
+                    enable_btn,
+                    enable_btn,
+                )
+                return
+            time.sleep(0.005)
     except requests.exceptions.RequestException as e:
         state.messages[-1][-1] = server_error_msg + f" (error_code: 4)"
         yield (state, state.to_gradio_chatbot()) + (
+            disable_btn,
+            disable_btn,
+            disable_btn,
             enable_btn,
             enable_btn,
         )
         return
 
     finish_tstamp = time.time() - start_time
-    elapsed_time = "\n✅generation elapsed time: {}s".format(round(finish_tstamp, 4))
 
-    # elapsed_time =  "\n{}s".format(round(finish_tstamp, 4))
-    # elapsed_time =  "<p class='time-style'>{}s </p>".format(round(finish_tstamp, 4))
+    output_throughput = len(output) / finish_tstamp  # Final output throughput
 
-    state.messages[-1][-1] = state.messages[-1][-1][:-1] + elapsed_time
-    yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 2
+    elapsed_time = f"<p><strong>Generation elapsed time:</strong> <span style='font-family: monospace;'>{round(finish_tstamp, 4)} seconds</span></p>"
+    output_throughput_info = f"<p title='This measures the speed at which the final response was generated, based on the visible output length and total time.'><strong>Final Output Throughput:</strong> <span style='font-family: monospace;'>{output_throughput:.2f} characters per second</span></p>"
+
+    separator_message = "<p style='text-align: center; margin-top: 1em; margin-bottom: 1em;'><hr></p>"
+    mydiv = f"<div style='font-size:x-small; margin-top: 1em;'>{separator_message}{elapsed_time}{output_throughput_info}</div>"
+
+
+    # state.messages[-1][-1] = state.messages[-1][-1][:-1] + elapsed_time
+    state.messages[-1][-1] = state.messages[-1][-1][:-1] + mydiv
+    yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 5
 
     logger.info(f"{output}")
 
@@ -573,20 +572,23 @@ footer {
 
 def build_single_model_ui(models):
     notice_markdown = """
-<div class="title">
-<div style="
-    color: #fff;
-">Large Language Model <p style="
-    font-size: 0.8rem;
-">Future Gen Intel® Xeon® (codenamed Granite Rapids) with Intel® AMX</p></div>
-</div>
-"""
-    learn_more_markdown =  """
-<div class="footer"><p>Powered by <a href="https://github.com/intel/intel-extension-for-transformers" style="text-decoration: underline;" target="_blank">Intel Extension for Transformers</a> and <a href="https://github.com/intel/intel-extension-for-pytorch" style="text-decoration: underline;" target="_blank">Intel Extension for PyTorch</a></p>
-</div>
-<div class="acknowledgments">
-<p></p></div>
-"""
+        <div class="title">
+        <div style="
+            color: #fff;
+        ">Large Language Model <p style="
+            font-size: 0.8rem;
+        ">Future Gen Intel® Xeon® (codenamed Granite Rapids) with Intel® AMX</p></div>
+
+        </div>
+        """
+    learn_more_markdown =  """<div class="footer">
+                    <p>Powered by <a href="https://github.com/intel/intel-extension-for-transformers" style="text-decoration: underline;" target="_blank">Intel Extension for Transformers</a> and <a href="https://github.com/intel/intel-extension-for-pytorch" style="text-decoration: underline;" target="_blank">Intel Extension for PyTorch</a>
+                    </p>
+            </div>
+            <div class="acknowledgments">
+            <p></p></div>
+
+        """
 
     state1 = gr.State()
     state2 = gr.State()
@@ -601,8 +603,8 @@ def build_single_model_ui(models):
             show_label=False,
         ).style(container=False)
     with gr.Row():
-        chatbot1 = grChatbot(elem_id="chatbot1", visible=False).style(height=500)
-        chatbot2 = grChatbot(elem_id="chatbot2", visible=False).style(height=500)
+        chatbot1 = gr.Chatbot(elem_id="chatbot1", visible=False).style(height=550)
+        chatbot2 = gr.Chatbot(elem_id="chatbot2", visible=False).style(height=550)
 
     with gr.Row(elem_id="text-box-style"):
         with gr.Column(scale=20):
@@ -643,17 +645,51 @@ def build_single_model_ui(models):
 
 
     with gr.Row(visible=False, elem_id="btn-style") as button_row:
+        upvote_btn = gr.Button(value="👍  Upvote", interactive=False, visible=False, elem_id="btn-list-style")
+        downvote_btn = gr.Button(value="👎  Downvote", interactive=False, visible=False, elem_id="btn-list-style")
+        flag_btn = gr.Button(value="⚠️  Flag", interactive=False, visible=False, elem_id="btn-list-style")
+        # stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=False)
         regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False, elem_id="btn-list-style")
         clear_btn = gr.Button(value="🗑️  Clear history", interactive=False, elem_id="btn-list-style")
         choice_chatbot1 = gr.Textbox(label='hidden', value=baseline_url, visible=False)
         choice_chatbot2 = gr.Textbox(label='hidden', value=optimized_url, visible=False)
 
 
-
     gr.Markdown(learn_more_markdown)
 
     # Register listeners
-    btn_list = [regenerate_btn, clear_btn]
+    btn_list = [upvote_btn, downvote_btn, flag_btn, regenerate_btn, clear_btn]
+    upvote_btn.click(
+        upvote_last_response,
+        [state1, model_selector],
+        [textbox, upvote_btn, downvote_btn, flag_btn],
+    )
+    upvote_btn.click(
+        upvote_last_response,
+        [state2, model_selector],
+        [textbox, upvote_btn, downvote_btn, flag_btn],
+    )
+    downvote_btn.click(
+        downvote_last_response,
+        [state1, model_selector],
+        [textbox, upvote_btn, downvote_btn, flag_btn],
+    )
+    downvote_btn.click(
+        downvote_last_response,
+        [state2, model_selector],
+        [textbox, upvote_btn, downvote_btn, flag_btn],
+    )
+    flag_btn.click(
+        flag_last_response,
+        [state1, model_selector],
+        [textbox, upvote_btn, downvote_btn, flag_btn],
+    )
+    flag_btn.click(
+        flag_last_response,
+        [state2, model_selector],
+        [textbox, upvote_btn, downvote_btn, flag_btn],
+    )
+
 
     regenerate_btn.click(regenerate, state1, [state1, chatbot1, textbox] + btn_list).then(
         http_bot,
@@ -748,16 +784,12 @@ def build_demo(models):
 
 if __name__ == "__main__":
 
-    baseline_url = "http://XX"
-    optimized_url = "http://XX"
     host = "0.0.0.0"
 
     concurrency_count = 10
     model_list_mode = "once"
     share = False
-    moderate = False
 
-    set_global_vars(baseline_url, optimized_url, moderate)
     models = get_model_list(baseline_url)
     demo = build_demo(models)
     demo.queue(
