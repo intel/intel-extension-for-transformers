@@ -40,9 +40,11 @@ pip install -v .
 # install requirements
 cd examples/huggingface/pytorch/text-generation/quantization
 pip install -r requirements.txt
-pip install neural-compressor==2.5
-pip install transformers==4.35.2
+pip install neural-compressor==2.6
 pip install torch==2.3.0+cpu --index-url https://download.pytorch.org/whl/cpu
+# 4.38.1 is only limited by smoothquant
+pip install transformers==4.38.1
+# ipex is only necessary for smoothquant
 pip install intel-extension-for-pytorch==2.3.0
 ```
 
@@ -738,7 +740,7 @@ python run_generation_cpu_woq.py \
     --seq_len 2048 \
     --scheme sym \
     --group_size 32 \
-     --nsamples 256 \
+    --n_samples 256 \
     --accuracy
 
 # int4 AutoRound

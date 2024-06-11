@@ -321,14 +321,9 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             "fp8_e4m3",
         ]:
             raise ValueError(
-<<<<<<< HEAD
-                "weight_dtype must be a string in "
-                "'int8', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
-=======
                 f"weight_dtype must be a string in "
                 f"'int8', 'int4', 'int4_clip', 'nf4', 'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', "
                 f"'fp8', 'fp8_e5m2, fp8_e4m3'"
->>>>>>> main
             )
 
         if self.scale_dtype is not None and self.scale_dtype not in [

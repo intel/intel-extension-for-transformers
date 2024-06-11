@@ -45,16 +45,16 @@ from intel_extension_for_transformers.tools.utils import (
 )
 
 from ...utils import CpuInfo
-from .sq_utils import (
-    IPEX_OPT_LLM_SUPPORTED,
-    MODEL_TYPES_REQUIRING_POSITION_IDS,
-    generate_dummy_past_key_values,
-    generate_dummy_past_key_values_for_opt_llm,
-    get_dataloader,
-)
 
 if is_ipex_available():
     import intel_extension_for_pytorch as ipex
+    from .sq_utils import (
+        IPEX_OPT_LLM_SUPPORTED,
+        MODEL_TYPES_REQUIRING_POSITION_IDS,
+        generate_dummy_past_key_values,
+        generate_dummy_past_key_values_for_opt_llm,
+        get_dataloader,
+    )
 
 if is_autoround_available():
     from auto_round.export.export_to_itrex.model_wrapper import (
