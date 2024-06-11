@@ -21,6 +21,7 @@ import os
 from typing import Optional, Tuple
 from neural_compressor.utils import logger
 from neural_compressor.utils.utility import LazyImport, CpuInfo
+from intel_extension_for_transformers.tools.utils import is_ipex_available
 
 
 CONFIG_NAME = "best_configure.yaml"
@@ -36,6 +37,8 @@ SPARSITY_CONFIG = "sparsity_config.json"
 SAFE_WEIGHTS_NAME = "model.safetensors"
 SAFE_WEIGHTS_INDEX_NAME = "model.safetensors.index.json"
 
+if is_ipex_available():
+    import intel_extension_for_pytorch as ipex
 torch = LazyImport("torch")
 
 def str2bool(v):
@@ -300,8 +303,24 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     ]
     return tuple(past_key_values)
 
-
-IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon", "chatglm", "baichuan"}
+IPEX_OPT_LLM_SUPPORTED_DICT = {
+    "2.2": ["gptj", "opt", "llama", "falcon", "chatglm", "baichuan", "gpt-neox"],
+    "2.3": [
+        "gptj",
+        "opt",
+        "llama",
+        "falcon",
+        "chatglm",
+        "baichuan",
+        "qwen",
+        "bloom",
+        "codegen",
+        "gptbigcode",
+        "t5",
+        "mixtral",
+        "mpt",
+    ],
+}
 
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
@@ -314,8 +333,31 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "llama",
     "mistral",
     "chatglm",
-    "baichuan"
 }
+
+if is_ipex_available() and ipex.__version__ == "2.2.0+cpu":
+    logger.info(
+        "ipex.llm.optimize by 2.2.0 version supported model family: {}".format(
+            ",".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.2"])
+            )
+    )
+    logger.info(
+        "The recommended transformers version is 4.35.2 if you used IPEX 2.2.0 version."
+    )
+    IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.2"]
+elif is_ipex_available() and ipex.__version__ == "2.3.0+cpu":
+    logger.info(
+        "ipex.llm.optimize by 2.3.0 version supported model family: {}".format(
+            ", ".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.3"])
+        )
+    )
+    logger.info(
+        "The recommended transformers version is 4.38.1 if you used IPEX 2.3.0 version."
+    )
+    IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]
+else:
+    logger.warning("Please check the intel_extension_for_pytorch version is 2.3.0+cpu.")
+    IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]
 
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
     """Generate the dummy example inputs."""
@@ -420,7 +462,8 @@ def recover_model_from_json(fp32_model_name_or_path, json_file_path, trust_remot
         (object): quantized model
     """
     from transformers import AutoModelForCausalLM
-    user_model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path, trust_remote_code=trust_remote_code)
+    user_model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path,
+                                                      trust_remote_code=trust_remote_code).float()
     if user_model.config.model_type in IPEX_OPT_LLM_SUPPORTED:
         import intel_extension_for_pytorch as ipex
         qconfig = ipex.quantization.default_static_qconfig_mapping

@@ -841,8 +841,7 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "llama" in model_type and transformers.__version__ >= "4.36.0":
-                quantization_config.ipex_opt_llm = False
+
             logger.info("Applying SmoothQuant.")
             # ipex.optimize_transformers
             if quantization_config.ipex_opt_llm is None:
@@ -851,7 +850,7 @@ class _BaseQBitsAutoModelClass:
                     logger.info(
                         "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
                     )
-                    logger.warning("The suggested transformers version is 4.35.2.")
+                    logger.warning("The suggested transformers version is 4.38.1.")
                 else:
                     quantization_config.ipex_opt_llm = False
             if quantization_config.ipex_opt_llm:
@@ -946,7 +945,7 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        if model_type in ["bloom", "qwen"]:
+                        if model_type in ["bloom"]:
                             attention_mask = torch.ones(len(input_ids) + 1)
                             attention_mask[0] = 0
                         else:
