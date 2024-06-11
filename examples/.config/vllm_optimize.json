@@ -1,0 +1,28 @@
+{
+  "chatglm2_6b_gen_ipex_static": {
+    "working_dir": "examples/vllm",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "chatglm2_6b",
+        "task": "generation",
+        "approach": "static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "chatglm2_6b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  }
+}
