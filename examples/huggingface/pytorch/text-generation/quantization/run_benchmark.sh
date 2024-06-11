@@ -71,9 +71,11 @@ function run_benchmark {
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy "
         extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks}"
+        extra_cmd=$extra_cmd" --eval_batch_size ${batch_size}"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
         extra_cmd=$extra_cmd" --benchmark_iters ${iters}"
+        extra_cmd=$extra_cmd" --benchmark_batch_size ${batch_size}"
     else
         echo "Error: No such mode: ${mode}"
         exit 1
@@ -242,13 +244,11 @@ function run_benchmark {
     if [ "${script}" == "run_generation_sq.py" ];then
         python -u ./${script} \
             --model ${model_name_or_path} \
-            --batch_size ${batch_size} \
             ${mode_cmd} \
             ${extra_cmd}
     elif [ "${script}" == "run_generation_cpu_woq.py" ];then
         python -u ./${script} \
             --model ${model_name_or_path} \
-            --eval_batch_size ${batch_size} \
             ${mode_cmd} \
             ${extra_cmd}
     else
