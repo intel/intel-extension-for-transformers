@@ -223,7 +223,7 @@ class OptimizationArguments:
     quantization_approach: Optional[str] = field(
         default="static",
         metadata={"help": "Quantization approach. Supported approach are static, "
-                  "dyanmic and qat."},
+                  "dynamic and qat."},
     )
     metric_name: Optional[str] = field(
         default=None,
