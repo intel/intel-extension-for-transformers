@@ -4,7 +4,7 @@ Welcome to ONNX Runtime Huggingface examples. The models are from [Huggingface](
 
 ## Quantization approach
 
-| Task | PostTrainingDynamic | PostTrainingStatic
+| Task | dynamic | static
 |---|:---:|:---:|
 |**`speech-recognition`**| ✅ | ✅ |
 

@@ -17,7 +17,7 @@ function init_params {
   extra_cmd=""
   batch_size=8
   model_type="bert"
-  approach="PostTrainingStatic"
+  approach="static"
   alpha=0.5
   for var in "$@"
   do
@@ -60,7 +60,7 @@ function run_tuning {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="EleutherAI/gpt-neo-125m"
         task="clm"
-        approach="PostTrainingStatic"
+        approach="static"
         backend=""
     elif [ "${topology}" = "gpt_neo" ]; then
         if [ "${task}" = "clm" ]; then
@@ -70,11 +70,11 @@ function run_tuning {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="EleutherAI/gpt-neo-125M"
         if [ "${approach}" = "dynamic" ]; then
-            approach="PostTrainingDynamic"
+            approach="dynamic"
         elif [ "${approach}" = "static" ]; then
-            approach="PostTrainingStatic"
+            approach="static"
         elif [ "${approach}" = "qat" ]; then
-            approach="QuantizationAwareTraining"
+            approach="qat"
             extra_cmd=$extra_cmd" --learning_rate 1e-5 \
                     --num_train_epochs 6 \
                     --eval_steps 100 \
@@ -93,9 +93,9 @@ function run_tuning {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         if [ "${approach}" = "dynamic" ]; then
-            approach="PostTrainingDynamic"
+            approach="dynamic"
         elif [ "${approach}" = "static" ]; then
-            approach="PostTrainingStatic"
+            approach="static"
         fi
     elif [ "${topology}" = "bert" ]; then
         if [ "${task}" = "mlm" ]; then
@@ -105,11 +105,11 @@ function run_tuning {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="bert-base-uncased"
         if [ "${approach}" = "dynamic" ]; then
-            approach="PostTrainingDynamic"
+            approach="dynamic"
         elif [ "${approach}" = "static" ]; then
-            approach="PostTrainingStatic"
+            approach="static"
         elif [ "${approach}" = "qat" ]; then
-            approach="QuantizationAwareTraining"
+            approach="qat"
             extra_cmd=$extra_cmd" --learning_rate 1e-5 \
                     --num_train_epochs 6 \
                     --eval_steps 100 \
@@ -129,11 +129,11 @@ function run_tuning {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="xlnet-base-cased"
         if [ "${approach}" = "dynamic" ]; then
-            approach="PostTrainingDynamic"
+            approach="dynamic"
         elif [ "${approach}" = "static" ]; then
-            approach="PostTrainingStatic"
+            approach="static"
         elif [ "${approach}" = "qat" ]; then
-            approach="QuantizationAwareTraining"
+            approach="qat"
             extra_cmd=$extra_cmd" --learning_rate 1e-5 \
                     --num_train_epochs 6 \
                     --eval_steps 100 \
@@ -153,9 +153,9 @@ function run_tuning {
         DATASET_CONFIG_NAME="unshuffled_original_ast"
         model_name_or_path="abeja/gpt-neox-japanese-2.7b"
         if [ "${approach}" = "dynamic" ]; then
-            approach="PostTrainingDynamic"
+            approach="dynamic"
         elif [ "${approach}" = "static" ]; then
-            approach="PostTrainingStatic"
+            approach="static"
         fi
     elif [ "${topology}" = "bloom" ]; then
         if [ "${task}" = "clm" ]; then
@@ -164,7 +164,7 @@ function run_tuning {
         DATASET_NAME="lambada"
         model_name_or_path="bigscience/bloom-560m"
         if [ "${approach}" = "static" ]; then
-            approach="PostTrainingStatic"
+            approach="static"
         fi
         extra_cmd=$extra_cmd" --smooth_quant --sampling_size 400 --torchscript"
     fi

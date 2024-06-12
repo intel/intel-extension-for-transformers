@@ -13,7 +13,7 @@
 
 ## Quantization
 ```python
-from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
+from neural_compressor.config import PostTrainingQuantConfig
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
@@ -27,7 +27,9 @@ trainer = NLPTrainer(model=model,
     eval_dataset=raw_datasets["validation"],
     tokenizer=tokenizer
 )
-q_config = QuantizationConfig(metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)])
+quantization_config = PostTrainingQuantConfig(
+    approach="static",
+)
 model = trainer.quantize(quant_config=q_config)
 
 input = tokenizer("I like Intel Extension for Transformers", return_tensors="pt")
@@ -81,7 +83,7 @@ from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 trainer = NLPTrainer(...)
 metric = metrics.Metric(name="eval_f1", is_relative=True, criterion=0.01)
 q_config = QuantizationConfig(
-    approach="PostTrainingStatic",
+    approach="static",
     metrics=[metric],
     objectives=[objectives.performance]
 )

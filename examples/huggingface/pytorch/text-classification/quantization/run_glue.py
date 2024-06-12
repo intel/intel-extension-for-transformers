@@ -26,9 +26,14 @@ import sys
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import  objectives, OptimizedModel
+from intel_extension_for_transformers.transformers import OptimizedModel
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-from neural_compressor.config import PostTrainingQuantConfig, QuantizationAwareTrainingConfig, TuningCriterion, AccuracyCriterion
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    QuantizationAwareTrainingConfig,
+    TuningCriterion,
+    AccuracyCriterion
+)
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -523,9 +528,8 @@ def main():
                     "do_train must be set to True for static and aware training quantization."
                 )
 
-        objective = objectives.performance
         if optim_args.quantization_approach != "qat":
-            tuning_criterion = TuningCriterion(max_trials=600, objective=[objective.name])
+            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
             accuracy_criterion = AccuracyCriterion(
                 higher_is_better=True,  # optional.
                 criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
@@ -537,7 +541,7 @@ def main():
                 accuracy_criterion=accuracy_criterion
             )
         else:
-            tuning_criterion = TuningCriterion(max_trials=600, objective=[objective.name])
+            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
             accuracy_criterion = AccuracyCriterion(
                 higher_is_better=True,  # optional.
                 criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".

@@ -209,13 +209,14 @@ class BaseTrainer():
         results = self.evaluate()
         logger.info(results)
         task_name = self.eval_dataset.config_name
-        metric_name = "eval_" + (
-                "pearson"
-                if task_name == "stsb"
-                else "matthews_correlation"
-                if task_name == "cola"
-                else "accuracy"
-            )
+        if "wikitext" in task_name:
+            metric_name = "eval_loss"
+        elif task_name == "stsb":
+            metric_name = "eval_person"
+        elif task_name == "cola":
+            metric_name = "eval_matthews_correlation"
+        else:
+            metric_name = "eval_accuracy"
         assert metric_name in results.keys(), \
                 "Please set metric from {}".format(results.keys())
         result = results.get(metric_name)
@@ -255,7 +256,10 @@ class BaseTrainer():
         except Exception as e:  # pragma: no cover
             logger.warning("Model deepcopy failed: {}!".format(repr(e)))
         if isinstance(quant_config, PostTrainingQuantConfig):
-            self.opt_model = fit(self.model, conf=quant_config, calib_dataloader=self.get_train_dataloader(), eval_func=self._eval_func)
+            self.opt_model = fit(self.model,
+                                 conf=quant_config,
+                                 calib_dataloader=self.get_train_dataloader(),
+                                 eval_func=self._eval_func)
         else:
             compression_manager = prepare_compression(self.model, quant_config)
             compression_manager.callbacks.on_train_begin()
@@ -530,7 +534,7 @@ class BaseTrainer():
         """
         components = []
         for config in config_list:
-            if isinstance(config, QuantizationConfig):
+            if isinstance(config, PostTrainingQuantConfig):
                 component = self.init_quantizer(config)
                 component.eval_func = self._eval_func
                 component.q_func = self._train_func
@@ -1731,31 +1735,10 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
             torch.manual_seed(self.args.seed)
         results = self.evaluate(metric_key_prefix="eval")
         logger.info(results)
-    def builtin_eval_func(self, model):
-        """Custom Evaluate function to inference the model for specified metric on validation dataset.
-
-        Args:
-            model: The model to evaluate.
-
-        Returns:
-            [float]: evaluation result, the larger is better.
-        """
-        self.model = model
-        # pylint: disable=E1101
-        if self.args.seed:
-            torch.manual_seed(self.args.seed)
-        results = self.evaluate()
-        logger.info(results)
-        task_name = self.eval_dataset.config_name
-        metric_name = "eval_" + (
-                "pearson"
-                if task_name == "stsb"
-                else "matthews_correlation"
-                if task_name == "cola"
-                else "accuracy"
-            )
+        metric_name = "eval_bleu"
         assert metric_name in results.keys(), \
-                "Please set metric from {}".format(results.keys())
+            "Please set metric from {}".format(results.keys())
         result = results.get(metric_name)
         logger.info("Throughput: {} samples/sec".format(results.get("eval_samples_per_second")))
         return result
+
