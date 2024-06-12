@@ -1,6 +1,6 @@
 {
   "chatglm2_6b_gen_ipex_static": {
-    "working_dir": "examples/vllm",
+    "working_dir": "vllm",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
