@@ -329,7 +329,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             g_idx = None
         weight_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 6)
         weight_dtype = "".join(chr(ascii_code) for ascii_code in weight_dtype_ascii.tolist())
-        bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4", "int4_fullrange"] else 8
+        bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4_e2m1", "fp4_e2m1_bnb"] else 8
         compute_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 7)
         compute_dtype = "".join(chr(ascii_code) for ascii_code in compute_dtype_ascii.tolist())
         scales_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 8)

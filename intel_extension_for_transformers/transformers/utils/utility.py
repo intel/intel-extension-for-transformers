@@ -21,6 +21,7 @@ import os
 from typing import Optional, Tuple
 from neural_compressor.utils import logger
 from neural_compressor.utils.utility import LazyImport, CpuInfo
+from intel_extension_for_transformers.tools.utils import is_ipex_available
 
 
 CONFIG_NAME = "best_configure.yaml"
@@ -36,6 +37,8 @@ SPARSITY_CONFIG = "sparsity_config.json"
 SAFE_WEIGHTS_NAME = "model.safetensors"
 SAFE_WEIGHTS_INDEX_NAME = "model.safetensors.index.json"
 
+if is_ipex_available():
+    import intel_extension_for_pytorch as ipex
 torch = LazyImport("torch")
 
 def str2bool(v):
@@ -98,52 +101,64 @@ def _build_inc_dataloader(dataloader):
 def generate_dummy_past_key_values(config, input_bs):
     """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
-
-    normalized_config = NormalizedConfigManager.get_normalized_config_class(
-        config.model_type
-    )(config)
-    nb_pkv = 2
-    num_layers = normalized_config.num_layers
-    num_attention_heads = normalized_config.num_attention_heads
-    hidden_size = normalized_config.hidden_size
-    d_k = hidden_size // num_attention_heads
-    num_key_value_heads = num_attention_heads
-    if hasattr(normalized_config, "num_key_value_heads"):
-        num_key_value_heads = normalized_config.num_key_value_heads
-    if hasattr(normalized_config, "multi_query_group_num"):
-        num_key_value_heads = normalized_config.multi_query_group_num
-
-    if config.model_type == "bloom":
-        shape_key = (input_bs * num_attention_heads, d_k, 1)
-        shape_value = (input_bs * num_attention_heads, 1, d_k)
-        key = torch.ones(size=shape_key)
-        value = torch.ones(size=shape_value)
-        past_key_values = tuple(
-            tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv))
-            for _ in range(num_layers)
-        )
-        return past_key_values
-    elif config.model_type == "gpt_bigcode":
-        new_shape = [input_bs, 0, d_k * 2]
-        dummy_tensor = torch.zeros(size=new_shape)
-        past_key_values = tuple([dummy_tensor] * num_layers)
-        return past_key_values
-    elif config.model_type == "qwen":
-        new_shape = [input_bs, 1, num_key_value_heads, d_k]
-        past_key_values = [
-            (
-                torch.ones(size=new_shape).contiguous(),
-                torch.ones(size=new_shape).contiguous(),
-            )
-            for _ in range(num_layers)
+    if config.model_type == "qwen":
+        new_shape = [
+            input_bs,
+            0,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
         ]
-        return tuple(past_key_values)
+        num_layers = config.num_hidden_layers
+    elif config.model_type == "baichuan":
+        new_shape = [
+            input_bs,
+            config.num_attention_heads,
+            0,
+            config.hidden_size // config.num_attention_heads,
+        ]
+        num_layers = config.num_hidden_layers
     elif config.model_type == "chatglm":
-        new_shape = [0, input_bs, num_key_value_heads, d_k]
-    elif config.model_type == "falcon":
-        new_shape = [input_bs, 1, 0, d_k]
+        new_shape = [
+            0,
+            input_bs,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+        ]
+        num_layers = config.num_layers
     else:
-        new_shape = [input_bs, num_key_value_heads, 0, d_k]
+        normalized_config = NormalizedConfigManager.get_normalized_config_class(
+            config.model_type
+        )(config)
+        nb_pkv = 2
+        num_layers = normalized_config.num_layers
+        num_attention_heads = normalized_config.num_attention_heads
+        hidden_size = normalized_config.hidden_size
+        d_k = hidden_size // num_attention_heads
+        num_key_value_heads = num_attention_heads
+        if hasattr(normalized_config, "num_key_value_heads"):
+            num_key_value_heads = normalized_config.num_key_value_heads
+        if hasattr(normalized_config, "multi_query_group_num"):
+            num_key_value_heads = normalized_config.multi_query_group_num
+
+        if config.model_type == "bloom":
+            shape_key = (input_bs * num_attention_heads, d_k, 1)
+            shape_value = (input_bs * num_attention_heads, 1, d_k)
+            key = torch.ones(size=shape_key)
+            value = torch.ones(size=shape_value)
+            past_key_values = tuple(
+                tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv))
+                for _ in range(num_layers)
+            )
+            return past_key_values
+        elif config.model_type == "gpt_bigcode":
+            new_shape = [input_bs, 0, d_k * 2]
+            dummy_tensor = torch.zeros(size=new_shape)
+            past_key_values = tuple([dummy_tensor] * num_layers)
+            return past_key_values
+        elif config.model_type == "falcon":
+            new_shape = [input_bs, 1, 0, d_k]
+        else:
+            new_shape = [input_bs, num_key_value_heads, 0, d_k]
     past_key_values = [
         (
             torch.zeros(size=new_shape).contiguous(),
@@ -156,44 +171,64 @@ def generate_dummy_past_key_values(config, input_bs):
 def generate_dummy_past_key_values_for_inference(config, input_bs):
     """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
-
-    normalized_config = NormalizedConfigManager.get_normalized_config_class(
-        config.model_type
-    )(config)
-    nb_pkv = 2
-    num_layers = normalized_config.num_layers
-    num_attention_heads = normalized_config.num_attention_heads
-    hidden_size = normalized_config.hidden_size
-    d_k = hidden_size // num_attention_heads
-    num_key_value_heads = num_attention_heads
-    if hasattr(normalized_config, "num_key_value_heads"):
-        num_key_value_heads = normalized_config.num_key_value_heads
-    if hasattr(normalized_config, "multi_query_group_num"):
-        num_key_value_heads = normalized_config.multi_query_group_num
-
-    if config.model_type == "bloom":
-        shape_key = (input_bs * num_attention_heads, d_k, 0)
-        shape_value = (input_bs * num_attention_heads, 0, d_k)
-        key = torch.empty(size=shape_key)
-        value = torch.empty(size=shape_value)
-        past_key_values = tuple(
-            tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv))
-            for _ in range(num_layers)
-        )
-        return past_key_values
-    elif config.model_type == "gpt_bigcode":
-        new_shape = [input_bs, 0, d_k * 2]
-        dummy_tensor = torch.zeros(size=new_shape)
-        past_key_values = tuple([dummy_tensor] * num_layers)
-        return past_key_values
-    elif config.model_type == "qwen":
-        new_shape = [input_bs, 0, num_key_value_heads, d_k]
+    if config.model_type == "qwen":
+        new_shape = [
+            input_bs,
+            0,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+        ]
+        num_layers = config.num_hidden_layers
+    elif config.model_type == "baichuan":
+        new_shape = [
+            input_bs,
+            config.num_attention_heads,
+            0,
+            config.hidden_size // config.num_attention_heads,
+        ]
+        num_layers = config.num_hidden_layers
     elif config.model_type == "chatglm":
-        new_shape = [0, input_bs, num_key_value_heads, d_k]
-    elif config.model_type == "falcon":
-        new_shape = [input_bs, 1, 0, d_k]
+        new_shape = [
+            0,
+            input_bs,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+        ]
+        num_layers = config.num_layers
     else:
-        new_shape = [input_bs, num_key_value_heads, 0, d_k]
+        normalized_config = NormalizedConfigManager.get_normalized_config_class(
+            config.model_type
+        )(config)
+        nb_pkv = 2
+        num_layers = normalized_config.num_layers
+        num_attention_heads = normalized_config.num_attention_heads
+        hidden_size = normalized_config.hidden_size
+        d_k = hidden_size // num_attention_heads
+        num_key_value_heads = num_attention_heads
+        if hasattr(normalized_config, "num_key_value_heads"):
+            num_key_value_heads = normalized_config.num_key_value_heads
+        if hasattr(normalized_config, "multi_query_group_num"):
+            num_key_value_heads = normalized_config.multi_query_group_num
+
+        if config.model_type == "bloom":
+            shape_key = (input_bs * num_attention_heads, d_k, 0)
+            shape_value = (input_bs * num_attention_heads, 0, d_k)
+            key = torch.empty(size=shape_key)
+            value = torch.empty(size=shape_value)
+            past_key_values = tuple(
+                tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv))
+                for _ in range(num_layers)
+            )
+            return past_key_values
+        elif config.model_type == "gpt_bigcode":
+            new_shape = [input_bs, 0, d_k * 2]
+            dummy_tensor = torch.zeros(size=new_shape)
+            past_key_values = tuple([dummy_tensor] * num_layers)
+            return past_key_values
+        elif config.model_type == "falcon":
+            new_shape = [input_bs, 1, 0, d_k]
+        else:
+            new_shape = [input_bs, num_key_value_heads, 0, d_k]
     past_key_values = [
         (
             torch.zeros(size=new_shape).contiguous(),
@@ -206,32 +241,53 @@ def generate_dummy_past_key_values_for_inference(config, input_bs):
 def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     """Generate the dummy past_key_values."""
     from optimum.utils import NormalizedConfigManager
-
-    normalized_config = NormalizedConfigManager.get_normalized_config_class(
-        config.model_type
-    )(config)
-    num_layers = normalized_config.num_layers
-    num_attention_heads = normalized_config.num_attention_heads
-    hidden_size = normalized_config.hidden_size
-    d_k = hidden_size // num_attention_heads
-    num_key_value_heads = num_attention_heads
-    nb_pkv = 2
-    if hasattr(normalized_config, "num_key_value_heads"):
-        num_key_value_heads = normalized_config.num_key_value_heads
-    if hasattr(normalized_config, "multi_query_group_num"):
-        num_key_value_heads = normalized_config.multi_query_group_num
-    if config.model_type == "bloom":
-        for nb_pkv in range(nb_pkv):
-            if nb_pkv % 2 == 0:
-                new_shape = [input_bs * num_key_value_heads, d_k, 1]
-            else:
-                new_shape = [input_bs * num_key_value_heads, 1, d_k]
-    elif config.model_type == "qwen":
-        new_shape = [input_bs, 1, num_key_value_heads, d_k]
+    if config.model_type == "qwen":
+        new_shape = [
+            input_bs,
+            1,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+        ]
+        num_layers = config.num_hidden_layers
+    elif config.model_type == "baichuan":
+        new_shape = [
+            input_bs,
+            config.num_attention_heads,
+            1,
+            config.hidden_size // config.num_attention_heads,
+        ]
+        num_layers = config.num_hidden_layers
     elif config.model_type == "chatglm":
-        new_shape = [1, input_bs, num_key_value_heads, d_k]
+        new_shape = [
+            1,
+            input_bs,
+            config.num_attention_heads,
+            config.hidden_size // config.num_attention_heads,
+        ]
+        num_layers = config.num_layers
     else:
-        new_shape = [input_bs, num_key_value_heads, 1, d_k]
+        normalized_config = NormalizedConfigManager.get_normalized_config_class(
+            config.model_type
+        )(config)
+        num_layers = normalized_config.num_layers
+        num_attention_heads = normalized_config.num_attention_heads
+        hidden_size = normalized_config.hidden_size
+        d_k = hidden_size // num_attention_heads
+        num_key_value_heads = num_attention_heads
+        nb_pkv = 2
+        if hasattr(normalized_config, "num_key_value_heads"):
+            num_key_value_heads = normalized_config.num_key_value_heads
+        if hasattr(normalized_config, "multi_query_group_num"):
+            num_key_value_heads = normalized_config.multi_query_group_num
+        if config.model_type == "bloom":
+            for nb_pkv in range(nb_pkv):
+                if nb_pkv % 2 == 0:
+                    new_shape = [input_bs * num_key_value_heads, d_k, 1]
+                else:
+                    new_shape = [input_bs * num_key_value_heads, 1, d_k]
+
+        else:
+            new_shape = [input_bs, num_key_value_heads, 1, d_k]
 
     beam_idx_tmp = torch.zeros(
         (2048, int(input_bs * num_beams)), dtype=torch.long
@@ -247,8 +303,24 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     ]
     return tuple(past_key_values)
 
-
-IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon", "chatglm", "baichuan"}
+IPEX_OPT_LLM_SUPPORTED_DICT = {
+    "2.2": ["gptj", "opt", "llama", "falcon", "chatglm", "baichuan", "gpt-neox"],
+    "2.3": [
+        "gptj",
+        "opt",
+        "llama",
+        "falcon",
+        "chatglm",
+        "baichuan",
+        "qwen",
+        "bloom",
+        "codegen",
+        "gptbigcode",
+        "t5",
+        "mixtral",
+        "mpt",
+    ],
+}
 
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
@@ -261,8 +333,31 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "llama",
     "mistral",
     "chatglm",
-    "baichuan"
 }
+
+if is_ipex_available() and ipex.__version__ == "2.2.0+cpu":
+    logger.info(
+        "ipex.llm.optimize by 2.2.0 version supported model family: {}".format(
+            ",".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.2"])
+            )
+    )
+    logger.info(
+        "The recommended transformers version is 4.35.2 if you used IPEX 2.2.0 version."
+    )
+    IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.2"]
+elif is_ipex_available() and ipex.__version__ == "2.3.0+cpu":
+    logger.info(
+        "ipex.llm.optimize by 2.3.0 version supported model family: {}".format(
+            ", ".join(IPEX_OPT_LLM_SUPPORTED_DICT["2.3"])
+        )
+    )
+    logger.info(
+        "The recommended transformers version is 4.38.1 if you used IPEX 2.3.0 version."
+    )
+    IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]
+else:
+    logger.warning("Please check the intel_extension_for_pytorch version is 2.3.0+cpu.")
+    IPEX_OPT_LLM_SUPPORTED = IPEX_OPT_LLM_SUPPORTED_DICT["2.3"]
 
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
     """Generate the dummy example inputs."""
@@ -367,7 +462,10 @@ def recover_model_from_json(fp32_model_name_or_path, json_file_path, trust_remot
         (object): quantized model
     """
     from transformers import AutoModelForCausalLM
-    user_model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path, trust_remote_code=trust_remote_code)
+
+    # ipex recovered int8 model from configure.json requests float32 model input and on cpu device.
+    user_model = AutoModelForCausalLM.from_pretrained(fp32_model_name_or_path,
+                                                      trust_remote_code=trust_remote_code).float()
     if user_model.config.model_type in IPEX_OPT_LLM_SUPPORTED:
         import intel_extension_for_pytorch as ipex
         qconfig = ipex.quantization.default_static_qconfig_mapping
@@ -400,5 +498,9 @@ def recover_model_from_json(fp32_model_name_or_path, json_file_path, trust_remot
     from intel_extension_for_transformers.transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
+    origin_model_type = config.model_type
+    if origin_model_type in ["chatglm", "qwen", "baichuan"]:
+        config.model_type = "qwen2"
     user_model = TSModelCausalLMForITREX(user_model, config=config)
+    user_model.config.model_type = origin_model_type
     return user_model

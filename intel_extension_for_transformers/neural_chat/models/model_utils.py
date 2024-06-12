@@ -839,13 +839,27 @@ def load_model(
                     import intel_extension_for_pytorch as intel_ipex
 
                     if not use_tpp:
-                        model = intel_ipex.optimize(
-                            model.eval(),
-                            dtype=torch_dtype,
-                            inplace=True,
-                            level="O1",
-                            auto_kernel_selection=True,
-                        )
+                        try:
+                            model = intel_ipex.optimize(
+                                model.eval(),
+                                dtype=torch_dtype,
+                                inplace=True,
+                                level="O1",
+                                auto_kernel_selection=True,
+                            )
+                        except AssertionError:
+                            model = intel_ipex.optimize(
+                                model.eval(),
+                                dtype=torch_dtype,
+                                inplace=True,
+                                level="O1",
+                                auto_kernel_selection=True,
+                                weights_prepack=False,
+                            )
+                        except Exception as e:
+                            logging.info(f"IPEX optimize failure! Skip IPEX.")
+                            model = model.eval()
+
                 if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                                 or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
                     from intel_extension_for_transformers.transformers.llm.utils.mpt_trace import \

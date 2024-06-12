@@ -5,10 +5,9 @@ protobuf
 sentencepiece != 0.1.92
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.3.0+cpu
-transformers
+transformers==4.38.1
 intel_extension_for_pytorch==2.3.0
-git+https://github.com/huggingface/optimum.git@e38d40ad220a180213f99b1d93d0407a826c326d
-optimum-intel
+optimum-intel==1.16.1
 bitsandbytes  #baichuan
 transformers_stream_generator
 tiktoken  #qwen
