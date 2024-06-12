@@ -1741,4 +1741,3 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
         result = results.get(metric_name)
         logger.info("Throughput: {} samples/sec".format(results.get("eval_samples_per_second")))
         return result
-
