@@ -11,7 +11,7 @@ function main {
 # init params
 function init_params {
   tuned_checkpoint="saved_results"
-  approach="PostTrainingStatic"
+  approach="static"
   batch_size=8
   for var in "$@"
   do
@@ -47,7 +47,7 @@ function run_tuning {
         approach="PostTrainingDynamic"
     elif [ "${topology}" = "bert_base_swag_qat" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        approach="QuantizationAwareTraining"
+        approach="qat"
         extra_cmd=$extra_cmd" --learning_rate 1e-5 \
                    --num_train_epochs 6 \
                    --eval_steps 100 \

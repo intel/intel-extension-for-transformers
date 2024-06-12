@@ -9,19 +9,17 @@ This example shows the model quantization for multiple choice task. A multiple c
 ```
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
-pip install transformers==4.34.1
 ```
->**Note**: Please use transformers no higher than 4.34.1
 
 # Run
 
-The script `run_swag.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+The script `run_swag.py` provides three quantization approaches PostTrainingDynamic(dynamic), PostTrainingStatic(static) and QuantizationAwareTraining(qat) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
 ```
 python run_swag.py \
     --model_name_or_path ehdwns1516/bert-base-uncased_SWAG \
     --tune \
-    --quantization_approach PostTrainingStatic \
+    --quantization_approach static \
     --do_train \
     --do_eval \
     --pad_to_max_length \
@@ -31,6 +29,6 @@ python run_swag.py \
 
 # Validated model list
 
-|DATASET|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
+|DATASET|Pretrained model|dynamic | static | qat
 |---|------------------------------------|---|---|---
 |SWAG|ehdwns1516/bert-base-uncased_SWAG| ✅| ✅| ✅

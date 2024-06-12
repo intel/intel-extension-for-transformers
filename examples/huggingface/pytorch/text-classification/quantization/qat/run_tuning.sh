@@ -18,7 +18,7 @@ function init_params {
   batch_size=8
   MAX_SEQ_LENGTH=128
   model_type="bert"
-  approach="PostTrainingStatic"
+  approach="static"
   for var in "$@"
   do
     case $var in
@@ -49,7 +49,7 @@ function run_tuning {
         TASK_NAME="mrpc"
         model_name_or_path="bert-base-uncased"
         model_type="bert"
-        approach="QuantizationAwareTraining"
+        approach="qat"
         extra_cmd=$extra_cmd" --learning_rate 1e-5 \
                    --num_train_epochs 6 \
                    --eval_steps 100 \
@@ -59,7 +59,8 @@ function run_tuning {
                    --evaluation_strategy steps \
                    --save_strategy steps \
                    --metric_for_best_model accuracy \
-                   --save_total_limit 1"
+                   --save_total_limit 1 \
+                   --save_safetensors False"
     fi
 
 

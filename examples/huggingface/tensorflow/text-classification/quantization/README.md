@@ -57,7 +57,7 @@ python run_glue.py
     --model_name_or_path [model_name_or_path] \
     --task_name mrpc \     
     --tune \     
-    --quantization_approach PostTrainingStatic \     
+    --quantization_approach static \     
     --do_train \     
     --do_eval \     
     --output_dir ./saved_result \  
@@ -77,7 +77,7 @@ python run_glue.py
 ```
 
 > **Notes**:
- - quantization_approach in Tensorflow consist of `PostTrainingStatic`, `QuantizationAwareTraining`.
+ - quantization_approach in Tensorflow consist of `static`, `qat`.
  - task_name consist of cola, sst2, mrpc, stsb, qqp, mnli, qnli, rte, wnli.
 
 
@@ -85,7 +85,7 @@ python run_glue.py
 
 We also supported Distributed Data Parallel training on multi nodes settings for quantization.
 
-> **Note**: multi node settings boost performance in the training process and may not show good performance with PostTrainingStatic quantization strategy
+> **Note**: multi node settings boost performance in the training process and may not show good performance with static quantization strategy
 
 The default strategy we used is `MultiWorkerMirroredStrategy` in Tensorflow, and with `task_type` set as "worker", we are expected to pass following extra parameters to the script:
 
