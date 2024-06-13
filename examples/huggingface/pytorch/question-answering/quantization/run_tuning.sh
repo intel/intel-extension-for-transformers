@@ -17,7 +17,7 @@ function init_params {
   extra_cmd=""
   batch_size=8
   MAX_SEQ_LENGTH=384
-  approach="PostTrainingStatic"
+  approach="static"
   for var in "$@"
   do
     case $var in
@@ -52,15 +52,15 @@ function run_tuning {
     if [ "${topology}" = "distilbert_base_squad_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
-        approach="PostTrainingStatic"
+        approach="static"
     elif [ "${topology}" = "distilbert_base_squad_dynamic" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     elif [ "${topology}" = "distilbert_base_squad_qat" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
-        approach="QuantizationAwareTraining"
+        approach="qat"
         extra_cmd=$extra_cmd" --learning_rate 1e-5 \
                    --num_train_epochs 6 \
                    --eval_steps 100 \
@@ -73,31 +73,31 @@ function run_tuning {
     elif [ "${topology}" = "bert_large_SQuAD_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="bert-large-uncased-whole-word-masking-finetuned-squad"
-        approach="PostTrainingStatic"
+        approach="static"
     elif [ "${topology}" = "roberta_base_SQuAD2_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="deepset/roberta-base-squad2"
-        approach="PostTrainingStatic"
+        approach="static"
         # extra_cmd=$extra_cmd" --version_2_with_negative"
     elif [ "${topology}" = "longformer_base_squad_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="valhalla/longformer-base-4096-finetuned-squadv1"
-        approach="PostTrainingStatic"
+        approach="static"
         extra_cmd=$extra_cmd" --strategy mse_v2"
     elif [ "${topology}" = "longformer_base_squad_dynamic" ]; then
         DATASET_NAME="squad"
         model_name_or_path="valhalla/longformer-base-4096-finetuned-squadv1"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
         extra_cmd=$extra_cmd" --strategy mse_v2"
     elif [ "${topology}" = "distilbert_base_squad_ipex" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
         extra_cmd=$extra_cmd" --perf_tol 0.02"
-        approach="PostTrainingStatic"
+        approach="static"
     elif [ "${topology}" = "bert_large_squad_ipex" ]; then
         DATASET_NAME="squad"
         model_name_or_path="bert-large-uncased-whole-word-masking-finetuned-squad"
-        approach="PostTrainingStatic"
+        approach="static"
     fi
 
     python -u ./run_qa.py \

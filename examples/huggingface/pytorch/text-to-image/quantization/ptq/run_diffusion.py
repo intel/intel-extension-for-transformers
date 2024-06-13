@@ -30,7 +30,12 @@ from torch.utils.data import DataLoader, Dataset
 
 from accelerate.utils import set_seed
 from diffusers import StableDiffusionPipeline
-from intel_extension_for_transformers.transformers import metrics , NoTrainerOptimizer, OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.transformers import metrics , NoTrainerOptimizer
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    TuningCriterion,
+    AccuracyCriterion
+)
 from intel_extension_for_transformers.transformers.config import WEIGHTS_NAME
 from pytorch_fid import fid_score
 
@@ -100,9 +105,9 @@ def parse_args():
     parser.add_argument(
         "--quantization_approach",
         type=str,
-        default="PostTrainingStatic",
-        help="Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining.",
+        default="static",
+        help="Quantization approach. Supported approach are static, "
+                  "dynamic and qat.",
     )
     parser.add_argument(
         "--framework",
@@ -301,13 +306,20 @@ def main():
                                     criterion=args.perf_tol,
                                     greater_is_better=False
                                     )
-                quantization_config = QuantizationConfig(
-                                            approach=args.quantization_approach,
-                                            max_trials=200,
-                                            metrics=[tune_metric],
-                                            )
+                tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+                accuracy_criterion = AccuracyCriterion(
+                    higher_is_better=False,  # optional.
+                    criterion="relative" if args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                    tolerable_loss=args.perf_tol,  # optional.
+                )
+                quantization_config = PostTrainingQuantConfig(
+                    approach=args.quantization_approach,
+                    tuning_criterion=tuning_criterion,
+                    accuracy_criterion=accuracy_criterion
+                )
                 os.makedirs(args.output_dir, exist_ok=True)
                 quantizer = NoTrainerOptimizer(model, args.output_dir)
+                quantizer.metrics = tune_metric
                 model = quantizer.quantize(quantization_config,
                            eval_func=eval_func,
                            calib_func=calibration_func,

@@ -28,7 +28,7 @@ import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset
 from itertools import chain
-from intel_extension_for_transformers.transformers import OptimizedModel
+from intel_extension_for_transformers.transformers import OptimizedModel, metrics
 from neural_compressor.config import (
     PostTrainingQuantConfig,
     QuantizationAwareTrainingConfig,
@@ -486,6 +486,10 @@ def main():
                 )
             model.config.save_pretrained(training_args.output_dir)
 
+        tune_metric = metrics.Metric(
+            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
+        )
+        trainer.metrics = tune_metric
         if optim_args.quantization_approach != "qat":
             tuning_criterion = TuningCriterion(max_trials=600)
             accuracy_criterion = AccuracyCriterion(

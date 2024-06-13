@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from datasets import load_dataset
 from itertools import chain
 
-from intel_extension_for_transformers.transformers import OptimizedModel
+from intel_extension_for_transformers.transformers import OptimizedModel, metrics
 from neural_compressor.config import (
     PostTrainingQuantConfig,
     QuantizationAwareTrainingConfig,
@@ -207,6 +207,10 @@ class OptimizationArguments:
     tune: bool = field(
         default=False,
         metadata={"help": "Whether or not to apply quantization."},
+    )
+    metric_name: Optional[str] = field(
+        default="eval_loss",
+        metadata={"help": "Metric used for the tuning strategy."},
     )
     quantization_approach: Optional[str] = field(
         default="static",
@@ -513,6 +517,7 @@ def main():
         plm_probability=data_args.plm_probability,
         max_span_length=data_args.max_span_length,
     )
+
     metric_name = optim_args.metric_name
     training_args.metric_for_best_model = metric_name
 
@@ -537,6 +542,13 @@ def main():
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
+        tune_metric = metrics.Metric(
+            name=metric_name, 
+            is_relative=optim_args.is_relative,
+            criterion=optim_args.perf_tol,
+            greater_is_better=False
+        )
+        trainer.metrics = tune_metric
         if optim_args.quantization_approach != "qat":
             tuning_criterion = TuningCriterion(max_trials=600)
             accuracy_criterion = AccuracyCriterion(

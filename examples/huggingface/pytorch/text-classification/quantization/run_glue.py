@@ -26,7 +26,7 @@ import sys
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import OptimizedModel
+from intel_extension_for_transformers.transformers import OptimizedModel, metrics, objectives
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from neural_compressor.config import (
     PostTrainingQuantConfig,
@@ -207,6 +207,10 @@ class OptimizationArguments:
         default="static",
         metadata={"help": "Quantization approach. Supported approach are static, "
                   "dynamic and qat."},
+    )
+    metric_name: Optional[str] = field(
+        default=None,
+        metadata={"help": "Metric used for the tuning strategy."},
     )
     is_relative: Optional[bool] = field(
         default=True,
@@ -506,6 +510,20 @@ def main():
     else:
         data_collator = None
 
+    metric_name = (
+        optim_args.metric_name
+        if optim_args.metric_name is not None
+        else "eval_"
+        + (
+            "pearson"
+            if data_args.task_name == "stsb"
+            else "matthews_correlation"
+            if data_args.task_name == "cola"
+            else "accuracy"
+        )
+    )
+    training_args.metric_for_best_model = metric_name
+
     # Initialize our Trainer
     trainer = NLPTrainer(
         model=model,
@@ -527,9 +545,13 @@ def main():
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-
+        tune_metric = metrics.Metric(
+            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
+        )
+        trainer.metrics = tune_metric
+        objective = objectives.performance
         if optim_args.quantization_approach != "qat":
-            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+            tuning_criterion = TuningCriterion(max_trials=600, objective=[objective.name])
             accuracy_criterion = AccuracyCriterion(
                 higher_is_better=True,  # optional.
                 criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".

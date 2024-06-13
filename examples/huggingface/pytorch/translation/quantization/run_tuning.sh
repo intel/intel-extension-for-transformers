@@ -15,7 +15,7 @@ function init_params {
   DATASET_NAME="xsum"
   extra_cmd=""
   batch_size=8
-  approach="PostTrainingStatic"
+  approach="static"
   for var in "$@"
   do
     case $var in
@@ -45,11 +45,11 @@ function run_tuning {
     if [ "${topology}" = "t5-small_dynamic" ]; then
         model_name_or_path="t5-small"
         extra_cmd=$extra_cmd" --source_lang en --target_lang ro --dataset_name wmt16 --dataset_config_name ro-en"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     elif [ "${topology}" = "marianmt_WMT_en_ro_dynamic" ]; then
         model_name_or_path='Helsinki-NLP/opus-mt-en-ro'
         extra_cmd=$extra_cmd" --source_lang en --target_lang ro --dataset_name wmt16 --dataset_config_name ro-en"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     else
         echo "unsupported topology: ${topology}"
         exit 1

@@ -30,8 +30,12 @@ from torch.utils.data import DataLoader
 import transformers
 from accelerate import Accelerator
 from huggingface_hub import Repository
-from intel_extension_for_transformers.transformers import (metrics, NoTrainerOptimizer, objectives, OptimizedModel,
-                         QuantizationConfig)
+from intel_extension_for_transformers.transformers import metrics, NoTrainerOptimizer, objectives, OptimizedModel
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    TuningCriterion,
+    AccuracyCriterion
+)
 from transformers import (
     AdamW,
     AutoConfig,
@@ -172,9 +176,9 @@ def parse_args():
     parser.add_argument("--tune", action="store_true", help="tune a best model with Intel Extension for Transformers.")
     parser.add_argument("--quantization_approach",
                         type=str,
-                        default="PostTrainingStatic",
-                        help="Quantization approach. Supported approach are PostTrainingStatic, "
-                        "PostTrainingDynamic and QuantizationAwareTraining.")
+                        default="static",
+                        help="Quantization approach. Supported approach are static, "
+                        "dynamic and qat.")
     parser.add_argument("--metric_name",
                         type=str,
                         default=None,
@@ -521,12 +525,20 @@ def main():
                                      is_relative=args.is_relative,
                                      criterion=args.perf_tol)
         objective = objectives.performance
-        q_config = QuantizationConfig(approach=args.quantization_approach,
-                                      max_trials=600,
-                                      metrics=[tune_metric],
-                                      objectives=[objective])
+        tuning_criterion = TuningCriterion(max_trials=600, objective=[objective.name])
+        accuracy_criterion = AccuracyCriterion(
+            higher_is_better=False,  # optional.
+            criterion="relative" if args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+            tolerable_loss=args.perf_tol,  # optional.
+        )
+        quantization_config = PostTrainingQuantConfig(
+            approach=args.quantization_approach,
+            tuning_criterion=tuning_criterion,
+            accuracy_criterion=accuracy_criterion
+        )
         quantizer = NoTrainerOptimizer(model, args.output_dir)
-        model = quantizer.quantize(q_config,
+        quantizer.metrics = tune_metric
+        model = quantizer.quantize(quantization_config,
                                    eval_func=eval_func_nc,
                                    calib_dataloader=train_dataloader)
 

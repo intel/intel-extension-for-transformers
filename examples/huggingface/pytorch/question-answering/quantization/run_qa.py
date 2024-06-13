@@ -26,7 +26,13 @@ import timeit
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import metrics , OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.transformers import OptimizedModel, metrics
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    QuantizationAwareTrainingConfig,
+    TuningCriterion,
+    AccuracyCriterion
+)
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -215,13 +221,13 @@ class OptimizationArguments:
         metadata={"help": "Tuning strategy. Supported strategies are basic, bayesian, mse, mse_v2."},
     )
     quantization_approach: Optional[str] = field(
-        default="PostTrainingStatic",
-        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining."},
+        default="static",
+        metadata={"help": "Quantization approach. Supported approach are static, "
+                  "dynamic and qat."},
     )
     framework: Optional[str] = field(
-        default="pytorch",
-        metadata={"help": "Deep learning framework. Supported framework are pytorch, ipex"},
+        default="default",
+        metadata={"help": "Deep learning framework. Supported framework are default, ipex"},
     )
     metric_name: Optional[str] = field(
         default="eval_f1",
@@ -655,31 +661,46 @@ def main():
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for quantization.")
 
-        if optim_args.quantization_approach != "PostTrainingDynamic":
+        if optim_args.quantization_approach != "dynamic":
             if not training_args.do_train:
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-        if optim_args.quantization_approach == "QuantizationAwareTraining":
-            early_stopping_patience = 6
-            early_stopping_threshold = 0.001 # optional
-            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
-                                                                    early_stopping_threshold))
-
         tune_metric = metrics.Metric(
             name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
         )
-        quantization_config = QuantizationConfig(
-            approach=optim_args.quantization_approach,
-            max_trials=200,
-            metrics=[tune_metric],
-            sampling_size = len(train_dataset)//20
-        )
-        if optim_args.strategy == "mse_v2":
-            quantization_config.strategy = "mse_v2"
-        if optim_args.framework == "ipex":
-            quantization_config.framework = "pytorch_ipex" 
-            trainer.calib_dataloader = calib_dataloader
+        trainer.metrics = tune_metric
+        if optim_args.quantization_approach != "qat":
+            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+            accuracy_criterion = AccuracyCriterion(
+                higher_is_better=True,  # optional.
+                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                tolerable_loss=optim_args.perf_tol,  # optional.
+            )
+            quantization_config = PostTrainingQuantConfig(
+                backend = optim_args.framework,
+                approach=optim_args.quantization_approach,
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )
+            if optim_args.framework == "ipex":
+                trainer.calib_dataloader = calib_dataloader
+        else:
+            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+            accuracy_criterion = AccuracyCriterion(
+                higher_is_better=True,  # optional.
+                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                tolerable_loss=optim_args.perf_tol,  # optional.
+            )
+            quantization_config = QuantizationAwareTrainingConfig(
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )            
+            early_stopping_patience = 2
+            early_stopping_threshold = 0.001 # optional
+            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience, \
+                                                                    early_stopping_threshold))
+
         model = trainer.quantize(quant_config=quantization_config)
 
     if optim_args.benchmark_only:

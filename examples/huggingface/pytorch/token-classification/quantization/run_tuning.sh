@@ -18,7 +18,7 @@ function init_params {
   batch_size=8
   MAX_SEQ_LENGTH=384
   model_type="bert"
-  approach="PostTrainingStatic"
+  approach="static"
   for var in "$@"
   do
     case $var in
@@ -49,17 +49,17 @@ function run_tuning {
         DATASET_NAME="conll2003"
         model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
         model_type="bert"
-        approach="PostTrainingStatic"
+        approach="static"
     elif [ "${topology}" = "distilbert_base_ner_dynamic" ]; then
         DATASET_NAME="conll2003"
         model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
         model_type="bert"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     elif [ "${topology}" = "distilbert_base_ner_qat" ]; then
         DATASET_NAME="conll2003"
         model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
         model_type="bert"
-        approach="QuantizationAwareTraining"
+        approach="qat"
         extra_cmd=$extra_cmd" --learning_rate 1e-5 \
                    --num_train_epochs 6 \
                    --eval_steps 100 \

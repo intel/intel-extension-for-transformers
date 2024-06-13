@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 # Run
 
-The script `run_swag.py` provides three quantization approaches PostTrainingDynamic(dynamic), PostTrainingStatic(static) and QuantizationAwareTraining(qat) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+The script `run_swag.py` provides three quantization approaches (dynamic, static and qat) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
 ```
 python run_swag.py \
