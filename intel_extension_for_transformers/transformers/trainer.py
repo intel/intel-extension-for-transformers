@@ -32,8 +32,8 @@ from intel_extension_for_transformers.transformers import (
     DistillationConfig,
     Provider,
     PruningMode,
-    # QuantizationConfig,
-    # QuantizationMode,
+    QuantizationConfig,
+    QuantizationMode,
     PruningConfig,
     DynamicLengthConfig,
     BenchmarkConfig,
@@ -43,7 +43,6 @@ from neural_compressor.quantization import fit
 from neural_compressor.config import (
     PostTrainingQuantConfig,
     QuantizationAwareTrainingConfig,
-    TuningCriterion
 )
 from intel_extension_for_transformers.transformers.benchmark import benchmark
 from intel_extension_for_transformers.transformers.utils.metrics import Metric
@@ -147,6 +146,7 @@ class BaseTrainer():
         self.orchestrate_opt = False
         self.orchestrate_opt_pruning = False
         self.dynamic_config = None
+        self.model_config = None
 
     @property
     def resuming_checkpoint(self):
@@ -208,18 +208,27 @@ class BaseTrainer():
             torch.manual_seed(self.args.seed)
         results = self.evaluate()
         logger.info(results)
-        task_name = self.eval_dataset.config_name
-        if "wikitext" in task_name:
-            metric_name = "eval_loss"
-        elif task_name == "stsb":
-            metric_name = "eval_person"
-        elif task_name == "cola":
-            metric_name = "eval_matthews_correlation"
-        else:
-            metric_name = "eval_accuracy"
-        assert metric_name in results.keys(), \
-                "Please set metric from {}".format(results.keys())
-        result = results.get(metric_name)
+        if isinstance(self.metrics, list):
+            nums = len(self.metrics)
+            for metric in self.metrics:
+                assert metric.name in results.keys(), \
+                    "Please set metric from {}".format(results.keys())
+            if nums == 1:
+                result = results.get(self.metrics[0].name)
+            else:  # pragma: no cover
+                result = 0
+                for metric in self.metrics:
+                    assert metric.weight_ratio is not None, \
+                        "Please set weights for metric if you want to use more than one metric"
+                    result += results[metric.name] * metric.weighted
+            logger.info("metric: {}".format(result))
+        elif isinstance(self.metrics, Metric):
+            assert self.metrics.name in results.keys(), \
+                    "Please set metric from {}".format(results.keys())
+            result = results.get(self.metrics.name)
+            logger.info("metric: {}".format(result))
+        else:  # pragma: no cover
+            assert False, "Please set the correct metrics format from the README"
         logger.info("Throughput: {} samples/sec".format(results.get("eval_samples_per_second")))
         return result
 
@@ -256,9 +265,13 @@ class BaseTrainer():
         except Exception as e:  # pragma: no cover
             logger.warning("Model deepcopy failed: {}!".format(repr(e)))
         if isinstance(quant_config, PostTrainingQuantConfig):
+            if quant_config.backend == "ipex":
+                self.model_config = self.model.config # jit model will loss config
+            if self._calib_dataloader is None:
+                self._calib_dataloader = self.get_train_dataloader()
             self.opt_model = fit(self.model,
                                  conf=quant_config,
-                                 calib_dataloader=self.get_train_dataloader(),
+                                 calib_dataloader=self._calib_dataloader,
                                  eval_func=self._eval_func)
         else:
             compression_manager = prepare_compression(self.model, quant_config)
@@ -1735,9 +1748,26 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
             torch.manual_seed(self.args.seed)
         results = self.evaluate(metric_key_prefix="eval")
         logger.info(results)
-        metric_name = "eval_bleu"
-        assert metric_name in results.keys(), \
-            "Please set metric from {}".format(results.keys())
-        result = results.get(metric_name)
+        if isinstance(self.metrics, list):
+            nums = len(self.metrics)
+            for metric in self.metrics:
+                assert metric.name in results.keys(), \
+                    "Please set metric from {}".format(results.keys())
+            if nums == 1:
+                result = results.get(self.metrics[0].name)
+            else:
+                result = 0
+                for metric in self.metrics:
+                    assert metric.weight_ratio is not None, \
+                        "Please set weights for metric if you want to use more than one metric"
+                    result += results[metric.name] * metric.weighted
+            logger.info("metric: {}".format(result))
+        elif isinstance(self.metrics, Metric):
+            assert self.metrics.name in results.keys(), \
+                    "Please set metric from {}".format(results.keys())
+            result = results.get(self.metrics.name)
+            logger.info("metric: {}".format(result))
+        else:
+            assert False, "Please set the correct metrics format from the README"
         logger.info("Throughput: {} samples/sec".format(results.get("eval_samples_per_second")))
         return result
