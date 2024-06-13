@@ -182,9 +182,6 @@ class Agent_QA():
                 knowledge_base = self.database.build(documents=langchain_documents, embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               **kwargs)
-            if self.vector_database == "Qdrant" and knowledge_base.is_local():
-               # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
-               knowledge_base.client.close()
         elif self.retrieval_type == "child_parent":    # Using child-parent store retriever
             child_documents = self.splitter.split_documents(langchain_documents)
             langchain_documents = document_append_id(langchain_documents)
@@ -199,12 +196,6 @@ class Agent_QA():
                                             sign='child', **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                child_document_store=child_knowledge_base, **kwargs)
-            if self.vector_database == "Qdrant" :
-                # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
-                if knowledge_base.is_local():
-                    knowledge_base.client.close()
-                if child_knowledge_base.is_local():
-                    child_knowledge_base.client.close()
         elif self.retrieval_type == "bm25":
             self.docs = document_append_id(langchain_documents)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, docs=self.docs, **kwargs)
@@ -334,4 +325,17 @@ class Agent_QA():
                 prompt = generate_qa_prompt(query, context)
         else:
             logging.error("The selected generation mode is invalid!")
+
+        # qdrant local vector db need to be closed
+        # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
+        if self.vector_database == "Qdrant":
+            knowledge_base = self.retriever.retriever.vectorstore
+            to_close = []
+            if self.retrieval_type in ['default', 'child_parent'] and knowledge_base.is_local():
+                to_close.append(knowledge_base)
+            if self.retrieval_type == "child_parent" and child_knowledge_base.is_local():
+                to_close.append(child_knowledge_base)
+            for kb in to_close:
+                kb.client.close()
+        
         return prompt, links
