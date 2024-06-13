@@ -234,12 +234,12 @@ router = RetrievalAPIRouter()
 RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./retrieval_docs")+'/'
 EXCEPT_PATTERNS = ["/xuhui_doc", "default/persist_dir"]
 
-def safe_join(base_path, *paths):     
-    # Prevent path traversal by ensuring the final path is within the base path    
-    base_path = os.path.abspath(base_path)    
-    final_path = os.path.abspath(os.path.join(base_path, *paths))    
-    if not final_path.startswith(base_path):        
-        raise ValueError("Attempted Path Traversal Detected") 
+def safe_join(base_path, *paths):
+    # Prevent path traversal by ensuring the final path is within the base path
+    base_path = os.path.abspath(base_path)
+    final_path = os.path.abspath(os.path.join(base_path, *paths))
+    if not final_path.startswith(base_path):
+        raise ValueError("Attempted Path Traversal Detected")
     return final_path
 
 @router.post("/v1/askdoc/upload_link")
