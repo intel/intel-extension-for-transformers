@@ -231,11 +231,16 @@ class RetrievalAPIRouter(APIRouter):
 
 
 router = RetrievalAPIRouter()
-current_working_directory = os.getcwd()
-absolute_path_cwd = os.path.abspath(current_working_directory)
-RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default=absolute_path_cwd+"/retrieval_docs")+'/'
+RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./retrieval_docs")+'/'
 EXCEPT_PATTERNS = ["/xuhui_doc", "default/persist_dir"]
 
+def safe_join(base_path, *paths):     
+    # Prevent path traversal by ensuring the final path is within the base path    
+    base_path = os.path.abspath(base_path)    
+    final_path = os.path.abspath(os.path.join(base_path, *paths))    
+    if not final_path.startswith(base_path):        
+        raise ValueError("Attempted Path Traversal Detected") 
+    return final_path
 
 @router.post("/v1/askdoc/upload_link")
 async def retrieval_upload_link(request: Request):
@@ -318,7 +323,7 @@ async def retrieval_add_files(request: Request,
         path_prefix = get_path_prefix(kb_id, user_id)
         upload_path = path_prefix + '/upload_dir'
         persist_path = path_prefix + '/persist_dir'
-        save_path = Path(upload_path) / file_path
+        save_path = safe_join(Path(upload_path), file_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
 
         # save file content to local disk
@@ -620,7 +625,7 @@ async def delete_single_file(request: Request):
         logger.info(f"[askdoc - delete_file] successfully delete kb {knowledge_base_id}")
         return {"status": True}
 
-    delete_path = Path(path_prefix) / "upload_dir" / del_path
+    delete_path = safe_join(Path(path_prefix) / "upload_dir", del_path)
     logger.info(f'[askdoc - delete_file] delete_path: {delete_path}')
 
     # partially delete files/folders from the kb
