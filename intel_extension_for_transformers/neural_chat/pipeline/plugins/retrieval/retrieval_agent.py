@@ -329,12 +329,18 @@ class Agent_QA():
         # qdrant local vector db need to be closed
         # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
         if self.vector_database == "Qdrant":
-            knowledge_base = self.retriever.retriever.vectorstore
             to_close = []
-            if self.retrieval_type in ['default', 'child_parent'] and knowledge_base.is_local():
-                to_close.append(knowledge_base)
-            if self.retrieval_type == "child_parent" and child_knowledge_base.is_local():
-                to_close.append(child_knowledge_base)
+            if self.retrieval_type == "default":
+                knowledge_base = self.retriever.retriever.vectorstore
+                if knowledge_base.is_local():
+                    to_close.append(knowledge_base)
+            if self.retrieval_type == "child_parent":
+                knowledge_base = self.retriever.retriever.parentstore
+                child_knowledge_base = self.retriever.retriever.vectorstore
+                if knowledge_base.is_local():
+                    to_close.append(knowledge_base)
+                if child_knowledge_base.is_local():
+                    to_close.append(child_knowledge_base)
             for kb in to_close:
                 kb.client.close()
 
