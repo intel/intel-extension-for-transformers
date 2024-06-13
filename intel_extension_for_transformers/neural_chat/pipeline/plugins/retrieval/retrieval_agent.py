@@ -337,5 +337,5 @@ class Agent_QA():
                 to_close.append(child_knowledge_base)
             for kb in to_close:
                 kb.client.close()
-        
+
         return prompt, links
