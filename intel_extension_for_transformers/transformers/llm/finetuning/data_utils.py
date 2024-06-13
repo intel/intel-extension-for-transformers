@@ -63,6 +63,9 @@ class CompletionDataPreprocess:
         elif "stack-exchange-instruction" in self.dataset_name:
             self.prompt_template = PromptTemplate("question_answer")
             self.key_role_map = [('question', 0), ('response', 1)]
+        elif "glue" in self.dataset_name:
+            self.prompt_template = PromptTemplate("glue_mnli")
+            self.key_role_map = [('premise', 0), ('hypothesis', 1), ('label', 2)]
         else:
             raise NotImplementedError(
                 f"Unsupported dataset {dataset_name}, "
@@ -86,13 +89,13 @@ class CompletionDataPreprocess:
                     key_role_map = self.key_role_map[0]
 
             for idx, (key, role) in enumerate(key_role_map):
-                message = example[key]
+                message = str(example[key])
                 if idx == len(key_role_map)-1:
                     message = ""
                 prompt_template.append_message(prompt_template.roles[role], message)
             source = prompt_template.get_prompt()
             prompts["source"].append(source)
-            prompts["target"].append(example[key_role_map[-1][0]])
+            prompts["target"].append(str(example[key_role_map[-1][0]]))
             prompt_template.clear_messages()
         return prompts
 

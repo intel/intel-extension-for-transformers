@@ -193,8 +193,8 @@ def convert_model_to_public(model):
         "fp8_e5m2",
         "fp8_e4m3",
         "nf4",
-        "fp4",
-        "int4_fullrange",
+        "fp4_e2m1",
+        "fp4_e2m1_bnb",
     ]:
         model = recover_export_model(model)
 
@@ -419,11 +419,15 @@ class _BaseQBitsAutoModelClass:
             model.load_weights(weights_iterator)
 
             print("INC quantizing...")
-            config = RtnConfig(compute_dtype="bf16",
-                            group_size=128,
-                            scale_dtype="bf16",
-                            weight_dtype="int4_clip",
-                            bits=4)
+            config = kwargs.pop("config", None)
+            if config is None:
+                config = RtnConfig(compute_dtype="int8",
+                                group_size=128,
+                                scale_dtype="bf16",
+                                weight_dtype="int4_clip",
+                                bits=4)
+                print("using default RTNConfig = ", config)
+            print("Using customized config = ", config)
             model = convert_to_quantized_model(model, config)
 
             return llm
@@ -657,8 +661,8 @@ class _BaseQBitsAutoModelClass:
                         "4" in quantization_config.weight_dtype
                         and convert_dtype_str2torch(quantization_config.compute_dtype)
                         == torch_dtype
-                    ), "Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
-                    f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
+                    ), "Quantization_config.weight_dtype should be 'nf4' , 'int4', 'int4_fullrange', 'int4_clip', "
+                    f"'fp4', 'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
                     if use_neural_speed:
@@ -795,10 +799,6 @@ class _BaseQBitsAutoModelClass:
                     or device_map == torch.device("cpu")
                 ) and model.config.model_type == "chatglm":
                     model = model.float()
-                if use_cpu:
-                    quantization_config.post_init_cpu()
-                elif use_xpu:
-                    quantization_config.post_init_xpu()
                 model = convert_to_quantized_model(
                     model, quantization_config, device=device_map
                 )
@@ -841,8 +841,7 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "llama" in model_type and transformers.__version__ >= "4.36.0":
-                quantization_config.ipex_opt_llm = False
+
             logger.info("Applying SmoothQuant.")
             # ipex.optimize_transformers
             if quantization_config.ipex_opt_llm is None:
@@ -851,7 +850,7 @@ class _BaseQBitsAutoModelClass:
                     logger.info(
                         "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
                     )
-                    logger.warning("The suggested transformers version is 4.35.2.")
+                    logger.warning("The suggested transformers version is 4.38.1.")
                 else:
                     quantization_config.ipex_opt_llm = False
             if quantization_config.ipex_opt_llm:
@@ -946,7 +945,7 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        if model_type in ["bloom", "qwen"]:
+                        if model_type in ["bloom"]:
                             attention_mask = torch.ones(len(input_ids) + 1)
                             attention_mask[0] = 0
                         else:
@@ -1896,7 +1895,8 @@ class _BaseQBitsAutoModelClass:
                 logger.warning("Please provide the correct bits number or weight_dtype in config.json.")
                 raise ValueError(
                     f"weight_dtype must be a string in "
-                    f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+                    f"'int8', 'int4', 'int4_fullrange', 'int4_clip', 'nf4', "
+                    f"'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8', 'fp8_e5m2, fp8_e4m3'"
                 )
             else:
                 logger.info("{} quantization weight_dtype is used.".format(quantization_config.weight_dtype))
@@ -1910,7 +1910,8 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
-            "fp4",
+            "fp4_e2m1",
+            "fp4_e2m1_bnb",
             "nf4",
             "int4_fullrange",
         ]:
@@ -2018,7 +2019,8 @@ class _BaseQBitsAutoModelClass:
             "fp8_e5m2",
             "fp8_e4m3",
             "nf4",
-            "fp4",
+            "fp4_e2m1",
+            "fp4_e2m1_bnb",
             "int4_fullrange",
         ] and not quantization_config.use_ipex:
             model = replace_linear(

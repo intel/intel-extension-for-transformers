@@ -8,9 +8,7 @@ omit =
  */intel_extension_for_transformers/haystack/**
  */intel_extension_for_transformers/llama_index/**
  */intel_extension_for_transformers/transformers/dynamic/**
- */intel_extension_for_transformers/transformers/mixture/**
  */intel_extension_for_transformers/transformers/modeling/**
- */intel_extension_for_transformers/transformers/nas/**
  */intel_extension_for_transformers/transformers/pruner/**
  */intel_extension_for_transformers/transformers/utils/**
  */intel_extension_for_transformers/transformers/llm/**

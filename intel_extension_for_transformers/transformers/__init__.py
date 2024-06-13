@@ -18,12 +18,9 @@
 
 from .config import (
     WEIGHTS_NAME,
-    AutoDistillationConfig,
     BenchmarkConfig,
     DistillationConfig,
     DynamicLengthConfig,
-    FlashDistillationConfig,
-    NASConfig,
     Provider,
     PrunerV2,
     PruningConfig,
@@ -34,8 +31,6 @@ from .distillation import (
     SUPPORTED_DISTILLATION_CRITERION_MODE,
     DistillationCriterionMode,
 )
-from .mixture.auto_distillation import AutoDistillation
-from .nas import NAS
 from .optimizer import NoTrainerOptimizer, Orchestrate_optimizer
 from .optimizer_tf import TFOptimization
 from .pruning import SUPPORTED_PRUNING_MODE, PrunerConfig, PruningMode
