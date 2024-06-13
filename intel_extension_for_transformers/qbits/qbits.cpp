@@ -114,7 +114,6 @@ static void woq_linear(const torch::Tensor& activation, const torch::Tensor& wei
                        torch::Tensor& output, const std::string& compute_type, const std::string& weight_type,
                        const std::string& scale_type, bool asym) {
   woq::woq_config_param p;
-
   torch::Tensor bias_fp32;
   torch::Tensor* rt_bias = bias.numel() == 0 ? &output : const_cast<torch::Tensor*>(&bias);
   if (bias.scalar_type() != torch::kFloat32 && bias.numel() != 0) {
@@ -180,6 +179,16 @@ static bool check_isa_supported(std::string isa) {
   return false;
 }
 
+static bool check_torch_compatibility(std::string version) {
+  static std::string expected_version = COMPATIBLE_TORCH_VERSION;
+  if (version == expected_version) {
+    return true;
+  }
+  TORCH_CHECK(false,
+              "QBits: Detected non QBits compiled version Torch, expected" + expected_version + ", but got " + version);
+  return false;
+}
+
 PYBIND11_MODULE(qbits_py, m) {
   m.def("quantize_to_packed_weight", &quantize_to_packed_weight);
   m.def("woq_linear", &woq_linear);
@@ -193,4 +202,5 @@ PYBIND11_MODULE(qbits_py, m) {
   m.def("dropout_fwd", &qbits_dropout_fwd);
   m.def("dropout_bwd", &qbits_dropout_bwd);
   m.def("check_isa_supported", &check_isa_supported);
+  m.def("check_torch_compatibility", &check_torch_compatibility);
 }
