@@ -322,6 +322,7 @@ class _BaseQBitsAutoModelClass:
         "whisper",
         "qwen2",
         "gemma",
+        "phi3",
         "tinyllama",
     ]
 
