@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Build Your Chatbot with Intel® Extension for Transformers neural-chat &mdash; Intel® Extension for Transformers 0.1.dev1+g85f2495 documentation</title>
+  <title>Build Your Chatbot with Intel® Extension for Transformers neural-chat &mdash; Intel® Extension for Transformers 0.1.dev1+g8ab25cf documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=fd3f3429" />
@@ -192,7 +192,33 @@
 <h3>3.1.1 Verify the client connection to server is OK.<a class="headerlink" href="#verify-the-client-connection-to-server-is-ok" title="Link to this heading"></a></h3>
 <p>Open a new linux console, run following command</p>
 <p><code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">-vv</span> <span class="pre">-X</span> <span class="pre">POST</span> <span class="pre">http://127.0.0.1:8000/v1/chat/completions</span></code></p>
-<p>Check the output. Make sure there is no network connection and proxy setting issue at Client side</p>
+<p>Check the output. Make sure there is no network connection and proxy setting issue at Client side.</p>
+<p>If there is no network connection issue, you will get such response from console:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span><span class="w"> </span><span class="o">-</span><span class="n">vv</span><span class="w"> </span><span class="o">-</span><span class="n">X</span><span class="w"> </span><span class="n">POST</span><span class="w"> </span><span class="n">http</span><span class="o">:</span><span class="c1">//127.0.0.1:8000/v1/chat/completions</span>
+<span class="o">*</span><span class="w"> </span><span class="n">Uses</span><span class="w"> </span><span class="n">proxy</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="n">variable</span><span class="w"> </span><span class="n">no_proxy</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="err">&#39;</span><span class="n">localhost</span><span class="p">,</span><span class="mf">127.0.0.1</span><span class="err">&#39;</span>
+<span class="o">*</span><span class="w">   </span><span class="n">Trying</span><span class="w"> </span><span class="mf">127.0.0.1</span><span class="o">:</span><span class="mf">8000.</span><span class="p">..</span>
+<span class="o">*</span><span class="w"> </span><span class="n">Connected</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="mf">127.0.0.1</span><span class="w"> </span><span class="p">(</span><span class="mf">127.0.0.1</span><span class="p">)</span><span class="w"> </span><span class="n">port</span><span class="w"> </span><span class="mi">8000</span><span class="w"> </span><span class="p">(</span><span class="err">#</span><span class="mi">0</span><span class="p">)</span>
+<span class="o">&gt;</span><span class="w"> </span><span class="n">POST</span><span class="w"> </span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">chat</span><span class="o">/</span><span class="n">completions</span><span class="w"> </span><span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+<span class="o">&gt;</span><span class="w"> </span><span class="n">Host</span><span class="o">:</span><span class="w"> </span><span class="mf">127.0.0.1</span><span class="o">:</span><span class="mi">8000</span>
+<span class="o">&gt;</span><span class="w"> </span><span class="n">User</span><span class="o">-</span><span class="n">Agent</span><span class="o">:</span><span class="w"> </span><span class="n">curl</span><span class="o">/</span><span class="mf">7.81.0</span>
+<span class="o">&gt;</span><span class="w"> </span><span class="n">Accept</span><span class="o">:</span><span class="w"> </span><span class="o">*</span><span class="cm">/*</span>
+<span class="cm">&gt;</span>
+<span class="cm">* Mark bundle as not supporting multiuse</span>
+<span class="cm">&lt; HTTP/1.1 422 Unprocessable Entity</span>
+<span class="cm">&lt; date: Wed, 12 Jun 2024 01:56:44 GMT</span>
+<span class="cm">&lt; server: uvicorn</span>
+<span class="cm">&lt; content-length: 81</span>
+<span class="cm">&lt; content-type: application/json</span>
+<span class="cm">&lt;</span>
+<span class="cm">* Connection #0 to host 127.0.0.1 left intact</span>
+<span class="cm">{&quot;detail&quot;:[{&quot;loc&quot;:[&quot;body&quot;],&quot;msg&quot;:&quot;field required&quot;,&quot;type&quot;:&quot;value_error.missing&quot;}]}</span>
+</pre></div>
+</div>
+<p>And at server side there is connection in (but incorrect input data), there output is:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="nl">INFO</span><span class="p">:</span><span class="w">     </span><span class="mf">127.0.0.1</span><span class="o">:</span><span class="mi">59902</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="s">&quot;POST /v1/chat/completions HTTP/1.1&quot;</span><span class="w"> </span><span class="mi">422</span><span class="w"> </span><span class="n">Unprocessable</span><span class="w"> </span><span class="n">Entity</span>
+</pre></div>
+</div>
+<p>Otherwise, check your network setting.</p>
 </section>
 <section id="test-request-command-at-client-side">
 <h3>3.1.2 Test request command at client side<a class="headerlink" href="#test-request-command-at-client-side" title="Link to this heading"></a></h3>
@@ -278,7 +304,7 @@ You can access chatbot through web browser on port 8008 now.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f36bbdc4760> 
+   <jinja2.runtime.BlockReference object at 0x7f2df607c490> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
