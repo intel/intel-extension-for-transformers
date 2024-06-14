@@ -56,10 +56,6 @@ from ..utils import (
 )
 from ..utils.utility import (
     CpuInfo,
-    generate_dummy_past_key_values,
-    generate_dummy_past_key_values_for_opt_llm,
-    MODEL_TYPES_REQUIRING_POSITION_IDS,
-    IPEX_OPT_LLM_SUPPORTED,
     WEIGHTS_NAME,
     WEIGHTS_INDEX_NAME,
     SAFE_WEIGHTS_NAME,
@@ -523,7 +519,8 @@ class _BaseQBitsAutoModelClass:
 
             if model_type not in cls.model_type_list:
                 logger.error(
-                    "Can't support this model_type. Please set the correct model_type, supported model_type: {}".format(
+                    "Can't support this model_type." + 
+                    "Please set the correct model_type, supported model_type: {}".format(
                         cls.model_type_list
                     )
                 )
