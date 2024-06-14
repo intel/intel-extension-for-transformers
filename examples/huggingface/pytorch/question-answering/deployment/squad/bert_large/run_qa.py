@@ -26,7 +26,13 @@ import timeit
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import metrics , OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.transformers import metrics , OptimizedModel
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    QuantizationAwareTrainingConfig,
+    TuningCriterion,
+    AccuracyCriterion
+)
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -211,9 +217,9 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply quantization."},
     )
     quantization_approach: Optional[str] = field(
-        default="PostTrainingStatic",
-        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining."},
+        default="static",
+        metadata={"help": "Quantization approach. Supported approach are static, "
+                  "dynamic and qat."},
     )
     metric_name: Optional[str] = field(
         default="eval_f1",
@@ -646,25 +652,43 @@ def main():
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for quantization.")
 
-        if optim_args.quantization_approach != "PostTrainingDynamic":
+        if optim_args.quantization_approach != "dynamic":
             if not training_args.do_train:
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-        if optim_args.quantization_approach == "QuantizationAwareTraining":
-            early_stopping_patience = 6
-            early_stopping_threshold = 0.001 # optional
-            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
-                                                                    early_stopping_threshold))
 
         tune_metric = metrics.Metric(
             name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
         )
-        quantization_config = QuantizationConfig(
-            approach=optim_args.quantization_approach,
-            max_trials=200,
-            metrics=[tune_metric],
-        )
+        trainer.metrics = tune_metric
+        if optim_args.quantization_approach != "qat":
+            tuning_criterion = TuningCriterion(max_trials=600)
+            accuracy_criterion = AccuracyCriterion(
+                higher_is_better=False,  # optional.
+                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                tolerable_loss=optim_args.perf_tol,  # optional.
+            )
+            quantization_config = PostTrainingQuantConfig(
+                approach=optim_args.quantization_approach,
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )
+        else:
+            tuning_criterion = TuningCriterion(max_trials=600)
+            accuracy_criterion = AccuracyCriterion(
+                higher_is_better=False,  # optional.
+                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                tolerable_loss=optim_args.perf_tol,  # optional.
+            )
+            quantization_config = QuantizationAwareTrainingConfig(
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )
+            early_stopping_patience = 2
+            early_stopping_threshold = 0.001 # optional
+            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience, \
+                                                                    early_stopping_threshold))
         model = trainer.quantize(quant_config=quantization_config)
 
     if optim_args.benchmark or optim_args.accuracy_only:
@@ -674,7 +698,7 @@ def main():
         max_eval_samples = data_args.max_eval_samples \
             if data_args.max_eval_samples is not None else len(eval_dataset)
         eval_samples = min(max_eval_samples, len(eval_dataset))
-        samples = eval_samples - (eval_samples % batch_size) \
+        samples = eval_samples - (eval_samples % training_args.per_device_eval_batch_size) \
             if training_args.dataloader_drop_last else eval_samples
         logger.info("metrics keys: {}".format(results.keys()))
         bert_task_acc_keys = ['eval_f1', 'eval_accuracy', 'eval_matthews_correlation',

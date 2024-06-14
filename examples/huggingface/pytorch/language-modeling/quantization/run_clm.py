@@ -583,29 +583,23 @@ def main():
                         greater_is_better=False
         )
         trainer.metrics = tune_metric
+        tuning_criterion = TuningCriterion(max_trials=600)
+        accuracy_criterion = AccuracyCriterion(
+            higher_is_better=False,  # optional.
+            criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+            tolerable_loss=optim_args.perf_tol,  # optional.
+        )
         if optim_args.quantization_approach != "qat":
-            tuning_criterion = TuningCriterion(max_trials=600)
-            accuracy_criterion = AccuracyCriterion(
-                higher_is_better=False,  # optional.
-                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
-                tolerable_loss=optim_args.perf_tol,  # optional.
-            )
             quantization_config = PostTrainingQuantConfig(
                 approach=optim_args.quantization_approach,
                 tuning_criterion=tuning_criterion,
                 accuracy_criterion=accuracy_criterion
             )
         else:
-            tuning_criterion = TuningCriterion(max_trials=600)
-            accuracy_criterion = AccuracyCriterion(
-                higher_is_better=False,  # optional.
-                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
-                tolerable_loss=optim_args.perf_tol,  # optional.
-            )
             quantization_config = QuantizationAwareTrainingConfig(
                 tuning_criterion=tuning_criterion,
                 accuracy_criterion=accuracy_criterion
-            )            
+            )
             early_stopping_patience = 2
             early_stopping_threshold = 0.001 # optional
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience, \

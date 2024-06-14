@@ -16,7 +16,7 @@ function init_params {
   model_name_or_path="bigcode/starcoder"
   extra_cmd=""
   batch_size=8
-  approach="PostTrainingStatic"
+  approach="static"
   alpha=0.5
   script="run_generation.py"
   for var in "$@"
