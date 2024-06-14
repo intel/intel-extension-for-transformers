@@ -11,6 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
+* [2024/06] Support Qwen2, please find the details in [Blog](https://medium.com/intel-analytics-software/accelerating-qwen2-models-with-intel-extension-for-transformers-99403de82f68)
 * [2024/04] Support the launch of **[Meta Llama 3](https://llama.meta.com/llama3/)**, the next generation of Llama models. Check out [Accelerate Meta* Llama 3 with Intel AI Solutions](https://www.intel.com/content/www/us/en/developer/articles/technical/accelerate-meta-llama3-with-intel-ai-solutions.html).
 * [2024/04] Demonstrated the chatbot in 4th, 5th, and 6th Gen Xeon Scalable Processors in [**Intel Vision Pat's Keynote**](https://youtu.be/QB7FoIpx8os?t=2280).
 * [2024/04] Supported **INT4 inference on Intel Meteor Lake**.

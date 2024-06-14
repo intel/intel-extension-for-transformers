@@ -1,7 +1,8 @@
 Full Publications/Events (50)
 ==========
 
-## 2024 (10)
+## 2024 (11)
+* Blog published on Medium: [Accelerating Qwen2 Models with Intel Extension for Transformers](https://medium.com/intel-analytics-software/accelerating-qwen2-models-with-intel-extension-for-transformers-99403de82f68) (June 2024)
 * Blog published on Huggingface: [Building Cost-Efficient Enterprise RAG applications with Intel Gaudi 2 and Intel Xeon](https://huggingface.co/blog/cost-efficient-rag-applications-with-intel) (May 2024)
 * Blog published on Intel Developer News: [Efficient Natural Language Embedding Models with Intel® Extension for Transformers](https://www.intel.com/content/www/us/en/developer/articles/technical/efficient-natural-language-embedding-models.html) (May 2024)
 * Blog published on Intel NewsRoom: [Intel Welcomes Open Platform for Enterprise AI](https://www.intel.com/content/www/us/en/newsroom/news/intel-welcomes-open-platform-enterprise-ai.html#gs.89490l) (April 2024)
