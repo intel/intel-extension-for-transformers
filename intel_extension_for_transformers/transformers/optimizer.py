@@ -26,12 +26,21 @@ from neural_compressor.experimental import(
     Quantization,
     Pruning,
 )
+from neural_compressor.training import prepare_compression
+from neural_compressor.quantization import fit
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    QuantizationAwareTrainingConfig,
+)
 from neural_compressor.experimental.scheduler import Scheduler
 from intel_extension_for_transformers.transformers import(
     DistillationConfig,
     Provider,
-    QuantizationConfig,
     PruningConfig
+)
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    QuantizationAwareTrainingConfig,
 )
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from intel_extension_for_transformers.transformers.quantization import QuantizationMode
@@ -214,38 +223,6 @@ class NoTrainerOptimizer:   # pragma: no cover
         else:
             self._calib_dataloader = dataloader
 
-    def init_quantizer(
-        self,
-        quant_config,
-        provider: str = Provider.INC.value,
-    ):
-        """Init a Quantization object with config.
-
-        Args:
-            quant_config: quantization config.
-            provider: define the quantization provider.
-        """
-        from neural_compressor.experimental import Quantization
-
-        assert isinstance(quant_config, QuantizationConfig), \
-            "Please pass QuantizationConfig instance to trainer.quantize!"
-        self.quant_config = quant_config
-        self.metrics = self.quant_config.metrics
-        self._provider = Provider[provider.upper()].value
-
-        if self.quant_config.framework == "pytorch":
-            if self.quant_config.approach == \
-              QuantizationMode.POSTTRAININGDYNAMIC.value:
-                self.quant_config.framework = "pytorch"
-            else:
-                self.quant_config.framework = "pytorch_fx"
-
-        quantizer = Quantization(self.quant_config.inc_config)
-        quantizer.model = common.Model(self.model)
-
-        self.quantizer = quantizer
-        return quantizer
-
     def _inc_quantize(
         self,
         quant_config,
@@ -258,22 +235,28 @@ class NoTrainerOptimizer:   # pragma: no cover
             self.quantizer.eval_func = self._eval_func
         if self._calib_func is not None:
             self.quantizer.calib_func = self._calib_func
-        if self.quant_config.approach == QuantizationMode.POSTTRAININGSTATIC.value:
-            assert self._calib_dataloader is not None, \
-                "Please pass calib_dataloader to NoTrainerOptimizer.calib_dataloader"
-            self.quantizer.calib_dataloader = self._calib_dataloader
-        elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
-            assert self._train_func is not None, \
-                "Please pass train_func to NoTrainerOptimizer.train_func"
-            self.quantizer.q_func = self._train_func
-        self.opt_model = self.quantizer.fit()
+        if isinstance(quant_config, PostTrainingQuantConfig):
+            if quant_config.backend == "ipex":
+                self.model_config = self.model.config # jit model will loss config
+            if self._calib_dataloader is None:
+                self._calib_dataloader = self.get_train_dataloader()
+            self.opt_model = fit(self.model,
+                                 conf=quant_config,
+                                 calib_dataloader=self._calib_dataloader,
+                                 eval_func=self._eval_func)
+        else:
+            compression_manager = prepare_compression(self.model, quant_config)
+            compression_manager.callbacks.on_train_begin()
+            self.train()
+            compression_manager.callbacks.on_train_end()
+            self.opt_model = compression_manager.model
         self.enable_inc_quant = True
-        self.save_model(self.output_dir)
+        self.save_model(self.args.output_dir)
         return self.opt_model.model
 
     def quantize(
         self,
-        quant_config: QuantizationConfig = None,
+        quant_config: Union[PostTrainingQuantConfig, QuantizationAwareTrainingConfig] = None,
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
