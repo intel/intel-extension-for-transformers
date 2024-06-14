@@ -229,8 +229,6 @@ class NoTrainerOptimizer:   # pragma: no cover
         provider: str = Provider.INC.value,
     ):
         """Do the quantization."""
-        if self.quantizer is None:
-            self.init_quantizer(quant_config=quant_config, provider=provider)
         if self._eval_func is not None:
             self.quantizer.eval_func = self._eval_func
         if self._calib_func is not None:
