@@ -98,6 +98,31 @@ class TestChatbotBuilder_docx(unittest.TestCase):
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
 
+class TestChatbotBuilder_pptx(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("test_pptx"):
+            shutil.rmtree("test_pptx", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("test_pptx"):
+            shutil.rmtree("test_pptx", ignore_errors=True)
+        return super().tearDown()
+
+    def test_retrieval_pptx(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample.pptx"
+        plugins.retrieval.args["persist_directory"] = "./test_pptx"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("How many cores does the Intel Xeon Platinum 8480+ Processor have in total?")
+        print(response)
+        plugins.retrieval.args["persist_directory"] = "./output"
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+
 class TestChatbotBuilder_xlsx(unittest.TestCase):
     def setUp(self):
         if os.path.exists("test_xlsx"):

@@ -110,7 +110,35 @@ Open a new linux console, run following command
 
 `curl -vv -X POST http://127.0.0.1:8000/v1/chat/completions`
 
-Check the output. Make sure there is no network connection and proxy setting issue at Client side
+Check the output. Make sure there is no network connection and proxy setting issue at Client side.
+
+If there is no network connection issue, you will get such response from console:
+```
+curl -vv -X POST http://127.0.0.1:8000/v1/chat/completions
+* Uses proxy env variable no_proxy == 'localhost,127.0.0.1'
+*   Trying 127.0.0.1:8000...
+* Connected to 127.0.0.1 (127.0.0.1) port 8000 (#0)
+> POST /v1/chat/completions HTTP/1.1
+> Host: 127.0.0.1:8000
+> User-Agent: curl/7.81.0
+> Accept: */*
+>
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 422 Unprocessable Entity
+< date: Wed, 12 Jun 2024 01:56:44 GMT
+< server: uvicorn
+< content-length: 81
+< content-type: application/json
+<
+* Connection #0 to host 127.0.0.1 left intact
+{"detail":[{"loc":["body"],"msg":"field required","type":"value_error.missing"}]}
+```
+
+And at server side there is connection in (but incorrect input data), there output is:
+```
+INFO:     127.0.0.1:59902 - "POST /v1/chat/completions HTTP/1.1" 422 Unprocessable Entity
+ ```
+Otherwise, check your network setting.
 
 ### 3.1.2 Test request command at client side
 

@@ -11,7 +11,7 @@ markdown
 openpyxl
 PyMuPDF
 python-docx
-qdrant-client==1.8.2
+qdrant-client==1.9.0
 rank_bm25
 scikit-learn
 sentence-transformers==2.3.1

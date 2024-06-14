@@ -41,6 +41,7 @@ asym_configs = {"int8", "int4_clip", "int3_clip", "int2_clip"}
 @pytest.mark.parametrize("src_dt", ["fp32", "bf16"])
 @pytest.mark.parametrize("dst_dt", ["fp32", "bf16"])
 def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transpose, add_bias, src_dt, dst_dt, dump_tensor_info=True):
+    assert qbits.check_torch_compatibility(str(torch.__version__))
     if compute_type == "int8" and weight_type == "int8" and (not qbits.check_isa_supported("AVX_VNNI")):
         pytest.skip()
     if compute_type not in cmpt_configs[weight_type] or scale_type not in scale_configs[weight_type]:
