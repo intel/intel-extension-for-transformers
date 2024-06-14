@@ -519,7 +519,7 @@ class _BaseQBitsAutoModelClass:
 
             if model_type not in cls.model_type_list:
                 logger.error(
-                    "Can't support this model_type." + 
+                    "Can't support this model_type." +
                     "Please set the correct model_type, supported model_type: {}".format(
                         cls.model_type_list
                     )
