@@ -14,12 +14,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import re
+
 from typing import Optional, Tuple
 
 import transformers
 from datasets import load_dataset
-from optimum.intel.generation.modeling import TSModelForCausalLM
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
 from transformers.modeling_outputs import CausalLMOutputWithPast
@@ -315,7 +314,7 @@ def get_dataloader(
     )
     return calib_dataloader
 
-
+from optimum.intel.generation.modeling import TSModelForCausalLM
 class TSModelCausalLMForITREX(TSModelForCausalLM):
     def _reorder_cache(
         self, past_key_values: Tuple[Tuple[torch.Tensor]], beam_idx: torch.Tensor

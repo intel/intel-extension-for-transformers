@@ -57,9 +57,7 @@ if is_ipex_available():
     )
 
 if is_autoround_available():
-    from auto_round.export.export_to_itrex.model_wrapper import (
-        WeightOnlyLinear as auto_round_woqlinear,
-    )  # pylint: disable=E0401
+    from auto_round.export.export_to_itrex.model_wrapper import WeightOnlyLinear as auto_round_woqlinear # pylint: disable=E0401
     from neural_compressor.torch.algorithms.weight_only.autoround import get_dataloader as get_autoround_dataloader
 
 torch = LazyImport("torch")
@@ -299,10 +297,8 @@ def _replace_linear(
                                 use_optimum_format=use_optimum_format,
                             )
                     elif device == "xpu" or device == torch.device("xpu"):
-                        from intel_extension_for_pytorch.nn.utils._quantize_convert import (
-                            WeightOnlyQuantizedLinear as ipex_linear,
-                        )  # pylint: disable=E0401
-
+                        from intel_extension_for_pytorch.nn.utils._quantize_convert import \
+                            WeightOnlyQuantizedLinear as ipex_linear # pylint: disable=E0401
                         model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
@@ -569,6 +565,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
             )
             model = prepare(model, quant_config)
             model = convert(model)
+            # qits module doesn't match with HQQ algorithm.
+            return model
         elif config.quant_method.value == "awq":
             quant_config = AWQConfig(
                 dtype=dtype,

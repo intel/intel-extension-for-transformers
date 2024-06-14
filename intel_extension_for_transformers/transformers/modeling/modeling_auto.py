@@ -164,7 +164,11 @@ def build_woq_model(model, quantization_config):
         if "lm_head" in n or "output_layer" in n or "embed_out" in n:
             continue
         if isinstance(m, torch.nn.Linear):
-            zp = getattr(quantization_config, "zero_point", not getattr(quantization_config, "sym", False))
+            zp = getattr(
+                quantization_config,
+                "zero_point",
+                not getattr(quantization_config, "sym", False),
+            )
             with init_empty_weights():
                 new_module = WeightOnlyLinear(
                     m.in_features,
@@ -201,6 +205,7 @@ def convert_model_to_public(model):
     ]:
         model = recover_export_model(model)
 
+
 def make_contiguous(model):
     for param in model.parameters():
         if param.data.ndimension() > 1:
@@ -225,7 +230,8 @@ def save_low_bit(
         self.model.config.quantization_config = self.quantization_config
         self.model.config.save_pretrained(save_directory)
         weights_file = os.path.join(
-                    os.path.abspath(os.path.expanduser(save_directory)), WEIGHTS_NAME)
+            os.path.abspath(os.path.expanduser(save_directory)), WEIGHTS_NAME
+        )
         torch.save(self.quantized_state_dict(), weights_file)
         return
 
@@ -239,25 +245,42 @@ def save_low_bit(
     )
 
     if self.quantization_config.use_ipex:
+
         def save_linear_parameters(model, save_directory):
             # only can save to pytorch model.bin due to ipex.
             weights_file = os.path.join(
-            os.path.abspath(os.path.expanduser(save_directory)), SAFE_WEIGHTS_NAME)
+                os.path.abspath(os.path.expanduser(save_directory)), SAFE_WEIGHTS_NAME
+            )
             os.remove(weights_file)
             weights_file = os.path.join(
-            os.path.abspath(os.path.expanduser(save_directory)), WEIGHTS_NAME)
+                os.path.abspath(os.path.expanduser(save_directory)), WEIGHTS_NAME
+            )
             linear_parameters = {}
-            from intel_extension_for_pytorch.nn.modules import WeightOnlyQuantizedLinear as ipex_cpu_linear
+            from intel_extension_for_pytorch.nn.modules import (
+                WeightOnlyQuantizedLinear as ipex_cpu_linear,
+            )
+
             for name, module in model.named_modules():
                 if isinstance(module, ipex_cpu_linear):
-                    linear_parameters[name + ".ipex_scales"] = module._op_context.get_scales().contiguous()
-                    linear_parameters[name + ".ipex_weight"] = \
-                        module._op_context.to_public(module._op_context.get_weight()).contiguous()
-                    linear_parameters[name + ".ipex_zeros"] = module._op_context.get_zero_points().contiguous()
+                    linear_parameters[name + ".ipex_scales"] = (
+                        module._op_context.get_scales().contiguous()
+                    )
+                    linear_parameters[name + ".ipex_weight"] = (
+                        module._op_context.to_public(
+                            module._op_context.get_weight()
+                        ).contiguous()
+                    )
+                    linear_parameters[name + ".ipex_zeros"] = (
+                        module._op_context.get_zero_points().contiguous()
+                    )
                     if module._op_context.get_bias() is not None:
-                        linear_parameters[name + ".ipex_bias"] = module._op_context.get_bias().contiguous()
+                        linear_parameters[name + ".ipex_bias"] = (
+                            module._op_context.get_bias().contiguous()
+                        )
                     if module._op_context.get_g_idx() is not None:
-                        linear_parameters[name + ".ipex_g_idx"] = module._op_context.get_g_idx().contiguous()
+                        linear_parameters[name + ".ipex_g_idx"] = (
+                            module._op_context.get_g_idx().contiguous()
+                        )
             others_parameters = model.state_dict()
             linear_parameters.update(others_parameters)
 
@@ -346,17 +369,27 @@ class _BaseQBitsAutoModelClass:
         use_vllm = kwargs.pop("use_vllm", None)
         if use_vllm is not None:
             logger.info("The backend is vLLM.")
-            from vllm import LLM # pylint: disable=E1101
-            from vllm.model_executor.model_loader import get_model_loader  # pylint: disable=E0611
-            from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E0401 disable=E0611
-            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear,
-                                                        QKVParallelLinear,
-                                                        ColumnParallelLinear,
-                                                        RowParallelLinear)  # pylint: disable=E1101
+            from vllm import LLM  # pylint: disable=E1101
+            from vllm.model_executor.model_loader import (
+                get_model_loader,
+            )  # pylint: disable=E0611
+            from vllm.model_executor.model_loader.weight_utils import (
+                default_weight_loader,
+            )  # pylint: disable=E0401 disable=E0611
+            from vllm.model_executor.layers.linear import (
+                MergedColumnParallelLinear,
+                QKVParallelLinear,
+                ColumnParallelLinear,
+                RowParallelLinear,
+            )  # pylint: disable=E1101
 
             os.environ["backend"] = "use_vllm"
-            llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
-            model = llm.llm_engine.model_executor.driver_worker.model_runner.model  # pylint: disable=E1101
+            llm = LLM(
+                model=pretrained_model_name_or_path, trust_remote_code=True
+            )  # Create an vllm instance.
+            model = (
+                llm.llm_engine.model_executor.driver_worker.model_runner.model
+            )  # pylint: disable=E1101
             print("Original model =", model)
 
             original_parameter_memo = dict()
@@ -366,12 +399,22 @@ class _BaseQBitsAutoModelClass:
                 if "qkv_proj" in name or "gate_up_proj" in name:
                     input_dim = getattr(params, "input_dim", None)
                     output_dim = getattr(params, "output_dim", None)
-                    original_parameter_memo[name] = (input_dim, output_dim, params.weight_loader)
+                    original_parameter_memo[name] = (
+                        input_dim,
+                        output_dim,
+                        params.weight_loader,
+                    )
 
             class linear_adaptor(torch.nn.Linear):
 
-                def __init__(self, in_features: int, out_features: int, bias: bool = True, \
-                             device=None, dtype=None) -> None:
+                def __init__(
+                    self,
+                    in_features: int,
+                    out_features: int,
+                    bias: bool = True,
+                    device=None,
+                    dtype=None,
+                ) -> None:
                     super().__init__(in_features, out_features, bias, device, dtype)
 
                 def forward(self, input: torch.Tensor) -> tuple[torch.Tensor, None]:
@@ -379,34 +422,49 @@ class _BaseQBitsAutoModelClass:
 
             for name, module in model.named_modules():
                 bias_flag = False
-                if isinstance(module, QKVParallelLinear) or isinstance(module, MergedColumnParallelLinear) or \
-                    isinstance(module, RowParallelLinear) or isinstance(module, ColumnParallelLinear):
+                if (
+                    isinstance(module, QKVParallelLinear)
+                    or isinstance(module, MergedColumnParallelLinear)
+                    or isinstance(module, RowParallelLinear)
+                    or isinstance(module, ColumnParallelLinear)
+                ):
                     out_feature = module.weight.shape[0]
                     in_feature = module.weight.shape[1]
                     if getattr(module, "bias", False) != None:
                         bias_flag = True
                     weight_dtype = module.weight.dtype
 
-                    torch_linear = linear_adaptor(in_features=in_feature,
-                                                out_features=out_feature,
-                                                bias=bias_flag,
-                                                dtype=weight_dtype)
+                    torch_linear = linear_adaptor(
+                        in_features=in_feature,
+                        out_features=out_feature,
+                        bias=bias_flag,
+                        dtype=weight_dtype,
+                    )
                     module_traversal = model
-                    all_module_names = name.split('.')
+                    all_module_names = name.split(".")
                     all_module_names_except_last = all_module_names[:-1]
                     for sub_module_name in all_module_names_except_last:
                         module_traversal = module_traversal._modules[sub_module_name]
 
-                    module_traversal._modules[all_module_names[-1]] = copy.deepcopy(torch_linear)
+                    module_traversal._modules[all_module_names[-1]] = copy.deepcopy(
+                        torch_linear
+                    )
 
             print("Optimized model =", model)
-            loader = get_model_loader(llm.llm_engine.load_config)  # pylint: disable=E1101
+            loader = get_model_loader(
+                llm.llm_engine.load_config
+            )  # pylint: disable=E1101
 
-            weights_iterator = loader._get_weights_iterator(llm.llm_engine.model_config.model,
-                                                            llm.llm_engine.model_config.revision,
-                                                            fall_back_to_pt=True)
+            weights_iterator = loader._get_weights_iterator(
+                llm.llm_engine.model_config.model,
+                llm.llm_engine.model_config.revision,
+                fall_back_to_pt=True,
+            )
 
-            from vllm.model_executor.model_loader.weight_utils import default_weight_loader # pylint: disable=E0401 disable=E0611
+            from vllm.model_executor.model_loader.weight_utils import (
+                default_weight_loader,
+            )  # pylint: disable=E0401 disable=E0611
+
             params_dict = dict(model.named_parameters(remove_duplicate=False))
             for name in params_dict.keys():
                 params = params_dict[name]
@@ -424,11 +482,13 @@ class _BaseQBitsAutoModelClass:
             print("INC quantizing...")
             config = kwargs.pop("config", None)
             if config is None:
-                config = RtnConfig(compute_dtype="int8",
-                                group_size=128,
-                                scale_dtype="bf16",
-                                weight_dtype="int4_clip",
-                                bits=4)
+                config = RtnConfig(
+                    compute_dtype="int8",
+                    group_size=128,
+                    scale_dtype="bf16",
+                    weight_dtype="int4_clip",
+                    bits=4,
+                )
                 print("using default RTNConfig = ", config)
             print("Using customized config = ", config)
             model = convert_to_quantized_model(model, config)
@@ -489,8 +549,12 @@ class _BaseQBitsAutoModelClass:
             return model
 
         device_map = kwargs.get("device_map", "cpu")
-        use_cpu = True if device_map == torch.device("cpu") or device_map == "cpu" else False
-        use_xpu = True if device_map == torch.device("xpu") or device_map == "xpu" else False
+        use_cpu = (
+            True if device_map == torch.device("cpu") or device_map == "cpu" else False
+        )
+        use_xpu = (
+            True if device_map == torch.device("xpu") or device_map == "xpu" else False
+        )
 
         config = kwargs.pop("config", None)
         model_hub = kwargs.pop("model_hub", "huggingface")
@@ -498,20 +562,28 @@ class _BaseQBitsAutoModelClass:
         quantization_config = kwargs.pop("quantization_config", None)
         if not isinstance(config, PretrainedConfig):
             if model_hub == "modelscope":
-                import modelscope # pylint: disable=E0401
-                config = modelscope.AutoConfig.from_pretrained(pretrained_model_name_or_path,
-                                            trust_remote_code=True)
+                import modelscope  # pylint: disable=E0401
+
+                config = modelscope.AutoConfig.from_pretrained(
+                    pretrained_model_name_or_path, trust_remote_code=True
+                )
             else:
                 config, _ = AutoConfig.from_pretrained(
                     pretrained_model_name_or_path,
                     return_unused_kwargs=True,
                     **kwargs,
-
                 )
 
-        if quantization_config is not None and quantization_config.quant_method in ["sq"]:
+        if quantization_config is not None and quantization_config.quant_method in [
+            "sq"
+        ]:
             use_neural_speed = False
-        elif hasattr(config, "quantization_config") and isinstance(config.quantization_config, dict) and "quant_method" in config.quantization_config and config.quantization_config["quant_method"] in ["sq"]:
+        elif (
+            hasattr(config, "quantization_config")
+            and isinstance(config.quantization_config, dict)
+            and "quant_method" in config.quantization_config
+            and config.quantization_config["quant_method"] in ["sq"]
+        ):
             use_neural_speed = False
         elif kwargs.get("use_llm_runtime", None) is not None:
             use_neural_speed = kwargs.pop("use_llm_runtime", True) and not use_xpu
@@ -544,30 +616,38 @@ class _BaseQBitsAutoModelClass:
                     "Quantization_config loading failed. If you want to load saved "
                     "low bit model, please check your quantizate_config.json."
                 )
-            elif use_neural_speed and not config.quantization_config["quant_method"] in ["dynamic", "static", "qat"]:
+            elif use_neural_speed and not config.quantization_config[
+                "quant_method"
+            ] in ["dynamic", "static", "qat"]:
                 if not os.path.exists(pretrained_model_name_or_path):
                     from huggingface_hub import snapshot_download
-                    pretrained_model_name_or_path = snapshot_download(repo_id=pretrained_model_name_or_path,
-                                                        allow_patterns=["*.pt", "*.safetensors", "*.json", ".model"],
-                                                    )
+
+                    pretrained_model_name_or_path = snapshot_download(
+                        repo_id=pretrained_model_name_or_path,
+                        allow_patterns=["*.pt", "*.safetensors", "*.json", ".model"],
+                    )
                 if quantization_config is None:
-                    ConfigInit = {"rtn": RtnConfig,
-                                "awq": AwqConfig,
-                                "teq": TeqConfig,
-                                "gptq": GPTQConfig,
-                                "autoround": AutoRoundConfig,
-                                }
+                    ConfigInit = {
+                        "rtn": RtnConfig,
+                        "awq": AwqConfig,
+                        "teq": TeqConfig,
+                        "gptq": GPTQConfig,
+                        "autoround": AutoRoundConfig,
+                    }
                     quantization_config = config.quantization_config
-                    assert quantization_config.get("quant_method", None) in ConfigInit, \
-                        "Detect this model is not a low-bit model."
-                    quantization_config = ConfigInit[quantization_config["quant_method"]].from_dict(quantization_config)
+                    assert (
+                        quantization_config.get("quant_method", None) in ConfigInit
+                    ), "Detect this model is not a low-bit model."
+                    quantization_config = ConfigInit[
+                        quantization_config["quant_method"]
+                    ].from_dict(quantization_config)
                     logger.info("Loading Low Bits model by Neural Speed.")
                     quantization_config.post_init_runtime()
 
                 from neural_speed import Model
 
                 model = Model()
-                model.init( # pylint: disable=E1123
+                model.init(  # pylint: disable=E1123
                     pretrained_model_name_or_path,
                     weight_dtype=quantization_config.weight_dtype,
                     alg=quantization_config.scheme,
@@ -658,9 +738,15 @@ class _BaseQBitsAutoModelClass:
                     else:
                         quantization_config = RtnConfig(
                             bits=4,
-                            compute_dtype=torch.float32 if
-                            (use_cpu and not CpuInfo().bf16
-                             and torch_dtype == torch.bfloat16) else convert_dtype_torch2str(torch_dtype),
+                            compute_dtype=(
+                                torch.float32
+                                if (
+                                    use_cpu
+                                    and not CpuInfo().bf16
+                                    and torch_dtype == torch.bfloat16
+                                )
+                                else convert_dtype_torch2str(torch_dtype)
+                            ),
                             weight_dtype="nf4" if use_cpu else "int4_fullrange",
                         )
                 else:
@@ -674,14 +760,21 @@ class _BaseQBitsAutoModelClass:
                 if quantization_config is None:
                     if use_neural_speed:
                         quantization_config = RtnConfig(
-                            compute_dtype="bf16" if CpuInfo().bf16 else "fp32", weight_dtype="int8"
+                            compute_dtype="bf16" if CpuInfo().bf16 else "fp32",
+                            weight_dtype="int8",
                         )
                     else:
                         quantization_config = RtnConfig(
                             bits=8,
-                            compute_dtype=torch.float32 if
-                            (use_cpu and not CpuInfo().bf16
-                             and torch_dtype == torch.bfloat16) else convert_dtype_torch2str(torch_dtype),
+                            compute_dtype=(
+                                torch.float32
+                                if (
+                                    use_cpu
+                                    and not CpuInfo().bf16
+                                    and torch_dtype == torch.bfloat16
+                                )
+                                else convert_dtype_torch2str(torch_dtype)
+                            ),
                             weight_dtype="int8",
                         )
                 else:
@@ -731,7 +824,7 @@ class _BaseQBitsAutoModelClass:
                 from neural_speed import Model
 
                 model = Model()
-                model.init( # pylint: disable=E1123
+                model.init(  # pylint: disable=E1123
                     pretrained_model_name_or_path,
                     weight_dtype=quantization_config.weight_dtype,
                     alg=quantization_config.scheme,
@@ -990,7 +1083,6 @@ class _BaseQBitsAutoModelClass:
         #                 torch.tensor(last_ind),
         #             )
 
-
         #         tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
         #         tokenized_dataset.set_format(type="torch", columns=["input_ids"])
         #         calib_dataloader = DataLoader(
@@ -1013,7 +1105,6 @@ class _BaseQBitsAutoModelClass:
         #             + "batchsize is 1 and calibration iteration is 100."
         #         )
         #         calib_func = calib_func
-
 
         #     # call inc static quant
         #     from neural_compressor.torch.quantization import StaticQuantConfig, convert, prepare
@@ -1130,7 +1221,6 @@ class _BaseQBitsAutoModelClass:
                         torch.tensor(last_ind),
                     )
 
-
                 tokenized_dataset = train_dataset.map(tokenize_function, batched=True)
                 tokenized_dataset.set_format(type="torch", columns=["input_ids"])
                 train_dataloader = DataLoader(
@@ -1157,7 +1247,7 @@ class _BaseQBitsAutoModelClass:
                         optimizer.zero_grad()
                         loss.backward()
                         optimizer.step()
-                        print('Iteration [{}], Loss: {:.4f}'.format(i+1, loss))
+                        print("Iteration [{}], Loss: {:.4f}".format(i + 1, loss))
                     return model
 
                 logger.info(
@@ -1170,6 +1260,7 @@ class _BaseQBitsAutoModelClass:
             # call inc static quant
             from neural_compressor import QuantizationAwareTrainingConfig, quantization
             from neural_compressor.training import prepare_compression
+
             conf = QuantizationAwareTrainingConfig(
                 backend=quantization_config.backend,
                 excluded_precisions=quantization_config.excluded_precisions,
@@ -1181,7 +1272,9 @@ class _BaseQBitsAutoModelClass:
             model = compression_manager.model
             train_func(model)
             compression_manager.callbacks.on_train_end()
-            compression_manager.model.save_pretrained = types.MethodType(save_low_bit, model)
+            compression_manager.model.save_pretrained = types.MethodType(
+                save_low_bit, model
+            )
             quantization_config.remove_redundant_parameters()
             compression_manager.model.quantization_config = quantization_config
             logger.info("Quant Aware Training done.")
@@ -1192,7 +1285,7 @@ class _BaseQBitsAutoModelClass:
                 from neural_speed import Model
 
                 model = Model()
-                model.init( # pylint: disable=E1123
+                model.init(  # pylint: disable=E1123
                     pretrained_model_name_or_path,
                     weight_dtype="fp32",
                     use_quant=False,
@@ -1273,7 +1366,11 @@ class _BaseQBitsAutoModelClass:
         kwarg_attn_imp = kwargs.pop("attn_implementation", None)
 
         # lm-eval device map is dictionary
-        device_map = device_map[""] if isinstance(device_map, dict) and "" in device_map else device_map
+        device_map = (
+            device_map[""]
+            if isinstance(device_map, dict) and "" in device_map
+            else device_map
+        )
 
         if use_safetensors is None and not is_safetensors_available():
             use_safetensors = False
@@ -1289,8 +1386,12 @@ class _BaseQBitsAutoModelClass:
                 )
             token = use_auth_token
 
-        use_cpu = True if device_map == torch.device("cpu") or device_map == "cpu" else False
-        use_xpu = True if device_map == torch.device("xpu") or device_map == "xpu" else False
+        use_cpu = (
+            True if device_map == torch.device("cpu") or device_map == "cpu" else False
+        )
+        use_xpu = (
+            True if device_map == torch.device("xpu") or device_map == "xpu" else False
+        )
 
         user_agent = {
             "file_type": "model",
@@ -1321,7 +1422,9 @@ class _BaseQBitsAutoModelClass:
         elif quantization_config["quant_method"] == "dynamic":
             quantization_config = DynamicQuantConfig.from_dict(quantization_config)
         elif quantization_config["quant_method"] == "qat":
-            quantization_config = QuantAwareTrainingConfig.from_dict(quantization_config)
+            quantization_config = QuantAwareTrainingConfig.from_dict(
+                quantization_config
+            )
         elif quantization_config["quant_method"] == "sq":
             quantization_config = SmoothQuantConfig.from_dict(quantization_config)
         assert (
@@ -1462,11 +1565,15 @@ class _BaseQBitsAutoModelClass:
                         "_raise_exceptions_for_missing_entries": False,
                         "_commit_hash": commit_hash,
                     }
-                    resolved_archive_file = cached_file(pretrained_model_name_or_path, filename, **cached_file_kwargs)
+                    resolved_archive_file = cached_file(
+                        pretrained_model_name_or_path, filename, **cached_file_kwargs
+                    )
 
                     # Since we set _raise_exceptions_for_missing_entries=False, we don't get an exception but a None
                     # result when internet is up, the repo and revision exist, but the file does not.
-                    if resolved_archive_file is None and filename == _add_variant(SAFE_WEIGHTS_NAME, variant):
+                    if resolved_archive_file is None and filename == _add_variant(
+                        SAFE_WEIGHTS_NAME, variant
+                    ):
                         # Maybe the checkpoint is sharded, we try to grab the index name in this case.
                         resolved_archive_file = cached_file(
                             pretrained_model_name_or_path,
@@ -1487,9 +1594,13 @@ class _BaseQBitsAutoModelClass:
                             # This repo has no safetensors file of any kind, we switch to PyTorch.
                             filename = _add_variant(WEIGHTS_NAME, variant)
                             resolved_archive_file = cached_file(
-                                pretrained_model_name_or_path, filename, **cached_file_kwargs
+                                pretrained_model_name_or_path,
+                                filename,
+                                **cached_file_kwargs,
                             )
-                    if resolved_archive_file is None and filename == _add_variant(WEIGHTS_NAME, variant):
+                    if resolved_archive_file is None and filename == _add_variant(
+                        WEIGHTS_NAME, variant
+                    ):
                         # Maybe the checkpoint is sharded, we try to grab the index name in this case.
                         resolved_archive_file = cached_file(
                             pretrained_model_name_or_path,
@@ -1508,7 +1619,9 @@ class _BaseQBitsAutoModelClass:
                             "token": token,
                         }
                         if variant is not None and has_file(
-                            pretrained_model_name_or_path, WEIGHTS_NAME, **has_file_kwargs
+                            pretrained_model_name_or_path,
+                            WEIGHTS_NAME,
+                            **has_file_kwargs,
                         ):
                             raise EnvironmentError(
                                 f"{pretrained_model_name_or_path} does not appear to have a file named"
@@ -1571,8 +1684,11 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.quant_method in ["static", "dynamic", "qat"]:
             model = model_class(config, *model_args, **kwargs)
             from neural_compressor.utils.pytorch import load
+
             weights_file = os.path.join(
-                os.path.abspath(os.path.expanduser(pretrained_model_name_or_path)), WEIGHTS_NAME)
+                os.path.abspath(os.path.expanduser(pretrained_model_name_or_path)),
+                WEIGHTS_NAME,
+            )
             q_model = load(weights_file, model, dataloader=None)
             del model
             return q_model
@@ -1581,7 +1697,10 @@ class _BaseQBitsAutoModelClass:
             from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import (
                 TSModelCausalLMForITREX,
             )
-            q_model = torch.jit.load(os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME))
+
+            q_model = torch.jit.load(
+                os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)
+            )
             origin_model_type = config.model_type
             if origin_model_type in ["chatglm", "qwen", "baichuan"]:
                 config.model_type = "qwen2"
@@ -1611,19 +1730,25 @@ class _BaseQBitsAutoModelClass:
             dtype_orig = model_class._set_default_torch_dtype(torch_dtype)
         if quantization_config.compute_dtype is None:
             if use_xpu:
-                quantization_config.compute_dtype = \
-                    "fp16" if (torch_dtype is None or
-                               torch_dtype == torch.bfloat16) \
+                quantization_config.compute_dtype = (
+                    "fp16"
+                    if (torch_dtype is None or torch_dtype == torch.bfloat16)
                     else convert_dtype_torch2str(torch_dtype)
+                )
             else:
-                quantization_config.compute_dtype = \
-                    "fp32" if (torch_dtype is None or
-                               (not CpuInfo().bf16 and torch_dtype == torch.bfloat16) or
-                               (torch_dtype == torch.float16)) \
+                quantization_config.compute_dtype = (
+                    "fp32"
+                    if (
+                        torch_dtype is None
+                        or (not CpuInfo().bf16 and torch_dtype == torch.bfloat16)
+                        or (torch_dtype == torch.float16)
+                    )
                     else convert_dtype_torch2str(torch_dtype)
+                )
         else:
-            if ((not CpuInfo().bf16 and quantization_config.compute_dtype == "bf16")
-                    or (use_cpu and quantization_config.compute_dtype == "fp16")):
+            if (not CpuInfo().bf16 and quantization_config.compute_dtype == "bf16") or (
+                use_cpu and quantization_config.compute_dtype == "fp16"
+            ):
                 quantization_config.compute_dtype = "fp32"
 
         if quantization_config.scale_dtype is None:
@@ -1631,7 +1756,9 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.scale_dtype not in ["fp32", "fp16", "bf16"]:
             logger.warning("scale_dtype only supports fp32, bf16, fp16.")
             quantization_config.scale_dtype = "fp32"
-            logger.warning("fp32 scale_dtype is used, please change the config.json if you don't want to use it.")
+            logger.warning(
+                "fp32 scale_dtype is used, please change the config.json if you don't want to use it."
+            )
 
         # weight dtype is higher priority than bits in config.json when both existed.
         if quantization_config.weight_dtype is None:
@@ -1639,36 +1766,47 @@ class _BaseQBitsAutoModelClass:
                 quantization_config.weight_dtype = "int4_clip"
                 logger.info(
                     "{} quantization weight_dtype is used due to bits is 4 in config.json.".format(
-                        quantization_config.weight_dtype)
+                        quantization_config.weight_dtype
                     )
+                )
             elif quantization_config.bits == 8:
                 quantization_config.weight_dtype = "int8"
                 logger.info(
                     "{} quantization weight_dtype is used due to bits is 8 in config.json.".format(
-                        quantization_config.weight_dtype)
+                        quantization_config.weight_dtype
                     )
+                )
             else:
                 logger.warning("bits number only supports 4, 8.")
                 quantization_config.weight_dtype = "int4_clip"
                 logger.warning(
-                    "int4_clip weight_dtype is used, please change the config.json if you don't want to use it.")
+                    "int4_clip weight_dtype is used, please change the config.json if you don't want to use it."
+                )
         else:
-            if quantization_config.weight_dtype not in ["int4_fullrange",
-                                                         "int4_clip",
-                                                         "int8",
-                                                         "fp8_e5m2",
-                                                         "fp8_e4m3",
-                                                         "nf4",
-                                                         "fp4_e2m1_bnb",
-                                                         "fp4_e2m1"]:
-                logger.warning("Please provide the correct bits number or weight_dtype in config.json.")
+            if quantization_config.weight_dtype not in [
+                "int4_fullrange",
+                "int4_clip",
+                "int8",
+                "fp8_e5m2",
+                "fp8_e4m3",
+                "nf4",
+                "fp4_e2m1_bnb",
+                "fp4_e2m1",
+            ]:
+                logger.warning(
+                    "Please provide the correct bits number or weight_dtype in config.json."
+                )
                 raise ValueError(
                     f"weight_dtype must be a string in "
                     f"'int8', 'int4', 'int4_fullrange', 'int4_clip', 'nf4', "
                     f"'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8', 'fp8_e5m2, fp8_e4m3'"
                 )
             else:
-                logger.info("{} quantization weight_dtype is used.".format(quantization_config.weight_dtype))
+                logger.info(
+                    "{} quantization weight_dtype is used.".format(
+                        quantization_config.weight_dtype
+                    )
+                )
 
         init_contexts = [no_init_weights(_enable=_fast_init)]
         init_contexts.append(init_empty_weights())
@@ -1706,7 +1844,10 @@ class _BaseQBitsAutoModelClass:
 
         if is_ipex_available() and quantization_config.use_ipex:
             import intel_extension_for_pytorch as ipex
-            from intel_extension_for_pytorch.nn.modules import WeightOnlyQuantizedLinear as ipex_linear
+            from intel_extension_for_pytorch.nn.modules import (
+                WeightOnlyQuantizedLinear as ipex_linear,
+            )
+
             def replace_ipex_cpu_woq_linear(model, current_name=[]):
                 for name, module in model.named_children():
                     current_name.append(name)
@@ -1716,37 +1857,46 @@ class _BaseQBitsAutoModelClass:
                             8: ipex.quantization.WoqWeightDtype.INT8,
                         }
                         compute_dtype = {
-                            "fp32": ipex.quantization.WoqLowpMode.NONE, # follow the activation datatype.
+                            "fp32": ipex.quantization.WoqLowpMode.NONE,  # follow the activation datatype.
                             "bf16": ipex.quantization.WoqLowpMode.BF16,
                             "fp16": ipex.quantization.WoqLowpMode.FP16,
                             "int8": ipex.quantization.WoqLowpMode.INT8,
-
                         }
 
-                        ipex_qconfig_mapping = (
-                            ipex.quantization.get_weight_only_quant_qconfig_mapping(
-                                weight_dtype=weight_dtype[quantization_config.bits],
-                                lowp_mode=compute_dtype[quantization_config.compute_dtype],
-                                act_quant_mode=ipex.quantization.WoqActQuantMode.PER_IC_BLOCK,
-                                group_size=quantization_config.group_size,
-                            )
+                        ipex_qconfig_mapping = ipex.quantization.get_weight_only_quant_qconfig_mapping(
+                            weight_dtype=weight_dtype[quantization_config.bits],
+                            lowp_mode=compute_dtype[quantization_config.compute_dtype],
+                            act_quant_mode=ipex.quantization.WoqActQuantMode.PER_IC_BLOCK,
+                            group_size=quantization_config.group_size,
                         )
                         tmp_linear = torch.nn.Linear(
                             module.in_features,
                             module.out_features,
-                            True if hasattr(module, "bias") else False
-                            )
+                            True if hasattr(module, "bias") else False,
+                        )
                         tmp_linear.qconfig = ipex_qconfig_mapping.global_qconfig
                         target_linear = ipex_linear.from_float_and_int4_weight(
-                            mod = tmp_linear,
-                            qweight = state_dict.pop('.'.join(current_name) + ".ipex_weight"),
-                            scales = state_dict.pop('.'.join(current_name) + ".ipex_scales"),
-                            zero_points = state_dict.pop('.'.join(current_name) + ".ipex_zeros"),
-                            bias = state_dict.pop('.'.join(current_name) + ".ipex_bias") \
-                                if '.'.join(current_name) + ".ipex_bias" in state_dict else None,
-                            group_size = quantization_config.group_size,
-                            g_idx = state_dict.pop('.'.join(current_name) + ".ipex_g_idx") \
-                                if '.'.join(current_name) + ".ipex_g_idx" in state_dict else None,
+                            mod=tmp_linear,
+                            qweight=state_dict.pop(
+                                ".".join(current_name) + ".ipex_weight"
+                            ),
+                            scales=state_dict.pop(
+                                ".".join(current_name) + ".ipex_scales"
+                            ),
+                            zero_points=state_dict.pop(
+                                ".".join(current_name) + ".ipex_zeros"
+                            ),
+                            bias=(
+                                state_dict.pop(".".join(current_name) + ".ipex_bias")
+                                if ".".join(current_name) + ".ipex_bias" in state_dict
+                                else None
+                            ),
+                            group_size=quantization_config.group_size,
+                            g_idx=(
+                                state_dict.pop(".".join(current_name) + ".ipex_g_idx")
+                                if ".".join(current_name) + ".ipex_g_idx" in state_dict
+                                else None
+                            ),
                         )
                         setattr(model, name, target_linear)
                     else:
@@ -1783,14 +1933,18 @@ class _BaseQBitsAutoModelClass:
 
         # Set model in evaluation mode to deactivate DropOut modules by default
         model.eval()
-        if quantization_config.weight_dtype not in [
-            "fp8_e5m2",
-            "fp8_e4m3",
-            "nf4",
-            "fp4_e2m1",
-            "fp4_e2m1_bnb",
-            "int4_fullrange",
-        ] and not quantization_config.use_ipex:
+        if (
+            quantization_config.weight_dtype
+            not in [
+                "fp8_e5m2",
+                "fp8_e4m3",
+                "nf4",
+                "fp4_e2m1",
+                "fp4_e2m1_bnb",
+                "int4_fullrange",
+            ]
+            and not quantization_config.use_ipex
+        ):
             model = replace_linear(
                 model,
                 quantization_config=quantization_config,
@@ -1798,8 +1952,9 @@ class _BaseQBitsAutoModelClass:
                 empty_weights=True,
             )
 
-        if (not use_xpu and torch_dtype == torch.float16) or (not use_xpu and not CpuInfo().bf16
-                                                              and torch_dtype == torch.bfloat16):
+        if (not use_xpu and torch_dtype == torch.float16) or (
+            not use_xpu and not CpuInfo().bf16 and torch_dtype == torch.bfloat16
+        ):
             model.to(dtype=torch.float32)
 
         # If it is a model with generation capabilities, attempt to load the generation config
