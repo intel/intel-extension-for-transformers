@@ -359,7 +359,8 @@ def _replace_linear(
                 else:
                     if not hasattr(module, "qweight"):
                         n_pack = (
-                            (8 if _ipex_version < "2.3.10" else 32) // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]
+                            (8 if _ipex_version < "2.3.10" else 32)
+                            // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]
                         )
                         weight = torch.zeros(
                             (math.ceil(out_features / n_pack), in_features) if _ipex_version < "2.3.10" else

@@ -180,7 +180,7 @@ def build_woq_model(model, quantization_config):
 
 def convert_model_to_public(model):
     # reorder weight and scales if they have been transposed
-    if model.device == "xpu":
+    if model.device == "xpu" or (isinstance(model.device, torch.device) and model.device.type == "xpu"):
         for name, module in model.named_modules():
             if isinstance(module, WeightOnlyQuantizedLinear) and not module.use_optimum_format:
                 if module.weight_transposed:
