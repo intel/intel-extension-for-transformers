@@ -146,8 +146,10 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias = None if self.bias is None else self.bias.data.float()
         if not x.is_contiguous():
             x = x.contiguous()
+
+        # Only FP32 activation supports gemv which benefits next-token.
         out = matmul_kbit(
-            x.view(m, shape[-1]),
+            x.view(m, shape[-1]).float(),
             self.weight,
             bias,
             out,
@@ -327,7 +329,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             g_idx = None
         weight_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 6)
         weight_dtype = "".join(chr(ascii_code) for ascii_code in weight_dtype_ascii.tolist())
-        bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4", "int4_fullrange"] else 8
+        bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4_e2m1", "fp4_e2m1_bnb"] else 8
         compute_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 7)
         compute_dtype = "".join(chr(ascii_code) for ascii_code in compute_dtype_ascii.tolist())
         scales_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 8)
