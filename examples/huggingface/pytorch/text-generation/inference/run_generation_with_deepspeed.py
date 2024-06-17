@@ -79,6 +79,7 @@ parser.add_argument('--print-memory', action='store_true')
 parser.add_argument("--token-latency", action="store_true")
 parser.add_argument("--throughput", action="store_true")
 parser.add_argument("--accuracy-only", action="store_true")
+parser.add_argument("--optimum-intel", action="store_true")
 parser.add_argument(
     "--acc-tasks",
     nargs="+",
@@ -143,7 +144,7 @@ def get_repo_root(model_name_or_path):
             model_name_or_path,
             local_files_only=is_offline_mode(),
             cache_dir=os.getenv("TRANSFORMERS_CACHE", None),
-            ignore_patterns=["*.safetensors", "*.msgpack", "*.h5"],
+            ignore_patterns=["*.safetensors", "*.msgpack", "*.h5", "training_args.bin"],
             resume_download=True,
         )
 
@@ -153,7 +154,7 @@ def get_repo_root(model_name_or_path):
         model_name_or_path,
         local_files_only=is_offline_mode(),
         cache_dir=os.getenv("TRANSFORMERS_CACHE", None),
-        ignore_patterns=["*.safetensors", "*.msgpack", "*.h5"],
+        ignore_patterns=["*.safetensors", "*.msgpack", "*.h5", "training_args.bin"],
         resume_download=True,
     )
 
@@ -226,7 +227,8 @@ checkpoints_json = "checkpoints.json"
 def write_checkpoints_json():
     checkpoint_files = get_checkpoint_files(model_name)
     if local_rank == 0:
-        data = {"type": "BLOOM", "checkpoints": checkpoint_files, "version": 1.0}
+        type = "BLOOM" if model.config.model_type == "bloom" else "ds_model"
+        data = {"type": type, "checkpoints": checkpoint_files, "version": 1.0}
         json.dump(data, open(checkpoints_json, "w"))
 
 
@@ -255,6 +257,7 @@ model = deepspeed.init_inference(
     checkpoint=checkpoints_json if is_meta_support else None,
     **kwargs,
 )
+model = model.module
 
 if args.benchmark:
     print_mem_usage("post-ds-inference-init")
@@ -264,7 +267,11 @@ if args.benchmark:
 
 # to ipex
 if args.ipex:
-    model = ipex.optimize_transformers(model.eval().to("xpu"), dtype=infer_dtype)
+    if args.optimum_intel and args.device == "cpu" and model.config.model_type == "llama":
+        from optimum.intel import IPEXModelForCausalLM
+        model = IPEXModelForCausalLM(model.eval(), config)
+    else:
+        model = ipex.optimize_transformers(model.eval().to(model.device), dtype=infer_dtype)
 
 # bypass assertion for beam4
 if isinstance(model, deepspeed.InferenceEngine):
@@ -378,7 +385,7 @@ def run_accuracy():
         config=config,
         model=model,
         tokenizer=tokenizer,
-        device="xpu",
+        device=model.device,
         num_beams=args.num_beams,
         batch_size=args.batch_size,
         dtype=args.dtype,
@@ -480,7 +487,7 @@ def run_generate(num_tokens, num_input_tokens, num_beams):
         with torch.inference_mode():
             # latency
             for i in range(cycles):
-                with torch.autograd.profiler_legacy.profile(enabled=do_profiling, use_xpu=True, record_shapes=True) as prof:
+                with torch.autograd.profiler_legacy.profile(enabled=do_profiling, use_xpu=True if model.device.type=="cpu" else False, record_shapes=True) as prof:
                     t0 = time.time()
                     gen_ids, outputs = generate()
                     if args.cuda:
@@ -488,7 +495,7 @@ def run_generate(num_tokens, num_input_tokens, num_beams):
                     t1 = time.time()
 
                 if do_profiling:
-                    torch.save(prof.key_averages().table(sort_by="self_xpu_time_total"), "./profile_{}.pt".format(local_rank))
+                    torch.save(prof.key_averages().table(sort_by=f"self_{args.device}_time_total"), "./profile_{}.pt".format(local_rank))
                     torch.save(prof.table(sort_by="id", row_limit=-1),'./profile_{}_id.pt'.format(local_rank))
                     torch.save(prof.key_averages(group_by_input_shape=True).table(), "./profile_{}_detail.pt".format(local_rank))
                     prof.export_chrome_trace("./trace.json")
