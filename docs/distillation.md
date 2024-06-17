@@ -56,6 +56,7 @@ from neural_compressor.config import DistillationConfig
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
 metric = metrics.Metric(name="eval_accuracy")
+trainer.metrics = metric
 d_conf = DistillationConfig(teacher_model=teacher_model, criterion=criterion)
 model = trainer.distill(distillation_config=d_conf)
 ```

@@ -306,9 +306,6 @@ class BaseTrainer():
         if calib_dataloader is not None:
             self._calib_dataloader = calib_dataloader
 
-        if self.quantizer is None:
-            self._provider = Provider[provider.upper()].value
-
         if self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
         else:
