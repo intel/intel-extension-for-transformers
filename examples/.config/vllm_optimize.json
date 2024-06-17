@@ -1,5 +1,5 @@
 {
-  "chatglm2_6b_gen_ipex_static": {
+  "chatglm2_6b": {
     "working_dir": "vllm",
     "tune": {
       "cmd": "bash run_tuning.sh",
