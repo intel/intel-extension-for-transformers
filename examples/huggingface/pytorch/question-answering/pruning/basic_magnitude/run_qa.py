@@ -26,7 +26,8 @@ import time
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import metrics, OptimizedModel, PrunerConfig, PruningConfig, PruningMode
+from intel_extension_for_transformers.transformers import metrics, OptimizedModel
+from neural_compressor.config import WeightPruningConfig
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -210,8 +211,8 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply prune."},
     )
     pruning_approach: Optional[str] = field(
-        default="BasicMagnitude",
-        metadata={"help": "Pruning approach. Supported approach is basic_magnite."},
+        default="magnitude",
+        metadata={"help": "Pruning approach. Supported approach is magnite."},
     )
     target_sparsity_ratio: Optional[float] = field(
         default=None,
@@ -631,12 +632,15 @@ def main():
             raise ValueError("do_train must be set to True for pruning.")
 
         tune_metric = metrics.Metric(name=metric_name)
-        prune_type = 'BasicMagnitude' if optim_args.pruning_approach else optim_args.pruning_approach
+        prune_type = optim_args.pruning_approach \
+            if optim_args.pruning_approach else 'pattern_lock'
         target_sparsity_ratio = optim_args.target_sparsity_ratio \
             if optim_args.target_sparsity_ratio else None
-        pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
-        pruning_conf = PruningConfig(pruner_config=pruner_config, metrics=tune_metric)
-
+        trainer.metrics = tune_metric
+        pruning_conf = WeightPruningConfig([{"start_step": 0, "end_step": 2}],
+                                            target_sparsity=target_sparsity_ratio,
+                                            pruning_scope="local",
+                                            pruning_type=prune_type)
         model = trainer.prune(pruning_config=pruning_conf)
         trainer.save_model(training_args.output_dir)
 

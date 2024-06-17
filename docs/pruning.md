@@ -45,7 +45,7 @@ The Metric defines which metric will be used to measure the performance of tuned
 
     Please refer to [metrics document](metrics.md) for the details.
 
-### Create list of an instance of PrunerConfig(Optional)
+### Create an instance of WeightPruningConfig
 PrunerConfig defines which pruning algorithm to use and how to apply it during the training process. Intel® Extension for Transformers supports pruning types "BasicMagnitude", "PatternLock", and "GroupLasso". You can create different pruners for different layers.
 
 - arguments:
@@ -60,26 +60,18 @@ PrunerConfig defines which pruning algorithm to use and how to apply it during t
     |names|list of string|List of weight name to be pruned. If no weight is specified, all weights of the model will be pruned|[]|
     |parameters|dict of string|The hyper-parameters for pruning, refer to [the link](https://github.com/intel/neural-compressor/blob/master/docs/source/pruning.md)|None|
 
-- example:
-    ```python
-    pruner_config = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
-    ```
-
-### Create an instance of PruningConfig
-The PruningConfig contains all the information related to the model pruning behavior. If you have created Metric and PrunerConfig instance, then you can create an instance of PruningConfig. Metric and pruner are optional.
-
-- arguments:
-    |Argument   |Type       |Description                                        |Default value    |
-    |:----------|:----------|:-----------------------------------------------|:----------------|
-    |framework  |string     |Which framework you used                        |"pytorch"        |
-    |initial_sparsity_ratio|float |Initial sparsity goal, if pruner_config argument is defined, it didn't need                       |0.0|
-    |target_sparsity_ratio|float |Target sparsity goal, if pruner argument is defined, it didn't need                       |0.97|
-    |metrics    |Metric    |Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer|None    |
-    |pruner_config |PrunerConfig    |Defined pruning behavior, if it is None, then NLP will create a default a pruner with 'BasicMagnitude' pruning type                                  |None              |
+The WeightPruningConfig contains all the information related to the model pruning behavior. If you have created Metric and WeightPruningConfig instance, then you can create an instance of WeightPruningConfig. Metric and pruner are optional.
 
 - example:
     ```python
-    pruning_conf = PruningConfig(pruner_config=[pruner_config], metrics=tune_metric)
+    from neural_compressor.config import WeightPruningConfig
+
+    metric = metrics.Metric(name="eval_accuracy")
+    trainer.metrics = tune_metric
+    pruning_conf = WeightPruningConfig([{"start_step": 0, "end_step": 2}],
+                                        target_sparsity=0,9,
+                                        pruning_scope="local",
+                                        pruning_type="magnitude")
     ```
 
 ### Prune with Trainer
