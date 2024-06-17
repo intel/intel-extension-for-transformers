@@ -537,25 +537,19 @@ def main():
             name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
         )
         trainer.metrics = tune_metric
+        tuning_criterion = TuningCriterion(max_trials=600)
+        accuracy_criterion = AccuracyCriterion(
+            higher_is_better=False,  # optional.
+            criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+            tolerable_loss=optim_args.perf_tol,  # optional.
+        )
         if optim_args.quantization_approach != "qat":
-            tuning_criterion = TuningCriterion(max_trials=600)
-            accuracy_criterion = AccuracyCriterion(
-                higher_is_better=False,  # optional.
-                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
-                tolerable_loss=optim_args.perf_tol,  # optional.
-            )
             quantization_config = PostTrainingQuantConfig(
                 approach=optim_args.quantization_approach,
                 tuning_criterion=tuning_criterion,
                 accuracy_criterion=accuracy_criterion
             )
         else:
-            tuning_criterion = TuningCriterion(max_trials=600)
-            accuracy_criterion = AccuracyCriterion(
-                higher_is_better=False,  # optional.
-                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
-                tolerable_loss=optim_args.perf_tol,  # optional.
-            )
             quantization_config = QuantizationAwareTrainingConfig(
                 tuning_criterion=tuning_criterion,
                 accuracy_criterion=accuracy_criterion
