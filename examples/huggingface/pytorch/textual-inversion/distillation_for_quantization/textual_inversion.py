@@ -19,9 +19,10 @@ from diffusers import AutoencoderKL, DDPMScheduler, PNDMScheduler, StableDiffusi
 from diffusers.optimization import get_scheduler
 from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
 from huggingface_hub import HfFolder, Repository, whoami
-from intel_extension_for_transformers.transformers.config import (
+from neural_compressor.config import (
     DistillationConfig,
-    QuantizationConfig,
+    IntermediateLayersKnowledgeDistillationLossConfig,
+    QuantizationAwareTrainingConfig,
 )
 from intel_extension_for_transformers.transformers.utils import metrics, objectives
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
@@ -769,12 +770,7 @@ def main():
         tune_metric = metrics.Metric(name="")
         if args.do_quantization: 
             objective = objectives.performance
-            quantization_conf = QuantizationConfig(
-                approach="QuantizationAwareTraining",
-                max_trials=600,
-                metrics=[tune_metric],
-                objectives=[objective]
-            )
+            quantization_conf = QuantizationAwareTrainingConfig()
             conf_list.append(quantization_conf)
 
         if args.do_distillation:
@@ -828,17 +824,13 @@ def main():
                 [['mid_block.resnets.1', ]],
                 [['conv_out', ]],
             ]
-
-            distillation_conf = DistillationConfig(
-                framework="pytorch_fx", metrics=tune_metric,
-                criterion=Criterion(
-                    name="IntermediateLayersLoss",
-                    layer_mappings=layer_mappings,
-                    loss_types=["MSE"] * len(layer_mappings),
-                    loss_weight_ratio=[1.0 / len(layer_mappings)] * len(layer_mappings),
-                    add_origin_loss=True
-                )
+            criterion_conf = IntermediateLayersKnowledgeDistillationLossConfig(
+                layer_mappings=layer_mappings,
+                loss_types=["MSE"] * len(layer_mappings),
+                loss_weight_ratio=[1.0 / len(layer_mappings)] * len(layer_mappings),
+                add_origin_loss=True
             )
+            distillation_conf = DistillationConfig(teacher_model=teacher_model, criterion=criterion_conf)
             conf_list.append(distillation_conf)
         
         # Initialize our Trainer
@@ -846,10 +838,10 @@ def main():
             model=model,
             args=TrainingArguments(output_dir=args.output_dir),
         )
+        trainer.metrics = tune_metric
 
         model = trainer.orchestrate_optimizations(
             config_list=conf_list,
-            teacher_model=teacher_model,
             eval_func=lambda model:1,
             train_func=train_func)
 

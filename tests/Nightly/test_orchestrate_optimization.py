@@ -20,18 +20,14 @@ import shutil
 import torch.utils.data as data
 import unittest
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import (
-    PrunerConfig,
-    PruningConfig,
+from neural_compressor.config import (
+    WeightPruningConfig,
     DistillationConfig,
-    QuantizationConfig,
-    DistillationCriterionMode,
-    metrics,
-    objectives,
-    OptimizedModel,
+    KnowledgeDistillationLossConfig,
+    QuantizationAwareTrainingConfig,
 )
+from intel_extension_for_transformers.transformers import metrics
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-from intel_extension_for_transformers.transformers.distillation import Criterion
 
 from transformers import (
     AutoModelForSequenceClassification,
@@ -77,36 +73,26 @@ class TestOrchestrateOptimizations(unittest.TestCase):
             preds = p.predictions
             preds = np.argmax(preds, axis=1)
             return metric.compute(predictions=preds, references=p.label_ids)
-        origin_weight = copy.deepcopy(self.model.classifier.weight)
-        for mode in DistillationCriterionMode:
-            print("Distillation approach:", mode.value)
-            self.trainer = NLPTrainer(
-                model=copy.deepcopy(self.model),
-                train_dataset=self.dataset,
-                eval_dataset=self.dataset,
-                compute_metrics=compute_metrics,
-            )
-            self.trainer.calib_dataloader = self.trainer.get_eval_dataloader()
+
+        self.trainer = NLPTrainer(
+            model=copy.deepcopy(self.model),
+            train_dataset=self.dataset,
+            eval_dataset=self.dataset,
+            compute_metrics=compute_metrics,
+        )
+        self.trainer.calib_dataloader = self.trainer.get_eval_dataloader()
         tune_metric = metrics.Metric(
             name="eval_accuracy", is_relative=True, criterion=0.5
         )
-        pruner_config = PrunerConfig(prune_type='PatternLock', target_sparsity_ratio=0.9)
-        pruning_conf = PruningConfig(framework="pytorch_fx",pruner_config=[pruner_config], metrics=tune_metric)
-        distillation_conf = DistillationConfig(framework="pytorch_fx", metrics=tune_metric)
-
-        objective = objectives.performance
-        quantization_conf = QuantizationConfig(
-            approach="QuantizationAwareTraining",
-            max_trials=600,
-            metrics=[tune_metric],
-            objectives=[objective]
-        )
-
-        from neural_compressor.adaptor.torch_utils.symbolic_trace import symbolic_trace
-        self.model = symbolic_trace(self.model, is_qat=True)
-        self.trainer.model = self.model
+        self.trainer.metrics = tune_metric
+        pruning_conf = WeightPruningConfig([{"start_step": 0, "end_step": 2}], 
+                                           target_sparsity=0.64, 
+                                           pruning_scope="local")
+        distillation_criterion = KnowledgeDistillationLossConfig(loss_types=["CE", "KL"])
+        distillation_conf = DistillationConfig(teacher_model=self.teacher_model, criterion=distillation_criterion)
+        quantization_conf = QuantizationAwareTrainingConfig()
         conf_list = [pruning_conf, distillation_conf, quantization_conf]
-        opt_model = self.trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=self.teacher_model)
+        opt_model = self.trainer.orchestrate_optimizations(config_list=conf_list)
         self.assertTrue("quantize" in str(type(opt_model.classifier.module)))
 
 

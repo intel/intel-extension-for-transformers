@@ -16,7 +16,7 @@ model_name_or_path: "Intel/distilbert-base-uncased-sparse-90-unstructured-pruneo
 teacher_model_name_or_path: "distilbert-base-uncased-finetuned-sst-2-english"
 task_name: "sst2"
 sat: true
-quantization_approach: "QuantizationAwareTraining"
+quantization_approach: "qat"
 learning_rate: 0.000012
 num_train_epochs: 6
 do_train: true

@@ -29,18 +29,15 @@ from functools import partial
 from neural_compressor import __version__ as nc_version
 from neural_compressor.utils import logger
 from intel_extension_for_transformers.transformers import (
-    DistillationConfig,
     Provider,
-    PruningMode,
-    QuantizationConfig,
-    QuantizationMode,
-    PruningConfig,
     DynamicLengthConfig,
     BenchmarkConfig,
 )
 from neural_compressor.training import prepare_compression
 from neural_compressor.quantization import fit
 from neural_compressor.config import (
+    DistillationConfig,
+    WeightPruningConfig,
     PostTrainingQuantConfig,
     QuantizationAwareTrainingConfig,
 )
@@ -133,11 +130,7 @@ class BaseTrainer():
         self._calib_dataloader = None
         self._resuming_checkpoint = None
         self.compression_ctrl = None
-        self.component = None
         self.enable_inc_quant = False
-        self.pruner = None
-        self.quantizer = None
-        self.distiller = None
         self.fp32_model = None
         self.opt_model = None
         # This flag is set for the engine in the export_to_int8_onnx API.
@@ -147,6 +140,7 @@ class BaseTrainer():
         self.orchestrate_opt_pruning = False
         self.dynamic_config = None
         self.model_config = None
+        self.compression_manager = None
 
     @property
     def resuming_checkpoint(self):
@@ -244,7 +238,7 @@ class BaseTrainer():
         """
         self.model_wrapped = model
         self.model = model
-        train_result = self.train(component=self.component,
+        train_result = self.train(compression_manager=self.compression_manager,
                                   resume_from_checkpoint=self._resuming_checkpoint)
         metrics = train_result.metrics
         if not self.orchestrate_opt:
@@ -275,10 +269,11 @@ class BaseTrainer():
                                  eval_func=self._eval_func)
         else:
             compression_manager = prepare_compression(self.model, quant_config)
-            compression_manager.callbacks.on_train_begin()
-            self.train()
-            compression_manager.callbacks.on_train_end()
-            self.opt_model = compression_manager.model
+            self.compression_manager = compression_manager
+            self.compression_manager.callbacks.on_train_begin()
+            self._train_func(compression_manager.model._model)
+            self.compression_manager.callbacks.on_train_end()
+            self.opt_model = self.compression_manager.model
         self.enable_inc_quant = True
         self.save_model(self.args.output_dir)
         return self.opt_model.model
@@ -338,54 +333,9 @@ class BaseTrainer():
             torch.save(opt_model.quantized_state_dict(), weights_file)
         logger.info("quantized model and configure file have saved to {}".format(output_dir))
 
-    def init_pruner(
-        self,
-        pruning_config=None,
-        provider: str = Provider.INC.value,
-    ):
-        """Initialize the pruner.
-
-        Args:
-            pruning_config: The path to the YAML configuration file or PruningConf class containing
-            accuracy goal, pruning objective and related dataloaders etc.
-            provider: The provider used to quantize.
-
-        Returns:
-            An objective of neural_compressor Pruning class.
-        """
-
-        from neural_compressor.experimental import Pruning
-        self.pruning_config = pruning_config
-        self.metrics = self.pruning_config.metrics
-        self._provider = Provider[provider.upper()].value
-
-        assert isinstance(self.pruning_config, PruningConfig), \
-            "please pass a instance of PruningConfig to trainer.prune!"
-
-        pruning_start_epoch, pruning_end_epoch = self.pruning_config.epoch_range
-
-        # pylint: disable=E1101
-        if pruning_start_epoch > self.args.num_train_epochs - 1:
-            logger.warning(f"Pruning end epoch {pruning_start_epoch} is higher than "
-                           f"the total number of training epoch "
-                           f"{self.args.num_train_epochs}. No pruning will be applied.")
-
-        # pylint: disable=E1101
-        if pruning_end_epoch > self.args.num_train_epochs - 1:
-            logger.warning(
-                f"Pruning end epoch {pruning_end_epoch} is higher than "
-                f"the total number of training epoch "
-                f"{self.args.num_train_epochs}. The target sparsity will not be reached.")
-
-        pruner = Pruning(self.pruning_config.inc_config)
-        pruner.model = self.model
-
-        self.pruner = pruner
-        return pruner
-
     def prune(
         self,
-        pruning_config=None,
+        pruning_config: Union[WeightPruningConfig] = None,
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
@@ -402,72 +352,19 @@ class BaseTrainer():
         Returns:
             An objective of neural_compressor Pruning class.
         """
-        if self.pruner is None:
-            self.init_pruner(pruning_config=pruning_config, provider=provider)
-        if eval_func is not None:
-            self._eval_func = eval_func
-        if train_func is not None:
-            self._train_func = train_func
-
-        if self._eval_func is not None:
-            self.pruner.eval_func = self._eval_func
-        else:
-            assert self.metrics is not None, "Please pass metrics to trainer.pruning.metrics!"
-            assert self.pruning_config.pruner_config[0].prune_type == PruningMode.BASICMAGNITUDE.value, \
-                "Please pass eval_func to trainer.eval_func"
-            self.pruner.eval_func = self.builtin_eval_func
-
-        if self._train_func is not None:
-            self.pruner.pruning_func = self._train_func
-        else:
-            assert self.pruning_config.pruner_config[0].prune_type == PruningMode.BASICMAGNITUDE.value, \
-                "Please pass train_func to trainer.train_func"
-            self.pruner.pruning_func = self.builtin_train_func
-
-        self.component = self.pruner
-        self.opt_model = self.pruner.fit()
-        stats, sparsity = self.opt_model.report_sparsity()
-        logger.info(stats)
-        logger.info(sparsity)
-
+        self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
+        self._train_func = self.builtin_train_func if train_func is None else train_func
+        compression_manager = prepare_compression(model=self.model, confs=pruning_config)
+        self.compression_manager = compression_manager
+        self.compression_manager.callbacks.on_train_begin()
+        self._train_func(compression_manager.model._model)
+        self.compression_manager.callbacks.on_train_end()
+        self.opt_model = self.compression_manager.model
         return self.opt_model.model
-
-    def init_distiller(
-        self,
-        distillation_config,
-        teacher_model: Union[PreTrainedModel, torch.nn.Module],
-        provider: str = Provider.INC.value,
-    ):
-        """The main entry point of automatic distillation tuning.
-
-        Args:
-            quant_config: The path to the YAML configuration file or DistillationConfig class containing.
-            accuracy goal, distillation objective and related dataloaders etc.
-            teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
-            provider (str): The provider used to quantize.
-
-        Returns:
-            An objective of neural_compressor Distillation class.
-        """
-        from neural_compressor.experimental import Distillation
-        assert isinstance(distillation_config, DistillationConfig), \
-            "please pass a instance of PruningConfig to trainer.prune!"
-        self.distillation_config = distillation_config
-        self._provider = Provider[provider.upper()].value
-        self.metrics = self.distillation_config.metrics
-        self.teacher_model = teacher_model
-
-        distiller = Distillation(self.distillation_config.inc_config)
-        distiller.model = self.model
-        distiller.teacher_model = self.teacher_model
-
-        self.distiller = distiller
-        return distiller
 
     def distill(
         self,
-        distillation_config,
-        teacher_model: Union[PreTrainedModel, torch.nn.Module],
+        distillation_config: Union[DistillationConfig] = None,
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
@@ -477,7 +374,6 @@ class BaseTrainer():
         Args:
             quant_config: The path to the YAML configuration file or DistillationConfig class containing
             accuracy goal, distillation objective and related dataloaders etc.
-            teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
             provider (str): The provider used to quantize.
             eval_func (:obj:`Callable`, optional: The function to evaluate the model.
             train_func (:obj:`Callable`, optional: The function to train the model.
@@ -485,34 +381,25 @@ class BaseTrainer():
         Returns:
             An objective of neural_compressor Distillation class.
         """
-        if self.distiller is None:
-            self.init_distiller(distillation_config=distillation_config,
-                                teacher_model=teacher_model,
-                                provider=provider)
-        if eval_func is not None:
-            self._eval_func = eval_func
-        if train_func is not None:
-            self._train_func = train_func
-
-        if self._eval_func is not None:
-            self.distiller.eval_func = self._eval_func
+        if distillation_config.teacher_model is not None:
+            self.teacher_model = distillation_config.teacher_model
         else:
-            assert self.metrics is not None, \
-                "Please pass metrics to trainer.distillation.metrics!"
-            self.distiller.eval_func = self.builtin_eval_func
-
-        self.distiller.train_func = \
-            self.builtin_train_func if self._train_func is None else self._train_func
-        self.distiller.create_criterion()
-        self.component = self.distiller
-        self.opt_model = self.distiller.fit()
+            assert False, "Please provide teacher model for DistillationConfig."
+        self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
+        self._train_func = self.builtin_train_func if train_func is None else train_func
+        
+        compression_manager = prepare_compression(self.model, distillation_config)
+        self.compression_manager = compression_manager
+        self.compression_manager.callbacks.on_train_begin()
+        self._train_func(compression_manager.model._model)
+        self.compression_manager.callbacks.on_epoch_end()
+        self.opt_model = self.compression_manager.model
 
         return self.opt_model.model
 
     def orchestrate_optimizations(
         self,
         config_list,
-        teacher_model: Optional[Callable] = None,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
@@ -525,50 +412,503 @@ class BaseTrainer():
             eval_func (:obj:`Callable`, optional): Evaluation function to evaluate the tuning objective.
             train_func (:obj:`Callable`, optional): Training function which will be combined with pruning.
         """
-        from intel_extension_for_transformers.transformers.optimizer import Orchestrate_optimizer
+        # from intel_extension_for_transformers.transformers.optimizer import Orchestrate_optimizer
         self.orchestrate_opt = True
+        for config in config_list:
+            if isinstance(config, DistillationConfig):
+                self.teacher_model = config.teacher_model
+                assert self.teacher_model is not None, "Distillation need teacher model, please provide."
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
         self._train_func = self.builtin_train_func if train_func is None else train_func
-        components = self.create_optimizer_builtin(config_list, teacher_model)
-        self.orchestrate_optimizer = Orchestrate_optimizer(self.model, components, \
-                                     eval_func=self.eval_func, train_func=self.train_func, \
-                                     output_dir=self.args.output_dir)
-        self.component = self.orchestrate_optimizer.scheduler.components[0]
-        torch_model = self.orchestrate_optimizer.fit()
-        return torch_model
+        compression_manager = prepare_compression(model=self.model, confs=config_list)
+        self.compression_manager = compression_manager
+        self.compression_manager.callbacks.on_train_begin()
+        self._train_func(compression_manager.model._model)
+        self.compression_manager.callbacks.on_train_end()
+        self.opt_model = self.compression_manager.model
+        return self.opt_model.model
 
-    def create_optimizer_builtin(self, config_list, teacher_model=None):
-        """The function to create optimizer.
+    def train(
+        self,
+        compression_manager = None,
+        resume_from_checkpoint: Optional[Union[str, bool]] = None,
+        trial: Union["optuna.Trial", Dict[str, Any]] = None,
+        ignore_keys_for_eval: Optional[List[str]] = None,
+        **kwargs,
+    ):  # pragma: no cover
+        """The main entry point tor train model.
 
         Args:
-            config_list: The list of configs.
-            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge
-                to a smaller model.
+            compression_manager (:obj:`CompressionManager`, `optional`): handling the training process.
+            resume_from_checkpoint (:obj:`str` or :obj:`bool`, `optional`): If a :obj:`str`, local path
+                to a saved checkpoint as saved by a previous instance of :class:`~transformers.Trainer`.
+                If a :obj:`bool` and equals `True`, load the last checkpoint in `args.output_dir` as saved
+                by a previous instance of :class:`~transformers.Trainer`. If present, training will resume
+                from the model/optimizer/scheduler states loaded here.
+            trial (:obj:`optuna.Trial` or :obj:`Dict[str, Any]`, `optional`): The trial run or the
+                hyperparameter dictionary for hyperparameter search.
+            ignore_keys_for_eval (:obj:`List[str]`, `optional`): A list of keys in the output of your model
+                (if it is a dictionary) that should be ignored when gathering predictions for evaluation
+                during the training.
+            kwargs: Additional keyword arguments used to hide deprecated arguments
         """
-        components = []
-        for config in config_list:
-            if isinstance(config, PostTrainingQuantConfig):
-                component = self.init_quantizer(config)
-                component.eval_func = self._eval_func
-                component.q_func = self._train_func
-                self.enable_inc_quant = True
-            elif isinstance(config, PruningConfig):
-                self.orchestrate_opt_pruning = True
-                component = self.init_pruner(config)
-                component.eval_func = self._eval_func
-                component.pruning_func = self._train_func
-            elif isinstance(config, DistillationConfig):
-                assert isinstance(teacher_model, torch.nn.Module), \
-                        "The teacher_model is needed for distiller"
-                component = self.init_distiller(config, teacher_model)
-                component.eval_func = self._eval_func
-                component.train_func = self._train_func
-                component.create_criterion()
-            else:  # pragma: no cover
-                assert False, "Orchestrate_optimizations config_list requires at least one" \
-                    "       `QuantizationConfig`, `PruningConfig` or `DistillationConfig` object"
-            components.append(component)
-        return components
+        resume_from_checkpoint = None if not resume_from_checkpoint else resume_from_checkpoint
+
+        # memory metrics - must set up as early as possible
+        # pylint: disable=E1101
+        self._memory_tracker.start()
+
+        # pylint: disable=E1101
+        args = self.args
+
+        self.is_in_train = True
+
+        self.compression_manager = compression_manager
+
+        # do_train is not a reliable argument, as it might not be set and .train() still called, so
+        # the following is a workaround:
+        if args.fp16_full_eval and not args.do_train:
+            self._move_model_to_device(self.model, args.device)
+
+        if "model_path" in kwargs:
+            resume_from_checkpoint = kwargs.pop("model_path")
+            warnings.warn(
+                "`model_path` is deprecated and will be removed in a future version. Use `resume_from_checkpoint` "
+                "instead.",
+                FutureWarning,
+            )
+        if len(kwargs) > 0:
+            raise TypeError(
+                f"train() received got unexpected keyword arguments: {', '.join(list(kwargs.keys()))}."
+            )
+        # This might change the seed so needs to run first.
+        self._hp_search_setup(trial)
+
+        # Model re-init
+        model_reloaded = False
+        if self.model_init is not None:
+            # Seed must be set before instantiating the model when using model_init.
+            set_seed(args.seed)
+            self.model = self.call_model_init(trial)
+            model_reloaded = True
+            # Reinitializes optimizer and scheduler
+            self.optimizer, self.lr_scheduler = None, None
+
+        # Load potential model checkpoint
+        if isinstance(resume_from_checkpoint, bool) and resume_from_checkpoint:
+            resume_from_checkpoint = get_last_checkpoint(args.output_dir)
+            if resume_from_checkpoint is None:
+                raise ValueError(
+                    f"No valid checkpoint found in output directory ({args.output_dir})")
+
+        if resume_from_checkpoint is not None:
+            if version.parse(__version__) < version.parse("4.19"):
+                if not os.path.isfile(os.path.join(resume_from_checkpoint, WEIGHTS_NAME)):
+                    raise ValueError(f"Can't find a valid checkpoint at {resume_from_checkpoint}")
+
+                logger.info(f"Loading model from {resume_from_checkpoint}).")
+
+                if os.path.isfile(os.path.join(resume_from_checkpoint, CONFIG_NAME)):
+                    config = PretrainedConfig.from_json_file(
+                        os.path.join(resume_from_checkpoint, CONFIG_NAME))
+                    checkpoint_version = config.transformers_version
+                    if checkpoint_version is not None and checkpoint_version != __version__:
+                        logger.warn(
+                            f"You are resuming training from a checkpoint trained with {checkpoint_version} of "
+                            f"Transformers but your current version is {__version__}. "
+                            "This is not recommended and could yield to errors or unwanted behaviors."
+                        )
+
+                # We load the model state dict on the CPU to avoid an OOM error.
+                state_dict = torch.load(os.path.join(resume_from_checkpoint, WEIGHTS_NAME),
+                                        map_location="cpu")
+                # If the model is on the GPU, it still works!
+                self._load_state_dict_in_model(state_dict)
+
+                # release memory
+                del state_dict
+            else:
+                self._load_from_checkpoint(resume_from_checkpoint)
+
+        # If model was re-initialized, put it on the right device and update self.model_wrapped
+        if model_reloaded:
+            if self.place_model_on_device:
+                self._move_model_to_device(self.model, args.device)
+            self.model_wrapped = self.model
+
+        # Keeping track whether we can can len() on the dataset or not
+        train_dataset_is_sized = isinstance(self.train_dataset, collections.abc.Sized)
+
+        # Data loader and number of training steps
+        # pylint: disable=E1101
+        train_dataloader = self.get_train_dataloader()
+
+        # Setting up training control variables:
+        # number of training epochs: num_train_epochs
+        # number of training steps per epoch: num_update_steps_per_epoch
+        # total number of training steps to execute: max_steps
+        total_train_batch_size = args.train_batch_size * args.gradient_accumulation_steps * args.world_size
+        if train_dataset_is_sized:
+            num_update_steps_per_epoch = len(train_dataloader) // args.gradient_accumulation_steps
+            num_update_steps_per_epoch = max(num_update_steps_per_epoch, 1)
+            if args.max_steps > 0:
+                max_steps = args.max_steps
+                num_train_epochs = args.max_steps // num_update_steps_per_epoch + int(
+                    args.max_steps % num_update_steps_per_epoch > 0)
+                # May be slightly incorrect if the last batch in the training datalaoder has a smaller size but it's
+                # the best we can do.
+                num_train_samples = args.max_steps * total_train_batch_size
+            else:
+                max_steps = math.ceil(args.num_train_epochs * num_update_steps_per_epoch)
+                num_train_epochs = math.ceil(args.num_train_epochs)
+                num_train_samples = len(self.train_dataset) * args.num_train_epochs
+        else:
+            # see __init__. max_steps is set when the dataset has no __len__
+            max_steps = args.max_steps
+            # Setting a very large number of epochs so we go as many times as necessary over the iterator.
+            num_train_epochs = sys.maxsize
+            num_update_steps_per_epoch = max_steps
+            num_train_samples = args.max_steps * total_train_batch_size
+
+        # pylint: disable=E1101
+        if DebugOption.UNDERFLOW_OVERFLOW in self.args.debug:
+            if self.args.n_gpu > 1:
+                # nn.DataParallel(model) replicates the model, creating new variables and module
+                # references registered here no longer work on other gpus, breaking the module
+                raise ValueError("Currently --debug underflow_overflow is not supported under DP. "
+                                 "Please use DDP (torch.distributed.launch).")
+            else:
+                debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
+
+        # delay_optimizer_creation = is_sagemaker_mp_enabled() or self.is_fsdp_xla_enabled or self.is_fsdp_enabled
+        delay_optimizer_creation = is_sagemaker_mp_enabled()
+
+        if not delay_optimizer_creation:
+            self.create_optimizer_and_scheduler(num_training_steps=max_steps)
+
+        self.state = TrainerState()
+        self.state.is_hyper_param_search = trial is not None
+
+        # Activate gradient checkpointing if needed
+        if args.gradient_checkpointing:
+            self.model.gradient_checkpointing_enable()
+
+        model = self._wrap_model(self.model_wrapped)
+
+        # for the rest of this function `model` is the outside model, whether it was wrapped or not
+        if model is not self.model:
+            self.model_wrapped = model
+
+        if delay_optimizer_creation:
+            self.create_optimizer_and_scheduler(num_training_steps=max_steps)
+
+        # Check if saved optimizer or scheduler states exist
+        self._load_optimizer_and_scheduler(resume_from_checkpoint)
+
+        # important: at this point:
+        # self.model         is the Transformers Model
+        # self.model_wrapped is DDP(Transformers Model), Deepspeed(Transformers Model), etc.
+
+        # Train!
+        num_examples = (self.num_examples(train_dataloader)
+                        if train_dataset_is_sized else total_train_batch_size * args.max_steps)
+
+        logger.info("***** Running training *****")
+        logger.info(f"  Num examples = {num_examples}")
+        logger.info(f"  Num Epochs = {num_train_epochs}")
+        logger.info(f"  Instantaneous batch size per device = {args.per_device_train_batch_size}")
+        logger.info(
+            f"  Total train batch size (w. parallel, distributed & accumulation) = {total_train_batch_size}"
+        )
+        logger.info(f"  Gradient Accumulation steps = {args.gradient_accumulation_steps}")
+        logger.info(f"  Total optimization steps = {max_steps}")
+
+        self.state.epoch = 0
+        start_time = time.time()
+        epochs_trained = 0
+        steps_trained_in_current_epoch = 0
+        steps_trained_progress_bar = None
+
+        # Check if continuing training from a checkpoint
+        if resume_from_checkpoint is not None and os.path.isfile(
+                os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME)):
+            self.state = TrainerState.load_from_json(
+                os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME))
+            epochs_trained = self.state.global_step // num_update_steps_per_epoch
+            if not args.ignore_data_skip:
+                steps_trained_in_current_epoch = self.state.global_step % (
+                    num_update_steps_per_epoch)
+                steps_trained_in_current_epoch *= args.gradient_accumulation_steps
+            else:
+                steps_trained_in_current_epoch = 0
+
+            logger.info("  Continuing training from checkpoint, will skip to saved global_step")
+            logger.info(f"  Continuing training from epoch {epochs_trained}")
+            logger.info(f"  Continuing training from global step {self.state.global_step}")
+            if not args.ignore_data_skip:
+                logger.info(
+                    f"  Will skip the first {epochs_trained} epochs then the first {steps_trained_in_current_epoch} "
+                    "batches in the first epoch. If this takes a lot of time, you can add the `--ignore_data_skip` "
+                    "flag to your launch command, but you will resume the training on data already seen by your model."
+                )
+                if self.is_local_process_zero() and not args.disable_tqdm:
+                    steps_trained_progress_bar = tqdm(total=steps_trained_in_current_epoch)
+                    steps_trained_progress_bar.set_description("Skipping the first batches")
+
+        # Update the references
+        self.callback_handler.model = self.model
+        self.callback_handler.optimizer = self.optimizer
+        self.callback_handler.lr_scheduler = self.lr_scheduler
+        self.callback_handler.train_dataloader = train_dataloader
+        self.state.trial_name = self.hp_name(trial) if self.hp_name is not None else None
+        if trial is not None:
+            assignments = trial.assignments if self.hp_search_backend == HPSearchBackend.SIGOPT else trial
+            self.state.trial_params = hp_params(assignments)
+        else:
+            self.state.trial_params = None
+        # This should be the same if the state has been saved but in case the training arguments changed, it's safer
+        # to set this after the load.
+        self.state.max_steps = max_steps
+        self.state.num_train_epochs = num_train_epochs
+        self.state.is_local_process_zero = self.is_local_process_zero()
+        self.state.is_world_process_zero = self.is_world_process_zero()
+
+        tr_loss = torch.tensor(0.0).to(args.device)
+        # _total_loss_scalar is updated every time .item() has to be called on tr_loss and stores the sum of all losses
+        self._total_loss_scalar = 0.0
+        self._globalstep_last_logged = self.state.global_step
+        model.zero_grad()
+
+        self.control = self.callback_handler.on_train_begin(args, self.state, self.control)
+
+        # Skip the first epochs_trained epochs to get the random state of the dataloader at the right point.
+        if not args.ignore_data_skip:
+            for epoch in range(epochs_trained):
+                # We just need to begin an iteration to create the randomization of the sampler.
+                for _ in train_dataloader:
+                    break
+        if self.compression_manager is not None:
+            if self.teacher_model is not None:
+                self.teacher_model = self._wrap_model(
+                    self.teacher_model)
+            # compression_manager.pre_epoch_begin(self.calib_dataloader if self.calib_dataloader else None)
+        for epoch in range(epochs_trained, num_train_epochs):
+            if isinstance(train_dataloader, torch.utils.data.dataloader.DataLoader) and \
+              isinstance(train_dataloader.sampler, torch.utils.data.distributed.DistributedSampler):
+                train_dataloader.sampler.set_epoch(epoch)
+            elif isinstance(train_dataloader.dataset, IterableDatasetShard):
+                train_dataloader.dataset.set_epoch(epoch)
+
+            epoch_iterator = train_dataloader
+
+            # Reset the past mems state at the beginning of each epoch if necessary.
+            if args.past_index >= 0:
+                self._past = None
+
+            steps_in_epoch = (len(epoch_iterator) if train_dataset_is_sized else args.max_steps *
+                              args.gradient_accumulation_steps)
+            self.control = self.callback_handler.on_epoch_begin(args, self.state, self.control)
+            if self.compression_manager is not None:
+                self.compression_manager.callbacks.on_epoch_begin(epoch)
+
+            self.in_training = True
+            for step, inputs in enumerate(epoch_iterator):
+
+                # Skip past any already trained steps if resuming training
+                if steps_trained_in_current_epoch > 0:
+                    steps_trained_in_current_epoch -= 1
+                    if steps_trained_progress_bar is not None:
+                        steps_trained_progress_bar.update(1)
+                    if steps_trained_in_current_epoch == 0:
+                        self._load_rng_state(resume_from_checkpoint)
+                    continue
+                elif steps_trained_progress_bar is not None:
+                    steps_trained_progress_bar.close()
+                    steps_trained_progress_bar = None
+
+                if step % args.gradient_accumulation_steps == 0:
+                    self.control = self.callback_handler.on_step_begin(
+                        args, self.state, self.control)
+                    if compression_manager is not None:
+                        self.compression_manager.callbacks.on_step_begin(step)
+
+                training_step = self.training_step_length_adaptive if self.dynamic_config is not None and \
+                                    self.dynamic_config.dynamic_training else self.training_step
+                if (
+                    ((step + 1) % args.gradient_accumulation_steps != 0)
+                    and args.local_rank != -1
+                    and args._no_sync_in_gradient_accumulation
+                ):
+                    # Avoid unnecessary DDP synchronization since there will be no backward pass on this example.
+                    with model.no_sync():
+                        tr_loss_step = training_step(model, inputs)
+                else:
+                    tr_loss_step = training_step(model, inputs)
+
+                if args.logging_nan_inf_filter and (torch.isnan(tr_loss_step)
+                                                    or torch.isinf(tr_loss_step)):
+                    # if loss is nan or inf simply add the average of previous logged losses
+                    tr_loss += tr_loss / (1 + self.state.global_step -
+                                          self._globalstep_last_logged)
+                else:
+                    tr_loss += tr_loss_step
+
+                self.current_flos += float(self.floating_point_ops(inputs))
+
+                if (step + 1) % args.gradient_accumulation_steps == 0 or (
+                        # last step in epoch but step is always smaller than gradient_accumulation_steps
+                        steps_in_epoch <= args.gradient_accumulation_steps and
+                    (step + 1) == steps_in_epoch):
+                    # if isinstance(component, Component):
+                    #     component.on_post_grad()
+
+                    # Gradient clipping
+                    if args.max_grad_norm is not None and args.max_grad_norm > 0:
+
+                        if hasattr(self.optimizer, "clip_grad_norm"):
+                            # Some optimizers (like the sharded optimizer) have a specific way to do gradient clipping
+                            self.optimizer.clip_grad_norm(args.max_grad_norm)
+                        elif hasattr(model, "clip_grad_norm_"):
+                            # Some models (like FullyShardedDDP) have a specific way to do gradient clipping
+                            model.clip_grad_norm_(args.max_grad_norm)
+                        else:
+                            # Revert to normal clipping otherwise, handling Apex or full precision
+                            torch.nn.utils.clip_grad_norm_(
+                                model.parameters(),
+                                args.max_grad_norm,
+                            )
+
+                    # # Optimizer step
+                    # if self.compression_ctrl is not None:
+                    #     self.compression_ctrl.scheduler.step()
+                    if self.compression_manager is not None:
+                        self.compression_manager.callbacks.on_before_optimizer_step()
+                    optimizer_was_run = True
+                    self.optimizer.step()
+                    if self.compression_manager is not None:
+                        self.compression_manager.callbacks.on_after_optimizer_step()
+
+                    if optimizer_was_run:
+                        self.lr_scheduler.step()
+
+                    model.zero_grad()
+                    self.state.global_step += 1
+                    self.state.epoch = epoch + (step + 1) / steps_in_epoch
+                    self.state.curr_loss = tr_loss_step.cpu().detach().item()
+                    self.control = self.callback_handler.on_step_end(args, self.state,
+                                                                     self.control)
+
+                    if self.compression_manager is not None:
+                         compression_manager.callbacks.on_step_end()
+                    self._maybe_log_save_evaluate(tr_loss, model, trial, epoch,
+                                                  ignore_keys_for_eval)
+                else:
+                    self.control = self.callback_handler.on_substep_end(
+                        args, self.state, self.control)
+
+                if self.control.should_epoch_stop or self.control.should_training_stop:
+                    break
+
+            self.in_training = False
+            self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
+            if self.compression_manager is not None:
+                self.compression_manager.callbacks.on_epoch_end()
+            self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+
+            # pylint: disable=E1101
+            if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
+                logger.warning(
+                    "You enabled PyTorch/XLA debug metrics but you don't have a TPU "
+                    "configured. Check your training configuration if this is unexpected.")
+
+            if self.control.should_training_stop:
+                break
+
+        if args.past_index and hasattr(self, "_past"):
+            # Clean the state at the end of training
+            delattr(self, "_past")
+
+        logger.info(
+            "\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n"
+        )
+        if args.load_best_model_at_end and self.state.best_model_checkpoint is not None:
+            # Wait for everyone to get here so we are sur the model has been saved by process 0.
+            if args.local_rank != -1 and args.n_gpu > 1:
+                torch.distributed.barrier()
+
+            if version.parse(__version__) < version.parse("4.19"):
+                logger.info(
+                    f"Loading best model from {self.state.best_model_checkpoint} (score: {self.state.best_metric})."
+                )
+
+                best_model_path = os.path.join(self.state.best_model_checkpoint, WEIGHTS_NAME)
+                if os.path.exists(best_model_path):
+                    # We load the model state dict on the CPU to avoid an OOM error.
+                    state_dict = torch.load(best_model_path, map_location="cpu")
+                    # If the model is on the GPU, it still works!
+                    self._load_state_dict_in_model(state_dict)
+                else:
+                    logger.warn(f"Could not locate the best model at {best_model_path}, "
+                                "if you are running a distributed training on multiple nodes, "
+                                "you should activate `--save_on_each_node`.")
+            else:
+                self._load_best_model()
+
+        # add remaining tr_loss
+        self._total_loss_scalar += tr_loss.item()
+        train_loss = self._total_loss_scalar / self.state.global_step
+
+        metrics = speed_metrics("train",
+                                start_time,
+                                num_samples=num_train_samples,
+                                num_steps=self.state.max_steps)
+        self.store_flos()
+        metrics["total_flos"] = self.state.total_flos
+        metrics["train_loss"] = train_loss
+
+        self.is_in_train = False
+
+        self._memory_tracker.stop_and_update_metrics(metrics)
+
+        self.log(metrics)
+
+        self.control = self.callback_handler.on_train_end(args, self.state, self.control)
+
+        return TrainOutput(self.state.global_step, train_loss, metrics)
+
+    # pylint: disable=E1101
+    def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch,
+                                 ignore_keys_for_eval):  # pragma: no cover
+        if self.control.should_log:
+            if is_torch_tpu_available():
+                xm.mark_step()
+
+            logs: Dict[str, float] = {}
+
+            # all_gather + mean() to get average loss over all processes
+            tr_loss_scalar = self._nested_gather(tr_loss).mean().item()
+
+            # reset tr_loss to zero
+            tr_loss -= tr_loss
+
+            logs["loss"] = round(
+                tr_loss_scalar / (self.state.global_step - self._globalstep_last_logged), 4)
+            logs["learning_rate"] = self._get_learning_rate()
+
+            self._total_loss_scalar += tr_loss_scalar
+            self._globalstep_last_logged = self.state.global_step
+            self.store_flos()
+
+            self.log(logs)
+
+        metrics = None
+        if self.control.should_evaluate:
+            metrics = self.evaluate(ignore_keys=ignore_keys_for_eval)
+            self._report_to_hp_search(trial, epoch, metrics)
+
+        if self.control.should_save:
+            self._save_checkpoint(model, trial, metrics=metrics)
+            self.control = self.callback_handler.on_save(self.args, self.state, self.control)
 
     # pylint: disable=E1101
     def training_step(
@@ -655,7 +995,6 @@ class BaseTrainer():
                 loss.backward()
 
         return loss.detach()
-
 
     def training_step_length_adaptive(
         self,
@@ -853,11 +1192,10 @@ class BaseTrainer():
             if self.label_smoother is not None and "labels" in inputs else None
 
         teacher_logits = inputs.pop("teacher_logits") if "teacher_logits" in inputs else None
-
         outputs = model(**inputs)
 
-        if self.in_training and hasattr(self, "component") and \
-           hasattr(self.component, "criterion"):
+        if self.in_training and hasattr(self, "compression_manager") and \
+           hasattr(self.compression_manager, "criterion"):
             qa_output_merger = lambda outputs: torch.vstack([
                 torch.vstack([sl, el])
                 for sl, el in zip(outputs["start_logits"], outputs["end_logits"])
@@ -884,8 +1222,8 @@ class BaseTrainer():
                 if "start_positions" in inputs and "end_positions" in inputs:  # for SQuAD
                     teacher_logits = torch.vstack(list(teacher_logits))
             else:
-                teacher_outputs = self.component.criterion.teacher_model_forward(inputs)
-                teacher_logits = get_logits(self.component.criterion.teacher_outputs
+                teacher_outputs = self.compression_manager.criterion.teacher_model_forward(inputs)
+                teacher_logits = get_logits(self.compression_manager.criterion.teacher_outputs
                                             if teacher_outputs is None else teacher_outputs)
 
             logits = get_logits(outputs)
@@ -899,14 +1237,14 @@ class BaseTrainer():
                     else:
                         raise AssertionError(
                             "Labels of input data not provided, can't compute loss")
-                if hasattr(self.component, "on_post_forward"):
-                    self.component.on_post_forward(inputs, teacher_output=teacher_logits)
-                    if hasattr(self.component.criterion, "teacher_outputs"):
-                        self.component.criterion.teacher_outputs = \
-                            get_logits(self.component.criterion.teacher_outputs)
-                loss = self.component.criterion(logits, labels)
-                if hasattr(self.component.criterion, 'add_origin_loss') and \
-                    self.component.criterion.add_origin_loss:
+                if hasattr(self.compression_manager, "on_post_forward"):
+                    self.compression_manager.on_post_forward(inputs, teacher_output=teacher_logits)
+                    if hasattr(self.compression_manager.criterion, "teacher_outputs"):
+                        self.compression_manager.criterion.teacher_outputs = \
+                            get_logits(self.compression_manager.criterion.teacher_outputs)
+                loss = self.compression_manager.criterion(logits, labels)
+                if hasattr(self.compression_manager.criterion, 'add_origin_loss') and \
+                    self.compression_manager.criterion.add_origin_loss:
                     loss = loss + outputs['loss']
             else:
                 if self.args.past_index >= 0:
@@ -917,7 +1255,8 @@ class BaseTrainer():
                 else:
                     # We don't use .loss here since the model may return tuples instead of ModelOutput.
                     loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
-                loss = self.component.on_after_compute_loss(inputs, logits, loss, teacher_logits)
+                if self.compression_manager is not None:
+                    loss = self.compression_manager.on_after_compute_loss(inputs, logits, loss, teacher_logits)
             if "start_positions" in inputs and "end_positions" in inputs:
                 start_logits, end_logits = qa_output_spliter(logits)
                 outputs = {"start_logits": start_logits, "end_logits": end_logits, "loss": loss}
