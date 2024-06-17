@@ -85,8 +85,8 @@ class TestOrchestrateOptimizations(unittest.TestCase):
             name="eval_accuracy", is_relative=True, criterion=0.5
         )
         self.trainer.metrics = tune_metric
-        pruning_conf = WeightPruningConfig([{"start_step": 0, "end_step": 2}], 
-                                           target_sparsity=0.64, 
+        pruning_conf = WeightPruningConfig([{"start_step": 0, "end_step": 2}],
+                                           target_sparsity=0.64,
                                            pruning_scope="local")
         distillation_criterion = KnowledgeDistillationLossConfig(loss_types=["CE", "KL"])
         distillation_conf = DistillationConfig(teacher_model=self.teacher_model, criterion=distillation_criterion)

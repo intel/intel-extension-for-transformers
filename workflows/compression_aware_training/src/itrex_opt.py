@@ -778,7 +778,7 @@ class ItrexOpt(object):
             quantization_config = QuantizationAwareTrainingConfig(
                 tuning_criterion=tuning_criterion,
                 accuracy_criterion=accuracy_criterion
-            )            
+            )
             early_stopping_patience = 2
             early_stopping_threshold = 0.001 # optional
             self.trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience, \

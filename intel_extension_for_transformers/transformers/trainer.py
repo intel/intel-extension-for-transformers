@@ -387,7 +387,7 @@ class BaseTrainer():
             assert False, "Please provide teacher model for DistillationConfig."
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
         self._train_func = self.builtin_train_func if train_func is None else train_func
-        
+
         compression_manager = prepare_compression(self.model, distillation_config)
         self.compression_manager = compression_manager
         self.compression_manager.callbacks.on_train_begin()

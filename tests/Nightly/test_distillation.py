@@ -28,7 +28,7 @@ from intel_extension_for_transformers.transformers import (
 from neural_compressor.config import (
     DistillationConfig,
     KnowledgeDistillationLossConfig,
-) 
+)
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from transformers import (
     AutoModelForSequenceClassification,
@@ -76,7 +76,7 @@ class TestDistillation(unittest.TestCase):
             preds = np.argmax(preds, axis=1)
             return metric.compute(predictions=preds, references=p.label_ids)
         origin_weight = copy.deepcopy(self.model.classifier.weight)
-  
+
         self.trainer = NLPTrainer(
             model=copy.deepcopy(self.model),
             train_dataset=self.dataset,
