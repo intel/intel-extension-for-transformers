@@ -231,8 +231,9 @@ class H2OMistralAttention(nn.Module):
         return attn_output, attn_weights, past_key_value
 
 class H2OMistralFlashAttention2(H2OMistralAttention):
-    """
-    Mistral flash attention module. This module inherits from `MistralAttention` as the weights of the module stays
+    """Mistral flash attention module.
+
+    This module inherits from `MistralAttention` as the weights of the module stays
     untouched. The only required change would be on the forward pass where it needs to correctly call the public API of
     flash attention and deal with padding tokens in case the input contains any of them.
     """
@@ -242,7 +243,7 @@ class H2OMistralFlashAttention2(H2OMistralAttention):
         super().__init__(*args, **kwargs)
 
         # TODO: Should be removed once Flash Attention for RoCm is bumped to 2.1.
-        # flash_attn<2.1 generates top-left aligned causal mask, while what is needed here is bottom-right alignement, that was made default for flash_attn>=2.1. This attribute is used to handle this difference. Reference: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.1.0.
+        # flash_attn<2.1 generates top-left aligned causal mask, while what is needed here is bottom-right alignment, that was made default for flash_attn>=2.1. This attribute is used to handle this difference. Reference: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.1.0.
         # Beware that with flash_attn<2.1, using q_seqlen != k_seqlen (except for the case q_seqlen == 1) produces a wrong mask (top-left).
         self._flash_attn_uses_top_left_mask = not is_flash_attn_greater_or_equal_2_10()
 
@@ -689,7 +690,7 @@ class H2OMistralForCausalLM(MistralPreTrainedModel):
                 cls = H2OMistralSdpaAttention
             else:
                 cls = H2OMistralAttention
-            
+
             self.model.layers[layer_idx].self_attn = cls(
                 config,
                 layer_idx,

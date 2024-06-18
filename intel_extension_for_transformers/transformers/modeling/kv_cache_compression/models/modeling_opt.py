@@ -43,7 +43,7 @@ class H2OOPTAttention(nn.Module):
         self,
         config: OPTConfig,
         is_decoder: bool = False,
-        h2o_config: H2OConfig =- None, 
+        h2o_config: H2OConfig =- None,
     ):
         super().__init__()
         self.config = config

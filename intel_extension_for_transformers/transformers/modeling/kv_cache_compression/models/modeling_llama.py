@@ -149,7 +149,7 @@ class H2OLlamaAttention(nn.Module):
         self.h2o_min_seqlen = h2o_config.h2o_min_seqlen
 
         self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, h2o_config.h2o_min_seqlen)
-    
+
     def _init_rope(self):
         if self.config.rope_scaling is None:
             self.rotary_emb = LlamaRotaryEmbedding(
@@ -176,7 +176,7 @@ class H2OLlamaAttention(nn.Module):
                 )
             else:
                 raise ValueError(f"Unknown RoPE scaling type {scaling_type}")
-    
+
 
     def forward(
         self,
@@ -645,7 +645,7 @@ class H2OLlamaForCausalLM(LlamaPreTrainedModel):
         self.model = LlamaModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
-        
+
         num_layers = len(self.model.layers)
         for layer_idx in range(num_layers):
             module = self.model.layers[layer_idx].self_attn
@@ -658,19 +658,19 @@ class H2OLlamaForCausalLM(LlamaPreTrainedModel):
                 cls = H2OLlamaSdpaAttention
             else:
                 cls = H2OLlamaAttention
-            
+
             self.model.layers[layer_idx].self_attn = cls(
                 config,
                 layer_idx,
                 h2o_config
                 )
-        
+
         # Initialize weights and apply final processing
         self.post_init()
 
         self.ori_generate = self.generate
         self.generate = partial(generate, self)
-    
+
     def get_input_embeddings(self):
         return self.model.embed_tokens
 
@@ -688,7 +688,7 @@ class H2OLlamaForCausalLM(LlamaPreTrainedModel):
 
     def get_decoder(self):
         return self.model
-    
+
     @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
     @replace_return_docstrings(output_type=CausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
     def forward(
@@ -783,7 +783,7 @@ class H2OLlamaForCausalLM(LlamaPreTrainedModel):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
-    
+
     def prepare_inputs_for_generation(
         self,
         input_ids,
@@ -864,7 +864,7 @@ class H2OLlamaForCausalLM(LlamaPreTrainedModel):
             }
         )
         return model_inputs
-    
+
     def _update_causal_mask(
         self,
         attention_mask: torch.Tensor,

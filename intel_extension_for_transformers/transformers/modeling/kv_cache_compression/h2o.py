@@ -167,7 +167,7 @@ class H2OKVCache:
         self.hh_score = None
         self.min_seqlen = min_seqlen
         self.idx = 0
-        
+
         self._past_length = 0
 
 
@@ -234,15 +234,15 @@ class H2OKVCache:
         self.idx = 0
         self.past_length = 0
         self.hh_score = None
-    
+
     @property
     def past_length(self):
         return self._past_length
-    
+
     @past_length.setter
     def past_length(self, value):
         self._past_length = value
-    
+
 class H2OConfig(dict):
     def __init__(
             self,

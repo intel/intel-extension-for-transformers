@@ -64,7 +64,7 @@ class H2OGPTNeoXAttention(nn.Module):
         self.hidden_size = config.hidden_size
         if self.hidden_size % self.num_attention_heads != 0:
             raise ValueError(
-                "The hidden size is not divisble by the number of attention heads! Make sure to update them"
+                "The hidden size is not divisible by the number of attention heads! Make sure to update them"
             )
         self.head_size = self.hidden_size // self.num_attention_heads
         self.rotary_ndims = int(self.head_size * config.rotary_pct)
@@ -236,8 +236,9 @@ class H2OGPTNeoXAttention(nn.Module):
         return attn_output, attn_weights
 
 class H2OGPTNeoXFlashAttention2(H2OGPTNeoXAttention):
-    """
-    GPTNeoX flash attention module. This module inherits from `GPTNeoXAttention` as the weights of the module stays
+    """GPTNeoX flash attention module.
+
+    This module inherits from `GPTNeoXAttention` as the weights of the module stays
     untouched. The only required change would be on the forward pass where it needs to correctly call the public API of
     flash attention and deal with padding tokens in case the input contains any of them.
     """
@@ -246,7 +247,7 @@ class H2OGPTNeoXFlashAttention2(H2OGPTNeoXAttention):
         super().__init__(*args, **kwargs)
 
         # TODO: Should be removed once Flash Attention for RoCm is bumped to 2.1.
-        # flash_attn<2.1 generates top-left aligned causal mask, while what is needed here is bottom-right alignement, that was made default for flash_attn>=2.1. This attribute is used to handle this difference. Reference: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.1.0.
+        # flash_attn<2.1 generates top-left aligned causal mask, while what is needed here is bottom-right alignment, that was made default for flash_attn>=2.1. This attribute is used to handle this difference. Reference: https://github.com/Dao-AILab/flash-attention/releases/tag/v2.1.0.
         # Beware that with flash_attn<2.1, using q_seqlen != k_seqlen (except for the case q_seqlen == 1) produces a wrong mask (top-left).
         self._flash_attn_uses_top_left_mask = not is_flash_attn_greater_or_equal_2_10()
 
@@ -515,7 +516,7 @@ class H2OGPTNeoXForCausalLM(GPTNeoXPreTrainedModel):
                 cls = H2OGPTNeoXFlashAttention2
             else:
                 cls = H2OGPTNeoXAttention
-            
+
             self.gpt_neox.layers[layer_idx].self_attn = cls(
                 config,
                 layer_idx,
@@ -547,8 +548,7 @@ class H2OGPTNeoXForCausalLM(GPTNeoXPreTrainedModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
-        r"""
-        past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
+        r"""past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
             Tuple of `tuple(torch.FloatTensor)` of length `config.n_layers`, with each tuple having 2 tensors of shape
             `(batch_size, num_heads, sequence_length, embed_size_per_head)`) and 2 additional tensors of shape
             `(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`. The two additional tensors are
@@ -585,7 +585,8 @@ class H2OGPTNeoXForCausalLM(GPTNeoXPreTrainedModel):
         >>> outputs = model(**inputs)
 
         >>> prediction_logits = outputs.logits
-        ```"""
+        ```
+        """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         outputs = self.gpt_neox(

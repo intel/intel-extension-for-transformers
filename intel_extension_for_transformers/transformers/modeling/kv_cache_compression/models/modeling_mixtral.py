@@ -678,7 +678,7 @@ class H2OMixtralForCausalLM(MixtralPreTrainedModel):
                 cls = H2OMixtralSdpaAttention
             else:
                 cls = H2OMixtralAttention
-            
+
             self.model.layers[layer_idx].self_attn = cls(
                 config,
                 layer_idx,
