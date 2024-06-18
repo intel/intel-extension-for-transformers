@@ -467,7 +467,7 @@ def load_model(
         # Tweak generation so that it runs faster on Gaudi
         # pylint: disable=E0401
         # pylint: disable=E0611
-        from optimum.habana.transformers.modeling_utils import (
+        from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import (
             adapt_transformers_to_gaudi,
         )
 
@@ -602,7 +602,7 @@ def load_model(
 
     if gguf_model_path:
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-        model = AutoModelForCausalLM.from_pretrained(model_name, model_file = gguf_model_path)
+        model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file = gguf_model_path)
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
         MODELS[model_name]["model"] = model
@@ -839,13 +839,27 @@ def load_model(
                     import intel_extension_for_pytorch as intel_ipex
 
                     if not use_tpp:
-                        model = intel_ipex.optimize(
-                            model.eval(),
-                            dtype=torch_dtype,
-                            inplace=True,
-                            level="O1",
-                            auto_kernel_selection=True,
-                        )
+                        try:
+                            model = intel_ipex.optimize(
+                                model.eval(),
+                                dtype=torch_dtype,
+                                inplace=True,
+                                level="O1",
+                                auto_kernel_selection=True,
+                            )
+                        except AssertionError:
+                            model = intel_ipex.optimize(
+                                model.eval(),
+                                dtype=torch_dtype,
+                                inplace=True,
+                                level="O1",
+                                auto_kernel_selection=True,
+                                weights_prepack=False,
+                            )
+                        except Exception as e:
+                            logging.info(f"IPEX optimize failure! Skip IPEX.")
+                            model = model.eval()
+
                 if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                                 or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
                     from intel_extension_for_transformers.transformers.llm.utils.mpt_trace import \

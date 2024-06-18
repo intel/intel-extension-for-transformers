@@ -38,7 +38,6 @@ parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--do_profiling", action="store_true")
-parser.add_argument("--disable_optimize_transformers", action="store_true")
 parser.add_argument("--profile_token_latency", action="store_true")
 parser.add_argument("--iters", default=10, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=3, type=int, help="num warmup")
@@ -55,8 +54,12 @@ parser.add_argument("--bits", type=int, default=4, choices=[4])
 parser.add_argument("--woq", action="store_true")
 parser.add_argument("--woq_algo", default="Rtn", choices=['Rtn', 'GPTQ', 'AutoRound'], 
                     help="Weight-only parameter.")
-parser.add_argument("--weight_dtype", type=str, default="int4_fullrange",
-                    choices=["int4_fullrange"])
+parser.add_argument("--weight_dtype", type=str, default="int4",
+                    choices=[
+                        "int4",  # int4 == int4_fullrange
+                        "int4_fullrange",
+                        ]
+                   )
 parser.add_argument("--group_size", type=int, default=128)
 parser.add_argument("--scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
@@ -211,6 +214,12 @@ if user_model is not None:
     user_model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
 
+enable_optimize_transformers = False
+opt_gpu_model_type_list = ["llama", "gptj", "mistral", "qwen"]
+
+if config.model_type in opt_gpu_model_type_list:
+    enable_optimize_transformers = True
+
 if args.benchmark:
     if config.model_type == "qwen":
         prompt = "它完成了，并提交了。你可以在Android和网络上玩美味生存。在网络上玩是有效的，但你必须模拟多次触摸才能移动桌子."
@@ -226,7 +235,7 @@ if args.benchmark:
     user_model = user_model.to(memory_format=torch.channels_last)
     if quantization_config is None:
         quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
-    if not args.disable_optimize_transformers:
+    if enable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
             user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
@@ -243,7 +252,7 @@ if args.benchmark:
     if args.profile_token_latency:
         ipex.transformers.optimize.convert_function(user_model, "greedy_search", _greedy_search)
         ipex.transformers.optimize.convert_function(user_model, "_greedy_search", _greedy_search)
-        if args.disable_optimize_transformers:
+        if not enable_optimize_transformers:
             ipex.transformers.optimize.convert_function(user_model, "beam_search", _beam_search)
             ipex.transformers.optimize.convert_function(user_model, "_beam_search", _beam_search)
         user_model.config.token_latency = True
@@ -320,7 +329,7 @@ if args.accuracy:
             if user_model is None else user_model
     if quantization_config is None:
         quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
-    if not args.disable_optimize_transformers:
+    if enable_optimize_transformers:
         print("Optimize with IPEX...")
         user_model = ipex.optimize_transformers(
             user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)

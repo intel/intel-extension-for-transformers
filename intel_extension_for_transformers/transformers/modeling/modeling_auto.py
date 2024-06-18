@@ -86,6 +86,7 @@ from transformers.utils import (
     has_file,
 )
 
+import torch.nn.functional as F
 from typing import Union
 
 if is_ipex_available() and is_intel_gpu_available():
@@ -192,8 +193,8 @@ def convert_model_to_public(model):
         "fp8_e5m2",
         "fp8_e4m3",
         "nf4",
-        "fp4",
-        "int4_fullrange",
+        "fp4_e2m1",
+        "fp4_e2m1_bnb",
     ]:
         model = recover_export_model(model)
 
@@ -321,6 +322,8 @@ class _BaseQBitsAutoModelClass:
         "whisper",
         "qwen2",
         "gemma",
+        "phi3",
+        "tinyllama",
     ]
 
     model_type_list_for_gptq = [
@@ -338,15 +341,107 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        use_vllm = kwargs.pop("use_vllm", None)
+        if use_vllm is not None:
+            logger.info("The backend is vLLM.")
+            from vllm import LLM # pylint: disable=E1101
+            from vllm.model_executor.model_loader import get_model_loader  # pylint: disable=E0611
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E0401 disable=E0611
+            from vllm.model_executor.layers.linear import (MergedColumnParallelLinear,
+                                                        QKVParallelLinear,
+                                                        ColumnParallelLinear,
+                                                        RowParallelLinear)  # pylint: disable=E1101
+
+            os.environ["backend"] = "use_vllm"
+            llm = LLM(model=pretrained_model_name_or_path, trust_remote_code=True)  # Create an vllm instance.
+            model = llm.llm_engine.model_executor.driver_worker.model_runner.model  # pylint: disable=E1101
+            print("Original model =", model)
+
+            original_parameter_memo = dict()
+            original_params_dict = dict(model.named_parameters(remove_duplicate=False))
+            for name in original_params_dict.keys():
+                params = original_params_dict[name]
+                if "qkv_proj" in name or "gate_up_proj" in name:
+                    input_dim = getattr(params, "input_dim", None)
+                    output_dim = getattr(params, "output_dim", None)
+                    original_parameter_memo[name] = (input_dim, output_dim, params.weight_loader)
+
+            class linear_adaptor(torch.nn.Linear):
+
+                def __init__(self, in_features: int, out_features: int, bias: bool = True, \
+                             device=None, dtype=None) -> None:
+                    super().__init__(in_features, out_features, bias, device, dtype)
+
+                def forward(self, input: torch.Tensor) -> tuple[torch.Tensor, None]:
+                    return F.linear(input, self.weight, self.bias), None
+
+            for name, module in model.named_modules():
+                bias_flag = False
+                if isinstance(module, QKVParallelLinear) or isinstance(module, MergedColumnParallelLinear) or \
+                    isinstance(module, RowParallelLinear) or isinstance(module, ColumnParallelLinear):
+                    out_feature = module.weight.shape[0]
+                    in_feature = module.weight.shape[1]
+                    if getattr(module, "bias", False) != None:
+                        bias_flag = True
+                    weight_dtype = module.weight.dtype
+
+                    torch_linear = linear_adaptor(in_features=in_feature,
+                                                out_features=out_feature,
+                                                bias=bias_flag,
+                                                dtype=weight_dtype)
+                    module_traversal = model
+                    all_module_names = name.split('.')
+                    all_module_names_except_last = all_module_names[:-1]
+                    for sub_module_name in all_module_names_except_last:
+                        module_traversal = module_traversal._modules[sub_module_name]
+
+                    module_traversal._modules[all_module_names[-1]] = copy.deepcopy(torch_linear)
+
+            print("Optimized model =", model)
+            loader = get_model_loader(llm.llm_engine.load_config)  # pylint: disable=E1101
+
+            weights_iterator = loader._get_weights_iterator(llm.llm_engine.model_config.model,
+                                                            llm.llm_engine.model_config.revision,
+                                                            fall_back_to_pt=True)
+
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader # pylint: disable=E0401 disable=E0611
+            params_dict = dict(model.named_parameters(remove_duplicate=False))
+            for name in params_dict.keys():
+                params = params_dict[name]
+                if hasattr(params, "weight_loader") == False:
+                    if "qkv_proj" in name or "gate_up_proj" in name:
+                        original_params = original_parameter_memo[name]
+                        setattr(params, "input_dim", original_params[0])
+                        setattr(params, "output_dim", original_params[1])
+                        setattr(params, "weight_loader", original_params[2])
+                    else:
+                        setattr(params, "weight_loader", default_weight_loader)
+
+            model.load_weights(weights_iterator)
+
+            print("INC quantizing...")
+            config = kwargs.pop("config", None)
+            if config is None:
+                config = RtnConfig(compute_dtype="int8",
+                                group_size=128,
+                                scale_dtype="bf16",
+                                weight_dtype="int4_clip",
+                                bits=4)
+                print("using default RTNConfig = ", config)
+            print("Using customized config = ", config)
+            model = convert_to_quantized_model(model, config)
+
+            return llm
+
         # use for neuralspeed gguf
-        model_file = kwargs.pop("model_file", None)
-        if model_file is not None:
+        gguf_file = kwargs.pop("gguf_file", None)
+        if gguf_file is not None:
             from neural_speed import Model
 
             logger.info("Using Neural Speed to load the GGUF model...")
 
             gguf_model_file = hf_hub_download(
-                pretrained_model_name_or_path, filename=model_file
+                pretrained_model_name_or_path, filename=gguf_file
             )
 
             if kwargs.get("model_type", False):
@@ -567,8 +662,8 @@ class _BaseQBitsAutoModelClass:
                         "4" in quantization_config.weight_dtype
                         and convert_dtype_str2torch(quantization_config.compute_dtype)
                         == torch_dtype
-                    ), "Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
-                    f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
+                    ), "Quantization_config.weight_dtype should be 'nf4' , 'int4', 'int4_fullrange', 'int4_clip', "
+                    f"'fp4', 'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
                     if use_neural_speed:
@@ -705,10 +800,6 @@ class _BaseQBitsAutoModelClass:
                     or device_map == torch.device("cpu")
                 ) and model.config.model_type == "chatglm":
                     model = model.float()
-                if use_cpu:
-                    quantization_config.post_init_cpu()
-                elif use_xpu:
-                    quantization_config.post_init_xpu()
                 model = convert_to_quantized_model(
                     model, quantization_config, device=device_map
                 )
@@ -751,8 +842,7 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "llama" in model_type and transformers.__version__ >= "4.36.0":
-                quantization_config.ipex_opt_llm = False
+
             logger.info("Applying SmoothQuant.")
             # ipex.optimize_transformers
             if quantization_config.ipex_opt_llm is None:
@@ -761,7 +851,7 @@ class _BaseQBitsAutoModelClass:
                     logger.info(
                         "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
                     )
-                    logger.warning("The suggested transformers version is 4.35.2.")
+                    logger.warning("The suggested transformers version is 4.38.1.")
                 else:
                     quantization_config.ipex_opt_llm = False
             if quantization_config.ipex_opt_llm:
@@ -856,7 +946,7 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        if model_type in ["bloom", "qwen"]:
+                        if model_type in ["bloom"]:
                             attention_mask = torch.ones(len(input_ids) + 1)
                             attention_mask[0] = 0
                         else:
@@ -1806,7 +1896,8 @@ class _BaseQBitsAutoModelClass:
                 logger.warning("Please provide the correct bits number or weight_dtype in config.json.")
                 raise ValueError(
                     f"weight_dtype must be a string in "
-                    f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+                    f"'int8', 'int4', 'int4_fullrange', 'int4_clip', 'nf4', "
+                    f"'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8', 'fp8_e5m2, fp8_e4m3'"
                 )
             else:
                 logger.info("{} quantization weight_dtype is used.".format(quantization_config.weight_dtype))
@@ -1820,7 +1911,8 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
-            "fp4",
+            "fp4_e2m1",
+            "fp4_e2m1_bnb",
             "nf4",
             "int4_fullrange",
         ]:
@@ -1928,7 +2020,8 @@ class _BaseQBitsAutoModelClass:
             "fp8_e5m2",
             "fp8_e4m3",
             "nf4",
-            "fp4",
+            "fp4_e2m1",
+            "fp4_e2m1_bnb",
             "int4_fullrange",
         ] and not quantization_config.use_ipex:
             model = replace_linear(

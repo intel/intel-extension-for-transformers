@@ -2,6 +2,7 @@ name: CI-Summary
 
 on:
   pull_request:
+    branches: [main]
     types: [opened, reopened, ready_for_review, synchronize] # added `ready_for_review` since draft is skipped
   workflow_dispatch:
 

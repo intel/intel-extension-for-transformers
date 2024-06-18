@@ -114,6 +114,19 @@ register_conv_template(
     )
 )
 
+# Glue mnli
+register_conv_template(
+    Conversation(
+        name="glue_mnli",
+        system_message="Glue mnli.",
+        roles=("premise", "hypothesis", "label"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ROBIN,
+        sep="\n",
+    )
+)
+
 # Summarization template
 register_conv_template(
     Conversation(

@@ -280,6 +280,13 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
                 f"Only support quantization to [4, 8] bits but found {self.bits}"
             )
 
+        if self.weight_dtype == "int4":
+            self.weight_dtype = "int4_clip"
+        elif self.weight_dtype == "fp8":
+            self.weight_dtype == "fp8_e4m3"
+        elif self.weight_dtype == "fp4":
+            self.weight_dtype = "fp4_e2m1"
+
         if self.bits == 4 and self.weight_dtype not in [
             "int4_clip",
             "nf4",
@@ -297,7 +304,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
                 "int8 weight_type is used due to bits is 8 but weight_dtype is not set."
             )
 
-        elif self.weight_dtype not in [
+        if self.weight_dtype not in [
             "int8",
             "int4_clip",
             "nf4",
@@ -308,7 +315,8 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         ]:
             raise ValueError(
                 f"weight_dtype must be a string in "
-                f"'int8', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
+                f"'int8', 'int4', 'int4_clip', 'nf4', 'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', "
+                f"'fp8', 'fp8_e5m2, fp8_e4m3'"
             )
 
         if self.scale_dtype is not None and self.scale_dtype not in [
@@ -371,7 +379,8 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4_fullrange"
-
+        elif self.weight_dtype == "int4":
+            self.weight_dtype = "int4_fullrange"
         elif self.weight_dtype not in [
             "int4_fullrange",
         ]:
@@ -444,13 +453,11 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
         elif self.weight_dtype == "int4_clip":
-            self.weight_dtype == "int4"
+            self.weight_dtype = "int4"
         elif self.weight_dtype == "int4_fullrange":
-            self.weight_dtype == "int4"
+            self.weight_dtype = "int4"
         elif self.weight_dtype == "fp8":
-            self.weight_dtype == "fp8_e4m3"
-        elif self.weight_dtype == "fp8":
-            self.weight_dtype == "fp8_e4m3"
+            self.weight_dtype = "fp8_e4m3"
         elif self.weight_dtype == "fp4":
             self.weight_dtype = "fp4_e2m1"
         else:
@@ -817,6 +824,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         nsamples: int = 128,
         max_input_length: Optional[int] = None,
         static_groups: bool = False,
+        true_sequential: bool = False,
         layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
@@ -845,6 +853,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.damp_percent = damp_percent
         self.desc_act = desc_act
         self.static_groups = static_groups
+        self.true_sequential = true_sequential
         self.layer_wise = layer_wise
         self.max_input_length = max_input_length
         self.llm_int8_skip_modules = (
@@ -1042,20 +1051,20 @@ class TeqConfig(ITREXQuantizationConfigMixin):
 class AutoRoundConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
-        bits: int = 8,
+        bits: int = 4,
         tokenizer: Any = None,
         dataset: str = "NeelNanda/pile-10k",
-        group_size: int = 32,
+        group_size: int = 128,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
-        sym: bool = True,
-        lr: float = 0.0025,
-        minmax_lr: float = 0.0025,
-        use_quant_input: bool = True,
-        nsamples: int = 128,
+        sym: bool = False,
+        lr: float = None,
+        minmax_lr: float = None,
+        disable_quanted_input: bool = False,
+        nsamples: int = 512,
         iters: int = 200,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
@@ -1081,7 +1090,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.group_size = group_size
         self.lr = lr
         self.minmax_lr = minmax_lr
-        self.use_quant_input = use_quant_input
+        self.disable_quanted_input = disable_quanted_input
         self.iters = iters
         self.llm_int8_skip_modules = (
             llm_int8_skip_modules if llm_int8_skip_modules else []
@@ -1090,7 +1099,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
         self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_len = kwargs.get("calib_len", None)
+        self.calib_len = kwargs.get("calib_len", 2048)
         self.calib_func = kwargs.get("calib_func", None)
         self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"

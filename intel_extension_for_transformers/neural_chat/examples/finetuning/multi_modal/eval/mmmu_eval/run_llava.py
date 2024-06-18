@@ -17,7 +17,7 @@ import transformers
 from optimum.habana.transformers.generation.utils import MODELS_OPTIMIZED_WITH_STATIC_SHAPES
 if "llava" not in MODELS_OPTIMIZED_WITH_STATIC_SHAPES:
     MODELS_OPTIMIZED_WITH_STATIC_SHAPES.append("llava")
-from optimum.habana.transformers.modeling_utils import adapt_transformers_to_gaudi
+from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import adapt_transformers_to_gaudi
 adapt_transformers_to_gaudi()
 
 import torch

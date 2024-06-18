@@ -47,10 +47,13 @@ logger = logging.getLogger(__name__)
 
 DTYPE_BITS_MAPPING = {
     "nf4": 4,
+    "fp4": 4,  # fp4 == fp4_e2m1
     "fp4_e2m1_bnb": 4,
     "fp4_e2m1": 4,
+    "int4": 4,
     "int4_fullrange": 4,
     "int4_clip": 4,
+    "fp8": 8,  # fp8 == fp8_e4m3
     "fp8_e5m2": 8,
     "fp8_e4m3": 8,
     "int8": 8,
@@ -157,7 +160,8 @@ def _replace_linear(
             quantization_config.weight_dtype not in [
                 "fp8_e5m2",
                 "fp8_e4m3",
-                "fp4",
+                "fp4_e2m1_bnb",
+                "fp4_e2m1",
                 "nf4",
                 "int4_fullrange",
             ]
@@ -236,9 +240,9 @@ def _replace_linear(
                                 quantization_config.weight_dtype not in [
                                     "fp8_e5m2",
                                     "fp8_e4m3",
-                                    "fp4",
+                                    "fp4_e2m1_bnb",
+                                    "fp4_e2m1",
                                     "nf4",
-                                    "int4_fullrange",
                                 ]
 
                             model._modules[name] = QuantizedLinearQBits(
@@ -317,8 +321,8 @@ def _replace_linear(
                         "fp8_e5m2",
                         "fp8_e4m3",
                         "nf4",
-                        "fp4",
-                        "int4_fullrange",
+                        "fp4_e2m1_bnb",
+                        "fp4_e2m1",
                     ]:
                         model._modules[name].set_fp_weights_bias(
                             module.weight.data,
@@ -381,13 +385,24 @@ def convert_to_quantized_model(model, config, device="cpu"):
         assert (
             hasattr(torch, "xpu") and torch.xpu.is_available()
         ), "There is no xpu device in this system!"
+        config.post_init_xpu()
+    else:
+        config.post_init_cpu()
     calib_dataloader = config.calib_dataloader
     calib_func = config.calib_func
     calib_iters = config.calib_iters
     calib_dataset = config.dataset
     model_device = next(model.parameters()).device
 
-    if (
+    if config.quant_method.value == "autoround":
+        from neural_compressor.adaptor.torch_utils.auto_round import get_dataloader
+        calib_dataloader = get_dataloader(config.tokenizer,  # pylint: disable=E1123
+                                    seqlen=config.calib_len,
+                                    dataset_name=config.dataset,
+                                    seed=42,
+                                    bs=8,
+                                    n_samples=config.nsamples)
+    elif (
         calib_dataloader is None
         and config.quant_method.value not in ["rtn"]
         and calib_dataset is not None
@@ -437,36 +452,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 input_ids_padded.append(input_ids)
             return torch.vstack(input_ids_padded)
 
-        def collate_batch_for_autoround(batch):
-            input_ids_padded = []
-            for text in batch:
-                input_ids = text["input_ids"]
-                if input_ids.shape[0] < config.calib_len:
-                    continue
-                input_ids = input_ids[: config.calib_len]
-                input_ids_list = input_ids.tolist()
-                if input_ids_list.count(input_ids_list[-1]) > config.calib_len // 2:
-                    continue
-                input_ids_padded.append(input_ids)
-            if len(input_ids_padded) == 0:
-                return None
-
-            return torch.vstack(input_ids_padded)
-
-        if config.quant_method.value == "autoround":
-            calib_dataloader = DataLoader(
-                tokenized_dataset,
-                batch_size=8,
-                shuffle=False,
-                collate_fn=collate_batch_for_autoround,
-            )
-        else:
-            calib_dataloader = DataLoader(
-                tokenized_dataset,
-                batch_size=1,
-                shuffle=False,
-                collate_fn=collate_batch,
-            )
+        calib_dataloader = DataLoader(
+            tokenized_dataset,
+            batch_size=1,
+            shuffle=False,
+            collate_fn=collate_batch,
+        )
     if calib_func is None and config.quant_method.value == "awq":
 
         def default_calib_func(model):
@@ -532,6 +523,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     "use_max_length": True if config.max_input_length else False,
                     "pad_max_length": config.max_input_length,
                     "static_groups": config.static_groups,
+                    "true_sequential": config.true_sequential,
                 },
             }
             algorithm = "GPTQ"
@@ -539,10 +531,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
             recipes = {
                 "autoround_args": {
                     "n_samples": config.nsamples,
-                    "seq_len": config.calib_len,
-                    "iters": config.calib_iters,
+                    "seqlen": config.calib_len,
+                    "iters": config.iters,
                     "scale_dtype": config.scale_dtype,
-                    "use_quant_input": config.use_quant_input,
+                    "enable_quanted_input": not config.disable_quanted_input,
                     "lr": config.lr,
                     "minmax_lr": config.minmax_lr,
                 }
@@ -604,7 +596,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
 
             q_model = replace_linear(model, None, None, config, device=device)
         else:
-            if config.weight_dtype not in ["nf4", "fp4", "int4_fullrange"]:
+            if config.weight_dtype not in ["nf4", "fp4_e2m1_bnb", "fp4_e2m1"]:
                 inc_model = inc_model.export_compressed_model(use_optimum_format=True)
                 inc_model.eval()
                 q_model = replace_linear(inc_model, None, None, config, device=device)

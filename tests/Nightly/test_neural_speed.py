@@ -81,7 +81,7 @@ class TestLLMRUNTIME(unittest.TestCase):
 
     def test_gguf_api(self):
         model_name = "TheBloke/Mistral-7B-v0.1-GGUF"
-        model_file = "mistral-7b-v0.1.Q4_0.gguf"
+        gguf_file = "mistral-7b-v0.1.Q4_0.gguf"
         tokenizer_name = "/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
 
         prompt = "Once upon a time"
@@ -89,7 +89,7 @@ class TestLLMRUNTIME(unittest.TestCase):
         inputs = tokenizer(prompt, return_tensors="pt").input_ids
         streamer = TextStreamer(tokenizer)
 
-        model = AutoModelForCausalLM.from_pretrained(model_name, model_file = model_file)
+        model = AutoModelForCausalLM.from_pretrained(model_name, gguf_file = gguf_file)
         output = model.generate(inputs, streamer=streamer, max_new_tokens=10)
         print("inputs = ", inputs, "output = ", output, "output[0][0:15] = ", output[0][0:15])
         assert(output[0][0:15] == [1, 5713, 3714, 264, 727, 28725, 736, 403, 264, 1628, 2746, 693, 6045, 298, 1220])

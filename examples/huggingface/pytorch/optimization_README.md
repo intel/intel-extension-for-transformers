@@ -23,11 +23,11 @@ Welcome to Pytorch Huggingface examples. The examples is following from [Hugging
 
 ## Distillation
 
-| Task | Knowledge Distillation | AutoDistillation
-|---|:---:|:---:|
-|**`language-modeling`**| N/A | ✅ 
-|**`question-answering`**| ✅ | N/A
-|**`text-classification`**| ✅| N/A
+| Task | Knowledge Distillation 
+|---|:---:|
+|**`language-modeling`**| N/A  
+|**`question-answering`**| ✅
+|**`text-classification`**| ✅
 
 ## Orchestrate
 

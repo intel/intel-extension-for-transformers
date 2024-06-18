@@ -166,14 +166,9 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         input_bs, input_len = input_ids.shape
         if self.use_cache and past_key_values is None:
             if model_type in IPEX_OPT_LLM_SUPPORTED:
-                if model_type == "llama" and transformers.__version__ >= "4.36":
-                    past_key_values = generate_dummy_past_key_values_for_inference(
-                        config=self.config, input_bs=input_bs
-                    )
-                else:
-                    past_key_values = generate_dummy_past_key_values_for_opt_llm(
-                        config=self.config, input_bs=input_bs, num_beams=1
-                    )
+                past_key_values = generate_dummy_past_key_values_for_opt_llm(
+                    config=self.config, input_bs=input_bs, num_beams=1
+                )
             else:
                 past_key_values = generate_dummy_past_key_values_for_inference(
                     config=self.config, input_bs=input_bs
