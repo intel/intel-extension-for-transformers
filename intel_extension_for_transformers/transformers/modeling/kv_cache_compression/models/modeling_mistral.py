@@ -665,7 +665,7 @@ class H2OMistralSdpaAttention(H2OMistralAttention):
 
         return attn_output, None, past_key_value
 
-class MistralForCausalLM(MistralPreTrainedModel):
+class H2OMistralForCausalLM(MistralPreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
 
     def __init__(

@@ -652,7 +652,7 @@ class H2OMixtralSdpaAttention(H2OMixtralAttention):
         return attn_output, None, past_key_value
 
 
-class MixtralForCausalLM(MixtralPreTrainedModel):
+class H2OMixtralForCausalLM(MixtralPreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
 
     def __init__(self, config, h2o_config: H2OConfig):
