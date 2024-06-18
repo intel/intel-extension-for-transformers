@@ -13,7 +13,6 @@ on:
        - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
        - "!intel_extension_for_transformers/transformers/runtime/docs/**"
   workflow_dispatch:
-permissions: write-all
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -50,6 +49,7 @@ jobs:
       - name: Binary build
         run: |
           cd ${{ github.workspace }}
+          source ~/.bashrc
           conda activate llm-test || source activate llm-test
           compiler_version=11.1.0
           conda install --update-deps -c conda-forge gxx==${compiler_version} gcc==${compiler_version} gxx_linux-64==${compiler_version} libstdcxx-ng sysroot_linux-64 libxcrypt -y

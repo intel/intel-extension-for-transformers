@@ -30,13 +30,6 @@ subprojects:
       - "optimize-unit-test-PR-test"
       - "Genreate-OptimizeUT-Report"
 
-  - id: "Neural Speed Unit Test workflow"
-    paths:
-      - .github/workflows/unit-test-neuralspeed.yml
-      - ".github/workflows/script/unitTest/run_unit_test_neuraspeed.sh"
-    checks:
-      - "neural-speed-unit-test"
-
   - id: "NeuralChat Unit Test"
     paths:
       - ".github/workflows/unit-test-neuralchat.yml"
