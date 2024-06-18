@@ -36,9 +36,9 @@ main() {
 }
 
 function prepare() {
-    [[ -d ${HOME}/anaconda3/bin ]] && export PATH=${HOME}/anaconda3/bin/:$PATH
-    [[ -d ${HOME}/miniconda3/bin ]] && export PATH=${HOME}/miniconda3/bin/:$PATH
-    export LD_LIBRARY_PATH=/lib64/libcrypto.so.1.1:${HOME}/miniconda3/envs/${conda_env_name}/lib/:$LD_LIBRARY_PATH
+    source ~/.bashrc
+    source activate ${conda_env_name} || conda activate ${conda_env_name}
+    export LD_LIBRARY_PATH=/lib64/libcrypto.so.1.1:${CONDA_PREFIX}/lib/:$LD_LIBRARY_PATH
     if [[ ${precision} == "fp8" ]]; then
         export NE_WEIGHT_FP8_4E3M=1
     fi
@@ -46,7 +46,6 @@ function prepare() {
         working_dir="${WORKING_DIR}/examples/huggingface/pytorch/text-generation/deployment"
     fi
     $BOLD_YELLOW && echo "Running ---- ${framework}, ${model}----Prepare"
-    source activate ${conda_env_name} || conda activate ${conda_env_name}
     if [[ ${cpu} == *"spr"* ]] || [[ ${cpu} == *"SPR"* ]] || [[ ${cpu} == *"Spr"* ]]; then
         export CC=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
         export CXX=/opt/rh/gcc-toolset-11/root/usr/bin/g++
@@ -56,8 +55,7 @@ function prepare() {
     echo "Working in ${working_dir}"
     echo -e "\nInstalling model requirements..."
     export PATH=/lib64/libcrypto.so.1.1:$PATH
-    cp /lib64/libcrypto.so.1.1 ${HOME}/miniconda3/envs/${conda_env_name}/lib/libcrypto.so.1.1
-    cp /lib64/libcrypto.so.1.1 ${HOME}/miniconda3/lib/libcrypto.so.1.1
+    cp /lib64/libcrypto.so.1.1 ${CONDA_PREFIX}/lib/libcrypto.so.1.1
     if [ -f "requirements.txt" ]; then
         sed -i '/^transformers/d' requirements.txt
         n=0

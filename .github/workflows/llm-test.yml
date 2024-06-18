@@ -49,6 +49,7 @@ jobs:
       - name: Binary build
         run: |
           cd ${{ github.workspace }}
+          source ~/.bashrc
           conda activate llm-test || source activate llm-test
           compiler_version=11.1.0
           conda install --update-deps -c conda-forge gxx==${compiler_version} gcc==${compiler_version} gxx_linux-64==${compiler_version} libstdcxx-ng sysroot_linux-64 libxcrypt -y
