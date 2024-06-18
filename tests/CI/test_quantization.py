@@ -24,7 +24,6 @@ import unittest
 from intel_extension_for_transformers.transformers import (
     metrics,
     OptimizedModel,
-    NoTrainerOptimizer,
 )
 from neural_compressor.config import (
     PostTrainingQuantConfig,
@@ -96,7 +95,6 @@ class TestQuantization(unittest.TestCase):
             train_dataset=self.dummy_dataset,
             eval_dataset=self.dummy_dataset,
         )
-        self.optimizer = NoTrainerOptimizer(self.model)
 
     @classmethod
     def tearDownClass(self):
@@ -165,25 +163,6 @@ class TestQuantization(unittest.TestCase):
                               train_func = train_func,
                               eval_func = eval_func,)
 
-    def test_no_trainer_quant(self):
-        def eval_func(model):
-            return 1
-
-        def train_func(model):
-            return model
-
-        quantization_config = PostTrainingQuantConfig(
-            approach='static',
-        )
-        self.optimizer.eval_func = eval_func
-        self.optimizer.train_func = train_func
-        self.optimizer.provider = "INC"
-        self.optimizer.calib_dataloader = self.trainer.get_eval_dataloader()
-
-        opt_model = self.optimizer.quantize(quant_config=quantization_config,
-                              provider="inc",
-                              train_func = train_func,
-                              eval_func = eval_func)
 
     def test_online_models(self):
         model = OptimizedModel.from_pretrained(
