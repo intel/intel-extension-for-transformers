@@ -203,7 +203,7 @@ class H2OOPTAttention(nn.Module):
         else:
             attn_weights_reshaped = None
 
-        
+
 
         attn_probs = nn.functional.dropout(attn_weights, p=self.dropout, training=self.training)
 

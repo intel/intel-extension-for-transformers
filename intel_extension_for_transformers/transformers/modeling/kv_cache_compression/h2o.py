@@ -131,7 +131,7 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights, local=Tru
             mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None)
         else:
             tmp_attn = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(attn_weights.dtype)
-            tmp_sum = torch.sum(tmp_attn, dim=-2) 
+            tmp_sum = torch.sum(tmp_attn, dim=-2)
             _, tmp_topk = tmp_sum.topk(k=heavy_budget, dim=-1)
 
             zeros = torch.zeros_like(tmp_sum, dtype=torch.bool)
