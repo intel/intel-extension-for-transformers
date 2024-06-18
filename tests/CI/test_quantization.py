@@ -119,7 +119,10 @@ class TestQuantization(unittest.TestCase):
         self.assertTrue(check_onnx('fp32-model.onnx', self.trainer.get_eval_dataloader()))
 
         self.trainer.benchmark(num_of_instance=1)
-
+        tune_metric = metrics.Metric(
+            name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
+        )
+        self.trainer.metrics = tune_metric
         quantization_config = PostTrainingQuantConfig(
             approach="static",
         )
@@ -155,6 +158,10 @@ class TestQuantization(unittest.TestCase):
             return model
 
         self.trainer = NLPTrainer(self.model, train_dataset=self.dummy_dataset)
+        tune_metric = metrics.Metric(
+            name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
+        )
+        self.trainer.metrics = tune_metric
         quantization_config = PostTrainingQuantConfig(
             approach='static',
         )
