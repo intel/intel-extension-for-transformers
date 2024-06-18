@@ -1,6 +1,5 @@
 import argparse
 import sys
-sys.path.insert(0, '/home/hengguo/code/intel-extension-for-transformers')
 import time
 import json
 import torch
@@ -66,7 +65,6 @@ args = parser.parse_args()
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
 # 4.31.0 for ipex.optimize_transformers
-check_min_version("4.35.2")
 # get model config
 if args.peft_model_id:
     from peft import PeftConfig
@@ -111,24 +109,26 @@ if 'cpu' in args.device:
     device = args.device
 else:
     device = f"cuda:{args.device}"
-user_model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
-user_model.to(device)
 
 # get optimized model
 if args.h2o:
     print('Enable Small Cache Size')
-    # checkpoint = copy.deepcopy(model.state_dict())
-    # model = ENABLE_Heavy_Hitter_FUNCTIONS[args.model_type](model, config)
-    from intel_extension_for_transformers.transformers.modeling.kv_cache_compression import convert_model
-    user_model = convert_model(
-        user_model,
+    from intel_extension_for_transformers.transformers.modeling.kv_cache_compression import H2OConfig, H2OLlamaForCausalLM
+    h2o_config = H2OConfig(
         heavy_ratio=args.heavy_ratio,
         recent_ratio=args.recent_ratio,
         h2o_min_seqlen=args.h2o_min_seqlen,
         real_drop=args.real_drop,
-        is_gen=args.is_gen
-        )
+        mean=False,
+    )
+    user_model = H2OLlamaForCausalLM.from_pretrained(
+        args.model,
+        h2o_config=h2o_config,
+        trust_remote_code=args.trust_remote_code)
     print("converted model: ", user_model)
+else:
+    user_model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+user_model.to(device)
 
 # save model
 # if args.output_dir is not None:
@@ -194,18 +194,45 @@ if args.benchmark:
 if args.accuracy:
     user_model = (user_model.eval() if (not (args.int8 or args.int8_bf16_mixed) and hasattr(user_model, "eval")) \
                   else user_model)
-    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-    model_args="pretrained="+args.model+",trust_remote_code="+str(args.trust_remote_code)
-    args.tasks = ",".join(args.tasks)
-    tokenizer.pad_token = tokenizer.eos_token
-    eval_args = LMEvalParser(model = "hf", 
-                        user_model=user_model,
-                        tokenizer=tokenizer,
-                        model_args=model_args,
-                        tasks = args.tasks,
-                        device = device,
-                        num_fewshot=args.num_fewshot,
-                        output_path=args.save_accuracy_path,
-                        batch_size = args.batch_size)
-    print("using device:", device)
-    results = evaluate(eval_args)
+    # from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
+    # model_args="pretrained="+args.model+",trust_remote_code="+str(args.trust_remote_code)
+    # args.tasks = ",".join(args.tasks)
+    # tokenizer.pad_token = tokenizer.eos_token
+    # eval_args = LMEvalParser(model = "hf", 
+    #                     user_model=user_model,
+    #                     tokenizer=tokenizer,
+    #                     model_args=model_args,
+    #                     tasks = args.tasks,
+    #                     device = device,
+    #                     num_fewshot=args.num_fewshot,
+    #                     output_path=args.save_accuracy_path,
+    #                     batch_size = args.batch_size)
+    # print("using device:", device)
+    # results = evaluate(eval_args)
+
+
+    # original lm_eval
+    from lm_eval.evaluator import simple_evaluate
+    from lm_eval.tasks import TaskManager
+    import lm_eval
+
+    verbosity = 'INFO'
+    task_manager = TaskManager(verbosity)
+    limit = None
+    cache_requests = False
+    lm = lm_eval.api.registry.get_model("hf")(
+                pretrained=user_model,
+                batch_size=args.batch_size,
+                max_batch_size=None,
+            )
+    model_args="pretrained="+ args.model+ ",tokenizer="+ args.model + ",dtype=float32"
+    use_cache = None
+    results = simple_evaluate(
+        model=lm,
+        model_args=model_args,
+        tasks=args.tasks,
+        num_fewshot=args.num_fewshot,
+        device=device
+    )
+    import pprint
+    pprint.pprint(results["results"])

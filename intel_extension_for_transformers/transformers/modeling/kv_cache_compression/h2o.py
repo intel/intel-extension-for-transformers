@@ -67,60 +67,21 @@ def get_module(model, op_name):
 
 def clean_cache(model):
     for _, module in model.named_modules():
-        if "H2O" in module.__class__.__name__:
+        if "Attention" in module.__class__.__name__:
             module.h2o_kv_cache.clean_scores()
 
 def generate(model, **kwargs):
+    max_length = kwargs['max_new_tokens'] if kwargs.get('max_new_tokens') else kwargs['max_length']
     for _, module in model.named_modules():
-        if "H2O" in module.__class__.__name__:
+        if "Attention" in module.__class__.__name__:
             module.is_gen = True
+            if module.h2o_kv_cache.heavy_budget is None:
+                module.h2o_kv_cache.heavy_budget = int(max_length * module.h2o_kv_cache.heavy_ratio)
+            if module.h2o_kv_cache.recent_budget is None:
+                module.h2o_kv_cache.recent_budget = int(max_length * module.h2o_kv_cache.recent_ratio)
     result = model.ori_generate(**kwargs)
     clean_cache(model)
     return result
-
-def convert_model(
-        model,
-        heavy_ratio,
-        recent_ratio,
-        h2o_min_seqlen=1024,
-        real_drop=True,
-        is_gen=False,
-        mean=False,
-        local=True
-        ):
-    model_type = model.config.model_type
-    device = model.device
-    atten_layers = []
-    for name, module in model.named_modules():
-        if "Attention" in module.__class__.__name__:
-            atten_layers.append(name)
-
-    for layer_name in atten_layers:
-        module = get_module(model, layer_name)
-        cls_name = "H2O" + module.__class__.__name__ if real_drop else SIM_CLS_MAPPING[model_type]
-        h2o_cls = getattr(
-            importlib.import_module(
-                f".models.modeling_{model_type}",
-                "intel_extension_for_transformers.transformers.modeling.kv_cache_compression"
-                ),
-            cls_name)
-        module = h2o_cls(
-            module,
-            model.config,
-            heavy_ratio,
-            recent_ratio,
-            h2o_min_seqlen=h2o_min_seqlen,
-            real_drop=real_drop,
-            is_gen=is_gen,
-            mean=mean,
-            local=local
-            )
-        set_module(model, layer_name, module)
-    model.clean_cache = lambda: clean_cache(model)
-    model.ori_generate = model.generate
-    model.generate = partial(generate, model)
-    model = model.to(device)
-    return model
 
 
 def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=None):
@@ -188,28 +149,37 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights, local=Tru
 
     return mask_bottom
 
+
 class H2OKVCache:
     def __init__(
         self,
         heavy_ratio=0.2,
         recent_ratio=0.2,
+        heavy_budget=None,
+        recent_budget=None,
         min_seqlen=-1
     ):
         ## bsz, num_heads, seq_len, head_dim
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
+        self.heavy_budget = heavy_budget
+        self.recent_budget = recent_budget
         self.hh_score = None
         self.min_seqlen = min_seqlen
         self.idx = 0
+        
+        self._past_length = 0
 
 
     def __call__(self, attn_score, key_states, value_states, mean=False, **kwargs):
         seq_len = key_states.size(-2)
-        heavy_budget = int(self.heavy_ratio * seq_len)
-        recent_budget = int(self.recent_ratio * seq_len)
-        cache_size = heavy_budget + recent_budget
+        if self.heavy_budget is None:
+            self.heavy_budget = int(self.heavy_ratio * seq_len)
+        if self.recent_budget is None:
+            self.recent_budget = int(self.recent_ratio * seq_len)
+        cache_size = self.heavy_budget + self.recent_budget
         if seq_len <= self.min_seqlen or seq_len <= cache_size:
-            return torch.ones(attn_score.shape[:-1], dtype=attn_score.dtype).to(key_states.device)
+            return key_states, value_states
         self.idx += 1
         # attn_score shape (bsz, num_heads, seq_len, head_dim)
         if len(attn_score.shape) == 3:
@@ -218,12 +188,12 @@ class H2OKVCache:
 
         # hh-selection
         mask = torch.zeros(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
-        if not recent_budget == 0:
-            mask[:,:,-recent_budget:] = 1
-        select_hh_scores = self.hh_score[:,:,:seq_len - recent_budget]
+        if not self.recent_budget == 0:
+            mask[:,:,-self.recent_budget:] = 1
+        select_hh_scores = self.hh_score[:,:,:seq_len - self.recent_budget]
 
-        if not heavy_budget == 0:
-            _, keep_topk = torch.topk(select_hh_scores, heavy_budget, dim=-1, largest=True)
+        if not self.heavy_budget == 0:
+            _, keep_topk = torch.topk(select_hh_scores, self.heavy_budget, dim=-1, largest=True)
             mask = mask.scatter(-1, keep_topk, 1)
 
         mask = mask.bool()
@@ -260,7 +230,36 @@ class H2OKVCache:
 
         self.hh_score = attn_score_cache
 
-
     def clean_scores(self):
         self.idx = 0
+        self.past_length = 0
         self.hh_score = None
+    
+    @property
+    def past_length(self):
+        return self._past_length
+    
+    @past_length.setter
+    def past_length(self, value):
+        self._past_length = value
+    
+class H2OConfig(dict):
+    def __init__(
+            self,
+            heavy_ratio: float = None,
+            recent_ratio: float = None,
+            heavy_budget: int = None,
+            recent_budget: int = None,
+            h2o_min_seqlen: int = -1,
+            real_drop: bool = True,
+            mean: bool = False,
+            local: bool = True
+    ):
+        self.heavy_ratio = heavy_ratio
+        self.recent_ratio = recent_ratio
+        self.heavy_budget = heavy_budget
+        self.recent_budget = recent_budget
+        self.h2o_min_seqlen = h2o_min_seqlen
+        self.real_drop = real_drop
+        self.mean = mean
+        self.local = local

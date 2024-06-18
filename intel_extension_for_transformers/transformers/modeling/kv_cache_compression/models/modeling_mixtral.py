@@ -18,15 +18,33 @@ import inspect
 import math
 import logging
 from typing import List, Optional, Tuple, Union
+from functools import partial
 
 import torch
 import torch.nn as nn
+from torch.nn import CrossEntropyLoss
 
 from transformers.cache_utils import Cache
-from transformers.models.mixtral.modeling_mixtral import apply_rotary_pos_emb, repeat_kv, _get_unpad_data
+from transformers.models.mixtral.modeling_mixtral import (
+    apply_rotary_pos_emb,
+    repeat_kv,
+    _get_unpad_data,
+    load_balancing_loss_func,
+    MixtralConfig,
+    MixtralRotaryEmbedding,
+    MixtralModel,
+    MixtralPreTrainedModel,
+    MoeCausalLMOutputWithPast,
+    MIXTRAL_INPUTS_DOCSTRING,
+    _CONFIG_FOR_DOC,
+    )
+from transformers.file_utils import (
+    replace_return_docstrings,
+    add_start_docstrings_to_model_forward,
+    )
 from transformers.utils import is_flash_attn_2_available, is_flash_attn_greater_or_equal_2_10
 
-from ..h2o import H2OKVCache
+from ..h2o import H2OKVCache, H2OConfig, generate
 
 logger = logging.getLogger(__name__)
 
@@ -44,21 +62,14 @@ class H2OMixtralAttention(nn.Module):
     """
 
     def __init__(
-            self,
-            model,
-            config,
-            heavy_ratio,
-            recent_ratio,
-            h2o_min_seqlen=1024,
-            real_drop=False,
-            is_gen=False,
-            mean=False,
-            local=True
+            self, config: MixtralConfig,
+            layer_idx: Optional[int] = None,
+            h2o_config: H2OConfig = None,
     ):
         super().__init__()
         self.config = config
-        self.layer_idx = model.layer_idx
-        if self.layer_idx is None:
+        self.layer_idx = layer_idx
+        if layer_idx is None:
             logger.warning_once(
                 f"Instantiating {self.__class__.__name__} without passing a `layer_idx` is not recommended and will "
                 "lead to errors during the forward call if caching is used. Please make sure to provide a `layer_idx` "
@@ -80,24 +91,29 @@ class H2OMixtralAttention(nn.Module):
                 f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
                 f" and `num_heads`: {self.num_heads})."
             )
-        self.q_proj = model.q_proj
-        self.k_proj = model.k_proj
-        self.v_proj = model.v_proj
-        self.o_proj = model.o_proj
+        self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
+        self.k_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=False)
+        self.v_proj = nn.Linear(self.hidden_size, self.num_key_value_heads * self.head_dim, bias=False)
+        self.o_proj = nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=False)
 
-        self.rotary_emb = model.rotary_emb
+        self.rotary_emb = MixtralRotaryEmbedding(
+            self.head_dim,
+            max_position_embeddings=self.max_position_embeddings,
+            base=self.rope_theta,
+        )
 
         # for h2o
-        self.is_gen = is_gen
-        self.real_drop = real_drop
-        self.mean = mean
-        self.local = local
+        self.h2o_config = h2o_config
+        self.is_gen = False
+        self.real_drop = h2o_config.real_drop
+        self.mean = h2o_config.mean
+        self.local = h2o_config.local
 
-        self.heavy_ratio = heavy_ratio
-        self.recent_ratio = recent_ratio
-        self.h2o_min_seqlen = h2o_min_seqlen
+        self.heavy_ratio = h2o_config.heavy_ratio
+        self.recent_ratio = h2o_config.recent_ratio
+        self.h2o_min_seqlen = h2o_config.h2o_min_seqlen
 
-        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, real_drop, h2o_min_seqlen)
+        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, h2o_config.h2o_min_seqlen)
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
@@ -176,6 +192,7 @@ class H2OMixtralAttention(nn.Module):
                 )
             past_key_value.key_cache[self.layer_idx] = new_key_states
             past_key_value.value_cache[self.layer_idx] = new_value_states
+            self.h2o_kv_cache.past_length += attn_weights.size(-2)
         else:
             from ..h2o import get_hh_mask
             mask = get_hh_mask(
@@ -330,6 +347,7 @@ class H2OMixtralFlashAttention2(H2OMixtralAttention):
                 )
             past_key_value.key_cache[self.layer_idx] = new_key_states
             past_key_value.value_cache[self.layer_idx] = new_value_states
+            self.h2o_kv_cache.past_length += attn_weights.size(-2)
 
         # In PEFT, usually we cast the layer norms in float32 for training stability reasons
         # therefore the input hidden states gets silently casted in float32. Hence, we need
@@ -601,6 +619,7 @@ class H2OMixtralSdpaAttention(H2OMixtralAttention):
                 )
             past_key_value.key_cache[self.layer_idx] = new_key_states
             past_key_value.value_cache[self.layer_idx] = new_value_states
+            self.h2o_kv_cache.past_length += attn_weights.size(-2)
 
         if attention_mask is not None:
             if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
@@ -631,3 +650,244 @@ class H2OMixtralSdpaAttention(H2OMixtralAttention):
         attn_output = self.o_proj(attn_output)
 
         return attn_output, None, past_key_value
+
+
+class MixtralForCausalLM(MixtralPreTrainedModel):
+    _tied_weights_keys = ["lm_head.weight"]
+
+    def __init__(self, config, h2o_config: H2OConfig):
+        super().__init__(config)
+        self.model = MixtralModel(config)
+        self.vocab_size = config.vocab_size
+        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.router_aux_loss_coef = config.router_aux_loss_coef
+        self.num_experts = config.num_local_experts
+        self.num_experts_per_tok = config.num_experts_per_tok
+
+        num_layers = len(self.model.layers)
+        for layer_idx in range(num_layers):
+            module = self.model.layers[layer_idx].self_attn
+            cls_name = module.__class__.__name__
+            if not h2o_config.real_drop:
+                cls = H2OMixtralAttention
+            elif cls_name == "MixtralFlashAttention2":
+                cls = H2OMixtralFlashAttention2
+            elif cls_name == "MixtralSdpaAttention":
+                cls = H2OMixtralSdpaAttention
+            else:
+                cls = H2OMixtralAttention
+            
+            self.model.layers[layer_idx].self_attn = cls(
+                config,
+                layer_idx,
+                h2o_config
+                )
+
+        # Initialize weights and apply final processing
+        self.post_init()
+
+        self.ori_generate = self.generate
+        self.generate = partial(generate, self)
+
+
+    def get_input_embeddings(self):
+        return self.model.embed_tokens
+
+    def set_input_embeddings(self, value):
+        self.model.embed_tokens = value
+
+    def get_output_embeddings(self):
+        return self.lm_head
+
+    def set_output_embeddings(self, new_embeddings):
+        self.lm_head = new_embeddings
+
+    def set_decoder(self, decoder):
+        self.model = decoder
+
+    def get_decoder(self):
+        return self.model
+
+    @add_start_docstrings_to_model_forward(MIXTRAL_INPUTS_DOCSTRING)
+    @replace_return_docstrings(output_type=MoeCausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
+    # Ignore copy
+    def forward(
+        self,
+        input_ids: torch.LongTensor = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        output_router_logits: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+    ) -> Union[Tuple, MoeCausalLMOutputWithPast]:
+        r"""
+        Args:
+            labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+                Labels for computing the masked language modeling loss. Indices should either be in `[0, ...,
+                config.vocab_size]` or -100 (see `input_ids` docstring). Tokens with indices set to `-100` are ignored
+                (masked), the loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`.
+
+        Returns:
+
+        Example:
+
+        ```python
+        >>> from transformers import AutoTokenizer, MixtralForCausalLM
+
+        >>> model = MixtralForCausalLM.from_pretrained("mistralai/Mixtral-8x7B-v0.1")
+        >>> tokenizer = AutoTokenizer.from_pretrained("mistralai/Mixtral-8x7B-v0.1")
+
+        >>> prompt = "Hey, are you conscious? Can you talk to me?"
+        >>> inputs = tokenizer(prompt, return_tensors="pt")
+
+        >>> # Generate
+        >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
+        >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+        "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
+        ```"""
+
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_router_logits = (
+            output_router_logits if output_router_logits is not None else self.config.output_router_logits
+        )
+
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
+        outputs = self.model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_values=past_key_values,
+            inputs_embeds=inputs_embeds,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            output_router_logits=output_router_logits,
+            return_dict=return_dict,
+        )
+
+        hidden_states = outputs[0]
+        logits = self.lm_head(hidden_states)
+        logits = logits.float()
+
+        loss = None
+        if labels is not None:
+            # Shift so that tokens < n predict n
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            # Flatten the tokens
+            loss_fct = CrossEntropyLoss()
+            shift_logits = shift_logits.view(-1, self.config.vocab_size)
+            shift_labels = shift_labels.view(-1)
+            # Enable model parallelism
+            shift_labels = shift_labels.to(shift_logits.device)
+            loss = loss_fct(shift_logits, shift_labels)
+
+        aux_loss = None
+        if output_router_logits:
+            aux_loss = load_balancing_loss_func(
+                outputs.router_logits if return_dict else outputs[-1],
+                self.num_experts,
+                self.num_experts_per_tok,
+                attention_mask,
+            )
+            if labels is not None:
+                loss += self.router_aux_loss_coef * aux_loss.to(loss.device)  # make sure to reside in the same device
+
+        if not return_dict:
+            output = (logits,) + outputs[1:]
+            if output_router_logits:
+                output = (aux_loss,) + output
+            return (loss,) + output if loss is not None else output
+
+        return MoeCausalLMOutputWithPast(
+            loss=loss,
+            aux_loss=aux_loss,
+            logits=logits,
+            past_key_values=outputs.past_key_values,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+            router_logits=outputs.router_logits,
+        )
+
+    def prepare_inputs_for_generation(
+        self,
+        input_ids,
+        past_key_values=None,
+        attention_mask=None,
+        inputs_embeds=None,
+        output_router_logits=False,
+        **kwargs,
+    ):
+        # Omit tokens covered by past_key_values
+        if past_key_values is not None:
+            if isinstance(past_key_values, Cache):
+                cache_length = past_key_values.get_seq_length()
+                past_length = past_key_values.seen_tokens
+                max_cache_length = past_key_values.get_max_length()
+            else:
+                cache_length = past_length = past_key_values[0][0].shape[2]
+                max_cache_length = None
+
+            # Keep only the unprocessed tokens:
+            # 1 - If the length of the attention_mask exceeds the length of input_ids, then we are in a setting where
+            # some of the inputs are exclusively passed as part of the cache (e.g. when passing input_embeds as
+            # input)
+            if attention_mask is not None and attention_mask.shape[1] > input_ids.shape[1]:
+                input_ids = input_ids[:, -(attention_mask.shape[1] - past_length) :]
+            # 2 - If the past_length is smaller than input_ids', then input_ids holds all input tokens. We can discard
+            # input_ids based on the past_length.
+            elif past_length < input_ids.shape[1]:
+                input_ids = input_ids[:, past_length:]
+            # 3 - Otherwise (past_length >= input_ids.shape[1]), let's assume input_ids only has unprocessed tokens.
+
+            # If we are about to go beyond the maximum cache length, we need to crop the input attention mask.
+            if (
+                max_cache_length is not None
+                and attention_mask is not None
+                and cache_length + input_ids.shape[1] > max_cache_length
+            ):
+                attention_mask = attention_mask[:, -max_cache_length:]
+
+        position_ids = kwargs.get("position_ids", None)
+        if attention_mask is not None and position_ids is None:
+            # create position_ids on the fly for batch generation
+            position_ids = attention_mask.long().cumsum(-1) - 1
+            position_ids.masked_fill_(attention_mask == 0, 1)
+            if past_key_values:
+                position_ids = position_ids[:, -input_ids.shape[1] :]
+
+        # if `inputs_embeds` are passed, we only want to use them in the 1st generation step
+        if inputs_embeds is not None and past_key_values is None:
+            model_inputs = {"inputs_embeds": inputs_embeds}
+        else:
+            model_inputs = {"input_ids": input_ids}
+
+        model_inputs.update(
+            {
+                "position_ids": position_ids,
+                "past_key_values": past_key_values,
+                "use_cache": kwargs.get("use_cache"),
+                "attention_mask": attention_mask,
+                "output_router_logits": output_router_logits,
+            }
+        )
+        return model_inputs
+
+    @staticmethod
+    def _reorder_cache(past_key_values, beam_idx):
+        reordered_past = ()
+        for layer_past in past_key_values:
+            reordered_past += (
+                tuple(past_state.index_select(0, beam_idx.to(past_state.device)) for past_state in layer_past),
+            )
+        return reordered_past

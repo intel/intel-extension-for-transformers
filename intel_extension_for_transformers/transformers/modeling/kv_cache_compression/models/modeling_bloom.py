@@ -15,30 +15,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import math
+import warnings
 from torch.nn import functional as F
 
 from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
-
-from ..h2o import H2OKVCache
+from torch.nn import CrossEntropyLoss
 from transformers.utils import logging
+from transformers.models.bloom import (
+    BloomConfig,
+    BloomModel,
+    BloomPreTrainedModel,
+    BLOOM_INPUTS_DOCSTRING,
+    _CHECKPOINT_FOR_DOC,
+    _CONFIG_FOR_DOC
+)
+from transformers.file_utils import (
+    add_code_sample_docstrings,
+    add_start_docstrings_to_model_forward
+    )
+from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
+
+from ..h2o import H2OKVCache, H2OConfig
 
 logger = logging.get_logger(__name__)
 
 class H2OBloomAttention(nn.Module):
     def __init__(
             self,
-            model,
-            config,
-            heavy_ratio,
-            recent_ratio,
-            h2o_min_seqlen=1024,
-            real_drop=False,
-            is_gen=False,
-            mean=False,
-            local=True
+            config: BloomConfig,
+            h2o_config: H2OConfig
             ):
         super().__init__()
 
@@ -61,24 +69,24 @@ class H2OBloomAttention(nn.Module):
         self.inv_norm_factor = 1.0 / math.sqrt(self.head_dim)
         self.beta = 1.0
 
-        self.query_key_value = model.query_key_value
-        self.dense = model.dense
-        self.attention_dropout = model.attention_dropout
+        self.query_key_value = nn.Linear(self.hidden_size, 3 * self.hidden_size, bias=True)
+        self.dense = nn.Linear(self.hidden_size, self.hidden_size)
+        self.attention_dropout = nn.Dropout(config.attention_dropout)
 
         # for h2o
         if real_drop:
             real_drop = False
             logger.warning_once("BloomAttention not support for kv cache, usning simulation mode.")
-        self.real_drop = real_drop
-        self.is_gen = is_gen
-        self.mean = mean
-        self.local = local
+        self.h2o_config = h2o_config
+        self.is_gen = False
+        self.mean = h2o_config.mean
+        self.local = h2o_config.local
 
-        self.heavy_ratio = heavy_ratio
-        self.recent_ratio = recent_ratio
-        self.h2o_min_seqlen = h2o_min_seqlen
+        self.heavy_ratio = h2o_config.heavy_ratio
+        self.recent_ratio = h2o_config.recent_ratio
+        self.h2o_min_seqlen = h2o_config.h2o_min_seqlen
 
-        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, real_drop, h2o_min_seqlen)
+        self.h2o_kv_cache = H2OKVCache(self.heavy_ratio, self.recent_ratio, h2o_config.h2o_min_seqlen)
 
     def _split_heads(self, fused_qkv: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Split the last dimension into (num_heads, head_dim) without making any copies, results share same memory
@@ -230,3 +238,174 @@ def dropout_add(x: torch.Tensor, residual: torch.Tensor, prob: float, training: 
     out = F.dropout(x, p=prob, training=training)
     out = residual + out
     return out
+
+class H2OBloomForCausalLM(BloomPreTrainedModel):
+    _tied_weights_keys = ["lm_head.weight"]
+
+    def __init__(
+            self,
+            config: BloomConfig,
+            h2o_config: H2OConfig
+            ):
+        super().__init__(config)
+        self.transformer = BloomModel(config)
+        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+
+        num_layers = len(self.transformer.h)
+        for layer_idx in range(num_layers):
+            self.transformer.h[layer_idx].self_attention = H2OBloomAttention(
+                config,
+                h2o_config
+                )
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def get_output_embeddings(self):
+        return self.lm_head
+
+    def set_output_embeddings(self, new_embeddings: torch.Tensor):
+        self.lm_head = new_embeddings
+
+    def prepare_inputs_for_generation(
+        self,
+        input_ids: torch.LongTensor,
+        past_key_values: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        **kwargs,
+    ) -> dict:
+        # only last tokens for input_ids if past is not None
+        if past_key_values is not None:
+            past_length = past_key_values[0][0].shape[2]
+
+            # Some generation methods already pass only the last input ID
+            if input_ids.shape[1] > past_length:
+                remove_prefix_length = past_length
+            else:
+                # Default to old behavior: keep only final ID
+                remove_prefix_length = input_ids.shape[1] - 1
+
+            input_ids = input_ids[:, remove_prefix_length:]
+
+            # the cache may be in the stardard format (e.g. in contrastive search), convert to bloom's format if needed
+            if past_key_values[0][0].shape[0] == input_ids.shape[0]:
+                past_key_values = self._convert_to_bloom_cache(past_key_values)
+
+        # if `inputs_embeds` are passed, we only want to use them in the 1st generation step
+        if inputs_embeds is not None and past_key_values is None:
+            model_inputs = {"inputs_embeds": inputs_embeds}
+        else:
+            model_inputs = {"input_ids": input_ids}
+
+        model_inputs.update(
+            {
+                "past_key_values": past_key_values,
+                "use_cache": kwargs.get("use_cache"),
+                "attention_mask": attention_mask,
+            }
+        )
+        return model_inputs
+
+    @add_start_docstrings_to_model_forward(BLOOM_INPUTS_DOCSTRING)
+    @add_code_sample_docstrings(
+        checkpoint=_CHECKPOINT_FOR_DOC,
+        output_type=CausalLMOutputWithCrossAttentions,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[Tuple[Tuple[torch.Tensor, torch.Tensor], ...]] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+        **deprecated_arguments,
+    ) -> Union[Tuple[torch.Tensor], CausalLMOutputWithCrossAttentions]:
+        r"""
+        labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+            Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
+            `labels = input_ids` Indices are selected in `[-100, 0, ..., config.vocab_size]` All labels set to `-100`
+            are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
+        """
+        if deprecated_arguments.pop("position_ids", False) is not False:
+            # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to `False` allows to detect if users were passing explicitly `None`
+            warnings.warn(
+                "`position_ids` have no functionality in BLOOM and will be removed in v5.0.0. You can safely ignore"
+                " passing `position_ids`.",
+                FutureWarning,
+            )
+        if len(deprecated_arguments) > 0:
+            raise ValueError(f"Got unexpected arguments: {deprecated_arguments}")
+
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        transformer_outputs = self.transformer(
+            input_ids,
+            past_key_values=past_key_values,
+            attention_mask=attention_mask,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+        hidden_states = transformer_outputs[0]
+
+        lm_logits = self.lm_head(hidden_states)
+
+        loss = None
+        if labels is not None:
+            # move labels to correct device to enable model parallelism
+            labels = labels.to(lm_logits.device)
+            # Shift so that tokens < n predict n
+            shift_logits = lm_logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            batch_size, seq_length, vocab_size = shift_logits.shape
+            # Flatten the tokens
+            loss_fct = CrossEntropyLoss()
+            loss = loss_fct(
+                shift_logits.view(batch_size * seq_length, vocab_size), shift_labels.view(batch_size * seq_length)
+            )
+
+        if not return_dict:
+            output = (lm_logits,) + transformer_outputs[1:]
+            return ((loss,) + output) if loss is not None else output
+
+        return CausalLMOutputWithCrossAttentions(
+            loss=loss,
+            logits=lm_logits,
+            past_key_values=transformer_outputs.past_key_values,
+            hidden_states=transformer_outputs.hidden_states,
+            attentions=transformer_outputs.attentions,
+        )
+
+    def _reorder_cache(
+        self, past: Tuple[Tuple[torch.Tensor, torch.Tensor], ...], beam_idx: torch.LongTensor
+    ) -> Tuple[Tuple[torch.Tensor, torch.Tensor], ...]:
+        """
+        This function is used to re-order the `past_key_values` cache if [`~PreTrainedModel.beam_search`] or
+        [`~PreTrainedModel.beam_sample`] is called. This is required to match `past_key_values` with the correct
+        beam_idx at every generation step.
+
+        Output shares the same memory storage as `past`.
+        """
+        standardized_past = self._convert_to_standard_cache(past, batch_size=len(beam_idx))
+
+        # Get a copy of `beam_idx` on all the devices where we need those indices.
+        device_to_beam_idx = {
+            past_state.device: beam_idx.to(past_state.device) for layer_past in past for past_state in layer_past
+        }
+        reordered_past = tuple(
+            (
+                layer_past[0].index_select(0, device_to_beam_idx[layer_past[0].device]),
+                layer_past[1].index_select(0, device_to_beam_idx[layer_past[0].device]),
+            )
+            for layer_past in standardized_past
+        )
+        return self._convert_to_bloom_cache(reordered_past)

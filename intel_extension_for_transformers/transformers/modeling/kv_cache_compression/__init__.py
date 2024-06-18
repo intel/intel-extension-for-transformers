@@ -15,4 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .h2o import convert_model
+from .h2o import H2OConfig
+from .models.modeling_llama import H2OLlamaForCausalLM
+from .models.modeling_bloom import H2OBloomForCausalLM
+from .models.modeling_gpt_neox import H2OGPTNeoXForCausalLM
+from .models.modeling_opt import H2OOPTForCausalLM
+from .models.modeling_mistral import H2OMistralForCausalLM
+from .models.modeling_mixtral import H2OMixtralForCausalLM
