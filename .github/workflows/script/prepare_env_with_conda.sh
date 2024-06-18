@@ -9,11 +9,3 @@ fi
 source ~/.bashrc
 conda create -n ${conda_env_name} python=${python_version} -y
 source activate ${conda_env_name} || conda activate ${conda_env_name}
-#pip install -U pip
-#
-#if [ -f "requirements.txt" ]; then
-#    python -m pip install --default-timeout=100 -r requirements.txt
-#    pip list
-#else
-#    echo "Not found requirements.txt file."
-#fi
