@@ -367,6 +367,7 @@ def main():
             data_args.dataset_config_name,
             cache_dir=model_args.cache_dir,
             use_auth_token=True if model_args.use_auth_token else None,
+            trust_remote_code=True,
         )
     else:
         data_files = {}
@@ -384,6 +385,7 @@ def main():
             data_files=data_files,
             cache_dir=model_args.cache_dir,
             use_auth_token=True if model_args.use_auth_token else None,
+            trust_remote_code=True,
         )
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
@@ -570,7 +572,7 @@ def main():
         )
 
     # Metric
-    metric = load_metric("sacrebleu")
+    metric = load_metric("sacrebleu", trust_remote_code=True)
 
     def postprocess_text(preds, labels):
         preds = [pred.strip() for pred in preds]

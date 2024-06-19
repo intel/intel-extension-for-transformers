@@ -68,7 +68,8 @@ function run_tuning {
                    --load_best_model_at_end True \
                    --evaluation_strategy steps \
                    --save_strategy steps \
-                   --save_total_limit 1"
+                   --save_total_limit 1 \
+                   --safe_serialization False"
     fi
 
     python -u ./run_ner.py \

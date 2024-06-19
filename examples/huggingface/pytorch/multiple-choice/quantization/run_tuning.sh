@@ -56,7 +56,8 @@ function run_tuning {
                    --load_best_model_at_end True \
                    --evaluation_strategy steps \
                    --save_strategy steps \
-                   --save_total_limit 1"
+                   --save_total_limit 1 \
+                   --safe_serialization False"
     fi
 
     python -u ./run_swag.py \
@@ -72,7 +73,8 @@ function run_tuning {
         --tune \
         --pad_to_max_length \
         --overwrite_cache \
-        --overwrite_output_dir 
+        --overwrite_output_dir \
+        ${extra_cmd}
 }
 
 main "$@"
