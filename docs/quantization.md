@@ -134,12 +134,12 @@ Quantization methods include the following three types:
 ## Get Started
 ### Script:
 ```python
-from neural_compressor.config import PostTrainingConfig
+from neural_compressor.config import PostTrainingQuantConfig
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
-q_config = PostTrainingConfig(
+q_config = PostTrainingQuantConfig(
     approach="static"
 )
 model = trainer.quantize(quant_config=q_config)
