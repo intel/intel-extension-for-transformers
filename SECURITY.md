@@ -1,3 +1,8 @@
+OpenSSF Badge
+===============
+
+## [OpenSSF Badge](https://www.bestpractices.dev/en/projects/9128)
+
 Security Policy
 ===============
 
