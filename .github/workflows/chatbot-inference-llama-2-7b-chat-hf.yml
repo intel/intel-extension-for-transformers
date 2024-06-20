@@ -6,7 +6,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-inf-lla-7b
   cancel-in-progress: true
-permissions: write-all
 jobs:
   inference:
     name: inference test

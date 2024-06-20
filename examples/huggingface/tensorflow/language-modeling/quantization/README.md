@@ -31,7 +31,7 @@ pip install -r requirements.txt
 
 ```
 cd ptq
-bash run_tuning.sh  --topology=[topology]
+bash run_tuning.sh --topology=[topology]
 ```
 
 * To benchmark the int8 model
@@ -52,7 +52,7 @@ bash run_benchmark.sh --topology=[topology] --mode=benchmark --int8=true
 
 ```
 cd ptq
-bash run_tuning.sh  --topology=[topology]
+bash run_tuning.sh --topology=[topology]
 ```
 
 * To benchmark the int8 model
