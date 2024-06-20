@@ -1009,8 +1009,8 @@ def is_llm_runtime_model(model, device):
 def remove_prompt_history(model_name, prompt):
     result = prompt
     if re.search("llama", model_name, re.IGNORECASE):
-        pattern = re.compile(r'\[INST\]([\s\S]*?)\[/INST\]', re.DOTALL)
-        matches = pattern.findall(prompt)
+        pattern = re.compile(r'\[INST\](.*?)\[/INST\]', re.DOTALL)
+        matches = [m for m in pattern.findall(prompt) if m.strip()]
         if matches:
             result = "[INST]" + matches[-1] + "[/INST]"
     elif re.search("chatglm", model_name, re.IGNORECASE):
@@ -1019,7 +1019,7 @@ def remove_prompt_history(model_name, prompt):
         if matches:
             result = matches[-1].replace("问：", "").replace("\n答：", "").strip()
     elif re.search("neuralchat", model_name, re.IGNORECASE):
-        matches = re.findall(r'### User:[\s\S]*?### Assistant:', prompt)
+        matches = re.findall(r'### User:.*?### Assistant:', prompt, re.DOTALL | re.IGNORECASE)
         if matches:
             result = '''
 ### System:
