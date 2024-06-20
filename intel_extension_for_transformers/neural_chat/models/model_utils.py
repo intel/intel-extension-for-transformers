@@ -1013,12 +1013,12 @@ def remove_prompt_history(model_name, prompt):
         if matches:
             result = "[INST]" + matches[-1] + "[/INST]"
     elif re.search("chatglm", model_name, re.IGNORECASE):
-        pattern = re.compile(r'问：((?:(?!问：|答：)[\s\S])*?)\n答：')
+        pattern = re.compile(r'问：((?:(?!问：|答：)[\s\S])*)\n答：')
         matches = pattern.findall(prompt)
         if matches:
             result = matches[-1].replace("问：", "").replace("\n答：", "").strip()
     elif re.search("neuralchat", model_name, re.IGNORECASE):
-        pattern = re.compile(r'### User:\s*([^#]*?)\s*### Assistant:')
+        pattern = re.compile(r'### User:\s*([^#\s]*)\s*### Assistant:')
         matches = pattern.findall(prompt)
         if matches:
             result = '''
