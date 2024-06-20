@@ -137,10 +137,10 @@ class LlamaAttention(nn.Module):
         self._init_rope()
 
         self._init_func = []
-    
+
     def register_init_func(self, func):
         self._init_func.append(func)
-    
+
     def post_init(self):
         for func in self._init_func:
             func(self)
@@ -690,13 +690,13 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             self.model.layers[layer_idx].self_attn.post_init()
 
             self.model.layers[layer_idx].self_attn.pruner = self.pruner
-        
+
         # Initialize weights and apply final processing
         self.post_init()
 
         def _generate(**kwargs):
-            self.pruner.before_generate(self, **kwargs) 
-            result = self.ori_generate(**kwargs) 
+            self.pruner.before_generate(self, **kwargs)
+            result = self.ori_generate(**kwargs)
             self.pruner.after_generate(self, **kwargs)
             return result
 
