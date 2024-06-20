@@ -28,6 +28,9 @@ env:
   EXTRA_CONTAINER_NAME: "modelTest"
   CONTAINER_SCAN: "codeScan"
 
+permissions:
+  contents: read
+
 jobs:
   engine-unit-test:
     runs-on: [self-hosted, linux, X64, itrex-node]

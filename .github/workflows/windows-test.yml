@@ -23,6 +23,9 @@ env:
     SCRIPT_PATH: ${{ github.workspace }}\.github\workflows\script
     WORKING_DIR: ${{ github.workspace }}
 
+permissions:
+  contents: read
+
 jobs:
     Windows-Binary-Test:
       runs-on: 'Windows'

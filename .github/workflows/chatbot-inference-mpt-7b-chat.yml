@@ -6,6 +6,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-inf-mpt-7b
   cancel-in-progress: true
+permissions:
+  contents: read
+
 jobs:
   inference:
     name: inference test

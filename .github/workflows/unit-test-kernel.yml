@@ -22,6 +22,9 @@ env:
   CONTAINER_NAME: "utTest"
   EXTRA_CONTAINER_NAME: "modelTest"
 
+permissions:
+  contents: read
+
 jobs:
   unit-test:
     runs-on: [self-hosted, linux, X64, itrex-node]

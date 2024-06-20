@@ -6,6 +6,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-ft-mpt-7b
   cancel-in-progress: true
+permissions:
+  contents: read
+
 jobs:
   finetuning:
     name: finetuning test

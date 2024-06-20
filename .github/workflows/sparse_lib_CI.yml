@@ -16,6 +16,9 @@ env:
   DOCKER_FILE_NAME: "unitTest"
   CONTAINER_NAME: "utTest"
 
+permissions:
+  contents: read
+
 jobs:
   sparselib:
     runs-on: itrex-node
