@@ -79,7 +79,7 @@ parser.add_argument('--print-memory', action='store_true')
 parser.add_argument("--token-latency", action="store_true")
 parser.add_argument("--throughput", action="store_true")
 parser.add_argument("--accuracy-only", action="store_true")
-parser.add_argument("--optimum-intel", action="store_true")
+parser.add_argument("--optimum-intel", action="store_true", help="Use IPEXModel in optimum-intel to optimize the model")
 parser.add_argument(
     "--acc-tasks",
     nargs="+",
@@ -202,7 +202,7 @@ print_rank0("*** model config:", config)
 if args.benchmark:
     print_mem_usage("pre-from-pretrained")
 
-is_meta_support = not model_type in ["falcon"]
+is_meta_support = model_type not in ["falcon"]
 
 # Construct model with fake meta tensors, later will be replaced during ds-inference ckpt load
 with deepspeed.OnDevice(dtype=load_dtype, device="meta", enabled=is_meta_support):
