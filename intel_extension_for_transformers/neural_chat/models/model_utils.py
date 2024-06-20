@@ -1014,7 +1014,7 @@ def remove_prompt_history(model_name, prompt):
         if matches:
             result = "[INST]" + matches[-1] + "[/INST]"
     elif re.search("chatglm", model_name, re.IGNORECASE):
-        pattern = re.compile(r'问：.*?\n答：', re.DOTALL)
+        pattern = re.compile(r'问：[\s\S]*?\n答：', re.DOTALL)
         matches = pattern.findall(prompt)
         if matches:
             result = matches[-1].replace("问：", "").replace("\n答：", "").strip()
