@@ -14,75 +14,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import importlib
-from functools import partial
-
+import math
 import torch
-from torch import nn
+import torch.nn as nn
 
-SIM_CLS_MAPPING = {
-    'llama': 'H2OLlamaAttention',
-    'opt': 'H2OOPTAttention',
-    'bloom': 'H2OBloomAttention',
-    'mistral': 'H2OMistralAttention',
-    'mixtral': 'H2OMixtralAttention',
-    'gpt_neox': 'H2OGPTNeoXAttention',
-}
-
-def set_module(model, op_name, new_module):
-    """Set module with a given op name.
-
-    Args:
-        model (object): the input model.
-        op_name (str): name of op.
-        new_module (object): the input model.
-
-    Returns:
-        module (object).
-    """
-    module = model
-    name_list = op_name.split(".")
-    for name in name_list[:-1]:
-        if hasattr(module, name):
-            module = getattr(module, name)
-        else:
-            module = module
-    setattr(module, name_list[-1], new_module)
-
-def get_module(model, op_name):
-    """Get module from model by key name.
-
-    Args:
-        model (torch.nn.Module): original model
-        key (str): module name to be replaced
-    """
-    module = model
-    name_list = op_name.split(".")
-    for name in name_list:
-        if hasattr(module, name):
-            module = getattr(module, name)
-        else:
-            module = module
-    return module
-
-def clean_cache(model):
-    for _, module in model.named_modules():
-        if "Attention" in module.__class__.__name__:
-            module.h2o_kv_cache.clean_scores()
-
-def generate(model, **kwargs):
-    max_length = kwargs['max_new_tokens'] if kwargs.get('max_new_tokens') else kwargs['max_length']
-    for _, module in model.named_modules():
-        if "Attention" in module.__class__.__name__:
-            module.is_gen = True
-            if module.h2o_kv_cache.heavy_budget is None:
-                module.h2o_kv_cache.heavy_budget = int(max_length * module.h2o_kv_cache.heavy_ratio)
-            if module.h2o_kv_cache.recent_budget is None:
-                module.h2o_kv_cache.recent_budget = int(max_length * module.h2o_kv_cache.recent_ratio)
-    result = model.ori_generate(**kwargs)
-    clean_cache(model)
-    return result
-
+from .base import KVPruner, PruneConfig
 
 def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=None):
 
@@ -149,6 +85,28 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights, local=Tru
 
     return mask_bottom
 
+class H2OConfig(PruneConfig):
+    def __init__(
+            self,
+            heavy_ratio: float = None,
+            recent_ratio: float = None,
+            heavy_budget: int = None,
+            recent_budget: int = None,
+            h2o_min_seqlen: int = -1,
+            real_drop: bool = True,
+            mean: bool = False,
+            local: bool = True
+    ):
+        super().__init__()
+        self.heavy_ratio = heavy_ratio
+        self.recent_ratio = recent_ratio
+        self.heavy_budget = heavy_budget
+        self.recent_budget = recent_budget
+        self.h2o_min_seqlen = h2o_min_seqlen
+        self.real_drop = real_drop
+        self.mean = mean
+        self.local = local
+
 
 class H2OKVCache:
     def __init__(
@@ -157,7 +115,8 @@ class H2OKVCache:
         recent_ratio=0.2,
         heavy_budget=None,
         recent_budget=None,
-        min_seqlen=-1
+        min_seqlen=-1,
+        mean=False
     ):
         ## bsz, num_heads, seq_len, head_dim
         self.heavy_ratio = heavy_ratio
@@ -166,12 +125,10 @@ class H2OKVCache:
         self.recent_budget = recent_budget
         self.hh_score = None
         self.min_seqlen = min_seqlen
+        self.mean = mean
         self.idx = 0
 
-        self._past_length = 0
-
-
-    def __call__(self, attn_score, key_states, value_states, mean=False, **kwargs):
+    def __call__(self, attn_score, key_states, value_states, **kwargs):
         seq_len = key_states.size(-2)
         if self.heavy_budget is None:
             self.heavy_budget = int(self.heavy_ratio * seq_len)
@@ -184,7 +141,7 @@ class H2OKVCache:
         # attn_score shape (bsz, num_heads, seq_len, head_dim)
         if len(attn_score.shape) == 3:
             attn_score = attn_score.unsqueeze(0)
-        self._update_hh_score(attn_score, mean=mean)
+        self._update_hh_score(attn_score, mean=self.mean)
 
         # hh-selection
         mask = torch.zeros(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
@@ -232,34 +189,55 @@ class H2OKVCache:
 
     def clean_scores(self):
         self.idx = 0
-        self.past_length = 0
         self.hh_score = None
 
-    @property
-    def past_length(self):
-        return self._past_length
 
-    @past_length.setter
-    def past_length(self, value):
-        self._past_length = value
+class H2OKVPruner(KVPruner):
+    def __init__(self, config: H2OConfig) -> None:
+        self.config = config
+        self.real_drop = self.config.real_drop
+        
+    
+    def self_attn_init(self, module):
+        module.h2o_kv_cache = H2OKVCache(
+            self.config.heavy_ratio,
+            self.config.recent_ratio,
+            self.config.heavy_budget,
+            self.config.recent_budget,
+            self.config.h2o_min_seqlen,
+            self.config.mean
+            )
+    
+    def before_generate(self, model, **kwargs):
+        self.past_length = 0
+        max_length = kwargs['max_new_tokens'] if kwargs.get('max_new_tokens') else kwargs['max_length']
+        for _, module in model.named_modules():
+            if "Attention" in module.__class__.__name__:
+                if module.h2o_kv_cache.heavy_budget is None:
+                    module.h2o_kv_cache.heavy_budget = int(max_length * module.h2o_kv_cache.heavy_ratio)
+                if module.h2o_kv_cache.recent_budget is None:
+                    module.h2o_kv_cache.recent_budget = int(max_length * module.h2o_kv_cache.recent_ratio)
 
-class H2OConfig(dict):
-    def __init__(
-            self,
-            heavy_ratio: float = None,
-            recent_ratio: float = None,
-            heavy_budget: int = None,
-            recent_budget: int = None,
-            h2o_min_seqlen: int = -1,
-            real_drop: bool = True,
-            mean: bool = False,
-            local: bool = True
-    ):
-        self.heavy_ratio = heavy_ratio
-        self.recent_ratio = recent_ratio
-        self.heavy_budget = heavy_budget
-        self.recent_budget = recent_budget
-        self.h2o_min_seqlen = h2o_min_seqlen
-        self.real_drop = real_drop
-        self.mean = mean
-        self.local = local
+    def after_generate(self, model, **kwargs):
+        for _, module in model.named_modules():
+            if "Attention" in module.__class__.__name__:
+                module.h2o_kv_cache.clean_scores()
+    
+    def prune(self, module, query_states, key_states, value_states, causal_mask=None, **kwargs):
+        attn_weights = torch.matmul(query_states, key_states.transpose(-2, -1)) / math.sqrt(module.head_dim)
+        if causal_mask is not None:  # no matter the length, we just slice it
+            attn_weights = attn_weights + causal_mask
+        if not self.config.real_drop:
+            module.h2o_kv_cache.clean_scores()
+        return module.h2o_kv_cache(attn_weights, key_states, value_states, **kwargs)
+    
+    def get_mask(self, module, query_states, key_states, value_states, causal_mask=None, **kwargs):
+        attn_weights = torch.matmul(query_states, key_states.transpose(-2, -1)) / math.sqrt(module.head_dim)
+        if causal_mask is not None:  # no matter the length, we just slice it
+            attn_weights = attn_weights + causal_mask
+        mask = get_hh_mask(
+            self.config.heavy_ratio,
+            self.config.recent_ratio,
+            attn_weights,
+            local=self.config.local)
+        return mask
