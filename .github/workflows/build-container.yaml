@@ -3,7 +3,6 @@ on:
   workflow_dispatch: # Can be manually executed
   schedule: # 1/week Sunday at 07:00AM
     - cron: "5 7 * * 0"
-permissions: write-all
 jobs:
   build:
     container: # MLOps Dev container for Compose Automation

@@ -7,7 +7,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-permissions: write-all
 jobs:
   call-finetune-mpt-7b-chat:
     uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat.yml

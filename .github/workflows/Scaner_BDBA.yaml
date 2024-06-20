@@ -3,7 +3,6 @@ name: Scanner BDBA
 on:
   workflow_dispatch:
 
-permissions: write-all
 jobs:
   bdba_job:
     name: BDBA Scan
