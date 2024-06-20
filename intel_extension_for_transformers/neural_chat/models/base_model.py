@@ -58,6 +58,15 @@ def construct_parameters(query, model_name, device, assistant_model, config):
     params["device"] = device
     return params
 
+def safe_path(*paths):
+    # Prevent path traversal by ensuring the final path is within the base path
+    current_working_directory = os.getcwd()
+    base_path = os.path.abspath(current_working_directory)
+    final_path = os.path.abspath(*paths)
+    if not final_path.startswith(base_path):
+        raise ValueError("Attempted Path Traversal Detected")
+    return final_path
+
 class BaseModel(ABC):
     """A base class for LLM."""
 
@@ -158,7 +167,7 @@ class BaseModel(ABC):
         my_origin_query = origin_query
 
         if is_audio_file(query):
-            if not os.path.exists(query):
+            if not os.path.exists(safe_path(query)):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
         query_include_prompt = False
@@ -181,7 +190,7 @@ class BaseModel(ABC):
                             if response:
                                 logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text'], link
-                        if plugin_name == "asr" and not os.path.exists(query):
+                        if plugin_name == "asr" and not os.path.exists(safe_path(query)):
                             continue
                         if plugin_name == "retrieval":
                             try:
@@ -281,7 +290,7 @@ class BaseModel(ABC):
         config.ipex_int8 = self.ipex_int8
 
         if is_audio_file(query):
-            if not os.path.exists(query):
+            if not os.path.exists(safe_path(query)):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
         query_include_prompt = False
@@ -302,7 +311,7 @@ class BaseModel(ABC):
                             if response:
                                 logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text']
-                        if plugin_name == "asr" and not os.path.exists(query):
+                        if plugin_name == "asr" and not os.path.exists(safe_path(query)):
                             continue
                         if plugin_name == "retrieval":
                             try:
