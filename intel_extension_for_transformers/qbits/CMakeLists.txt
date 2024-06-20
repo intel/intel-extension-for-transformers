@@ -16,6 +16,18 @@ project(qbits_py LANGUAGES C CXX)
 
 
 set(QBITS_TORCH_PATH "" CACHE STRING "Torch install path")
+set(torch_info "")
+
+function(get_torch_info python_command)
+    set(import_torch "import torch:")
+    string(REPLACE ":" ";" import_torch ${import_torch})
+    string(CONCAT fin_command "${import_torch}" "${python_command}")
+    execute_process(COMMAND python -c "${fin_command}"
+                    OUTPUT_VARIABLE torch_info
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(torch_info "${torch_info}" PARENT_SCOPE)
+endfunction()
+
 
 if(QBITS_TORCH_PATH)
     set(torch_path ${QBITS_TORCH_PATH})
@@ -23,9 +35,8 @@ if(QBITS_TORCH_PATH)
     unset(c10_LIBRARY CACHE)
     unset(TORCH_DIR CACHE)
 else()
-    execute_process(COMMAND python -c "import torch; print(torch.__path__[0])"
-                    OUTPUT_VARIABLE torch_path
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    get_torch_info("print(torch.__path__[0])")
+    set(torch_path "${torch_info}")
 endif()
 
 find_package(Torch REQUIRED
@@ -48,6 +59,10 @@ add_compile_options(-flto=auto)
 
 # Link against LibTorch
 pybind11_add_module(qbits_py ${qbits_src})
+get_torch_info("print(torch.__version__)")
+set(torch_version "${torch_info}")
 target_compile_features(qbits_py PRIVATE cxx_std_14)
+set(TORCH_VERSION_MACRO COMPATIBLE_TORCH_VERSION="${torch_version}")
+target_compile_definitions(qbits_py PUBLIC ${TORCH_VERSION_MACRO})
 target_link_directories(qbits_py PRIVATE ${torch_path}/lib)
 target_link_libraries(qbits_py PRIVATE bestla_dispatcher torch_python)

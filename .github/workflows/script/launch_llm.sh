@@ -23,7 +23,7 @@ function main() {
     fi
 
     # init conda
-    #. $(dirname ${CONDA_EXE})/../etc/profile.d/conda.sh
+    source ~/.bashrc
     conda activate $conda_env || source activate $conda_env
 
     # env

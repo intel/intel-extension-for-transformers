@@ -74,3 +74,8 @@ If user wants to use QBits, the Pytorch version must meet ITREX requirements, he
 |     v1.4      |    2.2.0+cpu    |
 |    v1.4.1     |    2.2.0+cpu    |
 |    v1.4.2     |    2.3.0+cpu    |
+
+Users can also check whether the current torch version is compatible with QBits by using the `check_torch_compatibility` function provided by QBits.  
+```python
+assert qbits.check_torch_compatibility(str(torch.__version__))
+```
