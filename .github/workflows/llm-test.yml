@@ -25,6 +25,9 @@ env:
   EXTRA_CONTAINER_NAME: "codeScan"
 
 
+permissions:
+  contents: read
+
 jobs:
   LLM-Workflow:
     runs-on: spr
@@ -83,6 +86,10 @@ jobs:
           retention-days: 60 # 1 <= retention-days <= 90
 
   Generate-LLM-Report:
+    permissions:
+      actions: read  # for dawidd6/action-download-artifact to query and download artifacts
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for dawidd6/action-download-artifact to query commit hash
     runs-on: itrex-node-spell
     needs: [LLM-Workflow]
     steps:

@@ -23,6 +23,9 @@ env:
   DOCKER_FILE_NAME: "codeScan"
   CONTAINER_NAME: "codeScan"
 
+permissions:
+  contents: read
+
 jobs:
   format-scan:
     runs-on: itrex-node-spell

@@ -35,6 +35,9 @@ env:
   CONTAINER_SCAN: "codeScan"
   GOOGLE_API_KEY: ${{ vars.GOOGLE_API_KEY }}
 
+permissions:
+  contents: read
+
 jobs:
   neuralchat-unit-test:
     runs-on: [self-hosted, Linux, X64, itrex-node]
