@@ -24,9 +24,6 @@ from transformers import (
     Trainer,
 )
 from intel_extension_for_transformers.transformers import (
-    QuantizationConfig,
-    PruningConfig,
-    PrunerConfig,
     metrics,
     objectives,
 )

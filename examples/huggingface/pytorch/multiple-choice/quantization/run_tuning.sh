@@ -57,7 +57,7 @@ function run_tuning {
                    --evaluation_strategy steps \
                    --save_strategy steps \
                    --save_total_limit 1 \
-                   --safe_serialization False"
+                   --save_safetensors False"
     fi
 
     python -u ./run_swag.py \

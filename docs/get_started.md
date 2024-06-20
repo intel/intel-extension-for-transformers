@@ -75,17 +75,17 @@ model = trainer.distill(distillation_config=d_conf, teacher_model=teacher_model)
 ## Quantized Length Adaptive Transformer
 Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.
 ```python
-from intel_extension_for_transformers.transformers import QuantizationConfig, DynamicLengthConfig, metric, objectives
+from intel_extension_for_transformers.transformers import DynamicLengthConfig, metric, objectives
+from neural_compressor.config import PostTrainingQuantConfig
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
 trainer = NLPTrainer(...)
 metric = metrics.Metric(name="eval_f1", is_relative=True, criterion=0.01)
-q_config = QuantizationConfig(
-    approach="static",
-    metrics=[metric],
-    objectives=[objectives.performance]
+trainer.metrics = metric
+q_config = PostTrainingQuantConfig(
+    approach="static"
 )
 # Apply the length config
 dynamic_length_config = DynamicLengthConfig(length_config=length_config)

@@ -84,7 +84,7 @@ function run_tuning {
                     --evaluation_strategy steps \
                     --save_strategy steps \
                     --save_total_limit 1 \
-                    --safe_serialization False"
+                    --save_safetensors False"
         fi
     elif [ "${topology}" = "gpt_j" ]; then
         if [ "${task}" = "clm" ]; then
@@ -121,7 +121,7 @@ function run_tuning {
                     --save_strategy steps \
                     --metric_for_best_model accuracy \
                     --save_total_limit 1 \
-                    --safe_serialization False"
+                    --save_safetensors False"
         fi
     elif [ "${topology}" = "xlnet" ]; then
         if [ "${task}" = "plm" ]; then
@@ -146,7 +146,7 @@ function run_tuning {
                     --save_strategy steps \
                     --metric_for_best_model accuracy \
                     --save_total_limit 1 \
-                    --safe_serialization False"
+                    --save_safetensors False"
         fi
     elif [ "${topology}" = "gpt_neox" ]; then
         if [ "${task}" = "clm" ]; then

@@ -157,16 +157,8 @@ In terms of evaluating the status of a specific model during tuning, we should h
     Please refer to [objective document](objectives.md) for the details.
 
 ### Create an Instance of QuantizationConfig
-The QuantizationConfig contains all the information related to the model quantization behavior. If you have created Metric and Objective instance(default Objective is "performance"), then you can create an instance of QuantizationConfig.
+The QuantizationConfig contains all the information related to the model quantization behavior. If you have created Metric and Objective instance(default Objective is "performance"), then you can create an instance of PostTrainingQuantConfig or QuantizationAwareTrainingConfig.
 
-- arguments:
-
-|Argument   |Type       |Description                                        |Default value    |
-|:----------|:----------|:-----------------------------------------------|:----------------|
-|approach   |string     |Which quantization approach you used            |"static"|
-|timeout    |integer    |Tuning timeout(seconds), 0 means early stop; combine with max_trials field to decide when to exit|0    |
-|max_trials |integer    |Max tune times                                  |100              |
-|objective |list of Objective|Objective with accuracy constraint guaranteed|performance|
 
 - example:
     ```python

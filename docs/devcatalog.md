@@ -99,7 +99,8 @@ raw_datasets = raw_datasets.map(lambda e: tokenizer(e['sentence'], truncation=Tr
 Documentation for API usage can be found [here](https://github.com/intel/intel-extension-for-transformers/tree/main/docs)
 
 ```python
-from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
+from intel_extension_for_transformers.transformers import metrics, objectives
+from neural_compressor.config import PostTrainingQuantConfig
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # load config, model and metric
 config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
@@ -120,7 +121,9 @@ trainer = NLPTrainer(model=model,
     tokenizer=tokenizer
 )
 # model quantization using trainer
-q_config = QuantizationConfig(metrics=[metrics.Metric(name="eval_accuracy")])
+tune_metric = metrics.Metric(name="eval_accuracy")
+trainer.metrics = tune_metric
+q_config = PostTrainingQuantConfig()
 model = trainer.quantize(quant_config=q_config)
 
 # test sentiment analysis with quantization

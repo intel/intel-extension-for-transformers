@@ -289,7 +289,7 @@ class BaseTrainer():
         """The main entry point of automatic quantization tuning.
 
         Args:
-            quant_config: The path to the YAML configuration file or QuantizationConfig class containing
+            quant_config: QuantizationConfig class containing
                 accuracy goal, quantization objective and related dataloaders etc.
             provider: The provider used to quantize.
             eval_func (:obj:`Callable`, optional): The function used to evaluate the model.

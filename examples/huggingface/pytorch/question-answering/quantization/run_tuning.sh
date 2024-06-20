@@ -70,7 +70,7 @@ function run_tuning {
                    --evaluation_strategy steps \
                    --save_strategy steps \
                    --save_total_limit 1 \
-                   --safe_serialization False"
+                   --save_safetensors False"
     elif [ "${topology}" = "bert_large_SQuAD_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="bert-large-uncased-whole-word-masking-finetuned-squad"

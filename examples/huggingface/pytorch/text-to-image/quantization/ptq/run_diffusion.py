@@ -30,12 +30,13 @@ from torch.utils.data import DataLoader, Dataset
 
 from accelerate.utils import set_seed
 from diffusers import StableDiffusionPipeline
-from intel_extension_for_transformers.transformers import metrics , NoTrainerOptimizer
+from intel_extension_for_transformers.transformers import metrics
 from neural_compressor.config import (
     PostTrainingQuantConfig,
     TuningCriterion,
     AccuracyCriterion
 )
+from neural_compressor.quantization import fit
 from intel_extension_for_transformers.transformers.config import WEIGHTS_NAME
 from pytorch_fid import fid_score
 
@@ -318,9 +319,8 @@ def main():
                     accuracy_criterion=accuracy_criterion
                 )
                 os.makedirs(args.output_dir, exist_ok=True)
-                quantizer = NoTrainerOptimizer(model, args.output_dir)
-                quantizer.metrics = tune_metric
-                model = quantizer.quantize(quantization_config,
+                model = fit(model,
+                            quantization_config,
                            eval_func=eval_func,
                            calib_func=calibration_func,
                            calib_dataloader=DataLoader(CalibDataset(), batch_size=1),
