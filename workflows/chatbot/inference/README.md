@@ -49,7 +49,7 @@ numactl -m <node N> -C <cpu list> python generate.py \
 To enable FP32 inference, you can add the parameter `--dtype "float32"`. To check the statistical information of inference, you can add the parameter `--return_stats`.
 
 ## LLama2 INT8 Inference
-[Llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) int8 inference demonstrates in [int8_llama2](https://github.com/intel/intel-extension-for-transformers/tree/int8_llama2/workflows/chatbot/inference) branch and need install Intel-extension-for-pytorch [llm_feature_branch](https://github.com/intel/intel-extension-for-pytorch/tree/llm_feature_branch) branch. Please follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization.
+[Llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) int8 inference demonstrates in [int8_llama2](https://github.com/intel/intel-extension-for-transformers/tree/int8_llama2/workflows/chatbot/inference) branch and need install Intel-extension-for-pytorch [llm_feature_branch](https://github.com/intel/intel-extension-for-pytorch/tree/llm_feature_branch) branch. Please follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to set up the environments and make quantization.
 
 # Inference on Habana Gaudi
 
@@ -107,7 +107,7 @@ python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
 
 Habana supports HPU graph mode for inference speedup, which is available for bloom, gpt2, opt, gptj, gpt_neox, mpt, llama. You can use the parameter `use_hpu_graphs` to speed up the inference.
 
-you can use '--peft_model_path' to apply you peft finetuned output model during generation.
+you can use '--peft_model_path' to apply your peft finetuned output model during generation.
 
 ```bash
 python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
@@ -122,7 +122,7 @@ python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
 
 # Additional Notes
 
-Here are the explanations of parameters in generate.py:
+Here are the explanations of the parameters in generate.py:
 `--temperature`: Controls the diversity of generated text. Lower values result in more deterministic outputs. The default value is 0.1.
 `--top_p`: During text generation, only consider tokens with cumulative probability up to this value. This parameter helps to avoid extremely low probability tokens. The default value is 0.75.
 `--top_k`: The number of highest probability vocabulary tokens to consider for each step of text generation. The default value is 40.

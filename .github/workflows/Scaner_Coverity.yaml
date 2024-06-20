@@ -3,7 +3,6 @@ name: Scanner Coverity PYTHON
 on:
     workflow_dispatch:
 
-permissions: write-all
 jobs:
   coverity_job:
     name: Coverity
