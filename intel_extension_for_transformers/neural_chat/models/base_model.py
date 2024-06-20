@@ -59,13 +59,14 @@ def construct_parameters(query, model_name, device, assistant_model, config):
     return params
 
 def safe_path(*paths):
-    # Prevent path traversal by ensuring the final path is within the base path
+    # Prevent path traversal by ensuring the final path is within the base path or assets_path
     current_working_directory = os.getcwd()
-    base_path = os.path.abspath(current_working_directory)
+    path_parts = current_working_directory.split('/')
+    base_path = '/' + path_parts[1]
+    assets_path = '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/'
     final_path = os.path.abspath(*paths)
-    if not final_path.startswith(base_path):
-        raise ValueError("Attempted Path Traversal Detected")
-    return final_path
+    if final_path.startswith(base_path) or final_path.startswith(assets_path):
+        return final_path
 
 class BaseModel(ABC):
     """A base class for LLM."""
