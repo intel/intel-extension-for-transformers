@@ -121,7 +121,7 @@ else
     echo "==========    Prepare Model ${MODEL_NAME_OR_PATH} with Precision ${PRECISION} ========"
     mode_cmd=""
     if [[ ${PRECISION} = 'int8' ]]; then
-        mode_cmd=$mode_cmd" --tune --quantization_approach static"
+        mode_cmd=$mode_cmd" --tune --quantization_approach PostTrainingStatic"
     elif [[ ${PRECISION} = 'fp32' ]]; then
         mode_cmd=$mode_cmd" --fp32"
     fi

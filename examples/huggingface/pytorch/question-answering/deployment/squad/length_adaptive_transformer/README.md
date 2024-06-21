@@ -76,7 +76,7 @@ python run_qa.py --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1
 
 For INT8:
 ```shell
-python run_qa.py --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1" --dataset_name squad --do_train --do_eval --output_dir model_and_tokenizer --overwrite_output_dir --length_config "(269, 253, 252, 202, 104, 34)" --overwrite_cache --to_onnx --tune --quantization_approach static
+python run_qa.py --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1" --dataset_name squad --do_train --do_eval --output_dir model_and_tokenizer --overwrite_output_dir --length_config "(269, 253, 252, 202, 104, 34)" --overwrite_cache --to_onnx --tune --quantization_approach PostTrainingStatic
 ```
 
 For BF16:
