@@ -1013,14 +1013,15 @@ def remove_prompt_history(model_name, prompt):
         if matches:
             result = "[INST]" + matches[-1] + "[/INST]"
     elif re.search("chatglm", model_name, re.IGNORECASE):
-        pattern = re.compile(r'问：((?:(?!问：|答：)[\s\S])*)\n答：')
-        matches = pattern.findall(prompt)
-        if matches:
-            result = matches[-1].replace("问：", "").replace("\n答：", "").strip()
+        last_q_index = prompt.rfind("问：")
+        last_a_index = prompt.rfind("\n答：")
+        if last_q_index != -1 and last_a_index != -1 and last_q_index < last_a_index:
+            result = prompt[last_q_index + len("问："):last_a_index].strip()
     elif re.search("neuralchat", model_name, re.IGNORECASE):
-        pattern = re.compile(r'### User:\s*([^#\s]*)\s*### Assistant:')
-        matches = pattern.findall(prompt)
-        if matches:
+        start = prompt.rfind('### User:')
+        end = prompt.rfind('### Assistant:')
+        if start != -1 and end != -1:
+            match = prompt[start:end+len('### Assistant:')]
             result = '''
 ### System:
     - You are a helpful assistant chatbot trained by Intel.
@@ -1029,7 +1030,7 @@ def remove_prompt_history(model_name, prompt):
 but will refuse to do anything that could be considered harmful to the user.
     - You are more than just an information source, you are also able to write poetry,\
 short stories, and make jokes.</s>
-''' + matches[-1]
+''' + match
 
     return result
 
