@@ -319,8 +319,6 @@ def main():
                     accuracy_criterion=accuracy_criterion
                 )
                 os.makedirs(args.output_dir, exist_ok=True)
-                model.config.torch_dtype = "int8"
-                model.config.save_pretrained(args.output_dir)
                 model = fit(model,
                             quantization_config,
                            eval_func=eval_func,
