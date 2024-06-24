@@ -43,8 +43,7 @@ retrieval:
     args:
         input_path: "/home/lvl/yuxiang/xuhui_doc"
         persist_directory: "/home/lvl/yuxiang/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/deployment/rag/persist_dir"
-        response_template: "Great curiosity! While we're scratching our heads for an answer, you could shoot your question over to ASKGM.zizhu.@intel.com? They've got the magic inbox to help you out!
-"
+        response_template: "Great curiosity! While we're scratching our heads for an answer, you could shoot your question over to ASKGM.zizhu.@intel.com? They've got the magic inbox to help you out!"
         append: False
 
 safety_checker:
