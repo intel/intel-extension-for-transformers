@@ -294,10 +294,10 @@ class GaudiLlamaAttention(LlamaAttention):
         self.norm_factor = 1.0 / math.sqrt(self.head_dim)
 
         self._init_func = []
-    
+
     def register_init_func(self, func):
         self._init_func.append(func)
-    
+
     def post_init(self):
         for func in self._init_func:
             func(self)
@@ -946,13 +946,13 @@ class GaudiLlamaForCausalLM(LlamaPreTrainedModel):
             self.model.layers[layer_idx].self_attn.post_init()
 
             self.model.layers[layer_idx].self_attn.pruner = self.pruner
-        
+
         # Initialize weights and apply final processing
         self.post_init()
 
         def _generate(*args, **kwargs):
-            self.pruner.before_generate(self, *args, **kwargs) 
-            result = self.ori_generate(*args, **kwargs) 
+            self.pruner.before_generate(self, *args, **kwargs)
+            result = self.ori_generate(*args, **kwargs)
             self.pruner.after_generate(self,*args, **kwargs)
             return result
 
