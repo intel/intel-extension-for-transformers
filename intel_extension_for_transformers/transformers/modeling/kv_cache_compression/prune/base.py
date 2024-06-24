@@ -5,6 +5,7 @@ class PruneConfig(dict):
 class KVPruner:
     def __init__(self, prune_config) -> None:
         self._past_length = 0
+        self.prune_kv_cache_size = None
 
     def self_attn_init(self, module):
         pass
@@ -12,10 +13,10 @@ class KVPruner:
     def prune(self, module, query_states, key_states, value_states, **kwargs):
         pass
 
-    def before_generate(self, model, **kwargs):
+    def before_generate(self, model, inputs, *args, **kwargs):
         self.past_length = 0
 
-    def after_generate(self, model, **kwargs):
+    def after_generate(self, model, inputs, *args, **kwargs):
         pass
 
     def get_mask(self, model, **kwargs):

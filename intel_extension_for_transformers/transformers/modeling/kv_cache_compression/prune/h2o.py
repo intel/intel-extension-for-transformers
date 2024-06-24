@@ -141,6 +141,13 @@ class H2OKVCache:
         # attn_score shape (bsz, num_heads, seq_len, head_dim)
         if len(attn_score.shape) == 3:
             attn_score = attn_score.unsqueeze(0)
+        if len(attn_score.shape) == 5:
+            attn_score = attn_score.reshape(
+                attn_score.shape[0],
+                attn_score.shape[1] * attn_score.shape[2],
+                attn_score.shape[3],
+                attn_score.shape[4]
+                )
         self._update_hh_score(attn_score, mean=self.mean)
 
         # hh-selection
@@ -196,6 +203,7 @@ class H2OKVPruner(KVPruner):
     def __init__(self, config: H2OConfig) -> None:
         self.config = config
         self.real_drop = self.config.real_drop
+        self.prune_kv_cache_size = None
         
     
     def self_attn_init(self, module):
@@ -208,20 +216,24 @@ class H2OKVPruner(KVPruner):
             self.config.mean
             )
     
-    def before_generate(self, model, **kwargs):
+    def before_generate(self, model, inputs, *args, **kwargs):
         self.past_length = 0
         max_length = kwargs['max_new_tokens'] if kwargs.get('max_new_tokens') else kwargs['max_length']
+        max_length += inputs.size(-1)
         for _, module in model.named_modules():
             if "Attention" in module.__class__.__name__:
                 if module.h2o_kv_cache.heavy_budget is None:
                     module.h2o_kv_cache.heavy_budget = int(max_length * module.h2o_kv_cache.heavy_ratio)
                 if module.h2o_kv_cache.recent_budget is None:
                     module.h2o_kv_cache.recent_budget = int(max_length * module.h2o_kv_cache.recent_ratio)
+                if self.prune_kv_cache_size is None:
+                    self.prune_kv_cache_size = module.h2o_kv_cache.recent_budget + module.h2o_kv_cache.heavy_budget
 
-    def after_generate(self, model, **kwargs):
+    def after_generate(self, model, inputs, *args, **kwargs):
         for _, module in model.named_modules():
             if "Attention" in module.__class__.__name__:
                 module.h2o_kv_cache.clean_scores()
+        self.prune_kv_cache_size = None
     
     def prune(self, module, query_states, key_states, value_states, causal_mask=None, **kwargs):
         attn_weights = torch.matmul(query_states, key_states.transpose(-2, -1)) / math.sqrt(module.head_dim)
