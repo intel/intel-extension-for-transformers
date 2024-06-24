@@ -242,7 +242,7 @@ class H2OKVPruner(KVPruner):
         if not self.config.real_drop:
             module.h2o_kv_cache.clean_scores()
         return module.h2o_kv_cache(attn_weights, key_states, value_states, **kwargs)
-    
+
     def get_mask(self, module, query_states, key_states, value_states, causal_mask=None, **kwargs):
         attn_weights = torch.matmul(query_states, key_states.transpose(-2, -1)) / math.sqrt(module.head_dim)
         if causal_mask is not None:  # no matter the length, we just slice it
