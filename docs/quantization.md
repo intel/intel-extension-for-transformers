@@ -134,32 +134,17 @@ Quantization methods include the following three types:
 ## Get Started
 ### Script:
 ```python
-from intel_extension_for_transformers.transformers import metric, objectives, QuantizationConfig
+from neural_compressor.config import PostTrainingQuantConfig
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
-metric = metrics.Metric(
-    name="eval_f1", is_relative=True, criterion=0.01
-)
-objective = objectives.performance
-q_config = QuantizationConfig(
-    approach="PostTrainingStatic",
-    metrics=[metric],
-    objectives=[objective]
+q_config = PostTrainingQuantConfig(
+    approach="static"
 )
 model = trainer.quantize(quant_config=q_config)
 ```
 Please refer to [quantization example](../examples/huggingface/pytorch/text-classification/quantization/run_glue.py) for the details.
-
-### Create an Instance of Metric
-The Metric defines which metric will be used to measure the performance of tuned models.
-- example:
-    ```python
-    metric = metrics.Metric(name="eval_f1", greater_is_better=True, is_relative=True, criterion=0.01, weight_ratio=None)
-    ```
-
-    Please refer to [metrics document](metrics.md) for the details.
 
 ### Create an Instance of Objective(Optional)
 In terms of evaluating the status of a specific model during tuning, we should have general objectives to measure the status of different models.
@@ -172,25 +157,28 @@ In terms of evaluating the status of a specific model during tuning, we should h
     Please refer to [objective document](objectives.md) for the details.
 
 ### Create an Instance of QuantizationConfig
-The QuantizationConfig contains all the information related to the model quantization behavior. If you have created Metric and Objective instance(default Objective is "performance"), then you can create an instance of QuantizationConfig.
+The QuantizationConfig contains all the information related to the model quantization behavior. If you have created Metric and Objective instance(default Objective is "performance"), then you can create an instance of PostTrainingQuantConfig or QuantizationAwareTrainingConfig.
 
-- arguments:
-
-|Argument   |Type       |Description                                        |Default value    |
-|:----------|:----------|:-----------------------------------------------|:----------------|
-|framework  |string     |Which framework you used                        |"pytorch"        |
-|approach   |string     |Which quantization approach you used            |"PostTrainingStatic"|
-|timeout    |integer    |Tuning timeout(seconds), 0 means early stop; combine with max_trials field to decide when to exit|0    |
-|max_trials |integer    |Max tune times                                  |100              |
-|metrics    |list of Metric|Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer|None |
-|objectives |list of Objective|Objective with accuracy constraint guaranteed|performance|
 
 - example:
     ```python
-    q_config = QuantizationConfig(
-        approach="PostTrainingDynamic",
-        metrics=[metric],
-        objectives=[objective]
+    from neural_compressor.config import (
+        PostTrainingQuantConfig,
+        QuantizationAwareTrainingConfig,
+        TuningCriterion,
+        AccuracyCriterion
+        )
+
+    tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+    accuracy_criterion = AccuracyCriterion(
+        higher_is_better=True,  # optional.
+        criterion="relative",  # optional. Available values are "relative" and "absolute".
+        tolerable_loss=0.01,  # optional.
+    )    
+    q_config = PostTrainingQuantConfig(
+        approach="dynamic",
+        tuning_criterion=tuning_criterion,
+        accuracy_criterion=accuracy_criterion
     )
     ```
 

@@ -22,7 +22,7 @@ pip install -r requirements.txt
 python run_diffusion.py \
     --model_name_or_path lambdalabs/sd-pokemon-diffusers \
     --tune \
-    --quantization_approach PostTrainingStatic \
+    --quantization_approach static \
     --perf_tol 0.02 \
     --output_dir /tmp/diffusion_output \
     --base_images base_images \

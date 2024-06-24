@@ -43,7 +43,7 @@ class TestExamples(unittest.TestCase):
             --model_name_or_path bert-large-uncased-whole-word-masking-finetuned-squad
             --dataset_name squad
             --tune
-            --quantization_approach PostTrainingStatic
+            --quantization_approach static
             --do_train
             --do_eval
             --max_eval_samples 100
@@ -62,7 +62,7 @@ class TestExamples(unittest.TestCase):
             run_qa.py
             --model_name_or_path bert-large-uncased-whole-word-masking-finetuned-squad
             --dataset_name squad
-            --quantization_approach PostTrainingStatic
+            --quantization_approach static
             --do_train
             --do_eval
             --max_eval_samples 100

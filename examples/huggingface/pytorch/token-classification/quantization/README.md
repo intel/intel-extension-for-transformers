@@ -8,9 +8,7 @@ Token classification assigns a label to individual tokens in a sentence. One of 
 ## 1. Environment
 ```
 pip install -r requirements.txt
-pip install transformers==4.34.1
 ```
->**Note**: Please use transformers no higher than 4.34.1
 
 
 # Run
@@ -22,7 +20,7 @@ pip install transformers==4.34.1
     --model_name_or_path elastic/distilbert-base-uncased-finetuned-conll03-english \
     --dataset_name conll2003 \
     --tune \
-    --quantization_approach PostTrainingStatic \
+    --quantization_approach static \
     --do_train \
     --do_eval \
     --pad_to_max_length \
@@ -32,7 +30,7 @@ pip install transformers==4.34.1
 
 # Performance Data
 
-|Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
+|Dataset|Pretrained model|dynamic | static | qat
 |---|------------------------------------|---|---|---
 |NER|elastic/distilbert-base-uncased-finetuned-conll03-english| ✅| ✅| ✅
 

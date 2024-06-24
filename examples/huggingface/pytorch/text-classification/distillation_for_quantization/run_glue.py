@@ -31,15 +31,15 @@ from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
 from intel_extension_for_transformers.transformers import (
     metrics,
-    PrunerConfig,
-    PruningConfig,
-    DistillationConfig,
-    QuantizationConfig,
     OptimizedModel,
     objectives
 )
+from neural_compressor.config import (
+    DistillationConfig,
+    IntermediateLayersKnowledgeDistillationLossConfig,
+    QuantizationAwareTrainingConfig,
+)
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-from intel_extension_for_transformers.transformers.distillation import Criterion
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from transformers import (
@@ -543,29 +543,21 @@ def main():
     tune_metric = metrics.Metric(
         name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
     )
+    trainer.metrics = tune_metric
+
     layer_mappings = [[[f"bert.encoder.layer.{i}", "0"]] for i in range(12)] +\
                      [[[f"bert.encoder.layer.{i}.attention", "1"]] for i in range(12)] +\
                      [[["classifier"]]]
-    distillation_conf = DistillationConfig(
-        framework="pytorch_fx", metrics=tune_metric,
-        criterion=Criterion(
-            name="IntermediateLayersLoss",
+    criterion_conf = IntermediateLayersKnowledgeDistillationLossConfig(
             layer_mappings=layer_mappings,
             loss_types=["MSE"] * len(layer_mappings),
             loss_weight_ratio=[1.0 / len(layer_mappings)] * len(layer_mappings),
             add_origin_loss=True
-        )
     )
-    
-    objective = objectives.performance
-    quantization_conf = QuantizationConfig(
-        approach="QuantizationAwareTraining",
-        max_trials=600,
-        metrics=[tune_metric],
-        objectives=[objective]
-    )
+    distillation_conf = DistillationConfig(teacher_model=teacher_model, criterion=criterion_conf)
+    quantization_conf = QuantizationAwareTrainingConfig()
     conf_list = [distillation_conf, quantization_conf]
-    model = trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=teacher_model)
+    model = trainer.orchestrate_optimizations(config_list=conf_list)
 
     if optim_args.benchmark or optim_args.accuracy_only:
         # Load the model obtained after Intel Neural Compressor (INC) quantization

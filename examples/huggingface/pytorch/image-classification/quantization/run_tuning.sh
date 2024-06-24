@@ -16,7 +16,7 @@ function init_params {
   model_name_or_path="google/vit-base-patch16-224"
   extra_cmd=""
   batch_size=8
-  approach="PostTrainingStatic"
+  approach="static"
   for var in "$@"
   do
     case $var in
@@ -45,8 +45,7 @@ function init_params {
 function run_tuning {
     if [ "${topology}" = "vit-base-patch16-224_static" ]; then
         model_name_or_path="/tf_dataset2/models/nlp_toolkit/vit-base"
-        approach="PostTrainingStatic"
-        inc_config_file="vit_config.yaml"
+        approach="static"
     fi
 
     python -u ./run_image_classification.py \
@@ -62,7 +61,6 @@ function run_tuning {
         --tune \
         --overwrite_output_dir \
         --quantization_approach ${approach} \
-        --inc_config_file ${inc_config_file} \
         ${extra_cmd}
 }
 

@@ -15,7 +15,7 @@ function init_params {
   model_name_or_path="lambdalabs/sd-pokemon-diffusers"
   extra_cmd=""
   batch_size=8
-  approach="PostTrainingStatic"
+  approach="static"
   for var in "$@"
   do
     case $var in
@@ -45,10 +45,10 @@ function run_tuning {
 
     if [ "${topology}" = "sd_pokemon_diffusers_static" ]; then
         model_name_or_path="lambdalabs/sd-pokemon-diffusers"
-        approach="PostTrainingStatic"
+        approach="static"
     elif [ "${topology}" = "sd_pokemon_diffusers_dynamic" ]; then
         model_name_or_path="lambdalabs/sd-pokemon-diffusers"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     fi
 
     python -u ./run_diffusion.py \

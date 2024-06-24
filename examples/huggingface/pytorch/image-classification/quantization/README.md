@@ -1,11 +1,11 @@
 # Image classification
-The script `run_image_classification.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+The script `run_image_classification.py` provides three quantization approaches (dynamic, static and qat) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
 Here is how to run the script:
 
 >**Note**: Please use transformers no higher than 4.34.1
 
-1. quantization with PostTrainingStatic
+1. static quantization
 
 ```
 sh run_tuning.sh
@@ -26,6 +26,6 @@ run run_benchmark.sh
 
 ### Validated model list
 
-|Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
+|Dataset|Pretrained model|dynamic | static | qat
 |---|------------------------------------|---|---|---
 |imagenet-1k|google/vit-base-patch16-224| ✅| ✅| N/A|

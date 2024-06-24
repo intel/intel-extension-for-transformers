@@ -187,7 +187,7 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply prune."},
     )
     pruning_approach: Optional[str] = field(
-        default="BasicMagnitude",
+        default="magnitude",
         metadata={"help": "Pruning approach. Supported approach is basic_magnite."},
     )
     target_sparsity_ratio: Optional[float] = field(
@@ -207,9 +207,9 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply quantization."},
     )
     quantization_approach: Optional[str] = field(
-        default="PostTrainingStatic",
-        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining."},
+        default="static",
+        metadata={"help": "Quantization approach. Supported approach are static, "
+                  "dynamic and qat."},
     )
     metric_name: Optional[str] = field(
         default=None,

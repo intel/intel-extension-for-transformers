@@ -4,7 +4,7 @@ Welcome to Pytorch Huggingface examples. The examples is following from [Hugging
 
 ## Quantization approach
 
-| Task | PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
+| Task | dynamic | static | qat
 |---|:---:|:---:|:---:|
 |**`language-modeling`**| ✅ | ✅ | ✅
 |**`multi-choice`**| ✅ | ✅ | ✅

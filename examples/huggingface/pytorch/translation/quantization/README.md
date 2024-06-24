@@ -9,9 +9,7 @@ This directory contains the example for quantization models on translation tasks
 ```
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
-pip install transformers==4.34.1
 ```
->**Note**: Please use transformers no higher than 4.34.1
 
 
 # Run
@@ -30,8 +28,8 @@ python examples/pytorch/translation/run_translation.py \
     --dataset_name wmt16 \
     --dataset_config_name ro-en \
     --output_dir /tmp/tst-translation \
-    --per_device_train_batch_size=4 \
-    --per_device_eval_batch_size=4 \
+    --per_device_train_batch_size 4 \
+    --per_device_eval_batch_size 4 \
     --overwrite_output_dir \
     --tune \
     --predict_with_generate
@@ -51,8 +49,8 @@ python examples/pytorch/translation/run_translation.py \
     --dataset_name wmt16 \
     --dataset_config_name ro-en \
     --output_dir /tmp/tst-translation \
-    --per_device_train_batch_size=4 \
-    --per_device_eval_batch_size=4 \
+    --per_device_train_batch_size 4 \
+    --per_device_eval_batch_size 4 \
     --overwrite_output_dir \
     --tune \
     --predict_with_generate
