@@ -40,8 +40,14 @@ pip install -v .
 # install requirements
 cd examples/huggingface/pytorch/text-generation/quantization
 pip install -r requirements.txt
-pip install neural-compressor==2.5
+pip install neural-compressor==2.6
 pip install transformers==4.35.2
+
+# For llama and chatglm
+pip install torch==2.2.0+cpu --index-url https://download.pytorch.org/whl/cpu
+pip install intel-extension-for-pytorch==2.2.0
+
+# For other models
 pip install torch==2.3.0+cpu --index-url https://download.pytorch.org/whl/cpu
 pip install intel-extension-for-pytorch==2.3.0
 ```
@@ -544,7 +550,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --int8 --sq --accuracy \
     --batch_size 1 \
-    --alpha 0.65
+    --alpha 1.0
 ```
 
 ### Weight-Only Quantization
@@ -651,7 +657,8 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --int8 --sq --accuracy \
     --batch_size 1 \
-    --alpha 0.75
+    --recipes "{'smooth_quant':True,'smooth_quant_args':{'alpha':'auto','folding':False,'default_alpha':0.7,'auto_alpha_args':{'alpha_min':0.55,'alpha_max':0.85,'alpha_step':0.01,'shared_criterion':'mean'}}}" \
+    --calib_iters 512
 ```
 
 ### Weight-Only Quantization
@@ -702,8 +709,9 @@ python run_generation_sq.py \
     --trust_remote_code \
     --tasks lambada_openai \
     --int8 --sq --accuracy \
+    --recipes "{'smooth_quant':True,'smooth_quant_args':{'alpha':'auto','folding':False,'default_alpha':0.85,'auto_alpha_args':{'alpha_min':0.79,'alpha_max':0.9,'alpha_step':0.01,'shared_criterion':'mean'}}}" \
     --batch_size 1 \
-    --alpha 0.9
+    --calib_len 256
 ```
 
 ### Weight-Only Quantization
