@@ -113,7 +113,7 @@ else:
 # get optimized model
 if args.h2o:
     print('Enable Small Cache Size')
-    from intel_extension_for_transformers.transformers.modeling.kv_cache_compression import H2OConfig, H2OLlamaForCausalLM
+    from intel_extension_for_transformers.transformers.kv_cache_compression import H2OConfig, LlamaForCausalLM
     h2o_config = H2OConfig(
         heavy_ratio=args.heavy_ratio,
         recent_ratio=args.recent_ratio,
@@ -121,9 +121,9 @@ if args.h2o:
         real_drop=args.real_drop,
         mean=False,
     )
-    user_model = H2OLlamaForCausalLM.from_pretrained(
+    user_model = LlamaForCausalLM.from_pretrained(
         args.model,
-        h2o_config=h2o_config,
+        prune_config=h2o_config,
         trust_remote_code=args.trust_remote_code)
     print("converted model: ", user_model)
 else:

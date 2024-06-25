@@ -417,6 +417,10 @@ class GaudiLlamaAttention(LlamaAttention):
 
                 # pruning kv cache
                 if self.pruner.real_drop:
+                    if attention_mask is not None:  # no matter the length, we just slice it
+                        causal_mask = attention_mask
+                        if cache_position is not None:
+                            causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
                     if self.layer_idx == 0:
                         self.pruner.past_length += query_states.size(-2)
                     new_key_states, new_value_states = self.pruner.prune(
@@ -479,6 +483,10 @@ class GaudiLlamaAttention(LlamaAttention):
             attn_weights = self.matmul_qk(query_states, key_states.transpose(-2, -1)) * self.norm_factor
 
             if not self.pruner.real_drop:
+                if attention_mask is not None:  # no matter the length, we just slice it
+                    causal_mask = attention_mask
+                    if cache_position is not None:
+                        causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
                 mask = self.pruner.get_mask(self, query_states, key_states, value_states,
                                         causal_mask=causal_mask)
                 attn_weights[~mask] = torch.finfo(attn_weights.dtype).min

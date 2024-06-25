@@ -25,7 +25,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
 
-from transformers.cache_utils import Cache, StaticCache
+from transformers.cache_utils import Cache, StaticCache  # pylint: disable=E0611
 from transformers.modeling_attn_mask_utils import AttentionMaskConverter
 from transformers.utils import (
     add_start_docstrings_to_model_forward,
@@ -61,10 +61,10 @@ import transformers
 if version.parse(transformers.__version__) > version.parse("4.33.0"):
     from transformers.utils import is_flash_attn_greater_or_equal_2_10, is_flash_attn_2_available
     if is_flash_attn_2_available():
-        from flash_attn import (
+        from flash_attn import (  # pylint: disable=E0401
             flash_attn_func,
-            flash_attn_varlen_func) # pylint: disable=E1101
-        from flash_attn.bert_padding import (
+            flash_attn_varlen_func) # pylint: disable=E0401
+        from flash_attn.bert_padding import ( # pylint: disable=E1101
             index_first_axis,
             pad_input,
             unpad_input) # pylint: disable=E1101
@@ -861,7 +861,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                 and attention_mask is not None
                 and cache_length + input_ids.shape[1] > max_cache_length
             ):
-                attention_mask = attention_mask[:, -max_cache_length:]
+                attention_mask = attention_mask[:, -max_cache_length:] # pylint: disable=E1130
 
         position_ids = kwargs.get("position_ids", None)
         if attention_mask is not None and position_ids is None:
@@ -905,11 +905,6 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         past_key_values: Cache,
         output_attentions: bool,
     ):
-        # TODO: As of torch==2.2.0, the `attention_mask` passed to the model in `generate` is 2D and of dynamic length even when the static
-        # KV cache is used. This is an issue for torch.compile which then recaptures cudagraphs at each decode steps due to the dynamic shapes.
-        # (`recording cudagraph tree for symint key 13`, etc.), which is VERY slow. A workaround is `@torch.compiler.disable`, but this prevents using
-        # `fullgraph=True`. See more context in https://github.com/huggingface/transformers/pull/29114
-
         if self.config._attn_implementation == "flash_attention_2":
             if attention_mask is not None and 0.0 in attention_mask:
                 return attention_mask
@@ -928,7 +923,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                 inputs_embeds=input_tensor,
                 past_key_values_length=past_seen_tokens,
                 is_training=self.training,
-            ):
+            ):  # pylint: disable=E1101
                 return None
 
         dtype, device = input_tensor.dtype, input_tensor.device

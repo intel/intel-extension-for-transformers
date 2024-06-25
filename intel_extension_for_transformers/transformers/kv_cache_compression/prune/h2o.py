@@ -153,7 +153,7 @@ class H2OKVCache:
         # hh-selection
         mask = torch.zeros(self.hh_score.shape, dtype=attn_score.dtype).to(key_states.device)
         if not self.recent_budget == 0:
-            mask[:,:,-self.recent_budget:] = 1
+            mask[:,:,-self.recent_budget:] = 1 # pylint: disable=E1130
         select_hh_scores = self.hh_score[:,:,:seq_len - self.recent_budget]
 
         if not self.heavy_budget == 0:

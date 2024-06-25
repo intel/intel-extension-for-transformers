@@ -14,3 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from .prune.h2o import H2OConfig, H2OKVPruner
+from .models.modeling_llama import LlamaForCausalLM
+from .models.modeling_gaudi_llama import GaudiLlamaForCausalLM
