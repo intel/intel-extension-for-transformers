@@ -204,8 +204,8 @@ class H2OKVPruner(KVPruner):
         self.config = config
         self.real_drop = self.config.real_drop
         self.prune_kv_cache_size = None
-        
-    
+
+
     def self_attn_init(self, module):
         module.h2o_kv_cache = H2OKVCache(
             self.config.heavy_ratio,
@@ -215,7 +215,7 @@ class H2OKVPruner(KVPruner):
             self.config.h2o_min_seqlen,
             self.config.mean
             )
-    
+
     def before_generate(self, model, inputs, *args, **kwargs):
         self.past_length = 0
         max_length = kwargs['max_new_tokens'] if kwargs.get('max_new_tokens') else kwargs['max_length']
@@ -234,7 +234,7 @@ class H2OKVPruner(KVPruner):
             if "Attention" in module.__class__.__name__:
                 module.h2o_kv_cache.clean_scores()
         self.prune_kv_cache_size = None
-    
+
     def prune(self, module, query_states, key_states, value_states, causal_mask=None, **kwargs):
         attn_weights = torch.matmul(query_states, key_states.transpose(-2, -1)) / math.sqrt(module.head_dim)
         if causal_mask is not None:  # no matter the length, we just slice it
