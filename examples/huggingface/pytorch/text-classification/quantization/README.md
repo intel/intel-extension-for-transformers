@@ -1,6 +1,6 @@
 Step-by-Step​
 ============
-The script `run_glue.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+The script `run_glue.py` provides three quantization approaches (dynamic, static and qat) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
 # Prerequisite​
 ## 1. Create Environment​
@@ -8,9 +8,7 @@ Recommend python 3.9 or higher version.
 ```shell
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
-pip install transformers==4.34.1
 ```
->**Note**: Please use transformers no higher than 4.34.1
 
 
 # Run
@@ -23,7 +21,7 @@ python run_glue.py \
     --model_name_or_path distilbert-base-uncased-finetuned-sst-2-english \
     --task_name sst2 \
     --tune \
-    --quantization_approach PostTrainingStatic \
+    --quantization_approach static \
     --do_train \
     --do_eval \
     --output_dir ./saved_result \
@@ -43,7 +41,7 @@ python run_glue.py \
 ```
 
 **Notes**: 
- - Choice of `quantization_approach` can be `PostTrainingDynamic`, `PostTrainingStatic`, and `QuantizationAwareTraining`.
+ - Choice of `quantization_approach` can be `dynamic`, `static`, and `qat`.
  - Choice of `task_name` can be `cola`, `sst2`, `mrpc`, `stsb`, `qqp`, `mnli`, `qnli`, `rte`, and `wnli`.
 
 ## 2. Distributed Data Parallel Support
@@ -66,16 +64,17 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
         --model_name_or_path distilbert-base-uncased-finetuned-sst-2-english \
         --task_name sst2 \
         --tune \
-        --quantization_approach QuantizationAwareTraining \
+        --quantization_approach qat \
         --do_train \
         --do_eval \
         --output_dir ./saved_result \
-        --overwrite_output_dir
+        --overwrite_output_dir \
+        --save_safetensors False
 ```
 
 ## 3. Validated model list
 
-|Task|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
+|Task|Pretrained model| dynamic| static | qat
 |---|------------------------------------|---|---|---
 |MRPC|textattack/bert-base-uncased-MRPC| ✅| ✅| ✅
 |MRPC|textattack/albert-base-v2-MRPC| ✅| ✅| N/A
@@ -107,7 +106,7 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
     bash run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
     ```
 
-### QuantizationAwareTraining
+### qat
 
 - Topology: 
     - BERT-MRPC: bert_base_mrpc

@@ -78,11 +78,11 @@ function run_benchmark {
     elif [ "${topology}" == "flan_t5_large_samsum_dynamic" ]; then
         DATASET_NAME="samsum"
         model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     elif [ "${topology}" == "flan_t5_large_samsum_static" ]; then
         DATASET_NAME="samsum"
         model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
-        approach="PostTrainingStatic"
+        approach="static"
     else
         echo "unsupported topology: ${topology}"
         exit 1

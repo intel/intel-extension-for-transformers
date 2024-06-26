@@ -1,6 +1,6 @@
 Step-by-Step​
 ============
-The script `run_whisper.py` provides two quantization approaches (PostTrainingStatic and PostTrainingDynamic) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor) with [LibriSpeech test-clean](https://huggingface.co/datasets/librispeech_asr) dataset.
+The script `run_whisper.py` provides two quantization approaches (static and dynamic) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor) with [LibriSpeech test-clean](https://huggingface.co/datasets/librispeech_asr) dataset.
 
 # Prerequisite​
 ## 1. Create Environment​
@@ -96,7 +96,7 @@ Available INT4 models on huggingface:
 
 # Validated model list
 
-|Topology|Pretrained model|PostTrainingDynamic|PostTrainingStatic|WeightOnly4Bit|
+|Topology|Pretrained model|dynamic|static|WeightOnly4Bit|
 |---|------------------------------------|---|---|---
 |whisper_tiny|openai/whisper-tiny| | | ✅|
 |whisper_base|openai/whisper-base| | | ✅|

@@ -23,7 +23,7 @@ output_dir:                 Path to output directory.
 overwrite_output_dir:       Whether to overwrite Output cache.
 perf_tol:                   Performance tolerance when optimizing the model.
 quantization:               Needs to be true in this case.
-quantization_approach:      Quantization approach. Supported approach are PostTrainingStatic, PostTrainingDynamic and QuantizationAwareTraining.
+quantization_approach:      Quantization approach. Supported approach are static, dynamic and qat.
 is_relative:                Metric tolerance model, expected to be relative or absolute.
 int8:                       Load int8 model.
 ```
@@ -41,7 +41,7 @@ output_dir:                 Path to output directory.
 overwrite_output_dir:       Whether to overwrite Output cache.
 perf_tol:                   Performance tolerance when optimizing the model.
 quantization:               Needs to be true in this case.
-quantization_approach:      Quantization approach. Supported approach are PostTrainingStatic, PostTrainingDynamic and QuantizationAwareTraining.
+quantization_approach:      Quantization approach. Supported approach are static, dynamic and qat.
 is_relative:                Metric tolerance model, expected to be relative or absolute.
 int8:                       Load int8 model.
 ```

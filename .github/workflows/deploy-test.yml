@@ -7,7 +7,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-permissions: write-all
 env:
   OUT_SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script/models
   SCRIPT_PATH: /intel-extension-for-transformers/.github/workflows/script
@@ -19,8 +18,15 @@ env:
   EXTRA_CONTAINER_NAME: "utTest"
   EXTRA_CONTAINER_NAME2: "codeScan"
 
+permissions:
+  contents: read
+
 jobs:
   Deploy-Workflow:
+    permissions:
+      actions: read  # for dawidd6/action-download-artifact to query and download artifacts
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for dawidd6/action-download-artifact to query commit hash
     runs-on: itrex-node
     strategy:
       matrix:
@@ -128,6 +134,10 @@ jobs:
           retention-days: 60 # 1 <= retention-days <= 90
 
   Genreate-Report:
+    permissions:
+      actions: read  # for dawidd6/action-download-artifact to query and download artifacts
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for dawidd6/action-download-artifact to query commit hash
     runs-on: itrex-node-spell
     needs: [Deploy-Workflow]
     steps:

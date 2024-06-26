@@ -5,10 +5,14 @@ on:
     branches:
       - main
   workflow_dispatch:
-permissions: write-all
+permissions:
+  contents: read
+
 jobs:
   build:
 
+    permissions:
+      contents: write  # for peaceiris/actions-gh-pages to push pages branch
     runs-on: ubuntu-latest
 
     steps:

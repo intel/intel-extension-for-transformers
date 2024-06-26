@@ -27,10 +27,12 @@ import sys
 import transformers
 from dataclasses import dataclass, field
 from datasets import ClassLabel, load_dataset, load_metric
-from intel_extension_for_transformers.transformers import(
-    metrics,
-    OptimizedModel,
-    QuantizationConfig,
+from intel_extension_for_transformers.transformers import OptimizedModel, metrics
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    QuantizationAwareTrainingConfig,
+    TuningCriterion,
+    AccuracyCriterion
 )
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from transformers import (
@@ -200,9 +202,9 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply quantization."},
     )
     quantization_approach: Optional[str] = field(
-        default="PostTrainingStatic",
-        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining."},
+        default="static",
+        metadata={"help": "Quantization approach. Supported approach are static, "
+                  "dynamic and qat."},
     )
     metric_name: Optional[str] = field(
         default="eval_f1",
@@ -299,7 +301,8 @@ def main():
     if data_args.dataset_name is not None:
         # Downloading and loading a dataset from the hub.
         raw_datasets = load_dataset(
-            data_args.dataset_name, data_args.dataset_config_name, cache_dir=model_args.cache_dir
+            data_args.dataset_name, data_args.dataset_config_name, cache_dir=model_args.cache_dir,
+            trust_remote_code=True
         )
     else:
         data_files = {}
@@ -310,7 +313,8 @@ def main():
         if data_args.test_file is not None:
             data_files["test"] = data_args.test_file
         extension = data_args.train_file.split(".")[-1]
-        raw_datasets = load_dataset(extension, data_files=data_files, cache_dir=model_args.cache_dir)
+        raw_datasets = load_dataset(extension, data_files=data_files, cache_dir=model_args.cache_dir,
+                                    trust_remote_code=True)
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
@@ -536,7 +540,7 @@ def main():
     data_collator = DataCollatorForTokenClassification(tokenizer, pad_to_multiple_of=8 if training_args.fp16 else None)
 
     # Metrics
-    metric = load_metric("seqeval")
+    metric = load_metric("seqeval", trust_remote_code=True)
 
     def compute_metrics(p):
         predictions, labels = p
@@ -573,6 +577,7 @@ def main():
 
     metric_name = optim_args.metric_name
     training_args.metric_for_best_model = metric_name
+
     # Initialize our Trainer
     trainer = NLPTrainer(
         model=model,
@@ -590,25 +595,42 @@ def main():
             raise ValueError("do_eval must be set to True for quantization.")
 
         trainer.save_model(training_args.output_dir)
-        if optim_args.quantization_approach != "PostTrainingDynamic":
+        if optim_args.quantization_approach != "dynamic":
             if not training_args.do_train:
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-        if optim_args.quantization_approach == "QuantizationAwareTraining":
-            early_stopping_patience = 6
-            early_stopping_threshold = 0.001 # optional
-            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
-                                                                    early_stopping_threshold))
-
         tune_metric = metrics.Metric(
             name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
         )
-        quantization_config = QuantizationConfig(
-            approach=optim_args.quantization_approach,
-            metrics=[tune_metric],
-            sampling_size = len(train_dataset)//20
-        )
+        trainer.metrics = tune_metric
+        if optim_args.quantization_approach != "qat":
+            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+            accuracy_criterion = AccuracyCriterion(
+                higher_is_better=True,  # optional.
+                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                tolerable_loss=optim_args.perf_tol,  # optional.
+            )
+            quantization_config = PostTrainingQuantConfig(
+                approach=optim_args.quantization_approach,
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )
+        else:
+            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+            accuracy_criterion = AccuracyCriterion(
+                higher_is_better=True,  # optional.
+                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                tolerable_loss=optim_args.perf_tol,  # optional.
+            )
+            quantization_config = QuantizationAwareTrainingConfig(
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )            
+            early_stopping_patience = 2
+            early_stopping_threshold = 0.001 # optional
+            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience, \
+                                                                    early_stopping_threshold))
         model = trainer.quantize(quantization_config)
 
     if optim_args.benchmark_only:

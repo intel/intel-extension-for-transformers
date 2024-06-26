@@ -17,7 +17,7 @@ python run_glue.py \
     --model_name_or_path Intel/distilbert-base-uncased-sparse-90-unstructured-pruneofa \
     --teacher_model distilbert-base-uncased-finetuned-sst-2-english \
     --task_name sst2 \
-    --quantization_approach QuantizationAwareTraining \
+    --quantization_approach qat \
     --do_train \
     --do_eval \
     --orchestrate_optimization \
@@ -37,7 +37,7 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
     --model_name_or_path Intel/distilbert-base-uncased-sparse-90-unstructured-pruneofa \
     --teacher_model distilbert-base-uncased-finetuned-sst-2-english \
     --task_name sst2 \
-    --quantization_approach QuantizationAwareTraining \
+    --quantization_approach qat \
     --do_train \
     --do_eval \
     --orchestrate_optimization \

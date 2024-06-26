@@ -16,7 +16,7 @@ function init_params {
   model_name_or_path="EleutherAI/gpt-j-6b"
   extra_cmd=""
   batch_size=8
-  approach="PostTrainingStatic"
+  approach="static"
   script="run_generation_sq.py"
   alpha=0.5
   weight_dtype="int4"

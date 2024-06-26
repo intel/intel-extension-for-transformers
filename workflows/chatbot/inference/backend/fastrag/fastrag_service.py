@@ -46,6 +46,7 @@ from utils import detect_language
 from database.mysqldb import MysqlDb
 from starlette.responses import RedirectResponse
 from mysqldb import MysqlDb
+from werkzeug.utils import secure_filename
 
 logger = build_logger("fastrag_service", f"fastrag_service.log")
 parser = argparse.ArgumentParser()
@@ -473,7 +474,7 @@ def query(request: QueryRequest):
         if request.blob:
             file_content = base64.b64decode(request.blob)
             random_suffix = str(uuid.uuid4().hex)
-            sanitized_filename = os.path.basename(request.filename)
+            sanitized_filename = secure_filename(request.filename)
             file_path = f"/tmp/customized_doc_{random_suffix}_{sanitized_filename}"
             with open(file_path, "wb") as f:
                 f.write(file_content)

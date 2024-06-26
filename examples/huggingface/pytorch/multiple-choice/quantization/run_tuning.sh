@@ -11,7 +11,7 @@ function main {
 # init params
 function init_params {
   tuned_checkpoint="saved_results"
-  approach="PostTrainingStatic"
+  approach="static"
   batch_size=8
   for var in "$@"
   do
@@ -41,13 +41,13 @@ function init_params {
 function run_tuning {
     if [ "${topology}" = "bert_base_swag_static" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        approach="PostTrainingStatic"
+        approach="static"
     elif [ "${topology}" = "bert_base_swag_dynamic" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     elif [ "${topology}" = "bert_base_swag_qat" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        approach="QuantizationAwareTraining"
+        approach="qat"
         extra_cmd=$extra_cmd" --learning_rate 1e-5 \
                    --num_train_epochs 6 \
                    --eval_steps 100 \
@@ -56,7 +56,8 @@ function run_tuning {
                    --load_best_model_at_end True \
                    --evaluation_strategy steps \
                    --save_strategy steps \
-                   --save_total_limit 1"
+                   --save_total_limit 1 \
+                   --save_safetensors False"
     fi
 
     python -u ./run_swag.py \
@@ -72,7 +73,8 @@ function run_tuning {
         --tune \
         --pad_to_max_length \
         --overwrite_cache \
-        --overwrite_output_dir 
+        --overwrite_output_dir \
+        ${extra_cmd}
 }
 
 main "$@"

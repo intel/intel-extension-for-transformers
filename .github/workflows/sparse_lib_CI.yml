@@ -8,7 +8,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-permissions: write-all
 
 env:
   DOCKER_CONFIG_NAME: "commonDockerConfig"
@@ -16,6 +15,9 @@ env:
   REPO_TAG: "py38"
   DOCKER_FILE_NAME: "unitTest"
   CONTAINER_NAME: "utTest"
+
+permissions:
+  contents: read
 
 jobs:
   sparselib:

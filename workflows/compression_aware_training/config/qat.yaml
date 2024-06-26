@@ -24,6 +24,6 @@ overwrite_output_dir: true
 perf_tol: 0.03
 
 quantization: true
-quantization_approach: "QuantizationAwareTraining"
+quantization_approach: "qat"
 is_relative: true
 int8: false
