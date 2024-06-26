@@ -34,7 +34,7 @@ from transformers.models.llama.modeling_llama import (
     logger,
 )
 
-from ...modeling_gaudi.models.modeling_attn_mask_utils import(
+from ...modeling.modeling_gaudi.models.modeling_attn_mask_utils import(
     _gaudi_prepare_4d_causal_attention_mask,
 )
 
@@ -76,7 +76,9 @@ def gaudi_llama_rmsnorm_forward(self, hidden_states):
         # mixed dtypes are not good for FusedRMSNorm, both inputs need to have same dtype
         if hidden_states.dtype != self.weight.dtype:
             orig_dtype = hidden_states.dtype
-            hidden_states = FusedRMSNorm.apply(hidden_states.to(self.weight.dtype), self.weight, self.variance_epsilon)
+            hidden_states = FusedRMSNorm.apply(
+                hidden_states.to(self.weight.dtype), self.weight, self.variance_epsilon
+                )
             return hidden_states.to(orig_dtype)
         else:
             hidden_states = FusedRMSNorm.apply(hidden_states, self.weight, self.variance_epsilon)

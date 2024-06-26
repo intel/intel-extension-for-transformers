@@ -63,8 +63,8 @@ if version.parse(transformers.__version__) > version.parse("4.33.0"):
     if is_flash_attn_2_available():
         from flash_attn import (  # pylint: disable=E0401
             flash_attn_func,
-            flash_attn_varlen_func) # pylint: disable=E0401
-        from flash_attn.bert_padding import ( # pylint: disable=E1101
+            flash_attn_varlen_func) # pylint: disable=E1101
+        from flash_attn.bert_padding import ( # pylint: disable=E0401
             index_first_axis,
             pad_input,
             unpad_input) # pylint: disable=E1101
@@ -876,7 +876,8 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             model_inputs = {"inputs_embeds": inputs_embeds}
         else:
             # The `contiguous()` here is necessary to have a static stride during decoding. torchdynamo otherwise
-            # recompiles graphs as the stride of the inputs is a guard. Ref: https://github.com/huggingface/transformers/pull/29114
+            # recompiles graphs as the stride of the inputs is a guard.
+            # Ref: https://github.com/huggingface/transformers/pull/29114
             # TODO: use `next_tokens` directly instead.
             model_inputs = {"input_ids": input_ids.contiguous()}
 
@@ -917,7 +918,8 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         using_static_cache = isinstance(past_key_values, StaticCache)
 
         # When output attentions is True, sdpa implementation's forward method calls the eager implementation's forward
-        if self.config._attn_implementation == "sdpa" and not using_static_cache and not output_attentions:
+        if self.config._attn_implementation == "sdpa" \
+            and not using_static_cache and not output_attentions: # pylint: disable=E1101
             if AttentionMaskConverter._ignore_causal_mask_sdpa(
                 attention_mask,
                 inputs_embeds=input_tensor,
@@ -968,6 +970,6 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             # Attend to all tokens in fully masked rows in the causal_mask, for example the relevant first rows when
             # using left padding. This is required by F.scaled_dot_product_attention memory-efficient attention path.
             # Details: https://github.com/pytorch/pytorch/issues/110213
-            causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
+            causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype) # pylint: disable=E1120
 
         return causal_mask
