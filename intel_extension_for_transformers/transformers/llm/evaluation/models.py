@@ -38,8 +38,7 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
 
         This is required to match `past_key_values` with the correct beam_idx at every generation step.
         """
-        if self.config.model_type == "bloom":
-            return self._reorder_cache_bloom(past_key_values, beam_idx)
+
         if self.config.model_type == "chatglm":
             return tuple(
                 tuple(

@@ -946,11 +946,7 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        if model_type in ["bloom"]:
-                            attention_mask = torch.ones(len(input_ids) + 1)
-                            attention_mask[0] = 0
-                        else:
-                            attention_mask = torch.ones(len(input_ids))
+                        attention_mask = torch.ones(len(input_ids))
                         position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
                         attention_mask_padded.append(attention_mask)
