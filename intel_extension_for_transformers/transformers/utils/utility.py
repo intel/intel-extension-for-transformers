@@ -375,11 +375,7 @@ def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
         past_key_values = generate_dummy_past_key_values(config=model_config, input_bs=batch_size)
 
     input_ids = input_ids[:, :512]
-    if model_type in ["bloom", "qwen"]:
-        attention_mask = torch.ones(input_ids.shape[0], input_ids.shape[1] + 1)
-        attention_mask[:,0] = 0
-    else:
-        attention_mask = torch.ones(input_ids.shape)
+    attention_mask = torch.ones(input_ids.shape)
     position_ids = torch.arange(input_ids.shape[1]).repeat(batch_size, 1)
 
     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
