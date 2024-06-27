@@ -840,6 +840,14 @@ class _BaseQBitsAutoModelClass:
                 or device_map == torch.device("cpu")
             ) and model.config.model_type == "chatglm":
                 model = model.float()
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "mpt":
+                config = AutoConfig.from_pretrained("mosaicml_mpt-7b_config.json",
+                                                    torchscript=True)
+                model.config = config
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
 
@@ -1077,6 +1085,7 @@ class _BaseQBitsAutoModelClass:
                 recipes=quantization_config.recipes,
                 example_inputs=example_inputs,
             )
+
             model = quantization.fit(
                 model,
                 conf,
