@@ -72,7 +72,11 @@ def get_hh_mask(heavy_budget_ratio, recent_budget_ratio, attn_weights, local=Tru
 
             zeros = torch.zeros_like(tmp_sum, dtype=torch.bool)
             mask_bottom = zeros.scatter(-1, tmp_topk, True).unsqueeze(2)
-            mask_bottom = mask_bottom.expand(mask_bottom.shape[0], mask_bottom.shape[1], attn_weights.shape[-2], mask_bottom.shape[-1])
+            mask_bottom = mask_bottom.expand(
+                mask_bottom.shape[0],
+                mask_bottom.shape[1],
+                attn_weights.shape[-2],
+                mask_bottom.shape[-1])
     else:
         mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
 

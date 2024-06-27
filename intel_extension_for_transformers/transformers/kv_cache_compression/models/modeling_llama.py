@@ -50,7 +50,6 @@ from transformers.modeling_outputs import (
     CausalLMOutputWithPast,
 )
 
-from intel_extension_for_transformers.transformers.modeling.modeling_gaudi import adapt_transformers_to_gaudi
 from ..prune import PruneConfig, H2OConfig
 
 logger = logging.get_logger(__name__)
@@ -920,12 +919,12 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         # When output attentions is True, sdpa implementation's forward method calls the eager implementation's forward
         if self.config._attn_implementation == "sdpa" \
             and not using_static_cache and not output_attentions: # pylint: disable=E1101
-            if AttentionMaskConverter._ignore_causal_mask_sdpa(
+            if AttentionMaskConverter._ignore_causal_mask_sdpa( # pylint: disable=E1101
                 attention_mask,
                 inputs_embeds=input_tensor,
                 past_key_values_length=past_seen_tokens,
                 is_training=self.training,
-            ):  # pylint: disable=E1101
+            ):  
                 return None
 
         dtype, device = input_tensor.dtype, input_tensor.device
