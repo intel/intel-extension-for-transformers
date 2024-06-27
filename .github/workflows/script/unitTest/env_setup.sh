@@ -13,6 +13,7 @@ until [ "$n" -ge 5 ]; do
     git clone https://github.com/intel/neural-compressor.git /neural-compressor
     cd /neural-compressor
     pip install -r requirements.txt
+    pip install -r requirements_pt.txt
     python setup.py install && break
     n=$((n + 1))
     sleep 5
