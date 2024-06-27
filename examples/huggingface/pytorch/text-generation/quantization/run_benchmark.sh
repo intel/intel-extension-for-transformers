@@ -166,13 +166,18 @@ function run_benchmark {
         model_name_or_path="Intel/neural-chat-7b-v3"
         script="run_generation_sq.py"
     elif [ "${topology}" = "phi_1b" ]; then
-        model_name_or_path="susnato/phi-1_dev"
-	    pip install transformers==4.36.1
+        model_name_or_path="microsoft/phi-1"
         script="run_generation_sq.py"
     elif [ "${topology}" = "phi_1_5b" ]; then
-        model_name_or_path="susnato/phi-1_5_dev"
-	    pip install transformers==4.36.1
+        model_name_or_path="microsoft/phi-1_5"
         script="run_generation_sq.py"
+    elif [ "${topology}" = "phi_2b" ]; then
+        model_name_or_path="microsoft/phi-2"
+        script="run_generation_sq.py"
+    elif [ "${topology}" = "phi_3b" ]; then
+        model_name_or_path="microsoft/Phi-3-mini-4k-instruct"
+        script="run_generation_sq.py"
+        extra_cmd=$extra_cmd" --trust_remote_code"
     elif [ "${topology}" = "llama2_7b_gptq" ] && [ "$model_source" != "huggingface" ]; then
         model_name_or_path="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
         script="run_generation_cpu_woq.py"
