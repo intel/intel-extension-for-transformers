@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Getting Started &mdash; Intel® Extension for Transformers 0.1.dev1+gffb4c3d documentation</title>
+  <title>Getting Started &mdash; Intel® Extension for Transformers 0.1.dev1+gf44bf95 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
@@ -109,7 +109,7 @@
 </ol>
 <section id="quantization">
 <h2>Quantization<a class="headerlink" href="#quantization" title="Link to this heading"></a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">QuantizationConfig</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">objectives</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neural_compressor.config</span> <span class="kn">import</span> <span class="n">PostTrainingQuantConfig</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">AutoConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;distilbert-base-uncased-finetuned-sst-2-english&quot;</span><span class="p">,</span><span class="n">num_labels</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -123,7 +123,9 @@
     <span class="n">eval_dataset</span><span class="o">=</span><span class="n">raw_datasets</span><span class="p">[</span><span class="s2">&quot;validation&quot;</span><span class="p">],</span>
     <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span>
 <span class="p">)</span>
-<span class="n">q_config</span> <span class="o">=</span> <span class="n">QuantizationConfig</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_loss&quot;</span><span class="p">,</span> <span class="n">greater_is_better</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
+<span class="n">quantization_config</span> <span class="o">=</span> <span class="n">PostTrainingQuantConfig</span><span class="p">(</span>
+    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;static&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">quant_config</span><span class="o">=</span><span class="n">q_config</span><span class="p">)</span>
 
 <span class="nb">input</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">&quot;I like Intel Extension for Transformers&quot;</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span>
@@ -173,17 +175,17 @@
 <section id="quantized-length-adaptive-transformer">
 <h2>Quantized Length Adaptive Transformer<a class="headerlink" href="#quantized-length-adaptive-transformer" title="Link to this heading"></a></h2>
 <p>Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">QuantizationConfig</span><span class="p">,</span> <span class="n">DynamicLengthConfig</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">DynamicLengthConfig</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span>
+<span class="kn">from</span> <span class="nn">neural_compressor.config</span> <span class="kn">import</span> <span class="n">PostTrainingQuantConfig</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
 
 <span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
 <span class="c1"># trainer = transformers.Trainer(...)</span>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_f1&quot;</span><span class="p">,</span> <span class="n">is_relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
-<span class="n">q_config</span> <span class="o">=</span> <span class="n">QuantizationConfig</span><span class="p">(</span>
-    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;PostTrainingStatic&quot;</span><span class="p">,</span>
-    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
-    <span class="n">objectives</span><span class="o">=</span><span class="p">[</span><span class="n">objectives</span><span class="o">.</span><span class="n">performance</span><span class="p">]</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">metric</span>
+<span class="n">q_config</span> <span class="o">=</span> <span class="n">PostTrainingQuantConfig</span><span class="p">(</span>
+    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;static&quot;</span>
 <span class="p">)</span>
 <span class="c1"># Apply the length config</span>
 <span class="n">dynamic_length_config</span> <span class="o">=</span> <span class="n">DynamicLengthConfig</span><span class="p">(</span><span class="n">length_config</span><span class="o">=</span><span class="n">length_config</span><span class="p">)</span>
@@ -229,7 +231,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fc071f04c10> 
+   <jinja2.runtime.BlockReference object at 0x7f4bbc295690> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

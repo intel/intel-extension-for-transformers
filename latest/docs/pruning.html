@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pruning &mdash; Intel® Extension for Transformers 0.1.dev1+gffb4c3d documentation</title>
+  <title>Pruning &mdash; Intel® Extension for Transformers 0.1.dev1+gf44bf95 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
@@ -63,7 +63,6 @@
 <li class="toctree-l3"><a class="reference internal" href="distillation.html">Distillation</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Pruning</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#pruning-types">Pruning types</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#usage">Usage</a></li>
 </ul>
 </li>
@@ -124,41 +123,24 @@
 <h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>Pruning is the process of removing redundant parameters of a network. The idea bears similarity to the <a class="reference external" href="http://yann.lecun.com/exdb/publis/pdf/lecun-90b.pdf">“optimal brain damage”</a> hypothesis by Yann LeCun. There are two types of pruning: Unstructured and Structured. Unstructured pruning means finding and removing the less salient connection in the model, the place could be anywhere in the matrix. Structured pruning means deleting entire blocks, filters, or channels.</p>
 </section>
-<section id="pruning-types">
-<h2>Pruning types<a class="headerlink" href="#pruning-types" title="Link to this heading"></a></h2>
-<p>There are three pruning types in Intel® Extension for Transformers:</p>
-<ul class="simple">
-<li><p>Magnitude (Unstructured)</p>
-<ul>
-<li><p>The algorithm prunes the weight by the lowest absolute value at each layer with a given sparsity target.</p></li>
-</ul>
-</li>
-<li><p>Group Lasso (Structured)</p>
-<ul>
-<li><p>The algorithm uses Group lasso regularization to prune entire rows, columns, or blocks of parameters that result in a smaller dense network.</p></li>
-</ul>
-</li>
-<li><p>Pattern Lock (Unstructured &amp; Structured)</p>
-<ul>
-<li><p>The algorithm locks the sparsity pattern in fine tune phase by freezing those zero values of the weight tensor during the weight update of training.</p></li>
-</ul>
-</li>
-</ul>
-</section>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
 <section id="script">
 <h3>Script:<a class="headerlink" href="#script" title="Link to this heading"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">objectives</span><span class="p">,</span> <span class="n">PrunerConfig</span><span class="p">,</span> <span class="n">PruningConfig</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">metrics</span>
+<span class="kn">from</span> <span class="nn">neural_compressor.config</span> <span class="kn">import</span> <span class="n">WeightPruningConfig</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
 <span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
 <span class="c1"># trainer = transformers.Trainer(......)</span>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">......</span><span class="p">)</span>
 <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_accuracy&quot;</span><span class="p">)</span>
-<span class="n">pruner_config</span> <span class="o">=</span> <span class="n">PrunerConfig</span><span class="p">(</span><span class="n">prune_type</span><span class="o">=</span><span class="s1">&#39;BasicMagnitude&#39;</span><span class="p">,</span> <span class="n">target_sparsity_ratio</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
-<span class="n">p_conf</span> <span class="o">=</span> <span class="n">PruningConfig</span><span class="p">(</span><span class="n">pruner_config</span><span class="o">=</span><span class="p">[</span><span class="n">pruner_config</span><span class="p">],</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">prune</span><span class="p">(</span><span class="n">pruning_config</span><span class="o">=</span><span class="n">p_conf</span><span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">tune_metric</span>
+<span class="n">pruning_conf</span> <span class="o">=</span> <span class="n">WeightPruningConfig</span><span class="p">([{</span><span class="s2">&quot;start_step&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;end_step&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}],</span>
+                                    <span class="n">target_sparsity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span>
+                                    <span class="n">pruning_scope</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span>
+                                    <span class="n">pruning_type</span><span class="o">=</span><span class="s2">&quot;magnitude&quot;</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">prune</span><span class="p">(</span><span class="n">pruning_config</span><span class="o">=</span><span class="n">pruning_conf</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Please refer to <a class="reference external" href="../examples/huggingface/pytorch/text-classification/pruning">example</a> for the details.</p>
@@ -175,42 +157,26 @@
 </li>
 </ul>
 </section>
-<section id="create-list-of-an-instance-of-prunerconfig-optional">
-<h3>Create list of an instance of PrunerConfig(Optional)<a class="headerlink" href="#create-list-of-an-instance-of-prunerconfig-optional" title="Link to this heading"></a></h3>
-<p>PrunerConfig defines which pruning algorithm to use and how to apply it during the training process. Intel® Extension for Transformers supports pruning types “BasicMagnitude”, “PatternLock”, and “GroupLasso”. You can create different pruners for different layers.</p>
-<ul>
+<section id="create-an-instance-of-weightpruningconfig">
+<h3>Create an instance of WeightPruningConfig<a class="headerlink" href="#create-an-instance-of-weightpruningconfig" title="Link to this heading"></a></h3>
+<p>[WeightPruningConfig](neural-compressor_neural_compressor_config.py at master · intel_neural-compressor.html) defines which pruning algorithm to use and how to apply it during the training process. Intel® Extension for Transformers supports pruning types “magnitude”, “pattern_lock”, and “GroupLasso”. You can create different pruners for different layers.</p>
+<ul class="simple">
 <li><p>arguments:
 |Argument   |Type       |Description                                        |Default value    |
 |:———-|:———-|:———————————————–|:—————-|
-|epoch_range|list of integer|Which epochs to pruning                     |[0, 4]           |
-|initial_sparsity_ratio|float |Initial sparsity goal                     |0.0              |
-|target_sparsity_ratio|float  |Target sparsity goal                      |0.97             |
+|pruning_configs |list of dicts|Which epochs to pruning                     |[{}]         |
+|target_sparsity |float |Initial sparsity goal                     |0.90            |
 |update_frequency|integer|Frequency to updating sparsity                 |1                |
-|prune_type|string|Pruning algorithm                                     |’BasicMagnitude’ |
-|method|string|Pruning method                                            |’per_tensor’ |
-|names|list of string|List of weight name to be pruned. If no weight is specified, all weights of the model will be pruned|[]|
-|parameters|dict of string|The hyper-parameters for pruning, refer to <a class="reference external" href="https://github.com/intel/neural-compressor/blob/master/docs/source/pruning.html">the link</a>|None|</p></li>
-<li><p>example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pruner_config</span> <span class="o">=</span> <span class="n">PrunerConfig</span><span class="p">(</span><span class="n">prune_type</span><span class="o">=</span><span class="s1">&#39;BasicMagnitude&#39;</span><span class="p">,</span> <span class="n">target_sparsity_ratio</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
-</pre></div>
-</div>
-</li>
+|pruning_type |string|Pruning algorithm |’snip_momentum’ |</p></li>
 </ul>
-</section>
-<section id="create-an-instance-of-pruningconfig">
-<h3>Create an instance of PruningConfig<a class="headerlink" href="#create-an-instance-of-pruningconfig" title="Link to this heading"></a></h3>
-<p>The PruningConfig contains all the information related to the model pruning behavior. If you have created Metric and PrunerConfig instance, then you can create an instance of PruningConfig. Metric and pruner are optional.</p>
+<p>The WeightPruningConfig contains all the information related to the model pruning behavior. If you have created Metric and WeightPruningConfig instance, then you can create an instance of WeightPruningConfig. Metric and pruner are optional.</p>
 <ul>
-<li><p>arguments:
-|Argument   |Type       |Description                                        |Default value    |
-|:———-|:———-|:———————————————–|:—————-|
-|framework  |string     |Which framework you used                        |”pytorch”        |
-|initial_sparsity_ratio|float |Initial sparsity goal, if pruner_config argument is defined, it didn’t need                       |0.0|
-|target_sparsity_ratio|float |Target sparsity goal, if pruner argument is defined, it didn’t need                       |0.97|
-|metrics    |Metric    |Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer|None    |
-|pruner_config |PrunerConfig    |Defined pruning behavior, if it is None, then NLP will create a default a pruner with ‘BasicMagnitude’ pruning type                                  |None              |</p></li>
 <li><p>example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pruning_conf</span> <span class="o">=</span> <span class="n">PruningConfig</span><span class="p">(</span><span class="n">pruner_config</span><span class="o">=</span><span class="p">[</span><span class="n">pruner_config</span><span class="p">],</span> <span class="n">metrics</span><span class="o">=</span><span class="n">tune_metric</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neural_compressor.config</span> <span class="kn">import</span> <span class="n">WeightPruningConfig</span>
+<span class="n">pruning_conf</span> <span class="o">=</span> <span class="n">WeightPruningConfig</span><span class="p">([{</span><span class="s2">&quot;start_step&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;end_step&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}],</span>
+                                    <span class="n">target_sparsity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span>
+                                    <span class="n">pruning_scope</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span>
+                                    <span class="n">pruning_type</span><span class="o">=</span><span class="s2">&quot;magnitude&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </li>
@@ -247,7 +213,7 @@ NLPTrainer inherits from <code class="docutils literal notranslate"><span class=
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fc071cd8a90> 
+   <jinja2.runtime.BlockReference object at 0x7f4bbbc44970> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

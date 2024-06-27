@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quantization &mdash; Intel® Extension for Transformers 0.1.dev1+gffb4c3d documentation</title>
+  <title>Quantization &mdash; Intel® Extension for Transformers 0.1.dev1+gf44bf95 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
@@ -230,36 +230,18 @@
 <h2>Get Started<a class="headerlink" href="#get-started" title="Link to this heading"></a></h2>
 <section id="script">
 <h3>Script:<a class="headerlink" href="#script" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span><span class="p">,</span> <span class="n">QuantizationConfig</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neural_compressor.config</span> <span class="kn">import</span> <span class="n">PostTrainingQuantConfig</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
 <span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
 <span class="c1"># trainer = transformers.Trainer(......)</span>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">......</span><span class="p">)</span>
-<span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_f1&quot;</span><span class="p">,</span> <span class="n">is_relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="mf">0.01</span>
-<span class="p">)</span>
-<span class="n">objective</span> <span class="o">=</span> <span class="n">objectives</span><span class="o">.</span><span class="n">performance</span>
-<span class="n">q_config</span> <span class="o">=</span> <span class="n">QuantizationConfig</span><span class="p">(</span>
-    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;PostTrainingStatic&quot;</span><span class="p">,</span>
-    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
-    <span class="n">objectives</span><span class="o">=</span><span class="p">[</span><span class="n">objective</span><span class="p">]</span>
+<span class="n">q_config</span> <span class="o">=</span> <span class="n">PostTrainingQuantConfig</span><span class="p">(</span>
+    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;static&quot;</span>
 <span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">quant_config</span><span class="o">=</span><span class="n">q_config</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Please refer to <a class="reference external" href="../examples/huggingface/pytorch/text-classification/quantization/run_glue.py">quantization example</a> for the details.</p>
-</section>
-<section id="create-an-instance-of-metric">
-<h3>Create an Instance of Metric<a class="headerlink" href="#create-an-instance-of-metric" title="Link to this heading"></a></h3>
-<p>The Metric defines which metric will be used to measure the performance of tuned models.</p>
-<ul>
-<li><p>example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_f1&quot;</span><span class="p">,</span> <span class="n">greater_is_better</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">weight_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Please refer to <a class="reference external" href="metrics.html">metrics document</a> for the details.</p>
-</li>
-</ul>
 </section>
 <section id="create-an-instance-of-objective-optional">
 <h3>Create an Instance of Objective(Optional)<a class="headerlink" href="#create-an-instance-of-objective-optional" title="Link to this heading"></a></h3>
@@ -275,63 +257,26 @@
 </section>
 <section id="create-an-instance-of-quantizationconfig">
 <h3>Create an Instance of QuantizationConfig<a class="headerlink" href="#create-an-instance-of-quantizationconfig" title="Link to this heading"></a></h3>
-<p>The QuantizationConfig contains all the information related to the model quantization behavior. If you have created Metric and Objective instance(default Objective is “performance”), then you can create an instance of QuantizationConfig.</p>
-<ul class="simple">
-<li><p>arguments:</p></li>
-</ul>
-<table border="1" class="docutils">
-<thead>
-<tr>
-<th style="text-align: left;">Argument</th>
-<th style="text-align: left;">Type</th>
-<th style="text-align: left;">Description</th>
-<th style="text-align: left;">Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;">framework</td>
-<td style="text-align: left;">string</td>
-<td style="text-align: left;">Which framework you used</td>
-<td style="text-align: left;">"pytorch"</td>
-</tr>
-<tr>
-<td style="text-align: left;">approach</td>
-<td style="text-align: left;">string</td>
-<td style="text-align: left;">Which quantization approach you used</td>
-<td style="text-align: left;">"PostTrainingStatic"</td>
-</tr>
-<tr>
-<td style="text-align: left;">timeout</td>
-<td style="text-align: left;">integer</td>
-<td style="text-align: left;">Tuning timeout(seconds), 0 means early stop; combine with max_trials field to decide when to exit</td>
-<td style="text-align: left;">0</td>
-</tr>
-<tr>
-<td style="text-align: left;">max_trials</td>
-<td style="text-align: left;">integer</td>
-<td style="text-align: left;">Max tune times</td>
-<td style="text-align: left;">100</td>
-</tr>
-<tr>
-<td style="text-align: left;">metrics</td>
-<td style="text-align: left;">list of Metric</td>
-<td style="text-align: left;">Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer</td>
-<td style="text-align: left;">None</td>
-</tr>
-<tr>
-<td style="text-align: left;">objectives</td>
-<td style="text-align: left;">list of Objective</td>
-<td style="text-align: left;">Objective with accuracy constraint guaranteed</td>
-<td style="text-align: left;">performance</td>
-</tr>
-</tbody>
-</table><ul>
+<p>The QuantizationConfig contains all the information related to the model quantization behavior. If you have created Metric and Objective instance(default Objective is “performance”), then you can create an instance of PostTrainingQuantConfig or QuantizationAwareTrainingConfig.</p>
+<ul>
 <li><p>example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">q_config</span> <span class="o">=</span> <span class="n">QuantizationConfig</span><span class="p">(</span>
-    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;PostTrainingDynamic&quot;</span><span class="p">,</span>
-    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
-    <span class="n">objectives</span><span class="o">=</span><span class="p">[</span><span class="n">objective</span><span class="p">]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neural_compressor.config</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PostTrainingQuantConfig</span><span class="p">,</span>
+    <span class="n">QuantizationAwareTrainingConfig</span><span class="p">,</span>
+    <span class="n">TuningCriterion</span><span class="p">,</span>
+    <span class="n">AccuracyCriterion</span>
+    <span class="p">)</span>
+
+<span class="n">tuning_criterion</span> <span class="o">=</span> <span class="n">TuningCriterion</span><span class="p">(</span><span class="n">max_trials</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;performance&quot;</span><span class="p">])</span>
+<span class="n">accuracy_criterion</span> <span class="o">=</span> <span class="n">AccuracyCriterion</span><span class="p">(</span>
+    <span class="n">higher_is_better</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># optional.</span>
+    <span class="n">criterion</span><span class="o">=</span><span class="s2">&quot;relative&quot;</span><span class="p">,</span>  <span class="c1"># optional. Available values are &quot;relative&quot; and &quot;absolute&quot;.</span>
+    <span class="n">tolerable_loss</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>  <span class="c1"># optional.</span>
+<span class="p">)</span>    
+<span class="n">q_config</span> <span class="o">=</span> <span class="n">PostTrainingQuantConfig</span><span class="p">(</span>
+    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;dynamic&quot;</span><span class="p">,</span>
+    <span class="n">tuning_criterion</span><span class="o">=</span><span class="n">tuning_criterion</span><span class="p">,</span>
+    <span class="n">accuracy_criterion</span><span class="o">=</span><span class="n">accuracy_criterion</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -369,7 +314,7 @@ NLPTrainer inherits from transformers.Trainer, so you can create trainer like yo
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fc071a9e290> 
+   <jinja2.runtime.BlockReference object at 0x7f4bbbedf490> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

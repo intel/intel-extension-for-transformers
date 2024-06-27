@@ -37,8 +37,8 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <th>Model</th>
     <th>Task</th>
     <th>Dataset</th>
-    <th>PostTrainingDynamic</th>
-    <th>PostTrainingStatic</th>
+    <th>dynamic</th>
+    <th>static</th>
   </tr>
 </thead>
 <tbody align="center">
@@ -177,7 +177,7 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <th>Model</th>
     <th>Task</th>
     <th>Dataset</th>
-    <th>QuantizationAwareTraining</th>
+    <th>qat</th>
     <th>No Trainer quantization</th>
   </tr>
 </thead>
@@ -206,7 +206,7 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <th>Model</th>
     <th>Task</th>
     <th>Dataset</th>
-    <th>PostTrainingStatic</th>
+    <th>static</th>
   </tr>
 </thead>
 <tbody align="center">
@@ -232,7 +232,7 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <th>Model</th>
     <th>Task</th>
     <th>Dataset</th>
-    <th>PostTrainingStatic</th>
+    <th>static</th>
   </tr>
 </thead>
 <tbody align="center">

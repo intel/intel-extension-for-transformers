@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Distillation &mdash; Intel® Extension for Transformers 0.1.dev1+gffb4c3d documentation</title>
+  <title>Distillation &mdash; Intel® Extension for Transformers 0.1.dev1+gf44bf95 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
@@ -154,40 +154,19 @@
 <h2>usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
 <section id="pytorch-script">
 <h3>Pytorch Script:<a class="headerlink" href="#pytorch-script" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span><span class="p">,</span> <span class="n">DistillationConfig</span><span class="p">,</span> <span class="n">Criterion</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+<span class="kn">from</span> <span class="nn">neural_compressor.config</span> <span class="kn">import</span> <span class="n">DistillationConfig</span>
 <span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
 <span class="c1"># trainer = transformers.Trainer(......)</span>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">......</span><span class="p">)</span>
 <span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_accuracy&quot;</span><span class="p">)</span>
-<span class="n">d_conf</span> <span class="o">=</span> <span class="n">DistillationConfig</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="n">tune_metric</span><span class="p">)</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">distill</span><span class="p">(</span>
-    <span class="n">distillation_config</span><span class="o">=</span><span class="n">d_conf</span><span class="p">,</span> <span class="n">teacher_model</span><span class="o">=</span><span class="n">teacher_model</span>
-<span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">metric</span>
+<span class="n">d_conf</span> <span class="o">=</span> <span class="n">DistillationConfig</span><span class="p">(</span><span class="n">teacher_model</span><span class="o">=</span><span class="n">teacher_model</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="n">criterion</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">distill</span><span class="p">(</span><span class="n">distillation_config</span><span class="o">=</span><span class="n">d_conf</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Please refer to <a class="reference external" href="../examples/huggingface/pytorch/text-classification/distillation/run_glue.py">example</a> for the details.</p>
-</section>
-<section id="tensorflow-script">
-<h3>Tensorflow Script:<a class="headerlink" href="#tensorflow-script" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="p">(</span><span class="n">DistillationConfig</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.distillation</span> <span class="kn">import</span> <span class="n">Criterion</span>
-
-<span class="n">optimizer</span> <span class="o">=</span> <span class="n">TFOptimization</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="n">metric_</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_accuracy&quot;</span><span class="p">)</span>
-<span class="n">criterion</span> <span class="o">=</span> <span class="n">Criterion</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;KnowledgeLoss&#39;</span><span class="p">,</span>
-                    <span class="n">layer_mappings</span><span class="o">=</span><span class="p">[[</span><span class="s1">&#39;classifier&#39;</span><span class="p">,</span> <span class="s1">&#39;classifier&#39;</span><span class="p">]],</span>
-                    <span class="n">loss_types</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;CE&#39;</span><span class="p">,</span> <span class="s1">&#39;CE&#39;</span><span class="p">],</span>
-                    <span class="n">loss_weight_ratio</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
-                    <span class="n">add_origin_loss</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">distillation_conf</span> <span class="o">=</span> <span class="n">DistillationConfig</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="n">metric_</span><span class="p">,</span>
-                                        <span class="n">criterion</span><span class="o">=</span><span class="n">criterion</span><span class="p">)</span>
-<span class="n">distilled_model</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">distill</span><span class="p">(</span>
-            <span class="n">distillation_config</span><span class="o">=</span><span class="n">distillation_conf</span><span class="p">,</span>
-            <span class="n">teacher_model</span><span class="o">=</span><span class="n">teacher_model</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Please refer to <a class="reference external" href="../examples/huggingface/tensorflow/text-classification/distillation/run_glue.py">example</a> for the details.</p>
 </section>
 <section id="create-an-instance-of-metric">
 <h3>Create an Instance of Metric<a class="headerlink" href="#create-an-instance-of-metric" title="Link to this heading"></a></h3>
@@ -205,17 +184,21 @@
 <h3>Create an Instance of Criterion(Optional)<a class="headerlink" href="#create-an-instance-of-criterion-optional" title="Link to this heading"></a></h3>
 <p>The criterion used in training phase.</p>
 <ul>
-<li><p>arguments:
+<li><p>KnowledgeDistillationLossConfig arguments:
 |Argument   |Type       |Description                                        |Default value    |
 |:———-|:———-|:———————————————–|:—————-|
-|name       |String|Name of criterion, like:”KnowledgeLoss”, “IntermediateLayersLoss”  |”KnowledgeLoss”|
 |temperature|Float |parameter for KnowledgeDistillationLoss               |1.0             |
+|loss_types|List of string|Type of loss                               |[’CE’, ‘CE’]        |
+|loss_weight_ratio|List of float|weight ratio of loss                 |[0.5, 0.5]     |</p></li>
+<li><p>IntermediateLayersKnowledgeDistillationLossConfig arguments:
+|Argument   |Type       |Description                                        |Default value    |
+|:———-|:———-|:———————————————–|:—————-|
 |loss_types|List of string|Type of loss                               |[’CE’, ‘CE’]        |
 |loss_weight_ratio|List of float|weight ratio of loss                 |[0.5, 0.5]     |
 |layer_mappings|List|parameter for IntermediateLayersLoss             |[] |
 |add_origin_loss|bool|parameter for IntermediateLayersLoss            |False |</p></li>
 <li><p>example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">criterion</span> <span class="o">=</span> <span class="n">Criterion</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;KnowledgeLoss&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">criterion</span> <span class="o">=</span> <span class="n">KnowledgeDistillationLossConfig</span><span class="p">()</span>
 </pre></div>
 </div>
 </li>
@@ -228,11 +211,10 @@
 <li><p>arguments:
 |Argument   |Type       |Description                                        |Default value    |
 |:———-|:———-|:———————————————–|:—————-|
-|framework  |string     |which framework you used                        |”pytorch”        |
-|criterion|Criterion |criterion of training                              |”KnowledgeLoss”|
-|metrics    |Metric    |Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer|None    |</p></li>
+|teacher_model  |torch.nn.Module     | teacher model object                    |None        |
+|criterion|Criterion |criterion of training                              |KnowledgeLoss object|</p></li>
 <li><p>example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">d_conf</span> <span class="o">=</span> <span class="n">DistillationConfig</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="n">criterion</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">d_conf</span> <span class="o">=</span> <span class="n">DistillationConfig</span><span class="p">(</span><span class="n">teacher_model</span><span class="o">=</span><span class="n">teacher_model</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="n">criterion</span><span class="p">)</span>
 </pre></div>
 </div>
 </li>
@@ -243,9 +225,7 @@
 <ul>
 <li><p>Distill with Trainer
 NLPTrainer inherits from transformers.Trainer, so you can create a trainer as in examples of Transformers. Then you can distill model with trainer.distill function.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">distill</span><span class="p">(</span>
-    <span class="n">distillation_config</span><span class="o">=</span><span class="n">d_conf</span><span class="p">,</span> <span class="n">teacher_model</span><span class="o">=</span><span class="n">teacher_model</span>
-<span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">distill</span><span class="p">(</span><span class="n">distillation_config</span><span class="o">=</span><span class="n">d_conf</span><span class="p">)</span>
 </pre></div>
 </div>
 </li>
@@ -271,7 +251,7 @@ NLPTrainer inherits from transformers.Trainer, so you can create a trainer as in
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fc072005450> 
+   <jinja2.runtime.BlockReference object at 0x7f4bbc30afb0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
