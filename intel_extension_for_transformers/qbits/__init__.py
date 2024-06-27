@@ -17,5 +17,5 @@
 
 import torch
 import intel_extension_for_transformers
-if "gpu" in intel_extension_for_transformers.__version__:
+if "gpu" not in intel_extension_for_transformers.__version__:
     from intel_extension_for_transformers.qbits_py import *  # pylint: disable=E0401, E0611
