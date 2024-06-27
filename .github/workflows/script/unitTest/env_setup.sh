@@ -1,4 +1,5 @@
 pip list
+pip install setuptools==69.5.1
 
 inc=$(pip list | grep -c 'neural-compressor') || true # Prevent from exiting when 'inc' not found
 if [ ${inc} != 0 ]; then
