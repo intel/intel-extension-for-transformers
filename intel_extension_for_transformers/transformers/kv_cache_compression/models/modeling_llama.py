@@ -924,7 +924,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                 inputs_embeds=input_tensor,
                 past_key_values_length=past_seen_tokens,
                 is_training=self.training,
-            ):  
+            ):
                 return None
 
         dtype, device = input_tensor.dtype, input_tensor.device
