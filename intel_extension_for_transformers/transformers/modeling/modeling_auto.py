@@ -180,7 +180,7 @@ def build_woq_model(model, quantization_config):
 
 def convert_model_to_public(model):
     # reorder weight and scales if they have been transposed
-    if model.device == "xpu":
+    if model.device == "xpu" or (isinstance(model.device, torch.device) and model.device.type == "xpu"):
         for name, module in model.named_modules():
             if isinstance(module, WeightOnlyQuantizedLinear):
                 if module.weight_transposed:
@@ -946,11 +946,7 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        if model_type in ["bloom"]:
-                            attention_mask = torch.ones(len(input_ids) + 1)
-                            attention_mask[0] = 0
-                        else:
-                            attention_mask = torch.ones(len(input_ids))
+                        attention_mask = torch.ones(len(input_ids))
                         position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
                         attention_mask_padded.append(attention_mask)

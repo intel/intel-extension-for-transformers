@@ -39,10 +39,10 @@ from transformers import (
 )
 from intel_extension_for_transformers.transformers import (
     OptimizedModel,
-    QuantizationConfig,
     metrics,
     objectives,
 )
+from neural_compressor.config import PostTrainingQuantConfig, TuningCriterion
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 hf_logging.set_verbosity_info()
@@ -288,12 +288,12 @@ def main():
     if args.do_quantize:
         with track("Quantize"):
             metric = metrics.Metric(name="eval_acc", is_relative=True, criterion=0.01)
-            q_config = QuantizationConfig(
-                framework="pytorch_ipex",
-                approach="PostTrainingStatic",
-                max_trials=200,  # set the Max tune times
-                metrics=[metric],
-                objectives=[objectives.performance],
+            trainer.metrics = metric
+            tuning_criterion = TuningCriterion(max_trials=600)
+            q_config = PostTrainingQuantConfig(
+                backend="ipex",
+                approach="static",
+                tuning_criterion=tuning_criterion
             )
 
             def eval_func(model):

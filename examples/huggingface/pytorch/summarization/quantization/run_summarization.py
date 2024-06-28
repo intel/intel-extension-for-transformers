@@ -30,8 +30,13 @@ import transformers
 from datasets import load_dataset, load_metric
 
 from filelock import FileLock
-from intel_extension_for_transformers.transformers import OptimizedModel, QuantizationConfig
-from intel_extension_for_transformers.transformers import metrics as nlp_metrics
+from intel_extension_for_transformers.transformers import OptimizedModel, metrics
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    QuantizationAwareTrainingConfig,
+    TuningCriterion,
+    AccuracyCriterion
+)
 from intel_extension_for_transformers.transformers.trainer import NLPSeq2SeqTrainer
 from transformers import (
     AutoConfig,
@@ -267,9 +272,9 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply quantization."},
     )
     quantization_approach: Optional[str] = field(
-        default="PostTrainingStatic",
-        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining."},
+        default="static",
+        metadata={"help": "Quantization approach. Supported approach are static, "
+                  "dynamic and qat."},
     )
     metric_name: Optional[str] = field(
         default="eval_rougeLsum",
@@ -700,26 +705,42 @@ def main():
 
 
         trainer.save_model(training_args.output_dir)
-        if optim_args.quantization_approach != "PostTrainingDynamic":
+        if optim_args.quantization_approach != "dynamic":
             if not training_args.do_train:
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-        if optim_args.quantization_approach == "QuantizationAwareTraining":
-            early_stopping_patience = 6
-            early_stopping_threshold = 0.001 # optional
-            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
-                                                                    early_stopping_threshold))
-
-        tune_metric = nlp_metrics.Metric(
+        tune_metric = metrics.Metric(
             name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
         )
-        quantization_config = QuantizationConfig(
-            approach=optim_args.quantization_approach,
-            max_trials=200,
-            metrics=[tune_metric],
-            sampling_size = len(train_dataset)//20
-        )
+        trainer.metrics = tune_metric
+        if optim_args.quantization_approach != "qat":
+            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+            accuracy_criterion = AccuracyCriterion(
+                higher_is_better=True,  # optional.
+                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                tolerable_loss=optim_args.perf_tol,  # optional.
+            )
+            quantization_config = PostTrainingQuantConfig(
+                approach=optim_args.quantization_approach,
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )
+        else:
+            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+            accuracy_criterion = AccuracyCriterion(
+                higher_is_better=True,  # optional.
+                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                tolerable_loss=optim_args.perf_tol,  # optional.
+            )
+            quantization_config = QuantizationAwareTrainingConfig(
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )            
+            early_stopping_patience = 2
+            early_stopping_threshold = 0.001 # optional
+            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience, \
+                                                                    early_stopping_threshold))
         trainer.max_length = max_length
         trainer.num_beams = num_beams
         model = trainer.quantize(quant_config=quantization_config)

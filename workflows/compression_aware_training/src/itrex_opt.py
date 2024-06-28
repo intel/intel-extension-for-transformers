@@ -28,13 +28,18 @@ from datasets import load_dataset, load_metric
 
 # Need to use itrex domain toolkit
 from intel_extension_for_transformers.transformers import (
-    DistillationConfig,
-    PrunerConfig,
-    PruningConfig,
     OptimizedModel,
-    QuantizationConfig,
     metrics,
     objectives,
+)
+from neural_compressor.config import (
+    WeightPruningConfig,
+    DistillationConfig,
+    KnowledgeDistillationLossConfig,
+    QuantizationAwareTrainingConfig,
+    PostTrainingQuantConfig,
+    TuningCriterion,
+    AccuracyCriterion
 )
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from torch.utils.data import DataLoader
@@ -529,7 +534,7 @@ class ItrexOpt(object):
 
         # Initialize and setup our itrexTrainer
         from neural_compressor.adaptor.torch_utils.symbolic_trace import symbolic_trace
-        self.model = symbolic_trace(self.model, self.optim_args.quantization_approach=="QuantizationAwareTraining")
+        self.model = symbolic_trace(self.model, self.optim_args.quantization_approach=="qat")
 
         self.trainer = NLPTrainer(
             model=self.model,
@@ -746,30 +751,38 @@ class ItrexOpt(object):
             raise ValueError("do_eval must be set to True for quantization.")
 
         self.trainer.save_model(self.training_args.output_dir)
-        if self.optim_args.quantization_approach != "PostTrainingDynamic":
+        if self.optim_args.quantization_approach != "dynamic":
             if not self.training_args.do_train:
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-            elif self.optim_args.quantization_approach == "QuantizationAwareTraining":
-                early_stopping_patience = 6
-                early_stopping_threshold = 0.001  # optional
-                # trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
-                #                                                    early_stopping_threshold))
 
         tune_metric = metrics.Metric(
-            name=metric_name,
-            is_relative=self.optim_args.is_relative,
-            criterion=self.optim_args.perf_tol,
+            name=metric_name, is_relative=self.optim_args.is_relative, criterion=self.optim_args.perf_tol
         )
+        self.trainer.metrics = tune_metric
         objective = objectives.performance
-        quantization_config = QuantizationConfig(
-            approach=self.optim_args.quantization_approach,
-            max_trials=600,
-            metrics=[tune_metric],
-            objectives=[objective],
-            sampling_size=len(self.train_dataset) // 20,
+        tuning_criterion = TuningCriterion(max_trials=600, objective=[objective.name])
+        accuracy_criterion = AccuracyCriterion(
+            higher_is_better=True,  # optional.
+            criterion="relative" if self.optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+            tolerable_loss=self.optim_args.perf_tol,  # optional.
         )
+        if self.optim_args.quantization_approach != "qat":
+            quantization_config = PostTrainingQuantConfig(
+                approach=self.optim_args.quantization_approach,
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )
+        else:
+            quantization_config = QuantizationAwareTrainingConfig(
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )
+            early_stopping_patience = 2
+            early_stopping_threshold = 0.001 # optional
+            self.trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience, \
+                                                                    early_stopping_threshold))
         model = self.trainer.quantize(quant_config=quantization_config)
 
         if self.optim_args.benchmark or self.optim_args.accuracy_only:
@@ -939,23 +952,15 @@ class ItrexOpt(object):
             tune_metric = metrics.Metric(
                 name=metric_name, is_relative=self.optim_args.is_relative, criterion=self.optim_args.perf_tol
             )
-            prune_type = 'PatternLock' \
-                if self.optim_args.pruning_approach else self.optim_args.pruning_approach
-            target_sparsity_ratio = self.optim_args.target_sparsity_ratio \
-                if self.optim_args.target_sparsity_ratio else None
-            pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
-            pruning_conf = PruningConfig(framework="pytorch_fx",pruner_config=[pruner_config], metrics=tune_metric)
-            distillation_conf = DistillationConfig(framework="pytorch_fx", metrics=tune_metric)
-
-            objective = objectives.performance
-            quantization_conf = QuantizationConfig(
-                approach=self.optim_args.quantization_approach,
-                max_trials=600,
-                metrics=[tune_metric],
-                objectives=[objective]
-            )
+            self.trainer.metrics = tune_metric
+            pruning_conf = WeightPruningConfig([{"start_step": 0, "end_step": 2}],
+                                                target_sparsity=self.optim_args.target_sparsity_ratio,
+                                                pruning_scope="local")
+            distillation_criterion = KnowledgeDistillationLossConfig(loss_types=["CE", "KL"])
+            distillation_conf = DistillationConfig(teacher_model=self.teacher_model, criterion=distillation_criterion)
+            quantization_conf = QuantizationAwareTrainingConfig()
             conf_list = [pruning_conf, distillation_conf, quantization_conf]
-            model = self.trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=self.teacher_model)
+            model = self.trainer.orchestrate_optimizations(config_list=conf_list)
 
         # ############################################################
         print(

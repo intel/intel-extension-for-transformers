@@ -33,12 +33,14 @@ import torch
 import transformers
 from intel_extension_for_transformers.transformers import (
     metrics,
-    PrunerConfig,
-    PruningConfig,
-    DistillationConfig,
-    QuantizationConfig,
     OptimizedModel,
     objectives
+)
+from neural_compressor.config import (
+    WeightPruningConfig,
+    DistillationConfig,
+    KnowledgeDistillationLossConfig,
+    QuantizationAwareTrainingConfig,
 )
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -225,7 +227,7 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply prune."},
     )
     pruning_approach: Optional[str] = field(
-        default="BasicMagnitude",
+        default="magnitude",
         metadata={"help": "Pruning approach. Supported approach is basic_magnite."},
     )
     target_sparsity_ratio: Optional[float] = field(
@@ -245,9 +247,9 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply quantization."},
     )
     quantization_approach: Optional[str] = field(
-        default="QuantizationAwareTraining",
-        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining."},
+        default="qat",
+        metadata={"help": "Quantization approach. Supported approach are static, "
+                  "dynamic and qat."},
     )
     metric_name: Optional[str] = field(
         default="eval_f1",
@@ -789,7 +791,7 @@ def main():
 
     # Trace model
     from neural_compressor.adaptor.torch_utils.symbolic_trace import symbolic_trace
-    model = symbolic_trace(model, optim_args.quantization_approach=="QuantizationAwareTraining")
+    model = symbolic_trace(model, optim_args.quantization_approach=="qat")
 
     # Initialize our Trainer
     trainer = QuestionAnsweringTrainer(
@@ -814,23 +816,20 @@ def main():
         tune_metric = metrics.Metric(
             name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
         )
-        prune_type = 'PatternLock' \
+        prune_type = 'pattern_lock' \
             if optim_args.pruning_approach else optim_args.pruning_approach
         target_sparsity_ratio = optim_args.target_sparsity_ratio \
             if optim_args.target_sparsity_ratio else None
-        pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
-        pruning_conf = PruningConfig(framework="pytorch_fx",pruner_config=[pruner_config], metrics=tune_metric)
-        distillation_conf = DistillationConfig(framework="pytorch_fx", metrics=tune_metric)
-
-        objective = objectives.performance
-        quantization_conf = QuantizationConfig(
-            approach=optim_args.quantization_approach,
-            max_trials=600,
-            metrics=[tune_metric],
-            objectives=[objective]
-        )
+        trainer.metrics = tune_metric
+        pruning_conf = WeightPruningConfig([{"start_step": 0, "end_step": 2}],
+                                            target_sparsity=target_sparsity_ratio,
+                                            pruning_scope="local",
+                                            pruning_type=prune_type)
+        distillation_criterion = KnowledgeDistillationLossConfig(loss_types=["CE", "KL"])
+        distillation_conf = DistillationConfig(teacher_model=teacher_model, criterion=distillation_criterion)
+        quantization_conf = QuantizationAwareTrainingConfig()
         conf_list = [pruning_conf, distillation_conf, quantization_conf]
-        model = trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=teacher_model)
+        model = trainer.orchestrate_optimizations(config_list=conf_list)
 
     if optim_args.benchmark or optim_args.accuracy_only:
         start_time = timeit.default_timer()
@@ -839,7 +838,7 @@ def main():
         max_eval_samples = data_args.max_eval_samples \
             if data_args.max_eval_samples is not None else len(eval_dataset)
         eval_samples = min(max_eval_samples, len(eval_dataset))
-        samples = eval_samples - (eval_samples % batch_size) \
+        samples = eval_samples - (eval_samples % optim_args.batch_size) \
             if training_args.dataloader_drop_last else eval_samples
         logger.info("metrics keys: {}".format(results.keys()))
         bert_task_acc_keys = ['eval_f1', 'eval_accuracy', 'eval_matthews_correlation',

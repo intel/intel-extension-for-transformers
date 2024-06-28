@@ -1,6 +1,6 @@
 Step-by-Step​
 ============
-The script `run_qa.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+The script `run_qa.py` provides three quantization approaches (dynamic, static and qat) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
 # Prerequisite​
 ## 1. Create Environment​
@@ -8,9 +8,8 @@ Recommended python 3.9 or higher version.
 ```shell
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
-pip install transformers==4.34.1
+
 ```
->**Note**: Please use transformers no higher than 4.34.1
 
 # Run
 ## 1. Quantization
@@ -22,7 +21,7 @@ python run_qa.py \
     --model_name_or_path distilbert-base-uncased-distilled-squad \
     --dataset_name squad \
     --tune \
-    --quantization_approach PostTrainingStatic \
+    --quantization_approach static \
     --do_train \
     --do_eval \
     --output_dir ./tmp/squad_output \
@@ -36,7 +35,7 @@ python run_qa.py \
     --model_name_or_path bert-large-uncased-whole-word-masking-finetuned-squad \
     --dataset_name squad \
     --tune \
-    --quantization_approach PostTrainingStatic \
+    --quantization_approach static \
     --do_train \
     --do_eval \
     --output_dir ./tmp/squad_output \
@@ -65,7 +64,7 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
         --model_name_or_path bert-large-uncased-whole-word-masking-finetuned-squad \
         --dataset_name squad \
         --tune \
-        --quantization_approach QuantizationAwareTraining \
+        --quantization_approach qat \
         --do_train \
         --do_eval \
         --output_dir ./tmp/squad_output \
@@ -75,7 +74,7 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
 ## 3. Validated Model List
 ###  Stock PyTorch Validated model list
 
-|Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining 
+|Dataset|Pretrained model|dynamic | static | qat 
 |---|------------------------------------|---|---|---
 |squad|distilbert-base-uncased-distilled-squad| ✅| ✅| ✅
 |squad|valhalla/longformer-base-4096-finetuned-squadv1| ✅| ✅| N/A

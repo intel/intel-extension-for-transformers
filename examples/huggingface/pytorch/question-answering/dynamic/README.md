@@ -82,7 +82,7 @@ python run_qa.py \
 python run_qa.py \
 --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1" \
 --dataset_name squad \
---quantization_approach PostTrainingStatic \
+--quantization_approach static \
 --do_eval \
 --do_train \
 --tune \

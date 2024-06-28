@@ -20,11 +20,8 @@ import unittest
 from intel_extension_for_transformers.transformers import (
     metrics,
     OptimizedModel,
-    PrunerConfig,
-    PruningConfig,
-    PruningMode,
-    NoTrainerOptimizer
 )
+from neural_compressor.config import WeightPruningConfig
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from transformers import (
     AutoModelForSequenceClassification,
@@ -63,7 +60,6 @@ class TestPruning(unittest.TestCase):
             train_dataset=self.dummy_dataset,
             eval_dataset=self.dummy_dataset,
         )
-        self.optimizer = NoTrainerOptimizer(self.model)
 
     @classmethod
     def tearDownClass(self):
@@ -72,31 +68,29 @@ class TestPruning(unittest.TestCase):
 
     def test_fx_model_prune(self):
         origin_weight = copy.deepcopy(self.model.classifier.weight)
-        for mode in PruningMode:
-            # not supported yet
-            if mode.name != "BasicMagnitude".upper():
-                continue
-            self.trainer = NLPTrainer(
-                model=self.model,
-                train_dataset=self.dummy_dataset,
-                eval_dataset=self.dummy_dataset,
-            )
-            metric = metrics.Metric(name="eval_loss")
-            pruner_config = PrunerConfig(prune_type=mode.name, target_sparsity_ratio=0.9)
-            pruning_conf = PruningConfig(pruner_config=pruner_config, metrics=metric)
-            agent = self.trainer.init_pruner(pruning_config=pruning_conf)
-            pruned_model = self.trainer.prune()
-            # By default, model will be saved in tmp_trainer dir.
-            self.trainer.save_model('./pruned_model')
-            loaded_model = OptimizedModel.from_pretrained(
-                './pruned_model',
-            )
-            pruned_weight = copy.deepcopy(pruned_model.classifier.weight)
-            loaded_weight = copy.deepcopy(loaded_model.classifier.weight)
-            # check pruned model
-            self.assertTrue((pruned_weight != origin_weight).any())
-            # check loaded model
-            self.assertTrue((pruned_weight == loaded_weight).all())
+
+        self.trainer = NLPTrainer(
+            model=self.model,
+            train_dataset=self.dummy_dataset,
+            eval_dataset=self.dummy_dataset,
+        )
+        metric = metrics.Metric(name="eval_loss")
+        self.trainer.metrics = metric
+        pruning_conf = WeightPruningConfig([{"start_step": 0, "end_step": 2}],
+                                            target_sparsity=0.64,
+                                            pruning_scope="local")
+        pruned_model = self.trainer.prune(pruning_config=pruning_conf)
+        # By default, model will be saved in tmp_trainer dir.
+        self.trainer.save_model('./pruned_model')
+        loaded_model = OptimizedModel.from_pretrained(
+            './pruned_model',
+        )
+        pruned_weight = copy.deepcopy(pruned_model.classifier.weight)
+        loaded_weight = copy.deepcopy(loaded_model.classifier.weight)
+        # check pruned model
+        self.assertTrue((pruned_weight != origin_weight).any())
+        # check loaded model
+        self.assertTrue((pruned_weight == loaded_weight).all())
 
     def test_functional_prune(self):
         def eval_func(model):
@@ -106,27 +100,14 @@ class TestPruning(unittest.TestCase):
             return model
 
         self.trainer = NLPTrainer(self.model)
-        pruner_conf = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
-        pruning_conf = PruningConfig(pruner_config=pruner_conf)
+        pruning_conf = WeightPruningConfig([{"start_step": 0, "end_step": 2}],
+                                            target_sparsity=0.64,
+                                            pruning_scope="local")
         self.trainer.prune(pruning_conf,
                            provider="inc",
                            train_func = train_func,
                            eval_func = eval_func,)
 
-    def test_no_trainer_prune(self):
-        def eval_func(model):
-            return 1
 
-        def train_func(model):
-            return model
-
-        pruner_conf = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
-        pruning_conf = PruningConfig(pruner_config=pruner_conf)
-        self.optimizer.eval_func = eval_func
-        self.optimizer.train_func = train_func
-        self.optimizer.prune(pruning_conf,
-                           provider="inc",
-                           train_func = train_func,
-                           eval_func = eval_func,)
 if __name__ == "__main__":
     unittest.main()

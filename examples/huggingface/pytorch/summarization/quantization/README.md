@@ -49,18 +49,16 @@ python examples/pytorch/summarization/run_summarization.py \
     --dataset_name samsum \
     --do_train \
     --do_eval \
-    --train_file path_to_csv_or_jsonlines_file \
-    --validation_file path_to_csv_or_jsonlines_file \
     --output_dir /tmp/tst-summarization \
     --overwrite_output_dir \
-    --per_device_train_batch_size=8 \
-    --per_device_eval_batch_size=8 \
+    --per_device_train_batch_size 8 \
+    --per_device_eval_batch_size 8 \
     --tune \
     --predict_with_generate \
     --perf_tol 0.03
 ```
 ### 2. Validated Model List
-|Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining 
+|Dataset|Pretrained model|dynamic | static | qat 
 |---|------------------------------------|---|---|---
 |samsum|pegasus_samsum| ✅| N/A | N/A
 |cnn_dailymail|t5_base_cnn| ✅| N/A | N/A 
