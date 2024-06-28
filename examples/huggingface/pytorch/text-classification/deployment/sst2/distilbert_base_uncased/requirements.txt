@@ -1,4 +1,5 @@
-neural-compressor
+intel-extension-for-transformers==1.4.2
+neural-compressor==2.6
 transformers
 accelerate
 datasets >= 1.8.0
