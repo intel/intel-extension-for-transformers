@@ -2450,6 +2450,58 @@
       }
     }
   },
+  "phi_2b_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "phi_2b",
+        "task": "generation",
+        "approach": "static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "phi_2b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "phi_3b_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "phi_3b",
+        "task": "generation",
+        "approach": "static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "phi_3b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "flan-t5-large_gen_ipex_static": {
     "working_dir": "huggingface/pytorch/text2text-generation",
     "tune": {
