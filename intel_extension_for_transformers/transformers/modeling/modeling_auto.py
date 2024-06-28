@@ -845,11 +845,7 @@ class _BaseQBitsAutoModelClass:
                 or device_map == "cpu"
                 or device_map == torch.device("cpu")
             ) and model.config.model_type == "mpt":
-                config = AutoConfig.from_pretrained(
-                    os.path.join(os.path.dirname(__file__), "mosaicml_mpt-7b_config.json"),
-                    torchscript=True
-                )
-                model.config = config
+                model.config.architectures = ["MptForCausalLM"]
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
 
