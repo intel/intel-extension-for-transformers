@@ -34,7 +34,7 @@ use_woq: true
 optimization:
     use_neural_speed: true
     optimization_type: "weight_only"
-    compute_dtype: "fp32"
+    compute_dtype: "int8"
     weight_dtype: "int4"
 ######################### end #########################
 
