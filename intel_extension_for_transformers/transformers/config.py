@@ -19,7 +19,7 @@
 import yaml
 from enum import Enum
 
-from neural_compressor.conf.dotdict import DotDict
+from neural_compressor.utils.utility import DotDict
 from .utils.metrics import Metric
 from .utils.objectives import Objective, performance
 
