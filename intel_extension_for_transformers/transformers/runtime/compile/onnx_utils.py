@@ -73,7 +73,7 @@ def get_initializer_children_names(model, initializer):
 def graph_node_names_details(model):
     """Parse the graph nodes ans get the graph_nodes_dict.
 
-    Be used for Grpah class with creating a new graph.
+    Be used for Graph class with creating a new graph.
     The node_name is the key, node in value is for getting the Const
     tensor value and the input_tensor source op; output_names in value
     is the node output name list; outputs in value is for output_tensor dest op
@@ -155,7 +155,7 @@ def bias_to_int32(bias_node, a_scale, b_scale):
         bias_node: bias_add in graph (from onnx framework)
         a_scale: matmul node input matrice a scale tensor
         b_scale: matmul node input matrice b scale tensor
-        model: Grpah class
+        model: Graph class
 
     Returns:
         int32 bias numpy array
