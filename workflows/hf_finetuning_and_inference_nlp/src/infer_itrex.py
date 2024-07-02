@@ -17,7 +17,6 @@ import numpy as np
 import torch
 from os import path
 from intel_extension_for_transformers.transformers import (
-    QuantizationConfig,
     metrics,
     objectives,
 )
@@ -29,7 +28,7 @@ from transformers import (
     DataCollatorWithPadding,
     Trainer,
 )
-
+from neural_compressor.config import PostTrainingQuantConfig, TuningCriterion
 from infer import DlsaInference
 from utils import PredsLabels, compute_metrics, save_performance_metrics
 
@@ -76,12 +75,11 @@ class ItrexInfer(DlsaInference):
             )
 
             metric = metrics.Metric(name="eval_acc", is_relative=True, criterion=0.03)
-            q_config = QuantizationConfig(
-                framework="pytorch",
-                approach="PostTrainingStatic",
-                max_trials=200,  # set the Max tune times
-                metrics=[metric],
-                objectives=[objectives.performance],
+            self.trainer.metrics = metric
+            tuning_criterion = TuningCriterion(max_trials=200)
+            q_config = PostTrainingQuantConfig(
+                approach="static",
+                tuning_criterion=tuning_criterion,
             )
             eval_dataloader = self.trainer.get_eval_dataloader()
             self.model = self.trainer.quantize(

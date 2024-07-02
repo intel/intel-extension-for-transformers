@@ -15,7 +15,7 @@ function init_params {
   DATASET_NAME="xsum"
   extra_cmd=""
   batch_size=8
-  approach="PostTrainingStatic"
+  approach="static"
   for var in "$@"
   do
     case $var in
@@ -45,24 +45,24 @@ function run_tuning {
     if [ "${topology}" == "pegasus_samsum_dynamic" ]; then
         DATASET_NAME="samsum"
         model_name_or_path="lvwerra/pegasus-samsum"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     elif [ "${topology}" == "t5_base_cnn_dynamic" ]; then
         DATASET_NAME="cnn_dailymail"
         model_name_or_path="flax-community/t5-base-cnn-dm"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     elif [ "${topology}" == "t5_large_cnn_dynamic" ]; then
         DATASET_NAME="cnn_dailymail"
         model_name_or_path="sysresearch101/t5-large-finetuned-xsum-cnn"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
     elif [ "${topology}" == "flan_t5_large_samsum_dynamic" ]; then
         DATASET_NAME="samsum"
         model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
-        approach="PostTrainingDynamic"
+        approach="dynamic"
         extra_cmd=$extra_cmd" --perf_tol 0.03"
     elif [ "${topology}" == "flan_t5_large_samsum_static" ]; then
         DATASET_NAME="samsum"
         model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
-        approach="PostTrainingStatic"
+        approach="static"
         extra_cmd=$extra_cmd" --perf_tol 0.03"
     else
         echo "unsupported topology: ${topology}"

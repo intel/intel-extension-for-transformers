@@ -468,7 +468,7 @@ def main():
 
     # Get the metric function
     if data_args.task_name is not None:
-        metric = load_metric("glue", data_args.task_name)
+        metric = load_metric("glue", data_args.task_name,trust_remote_code=True)
     else:
         metric = load_metric("accuracy")
 

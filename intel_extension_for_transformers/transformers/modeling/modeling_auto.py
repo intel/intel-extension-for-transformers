@@ -841,6 +841,12 @@ class _BaseQBitsAutoModelClass:
                 or device_map == torch.device("cpu")
             ) and model.config.model_type == "chatglm":
                 model = model.float()
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "mpt":
+                model.config.architectures = ["MptForCausalLM"]
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
 
@@ -947,11 +953,7 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        if model_type in ["bloom"]:
-                            attention_mask = torch.ones(len(input_ids) + 1)
-                            attention_mask[0] = 0
-                        else:
-                            attention_mask = torch.ones(len(input_ids))
+                        attention_mask = torch.ones(len(input_ids))
                         position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
                         attention_mask_padded.append(attention_mask)
@@ -1082,6 +1084,7 @@ class _BaseQBitsAutoModelClass:
                 recipes=quantization_config.recipes,
                 example_inputs=example_inputs,
             )
+
             model = quantization.fit(
                 model,
                 conf,

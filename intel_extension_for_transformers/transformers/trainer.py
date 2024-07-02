@@ -27,17 +27,19 @@ import json
 import warnings
 from functools import partial
 from neural_compressor import __version__ as nc_version
-from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
 from intel_extension_for_transformers.transformers import (
-    DistillationConfig,
     Provider,
-    PruningMode,
-    QuantizationConfig,
-    QuantizationMode,
-    PruningConfig,
     DynamicLengthConfig,
     BenchmarkConfig,
+)
+from neural_compressor.training import prepare_compression
+from neural_compressor.quantization import fit
+from neural_compressor.config import (
+    DistillationConfig,
+    WeightPruningConfig,
+    PostTrainingQuantConfig,
+    QuantizationAwareTrainingConfig,
 )
 from intel_extension_for_transformers.transformers.benchmark import benchmark
 from intel_extension_for_transformers.transformers.utils.metrics import Metric
@@ -128,11 +130,7 @@ class BaseTrainer():
         self._calib_dataloader = None
         self._resuming_checkpoint = None
         self.compression_ctrl = None
-        self.component = None
         self.enable_inc_quant = False
-        self.pruner = None
-        self.quantizer = None
-        self.distiller = None
         self.fp32_model = None
         self.opt_model = None
         # This flag is set for the engine in the export_to_int8_onnx API.
@@ -141,7 +139,8 @@ class BaseTrainer():
         self.orchestrate_opt = False
         self.orchestrate_opt_pruning = False
         self.dynamic_config = None
-
+        self.model_config = None
+        self.compression_manager = None
 
     @property
     def resuming_checkpoint(self):
@@ -239,7 +238,7 @@ class BaseTrainer():
         """
         self.model_wrapped = model
         self.model = model
-        train_result = self.train(component=self.component,
+        train_result = self.train(compression_manager=self.compression_manager,
                                   resume_from_checkpoint=self._resuming_checkpoint)
         metrics = train_result.metrics
         if not self.orchestrate_opt:
@@ -248,42 +247,6 @@ class BaseTrainer():
         self.save_metrics("train", metrics)
         self.save_state()
         return self.model
-
-    def init_quantizer(
-        self,
-        quant_config,
-        provider: str = Provider.INC.value,
-    ):
-        """Initialize the quantizer.
-
-        Args:
-            quant_config: The path to the YAML configuration file or QuantizationConfig class containing
-                accuracy goal, quantization objective and related dataloaders etc.
-            provider: The provider used to quantize.
-
-        Returns:
-            An objective of neural_compressor Quantization class, which can automativally searches for
-            optimal quantization recipes for low precision model inference and achieving best tuning
-            objectives.
-        """
-        from neural_compressor.experimental import Quantization
-
-        assert isinstance(quant_config, QuantizationConfig), \
-            "Please pass QuantizationConfig instance to trainer.quantize!"
-        self.quant_config = quant_config
-        self.metrics = self.quant_config.metrics
-        self._provider = Provider[provider.upper()].value
-
-        if self.quant_config.framework == "pytorch":
-            if self.quant_config.approach != QuantizationMode.POSTTRAININGDYNAMIC.value \
-              or self.quant_config.strategy == 'mse_v2':
-                self.quant_config.framework = "pytorch_fx"
-
-        quantizer = Quantization(self.quant_config.inc_config)
-        quantizer.model = self.model
-
-        self.quantizer = quantizer
-        return quantizer
 
     def _inc_quantize(
         self,
@@ -295,34 +258,29 @@ class BaseTrainer():
             self.fp32_model = copy.deepcopy(self.model)
         except Exception as e:  # pragma: no cover
             logger.warning("Model deepcopy failed: {}!".format(repr(e)))
-        if self.quantizer is None:
-            self.init_quantizer(quant_config=quant_config, provider=provider)
-        if self._eval_func is not None:
-            self.quantizer.eval_func = self._eval_func
-        else:  # pragma: no cover
-            assert self.metrics is not None, \
-                "Please pass the metrics to QuantizationConfig.metrics!"
-            self.quantizer.eval_func = self.builtin_eval_func
-
-        if self.quant_config.framework == "pytorch_ipex":
-            self.model_config = self.model.config # jit model will loss config
-        if self.quant_config.approach != QuantizationMode.POSTTRAININGDYNAMIC.value \
-          or self.quant_config.strategy == 'mse_v2':
-            # pylint: disable=E1101
-            self.quantizer.calib_dataloader = self.get_train_dataloader() \
-                if self._calib_dataloader is None else self._calib_dataloader
-        if self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
-            self.quantizer.q_func = \
-                self.builtin_train_func if self._train_func is None else self._train_func
-        self.component = self.quantizer
-        self.opt_model = self.quantizer.fit()
+        if isinstance(quant_config, PostTrainingQuantConfig):
+            if quant_config.backend == "ipex":
+                self.model_config = self.model.config # jit model will loss config
+            if self._calib_dataloader is None:
+                self._calib_dataloader = self.get_train_dataloader()
+            self.opt_model = fit(self.model,
+                                 conf=quant_config,
+                                 calib_dataloader=self._calib_dataloader,
+                                 eval_func=self._eval_func)
+        else:
+            compression_manager = prepare_compression(self.model, quant_config)
+            self.compression_manager = compression_manager
+            self.compression_manager.callbacks.on_train_begin()
+            self._train_func(compression_manager.model._model)
+            self.compression_manager.callbacks.on_train_end()
+            self.opt_model = self.compression_manager.model
         self.enable_inc_quant = True
         self.save_model(self.args.output_dir)
         return self.opt_model.model
 
     def quantize(
         self,
-        quant_config: QuantizationConfig = None,
+        quant_config: Union[PostTrainingQuantConfig, QuantizationAwareTrainingConfig] = None,
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
@@ -331,7 +289,7 @@ class BaseTrainer():
         """The main entry point of automatic quantization tuning.
 
         Args:
-            quant_config: The path to the YAML configuration file or QuantizationConfig class containing
+            quant_config: QuantizationConfig class containing
                 accuracy goal, quantization objective and related dataloaders etc.
             provider: The provider used to quantize.
             eval_func (:obj:`Callable`, optional): The function used to evaluate the model.
@@ -347,9 +305,6 @@ class BaseTrainer():
         self._train_func = self.builtin_train_func if train_func is None else train_func
         if calib_dataloader is not None:
             self._calib_dataloader = calib_dataloader
-
-        if self.quantizer is None:
-            self._provider = Provider[provider.upper()].value
 
         if self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
@@ -375,54 +330,9 @@ class BaseTrainer():
             torch.save(opt_model.quantized_state_dict(), weights_file)
         logger.info("quantized model and configure file have saved to {}".format(output_dir))
 
-    def init_pruner(
-        self,
-        pruning_config=None,
-        provider: str = Provider.INC.value,
-    ):
-        """Initialize the pruner.
-
-        Args:
-            pruning_config: The path to the YAML configuration file or PruningConf class containing
-            accuracy goal, pruning objective and related dataloaders etc.
-            provider: The provider used to quantize.
-
-        Returns:
-            An objective of neural_compressor Pruning class.
-        """
-
-        from neural_compressor.experimental import Pruning
-        self.pruning_config = pruning_config
-        self.metrics = self.pruning_config.metrics
-        self._provider = Provider[provider.upper()].value
-
-        assert isinstance(self.pruning_config, PruningConfig), \
-            "please pass a instance of PruningConfig to trainer.prune!"
-
-        pruning_start_epoch, pruning_end_epoch = self.pruning_config.epoch_range
-
-        # pylint: disable=E1101
-        if pruning_start_epoch > self.args.num_train_epochs - 1:
-            logger.warning(f"Pruning end epoch {pruning_start_epoch} is higher than "
-                           f"the total number of training epoch "
-                           f"{self.args.num_train_epochs}. No pruning will be applied.")
-
-        # pylint: disable=E1101
-        if pruning_end_epoch > self.args.num_train_epochs - 1:
-            logger.warning(
-                f"Pruning end epoch {pruning_end_epoch} is higher than "
-                f"the total number of training epoch "
-                f"{self.args.num_train_epochs}. The target sparsity will not be reached.")
-
-        pruner = Pruning(self.pruning_config.inc_config)
-        pruner.model = self.model
-
-        self.pruner = pruner
-        return pruner
-
     def prune(
         self,
-        pruning_config=None,
+        pruning_config: Union[WeightPruningConfig] = None,
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
@@ -439,72 +349,19 @@ class BaseTrainer():
         Returns:
             An objective of neural_compressor Pruning class.
         """
-        if self.pruner is None:
-            self.init_pruner(pruning_config=pruning_config, provider=provider)
-        if eval_func is not None:
-            self._eval_func = eval_func
-        if train_func is not None:
-            self._train_func = train_func
-
-        if self._eval_func is not None:
-            self.pruner.eval_func = self._eval_func
-        else:
-            assert self.metrics is not None, "Please pass metrics to trainer.pruning.metrics!"
-            assert self.pruning_config.pruner_config[0].prune_type == PruningMode.BASICMAGNITUDE.value, \
-                "Please pass eval_func to trainer.eval_func"
-            self.pruner.eval_func = self.builtin_eval_func
-
-        if self._train_func is not None:
-            self.pruner.pruning_func = self._train_func
-        else:
-            assert self.pruning_config.pruner_config[0].prune_type == PruningMode.BASICMAGNITUDE.value, \
-                "Please pass train_func to trainer.train_func"
-            self.pruner.pruning_func = self.builtin_train_func
-
-        self.component = self.pruner
-        self.opt_model = self.pruner.fit()
-        stats, sparsity = self.opt_model.report_sparsity()
-        logger.info(stats)
-        logger.info(sparsity)
-
+        self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
+        self._train_func = self.builtin_train_func if train_func is None else train_func
+        compression_manager = prepare_compression(model=self.model, confs=pruning_config)
+        self.compression_manager = compression_manager
+        self.compression_manager.callbacks.on_train_begin()
+        self._train_func(compression_manager.model._model)
+        self.compression_manager.callbacks.on_train_end()
+        self.opt_model = self.compression_manager.model
         return self.opt_model.model
-
-    def init_distiller(
-        self,
-        distillation_config,
-        teacher_model: Union[PreTrainedModel, torch.nn.Module],
-        provider: str = Provider.INC.value,
-    ):
-        """The main entry point of automatic distillation tuning.
-
-        Args:
-            quant_config: The path to the YAML configuration file or DistillationConfig class containing.
-            accuracy goal, distillation objective and related dataloaders etc.
-            teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
-            provider (str): The provider used to quantize.
-
-        Returns:
-            An objective of neural_compressor Distillation class.
-        """
-        from neural_compressor.experimental import Distillation
-        assert isinstance(distillation_config, DistillationConfig), \
-            "please pass a instance of PruningConfig to trainer.prune!"
-        self.distillation_config = distillation_config
-        self._provider = Provider[provider.upper()].value
-        self.metrics = self.distillation_config.metrics
-        self.teacher_model = teacher_model
-
-        distiller = Distillation(self.distillation_config.inc_config)
-        distiller.model = self.model
-        distiller.teacher_model = self.teacher_model
-
-        self.distiller = distiller
-        return distiller
 
     def distill(
         self,
-        distillation_config,
-        teacher_model: Union[PreTrainedModel, torch.nn.Module],
+        distillation_config: Union[DistillationConfig] = None,
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
@@ -514,7 +371,6 @@ class BaseTrainer():
         Args:
             quant_config: The path to the YAML configuration file or DistillationConfig class containing
             accuracy goal, distillation objective and related dataloaders etc.
-            teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
             provider (str): The provider used to quantize.
             eval_func (:obj:`Callable`, optional: The function to evaluate the model.
             train_func (:obj:`Callable`, optional: The function to train the model.
@@ -522,34 +378,25 @@ class BaseTrainer():
         Returns:
             An objective of neural_compressor Distillation class.
         """
-        if self.distiller is None:
-            self.init_distiller(distillation_config=distillation_config,
-                                teacher_model=teacher_model,
-                                provider=provider)
-        if eval_func is not None:
-            self._eval_func = eval_func
-        if train_func is not None:
-            self._train_func = train_func
-
-        if self._eval_func is not None:
-            self.distiller.eval_func = self._eval_func
+        if distillation_config.teacher_model is not None:
+            self.teacher_model = distillation_config.teacher_model
         else:
-            assert self.metrics is not None, \
-                "Please pass metrics to trainer.distillation.metrics!"
-            self.distiller.eval_func = self.builtin_eval_func
+            assert False, "Please provide teacher model for DistillationConfig."
+        self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
+        self._train_func = self.builtin_train_func if train_func is None else train_func
 
-        self.distiller.train_func = \
-            self.builtin_train_func if self._train_func is None else self._train_func
-        self.distiller.create_criterion()
-        self.component = self.distiller
-        self.opt_model = self.distiller.fit()
+        compression_manager = prepare_compression(self.model, distillation_config)
+        self.compression_manager = compression_manager
+        self.compression_manager.callbacks.on_train_begin()
+        self._train_func(compression_manager.model._model)
+        self.compression_manager.callbacks.on_epoch_end()
+        self.opt_model = self.compression_manager.model
 
         return self.opt_model.model
 
     def orchestrate_optimizations(
         self,
         config_list,
-        teacher_model: Optional[Callable] = None,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
@@ -562,54 +409,25 @@ class BaseTrainer():
             eval_func (:obj:`Callable`, optional): Evaluation function to evaluate the tuning objective.
             train_func (:obj:`Callable`, optional): Training function which will be combined with pruning.
         """
-        from intel_extension_for_transformers.transformers.optimizer import Orchestrate_optimizer
+        # from intel_extension_for_transformers.transformers.optimizer import Orchestrate_optimizer
         self.orchestrate_opt = True
+        for config in config_list:
+            if isinstance(config, DistillationConfig):
+                self.teacher_model = config.teacher_model
+                assert self.teacher_model is not None, "Distillation need teacher model, please provide."
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
         self._train_func = self.builtin_train_func if train_func is None else train_func
-        components = self.create_optimizer_builtin(config_list, teacher_model)
-        self.orchestrate_optimizer = Orchestrate_optimizer(self.model, components, \
-                                     eval_func=self.eval_func, train_func=self.train_func, \
-                                     output_dir=self.args.output_dir)
-        self.component = self.orchestrate_optimizer.scheduler.components[0]
-        torch_model = self.orchestrate_optimizer.fit()
-        return torch_model
-
-    def create_optimizer_builtin(self, config_list, teacher_model=None):
-        """The function to create optimizer.
-
-        Args:
-            config_list: The list of configs.
-            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge
-                to a smaller model.
-        """
-        components = []
-        for config in config_list:
-            if isinstance(config, QuantizationConfig):
-                component = self.init_quantizer(config)
-                component.eval_func = self._eval_func
-                component.q_func = self._train_func
-                self.enable_inc_quant = True
-            elif isinstance(config, PruningConfig):
-                self.orchestrate_opt_pruning = True
-                component = self.init_pruner(config)
-                component.eval_func = self._eval_func
-                component.pruning_func = self._train_func
-            elif isinstance(config, DistillationConfig):
-                assert isinstance(teacher_model, torch.nn.Module), \
-                        "The teacher_model is needed for distiller"
-                component = self.init_distiller(config, teacher_model)
-                component.eval_func = self._eval_func
-                component.train_func = self._train_func
-                component.create_criterion()
-            else:  # pragma: no cover
-                assert False, "Orchestrate_optimizations config_list requires at least one" \
-                    "       `QuantizationConfig`, `PruningConfig` or `DistillationConfig` object"
-            components.append(component)
-        return components
+        compression_manager = prepare_compression(model=self.model, confs=config_list)
+        self.compression_manager = compression_manager
+        self.compression_manager.callbacks.on_train_begin()
+        self._train_func(compression_manager.model._model)
+        self.compression_manager.callbacks.on_train_end()
+        self.opt_model = self.compression_manager.model
+        return self.opt_model.model
 
     def train(
         self,
-        component: Optional[Component] = None,
+        compression_manager = None,
         resume_from_checkpoint: Optional[Union[str, bool]] = None,
         trial: Union["optuna.Trial", Dict[str, Any]] = None,
         ignore_keys_for_eval: Optional[List[str]] = None,
@@ -618,7 +436,7 @@ class BaseTrainer():
         """The main entry point tor train model.
 
         Args:
-            component (:obj:`Component`, `optional`): Component object handling the training process.
+            compression_manager (:obj:`CompressionManager`, `optional`): handling the training process.
             resume_from_checkpoint (:obj:`str` or :obj:`bool`, `optional`): If a :obj:`str`, local path
                 to a saved checkpoint as saved by a previous instance of :class:`~transformers.Trainer`.
                 If a :obj:`bool` and equals `True`, load the last checkpoint in `args.output_dir` as saved
@@ -642,7 +460,7 @@ class BaseTrainer():
 
         self.is_in_train = True
 
-        self.component = component
+        self.compression_manager = compression_manager
 
         # do_train is not a reliable argument, as it might not be set and .train() still called, so
         # the following is a workaround:
@@ -866,17 +684,12 @@ class BaseTrainer():
                 # We just need to begin an iteration to create the randomization of the sampler.
                 for _ in train_dataloader:
                     break
-        if isinstance(component, Component):
-            if hasattr(self.component, "teacher_model"):
-                self.component.teacher_model._model = self._wrap_model(
-                    self.component.teacher_model.model)
-            component.pre_epoch_begin(self.calib_dataloader if self.calib_dataloader else None)
-            if component.combination is not None and "Quantization" in component.combination:
-                model = component.model.model
+        if self.compression_manager is not None:
+            if self.teacher_model is not None:
+                self.teacher_model = self._wrap_model(
+                    self.teacher_model)
+            # compression_manager.pre_epoch_begin(self.calib_dataloader if self.calib_dataloader else None)
         for epoch in range(epochs_trained, num_train_epochs):
-            if self.compression_ctrl is not None:
-                self.compression_ctrl.scheduler.epoch_step()
-                print(self.compression_ctrl.statistics().to_str())
             if isinstance(train_dataloader, torch.utils.data.dataloader.DataLoader) and \
               isinstance(train_dataloader.sampler, torch.utils.data.distributed.DistributedSampler):
                 train_dataloader.sampler.set_epoch(epoch)
@@ -892,8 +705,8 @@ class BaseTrainer():
             steps_in_epoch = (len(epoch_iterator) if train_dataset_is_sized else args.max_steps *
                               args.gradient_accumulation_steps)
             self.control = self.callback_handler.on_epoch_begin(args, self.state, self.control)
-            if isinstance(component, Component):
-                component.on_epoch_begin(epoch)
+            if self.compression_manager is not None:
+                self.compression_manager.callbacks.on_epoch_begin(epoch)
 
             self.in_training = True
             for step, inputs in enumerate(epoch_iterator):
@@ -913,8 +726,8 @@ class BaseTrainer():
                 if step % args.gradient_accumulation_steps == 0:
                     self.control = self.callback_handler.on_step_begin(
                         args, self.state, self.control)
-                    if isinstance(component, Component):
-                        component.on_batch_begin(step)
+                    if compression_manager is not None:
+                        self.compression_manager.callbacks.on_step_begin(step)
 
                 training_step = self.training_step_length_adaptive if self.dynamic_config is not None and \
                                     self.dynamic_config.dynamic_training else self.training_step
@@ -943,8 +756,8 @@ class BaseTrainer():
                         # last step in epoch but step is always smaller than gradient_accumulation_steps
                         steps_in_epoch <= args.gradient_accumulation_steps and
                     (step + 1) == steps_in_epoch):
-                    if isinstance(component, Component):
-                        component.on_post_grad()
+                    # if isinstance(component, Component):
+                    #     component.on_post_grad()
 
                     # Gradient clipping
                     if args.max_grad_norm is not None and args.max_grad_norm > 0:
@@ -962,11 +775,15 @@ class BaseTrainer():
                                 args.max_grad_norm,
                             )
 
-                    # Optimizer step
-                    if self.compression_ctrl is not None:
-                        self.compression_ctrl.scheduler.step()
+                    # # Optimizer step
+                    # if self.compression_ctrl is not None:
+                    #     self.compression_ctrl.scheduler.step()
+                    if self.compression_manager is not None:
+                        self.compression_manager.callbacks.on_before_optimizer_step()
                     optimizer_was_run = True
                     self.optimizer.step()
+                    if self.compression_manager is not None:
+                        self.compression_manager.callbacks.on_after_optimizer_step()
 
                     if optimizer_was_run:
                         self.lr_scheduler.step()
@@ -977,8 +794,9 @@ class BaseTrainer():
                     self.state.curr_loss = tr_loss_step.cpu().detach().item()
                     self.control = self.callback_handler.on_step_end(args, self.state,
                                                                      self.control)
-                    if isinstance(component, Component):
-                        component.on_batch_end()
+
+                    if self.compression_manager is not None:
+                         compression_manager.callbacks.on_step_end()
                     self._maybe_log_save_evaluate(tr_loss, model, trial, epoch,
                                                   ignore_keys_for_eval)
                 else:
@@ -990,16 +808,8 @@ class BaseTrainer():
 
             self.in_training = False
             self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
-            if isinstance(component, Component):
-                # When Distillation is involved, model will be evaluated in "on_epoch_end" hook, while in SQuAD
-                # evaluation, "start_positions" and "end_positions" will be removed from inputs of the fx model,
-                # this will damage the training afterward, so use the copied model for evaluation,
-                # and then restore the model.
-                component.model.model = copy.deepcopy(model)
-                component.on_epoch_end()
-                component.model.model = model
-                if 'Distillation' in component.__repr__():
-                    model.train()
+            if self.compression_manager is not None:
+                self.compression_manager.callbacks.on_epoch_end()
             self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
 
             # pylint: disable=E1101
@@ -1010,11 +820,6 @@ class BaseTrainer():
 
             if self.control.should_training_stop:
                 break
-
-        if isinstance(component, Component):
-            component.post_epoch_end()
-            if component.combination is not None and "Quantization" in component.combination:
-                self.model = component.model.model
 
         if args.past_index and hasattr(self, "_past"):
             # Clean the state at the end of training
@@ -1187,7 +992,6 @@ class BaseTrainer():
                 loss.backward()
 
         return loss.detach()
-
 
     def training_step_length_adaptive(
         self,
@@ -1385,11 +1189,10 @@ class BaseTrainer():
             if self.label_smoother is not None and "labels" in inputs else None
 
         teacher_logits = inputs.pop("teacher_logits") if "teacher_logits" in inputs else None
-
         outputs = model(**inputs)
 
-        if self.in_training and hasattr(self, "component") and \
-           hasattr(self.component, "criterion"):
+        if self.in_training and hasattr(self, "compression_manager") and \
+           hasattr(self.compression_manager, "criterion"):
             qa_output_merger = lambda outputs: torch.vstack([
                 torch.vstack([sl, el])
                 for sl, el in zip(outputs["start_logits"], outputs["end_logits"])
@@ -1416,8 +1219,8 @@ class BaseTrainer():
                 if "start_positions" in inputs and "end_positions" in inputs:  # for SQuAD
                     teacher_logits = torch.vstack(list(teacher_logits))
             else:
-                teacher_outputs = self.component.criterion.teacher_model_forward(inputs)
-                teacher_logits = get_logits(self.component.criterion.teacher_outputs
+                teacher_outputs = self.compression_manager.criterion.teacher_model_forward(inputs)
+                teacher_logits = get_logits(self.compression_manager.criterion.teacher_outputs
                                             if teacher_outputs is None else teacher_outputs)
 
             logits = get_logits(outputs)
@@ -1431,14 +1234,14 @@ class BaseTrainer():
                     else:
                         raise AssertionError(
                             "Labels of input data not provided, can't compute loss")
-                if hasattr(self.component, "on_post_forward"):
-                    self.component.on_post_forward(inputs, teacher_output=teacher_logits)
-                    if hasattr(self.component.criterion, "teacher_outputs"):
-                        self.component.criterion.teacher_outputs = \
-                            get_logits(self.component.criterion.teacher_outputs)
-                loss = self.component.criterion(logits, labels)
-                if hasattr(self.component.criterion, 'add_origin_loss') and \
-                    self.component.criterion.add_origin_loss:
+                if hasattr(self.compression_manager, "on_post_forward"):
+                    self.compression_manager.on_post_forward(inputs, teacher_output=teacher_logits)
+                    if hasattr(self.compression_manager.criterion, "teacher_outputs"):
+                        self.compression_manager.criterion.teacher_outputs = \
+                            get_logits(self.compression_manager.criterion.teacher_outputs)
+                loss = self.compression_manager.criterion(logits, labels)
+                if hasattr(self.compression_manager.criterion, 'add_origin_loss') and \
+                    self.compression_manager.criterion.add_origin_loss:
                     loss = loss + outputs['loss']
             else:
                 if self.args.past_index >= 0:
@@ -1449,7 +1252,8 @@ class BaseTrainer():
                 else:
                     # We don't use .loss here since the model may return tuples instead of ModelOutput.
                     loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
-                loss = self.component.on_after_compute_loss(inputs, logits, loss, teacher_logits)
+                if self.compression_manager is not None:
+                    loss = self.compression_manager.on_after_compute_loss(inputs, logits, loss, teacher_logits)
             if "start_positions" in inputs and "end_positions" in inputs:
                 start_logits, end_logits = qa_output_spliter(logits)
                 outputs = {"start_logits": start_logits, "end_logits": end_logits, "loss": loss}

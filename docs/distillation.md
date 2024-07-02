@@ -49,39 +49,20 @@ Where $D$ is a distance measurement as before, $F_t^{n_i}$ the output feature of
 ## usage
 ### Pytorch Script:
 ```python
-from intel_extension_for_transformers.transformers import metric, objectives, DistillationConfig, Criterion
+
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
+from neural_compressor.config import DistillationConfig
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
 metric = metrics.Metric(name="eval_accuracy")
-d_conf = DistillationConfig(metrics=tune_metric)
-model = trainer.distill(
-    distillation_config=d_conf, teacher_model=teacher_model
-)
+trainer.metrics = metric
+d_conf = DistillationConfig(teacher_model=teacher_model, criterion=criterion)
+model = trainer.distill(distillation_config=d_conf)
 ```
 
 Please refer to [example](../examples/huggingface/pytorch/text-classification/distillation/run_glue.py) for the details.
 
-### Tensorflow Script:
-```python
-from intel_extension_for_transformers.transformers import (DistillationConfig, metrics)
-from intel_extension_for_transformers.transformers.distillation import Criterion
-
-optimizer = TFOptimization(...)
-metric_ = metrics.Metric(name="eval_accuracy")
-criterion = Criterion(name='KnowledgeLoss',
-                    layer_mappings=[['classifier', 'classifier']],
-                    loss_types=['CE', 'CE'],
-                    loss_weight_ratio=[0.5, 0.5],
-                    add_origin_loss=False)
-distillation_conf = DistillationConfig(metrics=metric_,
-                                        criterion=criterion)
-distilled_model = optimizer.distill(
-            distillation_config=distillation_conf,
-            teacher_model=teacher_model)
-```
-Please refer to [example](../examples/huggingface/tensorflow/text-classification/distillation/run_glue.py) for the details.
 ### Create an Instance of Metric
 The Metric defines which metric will be used to measure the performance of tuned models.
 - example:
@@ -94,19 +75,23 @@ The Metric defines which metric will be used to measure the performance of tuned
 ### Create an Instance of Criterion(Optional)
 The criterion used in training phase.
 
-- arguments:
+- KnowledgeDistillationLossConfig arguments:
     |Argument   |Type       |Description                                        |Default value    |
     |:----------|:----------|:-----------------------------------------------|:----------------|
-    |name       |String|Name of criterion, like:"KnowledgeLoss", "IntermediateLayersLoss"  |"KnowledgeLoss"|
     |temperature|Float |parameter for KnowledgeDistillationLoss               |1.0             |
+    |loss_types|List of string|Type of loss                               |['CE', 'CE']        |
+    |loss_weight_ratio|List of float|weight ratio of loss                 |[0.5, 0.5]     |
+
+- IntermediateLayersKnowledgeDistillationLossConfig arguments:
+    |Argument   |Type       |Description                                        |Default value    |
+    |:----------|:----------|:-----------------------------------------------|:----------------|
     |loss_types|List of string|Type of loss                               |['CE', 'CE']        |
     |loss_weight_ratio|List of float|weight ratio of loss                 |[0.5, 0.5]     |
     |layer_mappings|List|parameter for IntermediateLayersLoss             |[] |
     |add_origin_loss|bool|parameter for IntermediateLayersLoss            |False |
-
 - example:
     ```python
-    criterion = Criterion(name='KnowledgeLoss')
+    criterion = KnowledgeDistillationLossConfig()
     ```
 
 ### Create an Instance of DistillationConfig
@@ -115,20 +100,18 @@ The DistillationConfig contains all the information related to the model distill
 - arguments:
     |Argument   |Type       |Description                                        |Default value    |
     |:----------|:----------|:-----------------------------------------------|:----------------|
-    |framework  |string     |which framework you used                        |"pytorch"        |
-    |criterion|Criterion |criterion of training                              |"KnowledgeLoss"|
-    |metrics    |Metric    |Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer|None    |
+    |teacher_model  |torch.nn.Module     | teacher model object                    |None        |
+    |criterion|Criterion |criterion of training                              |KnowledgeLoss object|
+
 
 - example:
     ```python
-    d_conf = DistillationConfig(metrics=metric, criterion=criterion)
+    d_conf = DistillationConfig(teacher_model=teacher_model, criterion=criterion)
     ```
 
 ### Distill with Trainer
 - Distill with Trainer
     NLPTrainer inherits from transformers.Trainer, so you can create a trainer as in examples of Transformers. Then you can distill model with trainer.distill function.
     ```python
-    model = trainer.distill(
-        distillation_config=d_conf, teacher_model=teacher_model
-    )
+    model = trainer.distill(distillation_config=d_conf)
     ```

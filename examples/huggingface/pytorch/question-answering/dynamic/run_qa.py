@@ -29,7 +29,12 @@ import torch
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.transformers import metrics , OptimizedModel, QuantizationConfig, DynamicLengthConfig
+from intel_extension_for_transformers.transformers import metrics, DynamicLengthConfig
+from neural_compressor.config import (
+    PostTrainingQuantConfig,
+    TuningCriterion,
+    AccuracyCriterion
+)
 from trainer_qa import QuestionAnsweringTrainer
 
 from intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic import RobertaForQuestionAnswering
@@ -221,9 +226,9 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply quantization."},
     )
     quantization_approach: Optional[str] = field(
-        default="PostTrainingStatic",
-        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining."},
+        default="static",
+        metadata={"help": "Quantization approach. Supported approach are static, "
+                  "dynamic and qat."},
     )
     metric_name: Optional[str] = field(
         default="eval_f1",
@@ -771,26 +776,29 @@ def main():
 
         trainer.save_model(training_args.output_dir)
         trainer.calib_dataloader = trainer.get_eval_dataloader()
-        if optim_args.quantization_approach != "PostTrainingDynamic":
+        if optim_args.quantization_approach != "dynamic":
             if not training_args.do_train:
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-        if optim_args.quantization_approach == "QuantizationAwareTraining":
-            early_stopping_patience = 6
-            early_stopping_threshold = 0.001 # optional
-            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
-                                                                    early_stopping_threshold))
-
         tune_metric = metrics.Metric(
             name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
         )
-        quantization_config = QuantizationConfig(
-            approach=optim_args.quantization_approach,
-            max_trials=200,
-            metrics=[tune_metric],
-        )
-        quantization_config.framework = "pytorch_ipex"
+        trainer.metrics = tune_metric
+        if optim_args.quantization_approach != "qat":
+            tuning_criterion = TuningCriterion(max_trials=600, objective=["performance"])
+            accuracy_criterion = AccuracyCriterion(
+                higher_is_better=True,  # optional.
+                criterion="relative" if optim_args.is_relative else "absolute",  # optional. Available values are "relative" and "absolute".
+                tolerable_loss=optim_args.perf_tol,  # optional.
+            )
+            quantization_config = PostTrainingQuantConfig(
+                backend = "ipex",
+                approach=optim_args.quantization_approach,
+                tuning_criterion=tuning_criterion,
+                accuracy_criterion=accuracy_criterion
+            )
+
         model = trainer.quantize(quant_config=quantization_config)
 
     if optim_args.benchmark or optim_args.accuracy_only:

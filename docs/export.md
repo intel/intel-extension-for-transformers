@@ -22,9 +22,9 @@ We support exporting PyTorch models into ONNX models with our well-designed API 
 | Input Model | Export FP32 | Export BF16 | Export INT8 |
 | --- | --- | --- | --- |
 | FP32 PyTorch Model | &#10004; | &#10004; | / |
-| INT8 PyTorch Model <br> (PostTrainingDynamic) | / | / | &#10004; |
-| INT8 PyTorch Model <br> (PostTrainingStatic) | / | / | &#10004; |
-| INT8 PyTorch Model <br> (QuantizationAwareTraining) | / | / | &#10004; |
+| INT8 PyTorch Model <br> (dynamic) | / | / | &#10004; |
+| INT8 PyTorch Model <br> (static) | / | / | &#10004; |
+| INT8 PyTorch Model <br> (qat) | / | / | &#10004; |
 
 
 ## Examples

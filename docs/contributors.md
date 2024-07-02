@@ -116,9 +116,20 @@
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/17159645"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/Liangliang-Ma">Liangliang-Ma</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/31226269"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/LucasHBG">Lucas Guimarães</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/71893085"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/siddhivelankar23">Siddhi Velankar</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/476864"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/cepera">Sergey Nesterov</a></td>
   </tr>
 
-
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/41214682"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/sramakintel">Srikanth Ramakrishna</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/5280697"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/igeni">igeni</a></td>
+  </tr>
 </table>
 
 <br />

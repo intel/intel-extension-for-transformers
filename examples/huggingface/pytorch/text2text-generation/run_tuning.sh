@@ -16,7 +16,7 @@ function init_params {
   model_name_or_path="google/flan-t5-large"
   extra_cmd=""
   batch_size=8
-  approach="PostTrainingStatic"
+  approach="static"
   alpha=0.7
   for var in "$@"
   do

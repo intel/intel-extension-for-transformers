@@ -12,7 +12,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-permissions: write-all
 env:
   DOCKER_CONFIG_NAME: "commonDockerConfig"
   REPO_NAME: "intel-extension-for-transformers"
@@ -20,6 +19,9 @@ env:
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "utTest"
   EXTRA_CONTAINER_NAME: "modelTest"
+
+permissions:
+  contents: read
 
 jobs:
   neural-speed-unit-test:

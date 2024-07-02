@@ -8,9 +8,11 @@ from io import open
 from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+from setuptools_scm import get_version
 
 result = subprocess.Popen("pip install -r requirements.txt", shell=True)
 result.wait()
+
 
 def is_intel_gpu_available():
     import torch
@@ -286,6 +288,9 @@ if __name__ == '__main__':
                            "intel_extension_for_transformers/transformers/runtime/"),
         ])
     cmdclass = {'build_ext': CMakeBuild}
+    itrex_version = get_version()
+    if IS_INTEL_GPU:
+        itrex_version = itrex_version + "-gpu"
 
     setup(
         name="intel-extension-for-transformers",
@@ -324,4 +329,5 @@ if __name__ == '__main__':
         ],
         setup_requires=['setuptools_scm'],
         use_scm_version=True,
+        version=itrex_version
     )
