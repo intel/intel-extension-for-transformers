@@ -7,5 +7,5 @@ transformers
 torch==2.0.1
 tqdm
 neural_compressor
-lm-eval
+lm-eval==0.4.2
 

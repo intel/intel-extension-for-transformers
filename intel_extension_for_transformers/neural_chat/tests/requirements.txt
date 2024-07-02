@@ -38,7 +38,7 @@ langchain-community==0.0.27
 langchain_core==0.1.35
 langid
 librosa
-lm-eval
+lm-eval==0.4.2
 markdown
 neural-compressor
 neural_speed==1.0a0

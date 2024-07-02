@@ -1,6 +1,6 @@
 intel_extension_for_transformers
 neural-speed
-lm-eval
+lm-eval==0.4.2
 sentencepiece
 gguf
 --extra-index-url https://download.pytorch.org/whl/cpu
