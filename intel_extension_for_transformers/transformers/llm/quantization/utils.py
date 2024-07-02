@@ -532,7 +532,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 "autoround_args": {
                     "n_samples": config.nsamples,
                     "seqlen": config.calib_len,
-                    "iters": config.iters,
+                    "iters": config.calib_iters,
                     "scale_dtype": config.scale_dtype,
                     "enable_quanted_input": not config.disable_quanted_input,
                     "lr": config.lr,
