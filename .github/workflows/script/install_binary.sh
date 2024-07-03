@@ -4,6 +4,7 @@ source /intel-extension-for-transformers/.github/workflows/script/change_color.s
 cd /intel-extension-for-transformers
 export CMAKE_ARGS="-DNE_DNNL_CACHE_DIR=/cache"
 pip install -U pip
+pip install -r requirements.txt
 $BOLD_YELLOW && echo "---------------- git submodule update --init --recursive -------------" && $RESET
 git config --global --add safe.directory "*"
 git submodule update --init --recursive
