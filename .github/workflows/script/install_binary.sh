@@ -1,7 +1,9 @@
 #!/bin/bash
+set -x
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
 
 cd /intel-extension-for-transformers
+git tag
 export CMAKE_ARGS="-DNE_DNNL_CACHE_DIR=/cache"
 pip install -U pip
 pip install -r requirements.txt
@@ -10,7 +12,8 @@ git config --global --add safe.directory "*"
 git submodule update --init --recursive
 
 
-$BOLD_YELLOW && echo "---------------- run python setup.py sdist bdist_wheel -------------" && $RESET
+$BOLD_YELLOW && echo "---------------- run python setup.py bdist_wheel -------------" && $RESET
+git fetch --tags
 python setup.py bdist_wheel
 
 
