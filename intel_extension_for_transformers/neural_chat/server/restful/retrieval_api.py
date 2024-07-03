@@ -821,3 +821,48 @@ async def recreate_kb(request: Request):
                 detail=f'Failed to create kb. Exception: {e}'
             )
         return {"status": True}
+
+def login_api(account: str, password: str):
+    url = "http://10.112.231.60:80/intel/login"
+    print('account', account)
+    print('password', password)
+    data = {
+        'account': account,
+        'password': password
+    }
+    headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    try:
+        session = requests.Session()
+        response = session.post(url, json=data, headers=headers)
+        response.raise_for_status()
+        print('Response status code:', response.status_code)
+        print('Response content:', response.content)
+
+        try:
+            res = response.json()
+        except json.JSONDecodeError:
+            res = {
+                "error": "Response is not in JSON format",
+                "content": response.text
+            }
+            print("JSON decoding failed, response text:", response.text)
+        
+    except requests.exceptions.RequestException as e:
+        res = {
+            "error": "Request failed",
+            "detail": str(e)
+        }
+        print("Request failed with exception:", e)
+
+    return res
+
+@router.post("/intel/login")
+async def login(request: Request):
+    params = await request.json()
+    account = params['account']
+    password = params['password']
+    login_res = login_api(account,password)
+    return login_res
