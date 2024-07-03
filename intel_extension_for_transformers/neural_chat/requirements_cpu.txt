@@ -7,7 +7,7 @@ fastapi
 fschat==0.2.32
 huggingface_hub
 intel_extension_for_pytorch==2.3.0
-lm-eval
+lm-eval==0.4.2
 neural-compressor
 neural_speed==1.0a0
 numpy==1.23.5
