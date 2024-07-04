@@ -170,10 +170,7 @@ if quantization_config is not None:
             quantization_config.remove_redundant_parameters()
             config.quantization_config = quantization_config
             config.save_pretrained(args.output_dir)
-            torch.jit.save(user_model, args.output_dir + "/pytorch_model.bin")
-            with open(args.output_dir + "/best_configure.json", "w") as f:
-                json.dump(user_model.tune_cfg, f, indent=4)
-            # validate loading
+            user_model.save(args.output_dir)
             user_model = AutoModelForCausalLM.from_pretrained(
                 args.output_dir,
                 trust_remote_code=args.trust_remote_code,
@@ -188,7 +185,7 @@ if args.restore_sq_model_from_json:
     )
     user_model = recover_model_from_json(
         args.model,
-        os.path.join(args.output_dir, "best_configure.json"),
+        os.path.join(args.output_dir, "qconfig.json"),
         args.trust_remote_code,
     )
 

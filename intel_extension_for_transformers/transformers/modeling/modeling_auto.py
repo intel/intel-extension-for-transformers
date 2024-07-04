@@ -943,41 +943,73 @@ class _BaseQBitsAutoModelClass:
                 model.config.architectures = ["MptForCausalLM"]
             model.eval()
             logger.info("Applying SmoothQuant.")
-<<<<<<< HEAD
             model = convert_to_smoothquant_model(model, quantization_config)
-=======
-            # ipex.optimize_transformers
-            if quantization_config.ipex_opt_llm is None:
-                if model_type in IPEX_OPT_LLM_SUPPORTED:
-                    quantization_config.ipex_opt_llm = True
-                    logger.info(
-                        "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
+            logger.info("SmoothQuant done.")
+        elif isinstance(quantization_config, DynamicQuantConfig):
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path,
+                *model_args,
+                config=config,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float,
+                **kwargs,
+            )
+
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "chatglm":
+                model = model.float()
+            model.eval()
+            logger.info("Applying DynamicQuant.")
+            # call inc dynamic quant
+            from neural_compressor import PostTrainingQuantConfig, quantization
+
+            conf = PostTrainingQuantConfig(
+                approach="dynamic",
+                excluded_precisions=quantization_config.excluded_precisions,
+                op_type_dict=quantization_config.op_type_dict,
+                op_name_dict=quantization_config.op_name_dict,
+            )
+            model = quantization.fit(
+                model,
+                conf,
+            )
+            model.save_pretrained = types.MethodType(save_low_bit, model)
+            quantization_config.remove_redundant_parameters()
+            model.quantization_config = quantization_config
+            logger.info("DynamicQuant done.")
+            return model
+        elif isinstance(quantization_config, StaticQuantConfig):
+            if quantization_config.backend == "ipex":
+                try:
+                    import intel_extension_for_pytorch as ipex
+                except ImportError:
+                    logger.warning(
+                        "Please install Intel Extension for PyTorch to accelerate the model inference."
                     )
-                    logger.warning("The suggested transformers version is 4.38.1.")
-                else:
-                    quantization_config.ipex_opt_llm = False
-            if quantization_config.ipex_opt_llm:
-                qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5)
-                model = ipex.optimize_transformers(
-                    model.eval(),
-                    quantization_config=qconfig,
-                    dtype=torch.float32,
-                    inplace=True,
-                    deployment_mode=False,
-                )
-                model.eval()
+                config.torchscript = True
+                assert quantization_config.example_inputs is not None, \
+                    "Please provide example_inputs for IPEX static quantization."
 
-            # past_key_values
-            num_beams = quantization_config.num_beams
-            if quantization_config.ipex_opt_llm:
-                past_key_values = generate_dummy_past_key_values_for_opt_llm(
-                    config=model.config, input_bs=1, num_beams=num_beams
-                )
-            else:
-                past_key_values = generate_dummy_past_key_values(
-                    config=model.config, input_bs=1
-                )
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path,
+                *model_args,
+                config=config,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float,
+                **kwargs,
+            )
 
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "chatglm":
+                model = model.float()
+            model.eval()
+            logger.info("Applying StaticQuant.")
             # calibration function
             calib_func = quantization_config.calib_func
             tokenizer = quantization_config.tokenizer
@@ -1029,10 +1061,8 @@ class _BaseQBitsAutoModelClass:
                     return example
 
                 def collate_batch(batch):
-                    position_ids_padded = []
                     input_ids_padded = []
                     last_ind = []
-                    attention_mask_padded = []
                     for text in batch:
                         input_ids = text["input_ids"]
                         if not calib_padding:
@@ -1048,99 +1078,30 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        attention_mask = torch.ones(len(input_ids))
-                        position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
-                        attention_mask_padded.append(attention_mask)
-                        position_ids_padded.append(position_ids)
-                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                        return (
-                            {
-                                "input_ids": torch.vstack(input_ids_padded),
-                                "attention_mask": torch.vstack(attention_mask_padded),
-                                "position_ids": torch.vstack(position_ids_padded),
-                                "past_key_values": past_key_values,
-                            },
-                            torch.tensor(last_ind),
-                        )
-                    else:
-                        return (
-                            {
-                                "input_ids": torch.vstack(input_ids_padded),
-                                "attention_mask": torch.vstack(attention_mask_padded),
-                                "past_key_values": past_key_values,
-                            },
-                            torch.tensor(last_ind),
-                        )
 
-                def collate_batch_for_chatglm(batch):
-                    last_ind = []
-                    for text in batch:
-                        input_ids = torch.vstack([text["input_ids"]])
-                        if re.search(
-                            "THUDM/chatglm-6b", model.config.auto_map["AutoConfig"]
-                        ):
-                            input_ids = (
-                                input_ids[:, :calib_len]
-                                if input_ids.shape[1] > calib_len
-                                else input_ids
-                            )
-                            eos = torch.tensor([130001, 130004]).repeat(1, 1)
-                            input_ids = torch.cat((input_ids, eos), 1)
-                        else:
-                            input_ids = (
-                                input_ids[:, :calib_len]
-                                if input_ids.shape[1] > calib_len
-                                else input_ids
-                            )
-                        prepared_inputs = model.prepare_inputs_for_generation(input_ids)
-                        attention_mask = torch.ones_like(input_ids)
-                        last_ind.append(input_ids.shape[1] - 1)
                     return (
                         {
-                            "input_ids": input_ids,
-                            "attention_mask": attention_mask,
-                            "position_ids": prepared_inputs["position_ids"],
-                            "past_key_values": past_key_values,
+                            "input_ids": torch.vstack(input_ids_padded),
                         },
                         torch.tensor(last_ind),
                     )
 
                 tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
                 tokenized_dataset.set_format(type="torch", columns=["input_ids"])
-                if model_type == "chatglm":
-                    calib_dataloader = DataLoader(
-                        tokenized_dataset,
-                        batch_size=1,
-                        shuffle=False,
-                        collate_fn=collate_batch_for_chatglm,
-                    )
-                else:
-                    calib_dataloader = DataLoader(
-                        tokenized_dataset,
-                        batch_size=1,
-                        shuffle=False,
-                        collate_fn=collate_batch,
-                    )
+                calib_dataloader = DataLoader(
+                    tokenized_dataset,
+                    batch_size=1,
+                    shuffle=False,
+                    collate_fn=collate_batch,
+                )
 
                 def calib_func(model):
                     with torch.no_grad():
                         for i, (inputs, last_ind) in enumerate(calib_dataloader):
                             if i >= calib_iters:
                                 break
-                            if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                                model(
-                                    input_ids=inputs["input_ids"],
-                                    past_key_values=inputs["past_key_values"],
-                                    position_ids=inputs["position_ids"],
-                                    attention_mask=inputs["attention_mask"],
-                                )
-                            else:
-                                model(
-                                    input_ids=inputs["input_ids"],
-                                    past_key_values=inputs["past_key_values"],
-                                    attention_mask=inputs["attention_mask"],
-                                )
+                            model(**inputs)
 
                 logger.info(
                     "The default calibration function is used, "
@@ -1149,236 +1110,26 @@ class _BaseQBitsAutoModelClass:
                 )
                 calib_func = calib_func
 
-            # example_inputs
-            example_inputs = quantization_config.example_inputs
-            if example_inputs is None:
-                for i, (inputs, last_ind) in enumerate(calib_dataloader):
-                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                        example_inputs = {
-                            "input_ids": inputs["input_ids"],
-                            "attention_mask": inputs["attention_mask"],
-                            "position_ids": inputs["position_ids"],
-                            "past_key_values": inputs["past_key_values"],
-                        }
-                    else:
-                        example_inputs = {
-                            "input_ids": inputs["input_ids"],
-                            "attention_mask": inputs["attention_mask"],
-                            "past_key_values": inputs["past_key_values"],
-                        }
-                    break
-
-            # call inc sq
+            # call inc static quant
             from neural_compressor import PostTrainingQuantConfig, quantization
 
             conf = PostTrainingQuantConfig(
-                backend=quantization_config.backend,  # default is ipex
+                backend=quantization_config.backend,
                 excluded_precisions=quantization_config.excluded_precisions,
                 op_type_dict=quantization_config.op_type_dict,
                 op_name_dict=quantization_config.op_name_dict,
-                recipes=quantization_config.recipes,
-                example_inputs=example_inputs,
+                example_inputs=quantization_config.example_inputs,
             )
-
             model = quantization.fit(
                 model,
                 conf,
                 calib_func=calib_func,
-                calib_dataloader=(
-                    calib_dataloader
-                    if quantization_config.recipes["smooth_quant_args"]["alpha"]
-                    == "auto"
-                    else None
-                ),
-            )
->>>>>>> main
-            logger.info("SmoothQuant done.")
-        elif isinstance(quantization_config, DynamicQuantConfig):
-            model = cls.ORIG_MODEL.from_pretrained(
-                pretrained_model_name_or_path,
-                *model_args,
-                config=config,
-                low_cpu_mem_usage=True,
-                torch_dtype=torch.float,
-                **kwargs,
-            )
-
-            if (
-                not torch.cuda.is_available()
-                or device_map == "cpu"
-                or device_map == torch.device("cpu")
-            ) and model.config.model_type == "chatglm":
-                model = model.float()
-            model.eval()
-            logger.info("Applying DynamicQuant.")
-            # call inc dynamic quant
-            from neural_compressor import PostTrainingQuantConfig, quantization
-
-            conf = PostTrainingQuantConfig(
-                approach="dynamic",
-                excluded_precisions=quantization_config.excluded_precisions,
-                op_type_dict=quantization_config.op_type_dict,
-                op_name_dict=quantization_config.op_name_dict,
-            )
-            model = quantization.fit(
-                model,
-                conf,
             )
             model.save_pretrained = types.MethodType(save_low_bit, model)
             quantization_config.remove_redundant_parameters()
             model.quantization_config = quantization_config
-            logger.info("DynamicQuant done.")
+            logger.info("StaticQuant done.")
             return model
-        # elif isinstance(quantization_config, StaticQuantConfig):
-        #     if quantization_config.backend == "ipex":
-        #         try:
-        #             import intel_extension_for_pytorch as ipex
-        #         except ImportError:
-        #             logger.warning(
-        #                 "Please install Intel Extension for PyTorch to accelerate the model inference."
-        #             )
-        #         config.torchscript = True
-        #         assert quantization_config.example_inputs is not None, \
-        #             "Please provide example_inputs for IPEX static quantization."
-
-        #     model = cls.ORIG_MODEL.from_pretrained(
-        #         pretrained_model_name_or_path,
-        #         *model_args,
-        #         config=config,
-        #         low_cpu_mem_usage=True,
-        #         torch_dtype=torch.float,
-        #         **kwargs,
-        #     )
-
-        #     if (
-        #         not torch.cuda.is_available()
-        #         or device_map == "cpu"
-        #         or device_map == torch.device("cpu")
-        #     ) and model.config.model_type == "chatglm":
-        #         model = model.float()
-        #     model.eval()
-        #     logger.info("Applying StaticQuant.")
-        #     # calibration function
-        #     calib_func = quantization_config.calib_func
-        #     tokenizer = quantization_config.tokenizer
-        #     if calib_func is None:
-        #         if quantization_config.tokenizer is None:
-        #             logger.error(
-        #                 "Please provide the tokenizer or provide calib_func directly,"
-        #                 + " the following is how to get tokenizer. \n"
-        #                 + " from transformer import AutoTokenizer \n"
-        #                 + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
-        #             )
-        #             exit(0)
-
-        #         from datasets import load_dataset
-        #         from torch.utils.data import DataLoader
-
-        #         calib_dataset = quantization_config.calib_dataset
-        #         calib_shuffle = quantization_config.calib_shuffle
-        #         calib_iters = quantization_config.calib_iters
-        #         calib_padding = quantization_config.calib_padding
-        #         calib_len = quantization_config.calib_len
-        #         calib_pad_val = quantization_config.calib_pad_val
-        #         from torch.nn.functional import pad
-
-        #         calib_dataset = load_dataset(
-        #             calib_dataset,
-        #             split=(
-        #                 "test"
-        #                 if calib_dataset in ["mbpp", "openai_humaneval"]
-        #                 else "train"
-        #             ),
-        #         )
-        #         if calib_shuffle:
-        #             calib_dataset = calib_dataset.shuffle(seed=42)
-
-        #         def tokenize_function(examples):
-        #             if "code" in examples:
-        #                 example = tokenizer(examples["code"])
-        #             elif "prompt" in examples:
-        #                 example = tokenizer(examples["prompt"])
-        #             elif "text" in examples:
-        #                 example = tokenizer(examples["text"])
-        #             else:
-        #                 logger.error(
-        #                     "Please check dataset prompt identifier,"
-        #                     + " NeelNanda/pile-10k is default used calibration dataset."
-        #                 )
-        #                 exit(0)
-        #             return example
-
-        #         def collate_batch(batch):
-        #             input_ids_padded = []
-        #             last_ind = []
-        #             for text in batch:
-        #                 input_ids = text["input_ids"]
-        #                 if not calib_padding:
-        #                     input_ids = (
-        #                         input_ids[: int(calib_len)]
-        #                         if len(input_ids) > int(calib_len)
-        #                         else input_ids
-        #                     )  # no_padding
-        #                 else:
-        #                     pad_len = calib_len - input_ids.shape[0]
-        #                     input_ids = pad(
-        #                         input_ids, (0, pad_len), value=calib_pad_val
-        #                     )
-
-        #                 last_ind.append(input_ids.shape[0] - 1)
-        #                 input_ids_padded.append(input_ids)
-
-        #             return (
-        #                 {
-        #                     "input_ids": torch.vstack(input_ids_padded),
-        #                 },
-        #                 torch.tensor(last_ind),
-        #             )
-
-        #         tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
-        #         tokenized_dataset.set_format(type="torch", columns=["input_ids"])
-        #         calib_dataloader = DataLoader(
-        #             tokenized_dataset,
-        #             batch_size=1,
-        #             shuffle=False,
-        #             collate_fn=collate_batch,
-        #         )
-
-        #         def calib_func(model):
-        #             with torch.no_grad():
-        #                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
-        #                     if i >= calib_iters:
-        #                         break
-        #                     model(**inputs)
-
-        #         logger.info(
-        #             "The default calibration function is used, "
-        #             + "the calibration dataset is NeelNanda/pile-10k, "
-        #             + "batchsize is 1 and calibration iteration is 100."
-        #         )
-        #         calib_func = calib_func
-
-        #     # call inc static quant
-        #     from neural_compressor.torch.quantization import StaticQuantConfig, convert, prepare
-        #     quant_config = StaticQuantConfig(
-        #         w_dtype=quantization_config.w_dtype,
-        #         w_sym=quantization_config.w_sym,
-        #         w_granularity=quantization_config.w_granularity,
-        #         w_algo=quantization_config.w_algo,
-        #         act_dtype=quantization_config.act_dtype,
-        #         act_sym=quantization_config.act_sym,
-        #         act_granularity=quantization_config.act_granularity,
-        #         act_algo=quantization_config.act_algo,
-        #         white_list=quantizate_config.white_list,
-        #     )
-        #     prepared_model = prepare(fp32_model, quant_config=quant_config, example_inputs=example_inputs)
-        #     calib_func(prepared_model)
-        #     q_model = convert(prepared_model)
-        #     model.save_pretrained = types.MethodType(save_low_bit, model)
-        #     quantization_config.remove_redundant_parameters()
-        #     model.quantization_config = quantization_config
-        #     logger.info("StaticQuant done.")
-        #     return model
         elif isinstance(quantization_config, QuantAwareTrainingConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
@@ -1732,6 +1483,7 @@ class _BaseQBitsAutoModelClass:
         # index of the files.
         is_sharded = False
         sharded_metadata = None
+
         if pretrained_model_name_or_path is not None:
             pretrained_model_name_or_path = str(pretrained_model_name_or_path)
             is_local = os.path.isdir(pretrained_model_name_or_path)
@@ -1748,6 +1500,20 @@ class _BaseQBitsAutoModelClass:
                         pretrained_model_name_or_path,
                         subfolder,
                         _add_variant(WEIGHTS_NAME, variant),
+                    )
+                # only for inc sq
+                elif os.path.isfile(
+                    os.path.join(
+                        pretrained_model_name_or_path,
+                        subfolder,
+                        _add_variant("quantized_model.pt", variant),
+                    )
+                ):
+                    # Load from a PyTorch checkpoint
+                    archive_file = os.path.join(
+                        pretrained_model_name_or_path,
+                        subfolder,
+                        _add_variant("quantized_model.pt", variant),
                     )
                 elif os.path.isfile(
                     os.path.join(
@@ -1897,7 +1663,6 @@ class _BaseQBitsAutoModelClass:
                         f" same name. Otherwise, make sure '{pretrained_model_name_or_path}' is the correct path to a"
                         f" directory containing a file named {_add_variant(WEIGHTS_NAME, variant)}."
                     ) from e
-
             if is_local:
                 logger.info(f"loading weights file {archive_file}")
                 resolved_archive_file = archive_file
@@ -1951,7 +1716,7 @@ class _BaseQBitsAutoModelClass:
             )
 
             q_model = torch.jit.load(
-                os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)
+                os.path.join(pretrained_model_name_or_path, "quantized_model.pt")
             )
             origin_model_type = config.model_type
             if origin_model_type in ["chatglm", "qwen", "baichuan"]:

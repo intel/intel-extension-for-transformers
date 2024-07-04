@@ -832,6 +832,7 @@ def convert_to_smoothquant_model(model, quantization_config):
         alpha_step=quantization_config.alpha_step,
         shared_criterion=quantization_config.shared_criterion,
         do_blockwise=quantization_config.do_blockwise,
+        excluded_precisions=quantization_config.excluded_precisions,
     )
     # fallback
     if model_type in ["gptj", "gpt_neox", "mpt"]:
