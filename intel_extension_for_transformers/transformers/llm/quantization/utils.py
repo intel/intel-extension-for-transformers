@@ -28,7 +28,6 @@ from neural_compressor.torch.quantization import (
     AutoRoundConfig,
     AWQConfig,
     GPTQConfig,
-    HQQConfig,
     RTNConfig,
     SmoothQuantConfig,
     TEQConfig,
@@ -554,19 +553,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
             quant_config.set_local(".*embed_out", RTNConfig(dtype="fp32"))
             model = prepare(model, quant_config)
             model = convert(model)
-        elif config.quant_method.value == "hqq":
-            quant_config = HQQConfig(
-                bits=config.bits,
-                group_size=config.group_size,
-                quant_zero=config.quant_zero,
-                quant_scale=config.quant_scale,
-                scale_quant_group_size=config.scale_quant_group_size,
-                skip_lm_head=config.skip_lm_head,
-            )
-            model = prepare(model, quant_config)
-            model = convert(model)
-            # qits module doesn't match with HQQ algorithm.
-            return model
         elif config.quant_method.value == "awq":
             quant_config = AWQConfig(
                 dtype=dtype,

@@ -12,7 +12,6 @@ from intel_extension_for_transformers.transformers import (
 from intel_extension_for_transformers.transformers import (
     BitsAndBytesConfig,
     RtnConfig,
-    HqqConfig,
     AwqConfig,
     TeqConfig,
     GPTQConfig,
@@ -49,7 +48,7 @@ parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
     default="Rtn",
-    choices=["Rtn", "Awq", "Teq", "GPTQ", "AutoRound", "HQQ"],
+    choices=["Rtn", "Awq", "Teq", "GPTQ", "AutoRound"],
     help="Weight-only algorithm.",
 )
 parser.add_argument(
@@ -223,15 +222,6 @@ if args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             layer_wise=args.layer_wise,
-            use_ipex=args.use_ipex,
-        )
-    elif args.woq_algo == "HQQ":
-        quantization_config = HqqConfig(
-            bits=args.bits,
-            group_size=args.group_size,
-            compute_dtype=args.compute_dtype,
-            scale_dtype=args.scale_dtype,
-            weight_dtype=args.weight_dtype,
             use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "Awq":

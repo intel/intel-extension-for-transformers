@@ -50,7 +50,6 @@ class QuantizationMethod(str, Enum):
     AWQ = "awq"
     AQLM = "aqlm"
     RTN = "rtn"
-    HQQ = "hqq"
     AUTOROUND = "autoround"
     TEQ = "teq"
     DYNAMIC = "dynamic"
@@ -827,59 +826,6 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
-        self.device = kwargs.get("device", "auto")
-        self.use_ipex = kwargs.pop("use_ipex", False)
-
-    def to_diff_dict(self) -> Dict[str, Any]:
-        """Removes all attributes from config which correspond to the default config attributes
-        for better readability and serializes to a Python dictionary.
-
-        Returns:
-            `Dict[str, Any]`: Dictionary of all the attributes that make up this configuration instance,
-        """
-        config_dict = self.to_dict()
-
-        # get the default config dict
-        default_config_dict = RtnConfig().to_dict()
-
-        serializable_config_dict = {}
-
-        # only serialize values that differ from the default config
-        for key, value in config_dict.items():
-            if value != default_config_dict[key]:
-                serializable_config_dict[key] = value
-
-        return serializable_config_dict
-
-class HqqConfig(ITREXQuantizationConfigMixin):
-    def __init__(
-        self,
-        bits: int = 4,
-        group_size: int = 64,
-        sym: bool = True,
-        compute_dtype: Any = None,
-        weight_dtype: Any = None,
-        scale_dtype: Any = None,
-        quant_zero: bool = True,
-        quant_scale: bool = False,
-        scale_quant_group_size: int = 128,
-        skip_lm_head: bool = True,
-        **kwargs,
-    ):
-        self.quant_method = QuantizationMethod.HQQ
-        self.bits = bits
-        self.weight_dtype = weight_dtype
-        self.compute_dtype = compute_dtype
-        self.scale_dtype = scale_dtype
-        self.use_double_quant = False
-        self.sym = sym
-        self.scheme = "sym" if self.sym else "asym"
-        self.group_size = group_size
-        self.quant_zero = quant_zero
-        self.quant_scale = quant_scale
-        self.scale_quant_group_size = scale_quant_group_size
-        self.skip_lm_head = skip_lm_head
-        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.device = kwargs.get("device", "auto")
         self.use_ipex = kwargs.pop("use_ipex", False)
 
