@@ -14,7 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Pipeline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline"""
+"""Pipeline Modification based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline"""
 
 import inspect
 from typing import Callable, List, Optional, Union
