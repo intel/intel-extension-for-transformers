@@ -7,7 +7,7 @@ sentencepiece != 0.1.92
 torch==2.3.0+cpu
 transformers==4.38.1
 intel_extension_for_pytorch==2.3.0
-optimum-intel==1.16.1
+optimum-intel
 bitsandbytes  #baichuan
 transformers_stream_generator
 tiktoken  #qwen
