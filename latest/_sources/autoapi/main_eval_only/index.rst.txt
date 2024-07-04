@@ -5,7 +5,7 @@ main_eval_only
 
 .. autoapi-nested-parse::
 
-   Parse and Evalate.
+   Parse and Evaluate.
 
 
 
