@@ -137,7 +137,7 @@ python run_executor.py --ir_path=./qat_int8_ir --mode=latency --input_model=runw
 ## 3. Accuracy
 Frechet Inception Distance(FID) metric is used to evaluate the accuracy. This case we check the FID scores between the pytorch image and engine image.
 
-By setting --accuracy to check FID socre.
+By setting --accuracy to check FID score.
 Python API command as follows:
 ```python
 # FP32 IR

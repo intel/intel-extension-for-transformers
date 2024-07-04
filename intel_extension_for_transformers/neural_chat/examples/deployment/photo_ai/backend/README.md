@@ -75,7 +75,7 @@ mkdir /home/nfs_images
 export IMAGE_SERVER_IP="your.server.ip"
 ```
 
-# Configurate photoai.yaml
+# Configure photoai.yaml
 
 You can customize the configuration file `photoai.yaml` to match your environment setup. Here's a table to help you understand the configurable options:
 
@@ -91,9 +91,9 @@ You can customize the configuration file `photoai.yaml` to match your environmen
 | tasks_list          | ['voicechat', 'photoai']               |
 
 
-# Configurate Environment Variables
+# Configure Environment Variables
 
-Configurate all of the environment variables in file `run.sh` using `export XXX=xxx`. Here's a table of all the variables needed to configurate.
+Configure all of the environment variables in file `run.sh` using `export XXX=xxx`. Here's a table of all the variables needed to configure.
 
 |  Variable           | Value                                  |
 | ------------------- | ---------------------------------------|

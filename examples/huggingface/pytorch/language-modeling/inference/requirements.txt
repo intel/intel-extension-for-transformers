@@ -1,4 +1,4 @@
 transformers 
 accelerate
 sentencepiece != 0.1.92
-lm-eval
+lm-eval==0.4.2

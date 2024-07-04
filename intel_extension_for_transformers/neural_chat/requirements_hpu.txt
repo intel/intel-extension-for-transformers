@@ -4,7 +4,7 @@ evaluate
 fastapi
 fschat==0.2.35
 huggingface_hub
-lm-eval
+lm-eval==0.4.2
 neural-compressor
 numpy==1.23.5
 optimum
