@@ -54,6 +54,8 @@ jobs:
 
       - name: Checkout out Repo
         uses: actions/checkout@v4
+        with:
+          fetch-tags: true
 
       - name: Docker Build
         run: |
