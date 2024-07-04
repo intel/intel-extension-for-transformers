@@ -1872,7 +1872,10 @@ class _BaseQBitsAutoModelClass:
         # weight dtype is higher priority than bits in config.json when both existed.
         if quantization_config.weight_dtype is None:
             if quantization_config.bits == 4:
-                quantization_config.weight_dtype = "int4_clip"
+                if use_xpu:
+                    quantization_config.weight_dtype = "int4_fullrange"
+                else:
+                    quantization_config.weight_dtype = "int4_clip"
                 logger.info(
                     "{} quantization weight_dtype is used due to bits is 4 in config.json.".format(
                         quantization_config.weight_dtype)
@@ -1918,7 +1921,6 @@ class _BaseQBitsAutoModelClass:
             "fp4_e2m1",
             "fp4_e2m1_bnb",
             "nf4",
-            "int4_fullrange",
         ]:
             model = build_woq_model(model, quantization_config)
         else:
@@ -2026,7 +2028,6 @@ class _BaseQBitsAutoModelClass:
             "nf4",
             "fp4_e2m1",
             "fp4_e2m1_bnb",
-            "int4_fullrange",
         ] and not quantization_config.use_ipex:
             model = replace_linear(
                 model,
