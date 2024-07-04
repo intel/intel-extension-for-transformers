@@ -1,11 +1,8 @@
 #!/bin/bash
-set -x
+
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
 
 cd /intel-extension-for-transformers
-git config --global --add safe.directory /intel-extension-for-transformers
-git fetch --tags
-git tag
 export CMAKE_ARGS="-DNE_DNNL_CACHE_DIR=/cache"
 pip install -U pip
 pip install -r requirements.txt
