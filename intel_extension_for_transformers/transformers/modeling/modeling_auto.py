@@ -366,26 +366,19 @@ class _BaseQBitsAutoModelClass:
         if use_vllm is not None:
             logger.info("The backend is vLLM.")
             from vllm import LLM  # pylint: disable=E1101
-            from vllm.model_executor.model_loader import (
-                get_model_loader,
-            )  # pylint: disable=E0611
-            from vllm.model_executor.model_loader.weight_utils import (
-                default_weight_loader,
-            )  # pylint: disable=E0401 disable=E0611
+            from vllm.model_executor.model_loader import get_model_loader  # pylint: disable=E0611
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader # pylint: disable=E0401 disable=E0611
             from vllm.model_executor.layers.linear import (
                 MergedColumnParallelLinear,
                 QKVParallelLinear,
                 ColumnParallelLinear,
-                RowParallelLinear,
-            )  # pylint: disable=E1101
+                RowParallelLinear)  # pylint: disable=E1101
 
             os.environ["backend"] = "use_vllm"
             llm = LLM(
                 model=pretrained_model_name_or_path, trust_remote_code=True
             )  # Create an vllm instance.
-            model = (
-                llm.llm_engine.model_executor.driver_worker.model_runner.model
-            )  # pylint: disable=E1101
+            model = llm.llm_engine.model_executor.driver_worker.model_runner.model  # pylint: disable=E1101
             print("Original model =", model)
 
             original_parameter_memo = dict()
@@ -447,9 +440,7 @@ class _BaseQBitsAutoModelClass:
                     )
 
             print("Optimized model =", model)
-            loader = get_model_loader(
-                llm.llm_engine.load_config
-            )  # pylint: disable=E1101
+            loader = get_model_loader(llm.llm_engine.load_config)  # pylint: disable=E1101
 
             weights_iterator = loader._get_weights_iterator(
                 llm.llm_engine.model_config.model,
@@ -457,9 +448,7 @@ class _BaseQBitsAutoModelClass:
                 fall_back_to_pt=True,
             )
 
-            from vllm.model_executor.model_loader.weight_utils import (
-                default_weight_loader,
-            )  # pylint: disable=E0401 disable=E0611
+            from vllm.model_executor.model_loader.weight_utils import default_weight_loader  # pylint: disable=E0401 disable=E0611
 
             params_dict = dict(model.named_parameters(remove_duplicate=False))
             for name in params_dict.keys():
