@@ -74,6 +74,7 @@ from ...tools.utils import is_intel_gpu_available, is_ipex_available
 from accelerate import init_empty_weights
 from huggingface_hub import hf_hub_download
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
+from neural_compressor.adaptor.torch_utils.layer_wise_quant import load_empty_model
 from neural_compressor.model.torch_model import PyTorchFXModel
 from threading import Thread
 from transformers.configuration_utils import PretrainedConfig
@@ -778,13 +779,16 @@ class _BaseQBitsAutoModelClass:
                         if quantization_config.quant_method.value in ["teq", "awq"]
                         else False
                     )
-                    model = cls.ORIG_MODEL.from_pretrained(
-                        pretrained_model_name_or_path,
-                        *model_args,
-                        config=config,
-                        **kwargs,
-                    )
-                    model.config.update({"low_cpu_mem_usage": True})
+                    if quantization_config.layer_wise:
+                        model = load_empty_model(pretrained_model_name_or_path, torchscript=True)
+                    else:
+                        model = cls.ORIG_MODEL.from_pretrained(
+                            pretrained_model_name_or_path,
+                            *model_args,
+                            config=config,
+                            **kwargs,
+                        )
+                        model.config.update({"low_cpu_mem_usage": True})
                 model.eval()
 
                 if use_xpu:

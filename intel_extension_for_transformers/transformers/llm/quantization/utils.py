@@ -25,6 +25,7 @@ from accelerate import init_empty_weights
 from datasets import load_dataset
 from neural_compressor import quantization
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
+from neural_compressor.utils.pytorch import load
 from neural_compressor.utils.utility import LazyImport
 from neural_compressor.config import PostTrainingQuantConfig
 from intel_extension_for_transformers.tools.utils import (
@@ -583,6 +584,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )
+        if config.layer_wise:
+            inc_model.save("./tmp")
+            inc_model = load("./tmp", model, weight_only=True, layer_wise=True)
+            return inc_model.eval()
         inc_model.eval()
 
         if device == "xpu" or device == torch.device("xpu"):
