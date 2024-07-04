@@ -1148,6 +1148,14 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.use_neural_speed = use_neural_speed
         self.batch_size = kwargs.pop("batch_size", 8)
         self.device = kwargs.get("device", "auto")
+        calib_iters = kwargs.get("calib_iters", None)
+        if iters is not None:
+            self.calib_iters = iters
+            if calib_iters is not None:
+                logger.info("cannot be set simultaneously for 'iters' and 'calib_iters', "
+                            "we will use 'iters' as calibration iterations!")
+        else:
+            self.calib_iters = 200 if calib_iters is None else calib_iters
         self.scheme = "sym" if self.sym else "asym"
         if isinstance(compute_dtype, torch.dtype):
             self.compute_dtype = convert_dtype_torch2str(compute_dtype)
