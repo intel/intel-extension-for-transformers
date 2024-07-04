@@ -140,7 +140,7 @@ def get_environ_info():
 
 
 def search_straight_pattern(input_pattern, graph):
-    """Search user specified patterns on internal grpah structure.
+    """Search user specified patterns on internal graph structure.
 
     Attention: the input computation chain in the graph which can be called pattern, there must be
                 straight (or sequence). It means it has not any subgraph nodes. Otherwise this
