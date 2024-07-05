@@ -48,8 +48,7 @@ void parse_prob(repack_quantized_weight_param* p, repack_quantized_weight_ctx* c
   }
   if (p->weight_type == "nf4" || p->weight_type == "fp4_e2m1_bnb" || p->weight_type == "fp4_e2m1") {
     TORCH_CHECK(!p->asym, "Qbits: float-weight unsupports asym quantization.");
-    if (!dispatcher_utils::is_int8_cmpt_gemmcore<GemmCore>)
-      return execute_qpack<bestla::prologue_b::gemm::WeightKBlockNFloat<GemmCore, ISA>>(p, ctx, task);
+    return execute_qpack<bestla::prologue_b::gemm::WeightKBlockNFloat<GemmCore, ISA>>(p, ctx, task);
   }
   TORCH_CHECK(false, "Qbits: unsupported bestla packq config, compute_type: " + p->compute_type +
                          " weight_type: " + p->weight_type);
