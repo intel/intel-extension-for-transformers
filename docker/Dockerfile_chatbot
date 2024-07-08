@@ -153,6 +153,7 @@ RUN apt update \
     && apt install -y wget numactl git nvidia-cuda* \
     && apt install -y openssh-server \
     && apt install -y python${PYTHON_VERSION} python3-pip \
+    && echo 'LoginGraceTime 0' >> /etc/ssh/sshd_config \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
 RUN ln -s /usr/bin/python3 /usr/bin/python
