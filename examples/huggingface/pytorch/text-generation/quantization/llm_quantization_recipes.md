@@ -41,13 +41,8 @@ pip install -v .
 cd examples/huggingface/pytorch/text-generation/quantization
 pip install -r requirements.txt
 pip install neural-compressor==2.6
-pip install transformers==4.35.2
+pip install transformers==4.38.1
 
-# For llama and chatglm
-pip install torch==2.2.0+cpu --index-url https://download.pytorch.org/whl/cpu
-pip install intel-extension-for-pytorch==2.2.0
-
-# For other models
 pip install torch==2.3.0+cpu --index-url https://download.pytorch.org/whl/cpu
 pip install intel-extension-for-pytorch==2.3.0
 ```
@@ -227,10 +222,11 @@ python run_generation_sq.py \
     --calib_len 2048 \
     --fallback_add \
     --calib_shuffle False \
+    --calib_iters 512 \
     --tasks lambada_openai \
     --int8 --sq --accuracy \
     --batch_size 1 \
-    --recipes "{'smooth_quant': True, 'smooth_quant_args': {'alpha': 'auto', 'folding': False, 'default_alpha': 0.8, 'auto_alpha_args': {'alpha_min': 0.8, 'alpha_max': 0.99, 'alpha_step': 0.01, 'shared_criterion': 'mean'}}}"
+    --recipes "{'smooth_quant': True, 'smooth_quant_args': {'alpha': 'auto', 'folding': False, 'default_alpha': 0.8, 'auto_alpha_args': {'alpha_min': 0.79, 'alpha_max': 0.99, 'alpha_step': 0.01, 'shared_criterion': 'mean'}}}"
 ```
 
 ### Weight-Only Quantization
@@ -282,11 +278,12 @@ python run_generation_sq.py \
     --trust_remote_code \
     --calib_len 1024 \
     --fallback_add \
+    --calib_iters 512
     --calib_padding \
     --tasks lambada_openai \
     --int8 --sq --accuracy \
     --batch_size 1 \
-    --recipes "{'smooth_quant': True, 'smooth_quant_args': {'alpha': 'auto', 'folding': False, 'default_alpha': 0.8, 'auto_alpha_args': {'alpha_min': 0.75, 'alpha_max': 0.99, 'alpha_step': 0.01, 'shared_criterion': 'max'}}}"
+    --recipes "{'smooth_quant': True, 'smooth_quant_args': {'alpha': 'auto', 'folding': False, 'default_alpha': 0.8, 'auto_alpha_args': {'alpha_min': 0.75, 'alpha_max': 0.99, 'alpha_step': 0.01, 'shared_criterion': 'max', 'n_samples':64}}}"
 ```
 
 ### Weight-Only Quantization
@@ -656,8 +653,9 @@ python run_generation_sq.py \
     --trust_remote_code \
     --tasks lambada_openai \
     --int8 --sq --accuracy \
+    --calib_iters 512
     --batch_size 1 \
-    --recipes "{'smooth_quant':True,'smooth_quant_args':{'alpha':'auto','folding':False,'default_alpha':0.7,'auto_alpha_args':{'alpha_min':0.55,'alpha_max':0.85,'alpha_step':0.01,'shared_criterion':'mean'}}}" \
+    --recipes "{'smooth_quant':True,'smooth_quant_args':{'alpha':'auto','folding':False,'default_alpha':0.7,'auto_alpha_args':{'alpha_min':0.55,'alpha_max':0.8,'alpha_step':0.01,'shared_criterion':'mean','n_samples':64}}}" \
     --calib_iters 512
 ```
 
@@ -709,9 +707,8 @@ python run_generation_sq.py \
     --trust_remote_code \
     --tasks lambada_openai \
     --int8 --sq --accuracy \
-    --recipes "{'smooth_quant':True,'smooth_quant_args':{'alpha':'auto','folding':False,'default_alpha':0.85,'auto_alpha_args':{'alpha_min':0.79,'alpha_max':0.9,'alpha_step':0.01,'shared_criterion':'mean'}}}" \
-    --batch_size 1 \
-    --calib_len 256
+    --recipes "{'smooth_quant':True,'smooth_quant_args':{'alpha':'auto','folding':False,'default_alpha':0.85,'auto_alpha_args':{'alpha_min':0.79,'alpha_max':0.88,'alpha_step':0.01,'shared_criterion':'mean'}}}" \
+    --batch_size 1
 ```
 
 ### Weight-Only Quantization
