@@ -1453,7 +1453,7 @@ class _BaseQBitsAutoModelClass:
                 return model
             else:
                 if model_hub=="modelscope":
-                    from modelscope import AutoModelForCausalLM
+                    from modelscope import AutoModelForCausalLM # pylint: disable=E0401
                     model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path,trust_remote_code=True)
                 else:
                     model = cls.ORIG_MODEL.from_pretrained(
@@ -1714,7 +1714,7 @@ class _BaseQBitsAutoModelClass:
                         "_commit_hash": commit_hash,
                     }
                     if model_hub=="modelscope":
-                        from modelscope import snapshot_download
+                        from modelscope import snapshot_download # pylint: disable=E0401
                         model_dir = snapshot_download(pretrained_model_name_or_path)
                         if os.path.exists(model_dir+"/model.safetensors"):
                             resolved_archive_file = model_dir+"/model.safetensors"
@@ -1725,7 +1725,8 @@ class _BaseQBitsAutoModelClass:
                                     resolved_archive_file  is not None
                                     ), "Don't detect this model checkpoint"
                     else:
-                        resolved_archive_file = cached_file(pretrained_model_name_or_path, filename, **cached_file_kwargs)
+                        resolved_archive_file = cached_file(pretrained_model_name_or_path, filename,
+                                                            **cached_file_kwargs)
 
                     # Since we set _raise_exceptions_for_missing_entries=False, we don't get an exception but a None
                     # result when internet is up, the repo and revision exist, but the file does not.
