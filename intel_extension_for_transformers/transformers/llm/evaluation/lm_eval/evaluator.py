@@ -538,7 +538,7 @@ def evaluate(
                             _higher_is_better[m] = h
                     if m in _higher_is_better and _higher_is_better[m] is not None and _higher_is_better[m] != h:
                         eval_logger.warning(
-                            f"Higher_is_better values for metric {m} in group {group} are not consistent." + 
+                            f"Higher_is_better values for metric {m} in group {group} are not consistent." +
                             f"Defaulting to None."
                         )
                         _higher_is_better[m] = None
@@ -571,7 +571,7 @@ def evaluate(
                         # TODO: allow GroupConfigs to choose which variance formula is used, for back-compatibility
                         # To use the old (likely incorrect) variance formula,
                         # comment out the above and uncomment this line:
-                        # results[group][stderr] = lm_eval.api.metrics.combined_sample_stderr(stderrs, 
+                        # results[group][stderr] = lm_eval.api.metrics.combined_sample_stderr(stderrs,
                         # sizes, metrics=metrics)
 
                     results[group]["samples"] = sum(sizes)
