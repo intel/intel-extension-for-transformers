@@ -142,12 +142,7 @@ config = AutoConfig.from_pretrained(
 
 user_model = None
 
-# tokenizer
-if config.model_type == "llama":
-   from transformers import LlamaTokenizer
-   tokenizer = LlamaTokenizer.from_pretrained(args.model)
-else:
-   tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
 quantization_config = None
 if args.woq:

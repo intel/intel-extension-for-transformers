@@ -4,7 +4,7 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: debug-statements
       - id: mixed-line-ending
@@ -44,7 +44,7 @@ repos:
           )$
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell
         args: [-w, --ignore-words=.github/workflows/script/formatScan/nlp_dict.txt]

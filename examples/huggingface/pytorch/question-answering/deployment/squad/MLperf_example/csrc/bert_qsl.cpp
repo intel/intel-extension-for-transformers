@@ -74,7 +74,7 @@ namespace qsl {
       }
     }
 
-    // Splice them togather
+    // Splice them together
     Queue_t result;
     for (auto& q : Buckets)
       result.splice(result.end(), std::move(q));
