@@ -28,7 +28,7 @@ else
     echo "Not found requirements.txt file."
 fi
 # install packages
-pip install lm-eval==0.4.2
+pip install lm-eval==0.4.3
 pip install accelerate nlpaug nltk schema optimum-intel optimum peft
 pip install --upgrade --force-reinstall transformers==4.36.2
 pip install optimum-habana
