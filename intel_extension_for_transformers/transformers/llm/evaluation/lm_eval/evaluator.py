@@ -38,7 +38,7 @@ from lm_eval.evaluator_utils import (
     print_writeout,
     run_task_tests,
 )
-from lm_eval.loggers import add_env_info, get_git_commit_hash
+from lm_eval.loggers.utils import add_env_info, get_git_commit_hash
 from lm_eval.tasks import TaskManager, get_task_dict
 from lm_eval.utils import eval_logger, positional_deprecated, simple_parse_args_string
 from lm_eval import utils
@@ -538,7 +538,8 @@ def evaluate(
                             _higher_is_better[m] = h
                     if m in _higher_is_better and _higher_is_better[m] is not None and _higher_is_better[m] != h:
                         eval_logger.warning(
-                            f"Higher_is_better values for metric {m} in group {group} are not consistent. Defaulting to None."
+                            f"Higher_is_better values for metric {m} in group {group} are not consistent." + 
+                            f"Defaulting to None."
                         )
                         _higher_is_better[m] = None
                 higher_is_better[group] = _higher_is_better
@@ -568,8 +569,10 @@ def evaluate(
                     else:
                         results[group][stderr] = lm_eval.api.metrics.pooled_sample_stderr(stderrs, sizes)
                         # TODO: allow GroupConfigs to choose which variance formula is used, for back-compatibility
-                        # To use the old (likely incorrect) variance formula, comment out the above and uncomment this line:
-                        # results[group][stderr] = lm_eval.api.metrics.combined_sample_stderr(stderrs, sizes, metrics=metrics)
+                        # To use the old (likely incorrect) variance formula,
+                        # comment out the above and uncomment this line:
+                        # results[group][stderr] = lm_eval.api.metrics.combined_sample_stderr(stderrs, 
+                        # sizes, metrics=metrics)
 
                     results[group]["samples"] = sum(sizes)
 
