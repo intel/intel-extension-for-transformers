@@ -123,6 +123,7 @@ def recover_export_model(model, current_key_name=None):
                 int_weight,
             ) = module.recover_qparms()
             dtype = "int4" if weight_dtype == "int4_clip" else weight_dtype
+            use_optimum_format = False if weight_dtype in ["fp4_e2m1", "fp4", "nf4"] else True
             model._modules[name] = WeightOnlyLinear(
                 in_features,
                 out_features,
@@ -133,17 +134,20 @@ def recover_export_model(model, current_key_name=None):
                 bias=module.bias is not None,
                 scale_dtype=scales_dtype,
                 g_idx=desc_act,
-                use_optimum_format=True,
+                use_optimum_format=use_optimum_format,
             )
 
             # Setting g_idx is invalid when use_optimum_format is True, so set it again when g_idx is not None.
             # https://github.com/intel/neural-compressor/blob/v2.5.dev2/neural_compressor/adaptor/torch_utils/
             # model_wrapper.py#L343
             model._modules[name].pack(
-                int_weight, scales, zeros, module.bias, g_idx=g_idx
+                int_weight.contiguous(),
+                scales.contiguous(),
+                zeros.contiguous() if zeros is not None else None,
+                module.bias.contiguous() if module.bias is not None else None,
             )
             if g_idx is not None:
-                model._modules[name].g_idx = g_idx
+                model._modules[name].g_idx = g_idx.contiguous()
 
         if len(list(module.children())) > 0:  # pylint: disable=E1101
             _ = recover_export_model(module, current_key_name)
@@ -154,7 +158,7 @@ def recover_export_model(model, current_key_name=None):
 
 def build_woq_model(model, quantization_config):
     from neural_compressor.adaptor.torch_utils.util import set_module
-
+    weight_dtype = quantization_config.weight_dtype
     for n, m in model.named_modules():
         if "lm_head" in n or "output_layer" in n or "embed_out" in n:
             continue
@@ -164,17 +168,19 @@ def build_woq_model(model, quantization_config):
                 "zero_point",
                 not getattr(quantization_config, "sym", False),
             )
+            dtype = "int4" if weight_dtype == "int4_clip" else weight_dtype
+            use_optimum_format = False if weight_dtype in ["nf4", "fp4", "fp4_e2m1"] else True
             with init_empty_weights():
                 new_module = WeightOnlyLinear(
                     m.in_features,
                     m.out_features,
-                    dtype="int",
+                    dtype=dtype,
                     bits=quantization_config.bits,
                     group_size=quantization_config.group_size,
                     zp=zp,
                     bias=m.bias is not None,
                     g_idx=True,
-                    use_optimum_format=True,
+                    use_optimum_format=use_optimum_format,
                 )
             set_module(model, n, new_module)
     return model
@@ -194,17 +200,9 @@ def convert_model_to_public(model):
     elif model.quantization_config.weight_dtype not in [
         "fp8_e5m2",
         "fp8_e4m3",
-        "nf4",
-        "fp4_e2m1",
-        "fp4_e2m1_bnb",
     ]:
         model = recover_export_model(model)
 
-
-def make_contiguous(model):
-    for param in model.parameters():
-        if param.data.ndimension() > 1:
-            param.data = param.data.contiguous()
 
 
 def save_low_bit(
@@ -234,7 +232,7 @@ def save_low_bit(
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
     del self.save_pretrained
-    make_contiguous(self)
+
     self.save_pretrained(
         save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
     )
@@ -733,7 +731,7 @@ class _BaseQBitsAutoModelClass:
                                 )
                                 else convert_dtype_torch2str(torch_dtype)
                             ),
-                            weight_dtype="nf4" if use_cpu else "int4_fullrange",
+                            weight_dtype="int4_clip" if use_cpu else "int4_fullrange",
                         )
                 else:
                     assert (
@@ -741,7 +739,7 @@ class _BaseQBitsAutoModelClass:
                         and convert_dtype_str2torch(quantization_config.compute_dtype)
                         == torch_dtype
                     ), "Quantization_config.weight_dtype should be 'nf4' , 'int4', 'int4_fullrange', 'int4_clip', "
-                    f"'fp4', 'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
+                    f"'fp4', 'fp4_e2m1' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
                     if use_neural_speed:
@@ -856,6 +854,7 @@ class _BaseQBitsAutoModelClass:
                             **kwargs,
                         )
                         model.config.update({"low_cpu_mem_usage": False})
+                        quantization_config.post_init_xpu()
                 else:
                     kwargs["low_cpu_mem_usage"] = True
                     config.torchscript = (
@@ -870,6 +869,7 @@ class _BaseQBitsAutoModelClass:
                         **kwargs,
                     )
                     model.config.update({"low_cpu_mem_usage": True})
+                    quantization_config.post_init_cpu()
                 model.eval()
 
                 if use_xpu:
@@ -1807,7 +1807,7 @@ class _BaseQBitsAutoModelClass:
                 raise ValueError(
                     f"weight_dtype must be a string in "
                     f"'int8', 'int4', 'int4_fullrange', 'int4_clip', 'nf4', "
-                    f"'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8', 'fp8_e5m2, fp8_e4m3'"
+                    f"'fp4', 'fp4_e2m1', 'fp8', 'fp8_e5m2, fp8_e4m3'"
                 )
             else:
                 logger.info(
@@ -1825,9 +1825,6 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
-            "fp4_e2m1",
-            "fp4_e2m1_bnb",
-            "nf4",
         ]:
             model = build_woq_model(model, quantization_config)
         else:
@@ -1944,9 +1941,6 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
-            "nf4",
-            "fp4_e2m1",
-            "fp4_e2m1_bnb",
         ] and not quantization_config.use_ipex:
             model = replace_linear(
                 model,

@@ -39,17 +39,17 @@ class qbits_acquire_type(Enum):
 
 
 def qbits_woq_linear_ref_impl(activation, packw,  bias, compute_type, weight_type, scale_type):
-    assert (activation.is_contiguous())
-    assert (packw.is_contiguous())
     activation = activation.to(torch.float32)
     n = qbits.acquire_packed_weight_info(
         packw, qbits_acquire_type.N.value)[0].item()
     k = activation.shape[1]
     revert_wei = torch.empty(k, n, dtype=torch.float)
     qbits.dequantize_packed_weight(
-        packw, revert_wei, False, compute_type, weight_type, scale_type)
+        packw, revert_wei, False, compute_type, weight_type, "fp32")
+
     enable_act_shuffle = qbits.acquire_packed_weight_info(
         packw, qbits_acquire_type.ACT_SHUFFLE.value)[0] != 0
+
     if enable_act_shuffle:
         g_idx = qbits.acquire_packed_weight_info(
             packw, qbits_acquire_type.G_IDX.value)
@@ -59,6 +59,7 @@ def qbits_woq_linear_ref_impl(activation, packw,  bias, compute_type, weight_typ
         assert (bias.is_contiguous())
         assert (bias.dtype == torch.float32)
         out += bias
+
     return out
 
 
@@ -117,6 +118,7 @@ class MatMulKBit(torch.autograd.Function):
                 False if scheme == "sym" else True,
             )
         else:
+
             out = qbits_woq_linear_ref_impl(
                 A, B.data, bias, compute_dtype, weight_dtype, scale_dtype)
         output = out

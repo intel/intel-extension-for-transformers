@@ -296,7 +296,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         if self.bits == 4 and self.weight_dtype not in [
             "int4_clip",
             "nf4",
-            "fp4_e2m1_bnb",
             "fp4_e2m1",
         ]:
             self.weight_dtype = "int4_clip"
@@ -314,14 +313,13 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             "int8",
             "int4_clip",
             "nf4",
-            "fp4_e2m1_bnb",
             "fp4_e2m1",
             "fp8_e5m2",
             "fp8_e4m3",
         ]:
             raise ValueError(
                 f"weight_dtype must be a string in "
-                f"'int8', 'int4', 'int4_clip', 'nf4', 'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', "
+                f"'int8', 'int4', 'int4_clip', 'nf4', 'fp4', 'fp4_e2m1', "
                 f"'fp8', 'fp8_e5m2, fp8_e4m3'"
             )
 
@@ -1043,6 +1041,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         weight_dtype: Any = None,
         scale_dtype: Any = None,
         layer_wise: bool = False,
+        absorb_to_layer: dict = {},
         n_samples: int = 128,
         seq_len: int = 2048,
         use_double_quant=False,
@@ -1060,6 +1059,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
         self.group_size = group_size
+        self.absorb_to_layer = absorb_to_layer
         self.sym = sym
         self.scheme = "sym" if self.sym else "asym"
         self.layer_wise = layer_wise

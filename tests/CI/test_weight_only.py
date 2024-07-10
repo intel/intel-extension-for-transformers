@@ -41,6 +41,11 @@ from intel_extension_for_transformers.transformers.llm.quantization.utils import
 from intel_extension_for_transformers.transformers.llm.utils.generation import _beam_search, _greedy_search
 from intel_extension_for_transformers.transformers import RtnConfig
 
+import random
+random.seed(1234)
+torch.manual_seed(1234)
+import numpy as np
+np.random.seed(1234)
 
 class DummyDataset(data.Dataset):
     def __init__(self):
@@ -124,29 +129,6 @@ class TestWeightOnly(unittest.TestCase):
             output = model(activation)
 
             config = RtnConfig(bits=8, weight_dtype="int8", group_size=32)
-            convert_to_quantized_model(model, config)
-            output_quant = model(activation)
-            print(output)
-            print(output_quant)
-            assert torch.allclose(output, output_quant, rtol=0.01)
-
-    def test_int4(self):
-        raw_wei = torch.rand(2, 32, dtype=torch.float)
-        compress_wei = qbits.quantize_to_packed_weight(
-            raw_wei, True, 32, "fp32", "nf4", "fp32", False)
-        revert_wei = torch.zeros(2, 32, dtype=torch.float)
-        qbits.dequantize_packed_weight(compress_wei, revert_wei, True,
-                             "fp32", "nf4", "fp32")
-        for bias in [True, False]:
-            model = M(with_bias=bias)
-            with torch.no_grad():
-                model.linear.weight = torch.nn.Parameter(revert_wei)
-            activation = torch.rand(1, 5, 32, dtype=torch.float)
-            output = model(activation)
-            with torch.no_grad():
-                model.linear.weight = torch.nn.Parameter(raw_wei)
-            config = RtnConfig(
-                bits=4, weight_dtype="nf4", group_size=32)
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)

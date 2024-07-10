@@ -25,6 +25,7 @@ from peft.utils.other import transpose
 from intel_extension_for_transformers.transformers.llm.quantization.autograd import (
     matmul_kbit, )
 import intel_extension_for_transformers.qbits as qbits  # pylint: disable=E0611, E0401
+from neural_compressor.torch.algorithms.weight_only.utility import quant_tensor as quant_nf4_fp4
 
 
 class DropoutQBits_(torch.autograd.Function):
@@ -221,10 +222,14 @@ class QuantizedLinearQBits(torch.nn.Linear):
                     g_idx = torch.empty(0, dtype=torch.int32)
             else:
                 g_idx = torch.empty(0, dtype=torch.int32)
-        if q_config.bits == 4:
+        if q_config.bits == 4 and 'f' not in q_config.weight_dtype:
             int_weight = (int_weight - 8) * 16 // 16
             gptq_zeros = (gptq_zeros - 8) * 16 // 16
 
+        if q_config.weight_dtype in ["nf4", "fp4", "fp4_e2m1"]:
+            int_weight = torch.where(int_weight < 0, int_weight + 16, int_weight)
+            int_weight = int_weight.t_()
+            gptq_scales = gptq_scales.t_()
         if q_config.sym:
             gptq_zeros = torch.empty(0, dtype=torch.int8)
 
@@ -329,7 +334,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             g_idx = None
         weight_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 6)
         weight_dtype = "".join(chr(ascii_code) for ascii_code in weight_dtype_ascii.tolist())
-        bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4_e2m1", "fp4_e2m1_bnb"] else 8
+        bits = 4 if weight_dtype in ["nf4", "int4_clip", "fp4_e2m1"] else 8
         compute_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 7)
         compute_dtype = "".join(chr(ascii_code) for ascii_code in compute_dtype_ascii.tolist())
         scales_dtype_ascii = qbits.acquire_packed_weight_info(self.weight, 8)
@@ -352,12 +357,19 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
         qbits.dequantize_packed_weight(self.weight, revert_wei, False, compute_dtype, weight_dtype, scales_dtype)
 
-        int_weight = self.quant_weight_w_scale(
-            revert_wei.t(),
-            scales.t(),
-            qzeros.to(torch.uint8).t() if qzeros is not None else None,
-            group_size=group_size,
-        )
+        if weight_dtype in ["nf4", "fp4", "fp4_e2m1"]:
+            int_weight = quant_nf4_fp4(revert_wei.t(),
+                                       bits=bits,
+                                       group_size=group_size,
+                                       dtype=weight_dtype,
+                                       return_int=True)[0]
+        else:
+            int_weight = self.quant_weight_w_scale(
+                revert_wei.t(),
+                scales.t(),
+                qzeros.to(torch.uint8).t() if qzeros is not None else None,
+                group_size=group_size,
+            )
 
         if g_idx is not None:
             int_weight = recover_int_weight(g_idx, int_weight.t())

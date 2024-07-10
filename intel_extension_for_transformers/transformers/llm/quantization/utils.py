@@ -68,7 +68,6 @@ logger = logging.getLogger(__name__)
 DTYPE_BITS_MAPPING = {
     "nf4": 4,
     "fp4": 4,  # fp4 == fp4_e2m1
-    "fp4_e2m1_bnb": 4,
     "fp4_e2m1": 4,
     "int4": 4,
     "int4_fullrange": 4,
@@ -84,27 +83,30 @@ def unpack_weight(qweight, scales, qzeros, q_config):
     sym = q_config.sym
     bits = q_config.bits
     wf = torch.tensor(list(range(0, 32, bits)), dtype=torch.int32).unsqueeze(0)
+    if qzeros is not None:
+        zeros = torch.bitwise_right_shift(
+            torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)
+        ).to(torch.int16 if bits == 8 else torch.int8)
+        torch.bitwise_and(zeros, (2**bits) - 1, out=zeros)
+        if bits == 8:
+            zeros = zeros.to(torch.int8 if sym else torch.uint8)
+        # due to INC minus one
+        zeros = zeros + 1
+        try:
+            zeros = zeros.reshape(scales.shape)
+        except:
+            # zeros and scales have different iteam numbers.
+            # remove 1 (due to 0 + 1 in line 68)
+            zeros = zeros[zeros != 1]
+            zeros = zeros.reshape(scales.shape)
 
-    zeros = torch.bitwise_right_shift(
-        torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)
-    ).to(torch.int16 if bits == 8 else torch.int8)
-    torch.bitwise_and(zeros, (2**bits) - 1, out=zeros)
-    if bits == 8:
-        zeros = zeros.to(torch.int8 if sym else torch.uint8)
-    # due to INC minus one
-    zeros = zeros + 1
-    try:
-        zeros = zeros.reshape(scales.shape)
-    except:
-        # zeros and scales have different iteam numbers.
-        # remove 1 (due to 0 + 1 in line 68)
-        zeros = zeros[zeros != 1]
-        zeros = zeros.reshape(scales.shape)
-
-    # due to INC asym return torch.uint8 but backend request int8,
-    # change it to int8 with offset 128
-    if not sym and bits == 8:
-        zeros = (zeros.to(torch.int32) - 128).to(torch.int8)
+        # due to INC asym return torch.uint8 but backend request int8,
+        # change it to int8 with offset 128
+        if not sym and bits == 8:
+            zeros = (zeros.to(torch.int32) - 128).to(torch.int8)
+        zeros = zeros.contiguous()
+    else:
+        zeros = None
 
     weight = torch.bitwise_right_shift(
         torch.unsqueeze(qweight, 1).expand(-1, 32 // bits, -1), wf.unsqueeze(-1)
@@ -120,7 +122,7 @@ def unpack_weight(qweight, scales, qzeros, q_config):
         # change it to int8 with offset 128
         if not sym:
             weight = (weight.to(torch.int32) - 128).to(torch.int8)
-    return weight.contiguous(), scales.contiguous(), zeros.contiguous()
+    return weight.contiguous(), scales.contiguous(), zeros
 
 
 def replace_linear(
@@ -180,9 +182,6 @@ def _replace_linear(
             quantization_config.weight_dtype not in [
                 "fp8_e5m2",
                 "fp8_e4m3",
-                "fp4_e2m1_bnb",
-                "fp4_e2m1",
-                "nf4",
                 "int4_fullrange",
             ]
 
@@ -272,9 +271,6 @@ def _replace_linear(
                                 quantization_config.weight_dtype not in [
                                     "fp8_e5m2",
                                     "fp8_e4m3",
-                                    "fp4_e2m1_bnb",
-                                    "fp4_e2m1",
-                                    "nf4",
                                 ]
 
                             model._modules[name] = QuantizedLinearQBits(
@@ -374,22 +370,25 @@ def _replace_linear(
                     if quantization_config.weight_dtype in [
                         "fp8_e5m2",
                         "fp8_e4m3",
-                        "nf4",
-                        "fp4_e2m1_bnb",
-                        "fp4_e2m1",
                     ]:
                         model._modules[name].set_fp_weights_bias(
                             module.weight.data,
                             None if module.bias is None else module.bias.data,
                         )
                     else:
-                        int_weight, scales, zeros = unpack_weight(
-                            module.qweight,
-                            module.scales,
-                            module.qzeros,
-                            quantization_config,
-                        )
-                        int_weight = int_weight.view(-1, int_weight.shape[-1])
+                        if quantization_config.weight_dtype in ["int4", "int4_clip", "int8"]:
+                            int_weight, scales, zeros = unpack_weight(
+                                module.qweight,
+                                module.scales,
+                                module.qzeros if hasattr(module, "qzeros") else None,
+                                quantization_config,
+                            )
+                            int_weight = int_weight.view(-1, int_weight.shape[-1])
+                        else:
+                            int_weight = module.unpack_tensor_with_numpy(module.qweight)
+                            scales = module.scales
+                            zeros = module.qzeros if hasattr(module, "qzeros") else None
+
                         model._modules[name].set_weights_bias(
                             int_weight,
                             scales,
@@ -601,7 +600,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 use_layer_wise=config.layer_wise,
                 absorb_to_layer=config.absorb_to_layer
             )
-            assert config.absorb_to_layer != {}, "absorb_to_layer is necessary for TEQ algorithm"
             quant_config.set_local(".*lm_head", TEQConfig(dtype="fp32"))
             quant_config.set_local(".*output_layer", TEQConfig(dtype="fp32"))
             quant_config.set_local(".*embed_out", TEQConfig(dtype="fp32"))
@@ -619,6 +617,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             model = prepare(model=model, quant_config=quant_config, example_inputs=example_inputs)
             run_fn(model, *run_args)
             model = convert(model)
+
         elif config.quant_method.value == "gptq":
             model.seqlen = config.seq_len
             quant_config = GPTQConfig(
@@ -682,21 +681,14 @@ def convert_to_quantized_model(model, config, device="cpu"):
             assert False, "The Supported algorithm are RTN, AWQ, TEQ, GPTQ, AUTOROUND"
 
         if device == "xpu" or device == torch.device("xpu"):
-            model = model.export_compressed_model(
-                compression_dtype=torch.int8,
-                compression_dim=0,
-                use_optimum_format=False,
-                scale_dtype=convert_dtype_str2torch(config.scale_dtype),
-                device="xpu",
-            ) if _ipex_version < "2.3.10" else inc_model.export_compressed_model(use_optimum_format=True, device="xpu")
+            logger.warning("The recommended ipex version is higher than 2.3.10 for xpu device.")
 
-            q_model = replace_linear(model, None, None, config, device=device)
-        else:
-            model.eval()
-            q_model = replace_linear(model, None, None, config, device=device)
+        model.eval()
+        q_model = replace_linear(model, None, None, config, device=device)
 
         if orig_dtype != torch.float32:
             q_model.to(dtype=orig_dtype)
+
         return q_model.to(device)
 
 
