@@ -20,7 +20,7 @@ import gc
 import logging
 import math
 import os
-
+from ....tools.utils import _ipex_version
 from accelerate import init_empty_weights
 from datasets import load_dataset
 from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
@@ -308,14 +308,12 @@ def _replace_linear(
                             scale_dtype=quantization_config.scale_dtype,
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme,
-                            compression_dtype=getattr(
-                                module, "compression_dtype", torch.int8
-                            ),
-                            compression_dim=getattr(module, "compression_dim", 0),
+                            compression_dtype=getattr(module, "compression_dtype",
+                                                      torch.int8 if _ipex_version < "2.3.10" else torch.int32),
+                            compression_dim=getattr(module, "compression_dim", 0 if _ipex_version < "2.3.10" else 1),
                             device=device,
-                            use_optimum_format=getattr(
-                                module, "use_optimum_format", False
-                            ),
+                            use_optimum_format=getattr(module, "use_optimum_format",
+                                                       False if _ipex_version < "2.3.10" else True),
                         )
                         if quantization_config.quant_method.value == "gptq":
                             g_idx = getattr(
@@ -335,6 +333,17 @@ def _replace_linear(
                                         math.ceil(
                                             in_features / quantization_config.group_size
                                         ),
+                                    ),
+                                    dtype=convert_dtype_str2torch(
+                                        quantization_config.compute_dtype
+                                    ),
+                                    device=torch.device(device),
+                                ) if _ipex_version < "2.3.10" else torch.ones(
+                                    (
+                                        math.ceil(
+                                            in_features / quantization_config.group_size
+                                        ),
+                                        out_features,
                                     ),
                                     dtype=convert_dtype_str2torch(
                                         quantization_config.compute_dtype
@@ -392,11 +401,13 @@ def _replace_linear(
                 else:
                     if not hasattr(module, "qweight"):
                         n_pack = (
-                            8 // quantization_config.bits
+                            (8 if _ipex_version < "2.3.10" else 32)
+                            // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]
                         )
                         weight = torch.zeros(
-                            (math.ceil(out_features / n_pack), in_features),
-                            dtype=torch.int8,
+                            (math.ceil(out_features / n_pack), in_features) if _ipex_version < "2.3.10" else
+                            (math.ceil(in_features / n_pack), out_features),
+                            dtype=torch.int8 if _ipex_version < "2.3.10" else torch.int32,
                             device=torch.device(device),
                         )
                     model._modules[name].set_weights_bias(
@@ -677,7 +688,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 use_optimum_format=False,
                 scale_dtype=convert_dtype_str2torch(config.scale_dtype),
                 device="xpu",
-            )
+            ) if _ipex_version < "2.3.10" else inc_model.export_compressed_model(use_optimum_format=True, device="xpu")
 
             q_model = replace_linear(model, None, None, config, device=device)
         else:
