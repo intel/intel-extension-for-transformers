@@ -16,6 +16,7 @@
 #include <chrono>
 #include <string>
 #include "bestla/bestla_device.h"
+#include "bestla/bestla_storage.h"
 #include "bestla/bestla_utils.h"
 #include "bestla/bestla_parallel.h"
 namespace dispatcher_utils {
@@ -25,6 +26,12 @@ inline bool check_avx512_vnni() { return bestla::device::CpuDevice::getInstance(
 inline bool check_avx_vnni() { return bestla::device::CpuDevice::getInstance()->AVX_VNNI(); };
 inline bool check_avx512f() { return bestla::device::CpuDevice::getInstance()->AVX512F(); }
 inline bool check_avx2() { return bestla::device::CpuDevice::getInstance()->AVX2(); }
+
+template <class GemmCore>
+constexpr bool is_int8_cmpt_gemmcore() {
+  return GemmCore::ISA == BTLA_ISA::AMX_INT8 || GemmCore::ISA == BTLA_ISA::AVX512_VNNI ||
+         GemmCore::ISA == BTLA_ISA::AVX_VNNI || std::is_same_v<GemmCore, bestla::gemm::ICoreRowNAvx2vnniKBlock<24, 2>>;
+}
 
 class qbits_threading {
  public:
