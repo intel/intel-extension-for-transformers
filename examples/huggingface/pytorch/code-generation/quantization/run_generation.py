@@ -41,23 +41,22 @@ parser.add_argument(
     "--max_new_tokens", default=32, type=int, help="output max new tokens"
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
-parser.add_argument("--calib_iters", default=500, type=int, help="calibration iters.")
-parser.add_argument("--int8", action="store_true")
+parser.add_argument("--n_samples", default=500, type=int, help="calibration iters.")
 parser.add_argument(
-    "--int8_bf16_mixed",
+    "--restore_sq_model_from_json",
     action="store_true",
-    help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
+    help="restore ipex quantized model from output_dir/best_configure.json",
 )
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
-parser.add_argument("--iters", default=100, type=int, help="num iter")
+parser.add_argument("--benchmark_iters", default=100, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
 parser.add_argument(
     "--prompt_size", default=32, type=int, help="generate dummy input_ids size"
 )
 # ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--batch_size", default=56, type=int, help="batch size num.")
+parser.add_argument("--eval_batch_size", default=56, type=int, help="batch size num.")
 parser.add_argument(
     "--save_accuracy_path", default=None, help="Save accuracy results path."
 )
@@ -65,30 +64,43 @@ parser.add_argument(
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
+parser.add_argument("--alpha", default=0.5, help="Smooth quant parameter.")
 parser.add_argument(
-    "--calib_padding", action="store_true", help="Calibration dataset do padding."
+    "--n_samples", default=100, type=int, help="Smooth quant calibration samples."
 )
 parser.add_argument(
-    "--calib_shuffle",
-    default=True,
-    type=str2bool,
-    help="Calibration dataset do shuffle.",
+    "--seq_len", default=512, type=int, help="Smooth quant calibration input length."
+)
+parser.add_argument("--batch_size", default=1, type=int, help="batch size num.")
+parser.add_argument("--padding", action="store_true")
+parser.add_argument("--shuffle", action="store_true")
+# sq alpha "auto" parameters
+parser.add_argument("--scale_sharing", action="store_true")
+parser.add_argument(
+    "--init_alpha", default=0.5, type=float, help="Smooth quant parameter."
 )
 parser.add_argument(
-    "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
+    "--alpha_min", default=0.0, type=float, help="Smooth quant parameter."
 )
 parser.add_argument(
-    "--calib_len",
-    default=512,
-    type=int,
-    help="Calibration dataset max or padding max length.",
+    "--alpha_max", default=1.0, type=float, help="Smooth quant parameter."
 )
 parser.add_argument(
-    "--recipes", type=str, help="A dictionary as a string, recipes for smoothquant."
+    "--alpha_step", default=0.1, type=float, help="Smooth quant parameter."
 )
-parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
+parser.add_argument("--shared_criterion", default="max", type=str)
+parser.add_argument("--do_blockwise", action="store_true")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
+# ============WeightOnlyQuant configs===============
+parser.add_argument("--accuracy", action="store_true")
+parser.add_argument("--eval_batch_size", default=56, type=int, help="batch size num for evaluation.")
+parser.add_argument(
+    "--tasks",
+    default="lambada_openai",
+    type=str,
+    help="tasks list for accuracy validation",
+)
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
@@ -124,7 +136,7 @@ parser.add_argument(
     "--scale_dtype",
     type=str,
     default="fp32",
-    choices=["fp32", "fp8"],
+    choices=["fp32", "bf16", "fp8"],
 )
 parser.add_argument(
     "--compute_dtype",
@@ -132,14 +144,27 @@ parser.add_argument(
     default="fp32",
     choices=["fp32", "bf16", "int8"],
 )
-parser.add_argument("--group_size", type=int, default=32)
-parser.add_argument("--scheme", default="sym")
-parser.add_argument("--load_in_4bit", action="store_true")
-parser.add_argument("--load_in_8bit", action="store_true")
+parser.add_argument("--group_size", type=int, default=128)
+parser.add_argument("--scheme", default=None)
 parser.add_argument(
     "--layer_wise",
     action="store_true",
     help="Use layer wise to do quantization",
+)
+parser.add_argument(
+    "--n_samples", type=int, default=512, help="Number of calibration data samples."
+)
+parser.add_argument(
+    "--seq_len",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
+parser.add_argument(
+    "--batch_size",
+    type=int,
+    default=8,
+    help="Calibration batchsize.",
 )
 # ============GPTQ configs==============
 parser.add_argument(
@@ -154,19 +179,15 @@ parser.add_argument(
     help="Percent of the average Hessian diagonal to use for dampening.",
 )
 parser.add_argument(
+    "--true_sequential",
+    action="store_true",
+    help="Whether to quantize layers within a transformer block in their original order.",
+)
+parser.add_argument(
     "--blocksize",
     type=int,
     default=128,
     help="Block size. sub weight matrix size to run GPTQ.",
-)
-parser.add_argument(
-    "--nsamples", type=int, default=128, help="Number of calibration data samples."
-)
-parser.add_argument(
-    "--max_input_length",
-    type=int,
-    default=2048,
-    help="Calibration dataset sequence max length, this should align with your model config",
 )
 parser.add_argument(
     "--static_groups",
@@ -177,19 +198,25 @@ parser.add_argument(
 parser.add_argument(
     "--lr",
     type=float,
-    default=0.0025,
+    default=None,
     help="learning rate, if None, it will be set to 1.0/iters automatically",
 )
 parser.add_argument(
     "--minmax_lr",
     type=float,
-    default=0.0025,
+    default=None,
     help="minmax learning rate, if None,it will beset to be the same with lr",
 )
+parser.add_argument("--autoround_iters", default=200, type=int, help="num iters for autoround calibration.")
 parser.add_argument(
-    "--use_quant_input",
+    "--disable_quanted_input",
     action="store_true",
     help="whether to use the output of quantized block to tune the next block",
+)
+parser.add_argument(
+    "--quant_lm_head",
+    action="store_true",
+    help="whether to quant the lm head layer",
 )
 # ============Harness configs============
 parser.add_argument("--tasks", default=None, help="Evaluation tasks")
@@ -293,34 +320,36 @@ if not tokenizer.eos_token:
 
 tokenizer.pad_token = tokenizer.eos_token
 
+# Generation
+generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 
-op_type_dict = {
-    "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-}
-recipes = {
-    "smooth_quant": True,
-    "smooth_quant_args": {
-        "alpha": args.alpha if args.alpha == "auto" else float(args.alpha)
-    },
-}
-excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
 # mp/sq/woq/bitsandbytes config setting
 quantization_config = None
 if args.mixed_precision:
     quantization_config = MixedPrecisionConfig(dtype="bfloat16")  # default is bfloat16
 elif args.sq:
+    excluded_precisions = ["bf16"]
     quantization_config = SmoothQuantConfig(
-        tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        recipes=recipes,
-        op_type_dict=op_type_dict,  # default is {}
-        excluded_precisions=excluded_precisions,  # default is []
-        calib_dataset=args.dataset,
-        calib_iters=args.calib_iters,
+        tokenizer=tokenizer,
+        seq_len=args.seq_len,
+        n_samples=args.n_samples,
+        batch_size=args.batch_size,
+        excluded_precisions=excluded_precisions,
+        alpha=args.alpha if args.alpha == "auto" else float(args.alpha),
+        scale_sharing=args.scale_sharing,
+        init_alpha=args.init_alpha,
+        alpha_min=args.alpha_min,
+        alpha_max=args.alpha_max,
+        alpha_step=args.alpha_step,
+        shared_criterion=args.shared_criterion,
+        do_blockwise=args.do_blockwise,
+        shuffle=args.shuffle,
+        padding=args.padding,
+        num_beams=generate_kwargs["num_beams"],
     )
 elif args.woq:
     if args.woq_algo == "Rtn":
         quantization_config = RtnConfig(
-            tokenizer=tokenizer,
             bits=args.bits,
             sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
@@ -328,6 +357,7 @@ elif args.woq:
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
             layer_wise=args.layer_wise,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "Awq":
         quantization_config = AwqConfig(
@@ -336,11 +366,13 @@ elif args.woq:
             bits=args.bits,
             zero_point=False if args.scheme == "sym" else True,
             group_size=args.group_size,
-            max_input_length=args.max_input_length,
+            seq_len=args.seq_len,
+            n_samples=args.n_samples,
+            batch_size=args.batch_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "Teq":
         quantization_config = TeqConfig(
@@ -349,11 +381,13 @@ elif args.woq:
             bits=args.bits,
             sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
-            max_input_length=args.max_input_length,
+            seq_len=args.seq_len,
+            batch_size=args.batch_size,
+            n_samples=args.n_samples,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "GPTQ":
         quantization_config = GPTQConfig(
@@ -364,15 +398,17 @@ elif args.woq:
             damp_percent=args.damp_percent,
             sym=True if args.scheme == "sym" else False,
             blocksize=args.blocksize,
-            nsamples=args.nsamples,
             static_groups=args.static_groups,
             group_size=args.group_size,
-            max_input_length=args.max_input_length,
+            n_samples=args.n_samples,
+            seq_len=args.seq_len,
+            batch_size=args.batch_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
             layer_wise=args.layer_wise,
+            true_sequential=args.true_sequential,
+            use_ipex=args.use_ipex,
         )
     elif args.woq_algo == "AutoRound":
         quantization_config = AutoRoundConfig(
@@ -380,16 +416,18 @@ elif args.woq:
             dataset=args.dataset,
             bits=args.bits,
             sym=True if args.scheme == "sym" else False,
-            nsamples=args.nsamples,
+            n_samples=args.n_samples,
             group_size=args.group_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
-            calib_iters=args.calib_iters,
-            calib_len=args.calib_len,
+            iters=args.autoround_iters,
+            seq_len=args.seq_len,
             lr=args.lr,
             minmax_lr=args.minmax_lr,
-            use_quant_input=args.use_quant_input,
+            disable_quanted_input=args.disable_quanted_input,
+            quant_lm_head = args.quant_lm_head,
+            use_ipex=args.use_ipex,
         )
     else:
         assert False, "Please set the correct '--woq_algo'"
@@ -432,28 +470,31 @@ elif not args.int8 and not args.int8_bf16_mixed:
 if args.output_dir is not None:
     tokenizer.save_pretrained(args.output_dir)
     if args.sq:
+        quantization_config.remove_redundant_parameters()
+        config.quantization_config = quantization_config
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
-    elif args.mixed_precision or args.woq:
-        # user_model will be changed.
-        user_model.save_pretrained(args.output_dir)
-        # loading saved woq model
         user_model = AutoModelForCausalLM.from_pretrained(
-            args.output_dir, 
+            args.output_dir,
             trust_remote_code=args.trust_remote_code,
-            use_neural_speed=args.use_neural_speed
-            )
+            _commit_hash=args._commit_hash,
+        )
+    elif args.mixed_precision:
+        user_model.save_pretrained(args.output_dir)
 
-if args.int8 or args.int8_bf16_mixed:
-    # TorchScript model don't attribute generate method, the wrapper is provided.
-    import intel_extension_for_pytorch as ipex
-    from intel_extension_for_transformers.transformers.llm.evaluation.models import (
-        TSModelCausalLMForITREX,
+if args.restore_sq_model_from_json:
+    from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import (
+        recover_model_from_json,
+    )
+    user_model = recover_model_from_json(
+        args.model,
+        os.path.join(args.output_dir, "qconfig.json"),
+        args.trust_remote_code,
     )
 
-    user_model = TSModelCausalLMForITREX.from_pretrained(
-        args.output_dir,
-        file_name="best_model.pt",
+elif not (args.sq or args.mixed_precision or args.woq):
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model,
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
     )
@@ -472,7 +513,7 @@ if args.benchmark:
     if hasattr(normalized_config, "multi_query_group_num"):
         num_key_value_heads = normalized_config.multi_query_group_num
 
-    num_iter = args.iters
+    num_iter = args.benchmark_iters
     num_warmup = args.num_warmup
 
     total_latency = 0
@@ -567,7 +608,7 @@ if args.accuracy:
         model=user_model,
         tokenizer=tokenizer,
         tasks=args.tasks,
-        batch_size=args.batch_size,
+        batch_size=args.eval_batch_size,
         args=args,
     )
     print(results)
