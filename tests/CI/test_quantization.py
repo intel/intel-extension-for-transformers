@@ -369,15 +369,15 @@ class TestQuantization(unittest.TestCase):
           isclose(float(output[0][0][0][0]), 0.16162332892417908, rel_tol=1e-04)
         )
 
-        # # amp
-        # amp_config = MixedPrecisionConfig()
-        # amp_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-        #                                             quantization_config=amp_config,
-        #                                             use_neural_speed=False
-        #                                         )
-        # amp_model.eval()
-        # output = amp_model(dummy_input)
-        # self.assertTrue(isclose(float(output[0][0][0][0]), 0.1689453125, rel_tol=1e-04))
+        # amp
+        amp_config = MixedPrecisionConfig()
+        amp_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=amp_config,
+                                                    use_neural_speed=False
+                                                )
+        amp_model.eval()
+        output = amp_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.1689453125, rel_tol=1e-04))
 
         # load_in_4bit
         bit4_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,

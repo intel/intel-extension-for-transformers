@@ -30,9 +30,6 @@ from .utility import QUANT_CONFIG, SPARSITY_CONFIG, LazyImport, logger
 torch = LazyImport("torch")
 
 
-@dataclass
-class MixedPrecisionConfig:
-    dtype: str = "bfloat16"
 
 
 if transformers.__version__ >= "4.32.0":
@@ -56,7 +53,17 @@ class QuantizationMethod(str, Enum):
     STATIC = "static"
     SmoothQuant = "sq"
     QuantAwareTraining = "qat"
+    MixedPrecision = "mp"
 
+
+class MixedPrecisionConfig(QuantizationConfig):
+
+    quant_method = QuantizationMethod.MixedPrecision
+    def __init__(
+            self,
+            dtype = "bfloat16"
+    ):
+        self.dtype = dtype
 
 class SparsityConfig(PretrainedConfig):
     def __init__(
@@ -758,6 +765,8 @@ class SmoothQuantConfig(ITREXQuantizationConfigMixin):
         excluded_precisions=[],
         ipex_opt_llm=None,
         num_beams=1,
+        shuffle=False,
+        padding=False,
         **kwargs,
     ):
         self.quant_method = QuantizationMethod.SmoothQuant
@@ -776,6 +785,8 @@ class SmoothQuantConfig(ITREXQuantizationConfigMixin):
         self.seq_len = seq_len
         self.ipex_opt_llm = ipex_opt_llm
         self.num_beams = num_beams
+        self.shuffle = shuffle
+        self.padding = padding
         self.excluded_precisions = excluded_precisions
         self.batch_size = kwargs.pop("batch_size", 1)
 

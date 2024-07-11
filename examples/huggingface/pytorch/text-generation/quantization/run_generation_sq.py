@@ -67,6 +67,8 @@ parser.add_argument(
     "--seq_len", default=512, type=int, help="Smooth quant calibration input length."
 )
 parser.add_argument("--batch_size", default=1, type=int, help="batch size num.")
+parser.add_argument("--padding", action="store_true")
+parser.add_argument("--shuffle", action="store_true")
 # sq alpha "auto" parameters
 parser.add_argument("--scale_sharing", action="store_true")
 parser.add_argument(
@@ -150,6 +152,8 @@ elif args.sq:
         alpha_step=args.alpha_step,
         shared_criterion=args.shared_criterion,
         do_blockwise=args.do_blockwise,
+        shuffle=args.shuffle,
+        padding=args.padding,
         num_beams=generate_kwargs["num_beams"],
     )
 else:

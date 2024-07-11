@@ -229,10 +229,11 @@ def get_dataloader(
     model_type,
     quantization_config,
     past_key_values,
-    shuffle=False,
-    padding=False,
-    seq_len=512,
 ):
+    shuffle=quantization_config.shuffle
+    padding=quantization_config.padding
+    seq_len=quantization_config.seq_len
+
     calib_dataset = load_dataset(
         quantization_config.dataset,
         split=(

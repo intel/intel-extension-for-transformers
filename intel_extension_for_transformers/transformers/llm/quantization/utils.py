@@ -271,8 +271,9 @@ def _replace_linear(
                                 quantization_config.weight_dtype not in [
                                     "fp8_e5m2",
                                     "fp8_e4m3",
+                                    "nf4",
+                                    "fp4_e2m1",
                                 ]
-
                             model._modules[name] = QuantizedLinearQBits(
                                 in_features,
                                 out_features,
@@ -684,6 +685,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
             logger.warning("The recommended ipex version is higher than 2.3.10 for xpu device.")
 
         model.eval()
+        # INC attribute conflicted with transformers when use nf4/int8 training.
+        del model.is_quantized
         q_model = replace_linear(model, None, None, config, device=device)
 
         if orig_dtype != torch.float32:
@@ -764,19 +767,9 @@ def convert_to_smoothquant_model(model, quantization_config):
             config=model.config, input_bs=1
         )
     # get calibration dataloader
-    if quantization_config.alpha == "auto" and model_type == "llama":
-        calib_dataloader = get_dataloader(
-            model_type,
-            quantization_config,
-            past_key_values=past_key_values,
-            shuffle=True,
-            padding=True,
-            seq_len=quantization_config.seq_len,
-        )
-    else:
-        calib_dataloader = get_dataloader(
-            model_type, quantization_config, past_key_values=past_key_values
-        )
+    calib_dataloader = get_dataloader(
+        model_type, quantization_config, past_key_values=past_key_values
+    )
 
     def calib_func(model):
         with torch.no_grad():

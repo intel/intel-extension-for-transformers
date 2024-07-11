@@ -129,6 +129,7 @@ class TestWeightOnly(unittest.TestCase):
             output = model(activation)
 
             config = RtnConfig(bits=8, weight_dtype="int8", group_size=32)
+            config.post_init_cpu()
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
@@ -208,8 +209,9 @@ class TestWeightOnly(unittest.TestCase):
         self.assertTrue(len(module_list) > 0)
 
     def test_nf4_training(self):
+        quantization_config = RtnConfig(bits=4, weight_dtype="nf4", scale_dtype="fp32")
         model = AutoModelForCausalLM.from_pretrained(
-            llama_model_path, load_in_4bit=True, use_neural_speed=False)
+            llama_model_path, quantization_config=quantization_config, use_neural_speed=False)
         peft_config = LoraConfig(
             r=8,
             lora_alpha=16,
