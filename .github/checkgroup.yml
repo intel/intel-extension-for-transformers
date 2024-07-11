@@ -30,40 +30,6 @@ subprojects:
       - "optimize-unit-test-PR-test"
       - "Genreate-OptimizeUT-Report"
 
-  - id: "NeuralChat Unit Test"
-    paths:
-      - ".github/workflows/unit-test-neuralchat.yml"
-      - ".github/workflows/script/unitTest/run_unit_test_neuralchat.sh"
-      - "intel_extension_for_transformers/neural_chat/**"
-      - "requirements.txt"
-      - "setup.py"
-      - "intel_extension_for_transformers/transformers/llm/finetuning/**"
-      - "intel_extension_for_transformers/transformers/llm/quantization/**"
-      - "intel_extension_for_transformers/transformers/**"
-      - "intel_extension_for_transformers/langchain/**"
-      - "!intel_extension_for_transformers/neural_chat/docs/**"
-      - "!intel_extension_for_transformers/neural_chat/examples/**"
-      - "!intel_extension_for_transformers/neural_chat/assets/**"
-      - "!intel_extension_for_transformers/neural_chat/README.md"
-    checks:
-      - "neuralchat-unit-test-baseline"
-      - "neuralchat-unit-test-PR-test"
-      - "Generate-NeuralChat-Report"
-
-  - id: "Engine Unit Test workflow"
-    paths:
-      - ".github/workflows/unit-test-engine.yml"
-      - "requirements.txt"
-      - "setup.py"
-      - intel_extension_for_transformers/transformers/**
-      - "intel_extension_for_transformers/transformers/runtime/**"
-      - "!intel_extension_for_transformers/transformers/runtime/kernels/**"
-      - "!intel_extension_for_transformers/transformers/runtime/third_party/**"
-      - "!intel_extension_for_transformers/transformers/runtime/docs/**"
-    checks:
-      - "engine-unit-test-baseline"
-      - "engine-unit-test-PR-test"
-      - "Genreate-Engine-Report"
 
   # - id: "Windows Binary Test"
   #   paths:
