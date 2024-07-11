@@ -38,7 +38,7 @@ from lm_eval.evaluator_utils import (
     print_writeout,
     run_task_tests,
 )
-from lm_eval.logging_utils import add_env_info, get_git_commit_hash
+from lm_eval.loggers.utils import add_env_info, get_git_commit_hash
 from lm_eval.tasks import TaskManager, get_task_dict
 from lm_eval.utils import eval_logger, positional_deprecated, simple_parse_args_string
 from lm_eval import utils
@@ -509,9 +509,14 @@ def evaluate(
         # aggregate results ; run bootstrap CIs
         for task_output in eval_tasks:
             task_output.calculate_aggregate_metric(bootstrap_iters=bootstrap_iters)
-        results, samples, configs, versions, num_fewshot = consolidate_results(
-            eval_tasks
-        )
+        (
+            results,
+            samples,
+            configs,
+            versions,
+            num_fewshot,
+            higher_is_better,
+        ) = consolidate_results(eval_tasks)
 
         ### Calculate group metrics ###
         if bool(results):
@@ -522,6 +527,24 @@ def evaluate(
                     # or `task_name: []`.
                     # we only want to operate on groups here.
                     continue
+
+                # collect all higher_is_better values for metrics
+                # in the group's subtasks.
+                # TODO: clean this up ; unify with the below metric_list loop?
+                _higher_is_better = {}
+                for task in task_list:
+                    for m, h in higher_is_better[task].items():
+                        if m not in _higher_is_better.keys():
+                            _higher_is_better[m] = h
+                    if m in _higher_is_better and _higher_is_better[m] is not None and _higher_is_better[m] != h:
+                        eval_logger.warning(
+                            f"Higher_is_better values for metric {m} in group {group} are not consistent." +
+                            f"Defaulting to None."
+                        )
+                        _higher_is_better[m] = None
+                higher_is_better[group] = _higher_is_better
+
+                # collect all metric keys used by a subtask in the group.
                 metric_list = list(
                     {
                         key
@@ -534,38 +557,22 @@ def evaluate(
                     stderr = "_stderr,".join(metric.split(","))
 
                     # gather metrics, sizes, and stderrs from subtasks
-                    metrics = [
-                        results[task][metric]
-                        for task in task_list
-                        if metric in results[task]
-                    ]  # TODO: copy?
-                    stderrs = [
-                        results[task][stderr]
-                        for task in task_list
-                        if stderr in results[task]
-                    ]
-                    sizes = [
-                        results[task]["samples"]
-                        for task in task_list
-                        if metric in results[task]
-                    ]
+                    metrics = [results[task][metric] for task in task_list if metric in results[task]]  # TODO: copy?
+                    stderrs = [results[task][stderr] for task in task_list if stderr in results[task]]
+                    sizes = [results[task]["samples"] for task in task_list if metric in results[task]]
 
                     # compute group's pooled metric and stderr
-                    results[group][metric] = (
-                        lm_eval.api.metrics.aggregate_subtask_metrics(metrics, sizes)
-                    )
+                    results[group][metric] = lm_eval.api.metrics.aggregate_subtask_metrics(metrics, sizes)
                     # TODO: calculate grouped metric using aggregation fn
                     if "N/A" in stderrs:
                         results[group][stderr] = "N/A"
                     else:
-                        results[group][stderr] = (
-                            lm_eval.api.metrics.pooled_sample_stderr(stderrs, sizes)
-                        )
+                        results[group][stderr] = lm_eval.api.metrics.pooled_sample_stderr(stderrs, sizes)
                         # TODO: allow GroupConfigs to choose which variance formula is used, for back-compatibility
                         # To use the old (likely incorrect) variance formula,
                         # comment out the above and uncomment this line:
-                        # results[group][stderr] = \
-                        # lm_eval.api.metrics.combined_sample_stderr(stderrs, sizes, metrics=metrics)
+                        # results[group][stderr] = lm_eval.api.metrics.combined_sample_stderr(stderrs,
+                        # sizes, metrics=metrics)
 
                     results[group]["samples"] = sum(sizes)
 
@@ -578,9 +585,7 @@ def evaluate(
             if len(left_tasks_list) == 0:
                 break
 
-            _task_hierarchy = {
-                k: v for k, v in task_hierarchy.items() if k in left_tasks_list
-            }
+            _task_hierarchy = {k: v for k, v in task_hierarchy.items() if k in left_tasks_list}
             _results_agg, _groups_agg = prepare_print_tasks(_task_hierarchy, results)
 
             results_agg = {**results_agg, **_results_agg}
@@ -588,9 +593,7 @@ def evaluate(
 
         for group_name, task_list in task_hierarchy.items():
             if task_list:
-                num_fewshot[group_name] = num_fewshot[
-                    task_list[0]
-                ]  # TODO: validate this
+                num_fewshot[group_name] = num_fewshot[task_list[0]]  # TODO: validate this
 
         results_dict = {
             "results": dict(results_agg.items()),
@@ -599,6 +602,17 @@ def evaluate(
             "configs": dict(sorted(configs.items())),
             "versions": dict(sorted(versions.items())),
             "n-shot": dict(sorted(num_fewshot.items())),
+            "higher_is_better": dict(sorted(higher_is_better.items())),
+            "n-samples": {
+                task_output.task_name: {
+                    "original": len(task_output.task.eval_docs),
+                    "effective": min(
+                        limit if limit else len(task_output.task.eval_docs),
+                        len(task_output.task.eval_docs),
+                    ),
+                }
+                for task_output in eval_tasks
+            },
         }
         if log_samples:
             results_dict["samples"] = dict(samples)
@@ -607,7 +621,6 @@ def evaluate(
 
     else:
         return None
-
 
 def request_caching_arg_to_dict(cache_requests: str) -> dict:
     request_caching_args = {

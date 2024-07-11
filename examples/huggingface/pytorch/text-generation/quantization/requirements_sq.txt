@@ -13,5 +13,5 @@ transformers_stream_generator
 tiktoken  #qwen
 einops  #qwen
 git+https://github.com/intel/neural-compressor.git
-lm-eval==0.4.2
+lm-eval==0.4.3
 huggingface_hub

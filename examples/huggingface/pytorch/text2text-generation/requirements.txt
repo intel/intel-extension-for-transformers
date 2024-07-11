@@ -11,4 +11,4 @@ neural-compressor
 optimum-intel > 1.12.0
 onnxruntime
 intel-extension-for-pytorch
-lm-eval==0.4.2
+lm-eval==0.4.3
