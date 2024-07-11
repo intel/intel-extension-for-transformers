@@ -699,7 +699,8 @@ def load_model(
                 assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
                 if re.search("falcon", model_name, re.IGNORECASE):
                     assert transformers.__version__ <= "4.33.3", "Please pip install transformers==4.33.3"
-                from intel_extension_for_transformers.transformers.llm.evaluation.models import TSModelCausalLMForITREX
+                from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import \
+                    TSModelCausalLMForITREX
                 model = TSModelCausalLMForITREX.from_pretrained(
                     model_name,
                     file_name="best_model.pt"

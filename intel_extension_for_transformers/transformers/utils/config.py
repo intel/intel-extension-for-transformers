@@ -21,19 +21,20 @@ import json
 import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Union
-from .utility import QUANT_CONFIG, SPARSITY_CONFIG, LazyImport, logger
+
 import transformers
 from transformers import BitsAndBytesConfig, PretrainedConfig
+
+from .utility import QUANT_CONFIG, SPARSITY_CONFIG, LazyImport, logger
 
 torch = LazyImport("torch")
 
 
-@dataclass
-class MixedPrecisionConfig:
-    dtype: str = "bfloat16"
+
 
 if transformers.__version__ >= "4.32.0":
     from transformers.utils.quantization_config import QuantizationConfigMixin
+
     QuantizationConfig = QuantizationConfigMixin
 else:
     QuantizationConfig = PretrainedConfig
@@ -52,8 +53,17 @@ class QuantizationMethod(str, Enum):
     STATIC = "static"
     SmoothQuant = "sq"
     QuantAwareTraining = "qat"
+    MixedPrecision = "mp"
 
 
+class MixedPrecisionConfig(QuantizationConfig):
+
+    quant_method = QuantizationMethod.MixedPrecision
+    def __init__(
+            self,
+            dtype = "bfloat16"
+    ):
+        self.dtype = dtype
 
 class SparsityConfig(PretrainedConfig):
     def __init__(
@@ -237,6 +247,7 @@ class SparsityConfig(PretrainedConfig):
             pretrained_model_name_or_path, _configuration_file=SPARSITY_CONFIG, **kwargs
         )
 
+
 class ITREXQuantizationConfigMixin(QuantizationConfig):
     """Mixin class for quantization config."""
 
@@ -258,7 +269,9 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
                 to_remove.append(key)
 
         # Remove all the attributes that were updated, without modifying the input dict
-        unused_kwargs = {key: value for key, value in kwargs.items() if key not in to_remove}
+        unused_kwargs = {
+            key: value for key, value in kwargs.items() if key not in to_remove
+        }
         return unused_kwargs
 
     def post_init_cpu(self):
@@ -290,7 +303,6 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         if self.bits == 4 and self.weight_dtype not in [
             "int4_clip",
             "nf4",
-            "fp4_e2m1_bnb",
             "fp4_e2m1",
         ]:
             self.weight_dtype = "int4_clip"
@@ -308,25 +320,24 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             "int8",
             "int4_clip",
             "nf4",
-            "fp4_e2m1_bnb",
             "fp4_e2m1",
             "fp8_e5m2",
             "fp8_e4m3",
         ]:
             raise ValueError(
                 f"weight_dtype must be a string in "
-                f"'int8', 'int4', 'int4_clip', 'nf4', 'fp4', 'fp4_e2m1_bnb', 'fp4_e2m1', "
+                f"'int8', 'int4', 'int4_clip', 'nf4', 'fp4', 'fp4_e2m1', "
                 f"'fp8', 'fp8_e5m2, fp8_e4m3'"
             )
 
         if self.scale_dtype is not None and self.scale_dtype not in [
             "fp32",
             "fp8_e8m0",
-            "bf16"
+            "bf16",
         ]:
             raise ValueError(
-                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0', 'bf16' "
-                f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
+                "scale_dtype must be a string in 'fp32', 'fp8_e8m0', 'bf16' "
+                "and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
             )
         elif self.scale_dtype is None:
             self.scale_dtype = "fp32"
@@ -353,9 +364,9 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             or self.scale_dtype != "fp32"
         ):
             raise ValueError(
-                f"WeightOnlyQuantization doesn't support asym with "
-                f"compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, "
-                f"please use sym scheme"
+                "WeightOnlyQuantization doesn't support asym with "
+                "compute_dtype int8 or weight_dtype float or scale_dtype non-fp32 now, "
+                "please use sym scheme"
             )
 
         self.use_neural_speed = False
@@ -384,10 +395,12 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         elif self.weight_dtype not in [
             "int4_fullrange",
         ]:
-            raise ValueError(f"weight_dtype must be a string in 'int4_fullrange', but get {self.weight_dtype}.")
+            raise ValueError(
+                f"weight_dtype must be a string in 'int4_fullrange', but get {self.weight_dtype}."
+            )
 
         if self.scale_dtype is not None and self.scale_dtype not in ["fp16"]:
-            raise ValueError(f"scale_dtype must be a string in 'fp16'")
+            raise ValueError("scale_dtype must be a string in 'fp16'")
         elif self.scale_dtype is None:
             self.scale_dtype = "fp16"
 
@@ -420,7 +433,7 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
         runtime_supported_weight_dtype = [
             "int4",
             "int4_clip",  # int4_clip will merge to int4 in next release.
-            "int4_fullrange", # int4_fullrange will merge to int4 in next release.
+            "int4_fullrange",  # int4_fullrange will merge to int4 in next release.
             "int8",
             "fp8",
             "fp8_e5m2",
@@ -542,13 +555,48 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             writer.write(self.to_json_string(use_diff=use_diff))
 
     def remove_redundant_parameters(self):
-        remove_parameters = ["calib_dataloader", "dataset", "calib_func", "calib_iters", "calib_len",
-        "double_quant_scale_dtype", "use_double_quant", "mse_range", "scheme", "tokenizer", "use_ggml",
-        "use_neural_speed", "use_quant", "layer_wise", "blocksize", "nsamples", "max_input_length", "static_groups",
-        "lr", "minmax_lr", "iters", "use_quant_input", "device", "calib_dataset", "calib_pad_val", "calib_shuffle",
-        "calib_padding", "example_inputs", "excluded_precisions", "op_name_dict", "op_type_dict", "train_dataloader",
-        "train_func", "train_iters", "train_len", "train_padding", "train_dataset", "train_pad_val", "train_shuffle",
-        "train_batch_size"]
+        remove_parameters = [
+            "calib_dataloader",
+            "dataset",
+            "calib_func",
+            "calib_iters",
+            "calib_len",
+            "double_quant_scale_dtype",
+            "use_double_quant",
+            "mse_range",
+            "scheme",
+            "tokenizer",
+            "use_ggml",
+            "use_neural_speed",
+            "use_quant",
+            "layer_wise",
+            "blocksize",
+            "nsamples",
+            "max_input_length",
+            "static_groups",
+            "lr",
+            "minmax_lr",
+            "iters",
+            "use_quant_input",
+            "device",
+            "calib_dataset",
+            "calib_pad_val",
+            "calib_shuffle",
+            "calib_padding",
+            "example_inputs",
+            "excluded_precisions",
+            "op_name_dict",
+            "op_type_dict",
+            "train_dataloader",
+            "train_func",
+            "train_iters",
+            "train_len",
+            "train_padding",
+            "train_dataset",
+            "train_pad_val",
+            "train_shuffle",
+            "train_batch_size",
+        ]
         for parameter in remove_parameters:
             if hasattr(self, parameter):
                 delattr(self, parameter)
@@ -611,24 +659,25 @@ class ITREXQuantizationConfigMixin(QuantizationConfig):
             pretrained_model_name_or_path, _configuration_file=cf, **kwargs
         )
 
+
 class QuantAwareTrainingConfig(ITREXQuantizationConfigMixin):
     def __init__(
-            self,
-            backend="default",
-            tokenizer=None,
-            train_dataset="NeelNanda/pile-10k",
-            train_dataloader=None,
-            train_func=None,
-            train_shuffle=True,
-            train_iters=100,
-            train_padding=True,
-            train_batch_size=8,
-            train_len=512,
-            train_pad_val=1,
-            op_name_dict=None,
-            op_type_dict=None,
-            excluded_precisions=[],
-            **kwargs,
+        self,
+        backend="default",
+        tokenizer=None,
+        train_dataset="NeelNanda/pile-10k",
+        train_dataloader=None,
+        train_func=None,
+        train_shuffle=True,
+        train_iters=100,
+        train_padding=True,
+        train_batch_size=8,
+        train_len=512,
+        train_pad_val=1,
+        op_name_dict=None,
+        op_type_dict=None,
+        excluded_precisions=[],
+        **kwargs,
     ):
         self.quant_method = QuantizationMethod.QuantAwareTraining
         self.backend = backend
@@ -649,35 +698,36 @@ class QuantAwareTrainingConfig(ITREXQuantizationConfigMixin):
 
 class DynamicQuantConfig(ITREXQuantizationConfigMixin):
     def __init__(
-            self,
-            excluded_precisions=[],
-            op_name_dict=None,
-            op_type_dict=None,
-            **kwargs,
+        self,
+        excluded_precisions=[],
+        op_name_dict=None,
+        op_type_dict=None,
+        **kwargs,
     ):
         self.quant_method = QuantizationMethod.DYNAMIC
         self.excluded_precisions = excluded_precisions
         self.op_name_dict = op_name_dict
         self.op_type_dict = op_type_dict
 
+
 class StaticQuantConfig(ITREXQuantizationConfigMixin):
     def __init__(
-            self,
-            backend="default",
-            tokenizer=None,
-            calib_dataset="NeelNanda/pile-10k",
-            calib_dataloader=None,
-            calib_func=None,
-            calib_shuffle=True,
-            calib_iters=100,
-            calib_padding=False,
-            calib_len=512,
-            calib_pad_val=1,
-            op_name_dict=None,
-            op_type_dict=None,
-            excluded_precisions=[],
-            example_inputs=None,
-            **kwargs,
+        self,
+        backend="default",
+        tokenizer=None,
+        calib_dataset="NeelNanda/pile-10k",
+        calib_dataloader=None,
+        calib_func=None,
+        calib_shuffle=True,
+        calib_iters=100,
+        calib_padding=False,
+        calib_len=512,
+        calib_pad_val=1,
+        op_name_dict=None,
+        op_type_dict=None,
+        excluded_precisions=[],
+        example_inputs=None,
+        **kwargs,
     ):
         self.quant_method = QuantizationMethod.STATIC
         self.backend = backend
@@ -695,93 +745,97 @@ class StaticQuantConfig(ITREXQuantizationConfigMixin):
         self.excluded_precisions = excluded_precisions
         self.example_inputs = example_inputs
 
-class SmoothQuantConfig(StaticQuantConfig):
+
+class SmoothQuantConfig(ITREXQuantizationConfigMixin):
     def __init__(
-            self,
-            backend="ipex",
-            tokenizer=None,
-            calib_dataset="NeelNanda/pile-10k",
-            calib_dataloader=None,
-            calib_func=None,
-            calib_shuffle=True,
-            calib_iters=100,
-            calib_padding=False,
-            calib_len=512,
-            calib_pad_val=1,
-            op_name_dict=None,
-            op_type_dict=None,
-            excluded_precisions=[],
-            example_inputs=None,
-            ipex_opt_llm=None,
-            alpha=0.5,
-            num_beams=1,
-            recipes={"smooth_quant": True, "smooth_quant_args":{"alpha":0.5}},
-            **kwargs,
+        self,
+        tokenizer=None,
+        dataset="NeelNanda/pile-10k",
+        alpha=0.5,
+        scale_sharing=False,
+        init_alpha=0.5,
+        alpha_min=0.0,
+        alpha_max=1.0,
+        alpha_step=0.1,
+        shared_criterion="max",
+        do_blockwise=False,
+        auto_alpha_args=None,
+        n_samples=100,
+        seq_len=512,
+        excluded_precisions=[],
+        ipex_opt_llm=None,
+        num_beams=1,
+        shuffle=False,
+        padding=False,
+        **kwargs,
     ):
-        super().__init__(
-            backend=backend,
-            tokenizer=tokenizer,
-            calib_dataset=calib_dataset,
-            calib_dataloader=calib_dataloader,
-            calib_func=calib_func,
-            calib_shuffle=calib_shuffle,
-            calib_iters=calib_iters,
-            calib_padding=calib_padding,
-            calib_len=calib_len,
-            calib_pad_val=calib_pad_val,
-            op_name_dict=op_name_dict,
-            op_type_dict=op_type_dict,
-            excluded_precisions=excluded_precisions,
-            example_inputs=example_inputs,
-        )
         self.quant_method = QuantizationMethod.SmoothQuant
-        self.ipex_opt_llm = ipex_opt_llm
+        self.dataset = dataset
+        self.tokenizer = tokenizer
         self.alpha = alpha
+        self.scale_sharing = scale_sharing
+        self.init_alpha = init_alpha
+        self.alpha_min = alpha_min
+        self.alpha_max = alpha_max
+        self.alpha_step = alpha_step
+        self.shared_criterion = shared_criterion
+        self.do_blockwise = do_blockwise
+        self.auto_alpha_args = auto_alpha_args
+        self.n_samples = n_samples
+        self.seq_len = seq_len
+        self.ipex_opt_llm = ipex_opt_llm
         self.num_beams = num_beams
-        self.recipes = recipes
+        self.shuffle = shuffle
+        self.padding = padding
+        self.excluded_precisions = excluded_precisions
+        self.batch_size = kwargs.pop("batch_size", 1)
+
 
 class RtnConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
         bits: int = 4,
         group_size: int = 32,
+        group_dim: int = 1,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
+        use_full_range: bool = False,
         mse_range: bool = False,
-        use_double_quant=False,
-        double_quant_scale_dtype=None,  # reserve for double quant
+        use_double_quant: bool = False,
+        double_quant_dtype: str = "int",
+        double_quant_bits: int = 8,
+        double_quant_use_sym: bool = False,
+        double_quant_group_size: int = 256,
         sym: bool = True,
         layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
         self.quant_method = QuantizationMethod.RTN
         self.bits = bits
+        self.use_full_range = use_full_range
         self.mse_range = mse_range
         self.compute_dtype = compute_dtype
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
         self.group_size = group_size
+        self.group_dim = group_dim
         self.layer_wise = layer_wise
         self.sym = sym
         self.scheme = "sym" if self.sym else "asym"
         self.use_double_quant = use_double_quant
-        self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.double_quant_dtype = double_quant_dtype
+        self.double_quant_bits = double_quant_bits
+        self.double_quant_use_sym = double_quant_use_sym
+        self.double_quant_group_size = double_quant_group_size
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = None
-        self.dataset = None
-        self.calib_func = None
-        self.calib_iters = None
         self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
@@ -811,6 +865,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         bits: int = 4,
         tokenizer: Any = None,
         dataset: str = "NeelNanda/pile-10k",
+        batch_size: int = 8,
         group_size: int = 32,
         compute_dtype: Any = None,
         weight_dtype: Any = None,
@@ -821,15 +876,14 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         blocksize: int = 128,
         damp_percent: float = 0.1,
         desc_act: bool = False,
-        nsamples: int = 128,
-        max_input_length: Optional[int] = None,
+        n_samples: int = 128,
+        seq_len: int = 2048,
         static_groups: bool = False,
         true_sequential: bool = False,
         layer_wise: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
 
@@ -841,6 +895,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.bits = bits
         self.tokenizer = tokenizer
         self.dataset = dataset
+        self.batch_size = batch_size
         self.compute_dtype = compute_dtype
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
@@ -848,24 +903,19 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
         self.blocksize = blocksize
-        self.nsamples = nsamples
+        self.n_samples = n_samples
         self.group_size = group_size
         self.damp_percent = damp_percent
         self.desc_act = desc_act
         self.static_groups = static_groups
         self.true_sequential = true_sequential
         self.layer_wise = layer_wise
-        self.max_input_length = max_input_length
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.seq_len = seq_len
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_func = kwargs.get("calib_func", None)
-        self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "sym" if self.sym else "asym"
 
         if isinstance(compute_dtype, torch.dtype):
@@ -919,6 +969,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
 
         return serializable_config_dict
 
+
 class AwqConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
@@ -929,14 +980,17 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
+        layer_wise: bool = False,
+        n_samples: int = 128,
+        seq_len: int = 2048,
+        auto_scale: bool = True,
+        auto_clip: bool = True,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
         zero_point: bool = True,
-        mse_range: bool = False,
         use_ggml: bool = False,
         use_quant: bool = True,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
         self.quant_method = QuantizationMethod.AWQ
@@ -948,21 +1002,21 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.scale_dtype = scale_dtype
         self.group_size = group_size
         self.zero_point = zero_point
-        self.mse_range = mse_range
+        self.auto_scale = auto_scale
+        self.auto_clip = auto_clip
+        self.layer_wise = layer_wise
+        self.n_samples = n_samples
+        self.seq_len = seq_len
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_func = kwargs.get("calib_func", None)
-        self.calib_iters = kwargs.get("calib_iters", 100)
         self.scheme = "asym" if self.zero_point else "sym"
         self.sym = True if not self.zero_point else False
+        self.batch_size = kwargs.pop("batch_size", 8)
         self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
@@ -986,6 +1040,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
 
         return serializable_config_dict
 
+
 class TeqConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
@@ -996,12 +1051,15 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         compute_dtype: Any = None,
         weight_dtype: Any = None,
         scale_dtype: Any = None,
+        layer_wise: bool = False,
+        absorb_to_layer: dict = {},
+        n_samples: int = 128,
+        seq_len: int = 2048,
         use_double_quant=False,
         double_quant_scale_dtype=None,  # reserve for double quant
         sym: bool = True,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
         self.quant_method = QuantizationMethod.TEQ
@@ -1012,19 +1070,19 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
         self.group_size = group_size
+        self.absorb_to_layer = absorb_to_layer
         self.sym = sym
         self.scheme = "sym" if self.sym else "asym"
+        self.layer_wise = layer_wise
+        self.n_samples = n_samples
+        self.seq_len = seq_len
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_neural_speed = use_neural_speed
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_func = kwargs.get("calib_func", None)
-        self.calib_iters = kwargs.get("calib_iters", 100)
+        self.batch_size = kwargs.pop("batch_size", 8)
         self.use_ipex = kwargs.pop("use_ipex", False)
 
     def to_diff_dict(self) -> Dict[str, Any]:
@@ -1048,6 +1106,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
 
         return serializable_config_dict
 
+
 class AutoRoundConfig(ITREXQuantizationConfigMixin):
     def __init__(
         self,
@@ -1063,12 +1122,13 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         sym: bool = False,
         lr: float = None,
         minmax_lr: float = None,
-        disable_quanted_input: bool = False,
-        nsamples: int = 512,
-        iters: int = None,
+        disable_quanted_input: bool = True,
+        n_samples: int = 128,
+        seq_len: int = 2048,
+        iters: int = 200,
+        quant_lm_head: bool = False,
         use_ggml: bool = False,
         use_neural_speed: bool = False,
-        llm_int8_skip_modules=None,
         **kwargs,
     ):
 
@@ -1086,20 +1146,19 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.sym = sym
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.nsamples = nsamples
+        self.n_samples = n_samples
         self.group_size = group_size
         self.lr = lr
         self.minmax_lr = minmax_lr
         self.disable_quanted_input = disable_quanted_input
-        self.llm_int8_skip_modules = (
-            llm_int8_skip_modules if llm_int8_skip_modules else []
-        )
+        self.iters = iters
+        self.seq_len = seq_len
+        self.quant_lm_head = quant_lm_head
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", [])
         self.use_ggml = use_ggml
         self.use_neural_speed = use_neural_speed
+        self.batch_size = kwargs.pop("batch_size", 8)
         self.device = kwargs.get("device", "auto")
-        self.calib_dataloader = kwargs.get("calib_dataloader", None)
-        self.calib_len = kwargs.get("calib_len", 2048)
-        self.calib_func = kwargs.get("calib_func", None)
         calib_iters = kwargs.get("calib_iters", None)
         if iters is not None:
             self.calib_iters = iters
