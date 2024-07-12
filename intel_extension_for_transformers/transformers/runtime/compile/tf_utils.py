@@ -48,7 +48,7 @@ def create_tf_node(op, name, inputs):
 def graph_node_names_details(nodes):
     """Parse the graph nodes ans get the graph_nodes_dict.
 
-    Be used for Grpah class when converting a tensorflow computation graph to an engine graph.
+    Be used for Graph class when converting a tensorflow computation graph to an engine graph.
     The node_name is the key, node in value is for getting the Const
     tensor value and the input_tensor source op; outputs in value is for
     output_tensor dest op.

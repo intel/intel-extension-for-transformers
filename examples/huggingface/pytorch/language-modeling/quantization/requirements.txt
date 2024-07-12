@@ -9,5 +9,5 @@ wandb
 einops
 neural-compressor
 pytest==8.0.0
-lm-eval==0.4.2
+lm-eval==0.4.3
 git+https://github.com/huggingface/peft.git@6c44096c7b8d55a2ecf24be9bc68393467e1584a

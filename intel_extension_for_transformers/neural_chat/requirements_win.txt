@@ -6,7 +6,7 @@ fastapi
 fschat==0.2.35
 huggingface_hub
 intel-extension-for-transformers
-lm-eval==0.4.2
+lm-eval==0.4.3
 neural-compressor
 numpy==1.23.5
 optimum

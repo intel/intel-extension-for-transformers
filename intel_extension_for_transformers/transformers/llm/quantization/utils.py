@@ -16,28 +16,48 @@
 # limitations under the License.
 
 
-import logging
 import gc
+import logging
 import math
 import os
-from ...utils import CpuInfo
+from ....tools.utils import _ipex_version
 from accelerate import init_empty_weights
 from datasets import load_dataset
-from neural_compressor import quantization
-from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
-from neural_compressor.utils.utility import LazyImport
-from neural_compressor.config import PostTrainingQuantConfig
-from intel_extension_for_transformers.tools.utils import (
-    is_ipex_available,
-    is_autoround_available,
+from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
+from neural_compressor.torch.quantization import (
+    AutoRoundConfig,
+    AWQConfig,
+    GPTQConfig,
+    RTNConfig,
+    SmoothQuantConfig,
+    TEQConfig,
+    convert,
+    prepare,
+    quantize,
 )
+from neural_compressor.utils.utility import LazyImport
 from transformers import AutoTokenizer
+
+from intel_extension_for_transformers.tools.utils import (
+    is_autoround_available,
+    is_ipex_available,
+)
+
+from ...utils import CpuInfo
 
 if is_ipex_available():
     import intel_extension_for_pytorch as ipex
+    from .sq_utils import (
+        IPEX_OPT_LLM_SUPPORTED,
+        MODEL_TYPES_REQUIRING_POSITION_IDS,
+        generate_dummy_past_key_values,
+        generate_dummy_past_key_values_for_opt_llm,
+        get_dataloader,
+    )
 
 if is_autoround_available():
     from auto_round.export.export_to_itrex.model_wrapper import WeightOnlyLinear as auto_round_woqlinear # pylint: disable=E0401
+    from neural_compressor.torch.algorithms.weight_only.autoround import get_dataloader as get_autoround_dataloader
 
 torch = LazyImport("torch")
 
@@ -48,7 +68,6 @@ logger = logging.getLogger(__name__)
 DTYPE_BITS_MAPPING = {
     "nf4": 4,
     "fp4": 4,  # fp4 == fp4_e2m1
-    "fp4_e2m1_bnb": 4,
     "fp4_e2m1": 4,
     "int4": 4,
     "int4_fullrange": 4,
@@ -64,27 +83,30 @@ def unpack_weight(qweight, scales, qzeros, q_config):
     sym = q_config.sym
     bits = q_config.bits
     wf = torch.tensor(list(range(0, 32, bits)), dtype=torch.int32).unsqueeze(0)
+    if qzeros is not None:
+        zeros = torch.bitwise_right_shift(
+            torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)
+        ).to(torch.int16 if bits == 8 else torch.int8)
+        torch.bitwise_and(zeros, (2**bits) - 1, out=zeros)
+        if bits == 8:
+            zeros = zeros.to(torch.int8 if sym else torch.uint8)
+        # due to INC minus one
+        zeros = zeros + 1
+        try:
+            zeros = zeros.reshape(scales.shape)
+        except:
+            # zeros and scales have different iteam numbers.
+            # remove 1 (due to 0 + 1 in line 68)
+            zeros = zeros[zeros != 1]
+            zeros = zeros.reshape(scales.shape)
 
-    zeros = torch.bitwise_right_shift(
-        torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)
-    ).to(torch.int16 if bits == 8 else torch.int8)
-    torch.bitwise_and(zeros, (2**bits) - 1, out=zeros)
-    if bits == 8:
-        zeros = zeros.to(torch.int8 if sym else torch.uint8)
-    # due to INC minus one
-    zeros = zeros + 1
-    try:
-        zeros = zeros.reshape(scales.shape)
-    except:
-        # zeros and scales have different iteam numbers.
-        # remove 1 (due to 0 + 1 in line 68)
-        zeros = zeros[zeros != 1]
-        zeros = zeros.reshape(scales.shape)
-
-    # due to INC asym return torch.uint8 but backend request int8,
-    # change it to int8 with offset 128
-    if not sym and bits == 8:
-        zeros = (zeros.to(torch.int32) - 128).to(torch.int8)
+        # due to INC asym return torch.uint8 but backend request int8,
+        # change it to int8 with offset 128
+        if not sym and bits == 8:
+            zeros = (zeros.to(torch.int32) - 128).to(torch.int8)
+        zeros = zeros.contiguous()
+    else:
+        zeros = None
 
     weight = torch.bitwise_right_shift(
         torch.unsqueeze(qweight, 1).expand(-1, 32 // bits, -1), wf.unsqueeze(-1)
@@ -100,7 +122,7 @@ def unpack_weight(qweight, scales, qzeros, q_config):
         # change it to int8 with offset 128
         if not sym:
             weight = (weight.to(torch.int32) - 128).to(torch.int8)
-    return weight, scales, zeros
+    return weight.contiguous(), scales.contiguous(), zeros
 
 
 def replace_linear(
@@ -160,9 +182,6 @@ def _replace_linear(
             quantization_config.weight_dtype not in [
                 "fp8_e5m2",
                 "fp8_e4m3",
-                "fp4_e2m1_bnb",
-                "fp4_e2m1",
-                "nf4",
                 "int4_fullrange",
             ]
 
@@ -188,48 +207,60 @@ def _replace_linear(
                         or device == "auto"
                     ):
                         if is_ipex_available() and quantization_config.use_ipex:
-                            from intel_extension_for_pytorch.nn.modules import WeightOnlyQuantizedLinear as ipex_linear
-                            from intel_extension_for_pytorch.utils.weight_only_quantization import \
-                                  _convert_optimum_format_to_desired
+                            from intel_extension_for_pytorch.nn.modules import (
+                                WeightOnlyQuantizedLinear as ipex_linear,
+                            )
+                            from intel_extension_for_pytorch.utils.weight_only_quantization import (
+                                _convert_optimum_format_to_desired,
+                            )
 
-                            qweight, scales, qzeros = _convert_optimum_format_to_desired(module.qweight,
-                                                                                          module.scales,
-                                                                                            module.qzeros)
+                            qweight, scales, qzeros = (
+                                _convert_optimum_format_to_desired(
+                                    module.qweight, module.scales, module.qzeros
+                                )
+                            )
 
                             weight_dtype = {
                                 4: ipex.quantization.WoqWeightDtype.INT4,
                                 8: ipex.quantization.WoqWeightDtype.INT8,
                             }
                             compute_dtype = {
-                                "fp32": ipex.quantization.WoqLowpMode.NONE, # follow the activation datatype.
+                                "fp32": ipex.quantization.WoqLowpMode.NONE,  # follow the activation datatype.
                                 "bf16": ipex.quantization.WoqLowpMode.BF16,
                                 "fp16": ipex.quantization.WoqLowpMode.FP16,
                                 "int8": ipex.quantization.WoqLowpMode.INT8,
-
                             }
 
-                            ipex_qconfig_mapping = (
-                                ipex.quantization.get_weight_only_quant_qconfig_mapping(
-                                    weight_dtype=weight_dtype[quantization_config.bits],
-                                    lowp_mode=compute_dtype[quantization_config.compute_dtype],
-                                    act_quant_mode=ipex.quantization.WoqActQuantMode.PER_IC_BLOCK,
-                                    group_size=quantization_config.group_size,
-                                )
+                            ipex_qconfig_mapping = ipex.quantization.get_weight_only_quant_qconfig_mapping(
+                                weight_dtype=weight_dtype[quantization_config.bits],
+                                lowp_mode=compute_dtype[
+                                    quantization_config.compute_dtype
+                                ],
+                                act_quant_mode=ipex.quantization.WoqActQuantMode.PER_IC_BLOCK,
+                                group_size=quantization_config.group_size,
                             )
                             tmp_linear = torch.nn.Linear(
                                 in_features,
                                 out_features,
-                                True if hasattr(module, "bias") else False
-                                )
+                                True if hasattr(module, "bias") else False,
+                            )
                             tmp_linear.qconfig = ipex_qconfig_mapping.global_qconfig
-                            model._modules[name] = ipex_linear.from_float_and_int4_weight(
-                                mod = tmp_linear,
-                                qweight = qweight,
-                                scales = scales,
-                                zero_points = qzeros,
-                                bias = module.bias if hasattr(module, "bias") else None,
-                                group_size = quantization_config.group_size,
-                                g_idx = module.g_idx if hasattr(module, "g_idx") else None,
+                            model._modules[name] = (
+                                ipex_linear.from_float_and_int4_weight(
+                                    mod=tmp_linear,
+                                    qweight=qweight,
+                                    scales=scales,
+                                    zero_points=qzeros,
+                                    bias=(
+                                        module.bias if hasattr(module, "bias") else None
+                                    ),
+                                    group_size=quantization_config.group_size,
+                                    g_idx=(
+                                        module.g_idx
+                                        if hasattr(module, "g_idx")
+                                        else None
+                                    ),
+                                )
                             )
                         else:
                             from .nn.modules import (
@@ -240,11 +271,9 @@ def _replace_linear(
                                 quantization_config.weight_dtype not in [
                                     "fp8_e5m2",
                                     "fp8_e4m3",
-                                    "fp4_e2m1_bnb",
-                                    "fp4_e2m1",
                                     "nf4",
+                                    "fp4_e2m1",
                                 ]
-
                             model._modules[name] = QuantizedLinearQBits(
                                 in_features,
                                 out_features,
@@ -252,17 +281,20 @@ def _replace_linear(
                                 compute_dtype=quantization_config.compute_dtype,
                                 compress_statistics=False,
                                 weight_dtype=quantization_config.weight_dtype,
+                                bits=quantization_config.bits,
                                 scale_dtype=quantization_config.scale_dtype,
                                 blocksize=quantization_config.group_size,
                                 scheme=quantization_config.scheme,
-                                compression_dtype=getattr(module, "compression_dtype", torch.int32),
+                                compression_dtype=getattr(
+                                    module, "compression_dtype", torch.int32
+                                ),
                                 compression_dim=getattr(module, "compression_dim", 1),
                                 device=device,
                                 use_optimum_format=use_optimum_format,
                             )
                     elif device == "xpu" or device == torch.device("xpu"):
-                        from intel_extension_for_pytorch.nn.utils._quantize_convert \
-                            import WeightOnlyQuantizedLinear as ipex_linear  # pylint: disable=E0401
+                        from intel_extension_for_pytorch.nn.utils._quantize_convert import \
+                            WeightOnlyQuantizedLinear as ipex_linear # pylint: disable=E0401
                         model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
@@ -273,13 +305,19 @@ def _replace_linear(
                             scale_dtype=quantization_config.scale_dtype,
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme,
-                            compression_dtype=getattr(module, "compression_dtype", torch.int8),
-                            compression_dim=getattr(module, "compression_dim", 0),
+                            compression_dtype=getattr(module, "compression_dtype",
+                                                      torch.int8 if _ipex_version < "2.3.10" else torch.int32),
+                            compression_dim=getattr(module, "compression_dim", 0 if _ipex_version < "2.3.10" else 1),
                             device=device,
-                            use_optimum_format=getattr(module, "use_optimum_format", False),
+                            use_optimum_format=getattr(module, "use_optimum_format",
+                                                       False if _ipex_version < "2.3.10" else True),
                         )
                         if quantization_config.quant_method.value == "gptq":
-                            g_idx = getattr(module, "g_idx", torch.zeros(in_features, dtype=torch.int32).to(device))
+                            g_idx = getattr(
+                                module,
+                                "g_idx",
+                                torch.zeros(in_features, dtype=torch.int32).to(device),
+                            )
                         else:
                             g_idx = None
                         model._modules[name].set_scales_zps_gidx(
@@ -292,6 +330,17 @@ def _replace_linear(
                                         math.ceil(
                                             in_features / quantization_config.group_size
                                         ),
+                                    ),
+                                    dtype=convert_dtype_str2torch(
+                                        quantization_config.compute_dtype
+                                    ),
+                                    device=torch.device(device),
+                                ) if _ipex_version < "2.3.10" else torch.ones(
+                                    (
+                                        math.ceil(
+                                            in_features / quantization_config.group_size
+                                        ),
+                                        out_features,
                                     ),
                                     dtype=convert_dtype_str2torch(
                                         quantization_config.compute_dtype
@@ -316,26 +365,30 @@ def _replace_linear(
                     model._modules[name].requires_grad_(False)
                 if quantization_config.use_ipex:
                     pass
-                elif (device == "cpu" or device == torch.device("cpu") or device == "auto"):
+                elif (
+                    device == "cpu" or device == torch.device("cpu") or device == "auto"
+                ):
                     if quantization_config.weight_dtype in [
                         "fp8_e5m2",
                         "fp8_e4m3",
-                        "nf4",
-                        "fp4_e2m1_bnb",
-                        "fp4_e2m1",
                     ]:
                         model._modules[name].set_fp_weights_bias(
                             module.weight.data,
                             None if module.bias is None else module.bias.data,
                         )
                     else:
-                        int_weight, scales, zeros = unpack_weight(
-                            module.qweight,
-                            module.scales,
-                            module.qzeros,
-                            quantization_config,
-                        )
-                        int_weight = int_weight.view(-1, int_weight.shape[-1])
+                        if quantization_config.weight_dtype in ["int4", "int4_clip", "int8"]:
+                            int_weight, scales, zeros = unpack_weight(
+                                module.qweight,
+                                module.scales,
+                                module.qzeros if hasattr(module, "qzeros") else None,
+                                quantization_config,
+                            )
+                            int_weight = int_weight.view(-1, int_weight.shape[-1])
+                        else:
+                            int_weight = module.unpack_tensor_with_numpy(module.qweight)
+                            scales = module.scales
+                            zeros = module.qzeros if hasattr(module, "qzeros") else None
 
                         model._modules[name].set_weights_bias(
                             int_weight,
@@ -348,11 +401,13 @@ def _replace_linear(
                 else:
                     if not hasattr(module, "qweight"):
                         n_pack = (
-                            8 // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]
+                            (8 if _ipex_version < "2.3.10" else 32)
+                            // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]
                         )
                         weight = torch.zeros(
-                            (math.ceil(out_features / n_pack), in_features),
-                            dtype=torch.int8,
+                            (math.ceil(out_features / n_pack), in_features) if _ipex_version < "2.3.10" else
+                            (math.ceil(in_features / n_pack), out_features),
+                            dtype=torch.int8 if _ipex_version < "2.3.10" else torch.int32,
                             device=torch.device(device),
                         )
                     model._modules[name].set_weights_bias(
@@ -378,6 +433,100 @@ def _replace_linear(
     return model, is_replaced
 
 
+def default_run_fn(
+    model, tokenizer, dataset, max_length=512, n_samples=100, batch_size=8, algo="rtn"
+):
+    from torch.utils.data import DataLoader
+
+    if isinstance(dataset, (str, bytes, os.PathLike)):
+        calib_dataset = load_dataset(dataset, split="train")
+    calib_dataset = calib_dataset.shuffle(seed=42)
+    if tokenizer is None:
+        logger.error("Please provide the tokenizer in quantization_config.")
+        exit(0)
+
+    def tokenize_function(examples):
+        if algo == "teq":
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+        if "prompt" in examples:
+            if algo == "teq":
+                example = tokenizer(
+                    examples["prompt"], padding="max_length", max_length=max_length
+                )
+            else:
+                example = tokenizer(examples["prompt"])
+        elif "code" in examples:
+            if algo == "teq":
+                example = tokenizer(
+                    examples["code"], padding="max_length", max_length=max_length
+                )
+            else:
+                example = tokenizer(examples["code"])
+        elif "text" in examples:
+            if algo == "teq":
+                example = tokenizer(
+                    examples["text"], padding="max_length", max_length=max_length
+                )
+            else:
+                example = tokenizer(examples["text"])
+        else:
+            logger.error(
+                "Please check dataset prompt identifier,"
+                + " NeelNanda/pile-10k is default used calibration dataset."
+            )
+            exit(0)
+        return example
+
+    tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
+    tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+    tokenized_dataset = tokenized_dataset.filter(lambda x: x["input_ids"].shape[-1] >= max_length)
+
+    def collate_batch(batch):
+        input_ids_padded = []
+        for text in batch:
+            input_ids = text["input_ids"]
+            if len(input_ids) >= max_length:
+                input_ids = input_ids[:max_length]
+                input_ids_padded.append(input_ids)
+            else:
+                continue
+        assert input_ids_padded != [], \
+            "The dataset does not have data that meets the required input length. Please reduce seq_len."
+        return torch.vstack(input_ids_padded)
+
+
+    calib_dataloader = DataLoader(
+        tokenized_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_batch,
+    )
+    total_cnt = 0
+    for i, (input_ids) in enumerate(calib_dataloader):
+        if total_cnt + input_ids.shape[0] > n_samples:
+            input_ids = input_ids[: n_samples - total_cnt, ...]
+        total_cnt += input_ids.shape[0]
+        if total_cnt >= n_samples:
+            break
+
+        try:
+            model(
+                input_ids=input_ids,
+            )
+        except ValueError:
+            pass
+
+@torch.no_grad()
+def run_fn_for_autoround(model, dataloader):
+    for data in dataloader:
+        if isinstance(data, tuple) or isinstance(data, list):
+            model(*data)
+        elif isinstance(data, dict):
+            model(**data)
+        else:
+            model(data)
+
 def convert_to_quantized_model(model, config, device="cpu"):
     if device == "xpu" or device == torch.device("xpu"):
         import intel_extension_for_pytorch
@@ -385,101 +534,16 @@ def convert_to_quantized_model(model, config, device="cpu"):
         assert (
             hasattr(torch, "xpu") and torch.xpu.is_available()
         ), "There is no xpu device in this system!"
-        config.post_init_xpu()
-    else:
-        config.post_init_cpu()
-    calib_dataloader = config.calib_dataloader
-    calib_func = config.calib_func
-    calib_iters = config.calib_iters
-    calib_dataset = config.dataset
-    model_device = next(model.parameters()).device
 
-    if config.quant_method.value == "autoround":
-        from neural_compressor.adaptor.torch_utils.auto_round import get_dataloader
-        calib_dataloader = get_dataloader(config.tokenizer,  # pylint: disable=E1123
-                                    seqlen=config.calib_len,
-                                    dataset_name=config.dataset,
-                                    seed=42,
-                                    bs=8,
-                                    n_samples=config.nsamples)
-    elif (
-        calib_dataloader is None
-        and config.quant_method.value not in ["rtn"]
-        and calib_dataset is not None
-    ):
-        from datasets import load_dataset
-        from torch.utils.data import DataLoader
-
-        if isinstance(calib_dataset, (str, bytes, os.PathLike)):
-            calib_dataset = load_dataset(calib_dataset, split="train")
-        calib_dataset = calib_dataset.shuffle(seed=42)
-        if config.tokenizer is None:
-            logger.error(
-                "Please provide the tokenizer or provide calib_func directly,"
-                + " the following is how to get tokenizer. \n"
-                + " from transformer import AutoTokenizer \n"
-                + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
-            )
-            exit(0)
-
-        def tokenize_function(examples):
-            if "prompt" in examples:
-                example = config.tokenizer(examples["prompt"])
-            elif "code" in examples:
-                example = config.tokenizer(examples["code"])
-            elif "text" in examples:
-                example = config.tokenizer(examples["text"])
-            else:
-                logger.error(
-                    "Please check dataset prompt identifier,"
-                    + " NeelNanda/pile-10k is default used calibration dataset."
-                )
-                exit(0)
-            return example
-
-        tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
-        tokenized_dataset.set_format(type="torch", columns=["input_ids"])
-
-        def collate_batch(batch):
-            input_ids_padded = []
-            for text in batch:
-                input_ids = text["input_ids"]
-                input_ids = (
-                    input_ids[:512]
-                    if (len(input_ids) > 512 and config.quant_method.value != "gptq")
-                    else input_ids
-                )
-                input_ids_padded.append(input_ids)
-            return torch.vstack(input_ids_padded)
-
-        calib_dataloader = DataLoader(
-            tokenized_dataset,
-            batch_size=1,
-            shuffle=False,
-            collate_fn=collate_batch,
-        )
-    if calib_func is None and config.quant_method.value == "awq":
-
-        def default_calib_func(model):
-            """This is the default calibration function, the dataset is NeelNanda/pile-10k,
-            the default calib_iters is 100."""
-            for i, (input_ids) in enumerate(calib_dataloader):
-                if i >= calib_iters:
-                    break
-                model(
-                    input_ids=input_ids,
-                )
-
-        calib_func = default_calib_func
-        logger.info(
-            "The default calibration function is used, "
-            + "the calibration dataset is NeelNanda/pile-10k,"
-            + "batchsize is 1 and calibration iteration is 100."
-        )
+    orig_dtype = torch.float32
+    for param in model.parameters():
+        orig_dtype = param.dtype
+        if orig_dtype != torch.float32:
+            model.to(dtype=torch.float32)
+        break
     if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
         return replace_linear(model, None, None, config, device=device)
     else:
-        bits = DTYPE_BITS_MAPPING[config.weight_dtype]
         if config.weight_dtype == "int8":
             dtype = "int8"
         elif "int4" in config.weight_dtype:
@@ -488,125 +552,146 @@ def convert_to_quantized_model(model, config, device="cpu"):
             dtype = config.weight_dtype
         # mapping to INC config
         if config.quant_method.value == "rtn":
-            recipes = {
-                "layer_wise_quant": config.layer_wise,
-                "rtn_args": {
-                    "enable_full_range": (
-                        True if "fullrange" in config.weight_dtype else False
-                    ),
-                    "enable_mse_search": config.mse_range,
-                },
-            }
-            algorithm = "RTN"
+            quant_config = RTNConfig(
+                 dtype=dtype,
+                 bits=config.bits,
+                 use_sym=config.sym,
+                 group_size=config.group_size,
+                 use_layer_wise=config.layer_wise,
+            )
+            quant_config.set_local(".*lm_head", RTNConfig(dtype="fp32"))
+            quant_config.set_local(".*output_layer", RTNConfig(dtype="fp32"))
+            quant_config.set_local(".*embed_out", RTNConfig(dtype="fp32"))
+            model = prepare(model, quant_config)
+            model = convert(model)
         elif config.quant_method.value == "awq":
-            recipes = {
-                "rtn_args": {
-                    "enable_full_range": (
-                        True if "fullrange" in config.weight_dtype else False
-                    ),
-                    "enable_mse_search": config.mse_range,
-                },
-                "awq_args": {"folding": True},
-            }
-            algorithm = "AWQ"
+            quant_config = AWQConfig(
+                dtype=dtype,
+                bits=config.bits,
+                use_sym=config.sym,
+                group_size=config.group_size,
+                use_layer_wise=config.layer_wise,
+                use_auto_scale=config.auto_scale,
+                use_auto_clip=config.auto_clip,
+                folding=True,
+            )
+            quant_config.set_local(".*lm_head", AWQConfig(dtype="fp32"))
+            quant_config.set_local(".*output_layer", AWQConfig(dtype="fp32"))
+            quant_config.set_local(".*embed_out", AWQConfig(dtype="fp32"))
+            logger.info(f"Do AWQ algorithm with config {quant_config}")
+            run_fn = default_run_fn
+            run_args = (
+                config.tokenizer,
+                config.dataset,
+                config.seq_len,  # max_length
+                config.n_samples,  # n_samples
+                config.batch_size,  # batch_size
+                config.quant_method.value,  # algo
+            )
+            example_inputs = torch.ones([1, 512], dtype=torch.long).to(device)
+            model = prepare(model=model, quant_config=quant_config, example_inputs=example_inputs)
+            run_fn(model, *run_args)
+            model = convert(model)
         elif config.quant_method.value == "teq":
-            recipes = {"teq_args": {}}
-            algorithm = "TEQ"
+            quant_config = TEQConfig(
+                dtype=dtype,
+                bits=config.bits,
+                use_sym=config.sym,
+                group_size=config.group_size,
+                use_layer_wise=config.layer_wise,
+                absorb_to_layer=config.absorb_to_layer
+            )
+            quant_config.set_local(".*lm_head", TEQConfig(dtype="fp32"))
+            quant_config.set_local(".*output_layer", TEQConfig(dtype="fp32"))
+            quant_config.set_local(".*embed_out", TEQConfig(dtype="fp32"))
+            logger.info(f"Do TEQ algorithm with config {quant_config}")
+            run_fn = default_run_fn
+            run_args = (
+                config.tokenizer,
+                config.dataset,
+                config.seq_len,  # max_length
+                config.n_samples,  # n_samples
+                config.batch_size,  # batch_size
+                config.quant_method.value,  # algo
+            )
+            example_inputs = torch.ones([1, 512], dtype=torch.long).to(device)
+            model = prepare(model=model, quant_config=quant_config, example_inputs=example_inputs)
+            run_fn(model, *run_args)
+            model = convert(model)
+
         elif config.quant_method.value == "gptq":
-            recipes = {
-                "layer_wise_quant": config.layer_wise,
-                "gptq_args": {
-                    "act_order": config.desc_act,
-                    "percdamp": config.damp_percent,
-                    "block_size": config.blocksize,
-                    "nsamples": config.nsamples,
-                    "use_max_length": True if config.max_input_length else False,
-                    "pad_max_length": config.max_input_length,
-                    "static_groups": config.static_groups,
-                    "true_sequential": config.true_sequential,
-                },
-            }
-            algorithm = "GPTQ"
+            model.seqlen = config.seq_len
+            quant_config = GPTQConfig(
+                dtype=dtype,
+                bits=config.bits,
+                use_sym=config.sym,
+                group_size=config.group_size,
+                use_layer_wise=config.layer_wise,
+                act_order=config.desc_act,
+                percdamp=config.damp_percent,
+                block_size=config.blocksize,
+                static_groups=config.static_groups,
+            )
+            quant_config.set_local(".*lm_head", GPTQConfig(dtype="fp32"))
+            quant_config.set_local(".*output_layer", GPTQConfig(dtype="fp32"))
+            quant_config.set_local(".*embed_out", GPTQConfig(dtype="fp32"))
+            logger.info(f"Do GPTQ algorithm with config {quant_config}")
+            run_fn = default_run_fn
+            run_args = (
+                config.tokenizer,
+                config.dataset,
+                config.seq_len,  # max_length
+                config.n_samples,  # n_samples
+                config.batch_size,  # batch_size
+                config.quant_method.value,  # algo
+            )
+            model = prepare(model=model, quant_config=quant_config)
+            run_fn(model, *run_args)
+            model = convert(model)
         elif config.quant_method.value == "autoround":
-            recipes = {
-                "autoround_args": {
-                    "n_samples": config.nsamples,
-                    "seqlen": config.calib_len,
-                    "iters": config.iters,
-                    "scale_dtype": config.scale_dtype,
-                    "enable_quanted_input": not config.disable_quanted_input,
-                    "lr": config.lr,
-                    "minmax_lr": config.minmax_lr,
-                }
-            }
-            algorithm = "AUTOROUND"
+            quant_config = AutoRoundConfig(
+                dtype=dtype,
+                bits=config.bits,
+                use_sym=config.sym,
+                group_size=config.group_size,
+                enable_quanted_input=not config.disable_quanted_input,
+                lr=config.lr,
+                minmax_lr=config.minmax_lr,
+                seqlen=config.seq_len,
+                n_samples=config.n_samples,
+                iters=config.iters,
+                scale_dtype=config.scale_dtype,
+            )
+            if config.quant_lm_head is False:
+                quant_config.set_local(".*lm_head", AutoRoundConfig(dtype="fp32"))
+                quant_config.set_local(".*output_layer", AutoRoundConfig(dtype="fp32"))
+                quant_config.set_local(".*embed_out", AutoRoundConfig(dtype="fp32"))
+            logger.info(f"Do AutoRound algorithm with config {quant_config}")
+            dataloader = get_autoround_dataloader(tokenizer=config.tokenizer,
+                                                  seqlen=config.seq_len,
+                                                  dataset_name="NeelNanda/pile-10k",
+                                                  seed=42,
+                                                  bs=config.batch_size,
+                                                  n_samples=config.n_samples)
+            run_fn = run_fn_for_autoround
+            run_args = (dataloader,)
+            model = prepare(model=model, quant_config=quant_config)
+            run_fn(model, *run_args)
+            model = convert(model)
         else:
             assert False, "The Supported algorithm are RTN, AWQ, TEQ, GPTQ, AUTOROUND"
 
-        conf = PostTrainingQuantConfig(
-            approach="weight_only",
-            op_type_dict={
-                ".*": {
-                    "weight": {
-                        "bits": bits,
-                        "dtype": dtype,
-                        "group_size": config.group_size,  # -1 (per-channel)
-                        "scheme": config.scheme,
-                        "algorithm": algorithm,
-                    },
-                },
-            },
-            op_name_dict={
-                ".*lm_head": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-                ".*output_layer": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-                ".*embed_out": {  # re.match
-                    "weight": {"dtype": "fp32"},
-                },
-            },
-            recipes=recipes,
-        )
-        # TEQ: set calib_func=None, use default training func as calib_func
-        # RTN: doesn't need calib_func
-        if config.quant_method.value not in ["awq"]:
-            calib_func = None
-
-        orig_dtype = torch.float32
-        for param in model.parameters():
-            orig_dtype = param.dtype
-            if orig_dtype != torch.float32:
-                model.to(dtype=torch.float32)
-            break
-        inc_model = quantization.fit(
-            model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
-        )
-        inc_model.eval()
-
         if device == "xpu" or device == torch.device("xpu"):
-            model = inc_model.export_compressed_model(
-                compression_dtype=torch.int8,
-                compression_dim=0,
-                use_optimum_format=False,
-                scale_dtype=convert_dtype_str2torch(config.scale_dtype),
-                device="xpu",
-            )
+            logger.warning("The recommended ipex version is higher than 2.3.10 for xpu device.")
 
-            q_model = replace_linear(model, None, None, config, device=device)
-        else:
-            if config.weight_dtype not in ["nf4", "fp4_e2m1_bnb", "fp4_e2m1"]:
-                inc_model = inc_model.export_compressed_model(use_optimum_format=True)
-                inc_model.eval()
-                q_model = replace_linear(inc_model, None, None, config, device=device)
-            else:
-                q_model = replace_linear(
-                    inc_model.model, None, None, config, device=device
-                )
+        model.eval()
+        # INC attribute conflicted with transformers when use nf4/int8 training.
+        del model.is_quantized
+        q_model = replace_linear(model, None, None, config, device=device)
 
         if orig_dtype != torch.float32:
             q_model.to(dtype=orig_dtype)
+
         return q_model.to(device)
 
 
@@ -648,3 +733,99 @@ def get_bits(config):
             config.weight_dtype
         )
     return bits
+
+
+def convert_to_smoothquant_model(model, quantization_config):
+    model_type = model.config.model_type.replace("_", "-")
+    # ipex.optimize_transformers
+    if quantization_config.ipex_opt_llm is None:
+        if model_type in IPEX_OPT_LLM_SUPPORTED:
+            quantization_config.ipex_opt_llm = True
+            logger.info(
+                "quantization_config.ipex_opt_llm set to True and ipex.llm.optimize is used."
+            )
+        else:
+            quantization_config.ipex_opt_llm = False
+    if quantization_config.ipex_opt_llm:
+        qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5)
+        model = ipex.llm.optimize(
+            model.eval(),
+            quantization_config=qconfig,
+            dtype=torch.float32,
+            inplace=True,
+            deployment_mode=False,
+        )
+        model.eval()
+    # past_key_values
+    num_beams = quantization_config.num_beams
+    if quantization_config.ipex_opt_llm:
+        past_key_values = generate_dummy_past_key_values_for_opt_llm(
+            config=model.config, input_bs=1, num_beams=num_beams
+        )
+    else:
+        past_key_values = generate_dummy_past_key_values(
+            config=model.config, input_bs=1
+        )
+    # get calibration dataloader
+    calib_dataloader = get_dataloader(
+        model_type, quantization_config, past_key_values=past_key_values
+    )
+
+    def calib_func(model):
+        with torch.no_grad():
+            for i, (inputs, last_ind) in enumerate(calib_dataloader):
+                if i >= quantization_config.n_samples:
+                    break
+                if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                    model(
+                        input_ids=inputs["input_ids"],
+                        past_key_values=inputs["past_key_values"],
+                        position_ids=inputs["position_ids"],
+                        attention_mask=inputs["attention_mask"],
+                    )
+                else:
+                    model(
+                        input_ids=inputs["input_ids"],
+                        past_key_values=inputs["past_key_values"],
+                        attention_mask=inputs["attention_mask"],
+                    )
+
+    # example_inputs
+    for i, (inputs, last_ind) in enumerate(calib_dataloader):
+        if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+            example_inputs = {
+                "input_ids": inputs["input_ids"],
+                "attention_mask": inputs["attention_mask"],
+                "position_ids": inputs["position_ids"],
+                "past_key_values": inputs["past_key_values"],
+            }
+        else:
+            example_inputs = {
+                "input_ids": inputs["input_ids"],
+                "attention_mask": inputs["attention_mask"],
+                "past_key_values": inputs["past_key_values"],
+            }
+        break
+    quant_config = SmoothQuantConfig(
+        alpha=quantization_config.alpha,
+        init_alpha=quantization_config.init_alpha,
+        alpha_min=quantization_config.alpha_min,
+        alpha_max=quantization_config.alpha_max,
+        alpha_step=quantization_config.alpha_step,
+        shared_criterion=quantization_config.shared_criterion,
+        do_blockwise=quantization_config.do_blockwise,
+        excluded_precisions=quantization_config.excluded_precisions,
+    )
+    # fallback
+    if model_type in ["gptj", "gpt_neox", "mpt"]:
+        quant_config = quant_config.set_local(
+            torch.add, SmoothQuantConfig(w_dtype="fp32", act_dtype="fp32")
+        )
+    model = quantize(
+        model,
+        quant_config=quant_config,
+        run_fn=calib_func,
+        example_inputs=example_inputs,
+    )
+
+    return model
