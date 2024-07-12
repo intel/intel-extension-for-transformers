@@ -1,8 +1,5 @@
 import argparse
-import os
-import re
 import time
-import json
 import torch
 from transformers import AutoConfig, AutoTokenizer
 from intel_extension_for_transformers.transformers import (

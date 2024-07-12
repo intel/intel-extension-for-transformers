@@ -67,11 +67,12 @@ from ..llm.quantization.utils import (
     convert_to_smoothquant_model,
     replace_linear,
 )
-from ...tools.utils import is_intel_gpu_available, is_ipex_available
+from ...tools.utils import is_intel_gpu_available, is_ipex_available, _neural_compressor_version
 from accelerate import init_empty_weights
 from huggingface_hub import hf_hub_download
 from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
 from neural_compressor.model.torch_model import PyTorchFXModel
+from packaging import version
 from threading import Thread
 from transformers.configuration_utils import PretrainedConfig
 from transformers import AutoConfig
@@ -799,6 +800,9 @@ class _BaseQBitsAutoModelClass:
             (RtnConfig, AwqConfig, TeqConfig, GPTQConfig, AutoRoundConfig),
         ):
             logger.info("Applying Weight Only Quantization.")
+            assert (
+                version.parse(_neural_compressor_version) > version.parse("2.6")
+            ), "Please use neural_compressor version > 2.6."
             if use_neural_speed:
                 if not isinstance(quantization_config, RtnConfig):
                     logger.error("Only Supports RTN Quantization in Neural Speed.")
@@ -907,6 +911,9 @@ class _BaseQBitsAutoModelClass:
             assert (
                 ipex.__version__ >= "2.2.0+cpu"
             ), "Please use Intel Extension for PyTorch >=2.2.0+cpu."
+            assert (
+                version.parse(_neural_compressor_version) > version.parse("2.6")
+            ), "Please use neural_compressor version > 2.6."
             config.torchscript = True
             config.use_cache = True
             model = cls.ORIG_MODEL.from_pretrained(
