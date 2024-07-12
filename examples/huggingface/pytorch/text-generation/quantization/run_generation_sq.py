@@ -1,11 +1,8 @@
 import argparse
-import json
 import os
-import re
 import time
 
 import torch
-from optimum.intel.generation.modeling import TSModelForCausalLM
 from transformers import AutoConfig, AutoTokenizer
 from transformers.utils import check_min_version
 
@@ -15,7 +12,6 @@ from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
     SmoothQuantConfig,
 )
-from intel_extension_for_transformers.transformers.utils import str2bool
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default=None)

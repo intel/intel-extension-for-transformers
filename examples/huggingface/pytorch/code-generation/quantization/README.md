@@ -30,42 +30,42 @@ export KMP_AFFINITY=granularity=fine,compact,1,0
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 # fp32
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_sq.py \
     --model bigcode/starcoder \
     --benchmark \
     --batch_size 1
 # mixedprecision
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_sq.py \
     --model bigcode/starcoder \
     --mixed_precision \
     --benchmark \
     --batch_size 1
 # smoothquant
 # [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
-python run_generation.py \
+python run_generation_sq.py \
     --model bigcode/starcoder \
     --output_dir "./saved_results" \
     --sq \
     --alpha 0.7  \
-    --calib_iters 500 \
+    --calib_n_samples 500 \
     --dataset "mbpp"
     --int8 \
     --benchmark \
     --batch_size 1
 # weightonlyquant
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_cpu_woq.py \
     --model bigcode/starcoder \
     --woq \
     --benchmark \
     --batch_size 1
 # load_in_4bit
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_cpu_woq.py \
     --model bigcode/starcoder \
     --load_in_4bit \
     --benchmark \
     --batch_size 1
 # load_in_8bit
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation_cpu_woq.py \
     --model bigcode/starcoder \
     --load_in_8bit \
     --benchmark \
@@ -75,7 +75,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 
 ```bash
 # fp32
-python run_generation.py \
+python run_generation_sq.py \
     --model bigcode/starcoder \
     --accuracy \
     --batch_size 20 \
@@ -85,7 +85,7 @@ python run_generation.py \
     --do_sample \
     --tasks "humaneval"
 # mixedprecision
-python run_generation.py \
+python run_generation_sq.py \
     --model bigcode/starcoder \
     --mixed_precision \
     --accuracy \
@@ -97,7 +97,7 @@ python run_generation.py \
     --tasks "humaneval"
 # smoothquant
 # [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
-python run_generation.py \
+python run_generation_sq.py \
     --model bigcode/starcoder \
     --sq \
     --alpha 1.0 \
@@ -110,7 +110,7 @@ python run_generation.py \
     --do_sample \
     --tasks "humaneval"
 # weightonlyquant
-python run_generation.py \
+python run_generation_cpu_woq.py \
     --model bigcode/starcoder \
     --woq \
     --woq_weight_dtype "nf4" \
@@ -122,7 +122,7 @@ python run_generation.py \
     --do_sample \
     --tasks "humaneval"
 # load_in_4bit
-python run_generation.py \
+python run_generation_cpu_woq.py \
     --model bigcode/starcoder \
     --load_in_4bit \
     --accuracy \
@@ -133,7 +133,7 @@ python run_generation.py \
     --do_sample \
     --tasks "humaneval"
 # load_in_8bit
-python run_generation.py \
+python run_generation_cpu_woq.py \
     --model bigcode/starcoder \
     --load_in_8bit \
     --accuracy \
