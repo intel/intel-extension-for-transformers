@@ -30,7 +30,7 @@ parser.add_argument(
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
-parser.add_argument("--eval_batch_size", default=1, type=int,
+parser.add_argument("--benchmark_batch_size", default=1, type=int,
                     help="batch size num.")
 parser.add_argument("--do_profiling", action="store_true")
 parser.add_argument("--profile_token_latency", action="store_true")
