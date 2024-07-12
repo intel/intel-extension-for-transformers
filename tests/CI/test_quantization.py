@@ -342,21 +342,20 @@ class TestQuantization(unittest.TestCase):
         output = woq_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.20071472227573395 , rel_tol=1e-04))
 
-        # # TEQ
-        # need INC fix.
-        # woq_config = TeqConfig(bits=4,
-        #                         n_samples=5,
-        #                         batch_size=1,
-        #                         seq_len=512,
-        #                         tokenizer=tokenizer
-        #                         )
-        # woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-        #                                             quantization_config=woq_config,
-        #                                             use_neural_speed=False
-        #                                         )
-        # woq_model.eval()
-        # output = woq_model(dummy_input)
-
+        # TEQ
+        woq_config = TeqConfig(bits=4,
+                                n_samples=5,
+                                batch_size=1,
+                                seq_len=512,
+                                tokenizer=tokenizer
+                                )
+        woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=woq_config,
+                                                    use_neural_speed=False
+                                                )
+        woq_model.eval()
+        output = woq_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17631684243679047 , rel_tol=1e-04))
 
         # fp8
         woq_config = RtnConfig(bits=8, weight_dtype="fp8_e5m2", scale_dtype="fp8_e8m0")

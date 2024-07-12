@@ -15,16 +15,15 @@ from intel_extension_for_transformers.transformers import (
 from intel_extension_for_transformers.transformers import (
     AutoModelForCausalLM,
 )
-
+from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import(
+    generate_dummy_past_key_values,
+)
 parser = argparse.ArgumentParser()
 
 # ============Main configs============
 parser.add_argument(
     "--model", nargs="?", default="bigcode/starcoderbase", const="bigcode/starcoderbase"
 )
-parser.add_argument("--trust_remote_code", action="store_true")
-parser.add_argument("--_commit_hash", default=None, type=str)
-parser.add_argument("--use_neural_speed", action="store_true")
 parser.add_argument("--dataset", nargs="?", default="mbpp", const="mbpp")
 parser.add_argument("--dtype", type=str, default="int8")
 parser.add_argument(
@@ -33,13 +32,12 @@ parser.add_argument(
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
+parser.add_argument("--benchmark_batch_size", default=1, type=int, help="num benchmark batchsize")
 parser.add_argument("--benchmark_iters", default=100, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
 parser.add_argument(
     "--prompt_size", default=32, type=int, help="generate dummy input_ids size"
 )
-# ============BitsAndBytes configs==============
-parser.add_argument("--bitsandbytes", action="store_true")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
@@ -91,7 +89,7 @@ parser.add_argument(
     help="Use layer wise to do quantization",
 )
 parser.add_argument(
-    "--n_samples", type=int, default=512, help="Number of calibration data samples."
+    "--calib_n_samples", type=int, default=512, help="Number of calibration data samples."
 )
 parser.add_argument(
     "--seq_len",
@@ -100,7 +98,7 @@ parser.add_argument(
     help="Calibration dataset sequence max length, this should align with your model config",
 )
 parser.add_argument(
-    "--batch_size",
+    "--calib_batch_size",
     type=int,
     default=8,
     help="Calibration batchsize.",
@@ -157,6 +155,14 @@ parser.add_argument(
     action="store_true",
     help="whether to quant the lm head layer",
 )
+# ============BitsAndBytes configs==============
+parser.add_argument("--bitsandbytes", action="store_true")
+# ============AutoModel parameters==============
+parser.add_argument("--load_in_4bit", action="store_true")
+parser.add_argument("--load_in_8bit", action="store_true")
+parser.add_argument("--_commit_hash", default=None, type=str)
+parser.add_argument("--trust_remote_code", action="store_true")
+parser.add_argument("--use_neural_speed", action="store_true")
 # ============Harness configs============
 parser.add_argument("--tasks", default=None, help="Evaluation tasks")
 parser.add_argument(
@@ -225,6 +231,7 @@ parser.add_argument("--top_k", default=0, type=int)
 parser.add_argument("--n_samples", default=1, type=int)
 parser.add_argument("--eos", default="<|endoftext|>", type=str)
 parser.add_argument("--seed", default=0, type=int)
+parser.add_argument("--batch_size", default=1, type=int, help="batch size num.")
 args = parser.parse_args()
 
 
@@ -240,11 +247,7 @@ config = AutoConfig.from_pretrained(
     args.model,
     torchscript=(
         True
-        if (
-            args.sq
-            or args.woq_algo in ["Awq", "Teq"]
-            or (args.int8 or args.int8_bf16_mixed or args.benchmark)
-        )
+        if args.woq_algo in ["Awq", "Teq"]
         else False
     ),  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
@@ -288,8 +291,8 @@ if args.woq:
             zero_point=False if args.scheme == "sym" else True,
             group_size=args.group_size,
             seq_len=args.seq_len,
-            n_samples=args.n_samples,
-            batch_size=args.batch_size,
+            n_samples=args.calib_n_samples,
+            batch_size=args.calib_batch_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
@@ -303,8 +306,8 @@ if args.woq:
             sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
             seq_len=args.seq_len,
-            batch_size=args.batch_size,
-            n_samples=args.n_samples,
+            batch_size=args.calib_batch_size,
+            n_samples=args.calib_n_samples,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
@@ -321,9 +324,9 @@ if args.woq:
             blocksize=args.blocksize,
             static_groups=args.static_groups,
             group_size=args.group_size,
-            n_samples=args.n_samples,
+            batch_size=args.calib_batch_size,
+            n_samples=args.calib_n_samples,
             seq_len=args.seq_len,
-            batch_size=args.batch_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
             weight_dtype=args.weight_dtype,
@@ -337,7 +340,8 @@ if args.woq:
             dataset=args.dataset,
             bits=args.bits,
             sym=True if args.scheme == "sym" else False,
-            n_samples=args.n_samples,
+            batch_size=args.calib_batch_size,
+            n_samples=args.calib_n_samples,
             group_size=args.group_size,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.scale_dtype,
@@ -384,25 +388,22 @@ else:
 
 # save model
 if args.output_dir is not None and ((args.woq or args.load_in_4bit or args.load_in_8bit) and not args.use_neural_speed):
+    import pdb;pdb.set_trace();
     user_model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
     # to validate woq model accuracy 
     args.model = args.output_dir
 
 if args.benchmark:
-    normalized_config = NormalizedConfigManager.get_normalized_config_class(
-        user_model.config.model_type
-    )(user_model.config)
-    num_layers = normalized_config.num_layers
-    num_attention_heads = normalized_config.num_attention_heads
-    hidden_size = normalized_config.hidden_size
-    d_k = hidden_size // num_attention_heads
-    num_beams = 1
-    if hasattr(normalized_config, "num_key_value_heads"):
-        num_key_value_heads = normalized_config.num_key_value_heads
-    if hasattr(normalized_config, "multi_query_group_num"):
-        num_key_value_heads = normalized_config.multi_query_group_num
-
+    print("Loading model from: ", args.model)
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        quantization_config=quantization_config,
+        trust_remote_code=args.trust_remote_code,
+        _commit_hash=args._commit_hash,
+        use_neural_speed=args.use_neural_speed,
+    )
+    model_config = user_model.config
     num_iter = args.benchmark_iters
     num_warmup = args.num_warmup
 
@@ -416,46 +417,16 @@ if args.benchmark:
                     input_ids = torch.randint(
                         1,
                         tokenizer.vocab_size,
-                        size=(args.batch_size, args.prompt_size),
+                        size=(args.benchmark_batch_size, args.prompt_size),
                     )
                     input_bs, input_len = input_ids.shape
                     attention_mask = torch.ones(input_bs, input_len)
                     position_ids = (
                         torch.arange(input_len).unsqueeze(0).expand(input_bs, -1)
                     )
-                    if user_model.config.model_type == "gpt_bigcode":
-                        new_shape = [input_bs, 0, d_k * 2]
-                        dummy_tensor = torch.zeros(size=new_shape)
-                        past_key_values = tuple([dummy_tensor] * num_layers)
-                    else:
-                        if not (args.int8 or args.int8_bf16_mixed):
-                            new_shape = [input_bs, num_key_value_heads, 0, d_k]
-                            past_key_values = [
-                                (
-                                    torch.zeros(size=new_shape).contiguous(),
-                                    torch.zeros(size=new_shape).contiguous(),
-                                )
-                                for _ in range(num_layers)
-                            ]
-                            past_key_values = tuple(past_key_values)
-
-                        else:
-                            new_shape = [input_bs, num_key_value_heads, 1, d_k]
-                            beam_idx_tmp = torch.zeros(
-                                (2048, int(input_bs * num_beams)), dtype=torch.long
-                            ).contiguous()
-                            past_key_values = [
-                                (
-                                    torch.zeros(
-                                        1, 0, 0, 1, dtype=torch.long
-                                    ).contiguous(),
-                                    torch.zeros(size=new_shape).contiguous(),
-                                    torch.zeros(size=new_shape).contiguous(),
-                                    beam_idx_tmp,
-                                )
-                                for _ in range(num_layers)
-                            ]
-                            past_key_values = tuple(past_key_values)
+                    past_key_values = generate_dummy_past_key_values(
+                        config=model_config, input_bs=input_bs
+                    )
 
                 inp = {
                     "input_ids": input_ids,

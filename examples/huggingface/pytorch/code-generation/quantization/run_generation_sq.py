@@ -12,6 +12,11 @@ from intel_extension_for_transformers.transformers import (
     AutoModelForCausalLM,
 )
 
+from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import(
+    generate_dummy_past_key_values,
+    generate_dummy_past_key_values_for_opt_llm,
+    IPEX_OPT_LLM_SUPPORTED,
+)
 parser = argparse.ArgumentParser()
 
 # ============Main configs============
@@ -29,6 +34,7 @@ parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--benchmark_iters", default=100, type=int, help="num iter")
+parser.add_argument("--benchmark_batch_size", default=1, type=int, help="batch size num.")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
 parser.add_argument(
     "--prompt_size", default=32, type=int, help="generate dummy input_ids size"
@@ -44,7 +50,7 @@ parser.add_argument(
 parser.add_argument(
     "--seq_len", default=512, type=int, help="Smooth quant calibration input length."
 )
-parser.add_argument("--batch_size", default=1, type=int, help="batch size num.")
+parser.add_argument("--calib_batch_size", default=1, type=int, help="batch size num.")
 parser.add_argument("--padding", action="store_true")
 parser.add_argument("--shuffle", action="store_true")
 # sq alpha "auto" parameters
@@ -136,6 +142,7 @@ parser.add_argument("--top_k", default=0, type=int)
 parser.add_argument("--n_samples", default=1, type=int)
 parser.add_argument("--eos", default="<|endoftext|>", type=str)
 parser.add_argument("--seed", default=0, type=int)
+parser.add_argument("--batch_size", default=1, type=int, help="batch size num.")
 args = parser.parse_args()
 
 
@@ -153,8 +160,7 @@ config = AutoConfig.from_pretrained(
         True
         if (
             args.sq
-            or args.woq_algo in ["Awq", "Teq"]
-            or (args.int8 or args.int8_bf16_mixed or args.benchmark)
+            or args.benchmark
         )
         else False
     ),  # torchscript will force `return_dict=False` to avoid jit errors
@@ -184,7 +190,7 @@ elif args.sq:
         tokenizer=tokenizer,
         seq_len=args.seq_len,
         n_samples=args.calib_n_samples,
-        batch_size=args.batch_size,
+        batch_size=args.calib_batch_size,
         excluded_precisions=excluded_precisions,
         alpha=args.alpha if args.alpha == "auto" else float(args.alpha),
         scale_sharing=args.scale_sharing,
@@ -243,19 +249,7 @@ elif not (args.sq or args.mixed_precision):
     )
 
 if args.benchmark:
-    normalized_config = NormalizedConfigManager.get_normalized_config_class(
-        user_model.config.model_type
-    )(user_model.config)
-    num_layers = normalized_config.num_layers
-    num_attention_heads = normalized_config.num_attention_heads
-    hidden_size = normalized_config.hidden_size
-    d_k = hidden_size // num_attention_heads
-    num_beams = 1
-    if hasattr(normalized_config, "num_key_value_heads"):
-        num_key_value_heads = normalized_config.num_key_value_heads
-    if hasattr(normalized_config, "multi_query_group_num"):
-        num_key_value_heads = normalized_config.multi_query_group_num
-
+    model_config = user_model.config
     num_iter = args.benchmark_iters
     num_warmup = args.num_warmup
 
@@ -269,46 +263,21 @@ if args.benchmark:
                     input_ids = torch.randint(
                         1,
                         tokenizer.vocab_size,
-                        size=(args.batch_size, args.prompt_size),
+                        size=(args.benchmark_batch_size, args.prompt_size),
                     )
                     input_bs, input_len = input_ids.shape
                     attention_mask = torch.ones(input_bs, input_len)
                     position_ids = (
                         torch.arange(input_len).unsqueeze(0).expand(input_bs, -1)
                     )
-                    if user_model.config.model_type == "gpt_bigcode":
-                        new_shape = [input_bs, 0, d_k * 2]
-                        dummy_tensor = torch.zeros(size=new_shape)
-                        past_key_values = tuple([dummy_tensor] * num_layers)
+                    if model_config.model_type in IPEX_OPT_LLM_SUPPORTED:
+                        past_key_values = generate_dummy_past_key_values_for_opt_llm(
+                            config=model_config, input_bs=input_bs, num_beams=1
+                        )
                     else:
-                        if not (args.int8 or args.int8_bf16_mixed):
-                            new_shape = [input_bs, num_key_value_heads, 0, d_k]
-                            past_key_values = [
-                                (
-                                    torch.zeros(size=new_shape).contiguous(),
-                                    torch.zeros(size=new_shape).contiguous(),
-                                )
-                                for _ in range(num_layers)
-                            ]
-                            past_key_values = tuple(past_key_values)
-
-                        else:
-                            new_shape = [input_bs, num_key_value_heads, 1, d_k]
-                            beam_idx_tmp = torch.zeros(
-                                (2048, int(input_bs * num_beams)), dtype=torch.long
-                            ).contiguous()
-                            past_key_values = [
-                                (
-                                    torch.zeros(
-                                        1, 0, 0, 1, dtype=torch.long
-                                    ).contiguous(),
-                                    torch.zeros(size=new_shape).contiguous(),
-                                    torch.zeros(size=new_shape).contiguous(),
-                                    beam_idx_tmp,
-                                )
-                                for _ in range(num_layers)
-                            ]
-                            past_key_values = tuple(past_key_values)
+                        past_key_values = generate_dummy_past_key_values(
+                            config=model_config, input_bs=input_bs
+                        )
 
                 inp = {
                     "input_ids": input_ids,
@@ -351,7 +320,7 @@ if args.accuracy:
         model=user_model,
         tokenizer=tokenizer,
         tasks=args.tasks,
-        batch_size=args.eval_batch_size,
+        batch_size=args.batch_size,
         args=args,
     )
     print(results)
