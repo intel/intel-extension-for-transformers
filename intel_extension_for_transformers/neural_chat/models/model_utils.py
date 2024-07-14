@@ -841,21 +841,10 @@ def load_model(
 
                     if not use_tpp:
                         try:
-                            model = intel_ipex.optimize(
+                            model = intel_ipex.llm.optimize(
                                 model.eval(),
                                 dtype=torch_dtype,
                                 inplace=True,
-                                level="O1",
-                                auto_kernel_selection=True,
-                            )
-                        except AssertionError:
-                            model = intel_ipex.optimize(
-                                model.eval(),
-                                dtype=torch_dtype,
-                                inplace=True,
-                                level="O1",
-                                auto_kernel_selection=True,
-                                weights_prepack=False,
                             )
                         except Exception as e:
                             logging.info(f"IPEX optimize failure! Skip IPEX.")
