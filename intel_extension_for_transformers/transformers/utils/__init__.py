@@ -30,4 +30,4 @@ from .config import (
     GPTQConfig,
     AutoRoundConfig
 )
-from .utility import LazyImport, logger, str2bool, CpuInfo
+from .utility import LazyImport, logger, CpuInfo

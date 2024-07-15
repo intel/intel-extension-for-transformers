@@ -14,7 +14,7 @@ function init_params {
   batch_size=1
   tuned_checkpoint=saved_results
   lm_eval_tasks="humaneval"
-  script="run_generation.py"
+  script="run_generation_sq.py"
   for var in "$@"
   do
     case $var in
@@ -85,7 +85,7 @@ function run_benchmark {
 
 
     if [[ ${int8} == "true" ]]; then
-        extra_cmd=$extra_cmd" --int8"
+        model_name_or_path=$tuned_checkpoint
     fi
 
     echo $extra_cmd
