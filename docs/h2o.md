@@ -3,7 +3,7 @@
 2. [Usage](#usage)
 
 ## Introduction
-**Heavy-Hitter Oracal (H2O)** is a novel approach for implementing the KV cache wihich significantly reduces memory footprint. 
+**Heavy-Hitter Oracal (H2O)** is a novel approach for implementing the KV cache which significantly reduces memory footprint. 
 
 This methods base on the fact that the accumulated attention scores of all tokens in attention blocks adhere to a power-law distribution. It suggests that there exists a small set of influential tokens that are critical during generation, named heavy-hitters (H2). H2 provides an opportunity to step away from the combinatorial search problem and identify an eviction policy that maintains accuracy.
 
