@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Operator Specific Types &mdash; Intel® Extension for Transformers 0.1.dev1+gb12a11b documentation</title>
+  <title>Operator Specific Types &mdash; Intel® Extension for Transformers 0.1.dev1+gbc268c5 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=fd3f3429" />
@@ -68,6 +68,49 @@
 <li class="toctree-l3"><a class="reference internal" href="operator_desc.html">Class operator_desc</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Operator Specific Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#_CPPv42jd"><code class="docutils literal notranslate"><span class="pre">jd</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssdE"><code class="docutils literal notranslate"><span class="pre">jd::ssd</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd20spec_translnorm_typeE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::spec_translnorm_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd20layernorm_ba_param_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::layernorm_ba_param_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd19layernorm_ba_data_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::layernorm_ba_data_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd14matmul_param_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::matmul_param_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd18matmul_fp8_param_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::matmul_fp8_param_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd13matmul_data_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::matmul_data_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd16matmul_u8_data_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::matmul_u8_data_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd17matmul_fp8_data_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::matmul_fp8_data_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd12matmul_inputE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::matmul_input</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd9matmul_ioE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::matmul_io</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd13matmul_outputE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::matmul_output</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd23mean_var_reduce_param_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::mean_var_reduce_param_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd22mean_var_reduce_data_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::mean_var_reduce_data_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd17spec_softmax_typeE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::spec_softmax_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd15softmax_param_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::softmax_param_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd14softmax_data_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::softmax_data_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd17amx_bf16_params_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::amx_bf16_params_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd17amx_int8_params_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::amx_int8_params_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd20amx_bf16f32_inputs_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::amx_bf16f32_inputs_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd21amx_bf16bf16_inputs_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::amx_bf16bf16_inputs_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd13sparse_schemeE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::sparse_scheme</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd13subfunc_levelE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::subfunc_level</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd3WEIE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::WEI</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd3SRCE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::SRC</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd4BIASE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::BIAS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd3DSTE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::DST</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd6SCALESE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::SCALES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd6DST_M1E"><code class="docutils literal notranslate"><span class="pre">jd::ssd::DST_M1</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd6DST_M2E"><code class="docutils literal notranslate"><span class="pre">jd::ssd::DST_M2</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd10WORK_SPACEE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::WORK_SPACE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd12vnni_param_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::vnni_param_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4I0EN2jd3ssd11vnni_data_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::vnni_data_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4I0EN2jd3ssd12amx_params_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::amx_params_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4I0000EN2jd3ssd12amx_inputs_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::amx_inputs_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd20avx512_fp32_params_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::avx512_fp32_params_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd13avx512_data_tE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::avx512_data_t</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd21transpose_copy_paramsE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::transpose_copy_params</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd20seq_vnni_copy_paramsE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::seq_vnni_copy_params</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd26transpose_mha_step1_paramsE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::transpose_mha_step1_params</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd26transpose_mha_step2_paramsE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::transpose_mha_step2_params</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd26transpose_mha_step3_paramsE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::transpose_mha_step3_params</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4N2jd3ssd16transpose_mha_ioE"><code class="docutils literal notranslate"><span class="pre">jd::ssd::transpose_mha_io</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -1912,7 +1955,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fa7a9a950f0> 
+   <jinja2.runtime.BlockReference object at 0x7f1125c1ca00> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
