@@ -1,6 +1,6 @@
 pip list
 
-inc=$(pip list | grep -c 'neural-compressor') || true # Prevent from exiting when 'inc' not found
+inc=$(pip list | grep -c 'neural[-_]compressor') || true # Prevent from exiting when 'inc' not found
 if [ ${inc} != 0 ]; then
     pip uninstall neural-compressor -y
     pip list

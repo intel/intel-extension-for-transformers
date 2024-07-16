@@ -69,7 +69,7 @@ jobs:
         with:
           submodules: "recursive"
           ref: ${{ matrix.test_branch }}
-          fetch-tags: true
+          fetch-depth: 0
 
       - name: docker Build
         run: |
