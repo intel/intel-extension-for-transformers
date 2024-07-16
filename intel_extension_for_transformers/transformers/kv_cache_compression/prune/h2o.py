@@ -44,7 +44,7 @@ def local_heavy_hitter_mask(attn_weights, heavy_budget, no_padding_seq_length=No
     for token_index in range(heavy_budget+padding_length, seq_length):
 
         tmp_attn_index = nn.functional.softmax(
-            attn_weights[:,:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
+        attn_weights[:,:,token_index,:], dim=-1, dtype=torch.float32).to(dtype_attn_weights)
         _, tmp_topk_index = accumulated_attention_score.topk(k=heavy_budget-1, dim=-1)
         zeros_index = torch.zeros_like(tmp_attn_index, dtype=torch.bool)
         mask_bottom_index = zeros_index.scatter(-1, tmp_topk_index, True) #(head, keys)
@@ -123,6 +123,9 @@ class H2OKVCache:
         mean=False
     ):
         ## bsz, num_heads, seq_len, head_dim
+        assert 0 <= heavy_ratio <= 1 and 0 <= recent_ratio <= 1, "ratio should be in [0, 1]"
+        assert heavy_budget is None or heavy_budget >= 0, "heavy_budget should be non-negative"
+        assert recent_budget is None or recent_budget >= 0, "recent_budget should be non-negative"
         self.heavy_ratio = heavy_ratio
         self.recent_ratio = recent_ratio
         self.heavy_budget = heavy_budget
@@ -221,15 +224,22 @@ class H2OKVPruner(KVPruner):
             )
 
     def before_generate(self, model, inputs, *args, **kwargs):
+        assert self.real_drop is True, 'H2O only support real drop mode when use generate func.'
         self.past_length = 0
-        max_length = kwargs['max_new_tokens'] if kwargs.get('max_new_tokens') else kwargs['max_length']
-        max_length += inputs.size(-1)
+        if kwargs.get('max_new_tokens', None):
+            max_length = kwargs['max_new_tokens'] + inputs.size(-1)
+        elif kwargs.get('max_length', None):
+            max_length = kwargs['max_length']
+        else:
+            max_length = model.config.max_length
+        if max_length <= inputs.size(-1):
+            max_length += inputs.size(-1)
         for _, module in model.named_modules():
             if "Attention" in module.__class__.__name__:
                 if module.h2o_kv_cache.heavy_budget is None:
-                    module.h2o_kv_cache.heavy_budget = int(max_length * module.h2o_kv_cache.heavy_ratio)
+                    module.h2o_kv_cache.heavy_budget = round(max_length * module.h2o_kv_cache.heavy_ratio)
                 if module.h2o_kv_cache.recent_budget is None:
-                    module.h2o_kv_cache.recent_budget = int(max_length * module.h2o_kv_cache.recent_ratio)
+                    module.h2o_kv_cache.recent_budget = round(max_length * module.h2o_kv_cache.recent_ratio)
                 if self.prune_kv_cache_size is None:
                     self.prune_kv_cache_size = module.h2o_kv_cache.recent_budget + module.h2o_kv_cache.heavy_budget
 

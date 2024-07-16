@@ -17,4 +17,6 @@
 
 from .prune.h2o import H2OConfig, H2OKVPruner
 from .models.modeling_llama import LlamaForCausalLM
-from .models.modeling_gaudi_llama import GaudiLlamaForCausalLM
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
+
+GaudiLlamaForCausalLM = LazyImport(".models.modeling_gaudi_llama.GaudiLlamaForCausalLM")

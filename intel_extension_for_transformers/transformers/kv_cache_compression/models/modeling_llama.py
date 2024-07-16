@@ -693,10 +693,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
-        def _generate(**kwargs):
-            self.pruner.before_generate(self, **kwargs)
-            result = self.ori_generate(**kwargs)
-            self.pruner.after_generate(self, **kwargs)
+        def _generate(*args, **kwargs):
+            self.pruner.before_generate(self, *args, **kwargs)
+            result = self.ori_generate(*args, **kwargs)
+            self.pruner.after_generate(self, *args, **kwargs)
             return result
 
         self.ori_generate = self.generate
