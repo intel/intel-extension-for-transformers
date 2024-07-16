@@ -42,7 +42,7 @@ jobs:
   neuralchat-unit-test:
     runs-on: [self-hosted, Linux, X64, itrex-node]
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - test_branch: ${{ github.ref }}
