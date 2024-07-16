@@ -35,6 +35,7 @@ jobs:
   engine-unit-test:
     runs-on: [self-hosted, linux, X64, itrex-node]
     strategy:
+      fail-fast: false
       matrix:
         include:
           - test_branch: ${{ github.ref }}
