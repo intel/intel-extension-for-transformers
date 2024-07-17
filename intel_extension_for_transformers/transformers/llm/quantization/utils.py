@@ -136,7 +136,8 @@ def replace_linear(
     if modules_to_not_convert is None:
         # output_layer is chatglm last layer name
         # embed_out is dolly_v2 last layer name
-        modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
+        #modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
+        modules_to_not_convert = []
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(
             quantization_config.llm_int8_skip_modules
@@ -662,10 +663,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 iters=config.iters,
                 scale_dtype=config.scale_dtype,
             )
-            if config.quant_lm_head is False:
-                quant_config.set_local(".*lm_head", AutoRoundConfig(dtype="fp32"))
-                quant_config.set_local(".*output_layer", AutoRoundConfig(dtype="fp32"))
-                quant_config.set_local(".*embed_out", AutoRoundConfig(dtype="fp32"))
+            #if config.quant_lm_head is False:
+            #    quant_config.set_local(".*lm_head", AutoRoundConfig(dtype="fp32"))
+            #    quant_config.set_local(".*output_layer", AutoRoundConfig(dtype="fp32"))
+            #    quant_config.set_local(".*embed_out", AutoRoundConfig(dtype="fp32"))
             logger.info(f"Do AutoRound algorithm with config {quant_config}")
             dataloader = get_autoround_dataloader(tokenizer=config.tokenizer,
                                                   seqlen=config.seq_len,
