@@ -160,10 +160,8 @@ def recover_export_model(model, current_key_name=None):
 def build_woq_model(model, quantization_config):
     from neural_compressor.adaptor.torch_utils.util import set_module
     weight_dtype = quantization_config.weight_dtype
-    quantizate_config.llm_int8_skip_modules
     for n, m in model.named_modules():
-        print(n)
-        if n in quantizate_config.llm_int8_skip_modules:
+        if n in quantization_config.llm_int8_skip_modules:
             continue
         if isinstance(m, torch.nn.Linear):
             zp = getattr(

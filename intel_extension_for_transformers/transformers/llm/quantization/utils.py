@@ -138,9 +138,10 @@ def replace_linear(
         # embed_out is dolly_v2 last layer name
         modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
     if quantization_config.llm_int8_skip_modules:
-        modules_to_not_convert = modules_to_not_convert.extend(
+        modules_to_not_convert.extend(
             quantization_config.llm_int8_skip_modules
         )
+        modules_to_not_convert = list(set(modules_to_not_convert))
     model, is_replaced = _replace_linear(
         model,
         modules_to_not_convert,
