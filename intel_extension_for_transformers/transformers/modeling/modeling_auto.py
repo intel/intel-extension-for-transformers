@@ -860,7 +860,6 @@ class _BaseQBitsAutoModelClass:
                             **kwargs,
                         )
                         model.config.update({"low_cpu_mem_usage": False})
-                        import pdb;pdb.set_trace();
                         quantization_config.post_init_xpu()
                 else:
                     kwargs["low_cpu_mem_usage"] = True
