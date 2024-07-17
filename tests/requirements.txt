@@ -1,13 +1,13 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 accelerate
 auto-gptq
-auto-round==0.2
 bitsandbytes
 datasets==2.16.1
 einops
 evaluate
 gguf
 git+https://github.com/huggingface/optimum-intel.git@50d867c13b22c22eda451ddb67bddb8159670f85
+git+https://github.com/intel/auto-round.git@24b2e74070f2b4e6f26ff069ec75af74cf5b177c
 git+https://github.com/intel/neural-compressor.git
 git+https://github.com/intel/neural-speed.git
 intel-extension-for-pytorch==2.3.0

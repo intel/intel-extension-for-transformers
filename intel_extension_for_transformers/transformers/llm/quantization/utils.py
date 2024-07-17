@@ -658,7 +658,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 lr=config.lr,
                 minmax_lr=config.minmax_lr,
                 seqlen=config.seq_len,
-                n_samples=config.n_samples,
+                nsamples=config.n_samples,
                 iters=config.iters,
                 scale_dtype=config.scale_dtype,
             )
@@ -672,7 +672,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                                   dataset_name="NeelNanda/pile-10k",
                                                   seed=42,
                                                   bs=config.batch_size,
-                                                  n_samples=config.n_samples)
+                                                  nsamples=config.n_samples)
             run_fn = run_fn_for_autoround
             run_args = (dataloader,)
             model = prepare(model=model, quant_config=quant_config)

@@ -11,7 +11,7 @@ transformers_stream_generator
 tiktoken  #qwen
 einops  #qwen
 git+https://github.com/intel/neural-speed.git
-auto-round==0.2
+git+https://github.com/intel/auto-round.git@24b2e74070f2b4e6f26ff069ec75af74cf5b177c
 git+https://github.com/intel/neural-compressor.git
 lm-eval==0.4.3
 huggingface_hub
