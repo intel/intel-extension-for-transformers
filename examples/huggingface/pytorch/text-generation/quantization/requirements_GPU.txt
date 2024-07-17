@@ -14,4 +14,4 @@ tiktoken  #qwen
 einops  #qwen
 auto-round
 git+https://github.com/intel/neural-compressor.git
-lm-eval==0.4.2
+lm-eval==0.4.3

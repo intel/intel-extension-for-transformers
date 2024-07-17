@@ -63,7 +63,7 @@ function run_tuning {
         alpha=0.5
     fi
 
-    if [ ${script} = "run_generation.py" ];then
+    if [ ${script} = "run_generation_sq.py" ];then
         python ./${script} \
             --model ${model_name_or_path} \
             --output_dir ${tuned_checkpoint} \

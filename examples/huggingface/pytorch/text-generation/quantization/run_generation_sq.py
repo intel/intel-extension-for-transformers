@@ -1,18 +1,14 @@
 import argparse
 import os
-import re
 import time
-import json
+
 import torch
 from transformers import AutoConfig, AutoTokenizer
-from intel_extension_for_transformers.transformers import (
-    AutoModelForCausalLM,
-    AutoModel,
-)
 from transformers.utils import check_min_version
-from intel_extension_for_transformers.transformers.utils import str2bool
-from optimum.intel.generation.modeling import TSModelForCausalLM
+
 from intel_extension_for_transformers.transformers import (
+    AutoModel,
+    AutoModelForCausalLM,
     MixedPrecisionConfig,
     SmoothQuantConfig,
 )
@@ -34,7 +30,7 @@ parser.add_argument(
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument(
-    "--restore",
+    "--restore_sq_model_from_json",
     action="store_true",
     help="restore ipex quantized model from output_dir/best_configure.json",
 )
@@ -43,11 +39,12 @@ parser.add_argument(
 )
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
-parser.add_argument("--iters", default=100, type=int, help="num iter")
+parser.add_argument("--benchmark_iters", default=100, type=int, help="num iter")
+parser.add_argument("--benchmark_batch_size", default=1, type=int, help="batch size for benchmark")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
 # ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--batch_size", default=56, type=int, help="batch size num.")
+parser.add_argument("--eval_batch_size", default=56, type=int, help="batch size num.")
 parser.add_argument(
     "--tasks",
     default="lambada_openai",
@@ -58,33 +55,32 @@ parser.add_argument(
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
-parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
+parser.add_argument("--alpha", default=0.5, help="Smooth quant parameter.")
 parser.add_argument(
-    "--calib_padding", action="store_true", help="Calibration dataset do padding."
+    "--n_samples", default=100, type=int, help="Smooth quant calibration samples."
 )
 parser.add_argument(
-    "--calib_shuffle",
-    default=True,
-    type=str2bool,
-    help="Calibration dataset do shuffle.",
+    "--seq_len", default=512, type=int, help="Smooth quant calibration input length."
+)
+parser.add_argument("--batch_size", default=1, type=int, help="batch size num.")
+parser.add_argument("--padding", action="store_true")
+parser.add_argument("--shuffle", action="store_true")
+# sq alpha "auto" parameters
+parser.add_argument("--scale_sharing", action="store_true")
+parser.add_argument(
+    "--init_alpha", default=0.5, type=float, help="Smooth quant parameter."
 )
 parser.add_argument(
-    "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
+    "--alpha_min", default=0.0, type=float, help="Smooth quant parameter."
 )
 parser.add_argument(
-    "--calib_len",
-    default=512,
-    type=int,
-    help="Calibration dataset max or padding max length.",
+    "--alpha_max", default=1.0, type=float, help="Smooth quant parameter."
 )
 parser.add_argument(
-    "--recipes", type=str, help="A dictionary as a string, recipes for smoothquant."
+    "--alpha_step", default=0.1, type=float, help="Smooth quant parameter."
 )
-parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
-parser.add_argument(
-    "--fallback_add", action="store_true", help="Whether to fallback add ops to FP32"
-)
-
+parser.add_argument("--shared_criterion", default="max", type=str)
+parser.add_argument("--do_blockwise", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--_commit_hash", default=None, type=str)
 parser.add_argument("--trust_remote_code", action="store_true")
@@ -106,12 +102,7 @@ if args.peft_model_id:
 config = AutoConfig.from_pretrained(
     args.model,
     torchscript=(
-        True
-        if (
-            args.sq
-            or (args.int8 or args.int8_bf16_mixed)
-        )
-        else False
+        True if args.sq else False
     ),  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
     trust_remote_code=args.trust_remote_code,
@@ -142,56 +133,24 @@ quantization_config = None
 if args.mixed_precision:
     quantization_config = MixedPrecisionConfig(dtype="bfloat16")  # default is bfloat16
 elif args.sq:
-    if re.search("gptj", config.model_type) or re.search("gpt_neox", config.model_type):
-        op_type_dict = {
-            "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-        }
-    elif re.search("mpt", config.model_type):
-        op_type_dict = {
-            "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-            "<built-in function linear>": {
-                "weight": {"dtype": ["fp32"]},
-                "activation": {"dtype": ["fp32"]},
-            },
-        }
-    elif re.search("mistral", config.model_type) or re.search(
-        "baichuan", config.model_type
-    ):
-        op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
-    else:
-        op_type_dict = {}
-    if args.fallback_add:
-        op_type_dict["add"] = {
-            "weight": {"dtype": ["fp32"]},
-            "activation": {"dtype": ["fp32"]},
-        }
-    excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    if args.recipes:
-        try:
-            import ast
-
-            recipes = ast.literal_eval(args.recipes)
-            print("Parsed recipes dictionary:", recipes)
-        except ValueError as e:
-            print("Error parsing recipes dictionary:", e)
-    else:
-        recipes = {
-            "smooth_quant": True,
-            "smooth_quant_args": {
-                "alpha": args.alpha if args.alpha == "auto" else float(args.alpha)
-            },
-        }
+    excluded_precisions = ["bf16"]
     quantization_config = SmoothQuantConfig(
-        tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        recipes=recipes,
-        op_type_dict=op_type_dict,  # default is {}
-        excluded_precisions=excluded_precisions,  # default is []
+        tokenizer=tokenizer,
+        seq_len=args.seq_len,
+        n_samples=args.n_samples,
+        batch_size=args.batch_size,
+        excluded_precisions=excluded_precisions,
+        alpha=args.alpha if args.alpha == "auto" else float(args.alpha),
+        scale_sharing=args.scale_sharing,
+        init_alpha=args.init_alpha,
+        alpha_min=args.alpha_min,
+        alpha_max=args.alpha_max,
+        alpha_step=args.alpha_step,
+        shared_criterion=args.shared_criterion,
+        do_blockwise=args.do_blockwise,
+        shuffle=args.shuffle,
+        padding=args.padding,
         num_beams=generate_kwargs["num_beams"],
-        calib_shuffle=args.calib_shuffle,
-        calib_iters=args.calib_iters,
-        calib_padding=args.calib_padding,
-        calib_len=args.calib_len,
-        calib_pad_val=args.calib_pad_val,
     )
 else:
     print("The quantization_config is None.")
@@ -203,50 +162,39 @@ if quantization_config is not None:
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
-        use_neural_speed=False
     )
     # save model
     if args.output_dir is not None and (args.sq or args.mixed_precision):
         tokenizer.save_pretrained(args.output_dir)
         if args.sq:
+            quantization_config.remove_redundant_parameters()
+            config.quantization_config = quantization_config
             config.save_pretrained(args.output_dir)
             user_model.save(args.output_dir)
+            user_model = AutoModelForCausalLM.from_pretrained(
+                args.output_dir,
+                trust_remote_code=args.trust_remote_code,
+                _commit_hash=args._commit_hash,
+            )
         elif args.mixed_precision:
             user_model.save_pretrained(args.output_dir)
-        args.model = args.output_dir
 
-if args.int8 or args.int8_bf16_mixed:
-    print("Loading SmoothQuant model from: ", args.model)
-    import intel_extension_for_pytorch as ipex
-    from intel_extension_for_transformers.transformers.llm.evaluation.models import (
-        TSModelCausalLMForITREX,
+if args.restore_sq_model_from_json:
+    from intel_extension_for_transformers.transformers.llm.quantization.sq_utils import (
+        recover_model_from_json,
+    )
+    user_model = recover_model_from_json(
+        args.model,
+        os.path.join(args.output_dir, "qconfig.json"),
+        args.trust_remote_code,
     )
 
-    if args.restore:
-        from intel_extension_for_transformers.transformers.utils.utility import (
-            recover_model_from_json,
-        )
-        user_model = recover_model_from_json(
-            args.model,
-            os.path.join(args.output_dir, "best_configure.json"),
-            args.trust_remote_code,
-        )
-    else:
-        user_model = torch.jit.load(os.path.join( args.model, "best_model.pt"))
-        config = AutoConfig.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
-        origin_model_type = config.model_type
-        if origin_model_type in ["chatglm", "qwen", "baichuan"]:
-            config.model_type = "qwen2"
-        user_model = TSModelCausalLMForITREX(user_model, config=config)
-        user_model.config.model_type = origin_model_type
 elif not (args.sq or args.mixed_precision):
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
-        use_neural_speed=False
     )
-
 
 
 if args.benchmark:
@@ -257,7 +205,7 @@ if args.benchmark:
 
     # start
     total_time = 0.0
-    num_iter = args.iters
+    num_iter = args.benchmark_iters
     num_warmup = args.num_warmup
     total_token_num = 0
     eos_token_id = tokenizer.eos_token_id
@@ -267,7 +215,7 @@ if args.benchmark:
             # for chatglm2 only
             if hasattr(tokenizer, "build_chat_input"):
                 input_ids = tokenizer.build_chat_input(prompt)["input_ids"]
-                input_ids = input_ids.repeat(args.batch_size, 1)
+                input_ids = input_ids.repeat(args.benchmark_batch_size, 1)
                 eos_token_id = [
                     tokenizer.eos_token_id,
                     tokenizer.get_command("<|user|>"),
@@ -277,11 +225,11 @@ if args.benchmark:
             elif hasattr(tokenizer, "build_prompt"):
                 build_prompt = tokenizer.build_prompt(prompt)
                 input_ids = tokenizer(
-                    [build_prompt] * args.batch_size, return_tensors="pt"
+                    [build_prompt] * args.benchmark_batch_size, return_tensors="pt"
                 ).input_ids
             else:
                 input_ids = tokenizer(
-                    [prompt] * args.batch_size, return_tensors="pt"
+                    [prompt] * args.benchmark_batch_size, return_tensors="pt"
                 ).input_ids
             gen_ids = user_model.generate(
                 input_ids,
@@ -307,18 +255,32 @@ if args.benchmark:
 
 if args.accuracy:
 
-    args.model = (peft_config.base_model_name_or_path if args.peft_model_id else args.model)
+    args.model = (
+        peft_config.base_model_name_or_path if args.peft_model_id else args.model
+    )
 
-    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
-    args = LMEvalParser(model = "hf", 
-                        tokenizer = tokenizer,
-                        user_model = user_model,
-                        tasks = args.tasks,
-                        device = "cpu",
-                        batch_size = args.batch_size)
+    from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import (
+        LMEvalParser,
+        evaluate,
+    )
+
+    args = LMEvalParser(
+        model="hf",
+        tokenizer=tokenizer,
+        user_model=user_model,
+        tasks=args.tasks,
+        device="cpu",
+        batch_size=args.eval_batch_size,
+    )
     results = evaluate(args)
     for task_name in args.tasks.split(","):
         if task_name == "wikitext":
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity,none"]))
+            print(
+                "Accuracy for %s is: %s"
+                % (task_name, results["results"][task_name]["word_perplexity,none"])
+            )
         else:
-            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc,none"]))
+            print(
+                "Accuracy for %s is: %s"
+                % (task_name, results["results"][task_name]["acc,none"])
+            )

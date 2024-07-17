@@ -60,6 +60,17 @@ if _autoround_available:
 def is_autoround_available():
     return _autoround_available
 
+_neural_compressor_available = importlib.util.find_spec("neural_compressor") is not None
+_neural_compressor_version = "N/A"
+
+if _neural_compressor_available:
+    try:
+        _neural_compressor_version = importlib_metadata.version("neural_compressor")
+    except importlib_metadata.PackageNotFoundError:
+        _neural_compressor_available = False
+def is_neural_compressor_avaliable():
+    return _neural_compressor_available
+
 def get_device_type():
     if torch.cuda.is_available():
         device = "cuda"

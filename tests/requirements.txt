@@ -12,7 +12,7 @@ git+https://github.com/intel/neural-compressor.git
 git+https://github.com/intel/neural-speed.git
 intel-extension-for-pytorch==2.3.0
 intel-tensorflow==2.14.0
-lm-eval==0.4.2
+lm-eval==0.4.3
 mlflow
 nlpaug==1.1.9
 onnx
