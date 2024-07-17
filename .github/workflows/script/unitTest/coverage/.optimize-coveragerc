@@ -18,7 +18,7 @@ omit =
  */intel_extension_for_transformers/langchain/**
  */intel_extension_for_transformers/llama_index/**
  */intel_extension_for_transformers/transformers/utils/get_throughput.py
- */intel_extension_for_transformers/transformers/kv_cache_compression/models/**
+ */intel_extension_for_transformers/transformers/kv_cache_compression/**
 exclude_lines =
  pragma: no cover
  raise NotImplementedError
