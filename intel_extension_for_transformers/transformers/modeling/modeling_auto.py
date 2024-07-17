@@ -160,8 +160,10 @@ def recover_export_model(model, current_key_name=None):
 def build_woq_model(model, quantization_config):
     from neural_compressor.adaptor.torch_utils.util import set_module
     weight_dtype = quantization_config.weight_dtype
+    quantizate_config.llm_int8_skip_modules
     for n, m in model.named_modules():
-        if "lm_head" in n or "output_layer" in n or "embed_out" in n:
+        print(n)
+        if n in quantizate_config.llm_int8_skip_modules:
             continue
         if isinstance(m, torch.nn.Linear):
             zp = getattr(
@@ -858,6 +860,7 @@ class _BaseQBitsAutoModelClass:
                             **kwargs,
                         )
                         model.config.update({"low_cpu_mem_usage": False})
+                        import pdb;pdb.set_trace();
                         quantization_config.post_init_xpu()
                 else:
                     kwargs["low_cpu_mem_usage"] = True
@@ -883,6 +886,7 @@ class _BaseQBitsAutoModelClass:
                         hasattr(torch, "xpu") and torch.xpu.is_available()
                     ), "There is no xpu device in this system!"
                     quantization_config.update(**{"device": "xpu"})
+                    quantization_config.post_init_xpu()
                 if (
                     not torch.cuda.is_available()
                     or device_map == "cpu"
