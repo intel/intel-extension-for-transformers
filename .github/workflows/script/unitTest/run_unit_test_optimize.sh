@@ -1,5 +1,7 @@
 #!/bin/bash
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
+export TQDM_MININTERVAL=30
+ulimit -s 8192
 export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.optimize-coveragerc"
 LOG_DIR=/log_dir
 mkdir -p ${LOG_DIR}
