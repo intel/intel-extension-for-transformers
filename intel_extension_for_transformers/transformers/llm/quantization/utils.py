@@ -136,7 +136,7 @@ def replace_linear(
     if modules_to_not_convert is None:
         # output_layer is chatglm last layer name
         # embed_out is dolly_v2 last layer name
-        modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
+        modules_to_not_convert = []
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert.extend(
             quantization_config.llm_int8_skip_modules
