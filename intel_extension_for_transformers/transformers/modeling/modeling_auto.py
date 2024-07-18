@@ -1833,6 +1833,7 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
+            "int4_fullrange"
         ]:
             model = build_woq_model(model, quantization_config)
         else:
@@ -1949,6 +1950,7 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
+            "int4_fullrange"
         ] and not quantization_config.use_ipex:
             model = replace_linear(
                 model,
