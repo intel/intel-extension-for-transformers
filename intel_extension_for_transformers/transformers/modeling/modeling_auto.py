@@ -67,7 +67,11 @@ from ..llm.quantization.utils import (
     convert_to_smoothquant_model,
     replace_linear,
 )
-from ...tools.utils import is_intel_gpu_available, is_ipex_available, _neural_compressor_version
+from ...tools.utils import (
+    is_intel_gpu_available,
+    is_ipex_available,
+    _neural_compressor_version,
+)
 from accelerate import init_empty_weights
 from huggingface_hub import hf_hub_download
 from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
@@ -1832,7 +1836,6 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
-            "int4_fullrange",
         ]:
             model = build_woq_model(model, quantization_config)
         else:
@@ -1949,7 +1952,6 @@ class _BaseQBitsAutoModelClass:
         if quantization_config.weight_dtype not in [
             "fp8_e5m2",
             "fp8_e4m3",
-            "int4_fullrange",
         ] and not quantization_config.use_ipex:
             model = replace_linear(
                 model,
