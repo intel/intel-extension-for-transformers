@@ -2,6 +2,8 @@ name: Scanner BDBA
 
 on:
   workflow_dispatch:
+permissions:
+  contents: read
 
 jobs:
   bdba_job:

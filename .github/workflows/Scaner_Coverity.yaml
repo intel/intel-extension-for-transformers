@@ -1,8 +1,9 @@
 name: Scanner Coverity PYTHON
 
 on:
-    workflow_dispatch:
-
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   coverity_job:
     name: Coverity
@@ -14,8 +15,8 @@ jobs:
       - name: Scan
         uses: intel-innersource/frameworks.devops.github.actions.coverity@main
         with:
-          server: 'https://coverityent.devtools.intel.com/prod4'
+          server: "https://coverityent.devtools.intel.com/prod4"
           username: ${{secrets.COVERITY_NAME }}
           password: ${{secrets.COVERITY }}
           project: IntelExtensionForTransformers
-          stream: 'IntelExtensionForTransformers12cpp'
+          stream: "IntelExtensionForTransformers12cpp"
