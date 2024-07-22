@@ -2,7 +2,8 @@ name: Chat Bot Finetuning Test
 
 on:
   workflow_dispatch:
-
+permissions:
+  contents: read
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
