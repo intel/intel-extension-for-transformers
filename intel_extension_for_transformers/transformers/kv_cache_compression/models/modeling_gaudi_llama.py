@@ -26,6 +26,7 @@ from transformers.models.llama.modeling_llama import (
     LlamaAttention,
     LlamaDecoderLayer,
     LlamaForCausalLM,
+    repeat_kv,
     LlamaMLP,
     LlamaModel,
     LlamaRMSNorm,
@@ -425,6 +426,8 @@ class GaudiLlamaAttention(LlamaAttention):
                             causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
                     if self.layer_idx == 0:
                         self.pruner.past_length += query_states.size(-2)
+                    key_states = repeat_kv(key_states, self.num_key_value_groups)
+                    value_states = repeat_kv(value_states, self.num_key_value_groups)
                     new_key_states, new_value_states = self.pruner.prune(
                     self,
                     query_states,
@@ -432,6 +435,8 @@ class GaudiLlamaAttention(LlamaAttention):
                     value_states,
                     causal_mask=causal_mask
                     )
+                    new_key_states = self.pruner.remove_repeat_kv(new_key_states, self.num_key_value_groups)
+                    new_value_states = self.pruner.remove_repeat_kv(new_value_states, self.num_key_value_groups)
                     key_states = self.k_cache(new_key_states, 2, token_idx)
                     value_states = self.v_cache(new_value_states, 2, token_idx)
                     past_key_value = (self.k_cache.get_shape(), self.v_cache.get_shape())

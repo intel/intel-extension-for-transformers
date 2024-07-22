@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import torch
 
 class PruneConfig(dict):
     def __init__(self, real_drop=True):
@@ -43,3 +44,14 @@ class KVPruner:
     @past_length.setter
     def past_length(self, value):
         self._past_length = value
+
+    def remove_repeat_kv(self, kv_tensor, n_rep):
+        if n_rep == 1:
+            return kv_tensor
+        drop_mask = torch.tensor(
+            [True if i % n_rep == 0 else False for i in range(0, kv_tensor.size(1))]
+        ).repeat(kv_tensor.size(0), 1).to(kv_tensor.device)
+        new_shape = list(kv_tensor.shape)
+        new_shape[1] = int(new_shape[1] / n_rep)
+        kv_tensor = kv_tensor[drop_mask].view(new_shape)
+        return kv_tensor
