@@ -1,7 +1,8 @@
 Full Publications/Events (50)
 ==========
 
-## 2024 (12)
+## 2024 (13)
+* Blog published on Intel Developer News: [Intel AI Solutions Boost LLMs: Unleashing the Power of Meta* Llama 3.1](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-ai-solutions-support-meta-llama-3-1-launch.html))
 * Blog published on digit.in: [AI hallucination in LLM and beyond: Will it ever be fixed?](https://www.digit.in/features/general/ai-hallucination-in-llm-and-beyond-can-it-be-fixed-completely.html)
 * Blog published on Medium: [Accelerating Qwen2 Models with Intel Extension for Transformers](https://medium.com/intel-analytics-software/accelerating-qwen2-models-with-intel-extension-for-transformers-99403de82f68) (June 2024)
 * Blog published on Huggingface: [Building Cost-Efficient Enterprise RAG applications with Intel Gaudi 2 and Intel Xeon](https://huggingface.co/blog/cost-efficient-rag-applications-with-intel) (May 2024)
