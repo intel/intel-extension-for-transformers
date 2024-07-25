@@ -1,7 +1,8 @@
 Full Publications/Events (50)
 ==========
 
-## 2024 (13)
+## 2024 (14)
+* Blog published on Intel information: [解决方案为最新Meta Llama 3.1模型提供加速](https://mp.weixin.qq.com/s/Qk3mSWPW8qdIMswpEJxVoA)
 * Blog published on Intel Developer News: [Intel AI Solutions Boost LLMs: Unleashing the Power of Meta* Llama 3.1](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-ai-solutions-support-meta-llama-3-1-launch.html)
 * Blog published on digit.in: [AI hallucination in LLM and beyond: Will it ever be fixed?](https://www.digit.in/features/general/ai-hallucination-in-llm-and-beyond-can-it-be-fixed-completely.html)
 * Blog published on Medium: [Accelerating Qwen2 Models with Intel Extension for Transformers](https://medium.com/intel-analytics-software/accelerating-qwen2-models-with-intel-extension-for-transformers-99403de82f68) (June 2024)
@@ -15,6 +16,8 @@ Full Publications/Events (50)
 * Blog published on Intel NewsRoom: [Intel Gaudi 2 Remains Only Benchmarked Alternative to NV H100 for GenAI Performance](https://www.intel.com/content/www/us/en/newsroom/news/new-gaudi-2-xeon-performance-ai-inference.html#gs.858z19) (March 2024)
 * Blog published on Intel Developer News: [Use the neural-chat-7b Model for Advanced Fraud Detection: An AI-Driven Approach in Cybersecurity](https://www.intel.com/content/www/us/en/developer/articles/technical/bilics-approach-cybersecurity-using-neuralchat-7b.html) (March 2024)
 * CES 2024: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
+
+    
 
 
 ## 2023 (34)
