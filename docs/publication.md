@@ -17,8 +17,6 @@ Full Publications/Events (50)
 * Blog published on Intel Developer News: [Use the neural-chat-7b Model for Advanced Fraud Detection: An AI-Driven Approach in Cybersecurity](https://www.intel.com/content/www/us/en/developer/articles/technical/bilics-approach-cybersecurity-using-neuralchat-7b.html) (March 2024)
 * CES 2024: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
 
-    
-
 
 ## 2023 (34)
 * Blog published on Hugging Face: [2023, year of open LLMs](https://huggingface.co/blog/2023-in-llms) (Dec 2023)
