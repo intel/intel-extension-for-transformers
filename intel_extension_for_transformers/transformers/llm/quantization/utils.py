@@ -136,11 +136,12 @@ def replace_linear(
     if modules_to_not_convert is None:
         # output_layer is chatglm last layer name
         # embed_out is dolly_v2 last layer name
-        modules_to_not_convert = ["lm_head", "output_layer", "embed_out"]
+        modules_to_not_convert = []
     if quantization_config.llm_int8_skip_modules:
-        modules_to_not_convert = modules_to_not_convert.extend(
+        modules_to_not_convert.extend(
             quantization_config.llm_int8_skip_modules
         )
+        modules_to_not_convert = list(set(modules_to_not_convert))
     model, is_replaced = _replace_linear(
         model,
         modules_to_not_convert,
@@ -559,9 +560,11 @@ def convert_to_quantized_model(model, config, device="cpu"):
                  group_size=config.group_size,
                  use_layer_wise=config.layer_wise,
             )
-            quant_config.set_local(".*lm_head", RTNConfig(dtype="fp32"))
-            quant_config.set_local(".*output_layer", RTNConfig(dtype="fp32"))
-            quant_config.set_local(".*embed_out", RTNConfig(dtype="fp32"))
+            if config.llm_int8_skip_modules != []:
+                for module in config.llm_int8_skip_modules:
+                    module_name = ".*" + module
+                    quant_config.set_local(module_name, RTNConfig(dtype="fp32"))
+            logger.info(f"Do RTN algorithm with config {quant_config}")
             model = prepare(model, quant_config)
             model = convert(model)
         elif config.quant_method.value == "awq":
@@ -575,9 +578,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 use_auto_clip=config.auto_clip,
                 folding=True,
             )
-            quant_config.set_local(".*lm_head", AWQConfig(dtype="fp32"))
-            quant_config.set_local(".*output_layer", AWQConfig(dtype="fp32"))
-            quant_config.set_local(".*embed_out", AWQConfig(dtype="fp32"))
+            if config.llm_int8_skip_modules != []:
+                for module in config.llm_int8_skip_modules:
+                    module_name = ".*" + module
+                    quant_config.set_local(module_name, AWQConfig(dtype="fp32"))
             logger.info(f"Do AWQ algorithm with config {quant_config}")
             run_fn = default_run_fn
             run_args = (
@@ -601,9 +605,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 use_layer_wise=config.layer_wise,
                 absorb_to_layer=config.absorb_to_layer
             )
-            quant_config.set_local(".*lm_head", TEQConfig(dtype="fp32"))
-            quant_config.set_local(".*output_layer", TEQConfig(dtype="fp32"))
-            quant_config.set_local(".*embed_out", TEQConfig(dtype="fp32"))
+            if config.llm_int8_skip_modules != []:
+                for module in config.llm_int8_skip_modules:
+                    module_name = ".*" + module
+                    quant_config.set_local(module_name, TEQConfig(dtype="fp32"))
             logger.info(f"Do TEQ algorithm with config {quant_config}")
             run_fn = default_run_fn
             run_args = (
@@ -632,9 +637,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 block_size=config.blocksize,
                 static_groups=config.static_groups,
             )
-            quant_config.set_local(".*lm_head", GPTQConfig(dtype="fp32"))
-            quant_config.set_local(".*output_layer", GPTQConfig(dtype="fp32"))
-            quant_config.set_local(".*embed_out", GPTQConfig(dtype="fp32"))
+            if config.llm_int8_skip_modules != []:
+                for module in config.llm_int8_skip_modules:
+                    module_name = ".*" + module
+                    quant_config.set_local(module_name, GPTQConfig(dtype="fp32"))
             logger.info(f"Do GPTQ algorithm with config {quant_config}")
             run_fn = default_run_fn
             run_args = (
@@ -662,10 +668,10 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 iters=config.iters,
                 scale_dtype=config.scale_dtype,
             )
-            if config.quant_lm_head is False:
-                quant_config.set_local(".*lm_head", AutoRoundConfig(dtype="fp32"))
-                quant_config.set_local(".*output_layer", AutoRoundConfig(dtype="fp32"))
-                quant_config.set_local(".*embed_out", AutoRoundConfig(dtype="fp32"))
+            if config.llm_int8_skip_modules != []:
+                for module in config.llm_int8_skip_modules:
+                    module_name = ".*" + module
+                    quant_config.set_local(module_name, AutoRoundConfig(dtype="fp32"))
             logger.info(f"Do AutoRound algorithm with config {quant_config}")
             dataloader = get_autoround_dataloader(tokenizer=config.tokenizer,
                                                   seqlen=config.seq_len,

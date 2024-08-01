@@ -97,12 +97,6 @@ parser.add_argument(
 )
 # ============AutoRound==================
 parser.add_argument(
-    "--autoround_iters",
-    default=2048,
-    type=int,
-    help="Calibration dataset max or padding max length for AutoRound.",
-)
-parser.add_argument(
     "--lr",
     type=float,
     default=None,
@@ -172,7 +166,6 @@ if args.woq:
             bits=args.bits,
             sym=True if args.scheme == "sym" else False,
             group_size=args.group_size,
-            seq_len=args.seq_len,
             compute_dtype=args.compute_dtype,
             scale_dtype=args.compute_dtype,
             weight_dtype=args.weight_dtype,
