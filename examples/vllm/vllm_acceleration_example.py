@@ -41,7 +41,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         config = RtnConfig(compute_dtype="int8",
                            group_size=128,
                            scale_dtype="bf16",
-                           weight_dtype="int4_clip",
+                           weight_dtype="int4",
                            bits=4)
         print(config)
         prompts = [args.prompt]

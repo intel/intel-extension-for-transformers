@@ -16,7 +16,7 @@ import intel_extension_for_transformers.qbits as qbits
         transpose (bool): Whether to transpose the weight tensor (required for quantize_to_packed_weight with KxN weight shape).
         blocksize (int): Blocksize for weight-only quantization.
         compute_type (str): Computation type (fp32/bf16/int8). fp32 will leverage AVX2/AVX512F to compute, bf16 will be AMX_BF16, int8 will be VNNI/AMX_INT8.
-        weight_type (str): Quantization type (int8/int4_clip/int4_fullrange/nf4/fp4_e2m1).
+        weight_type (str): Quantization type (int8/int4/int3/int2/nf4/fp4_e2m1).
         scale_type (str): Scale type (fp32/bf16).
         asym (bool): Whether to use asymmetric quantization.
 
@@ -37,7 +37,7 @@ pack_weight = qbits.quantize_to_packed_weight(
         g_idx (torch.Tensor): shuffle index used by GPTQ, dtype must be int32.
         blocksize (int): Blocksize for weight-only quantization.
         compute_type (str): Computation type (fp32/bf16/int8). fp32 will leverage AVX2/AVX512F to compute, bf16 will be AMX_BF16, int8 will be VNNI/AMX_INT8.
-        weight_type (str): Quantization type (int8/int4_clip/int4_fullrange/nf4/fp4_e2m1).
+        weight_type (str): Quantization type (int8/int4/int3/int2/nf4/fp4_e2m1).
         scale_type (str): Scale type (fp32/bf16).
         asym (bool): Whether to use asymmetric quantization.
 
@@ -57,7 +57,7 @@ pack_weight = qbits.repack_quantized_weight(
         bias (torch.Tensor): Bias tensor, must be fp32, if bias is empty woq_linear will not add bias.
         output (torch.Tensor): Output tensor, support fp32/bf16, shape must be MxN.
         compute_type (str): Computation type (fp32/bf16/int8).fp32 will leverage AVX2/AVX512F to compute, bf16 will leverage AMX_BF16 to compute, int8 will leverage VNNI/AMX_INT8 to compute.
-        weight_type (str): Quantization type (int8/int4_clip/int4_fullrange/nf4/fp4_e2m1).
+        weight_type (str): Quantization type (int8/int4/int3/int2/nf4/fp4_e2m1).
         scale_type (str): Scale type (fp32/bf16).
         asym (bool): Whether to use asymmetric quantization.
 """
