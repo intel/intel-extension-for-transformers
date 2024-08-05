@@ -833,7 +833,7 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.double_quant_group_size = double_quant_group_size
         # "transformer.output_layer" for chatglm series model.
         # "embed_out" for dolly v2 series model.
-        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", 
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules",
                                                 ["lm_head", "transformer.output_layer", "embed_out"])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
