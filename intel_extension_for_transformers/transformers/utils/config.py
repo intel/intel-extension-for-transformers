@@ -831,7 +831,10 @@ class RtnConfig(ITREXQuantizationConfigMixin):
         self.double_quant_bits = double_quant_bits
         self.double_quant_use_sym = double_quant_use_sym
         self.double_quant_group_size = double_quant_group_size
-        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", ["lm_head", "output_layer", "embed_out"])
+        # "transformer.output_layer" for chatglm series model.
+        # "gpt_neox.embed_out" for dolly v2 series model.
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", 
+                                                ["lm_head", "transformer.output_layer", "gpt_neox.embed_out"])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_neural_speed = use_neural_speed
