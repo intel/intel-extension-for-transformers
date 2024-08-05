@@ -161,9 +161,7 @@ def build_woq_model(model, quantization_config):
     from neural_compressor.adaptor.torch_utils.util import set_module
     weight_dtype = quantization_config.weight_dtype
     for n, m in model.named_modules():
-        print(n)
         if n in quantization_config.llm_int8_skip_modules:
-           # import pdb;pdb.set_trace();
             continue
         if isinstance(m, torch.nn.Linear):
             zp = getattr(
