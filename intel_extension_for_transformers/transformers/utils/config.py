@@ -914,7 +914,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.true_sequential = true_sequential
         self.layer_wise = layer_wise
         self.seq_len = seq_len
-        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", 
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules",
                                                 ["lm_head", "transformer.output_layer", "embed_out"])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
@@ -1013,7 +1013,7 @@ class AwqConfig(ITREXQuantizationConfigMixin):
         self.seq_len = seq_len
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", 
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules",
                                                 ["lm_head", "transformer.output_layer", "embed_out"])
         self.use_ggml = use_ggml
         self.use_quant = use_quant
@@ -1083,7 +1083,7 @@ class TeqConfig(ITREXQuantizationConfigMixin):
         self.seq_len = seq_len
         self.use_double_quant = use_double_quant
         self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", 
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules",
                                                 ["lm_head", "transformer.output_layer", "embed_out"])
         self.use_ggml = use_ggml
         self.use_neural_speed = use_neural_speed
@@ -1160,7 +1160,7 @@ class AutoRoundConfig(ITREXQuantizationConfigMixin):
         self.iters = iters
         self.seq_len = seq_len
         self.quant_lm_head = quant_lm_head
-        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules", 
+        self.llm_int8_skip_modules = kwargs.get("llm_int8_skip_modules",
                                                 ["lm_head", "transformer.output_layer", "embed_out"])
         if self.quant_lm_head:
             self.llm_int8_skip_modules = []
