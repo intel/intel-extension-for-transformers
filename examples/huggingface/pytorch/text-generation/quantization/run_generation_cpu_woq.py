@@ -133,6 +133,11 @@ parser.add_argument(
     action="store_true",
     help="Use determined group to do quantization",
 )
+parser.add_argument(
+    "--use_mse_search",
+    action="store_true",
+    help="Enables mean squared error (MSE) search.",
+)
 # ============AUTOROUND configs==============
 parser.add_argument(
     "--lr",
@@ -261,6 +266,7 @@ if args.woq:
             sym=True if args.scheme == "sym" else False,
             blocksize=args.blocksize,
             static_groups=args.static_groups,
+            use_mse_search=args.use_mse_search,
             group_size=args.group_size,
             n_samples=args.n_samples,
             seq_len=args.seq_len,

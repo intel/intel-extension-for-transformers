@@ -879,6 +879,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         n_samples: int = 128,
         seq_len: int = 2048,
         static_groups: bool = False,
+        use_mse_search: bool = False,
         true_sequential: bool = False,
         layer_wise: bool = False,
         use_ggml: bool = False,
@@ -908,6 +909,7 @@ class GPTQConfig(ITREXQuantizationConfigMixin):
         self.damp_percent = damp_percent
         self.desc_act = desc_act
         self.static_groups = static_groups
+        self.use_mse_search = use_mse_search
         self.true_sequential = true_sequential
         self.layer_wise = layer_wise
         self.seq_len = seq_len
