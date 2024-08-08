@@ -1,6 +1,7 @@
 #!/bin/bash
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
 export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.optimize-coveragerc"
+export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
 LOG_DIR=/log_dir
 mkdir -p ${LOG_DIR}
 # get parameters
