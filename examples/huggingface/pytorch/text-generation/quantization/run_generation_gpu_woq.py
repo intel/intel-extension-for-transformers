@@ -319,12 +319,12 @@ if args.accuracy:
             if user_model is None else user_model
     if quantization_config is None:
         quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
-    if enable_optimize_transformers:
-        print("Optimize with IPEX...")
-        user_model = ipex.optimize_transformers(
-            user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
-    else:
-        print("Disabled optimization with IPEX...")
+   # if enable_optimize_transformers:
+       # print("Optimize with IPEX...")
+       # user_model = ipex.optimize_transformers(
+           # user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
+   # else:
+       # print("Disabled optimization with IPEX...")
     from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
     args = LMEvalParser(model = "hf", 
                         tokenizer = tokenizer,
