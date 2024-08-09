@@ -40,10 +40,10 @@ pip install -v .
 # install requirements
 cd examples/huggingface/pytorch/text-generation/quantization
 pip install -r requirements.txt
-pip install neural-compressor==2.6
+pip install neural-compressor==3.0
 pip install torch==2.3.0+cpu --index-url https://download.pytorch.org/whl/cpu
 # 4.38.1 is only limited by smoothquant
-pip install transformers==4.38.1
+pip install transformers==4.38.2  # 4.42.4 for mistralai/Mistral-7B-v0.1
 # ipex is only necessary for smoothquant
 pip install intel-extension-for-pytorch==2.3.0
 ```
@@ -61,7 +61,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.85
 ```
 
@@ -115,7 +115,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.9
 ```
 
@@ -169,7 +169,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.5
 ```
 
@@ -222,13 +222,15 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 1 \
+    --eval_batch_size 1 \
     --init_alpha 0.8 \
-    --alpha_min 0.8 \
+    --alpha_min 0.79 \
     --alpha_max 0.99 \
     --alpha_step 0.01 \
     --shared_criterion mean \
     --seq_len 2048 \
+    --shuffle \
+    --n_samples 512 \
     --alpha auto
 ```
 
@@ -278,16 +280,18 @@ python run_generation_cpu_woq.py \
 python run_generation_sq.py \
     --model meta-llama/Llama-2-13b-hf \
     --output_dir ./saved_results \
-    --seq_len 1024 \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --batch_size 1 \
+    --eval_batch_size 1 \
+    --seq_len 1024 \
     --init_alpha 0.8 \
     --alpha_min 0.75 \
     --alpha_max 0.99 \
     --alpha_step 0.01 \
     --shared_criterion max \
+    --padding \
+    --n_samples 512 \
     --alpha auto
 ```
 
@@ -340,8 +344,9 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
-    --alpha 0.8
+    --eval_batch_size 1 \
+    --alpha 0.8 \
+    --n_samples 512
 ```
 
 ### Weight-Only Quantization
@@ -394,7 +399,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.9
 ```
 
@@ -447,7 +452,7 @@ python run_generation_sq.py \
     --trust_remote_code \
     --tasks lambada_openai \
     --sq --accuracy \
-    --batch_size 1 \
+    --eval_batch_size 1 \
     --alpha 0.95
 ```
 
@@ -500,7 +505,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.95
 ```
 
@@ -554,7 +559,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.65
 ```
 
@@ -607,7 +612,7 @@ python run_generation_sq.py \
     --trust_remote_code \
     --tasks lambada_openai \
     --sq --accuracy \
-    --batch_size 1 \
+    --eval_batch_size 1 \
     --alpha 0.5
 ```
 
@@ -662,8 +667,13 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
-    --alpha 0.75
+    --eval_batch_size 1 \
+    --init_alpha 0.7 \
+    --alpha_min 0.55 \
+    --alpha_max 0.8 \
+    --alpha_step 0.01 \
+    --shared_criterion mean \
+    --n_samples 512
 ```
 
 ### Weight-Only Quantization
@@ -715,8 +725,12 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
-    --alpha 0.9
+    --eval_batch_size 1 \
+    --init_alpha 0.85 \
+    --alpha_min 0.79 \
+    --alpha_max 0.88 \
+    --alpha_step 0.01 \
+    --shared_criterion mean
 ```
 
 ### Weight-Only Quantization
@@ -768,7 +782,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.6
 ```
 
@@ -821,7 +835,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.7
 ```
 
@@ -874,7 +888,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.75
 ```
 
@@ -896,10 +910,10 @@ python run_generation_cpu_woq.py \
     --woq_algo GPTQ \
     --bits 4 \
     --weight_dtype int4 \
-    --desc_act \
-    --seq_len 2048 \
-    --scheme sym \
-    --group_size 32 \
+    --scheme asym \
+    --group_size 128 \
+    --use_mse_search \
+    --n_samples 128
     --accuracy
 
 # int4 AutoRound
@@ -927,7 +941,7 @@ python run_generation_sq.py \
     --tasks lambada_openai \
     --sq \
     --accuracy \
-    --eval_batch_size 56 \
+    --eval_batch_size 1 \
     --alpha 0.75
 ```
 
