@@ -1,3 +1,9 @@
+**A Beginner friendly tutorial**
+=======
+[text_embedding_made_simple_xpu.ipynb](https://github.com/sleepingcat4/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-embedding/deployment/mteb/bge/text_embedding_made_simple_xpu.ipynb)
+
+In this notebook, we have showed how we can quantise one of the biggest and most recent embedding model (BAAI/bge-m3) present on huggingface using Intel XPU and generate embeddings on Jupyter Notebook.
+
 Step-by-Step
 =======
 This document describes the end-to-end workflow for Huggingface model [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) and [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) with LLM Runtime backend.
