@@ -636,6 +636,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 percdamp=config.damp_percent,
                 block_size=config.blocksize,
                 static_groups=config.static_groups,
+                use_mse_search=config.use_mse_search,
             )
             if config.llm_int8_skip_modules != []:
                 for module in config.llm_int8_skip_modules:
