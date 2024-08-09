@@ -23,7 +23,7 @@ import os
 from ....tools.utils import _ipex_version
 from accelerate import init_empty_weights
 from datasets import load_dataset
-from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
+from neural_compressor.torch.algorithms.weight_only.modules import INCWeightOnlyLinear as WeightOnlyLinear
 from neural_compressor.torch.quantization import (
     AutoRoundConfig,
     AWQConfig,
