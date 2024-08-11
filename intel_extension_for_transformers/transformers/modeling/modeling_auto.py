@@ -70,7 +70,7 @@ from ..llm.quantization.utils import (
 from ...tools.utils import is_intel_gpu_available, is_ipex_available, _neural_compressor_version
 from accelerate import init_empty_weights
 from huggingface_hub import hf_hub_download
-from neural_compressor.torch.algorithms.weight_only.modules import WeightOnlyLinear
+from neural_compressor.torch.algorithms.weight_only.modules import INCWeightOnlyLinear as WeightOnlyLinear
 from neural_compressor.model.torch_model import PyTorchFXModel
 from packaging import version
 from threading import Thread

@@ -15,6 +15,7 @@ intel-tensorflow==2.14.0
 lm-eval==0.4.3
 mlflow
 nlpaug==1.1.9
+nltk==3.8.1
 onnx
 onnxruntime
 peft==0.6.2
