@@ -38,7 +38,7 @@ parser.add_argument("--benchmark_iters", default=10, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=3, type=int, help="num warmup")
 # ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--eval_batch_size", default=56, type=int,
+parser.add_argument("--eval_batch_size", default=1, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
