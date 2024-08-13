@@ -34,11 +34,13 @@ extensions = [
         'sphinx.ext.coverage',
         'sphinx.ext.autosummary',
         'sphinx_md',
+        'sphinx_rtd_theme',
         'autoapi.extension',
         'sphinx.ext.napoleon',
         'sphinx.ext.githubpages',
-        "sphinx.ext.linkcode",
-        'breathe'
+        'sphinx.ext.linkcode',
+        'breathe',
+        'sphinxcontrib.jquery',
         ]
 
 autoapi_dirs = ['../../intel_extension_for_transformers']
