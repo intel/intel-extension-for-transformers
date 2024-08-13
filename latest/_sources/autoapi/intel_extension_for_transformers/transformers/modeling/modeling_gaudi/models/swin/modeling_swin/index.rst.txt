@@ -1,0 +1,27 @@
+intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.swin.modeling_swin
+===============================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.swin.modeling_swin
+
+.. autoapi-nested-parse::
+
+   PyTorch Swin Transformer model.
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.swin.modeling_swin.gaudi_swin_get_attn_mask
+
+
+Module Contents
+---------------
+
+.. py:function:: gaudi_swin_get_attn_mask(self, height, width, dtype)
+
+   The only difference is moving img_mask to hpu for performance.
+
+

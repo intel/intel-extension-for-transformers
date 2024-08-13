@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.transformers.utils.utility &mdash; Intel® Extension for Transformers 0.1.dev1+g6c15bae documentation</title>
+  <title>intel_extension_for_transformers.transformers.utils.utility &mdash; Intel® Extension for Transformers 0.1.dev1+g408e5f1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=fd3f3429" />
@@ -58,7 +58,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../docs/api_doc/api.html">API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/SECURITY.html">OpenSSF Badge</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/SECURITY.html#security-policy">Security Policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../docs/release.html">Release</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../docs/legal.html">Legal Information</a></li>
 <li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
@@ -98,24 +99,6 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.distributed_init" title="intel_extension_for_transformers.transformers.utils.utility.distributed_init"><code class="xref py py-obj docutils literal notranslate"><span class="pre">distributed_init</span></code></a>([backend, world_size, rank, ...])</p></td>
 <td><p>Init the distribute environment.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values" title="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_dummy_past_key_values</span></code></a>(config, input_bs)</p></td>
-<td><p>Generate the dummy past_key_values.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_inference" title="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_inference"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_dummy_past_key_values_for_inference</span></code></a>(config, ...)</p></td>
-<td><p>Generate the dummy past_key_values.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm" title="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_dummy_past_key_values_for_opt_llm</span></code></a>(config, ...)</p></td>
-<td><p>Generate the dummy past_key_values.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs" title="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_example_inputs</span></code></a>(model_config[, batch_size, ...])</p></td>
-<td><p>Generate the dummy example inputs.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.make_torchscript_model" title="intel_extension_for_transformers.transformers.utils.utility.make_torchscript_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_torchscript_model</span></code></a>(model, json_file_path, ...)</p></td>
-<td><p>Recover ipex model from JSON file.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json" title="intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recover_model_from_json</span></code></a>(fp32_model_name_or_path, ...)</p></td>
-<td><p>Recover ipex model from JSON file.</p></td>
-</tr>
 </tbody>
 </table>
 </section>
@@ -125,72 +108,6 @@
 <dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.distributed_init">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">distributed_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gloo'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">world_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master_addr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'127.0.0.1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'12345'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.distributed_init" title="Link to this definition"></a></dt>
 <dd><p>Init the distribute environment.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">generate_dummy_past_key_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_bs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values" title="Link to this definition"></a></dt>
-<dd><p>Generate the dummy past_key_values.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_inference">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">generate_dummy_past_key_values_for_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_bs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_inference" title="Link to this definition"></a></dt>
-<dd><p>Generate the dummy past_key_values.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">generate_dummy_past_key_values_for_opt_llm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_bs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_beams</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm" title="Link to this definition"></a></dt>
-<dd><p>Generate the dummy past_key_values.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">get_example_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_beams</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs" title="Link to this definition"></a></dt>
-<dd><p>Generate the dummy example inputs.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.make_torchscript_model">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">make_torchscript_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">json_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">example_inputs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.make_torchscript_model" title="Link to this definition"></a></dt>
-<dd><p>Recover ipex model from JSON file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>object</em>) – fp32 model need to do quantization.</p></li>
-<li><p><strong>json_file_path</strong> (<em>json</em>) – configuration JSON file for ipex.</p></li>
-<li><p><strong>example_inputs</strong> (<em>tuple</em><em> or </em><em>torch.Tensor</em><em> or </em><em>dict</em>) – example inputs that will be passed to the ipex function.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>quantized model</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>(object)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">recover_model_from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp32_model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">json_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trust_remote_code</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json" title="Link to this definition"></a></dt>
-<dd><p>Recover ipex model from JSON file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>object</em>) – fp32 model need to do quantization.</p></li>
-<li><p><strong>json_file_path</strong> (<em>json</em>) – configuration JSON file for ipex.</p></li>
-<li><p><strong>trust_remote_code</strong> (<em>bool</em>) – trust remote code.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>quantized model</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>(object)</p>
-</dd>
-</dl>
 </dd></dl>
 
 </section>
@@ -210,7 +127,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f69e925d030> 
+   <jinja2.runtime.BlockReference object at 0x7fc107fb1870> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

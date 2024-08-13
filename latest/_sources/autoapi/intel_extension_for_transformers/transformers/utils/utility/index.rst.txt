@@ -15,12 +15,6 @@ Functions
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.utils.utility.distributed_init
-   intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values
-   intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_inference
-   intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm
-   intel_extension_for_transformers.transformers.utils.utility.get_example_inputs
-   intel_extension_for_transformers.transformers.utils.utility.make_torchscript_model
-   intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json
 
 
 Module Contents
@@ -29,55 +23,5 @@ Module Contents
 .. py:function:: distributed_init(backend='gloo', world_size=1, rank=-1, init_method=None, master_addr='127.0.0.1', master_port='12345')
 
    Init the distribute environment.
-
-
-.. py:function:: generate_dummy_past_key_values(config, input_bs)
-
-   Generate the dummy past_key_values.
-
-
-.. py:function:: generate_dummy_past_key_values_for_inference(config, input_bs)
-
-   Generate the dummy past_key_values.
-
-
-.. py:function:: generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1)
-
-   Generate the dummy past_key_values.
-
-
-.. py:function:: get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4)
-
-   Generate the dummy example inputs.
-
-
-.. py:function:: make_torchscript_model(model, json_file_path, example_inputs)
-
-   Recover ipex model from JSON file.
-
-   :param model: fp32 model need to do quantization.
-   :type model: object
-   :param json_file_path: configuration JSON file for ipex.
-   :type json_file_path: json
-   :param example_inputs: example inputs that will be passed to the ipex function.
-   :type example_inputs: tuple or torch.Tensor or dict
-
-   :returns: quantized model
-   :rtype: (object)
-
-
-.. py:function:: recover_model_from_json(fp32_model_name_or_path, json_file_path, trust_remote_code=False)
-
-   Recover ipex model from JSON file.
-
-   :param model: fp32 model need to do quantization.
-   :type model: object
-   :param json_file_path: configuration JSON file for ipex.
-   :type json_file_path: json
-   :param trust_remote_code: trust remote code.
-   :type trust_remote_code: bool
-
-   :returns: quantized model
-   :rtype: (object)
 
 

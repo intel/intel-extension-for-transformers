@@ -9,21 +9,3 @@ intel_extension_for_transformers.transformers.quantization
 
 
 
-Classes
--------
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.transformers.quantization.QuantizationMode
-
-
-Module Contents
----------------
-
-.. py:class:: QuantizationMode
-
-
-
-   Currently support three quantization modes.
-
-

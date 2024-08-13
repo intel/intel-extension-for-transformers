@@ -130,14 +130,14 @@ Module Contents
    Mixin class for quantization config.
 
 
-.. py:class:: SmoothQuantConfig(backend='ipex', tokenizer=None, calib_dataset='NeelNanda/pile-10k', calib_dataloader=None, calib_func=None, calib_shuffle=True, calib_iters=100, calib_padding=False, calib_len=512, calib_pad_val=1, op_name_dict=None, op_type_dict=None, excluded_precisions=[], example_inputs=None, ipex_opt_llm=None, alpha=0.5, num_beams=1, recipes={'smooth_quant': True, 'smooth_quant_args': {'alpha': 0.5}}, **kwargs)
+.. py:class:: SmoothQuantConfig(tokenizer=None, dataset='NeelNanda/pile-10k', alpha=0.5, scale_sharing=False, init_alpha=0.5, alpha_min=0.0, alpha_max=1.0, alpha_step=0.1, shared_criterion='max', do_blockwise=False, auto_alpha_args=None, n_samples=100, seq_len=512, excluded_precisions=[], ipex_opt_llm=None, num_beams=1, shuffle=False, padding=False, **kwargs)
 
 
 
    Mixin class for quantization config.
 
 
-.. py:class:: RtnConfig(bits: int = 4, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, mse_range: bool = False, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, layer_wise: bool = False, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+.. py:class:: RtnConfig(bits: int = 4, group_size: int = 32, group_dim: int = 1, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_full_range: bool = False, mse_range: bool = False, use_double_quant: bool = False, double_quant_dtype: str = 'int', double_quant_bits: int = 8, double_quant_use_sym: bool = False, double_quant_group_size: int = 256, sym: bool = True, layer_wise: bool = False, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, **kwargs)
 
 
 
@@ -154,7 +154,7 @@ Module Contents
 
 
 
-.. py:class:: GPTQConfig(bits: int = 4, tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, blocksize: int = 128, damp_percent: float = 0.1, desc_act: bool = False, nsamples: int = 128, max_input_length: Optional[int] = None, static_groups: bool = False, true_sequential: bool = True, layer_wise: bool = False, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+.. py:class:: GPTQConfig(bits: int = 4, tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', batch_size: int = 8, group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, blocksize: int = 128, damp_percent: float = 0.1, desc_act: bool = False, n_samples: int = 128, seq_len: int = 2048, static_groups: bool = False, use_mse_search: bool = False, true_sequential: bool = False, layer_wise: bool = False, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, **kwargs)
 
 
 
@@ -177,7 +177,7 @@ Module Contents
 
 
 
-.. py:class:: AwqConfig(bits: int = 8, tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, zero_point: bool = True, mse_range: bool = False, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+.. py:class:: AwqConfig(bits: int = 8, tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, layer_wise: bool = False, n_samples: int = 128, seq_len: int = 2048, auto_scale: bool = True, auto_clip: bool = True, use_double_quant=False, double_quant_scale_dtype=None, zero_point: bool = True, use_ggml: bool = False, use_quant: bool = True, use_neural_speed: bool = False, **kwargs)
 
 
 
@@ -194,7 +194,7 @@ Module Contents
 
 
 
-.. py:class:: TeqConfig(bits: int = 8, tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, use_ggml: bool = False, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+.. py:class:: TeqConfig(bits: int = 8, tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', group_size: int = 32, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, layer_wise: bool = False, absorb_to_layer: dict = {}, n_samples: int = 128, seq_len: int = 2048, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = True, use_ggml: bool = False, use_neural_speed: bool = False, **kwargs)
 
 
 
@@ -211,7 +211,7 @@ Module Contents
 
 
 
-.. py:class:: AutoRoundConfig(bits: int = 4, tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', group_size: int = 128, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = False, lr: float = None, minmax_lr: float = None, enable_quanted_input: bool = True, nsamples: int = 512, iters: int = 200, use_ggml: bool = False, use_neural_speed: bool = False, llm_int8_skip_modules=None, **kwargs)
+.. py:class:: AutoRoundConfig(bits: int = 4, tokenizer: Any = None, dataset: str = 'NeelNanda/pile-10k', group_size: int = 128, compute_dtype: Any = None, weight_dtype: Any = None, scale_dtype: Any = None, use_double_quant=False, double_quant_scale_dtype=None, sym: bool = False, lr: float = None, minmax_lr: float = None, disable_quanted_input: bool = True, n_samples: int = 128, seq_len: int = 2048, iters: int = 200, quant_lm_head: bool = False, use_ggml: bool = False, use_neural_speed: bool = False, **kwargs)
 
 
 

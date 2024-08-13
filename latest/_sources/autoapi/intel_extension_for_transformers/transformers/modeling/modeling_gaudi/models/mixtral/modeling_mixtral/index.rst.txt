@@ -1,0 +1,90 @@
+intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.mixtral.modeling_mixtral
+=====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.mixtral.modeling_mixtral
+
+.. autoapi-nested-parse::
+
+   PyTorch Mixtral model.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.mixtral.modeling_mixtral.GaudiMixtralForCausalLM
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.mixtral.modeling_mixtral.gaudi_mixtral_rmsnorm_forward
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.mixtral.modeling_mixtral.gaudi_mixtral_repeat_kv
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.mixtral.modeling_mixtral.gaudi_mixtral_attention_forward
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.mixtral.modeling_mixtral.gaudi_mixtral_block_sparse_moe_forward
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.mixtral.modeling_mixtral.gaudi_mixtral_decoder_layer_forward
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.mixtral.modeling_mixtral.gaudi_mixtral_model_forward
+
+
+Module Contents
+---------------
+
+.. py:function:: gaudi_mixtral_rmsnorm_forward(self, hidden_states)
+
+   The only differences are:
+       - override RMSNorm with Habana fused RMSNorm
+
+
+.. py:function:: gaudi_mixtral_repeat_kv(query_states: torch.Tensor, key_states: torch.Tensor, value_states: torch.Tensor, attention_mask: torch.Tensor, n_rep: int)
+
+   The only differences are:
+   - Append num_key_value_heads == 1 check as kv states can be broadcasted during matmuls
+     so need to expand and reshape them.
+   - Add new args query_states, key_states, value_states and attention_mask and
+     update the logic for expansion.
+   The query states go from (batch, num_heads, seqlen, head_dim) to
+   (batch, num_key_value_heads, n_rep, seqlen, head_dim)
+   The key/value states go from (batch, num_key_value_heads, seqlen, head_dim) to
+   (batch, num_key_value_heads, 1, seqlen, head_dim)
+
+
+.. py:function:: gaudi_mixtral_attention_forward(self, hidden_states: torch.Tensor, attention_mask: Optional[torch.Tensor] = None, position_ids: Optional[torch.LongTensor] = None, past_key_value: Optional[transformers.cache_utils.Cache] = None, output_attentions: bool = False, use_cache: bool = False, token_idx: Optional[torch.Tensor] = None, **kwargs) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]
+
+   The only differences are:
+   - add new args token_idx
+   - optimize KV cache
+
+
+.. py:function:: gaudi_mixtral_block_sparse_moe_forward(self, hidden_states: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]
+
+   The only differences are:
+   - optimize expert forward, remove dynamic control and dynamic shape
+
+
+.. py:function:: gaudi_mixtral_decoder_layer_forward(self, hidden_states: torch.Tensor, attention_mask: Optional[torch.Tensor] = None, position_ids: Optional[torch.LongTensor] = None, past_key_value: Optional[Tuple[torch.Tensor]] = None, output_attentions: Optional[bool] = False, output_router_logits: Optional[bool] = False, use_cache: Optional[bool] = False, token_idx: Optional[torch.Tensor] = None, **kwargs) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]
+
+   The only differences are:
+   - add new args token_idx
+
+
+.. py:function:: gaudi_mixtral_model_forward(self, input_ids: torch.LongTensor = None, attention_mask: Optional[torch.Tensor] = None, position_ids: Optional[torch.LongTensor] = None, past_key_values: Optional[List[torch.FloatTensor]] = None, inputs_embeds: Optional[torch.FloatTensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, output_router_logits: Optional[bool] = None, return_dict: Optional[bool] = None, token_idx: Optional[torch.Tensor] = None) -> Union[Tuple, transformers.modeling_outputs.MoeModelOutputWithPast]
+
+   The only differences are:
+   - add new args token_idx
+
+
+.. py:class:: GaudiMixtralForCausalLM
+
+
+
+   The only differences are:
+   - add new args token_idx
+   - add token_idx into model_inputs
+   - from step2 when enable KV cache, slice next_input_ids from input_ids base on the token_idx
+   - from step2 when enable KV cache, slice next_position_ids from position_ids base on the token_idx
+
+

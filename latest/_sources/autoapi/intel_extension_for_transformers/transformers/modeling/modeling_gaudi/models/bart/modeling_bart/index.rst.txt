@@ -1,0 +1,48 @@
+intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.bart.modeling_bart
+===============================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.bart.modeling_bart
+
+.. autoapi-nested-parse::
+
+   PyTorch BART model.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.bart.modeling_bart.gaudi_BartLearnedPositionalEmbedding
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.bart.modeling_bart.gaudi_BartAttention_forward
+
+
+Module Contents
+---------------
+
+.. py:class:: gaudi_BartLearnedPositionalEmbedding(num_embeddings: int, embedding_dim: int)
+
+
+
+   This module learns positional embeddings up to a fixed maximum size.
+
+
+   .. py:method:: forward(input_ids: torch.Tensor, past_key_values_length: torch.Tensor = torch.tensor(0))
+
+      `input_ids' shape is expected to be [bsz x seqlen].
+
+
+
+.. py:function:: gaudi_BartAttention_forward(self, hidden_states: torch.Tensor, key_value_states: Optional[torch.Tensor] = None, past_key_value: Optional[Tuple[torch.Tensor]] = None, attention_mask: Optional[torch.Tensor] = None, layer_head_mask: Optional[torch.Tensor] = None, output_attentions: bool = False, token_idx: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]
+
+   Input shape: Batch x Time x Channel
+
+

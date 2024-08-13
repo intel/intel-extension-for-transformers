@@ -5,7 +5,7 @@ intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image.instru
 
 .. autoapi-nested-parse::
 
-   Pipeline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline.
+   Pipeline Modification based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline.
 
 
 

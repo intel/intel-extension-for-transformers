@@ -59,7 +59,7 @@ Module Contents
 
    Parse the graph nodes ans get the graph_nodes_dict.
 
-   Be used for Grpah class with creating a new graph.
+   Be used for Graph class with creating a new graph.
    The node_name is the key, node in value is for getting the Const
    tensor value and the input_tensor source op; output_names in value
    is the node output name list; outputs in value is for output_tensor dest op
@@ -91,7 +91,7 @@ Module Contents
    :param bias_node: bias_add in graph (from onnx framework)
    :param a_scale: matmul node input matrice a scale tensor
    :param b_scale: matmul node input matrice b scale tensor
-   :param model: Grpah class
+   :param model: Graph class
 
    :returns: int32 bias numpy array
 

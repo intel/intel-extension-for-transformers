@@ -20,6 +20,5 @@ Submodules
    /autoapi/intel_extension_for_transformers/transformers/utils/metrics/index
    /autoapi/intel_extension_for_transformers/transformers/utils/objectives/index
    /autoapi/intel_extension_for_transformers/transformers/utils/utility/index
-   /autoapi/intel_extension_for_transformers/transformers/utils/utility_tf/index
 
 

@@ -1,0 +1,11 @@
+intel_extension_for_transformers.transformers.modeling.modeling_gaudi.streaming_llm
+===================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_gaudi.streaming_llm
+
+.. autoapi-nested-parse::
+
+   Adapted from https://github.com/mit-han-lab/streaming-llm/tree/main
+
+
+

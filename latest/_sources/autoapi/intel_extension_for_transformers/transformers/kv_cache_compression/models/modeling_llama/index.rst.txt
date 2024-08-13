@@ -1,0 +1,86 @@
+intel_extension_for_transformers.transformers.kv_cache_compression.models.modeling_llama
+========================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.kv_cache_compression.models.modeling_llama
+
+.. autoapi-nested-parse::
+
+   PyTorch llama model.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.kv_cache_compression.models.modeling_llama.LlamaAttention
+   intel_extension_for_transformers.transformers.kv_cache_compression.models.modeling_llama.LlamaFlashAttention2
+   intel_extension_for_transformers.transformers.kv_cache_compression.models.modeling_llama.LlamaSdpaAttention
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.kv_cache_compression.models.modeling_llama.apply_rotary_pos_emb
+
+
+Module Contents
+---------------
+
+.. py:function:: apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1)
+
+   Applies Rotary Position Embedding to the query and key tensors.
+
+   :param q: The query tensor.
+   :type q: `torch.Tensor`
+   :param k: The key tensor.
+   :type k: `torch.Tensor`
+   :param cos: The cosine part of the rotary embedding.
+   :type cos: `torch.Tensor`
+   :param sin: The sine part of the rotary embedding.
+   :type sin: `torch.Tensor`
+   :param position_ids: Deprecated and unused.
+   :type position_ids: `torch.Tensor`, *optional*
+   :param unsqueeze_dim: The 'unsqueeze_dim' argument specifies the dimension along which to unsqueeze cos[position_ids] and
+                         sin[position_ids] so that they can be properly broadcasted to the dimensions of q and k. For example, note
+                         that cos[position_ids] and sin[position_ids] have the shape [batch_size, seq_len, head_dim]. Then, if q and
+                         k have the shape [batch_size, heads, seq_len, head_dim], then setting unsqueeze_dim=1 makes
+                         cos[position_ids] and sin[position_ids] broadcastable to the shapes of q and k. Similarly, if q and k have
+                         the shape [batch_size, seq_len, heads, head_dim], then set unsqueeze_dim=2.
+   :type unsqueeze_dim: `int`, *optional*, defaults to 1
+
+   :returns: `tuple(torch.Tensor)` comprising of the query and key tensors rotated using the Rotary Position Embedding.
+
+
+.. py:class:: LlamaAttention(config: transformers.models.llama.configuration_llama.LlamaConfig, layer_idx: Optional[int] = None)
+
+
+
+   Multi-headed attention from 'Attention Is All You Need' paper.
+
+
+.. py:class:: LlamaFlashAttention2(*args, **kwargs)
+
+
+
+   Llama flash attention module.
+
+   This module inherits from `LlamaAttention` as the weights of the module stays
+   untouched. The only required change would be on the forward pass where it needs to correctly call the public API of
+   flash attention and deal with padding tokens in case the input contains any of them.
+
+
+.. py:class:: LlamaSdpaAttention(config: transformers.models.llama.configuration_llama.LlamaConfig, layer_idx: Optional[int] = None)
+
+
+
+   Llama attention module using torch.nn.functional.scaled_dot_product_attention.
+
+   This module inherits from
+   `LlamaAttention` as the weights of the module stays untouched. The only changes are on the forward pass to adapt to
+   SDPA API.
+
+

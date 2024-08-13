@@ -1,0 +1,42 @@
+intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.phi.modeling_phi
+=============================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.phi.modeling_phi
+
+.. autoapi-nested-parse::
+
+   PyTorch Phi model.
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.phi.modeling_phi.gaudi_phi_attention_forward
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.phi.modeling_phi.gaudi_phi_decoder_layer_forward
+   intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.phi.modeling_phi.gaudi_phi_model_forward
+
+
+Module Contents
+---------------
+
+.. py:function:: gaudi_phi_attention_forward(self, hidden_states: torch.Tensor, attention_mask: Optional[torch.Tensor] = None, position_ids: Optional[torch.LongTensor] = None, past_key_value: Optional[transformers.cache_utils.Cache] = None, output_attentions: bool = False, use_cache: bool = False, token_idx: Optional[torch.Tensor] = None, **kwargs) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]
+
+   The only differences are:
+   - add new args token_idx
+
+
+.. py:function:: gaudi_phi_decoder_layer_forward(self, hidden_states: torch.Tensor, attention_mask: Optional[torch.Tensor] = None, position_ids: Optional[torch.LongTensor] = None, output_attentions: Optional[bool] = False, use_cache: Optional[bool] = False, past_key_value: Optional[Tuple[torch.Tensor]] = None, token_idx: Optional[torch.Tensor] = None, **kwargs) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]
+
+   The only differences are:
+   - add new args token_idx
+
+
+.. py:function:: gaudi_phi_model_forward(self, input_ids: torch.LongTensor = None, attention_mask: Optional[torch.Tensor] = None, position_ids: Optional[torch.LongTensor] = None, past_key_values: Optional[List[torch.FloatTensor]] = None, inputs_embeds: Optional[torch.FloatTensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, token_idx: Optional[torch.Tensor] = None) -> Union[Tuple, transformers.modeling_outputs.BaseModelOutputWithPast]
+
+   The only differences are:
+   - add new args token_idx
+
+

@@ -1,0 +1,15 @@
+intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.llama.pos_shift_llama
+==================================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_gaudi.models.llama.pos_shift_llama
+
+.. autoapi-nested-parse::
+
+   Adapted from https://github.com/tomaarsen/attention_sinks
+   Note (accelerate inference with hpu graphs in V1.15.1):
+     1. avoid using data dependent dynamic flow
+     2. avoid updating tensor by in-place view (a[:, idx] = c)
+     3. make all shapes static
+
+
+
