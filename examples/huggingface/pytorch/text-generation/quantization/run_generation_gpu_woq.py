@@ -38,7 +38,7 @@ parser.add_argument("--benchmark_iters", default=10, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=3, type=int, help="num warmup")
 # ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--eval_batch_size", default=56, type=int,
+parser.add_argument("--eval_batch_size", default=12, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
@@ -319,12 +319,12 @@ if args.accuracy:
             if user_model is None else user_model
     if quantization_config is None:
         quantization_config = user_model.quantization_config if hasattr(user_model, "quantization_config") else None
-    if enable_optimize_transformers:
-        print("Optimize with IPEX...")
-        user_model = ipex.optimize_transformers(
-            user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
-    else:
-        print("Disabled optimization with IPEX...")
+    #if enable_optimize_transformers:
+    #    print("Optimize with IPEX...")
+    #    user_model = ipex.optimize_transformers(
+    #        user_model.eval(), device=args.device, inplace=True, quantization_config=quantization_config, dtype=torch_dtype)
+    #else:
+    #    print("Disabled optimization with IPEX...")
     from intel_extension_for_transformers.transformers.llm.evaluation.lm_eval import evaluate, LMEvalParser
     args = LMEvalParser(model = "hf", 
                         tokenizer = tokenizer,
