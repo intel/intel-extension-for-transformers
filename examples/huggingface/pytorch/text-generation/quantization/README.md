@@ -232,7 +232,7 @@ python setup.py install
 
 ## Run
 The followings are command to show how to use it.
-
+> Note: if neural-compressor version is 3.0, please ```export FORCE_DEVICE="cpu"```, it is used to ensure calibration on cpu device.
 ### 1. Performance
 ``` bash
 # fp16
