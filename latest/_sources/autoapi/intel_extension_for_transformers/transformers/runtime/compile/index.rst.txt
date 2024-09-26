@@ -28,7 +28,6 @@ Submodules
 .. toctree::
    :maxdepth: 1
 
-   /autoapi/intel_extension_for_transformers/transformers/runtime/compile/compile/index
    /autoapi/intel_extension_for_transformers/transformers/runtime/compile/graph_utils/index
    /autoapi/intel_extension_for_transformers/transformers/runtime/compile/logger/index
    /autoapi/intel_extension_for_transformers/transformers/runtime/compile/onnx_utils/index
