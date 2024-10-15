@@ -42,8 +42,7 @@ void execute_qpack(repack_quantized_weight_param* p, repack_quantized_weight_ctx
 
 template <class GemmCore, BTLA_ISA ISA>
 void parse_prob(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx, WOQ_TASK task) {
-  if (p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int3_clip" ||
-      p->weight_type == "int2_clip") {
+  if (p->weight_type == "int8" || p->weight_type == "int4" || p->weight_type == "int3" || p->weight_type == "int2") {
     return execute_qpack<bestla::prologue_b::gemm::WeightKBlockNInteger<GemmCore, ISA>>(p, ctx, task);
   }
   if (p->weight_type == "nf4" || p->weight_type == "fp4_e2m1_bnb" || p->weight_type == "fp4_e2m1") {
@@ -61,11 +60,11 @@ std::string get_dtype_str(BTLA_DTYPE dtype) {
     case BTLA_DTYPE::BF16:
       return "bf16";
     case BTLA_DTYPE::S4_CLIP:
-      return "int4_clip";
+      return "int4";
     case BTLA_DTYPE::S3_CLIP:
-      return "int3_clip";
+      return "int3";
     case BTLA_DTYPE::S2_CLIP:
-      return "int2_clip";
+      return "int2";
     case BTLA_DTYPE::F4_NF4:
       return "nf4";
     case BTLA_DTYPE::F4_E2M1:
@@ -205,9 +204,9 @@ torch::Tensor get_packw_info(torch::Tensor& packw, PACKW_ACQUIRE_TYPE ACQ_T) {
 
 void bestla_packq(repack_quantized_weight_param* p, repack_quantized_weight_ctx* ctx, WOQ_TASK task) {
   if (p->compute_type == "int8") {
-    TORCH_CHECK(p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int3_clip" ||
-                    p->weight_type == "int2_clip",
-                "Qbits: only support Integer weight-type with int8 compute-type");
+    TORCH_CHECK(
+        p->weight_type == "int8" || p->weight_type == "int4" || p->weight_type == "int3" || p->weight_type == "int2",
+        "Qbits: only support Integer weight-type with int8 compute-type");
     if (dispatcher_utils::check_amx() && p->blocksize % bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>::KTILE == 0) {
       return parse_prob<bestla::gemm::ICoreRowNAmxint8KBlock<64, 16>, BTLA_ISA::AMX_INT8>(p, ctx, task);
     }

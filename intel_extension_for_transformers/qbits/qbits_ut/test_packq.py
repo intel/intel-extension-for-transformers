@@ -48,7 +48,7 @@ class acquire_type(Enum):
 @pytest.mark.parametrize("k", [512])
 @pytest.mark.parametrize("blocksize", [128])
 @pytest.mark.parametrize("compute_type", ["fp32", "bf16", "int8"])
-@pytest.mark.parametrize("weight_type", ["int8", "int4_clip"])
+@pytest.mark.parametrize("weight_type", ["int8", "int4"])
 @pytest.mark.parametrize("scale_type", ["fp32"])
 @pytest.mark.parametrize("asym", [True, False])
 def test(m, k, n, weight_type, scale_type, compute_type, asym, blocksize, dump_tensor=False):
