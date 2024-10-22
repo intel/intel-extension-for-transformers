@@ -20,7 +20,7 @@
 # for more information.
 #
 # ============================================================================
-# How to build: 
+# How to build:
 #   docker build ./ -f Dockerfile -t chatbot_finetune:latest
 # If you need to use proxy, please use the following command
 #   docker build ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} -f Dockerfile -t chatbot_finetune:latest
@@ -82,7 +82,7 @@ WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neura
 CMD ["/usr/sbin/sshd", "-D"]
 
 # HABANA environment
-FROM vault.habana.ai/gaudi-docker/1.13.0/ubuntu22.04/habanalabs/pytorch-installer-2.1.0:latest as hpu
+FROM vault.habana.ai/gaudi-docker/1.15.0/ubuntu22.04/habanalabs/pytorch-installer-2.2.0:latest as hpu
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
@@ -129,7 +129,7 @@ sed -i '/--extra-index-url https:\/\/download.pytorch.org\/whl\/cpu/d' requireme
     pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
     pip install -r requirements_hpu.txt && \
-    pip install transformers==4.34.1 && \
+    pip install transformers==4.38.2 && \
     pip install accelerate==0.24.0 && \
     pip install datasets==2.14.7
 
