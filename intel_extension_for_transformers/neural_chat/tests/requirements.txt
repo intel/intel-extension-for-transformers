@@ -33,7 +33,7 @@ jieba
 joblib==1.2.0
 jsonlines
 kornia==0.6.8
-langchain==0.1.11
+langchain==0.2.10
 langchain-community==0.0.27
 langchain_core==0.1.35
 langid
