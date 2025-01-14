@@ -207,6 +207,41 @@ class KVCache(torch.nn.Module):
     def forward(self, cur, dim, idx):
         return self.update(self.cache, cur, dim, idx, self.inp_seq_len)
 
+class KVCacheCPU(KVCache):
+    def __init__(self):
+        super(KVCacheCPU, self).__init__()
+
+    def allocate(self, inp_seq_len, dtype, device, shape):
+        if self.cache is None or self.cache.shape != shape:
+            self.inp_seq_len = inp_seq_len
+            cpu_dtype = dtype
+            # TODO allocate int8 as cpu has no float8_e4m3fn
+            if dtype == torch.float8_e4m3fn:
+                cpu_dtype = torch.int8
+            self.cache = torch.zeros(shape, dtype=cpu_dtype, device="cpu")
+        else:
+            assert (
+                self.inp_seq_len == inp_seq_len
+            ), f"inp_seq_len must be the same. self.inp_seq_len:{self.inp_seq_len} inp_seq_len:{inp_seq_len}"
+            self.cache.fill_(0)
+
+    def update(self, prev, cur, dim, idx, inp_seq_len):
+        orig_cur = cur
+        cpu_cur = cur.to('cpu')
+        cpu_idx = idx.to('cpu')
+        if prev.shape == cur.shape:
+            prev.copy_(cpu_cur)
+            return orig_cur
+        if cur.shape[2] > 1 and cur.shape[2] <= prev.shape[2]:
+            # Initialize
+            prev[:, :, :inp_seq_len, :].copy_(cpu_cur)
+            return orig_cur
+        assert cur.shape[2] == 1, f"Cannot update kv-cache. Unsupported shapes. prev:{prev.shape} cur:{cur.shape}"
+        if idx is not None:
+            prev.index_copy_(dim, cpu_idx - 1, cpu_cur)
+            return prev
+        else:
+            return torch.cat((prev, cpu_cur), dim=dim)
 
 class GaudiLlamaRotaryEmbedding(torch.nn.Module):
     def __init__(self, dim, max_position_embeddings=2048, base=10000, device=None, scaling_factor=1.0):
@@ -447,24 +482,50 @@ class GaudiLlamaAttention(LlamaAttention):
             query_states, key_states, value_states, attention_mask = gaudi_llama_repeat_kv(
                 query_states, key_states, value_states, attention_mask, self.num_key_value_groups
             )
+            if self.config.tensor_split:
+                q_slices = query_states.split(1, dim=1)
+                k_slices = key_states.transpose(-2, -1).split(1, dim=1)
+                v_slices = value_states.split(1, dim=1)
+                attn_outputs = []
+                for idx in range(query_states.shape[1]):
+                    attn_weights = self.matmul_qk(q_slices[idx], k_slices[idx]) * self.norm_factor
 
-            attn_weights = self.matmul_qk(query_states, key_states.transpose(-2, -1)) * self.norm_factor
+                    if attention_mask is not None:  # no matter the length, we just slice it
+                        causal_mask = attention_mask
+                        if cache_position is not None:
+                            causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
+                        attn_weights = attn_weights + causal_mask
 
-            if attention_mask is not None:  # no matter the length, we just slice it
-                causal_mask = attention_mask
-                if cache_position is not None:
-                    causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
-                attn_weights = attn_weights + causal_mask
-
-            if attn_softmax_bf16:
-                attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=query_states.dtype)
+                    if attn_softmax_bf16:
+                        attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=query_states.dtype)
+                    else:
+                        # upcast attention to fp32
+                        attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
+                            query_states.dtype
+                        )
+                    attn_weights = torch.nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
+                    attn_out = self.matmul_av(attn_weights, v_slices[idx])
+                    attn_outputs.append(attn_out)
+                attn_output = torch.cat(attn_outputs, dim=1)
             else:
-                # upcast attention to fp32
-                attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
-                    query_states.dtype
-                )
-            attn_weights = torch.nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
-            attn_output = self.matmul_av(attn_weights, value_states)
+                attn_weights = self.matmul_qk(query_states, key_states.transpose(-2, -1)) * self.norm_factor
+
+                if attention_mask is not None:  # no matter the length, we just slice it
+                    causal_mask = attention_mask
+                    if cache_position is not None:
+                        causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
+                    attn_weights = attn_weights + causal_mask
+
+                if attn_softmax_bf16:
+                    attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=query_states.dtype)
+                else:
+                    # upcast attention to fp32
+                    attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
+                        query_states.dtype
+                    )
+                attn_weights = torch.nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
+                attn_output = self.matmul_av(attn_weights, value_states)
+
             attn_output = attn_output.reshape(bsz, -1, q_len, self.head_dim)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
