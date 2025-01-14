@@ -4,5 +4,5 @@ datasets==2.11.0
 intel-extension-for-transformers==1.1
 intel_extension_for_pytorch==1.13.100
 neural-compressor==2.1
-torch==1.13.1
+torch==2.2.0
 transformers
